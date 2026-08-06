@@ -20,8 +20,22 @@ const AdminCommunicationPage = () => {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState(() => {
     const params = new URLSearchParams(window.location.search);
-    return params.get("tab") || "broadcast";
+    const tab = params.get("tab");
+    if (tab) return tab;
+    if (params.get("userId") || params.get("chatId") || params.get("peerId")) return "chat";
+    return "broadcast";
   });
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    const hasChatParams = Boolean(params.get("userId") || params.get("chatId") || params.get("peerId"));
+    if (tab === "chat" || hasChatParams) {
+      setActiveTab("chat");
+    } else if (tab === "broadcast") {
+      setActiveTab("broadcast");
+    }
+  }, [window.location.search]);
 
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);

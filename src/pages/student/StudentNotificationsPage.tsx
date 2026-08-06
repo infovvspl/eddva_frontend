@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { Bell, BookOpen, Loader2, CheckCheck, Trophy, Video, HelpCircle, Zap, BarChart2, Calendar, Sparkles } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useNotifications, useMarkNotificationRead, useMarkAllRead } from "@/hooks/use-notifications";
-import type { Notification } from "@/lib/api/notifications";
+import { Notification, getCoachingNotificationLink } from "@/lib/api/notifications";
 import { cn } from "@/lib/utils";
 
 const TYPE_CONFIG: Record<string, { bg: string; text: string; Icon: React.ComponentType<{ className?: string }> }> = {
@@ -30,21 +31,29 @@ function getConfig(type?: string, refType?: string) {
 }
 
 function NotificationRow({ n, index }: { n: Notification; index: number }) {
+  const navigate = useNavigate();
   const markRead = useMarkNotificationRead();
   const cfg = getConfig(n.type, n.refType ?? n.data?.refType);
   const { Icon } = cfg;
+
+  function handleClick() {
+    if (!n.isRead) markRead.mutate(n.id);
+    const targetLink = getCoachingNotificationLink(n, "student");
+    if (targetLink) navigate(targetLink);
+  }
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04 }}
-      onClick={() => !n.isRead && markRead.mutate(n.id)}
+      onClick={handleClick}
       className={cn(
         "flex items-start gap-4 p-4 rounded-2xl border transition-all cursor-pointer hover:shadow-sm",
-        n.isRead ? "bg-white border-slate-100" : "bg-indigo-50/50 border-indigo-100"
+        n.isRead ? "bg-white border-slate-100 hover:border-slate-200" : "bg-indigo-50/50 border-indigo-100 hover:border-indigo-200"
       )}
     >
+
       <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center shrink-0", cfg.bg, cfg.text)}>
         <Icon className="w-4 h-4" />
       </div>
