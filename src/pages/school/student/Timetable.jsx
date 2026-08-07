@@ -290,7 +290,7 @@ export default function Timetable() {
               <table className="w-full text-left border-collapse min-w-[900px]">
                 <thead className="bg-slate-50 dark:bg-slate-800/80">
                   <tr>
-                    <th className="p-4 border-b border-r border-slate-200 dark:border-slate-700/50 w-24 text-center font-bold text-slate-500 uppercase tracking-wider text-xs">
+                    <th className="p-4 border-b border-r border-slate-200 dark:border-slate-700/50 w-24 text-center font-bold text-slate-500 uppercase tracking-wider text-xs sticky left-0 z-20 bg-slate-50 dark:bg-slate-800 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
                       Period
                     </th>
                     {DAYS.map(day => (
@@ -320,7 +320,7 @@ export default function Timetable() {
                       const periodName = match?.periodName || `P${idx + 1}`;
                       return (
                         <tr key={slotTime} className="group">
-                          <td className="p-3 border-b border-r border-slate-100 dark:border-slate-800/50 text-center align-middle bg-slate-50/30 dark:bg-slate-800/20">
+                          <td className="p-3 border-b border-r border-slate-100 dark:border-slate-800/50 text-center align-middle bg-slate-50 dark:bg-slate-850 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
                             <div className="font-bold text-slate-700 dark:text-slate-300">{periodName}</div>
                             <div className="text-[10px] font-semibold text-slate-500 whitespace-nowrap mt-1">{startTime}-{endTime}</div>
                           </td>

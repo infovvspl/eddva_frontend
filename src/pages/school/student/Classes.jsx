@@ -63,40 +63,44 @@ function LiveRecordingCard({ rec }) {
           </span>
         )}
       </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap gap-1">
-          {isProcessing ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
-              <Loader2 size={8} className="animate-spin" /> Processing…
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400">
-              <Radio size={8} /> Live Recording
-            </span>
-          )}
-          {rec.subjectName && (
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] sm:text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-              {rec.subjectName}
-            </span>
-          )}
+      <div className="min-w-0 flex-1 flex flex-col justify-between">
+        <div>
+          <div className="flex flex-wrap gap-1">
+            {isProcessing ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
+                <Loader2 size={8} className="animate-spin" /> Processing…
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400">
+                <Radio size={8} /> Live Recording
+              </span>
+            )}
+            {rec.subjectName && (
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] sm:text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                {rec.subjectName}
+              </span>
+            )}
+          </div>
+          <h4 className="mt-1.5 line-clamp-2 text-xs sm:text-sm font-black text-slate-900 dark:text-white">{rec.title}</h4>
+          <p className="mt-0.5 text-[10px] sm:text-xs font-medium text-slate-500">
+            {rec.endedAt ? new Date(rec.endedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}
+            {rec.className ? ` · ${rec.className}` : ''}
+          </p>
         </div>
-        <h4 className="mt-1.5 line-clamp-2 text-xs sm:text-sm font-black text-slate-900 dark:text-white">{rec.title}</h4>
-        <p className="mt-0.5 text-[10px] sm:text-xs font-medium text-slate-500">
-          {rec.endedAt ? new Date(rec.endedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}
-          {rec.className ? ` · ${rec.className}` : ''}
-        </p>
         {isProcessing ? (
           <p className="mt-2 text-[10px] sm:text-xs font-medium text-amber-600 dark:text-amber-400">
             Recording is being saved — usually ready in 5–15 min
           </p>
         ) : (
-          <Link
-            to={`/school/student/live-classes/${rec.classRecordingId}/recording`}
-            className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-sky-50 px-3 py-1.5 text-[10px] sm:text-xs font-bold text-blue-600 transition hover:from-blue-100 hover:to-sky-100 hover:border-blue-300 hover:text-blue-700 disabled:opacity-60"
-          >
-            <PlayCircle size={12} />
-            Watch Recording
-          </Link>
+          <div className="mt-auto pt-2">
+            <Link
+              to={`/school/student/live-classes/${rec.classRecordingId}/recording`}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-sky-50 px-3 py-1.5 text-[10px] sm:text-xs font-bold text-blue-600 transition hover:from-blue-100 hover:to-sky-100 hover:border-blue-300 hover:text-blue-700 disabled:opacity-60"
+            >
+              <PlayCircle size={12} />
+              Watch Recording
+            </Link>
+          </div>
         )}
       </div>
     </div>
@@ -150,49 +154,51 @@ function RecordedClassCard({ recording, renderRecordingStatus }) {
           )}
         </Link>
 
-        <div className="min-w-0 flex-1 flex flex-col">
-          {/* Subject badge (desktop only) */}
-          {!isMobile && recording.subject_name && (
-            <div className="flex flex-wrap gap-2">
-              <span className="rounded-full bg-slate-50 dark:bg-slate-850 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300">
-                {recording.subject_name}
+        <div className="min-w-0 flex-1 flex flex-col justify-between">
+          <div>
+            {/* Subject badge (desktop only) */}
+            {!isMobile && recording.subject_name && (
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-slate-50 dark:bg-slate-850 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300">
+                  {recording.subject_name}
+                </span>
+              </div>
+            )}
+
+            <h3 className="mt-1 text-sm sm:text-base font-black text-slate-900 dark:text-white line-clamp-2 leading-snug sm:mt-3">
+              {recording.title}
+            </h3>
+            <p className="mt-0.5 line-clamp-1 text-xs font-medium text-slate-500">
+              {recording.chapter_name || 'General chapter'}
+              {recording.topic_name ? ` · ${recording.topic_name}` : ''}
+            </p>
+
+            {/* Status and metadata details pills */}
+            <div className="mt-2.5 flex flex-wrap gap-1.5 text-[10px] font-semibold text-slate-500 sm:mt-3 sm:text-[11px] sm:gap-2">
+              {renderRecordingStatus(recording)}
+              
+              <span className="inline-flex items-center gap-1 rounded-lg bg-slate-50 dark:bg-slate-800 px-2 py-0.5 sm:rounded-full sm:px-2.5 sm:py-1">
+                <CalendarDays size={11} />
+                {recording.recorded_date ? new Date(recording.recorded_date).toLocaleDateString('en-GB') : 'No date'}
               </span>
+
+              {hasNotes && (
+                <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-0.5 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-450 sm:rounded-full sm:px-2.5 sm:py-1">
+                  <Sparkles size={11} />
+                  Notes
+                </span>
+              )}
+              
+              {!hasNotes && hasTranscript && (
+                <span className="inline-flex items-center gap-1 rounded-lg bg-violet-50 px-2 py-0.5 text-violet-750 dark:bg-violet-950/20 dark:text-violet-400 sm:rounded-full sm:px-2.5 sm:py-1">
+                  <Download size={11} />
+                  Transcript
+                </span>
+              )}
             </div>
-          )}
-
-          <h3 className="mt-1 text-sm sm:text-base font-black text-slate-900 dark:text-white line-clamp-2 leading-snug sm:mt-3">
-            {recording.title}
-          </h3>
-          <p className="mt-0.5 line-clamp-1 text-xs font-medium text-slate-500">
-            {recording.chapter_name || 'General chapter'}
-            {recording.topic_name ? ` · ${recording.topic_name}` : ''}
-          </p>
-
-          {/* Status and metadata details pills */}
-          <div className="mt-2.5 flex flex-wrap gap-1.5 text-[10px] font-semibold text-slate-500 sm:mt-3 sm:text-[11px] sm:gap-2">
-            {renderRecordingStatus(recording)}
-            
-            <span className="inline-flex items-center gap-1 rounded-lg bg-slate-50 dark:bg-slate-800 px-2 py-0.5 sm:rounded-full sm:px-2.5 sm:py-1">
-              <CalendarDays size={11} />
-              {recording.recorded_date ? new Date(recording.recorded_date).toLocaleDateString('en-GB') : 'No date'}
-            </span>
-
-            {hasNotes && (
-              <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-0.5 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-450 sm:rounded-full sm:px-2.5 sm:py-1">
-                <Sparkles size={11} />
-                Notes
-              </span>
-            )}
-            
-            {!hasNotes && hasTranscript && (
-              <span className="inline-flex items-center gap-1 rounded-lg bg-violet-50 px-2 py-0.5 text-violet-750 dark:bg-violet-950/20 dark:text-violet-400 sm:rounded-full sm:px-2.5 sm:py-1">
-                <Download size={11} />
-                Transcript
-              </span>
-            )}
           </div>
 
-          <div className="mt-3.5 sm:mt-4">
+          <div className="mt-auto pt-3 sm:pt-4">
             <Link
               to={`/school/student/recorded-classes/${recording.id}${canWatch ? '?play=1' : ''}`}
               target="_blank"

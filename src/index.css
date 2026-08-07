@@ -776,3 +776,38 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     font-size: 16px !important;
   }
 }
+
+/* ── Phase 1: Centralized ERP Desktop/Laptop Responsive Foundation Tokens ── */
+@layer components {
+  .erp-container {
+    @apply mx-auto w-full max-w-7xl 3xl:max-w-[1800px] 4xl:max-w-[2400px] px-4 sm:px-6 lg:px-8 3xl:px-12;
+  }
+
+  .erp-dashboard-container {
+    @apply mx-auto w-full h-full max-w-7xl 3xl:max-w-[1920px] 4xl:max-w-[2560px] px-4 sm:px-6 lg:px-8 3xl:px-10;
+  }
+
+  .erp-workspace-container {
+    @apply mx-auto w-full h-full max-w-[2000px] 4xl:max-w-[2800px] px-2 sm:px-4 lg:px-6;
+  }
+
+  .erp-table-scroll {
+    @apply w-full overflow-x-auto custom-scrollbar border border-border rounded-2xl shadow-sm bg-card;
+  }
+
+  .erp-modal-container {
+    @apply w-full max-h-[90vh] flex flex-col overflow-hidden bg-card rounded-2xl shadow-2xl border border-border;
+  }
+
+  .erp-modal-body {
+    @apply p-6 overflow-y-auto grow custom-scrollbar;
+  }
+
+  .erp-modal-footer {
+    @apply p-4 border-t border-border shrink-0 bg-surface flex items-center justify-end gap-3;
+  }
+
+  .erp-card {
+    @apply rounded-2xl border border-border bg-card p-5 sm:p-6 transition-all duration-200 hover:shadow-md;
+  }
+}

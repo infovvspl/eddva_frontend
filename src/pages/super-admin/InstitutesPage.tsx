@@ -479,7 +479,7 @@ const InstitutesPage = () => {
           <table className="w-full text-left">
             <thead>
               <tr className="bg-slate-50 text-xs font-bold uppercase text-slate-500 tracking-wider border-b border-slate-200">
-                <th className="px-5 py-4">Coaching Institute</th>
+                <th className="px-5 py-4 sticky left-0 z-20 bg-slate-50 border-b border-slate-200">Coaching Institute</th>
                 <th className="px-5 py-4">Contact</th>
                 <th className="px-5 py-4">Tenant</th>
                 <th className="px-5 py-4">Students</th>
@@ -493,7 +493,7 @@ const InstitutesPage = () => {
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i}>
                     {Array.from({ length: 7 }).map((__, j) => (
-                      <td key={j} className="px-5 py-4">
+                      <td key={j} className={`px-5 py-4 ${j === 0 ? 'sticky left-0 z-20 bg-white' : ''}`}>
                         <div className="h-8 bg-slate-100 rounded-lg animate-pulse" />
                       </td>
                     ))}
@@ -538,7 +538,7 @@ const InstitutesPage = () => {
                         onClick={() => navigate(`/super-admin/tenants/${inst.id}`)}
                       >
                         {/* Institute */}
-                        <td className="px-5 py-4">
+                        <td className="px-5 py-4 sticky left-0 z-20 bg-white dark:bg-slate-900 group-hover:bg-slate-50 transition-colors">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm group-hover:bg-indigo-600 group-hover:text-white transition-all shrink-0">
                               {(inst.name || "?")[0].toUpperCase()}

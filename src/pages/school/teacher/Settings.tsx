@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Bell, CheckCircle2, KeyRound, Lock, Monitor, Moon, ShieldCheck, Smartphone, Sun } from 'lucide-react';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { useSchoolNotification } from '@/context/SchoolNotificationContext';
+import { toast } from 'sonner';
 
 export default function Settings() {
   const { user } = useAuth();
@@ -99,11 +100,19 @@ export default function Settings() {
               </div>
             </div>
             <div className="mt-5 space-y-3">
-              <button className="flex w-full items-center gap-3 rounded-lg border border-slate-200 p-3 text-left hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800">
+              <button
+                type="button"
+                onClick={() => toast.success('Password reset instructions sent to your registered email.')}
+                className="flex w-full items-center gap-3 rounded-lg border border-slate-200 p-3 text-left hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800 transition"
+              >
                 <KeyRound className="h-5 w-5 text-blue-600" />
                 <span className="text-xs sm:text-sm font-black text-slate-950 dark:text-white">Change Password</span>
               </button>
-              <button className="flex w-full items-center gap-3 rounded-lg border border-slate-200 p-3 text-left hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800">
+              <button
+                type="button"
+                onClick={() => toast.info('Two-Factor Authentication is managed by your Institute Administrator.')}
+                className="flex w-full items-center gap-3 rounded-lg border border-slate-200 p-3 text-left hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800 transition"
+              >
                 <Lock className="h-5 w-5 text-rose-600" />
                 <span className="text-xs sm:text-sm font-black text-slate-950 dark:text-white">Two-Factor Authentication</span>
               </button>

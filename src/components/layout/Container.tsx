@@ -8,7 +8,7 @@ interface ContainerProps extends React.HTMLAttributes<HTMLDivElement> {
 export const Container: React.FC<ContainerProps> = ({ children, className = '', fluid = false, ...props }) => {
   return (
     <div 
-      className={`w-full mx-auto px-4 sm:px-6 lg:px-8 ${className}`} 
+      className={`erp-container ${className}`} 
       {...props}
     >
       {children}

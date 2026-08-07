@@ -292,7 +292,7 @@ export default function Layout() {
         <main className={`flex-1 relative overflow-x-hidden ${isFullWidthPage ? 'p-0 overflow-y-auto' : 'p-3 sm:p-5 lg:p-6 overflow-y-auto'}`}>
           <AnimatePresence mode="wait">
             <PageTransition key={location.pathname}>
-              <div className="h-full w-full">
+              <div className={`h-full w-full ${isFullWidthPage ? '' : 'erp-container'}`}>
                 <Suspense fallback={
                   <div className="flex h-[50vh] w-full items-center justify-center">
                     <Loader2 className="h-8 w-8 animate-spin text-blue-500" />

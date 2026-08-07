@@ -269,7 +269,7 @@ export default function SecurityCenterPage() {
           <table className="w-full text-left text-sm">
             <thead className="bg-surface-50">
               <tr className="border-b font-semibold text-surface-700">
-                <th className="px-4 py-3">User</th>
+                <th className="px-4 py-3 sticky left-0 z-20 bg-surface-50 dark:bg-slate-850 shadow-sm">User</th>
                 <th className="px-4 py-3">{isSuperAdminRoute ? 'Institute' : 'School'}</th>
                 <th className="px-4 py-3">Location</th>
                 <th className="px-4 py-3">Login Time</th>
@@ -284,7 +284,7 @@ export default function SecurityCenterPage() {
               )}
               {paginatedSessions.map((s) => (
                 <tr key={s.sessionId} className={`group transition-colors ${s.status === 'Failure' ? 'bg-red-50/40 hover:bg-red-50/60' : s.isTerminated ? 'bg-surface-50 opacity-60' : 'hover:bg-surface-50'}`}>
-                  <td className="px-4 py-4">
+                  <td className="px-4 py-4 sticky left-0 z-20 bg-white dark:bg-slate-900">
                     {s.status === 'Failure' ? (
                       <div>
                         <div className="font-semibold text-red-700">Failed Login Attempt</div>

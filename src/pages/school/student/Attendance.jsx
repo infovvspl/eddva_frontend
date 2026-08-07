@@ -578,7 +578,7 @@ export default function Attendance() {
                               <p className="text-[13px] font-black text-slate-900 dark:text-white">
                                 {new Date(item.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
                               </p>
-                              <p className="mt-0.5 truncate text-[11px] font-semibold text-slate-400 max-w-[130px]">
+                              <p className="mt-0.5 truncate text-[11px] font-semibold text-slate-400 max-w-[160px] sm:max-w-none">
                                 {item.remarks || item.subjectName || 'Class day'}
                               </p>
                             </div>
