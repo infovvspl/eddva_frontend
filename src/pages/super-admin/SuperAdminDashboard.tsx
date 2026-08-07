@@ -460,9 +460,6 @@ const SuperAdminDashboard = () => {
           }
 
           @media (max-height: 750px) {
-            .short-hide-desc {
-              display: none !important;
-            }
             .hero-banner-compact {
               padding-bottom: 1.5rem !important;
             }
@@ -661,7 +658,7 @@ const SuperAdminDashboard = () => {
               </div>
             </div>
             <h3 className="mt-3 sm:mt-4 font-display text-base sm:text-lg font-bold text-slate-950 dark:text-white">Recent Registrations</h3>
-            <p className="short-hide-desc mt-1 sm:mt-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-normal sm:leading-relaxed">
+            <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-normal sm:leading-relaxed">
               Monitor recently registered coaching tenants, view pending applications, and manage institute profiles.
             </p>
           </div>
@@ -684,7 +681,7 @@ const SuperAdminDashboard = () => {
               </div>
             </div>
             <h3 className="mt-3 sm:mt-4 font-display text-base sm:text-lg font-bold text-slate-950 dark:text-white">Support Tickets</h3>
-            <p className="short-hide-desc mt-1 sm:mt-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-normal sm:leading-relaxed">
+            <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-normal sm:leading-relaxed">
               Handle platform queries, manage bug reports, and resolve support tickets raised by institute admins.
             </p>
           </div>
@@ -707,7 +704,7 @@ const SuperAdminDashboard = () => {
               </div>
             </div>
             <h3 className="mt-3 sm:mt-4 font-display text-base sm:text-lg font-bold text-slate-950 dark:text-white">Top Institutes</h3>
-            <p className="short-hide-desc mt-1 sm:mt-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-normal sm:leading-relaxed">
+            <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-normal sm:leading-relaxed">
               Review top performing coaching institutes ranked by student enrollment, activity, and engagement.
             </p>
           </div>

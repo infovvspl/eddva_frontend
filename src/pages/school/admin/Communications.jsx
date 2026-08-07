@@ -30,7 +30,8 @@ import {
   Smile,
   Calendar,
   User,
-  ChevronDown
+  ChevronDown,
+  ArrowLeft
 } from 'lucide-react';
 import schoolApi from '@/lib/api/school-client';
 import { apiClient } from '@/lib/api/client';
@@ -58,7 +59,7 @@ const EMOJIS = [
   '🔥', '✨', '🎉', '⭐', '🌈', '☀️', '🌸', '💡', '💬', '🔔'
 ];
 
-export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]', institutes = [] }) {
+export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]', institutes = [], onSelectedUserChange }) {
   const confirm = useConfirm();
   const { user, institute } = useAuth();
   const navigate = useNavigate();
@@ -93,10 +94,13 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]',
   // Track active chat peer ID
   useEffect(() => {
     window.activeChatPeerId = selectedUser?.id || null;
+    if (onSelectedUserChange) {
+      onSelectedUserChange(Boolean(selectedUser));
+    }
     return () => {
       window.activeChatPeerId = null;
     };
-  }, [selectedUser]);
+  }, [selectedUser, onSelectedUserChange]);
 
   // Handle userId query parameter on load/change
   useEffect(() => {
@@ -164,7 +168,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]',
   const [instituteFilter, setInstituteFilter] = useState('');
 
   // Layout Columns & Details Toggle
-  const [showDetails, setShowDetails] = useState(true);
+  const [showDetails, setShowDetails] = useState(false);
 
   // Message Action States
   const [contextMenu, setContextMenu] = useState(null);
@@ -495,6 +499,15 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]',
     }
   }
 
+  const handleBack = () => {
+    setSelectedUser(null);
+    const params = new URLSearchParams(window.location.search);
+    params.delete('userId');
+    params.delete('ticketId');
+    const newSearch = params.toString();
+    window.history.replaceState(null, '', window.location.pathname + (newSearch ? '?' + newSearch : ''));
+  };
+
   async function openConversation(peer) {
     setSelectedUser(peer);
     
@@ -780,7 +793,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]',
   return (
     <div className={`flex ${heightClass} min-h-0 w-full flex-col overflow-hidden px-2 sm:px-4 lg:px-6 pb-6 sm:pb-8`}>
       {!isSuperAdmin && (
-        <div className={cn("shrink-0 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3", selectedUser && "hidden md:grid")}>
+        <div className={cn("shrink-0 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3", selectedUser && "hidden")}>
           {[
             { label: 'Active Chats', val: stats.active, sub: 'This month' },
             { label: 'Unread Badges', val: stats.unread, sub: 'Needs reply', alert: stats.unread > 0 },
@@ -802,7 +815,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]',
       <div className={cn(
         isSuperAdmin ? '' : 'mt-3',
         "flex w-fit max-w-full shrink-0 gap-1.5 rounded-2xl border border-slate-100/60 bg-slate-50/50 p-1",
-        selectedUser && "hidden md:flex"
+        selectedUser && "hidden"
       )}>
         {PANELS.map((panel) => (
           <button
@@ -818,11 +831,11 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]',
         ))}
       </div>
 
-      {/* 3-Column Redesigned Layout */}
-      <div className="mt-3 mb-4 sm:mb-6 flex-1 min-h-0 overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-xl flex flex-col md:flex-row relative">
+      {/* WhatsApp-Style Full View Layout */}
+      <div className="mt-3 mb-4 sm:mb-6 flex-1 min-h-0 overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-xl flex flex-col relative">
 
-        {/* Column 1: Contacts Sidebar */}
-        <div className={`w-full md:w-[320px] lg:w-[350px] border-r border-slate-100 flex flex-col shrink-0 min-h-0 bg-slate-50/10 transition-all ${selectedUser ? 'hidden md:flex' : 'flex'}`}>
+        {/* Column 1: Full Width Contacts List (Shown when no chat selected) */}
+        <div className={`w-full border-r border-slate-100 flex flex-col shrink-0 min-h-0 bg-slate-50/10 transition-all ${selectedUser ? 'hidden' : 'flex-1 flex'}`}>
           <div className="p-4 bg-white border-b border-slate-100/60 shrink-0 space-y-3">
             {isSuperAdmin && institutes.length > 0 && (
               <CustomSelect
@@ -921,8 +934,8 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]',
           </div>
         </div>
 
-        {/* Column 2: Chat Conversation Panel */}
-        <div className={`flex-1 flex flex-col min-w-0 min-h-0 bg-white ${!selectedUser ? 'hidden md:flex' : 'flex'}`}>
+        {/* Column 2: Full Screen Dedicated Active Chat Page (Covers full screen including headerbar) */}
+        <div className={`flex-1 flex flex-col min-w-0 min-h-0 bg-white ${!selectedUser ? 'hidden' : 'fixed inset-0 z-[100] w-full h-full bg-white flex flex-col'}`}>
           {!selectedUser ? (
             <div className="flex h-full flex-col items-center justify-center text-center p-6 opacity-60 bg-slate-50/10">
               <MessageSquare className="h-10 w-10 text-slate-350 mb-2" />
@@ -934,8 +947,14 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]',
               {/* Conversation Header */}
               <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white shrink-0 shadow-xs z-10">
                 <div className="flex items-center gap-3 min-w-0">
-                  <button className="md:hidden p-1.5 -ml-1 rounded-xl hover:bg-slate-100 text-slate-500" onClick={() => setSelectedUser(null)}>
-                    <ChevronRight size={18} className="rotate-180" />
+                  <button
+                    type="button"
+                    className="p-2 -ml-1 rounded-xl bg-slate-100/80 hover:bg-slate-200 text-slate-700 transition shrink-0 cursor-pointer"
+                    onClick={handleBack}
+                    aria-label="Back to conversations"
+                    title="Back to conversations list"
+                  >
+                    <ArrowLeft size={18} />
                   </button>
                   <div className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white">
                     {(selectedUser.name || 'U').slice(0, 1).toUpperCase()}
