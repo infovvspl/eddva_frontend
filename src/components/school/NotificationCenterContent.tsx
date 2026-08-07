@@ -389,8 +389,13 @@ export default function NotificationCenterContent({
 
     const cat = (n.category || '').toLowerCase();
     const title = (n.title || '').toLowerCase();
+    const msg = (n.message || '').toLowerCase();
+    const text = `${cat} ${title} ${msg}`;
+
+    const isChat = text.includes("chat") || text.includes("message") || text.includes("communication") || text.includes("conversation") || text.includes("reply") || text.includes("broadcast") || text.includes("notice");
 
     if (isTeacher) {
+      if (isChat) return "/school/teacher/chat";
       if (cat.includes("calendar") || cat.includes("event") || title.includes("calendar") || title.includes("event")) return "/school/teacher/calendar";
       if (cat.includes("meeting") || title.includes("meeting")) return "/school/teacher/meetings";
       if (cat.includes("assignment") || title.includes("assignment")) return "/school/teacher/assignments";
@@ -401,6 +406,7 @@ export default function NotificationCenterContent({
     }
 
     if (isStudent) {
+      if (isChat) return "/school/student/chat";
       if (cat.includes("calendar") || cat.includes("event") || title.includes("calendar") || title.includes("event")) return "/school/student/calendar";
       if (cat.includes("assignment") || title.includes("assignment")) return "/school/student/assignments";
       if (cat.includes("assessment") || title.includes("assessment")) return "/school/student/assessments";
@@ -411,11 +417,13 @@ export default function NotificationCenterContent({
     }
 
     if (isParent) {
+      if (isChat) return "/school/parent/communication";
       if (cat.includes("attendance") || title.includes("attendance")) return "/school/parent/child";
       return "/school/parent/dashboard";
     }
 
     // Default Admin routes
+    if (isChat) return "/school/admin/communications";
     if (cat.includes("user")) return "/school/admin/users";
     if (cat.includes("calendar") || cat.includes("event") || title.includes("calendar") || title.includes("event")) return "/school/admin/calendar";
     if (cat.includes("class")) return "/school/admin/academics";

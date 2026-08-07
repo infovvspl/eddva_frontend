@@ -114,6 +114,13 @@ export default function CareerReport() {
   const [error, setError] = useState<string | null>(null);
   const stepTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const currentStudentName = user?.name || 'Student';
+  const formatReportText = (text: string) => {
+    if (!text) return '';
+    if (!currentStudentName || currentStudentName === 'Student' || currentStudentName.toLowerCase() === 'pratap') return text;
+    return text.replace(/\bPratap\b/gi, currentStudentName);
+  };
+
   const loadSaved = () => {
     setLoading(true);
     setError(null);
@@ -208,7 +215,7 @@ export default function CareerReport() {
           <h1 className="text-2xl font-black text-slate-900">Your Career Report</h1>
           <p className="text-xs text-slate-400">
             Generated {new Date(report.generatedAt).toLocaleDateString('en-GB')}
-            {report.generatedForGrade ? ` · Class ${report.generatedForGrade}` : ''} · CBSE
+            {report.generatedForGrade ? ` · Class ${report.generatedForGrade}` : ''}
           </p>
         </div>
       </div>
@@ -224,7 +231,7 @@ export default function CareerReport() {
       {/* Overall analysis */}
       {report.overallAnalysis && (
         <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-5">
-          <p className="text-sm leading-relaxed text-slate-700">{report.overallAnalysis}</p>
+          <p className="text-sm leading-relaxed text-slate-700">{formatReportText(report.overallAnalysis)}</p>
         </div>
       )}
 
@@ -245,7 +252,7 @@ export default function CareerReport() {
               {c.reasoning && (
                 <div className="mt-3">
                   <p className="text-xs font-black uppercase tracking-wide text-slate-400">Why this fits you</p>
-                  <p className="mt-1 text-sm leading-relaxed text-slate-600">{c.reasoning}</p>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-600">{formatReportText(c.reasoning)}</p>
                 </div>
               )}
 
@@ -265,7 +272,7 @@ export default function CareerReport() {
                     {c.actionPlan.map((a, i) => (
                       <li key={i} className="flex gap-2 text-sm text-slate-600">
                         <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-500">{i + 1}</span>
-                        <span>{a}</span>
+                        <span>{formatReportText(a)}</span>
                       </li>
                     ))}
                   </ol>
@@ -286,7 +293,7 @@ export default function CareerReport() {
                 {report.immediateActions.map((a, i) => (
                   <div key={i} className="flex items-start gap-2.5 text-sm text-slate-600 bg-slate-50/70 p-3 rounded-xl border border-slate-100">
                     <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-500">{i + 1}</span>
-                    <span className="font-semibold leading-relaxed">{a}</span>
+                    <span className="font-semibold leading-relaxed">{formatReportText(a)}</span>
                   </div>
                 ))}
               </div>
@@ -299,8 +306,8 @@ export default function CareerReport() {
       {report.encouragement && (
         <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-violet-600 p-6 text-white shadow-sm">
           <Quote className="h-6 w-6 opacity-70" />
-          <p className="mt-2 text-base font-semibold leading-relaxed">{report.encouragement}</p>
-          <p className="mt-3 flex items-center gap-1.5 text-sm font-bold opacity-90"><Trophy className="h-4 w-4" /> {(user as { name?: string } | null)?.name || 'Student'}</p>
+          <p className="mt-2 text-base font-semibold leading-relaxed">{formatReportText(report.encouragement)}</p>
+          <p className="mt-3 flex items-center gap-1.5 text-sm font-bold opacity-90"><Trophy className="h-4 w-4" /> {currentStudentName}</p>
         </div>
       )}
     </div>

@@ -29,6 +29,7 @@ import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
 import { EnrollmentGate } from "@/components/student/EnrollmentGate";
 import MaintenanceNotice from "@/components/shared/MaintenanceNotice";
 import { useUnreadCount, useNotifications, useMarkNotificationRead, useMarkAllRead } from "@/hooks/use-notifications";
+import { getCoachingNotificationLink } from "@/lib/api/notifications";
 import { WelcomeWalkthrough } from "@/components/onboarding/WelcomeWalkthrough";
 import { useNavTour } from "@/components/onboarding/useNavTour";
 import { NavTourCard } from "@/components/onboarding/NavTourCard";
@@ -1042,23 +1043,33 @@ const DashboardLayout = () => {
   const isFullWidthCoachingAdminPage = [
     "/admin",
     "/admin/students",
+    "/admin/teachers",
+    "/admin/content",
+    "/admin/lectures",
     "/admin/mock-tests",
     "/admin/calendar",
     "/admin/reports",
     "/admin/communication",
     "/admin/notifications",
+    "/teacher",
     "/admin/settings",
     "/teacher/lectures",
     "/teacher/recorded-lectures",
     "/teacher/doubts",
+    "/teacher/calendar",
     "/teacher/analytics",
     "/teacher/communication",
+    "/teacher/support-tickets",
+    "/teacher/profile",
     "/teacher/quizzes",
   ].includes(location.pathname) ||
     location.pathname.startsWith("/admin/batches") ||
+    location.pathname.startsWith("/teacher/batches") ||
     location.pathname.startsWith("/admin/content") ||
+    location.pathname.startsWith("/teacher/content") ||
     location.pathname.startsWith("/admin/students/") ||
-    location.pathname.startsWith("/teacher/students/");
+    location.pathname.startsWith("/teacher/students/") ||
+    location.pathname.startsWith("/admin/teachers/");
   const isFullWidthCoachingStudentPage = [
     "/student",
     "/student/live-classes",
@@ -1513,7 +1524,12 @@ const DashboardLayout = () => {
                               </div>
                             ) : notifs.slice(0, 3).map((n: any) => (
                               <button key={n.id}
-                                onClick={() => { if (!n.readAt) markRead.mutate(n.id); }}
+                                onClick={() => {
+                                  if (!n.readAt && !n.isRead) markRead.mutate(n.id);
+                                  setShowTeacherNotif(false);
+                                  const targetLink = getCoachingNotificationLink(n, user?.role);
+                                  if (targetLink) navigate(targetLink);
+                                }}
                                 className={`w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors ${!n.readAt ? "bg-indigo-50/50" : ""}`}
                               >
                                 <div className="flex gap-2">
@@ -1616,10 +1632,10 @@ const DashboardLayout = () => {
                 ? "max-w-none p-0"
                 : location.pathname.startsWith("/super-admin") || isFullWidthCoachingAdminPage || isFullWidthCoachingStudentPage
                   ? cn(
-                    "max-w-none px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))]",
+                    "max-w-none px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))] lg:pb-6",
                     isCoachingSuperAdminMobile && "pt-1"
                   )
-                  : "max-w-screen-2xl px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))]"
+                  : "max-w-screen-2xl px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))] lg:pb-6"
             )}
           >
             <PageErrorBoundary>

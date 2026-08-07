@@ -32,27 +32,32 @@ const EXAM_STYLES: Record<string, { from: string; to: string; badge: string }> =
 
 // ─── Components ──────────────────────────────────────────────────────────────
 
-function GlassCard({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
+function GlassCard({ children, className = "", delay = 0, accentColor }: {
+  children: React.ReactNode; className?: string; delay?: number; accentColor?: string;
+}) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.4 }}
       className={cn(
-        "relative overflow-hidden rounded-[2rem] border border-slate-200/60 sm:border-white/40 bg-white sm:bg-white/60 backdrop-blur-2xl shadow-md sm:shadow-[0_4px_20px_rgb(0,0,0,0.03)]",
+        "relative overflow-hidden rounded-[2rem] border border-slate-200/60 sm:border-slate-200 sm:bg-white sm:shadow-xl sm:shadow-slate-300/30 backdrop-blur-2xl sm:backdrop-blur-none",
         className
       )}
     >
-      <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent pointer-events-none" />
+      {accentColor && (
+        <div className={cn("hidden sm:block absolute top-0 left-0 right-0 h-1.5 z-20", accentColor)} />
+      )}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent pointer-events-none sm:hidden" />
       <div className="relative z-10">{children}</div>
     </motion.div>
   );
 }
 
-function StatCard({ label, value, icon: Icon, color, delay = 0, onClick }: {
+function StatCard({ label, value, icon: Icon, color, accentColor, delay = 0, onClick }: {
   label: string; value: string | number;
   icon: React.ComponentType<{ className?: string }>;
-  color: string; delay?: number; onClick?: () => void;
+  color: string; accentColor?: string; delay?: number; onClick?: () => void;
 }) {
   return (
     <motion.div
@@ -61,10 +66,13 @@ function StatCard({ label, value, icon: Icon, color, delay = 0, onClick }: {
       transition={{ delay, duration: 0.3 }}
       onClick={onClick}
       className={cn(
-        "group relative flex flex-col items-center sm:items-start p-0 sm:p-5 rounded-none sm:rounded-2xl border-none sm:border border-slate-100 bg-transparent sm:bg-white shadow-none sm:shadow-sm sm:hover:shadow-lg transition-all duration-300 w-[72px] sm:w-auto shrink-0",
+        "group relative flex flex-col items-center sm:items-start p-0 sm:p-5 sm:px-6 rounded-none sm:rounded-3xl border-none sm:border sm:border-slate-200 bg-transparent sm:bg-white shadow-none sm:shadow-md sm:hover:shadow-xl sm:hover:border-blue-400 transition-all duration-300 w-[72px] sm:w-auto shrink-0 overflow-hidden",
         onClick && "cursor-pointer sm:hover:-translate-y-1"
       )}
     >
+      {accentColor && (
+        <div className={cn("hidden sm:block absolute top-0 left-0 right-0 h-1.5 z-20", accentColor)} />
+      )}
       <div className={cn("w-14 h-14 sm:w-10 sm:h-10 rounded-full sm:rounded-xl flex flex-col items-center justify-center mb-1.5 sm:mb-4 transition-transform group-hover:scale-110 duration-300 shadow-md sm:shadow-none relative", color)}>
         <Icon className="w-5 h-5 text-white hidden sm:block" />
         <div className="sm:hidden flex flex-col items-center justify-center w-full h-full">
@@ -193,18 +201,18 @@ const AdminDashboard = () => {
       </section>
 
       {/* ─── Top Stats ─── */}
-      <section className="flex sm:grid overflow-x-auto scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0 pt-2 sm:pt-0 pb-1.5 sm:pb-0 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Total Students" value={stats.totalStudents} icon={Users} color="bg-blue-600" delay={0} onClick={() => navigate("/admin/students")} />
-        <StatCard label="Active Batches" value={`${stats.activeBatches}/${stats.totalBatches}`} icon={BookOpen} color="bg-emerald-500 sm:bg-indigo-600" delay={0.1} onClick={() => navigate("/admin/batches")} />
-        <StatCard label="Total Lectures" value={stats.totalLectures} icon={Video} color="bg-purple-600" delay={0.2} onClick={() => navigate("/teacher/recorded-lectures")} />
-        <StatCard label="Open Doubts" value={stats.openDoubts} icon={HelpCircle} color={stats.openDoubts > 0 ? "bg-orange-500" : "bg-emerald-500"} delay={0.3} onClick={() => navigate("/teacher/doubts")} />
+      <section className="flex sm:grid overflow-x-auto sm:overflow-visible scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-1 py-2 sm:py-3 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+        <StatCard label="Total Students" value={stats.totalStudents} icon={Users} color="bg-blue-600" accentColor="bg-blue-500" delay={0} onClick={() => navigate("/admin/students")} />
+        <StatCard label="Active Batches" value={`${stats.activeBatches}/${stats.totalBatches}`} icon={BookOpen} color="bg-emerald-500 sm:bg-indigo-600" accentColor="bg-indigo-500" delay={0.1} onClick={() => navigate("/admin/batches")} />
+        <StatCard label="Total Lectures" value={stats.totalLectures} icon={Video} color="bg-purple-600" accentColor="bg-purple-500" delay={0.2} onClick={() => navigate("/teacher/recorded-lectures")} />
+        <StatCard label="Open Doubts" value={stats.openDoubts} icon={HelpCircle} color={stats.openDoubts > 0 ? "bg-orange-500" : "bg-emerald-500"} accentColor="bg-orange-500" delay={0.3} onClick={() => navigate("/teacher/doubts")} />
       </section>
 
       {/* ─── Analytics Section ─── */}
       <section className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         
         {/* Batch Distribution Chart */}
-        <GlassCard className="xl:col-span-2 p-5 sm:p-8" delay={0.4}>
+        <GlassCard className="xl:col-span-2 p-5 sm:p-8" accentColor="bg-blue-600" delay={0.4}>
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-lg font-black text-slate-900">Batch Enrollment</h3>
             <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Real-time student distribution</span>
@@ -228,7 +236,7 @@ const AdminDashboard = () => {
         </GlassCard>
 
         {/* Teacher Status Chart */}
-        <GlassCard className="p-5 sm:p-8" delay={0.5}>
+        <GlassCard className="p-5 sm:p-8" accentColor="bg-emerald-500" delay={0.5}>
           <h3 className="text-lg font-black text-slate-900 mb-8">Teacher Network</h3>
           
           <div className="h-[140px] sm:h-[180px] w-full flex items-center justify-center relative">
@@ -278,7 +286,7 @@ const AdminDashboard = () => {
         
         {/* Course Directory (8/12) */}
         <div className="xl:col-span-8">
-          <GlassCard className="p-5 sm:p-8 h-full flex flex-col">
+          <GlassCard className="p-5 sm:p-8 h-full flex flex-col" accentColor="bg-indigo-600">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-black text-slate-900">Recent Batches</h3>
               <motion.button
@@ -290,7 +298,7 @@ const AdminDashboard = () => {
               </motion.button>
             </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:gap-6">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-6">
             {recentBatches.slice(0, 4).map((course, i) => (
               <motion.div
                 key={course.id}
@@ -298,17 +306,14 @@ const AdminDashboard = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 + (i * 0.05) }}
                 onClick={() => navigate(`/admin/batches/${course.id}`)}
-                className={cn(
-                  "group relative flex flex-col sm:flex-row items-center sm:items-center justify-center sm:justify-start gap-2 sm:gap-5 p-3 pb-6 sm:p-5 rounded-2xl sm:rounded-3xl bg-white border border-slate-100 hover:border-blue-200 hover:shadow-2xl transition-all cursor-pointer text-center sm:text-left",
-                  i === 3 && "sm:flex"
-                )}
+                className="group relative flex flex-col sm:flex-row items-center sm:items-center justify-center sm:justify-start gap-1.5 sm:gap-5 p-3 sm:p-5 rounded-2xl sm:rounded-3xl bg-white border border-slate-100 hover:border-blue-200 hover:shadow-2xl transition-all cursor-pointer text-center sm:text-left lg:border-slate-200 lg:bg-slate-50/40 lg:hover:bg-white lg:hover:border-blue-400 lg:shadow-xs lg:hover:shadow-xl"
               >
                 <CourseThumbnail name={course.name} examTarget={course.examTarget} imageUrl={course.thumbnailUrl} className="w-10 h-10 sm:w-14 sm:h-14 mb-1 sm:mb-0" />
                 <div className="flex-1 min-w-0 w-full px-1">
                   <h4 className="text-xs sm:text-base font-black text-slate-900 truncate group-hover:text-blue-600 transition-colors">{course.name}</h4>
                   <p className="text-[8px] sm:text-[10px] font-black text-slate-500 uppercase tracking-wider mt-0.5 sm:mt-1 truncate">{course.examTarget} · {course.studentCount} Students</p>
                 </div>
-                <ArrowRight className="sm:hidden absolute bottom-2 right-3 w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" />
+                <ArrowRight className="sm:hidden absolute bottom-2 right-2 w-3.5 h-3.5 text-slate-300 group-hover:text-blue-500 transition-colors" />
                 <ChevronRight className="hidden sm:block w-5 h-5 shrink-0 text-slate-300 group-hover:text-blue-600 transition-colors" />
               </motion.div>
             ))}
@@ -320,7 +325,7 @@ const AdminDashboard = () => {
 
         {/* Doubts (4/12) */}
         <div className="xl:col-span-4">
-          <GlassCard className="p-5 sm:p-8 h-full">
+          <GlassCard className="p-5 sm:p-8 h-full" accentColor="bg-orange-500">
             <div className="flex items-center justify-between mb-8">
               <h3 className="text-lg font-black text-slate-900">Urgent Doubts</h3>
               <button onClick={() => navigate("/teacher/doubts")} className="text-[10px] font-black uppercase tracking-widest text-blue-600 font-bold">View All</button>
@@ -332,7 +337,7 @@ const AdminDashboard = () => {
                   key={d.id} 
                   onClick={() => navigate("/teacher/doubts")}
                   className={cn(
-                    "p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/70 shadow-sm hover:shadow-md hover:border-orange-200 transition-all cursor-pointer group",
+                    "p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/70 shadow-sm hover:shadow-md hover:border-orange-200 transition-all cursor-pointer group lg:border-slate-200 lg:bg-slate-50/40 lg:hover:bg-white lg:hover:border-orange-300 lg:hover:shadow-md",
                     i === 3 && "hidden sm:block"
                   )}
                 >
