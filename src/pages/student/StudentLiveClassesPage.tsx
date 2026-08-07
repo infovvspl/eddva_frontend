@@ -196,6 +196,7 @@ export default function StudentLiveClassesPage() {
   const isCompactLayout = useIsCompactLayout();
   const [showAllScheduled, setShowAllScheduled] = useState(false);
   const [showAllPast, setShowAllPast] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'scheduled' | 'ongoing' | 'completed' | 'finished'>('all');
 
   // Filters from URL
   const filterBatch = searchParams.get("batchId") ?? "";
@@ -348,8 +349,8 @@ export default function StudentLiveClassesPage() {
   const scheduled = visibleBroadcasts.filter((l) => l.status === 'SCHEDULED');
   const past = visibleBroadcasts.filter((l) => l.status === 'ENDED' || l.status === 'PROCESSED');
 
-  const visibleScheduled = isCompactLayout && !showAllScheduled ? scheduled.slice(0, 3) : scheduled;
-  const visiblePast = isCompactLayout && !showAllPast ? past.slice(0, 3) : past;
+  const visibleScheduled = !showAllScheduled ? scheduled.slice(0, 4) : scheduled;
+  const visiblePast = !showAllPast ? past.slice(0, 4) : past;
 
   if (loading || isLoadingLectures) {
     return (
@@ -396,6 +397,73 @@ export default function StudentLiveClassesPage() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Status filter bar */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <button
+          type="button"
+          onClick={() => setStatusFilter('all')}
+          className={cn(
+            "px-4 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 flex items-center gap-1.5",
+            statusFilter === 'all'
+              ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+              : "bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800"
+          )}
+        >
+          All Classes
+          <span className={cn("px-1.5 py-0.5 rounded-full text-[10px] font-black", statusFilter === 'all' ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400")}>
+            {visibleBroadcasts.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setStatusFilter('scheduled')}
+          className={cn(
+            "px-4 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 flex items-center gap-1.5",
+            statusFilter === 'scheduled'
+              ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+              : "bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800"
+          )}
+        >
+          Scheduled
+          <span className={cn("px-1.5 py-0.5 rounded-full text-[10px] font-black", statusFilter === 'scheduled' ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400")}>
+            {scheduled.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setStatusFilter('ongoing')}
+          className={cn(
+            "px-4 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 flex items-center gap-1.5",
+            statusFilter === 'ongoing'
+              ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+              : "bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800"
+          )}
+        >
+          Ongoing (Live)
+          <span className={cn("px-1.5 py-0.5 rounded-full text-[10px] font-black", statusFilter === 'ongoing' ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400")}>
+            {live.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setStatusFilter('completed')}
+          className={cn(
+            "px-4 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 flex items-center gap-1.5",
+            statusFilter === 'completed' || statusFilter === 'finished'
+              ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+              : "bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800"
+          )}
+        >
+          Completed
+          <span className={cn("px-1.5 py-0.5 rounded-full text-[10px] font-black", statusFilter === 'completed' || statusFilter === 'finished' ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400")}>
+            {past.length}
+          </span>
+        </button>
       </div>
 
       {/* Curriculum filters */}
@@ -473,18 +541,29 @@ export default function StudentLiveClassesPage() {
       )}
 
       {/* Empty state */}
-      {visibleBroadcasts.length === 0 && (
+      {((statusFilter === 'all' && visibleBroadcasts.length === 0) ||
+        (statusFilter === 'ongoing' && live.length === 0) ||
+        (statusFilter === 'scheduled' && scheduled.length === 0) ||
+        ((statusFilter === 'completed' || statusFilter === 'finished') && past.length === 0)) && (
         <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border py-24 text-center">
           <Video className="mx-auto mb-4 h-14 w-14 text-muted-foreground/30" />
-          <p className="text-base font-bold text-muted-foreground">No live classes yet</p>
+          <p className="text-base font-bold text-muted-foreground">
+            {statusFilter === 'ongoing' ? 'No ongoing live classes' :
+             statusFilter === 'scheduled' ? 'No scheduled live classes' :
+             (statusFilter === 'completed' || statusFilter === 'finished') ? 'No completed live classes' :
+             'No live classes yet'}
+          </p>
           <p className="mt-1 text-sm text-muted-foreground/60">
-            Your teacher's scheduled live sessions will appear here automatically.
+            {statusFilter === 'ongoing' ? 'There are currently no active live streams in progress.' :
+             statusFilter === 'scheduled' ? 'No upcoming live classes are currently scheduled.' :
+             (statusFilter === 'completed' || statusFilter === 'finished') ? 'No past live class recordings are available.' :
+             "Your teacher's scheduled live sessions will appear here automatically."}
           </p>
         </div>
       )}
 
       {/* ── Currently LIVE ── */}
-      {live.length > 0 && (
+      {(statusFilter === 'all' || statusFilter === 'ongoing') && live.length > 0 && (
         <section className="space-y-3">
           <h2 className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-red-500">
             <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" /> Happening Right Now
@@ -498,7 +577,7 @@ export default function StudentLiveClassesPage() {
       )}
 
       {/* ── Upcoming / Scheduled ── */}
-      {scheduled.length > 0 && (
+      {(statusFilter === 'all' || statusFilter === 'scheduled') && scheduled.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-xs font-black uppercase tracking-widest text-muted-foreground">
             Upcoming
@@ -508,23 +587,25 @@ export default function StudentLiveClassesPage() {
               <LectureCard key={l.id} lecture={l} onJoin={() => navigate(`/student/live/${l.id}`)} />
             ))}
           </div>
-          {isCompactLayout && scheduled.length > 3 && (
-            <button
-              onClick={() => setShowAllScheduled(!showAllScheduled)}
-              className="w-full py-2.5 bg-white border border-slate-200 hover:border-indigo-300 text-indigo-600 font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-1"
-            >
-              {showAllScheduled ? (
-                <>Show Less <ChevronUp className="w-3.5 h-3.5" /></>
-              ) : (
-                <>Show More ({scheduled.length - 3} more) <ChevronDown className="w-3.5 h-3.5" /></>
-              )}
-            </button>
+          {scheduled.length > 4 && (
+            <div className="flex items-center justify-between px-1 flex-wrap gap-2 pt-1">
+              <p className="text-xs text-slate-500">
+                Showing {Math.min(showAllScheduled ? scheduled.length : 4, scheduled.length)} of {scheduled.length} upcoming classes
+              </p>
+              <button
+                onClick={() => setShowAllScheduled(!showAllScheduled)}
+                className="px-4 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors inline-flex items-center gap-1.5"
+              >
+                <span>{showAllScheduled ? "Show Less" : `Show ${scheduled.length - 4} more`}</span>
+                <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", showAllScheduled ? "rotate-180" : "rotate-0")} />
+              </button>
+            </div>
           )}
         </section>
       )}
 
       {/* ── Past classes ── */}
-      {past.length > 0 && (
+      {(statusFilter === 'all' || statusFilter === 'completed' || statusFilter === 'finished') && past.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-xs font-black uppercase tracking-widest text-muted-foreground">
             Past Classes
@@ -534,17 +615,19 @@ export default function StudentLiveClassesPage() {
               <LectureCard key={l.id} lecture={l} onJoin={() => navigate(`/student/live/${l.id}`)} />
             ))}
           </div>
-          {isCompactLayout && past.length > 3 && (
-            <button
-              onClick={() => setShowAllPast(!showAllPast)}
-              className="w-full py-2.5 bg-white border border-slate-200 hover:border-indigo-300 text-indigo-600 font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-1"
-            >
-              {showAllPast ? (
-                <>Show Less <ChevronUp className="w-3.5 h-3.5" /></>
-              ) : (
-                <>Show More ({past.length - 3} more) <ChevronDown className="w-3.5 h-3.5" /></>
-              )}
-            </button>
+          {past.length > 4 && (
+            <div className="flex items-center justify-between px-1 flex-wrap gap-2 pt-1">
+              <p className="text-xs text-slate-500">
+                Showing {Math.min(showAllPast ? past.length : 4, past.length)} of {past.length} past classes
+              </p>
+              <button
+                onClick={() => setShowAllPast(!showAllPast)}
+                className="px-4 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors inline-flex items-center gap-1.5"
+              >
+                <span>{showAllPast ? "Show Less" : `Show ${past.length - 4} more`}</span>
+                <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", showAllPast ? "rotate-180" : "rotate-0")} />
+              </button>
+            </div>
           )}
         </section>
       )}

@@ -159,6 +159,9 @@ const ClassManagement: React.FC = () => {
 
   // ── Live (self-hosted OBS/RTMP) ─────────────────────────────────────────────
   const [obsLectures, setObsLectures] = useState<LiveLecture[]>([]);
+  const [liveStatusFilter, setLiveStatusFilter] = useState<'all' | 'scheduled' | 'ongoing' | 'finished'>('all');
+  const [showAllObsLectures, setShowAllObsLectures] = useState(false);
+  const [showAllRecordedLectures, setShowAllRecordedLectures] = useState(false);
   const [showLiveModal, setShowLiveModal] = useState(false);    // OBS creds display
   const [createdLive, setCreatedLive] = useState<CreatedLecture | null>(null);
   const [credsLecture, setCredsLecture] = useState<LiveLecture | null>(null);
@@ -1379,32 +1382,130 @@ const ClassManagement: React.FC = () => {
     );
   };
 
+  const liveStatusCounts = useMemo(() => {
+    let scheduled = 0;
+    let ongoing = 0;
+    let completed = 0;
+
+    obsLectures.forEach((lec) => {
+      if (recFilter.classId && String(lec.classId) !== String(recFilter.classId)) return;
+      if (recFilter.subjectId && String(lec.subjectId) !== String(recFilter.subjectId)) return;
+
+      const isLive = lec.status === 'LIVE';
+      const isEnded = lec.status === 'ENDED' || lec.status === 'PROCESSED' || !!lec.recordingUrl || isExpiredScheduled(lec);
+      const isScheduled = !isLive && !isEnded;
+
+      if (isLive) ongoing++;
+      else if (isEnded) completed++;
+      else if (isScheduled) scheduled++;
+    });
+
+    return { all: scheduled + ongoing + completed, scheduled, ongoing, completed };
+  }, [obsLectures, recFilter.classId, recFilter.subjectId]);
+
+  const filteredObsLectures = useMemo(() => {
+    return obsLectures.filter((lec) => {
+      if (recFilter.classId && String(lec.classId) !== String(recFilter.classId)) return false;
+      if (recFilter.subjectId && String(lec.subjectId) !== String(recFilter.subjectId)) return false;
+
+      const isLive = lec.status === 'LIVE';
+      const isEnded = lec.status === 'ENDED' || lec.status === 'PROCESSED' || !!lec.recordingUrl || isExpiredScheduled(lec);
+      const isScheduled = !isLive && !isEnded;
+
+      if (liveStatusFilter === 'ongoing') return isLive;
+      if (liveStatusFilter === 'scheduled') return isScheduled;
+      if (liveStatusFilter === 'completed' || liveStatusFilter === 'finished') return isEnded;
+      return true;
+    });
+  }, [obsLectures, recFilter.classId, recFilter.subjectId, liveStatusFilter]);
+
+  const liveStatusTabs: { id: 'all' | 'scheduled' | 'ongoing' | 'completed'; label: string; count: number; activeColor: string }[] = [
+    { id: 'all', label: 'All Classes', count: liveStatusCounts.all, activeColor: 'bg-blue-600 text-white shadow-xs' },
+    { id: 'scheduled', label: 'Scheduled', count: liveStatusCounts.scheduled, activeColor: 'bg-blue-600 text-white shadow-xs' },
+    { id: 'ongoing', label: 'Ongoing (Live)', count: liveStatusCounts.ongoing, activeColor: 'bg-blue-600 text-white shadow-xs' },
+    { id: 'completed', label: 'Completed', count: liveStatusCounts.completed, activeColor: 'bg-blue-600 text-white shadow-xs' },
+  ];
+
   const liveContent = (
     <div className="class__section">
       {renderCurriculumFilters()}
+
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <span className="text-[11px] font-black uppercase tracking-widest text-slate-400 hidden sm:inline-block mr-1">Status</span>
+        {liveStatusTabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setLiveStatusFilter(tab.id)}
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all',
+              liveStatusFilter === tab.id
+                ? tab.activeColor
+                : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+            )}
+          >
+            {tab.id === 'ongoing' && (
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-500" />
+              </span>
+            )}
+            <span>{tab.label}</span>
+            <span className={cn(
+              'rounded-md px-1.5 py-0.5 text-[10px] font-black',
+              liveStatusFilter === tab.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+            )}>
+              {tab.count}
+            </span>
+          </button>
+        ))}
+      </div>
+
       {!canGoLive ? (
         <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50 py-14 text-center">
           <Radio className="mx-auto mb-3 h-10 w-10 text-amber-300" />
           <h3 className="text-base font-black text-slate-900">Live Classes Disabled</h3>
           <p className="mt-1 text-sm text-slate-500">Live streaming is not enabled for your school. Contact the super admin to enable it.</p>
         </div>
-      ) : obsLectures.length === 0 ? (
+      ) : filteredObsLectures.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 py-14 text-center">
           <Radio className="mx-auto mb-3 h-10 w-10 text-slate-300" />
-          <h3 className="text-base font-black text-slate-900">No live classes yet</h3>
-          <p className="mt-1 text-sm text-slate-500">Click <b>Go Live (OBS)</b> to create one and get your OBS stream key.</p>
+          <h3 className="text-base font-black text-slate-900">
+            {liveStatusFilter === 'ongoing'
+              ? 'No ongoing live classes'
+              : liveStatusFilter === 'scheduled'
+                ? 'No scheduled live classes'
+                : liveStatusFilter === 'finished'
+                  ? 'No finished live classes'
+                  : 'No live classes found'}
+          </h3>
+          <p className="mt-1 text-sm text-slate-500">
+            {liveStatusFilter === 'all'
+              ? 'Click Go Live (OBS) to create one and get your OBS stream key.'
+              : 'Try selecting a different status filter or class filter above.'}
+          </p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {obsLectures
-            .filter((lec) => {
-              if (recFilter.classId && String(lec.classId) !== String(recFilter.classId)) return false;
-              if (recFilter.subjectId && String(lec.subjectId) !== String(recFilter.subjectId)) return false;
-              return true;
-            })
-            .map((lec) => (
+        <div className="space-y-3">
+          <div className="grid gap-4 sm:grid-cols-2">
+            {(showAllObsLectures ? filteredObsLectures : filteredObsLectures.slice(0, 4)).map((lec) => (
               <LiveClassCard key={lec.id} lec={lec} />
             ))}
+          </div>
+          {filteredObsLectures.length > 4 && (
+            <div className="flex items-center justify-between px-1 flex-wrap gap-2 pt-1">
+              <p className="text-xs text-slate-500">
+                Showing {Math.min(showAllObsLectures ? filteredObsLectures.length : 4, filteredObsLectures.length)} of {filteredObsLectures.length} live classes
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowAllObsLectures((v) => !v)}
+                className="px-4 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors inline-flex items-center gap-1.5"
+              >
+                <span>{showAllObsLectures ? "Show Less" : `Show ${filteredObsLectures.length - 4} more`}</span>
+                <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", showAllObsLectures ? "-rotate-90" : "rotate-90")} />
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -1424,7 +1525,7 @@ const ClassManagement: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-3">
-          {uploadedRecordings.map((rec: any) => {
+          {(showAllRecordedLectures ? uploadedRecordings : uploadedRecordings.slice(0, 4)).map((rec: any) => {
             const date = rec.recorded_date ? new Date(rec.recorded_date).toLocaleDateString('en-GB') : '';
             return (
               <div key={rec.id} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:shadow-md">
@@ -1507,6 +1608,21 @@ const ClassManagement: React.FC = () => {
               </div>
             );
           })}
+          {uploadedRecordings.length > 4 && (
+            <div className="flex items-center justify-between px-1 flex-wrap gap-2 pt-1">
+              <p className="text-xs text-slate-500">
+                Showing {Math.min(showAllRecordedLectures ? uploadedRecordings.length : 4, uploadedRecordings.length)} of {uploadedRecordings.length} recorded lectures
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowAllRecordedLectures((v) => !v)}
+                className="px-4 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors inline-flex items-center gap-1.5"
+              >
+                <span>{showAllRecordedLectures ? "Show Less" : `Show ${uploadedRecordings.length - 4} more`}</span>
+                <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", showAllRecordedLectures ? "-rotate-90" : "rotate-90")} />
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
