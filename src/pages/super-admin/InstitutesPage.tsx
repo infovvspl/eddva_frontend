@@ -33,10 +33,10 @@ const StatusDot = ({ status }: { status: string }) => {
 
 const StatCard = ({ label, value, color }: { label: string; value: number | string; color: string }) => {
   const colors: Record<string, string> = {
-    blue:   "border-blue-200 bg-blue-50 text-blue-800",
-    green:  "border-emerald-200 bg-emerald-50 text-emerald-800",
-    amber:  "border-amber-200 bg-amber-50 text-amber-800",
-    red:    "border-rose-200 bg-rose-50 text-rose-800",
+    blue: "border-blue-200 bg-blue-50 text-blue-800",
+    green: "border-emerald-200 bg-emerald-50 text-emerald-800",
+    amber: "border-amber-200 bg-amber-50 text-amber-800",
+    red: "border-rose-200 bg-rose-50 text-rose-800",
     purple: "border-purple-200 bg-purple-50 text-purple-800",
   };
   return (
@@ -241,9 +241,9 @@ const InstitutesPage = () => {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-1 pt-0 pb-0 -mb-[6px] sm:-mb-0 sm:pb-8 sm:py-8 sm:px-6 lg:px-8 space-y-4 sm:space-y-8">
+    <div className="w-full space-y-4 sm:space-y-6">
       {/* Header Container */}
-      <div className="mt-3 sm:mt-0 mb-4 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 bg-blue-50/50 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 bg-blue-100 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
         <div className="flex-1">
           <h1 className="font-display text-xl sm:text-3xl font-bold text-slate-900">
             Coaching Institutes
@@ -452,11 +452,10 @@ const InstitutesPage = () => {
                 <button
                   key={p}
                   onClick={() => setPage(p)}
-                  className={`w-9 h-9 rounded-lg text-xs font-bold transition-all ${
-                    p === page
+                  className={`w-9 h-9 rounded-lg text-xs font-bold transition-all ${p === page
                       ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
                       : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                  }`}
+                    }`}
                 >
                   {p}
                 </button>
@@ -670,11 +669,10 @@ const InstitutesPage = () => {
                 <button
                   key={p}
                   onClick={() => setPage(p)}
-                  className={`w-9 h-9 rounded-lg text-xs font-bold transition-all ${
-                    p === page
+                  className={`w-9 h-9 rounded-lg text-xs font-bold transition-all ${p === page
                       ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
                       : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                  }`}
+                    }`}
                 >
                   {p}
                 </button>
