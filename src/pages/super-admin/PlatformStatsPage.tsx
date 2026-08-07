@@ -44,8 +44,8 @@ const PlatformStatsPage = () => {
   ];
 
   return (
-    <div className="mx-auto max-w-7xl px-1 pt-0 pb-0 -mb-[6px] sm:-mb-0 sm:pb-8 sm:py-8 sm:px-6 lg:px-8 space-y-4 sm:space-y-8 font-sans text-slate-900">
-      <header className="mt-3 sm:mt-0 mb-4 sm:mb-8 bg-blue-50/50 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
+    <div className="w-full space-y-4 sm:space-y-6 font-sans text-slate-900">
+      <header className="mb-4 sm:mb-8 bg-blue-100 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
         <h2 className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-indigo-600 mb-1">Ecosystem Intelligence</h2>
         <h1 className="text-2xl sm:text-[34px] lg:text-[40px] font-bold text-slate-900 tracking-tight leading-tight">Platform Analytics</h1>
         <p className="text-slate-400 text-xs sm:text-sm md:text-[15px] mt-1 font-semibold">Real-time architecture performance and platform health metrics</p>

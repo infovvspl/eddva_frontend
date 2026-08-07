@@ -92,12 +92,12 @@ const UsersPage = () => {
               value={roleFilter}
               onChange={setRoleFilter}
               options={[
-              { value: "all", label: "Every Role" },
-              { value: "super_admin", label: "Core Admins" },
-              { value: "institute_admin", label: "Partnerships" },
-              { value: "teacher", label: "Active Faculty" },
-              { value: "student", label: "Academic Hub" },
-            ]}
+                { value: "all", label: "Every Role" },
+                { value: "super_admin", label: "Core Admins" },
+                { value: "institute_admin", label: "Partnerships" },
+                { value: "teacher", label: "Active Faculty" },
+                { value: "student", label: "Academic Hub" },
+              ]}
               className="w-full"
             />
           </div>

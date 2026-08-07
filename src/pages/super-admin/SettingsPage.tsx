@@ -194,15 +194,23 @@ const SettingsPage = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6 pb-0 -mb-[6px] sm:-mb-0 sm:pb-12 px-1 font-sans text-slate-900">
-      <header className="mt-3 sm:mt-0 mb-4 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 bg-blue-50/50 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
-        <div>
-          <h2 className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-indigo-600 mb-1">Protocol Management</h2>
-          <h1 className="text-2xl sm:text-[34px] lg:text-[40px] font-bold text-slate-900 tracking-tight leading-tight">System Settings</h1>
-          <p className="text-slate-400 text-xs sm:text-sm md:text-[15px] mt-1 font-semibold">Configuring the global parameters of the educational network</p>
+      <header className="mb-4 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 bg-blue-100 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
+        <div className="flex items-center gap-3">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-sm">
+            <Settings className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="font-display text-2xl font-bold text-slate-950 dark:text-white">
+              System Settings
+            </h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+              Configuring the global parameters of the educational network
+            </p>
+          </div>
         </div>
         <Button
           onClick={handleSave}
-          className="h-10 md:h-12 px-6 md:px-8 bg-white text-gray-900 rounded-2xl font-semibold flex gap-2 shadow-sm sm:shadow-lg hover:bg-gray-100 transition-all text-sm border border-slate-100 w-full sm:w-auto justify-center"
+          className="h-10 md:h-12 px-6 md:px-8 bg-white text-gray-900 rounded-2xl font-semibold flex gap-2 shadow-sm sm:shadow-lg hover:bg-gray-100 transition-all text-sm border border-slate-100 w-full sm:w-auto justify-center shrink-0"
         >
           {isSaving ? <Zap className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 stroke-[2.5]" />}
           Execute Sync

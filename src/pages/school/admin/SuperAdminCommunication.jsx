@@ -107,6 +107,7 @@ export default function SuperAdminCommunication() {
   const [error, setError] = useState(null);
   const [logSearch, setLogSearch] = useState('');
   const [logCategory, setLogCategory] = useState('');
+  const [hasSelectedUser, setHasSelectedUser] = useState(false);
   const [logInstitute, setLogInstitute] = useState('');
   const [instSearch, setInstSearch] = useState('');
   const [instDropOpen, setInstDropOpen] = useState(false);
@@ -124,13 +125,8 @@ export default function SuperAdminCommunication() {
   useEffect(() => {
     const mainEl = document.querySelector('main');
     if (!mainEl) return;
-    if (activeTab === 'chat') {
-      mainEl.classList.remove('overflow-y-auto');
-      mainEl.classList.add('overflow-y-hidden');
-    } else {
-      mainEl.classList.remove('overflow-y-hidden');
-      mainEl.classList.add('overflow-y-auto');
-    }
+    mainEl.classList.remove('overflow-y-hidden');
+    mainEl.classList.add('overflow-y-auto');
     return () => {
       mainEl.classList.remove('overflow-y-hidden');
       mainEl.classList.add('overflow-y-auto');
@@ -321,77 +317,79 @@ export default function SuperAdminCommunication() {
     n => n.createdAt && new Date(n.createdAt).toDateString() === new Date().toDateString()
   ).length;
 
-  const chatHeightClass = 'h-[calc(100dvh-340px)] md:h-[calc(100dvh-280px)]';
+  const chatHeightClass = hasSelectedUser ? 'h-[calc(100vh-80px)] min-h-[550px]' : 'min-h-[550px] h-[calc(100vh-250px)]';
 
   return (
-    <div className="mx-auto max-w-7xl px-1 pt-0 pb-0 -mb-[6px] sm:-mb-0 sm:pb-8 sm:py-8 sm:px-6 lg:px-8 w-full flex flex-col">
+    <div className="w-full flex flex-col space-y-4 sm:space-y-6">
 
-      {/* ── Page header — always visible ─────────────────────────── */}
-      <div className="pt-0">
-        <div className="mt-3 sm:mt-0 mb-4 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 bg-blue-50/50 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
-          <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-sm">
-              <Radio className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="font-display text-2xl font-bold text-slate-950 dark:text-white">
-                Platform Communication
-              </h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                Broadcast notices and chat directly with institute admins
-              </p>
+      {/* ── Page header — hidden while actively chatting in a specific conversation ─────────────────────────── */}
+      {!(activeTab === 'chat' && hasSelectedUser) && (
+        <div className="pt-0">
+          <div className="mb-4 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 bg-blue-100 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
+            <div className="flex items-center gap-3">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-sm">
+                <Radio className="h-5 w-5" />
+              </div>
+              <div>
+                <h1 className="font-display text-2xl font-bold text-slate-950 dark:text-white">
+                  Platform Communication
+                </h1>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  Broadcast notices and chat directly with institute admins
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Stat cards — hidden on chat tab to maximise chat height */}
-        {activeTab !== 'chat' && (
-          <div className="mb-5 grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
-            <StatCard
-              icon={<Building2 className="h-5 w-5 text-blue-600" />}
-              label="Total Institutes" value={institutes.length}
-              sub="active on platform" tone="blue"
-            />
-            <StatCard
-              icon={<Send className="h-5 w-5 text-violet-600" />}
-              label="Total Notices" value={log.length || '—'}
-              sub="platform-wide" tone="violet"
-            />
-            <StatCard
-              icon={<Bell className="h-5 w-5 text-emerald-650" />}
-              label="Today's Broadcasts" value={todayBroadcasts || '—'}
-              sub="sent today" tone="emerald"
-            />
-            <StatCard
-              icon={<AlertTriangle className="h-5 w-5 text-amber-600" />}
-              label="Urgent Notices" value={urgentNotices || '—'}
-              sub="high priority" tone="amber"
-            />
+          {/* Stat cards — hidden on chat tab to maximise chat height */}
+          {activeTab !== 'chat' && (
+            <div className="mb-5 grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
+              <StatCard
+                icon={<Building2 className="h-5 w-5 text-blue-600" />}
+                label="Total Institutes" value={institutes.length}
+                sub="active on platform" tone="blue"
+              />
+              <StatCard
+                icon={<Send className="h-5 w-5 text-violet-600" />}
+                label="Total Notices" value={log.length || '—'}
+                sub="platform-wide" tone="violet"
+              />
+              <StatCard
+                icon={<Bell className="h-5 w-5 text-emerald-650" />}
+                label="Today's Broadcasts" value={todayBroadcasts || '—'}
+                sub="sent today" tone="emerald"
+              />
+              <StatCard
+                icon={<AlertTriangle className="h-5 w-5 text-amber-600" />}
+                label="Urgent Notices" value={urgentNotices || '—'}
+                sub="high priority" tone="amber"
+              />
+            </div>
+          )}
+
+          {/* Tab bar */}
+          <div className="mb-0 flex flex-nowrap sm:flex-wrap overflow-x-auto sm:overflow-visible gap-2 sm:gap-1 rounded-none sm:rounded-xl border-0 sm:border sm:border-slate-200 bg-transparent sm:bg-slate-50 p-1 sm:w-fit dark:border-slate-700 dark:bg-slate-900 scrollbar-hide pb-2 sm:pb-1">
+            {TABS.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => handleTabChange(id)}
+                className={`flex items-center gap-2 whitespace-nowrap shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-all border sm:border-transparent ${
+                  activeTab === id
+                    ? 'bg-white border-blue-200 text-blue-700 shadow-sm dark:bg-slate-800 dark:text-blue-400'
+                    : 'bg-white border-slate-200 sm:bg-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+              </button>
+            ))}
           </div>
-        )}
-
-        {/* Tab bar */}
-        <div className="mb-0 flex flex-nowrap sm:flex-wrap overflow-x-auto sm:overflow-visible gap-2 sm:gap-1 rounded-none sm:rounded-xl border-0 sm:border sm:border-slate-200 bg-transparent sm:bg-slate-50 p-1 sm:w-fit dark:border-slate-700 dark:bg-slate-900 scrollbar-hide pb-2 sm:pb-1">
-          {TABS.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => handleTabChange(id)}
-              className={`flex items-center gap-2 whitespace-nowrap shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-all border sm:border-transparent ${
-                activeTab === id
-                  ? 'bg-white border-blue-200 text-blue-700 shadow-sm dark:bg-slate-800 dark:text-blue-400'
-                  : 'bg-white border-slate-200 sm:bg-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-            </button>
-          ))}
         </div>
-      </div>
+      )}
 
       {/* ── Chat Tab — full Communications component ──────────────── */}
       {activeTab === 'chat' && (
-        <Communications heightClass={chatHeightClass} institutes={institutes} />
+        <Communications heightClass={chatHeightClass} institutes={institutes} onSelectedUserChange={setHasSelectedUser} />
       )}
 
       {/* ── Compose / Log tabs ────────────────────────────────────── */}
