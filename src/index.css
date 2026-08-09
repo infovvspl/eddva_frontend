@@ -780,15 +780,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* ── Phase 1: Centralized ERP Desktop/Laptop Responsive Foundation Tokens ── */
 @layer components {
   .erp-container {
-    @apply mx-auto w-full max-w-7xl 3xl:max-w-[1800px] 4xl:max-w-[2400px] px-4 sm:px-6 lg:px-8 3xl:px-12;
+    @apply w-full;
   }
 
   .erp-dashboard-container {
-    @apply mx-auto w-full h-full max-w-7xl 3xl:max-w-[1920px] 4xl:max-w-[2560px] px-4 sm:px-6 lg:px-8 3xl:px-10;
+    @apply w-full h-full;
   }
 
   .erp-workspace-container {
-    @apply mx-auto w-full h-full max-w-[2000px] 4xl:max-w-[2800px] px-2 sm:px-4 lg:px-6;
+    @apply w-full h-full;
   }
 
   .erp-table-scroll {

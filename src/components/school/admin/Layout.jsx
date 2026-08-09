@@ -289,10 +289,10 @@ export default function Layout() {
       >
         <Navbar onMenuClick={() => setSidebarOpen(true)} />
         <MaintenanceNotice />
-        <main className={`flex-1 relative overflow-x-hidden ${isFullWidthPage ? 'p-0 overflow-y-auto' : 'p-3 sm:p-5 lg:p-6 overflow-y-auto'}`}>
+        <main className={`flex-1 relative overflow-x-hidden ${isFullWidthPage ? 'p-0 overflow-y-auto' : 'px-3 sm:px-6 lg:px-8 py-4 lg:py-6 overflow-y-auto'}`}>
           <AnimatePresence mode="wait">
             <PageTransition key={location.pathname}>
-              <div className={`h-full w-full ${isFullWidthPage ? '' : 'erp-container'}`}>
+              <div className="h-full w-full">
                 <Suspense fallback={
                   <div className="flex h-[50vh] w-full items-center justify-center">
                     <Loader2 className="h-8 w-8 animate-spin text-blue-500" />

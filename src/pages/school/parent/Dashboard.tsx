@@ -111,77 +111,75 @@ export default function ParentDashboard() {
       {/* Top Grid for Welcome Card and Smart Calendar */}
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 items-stretch">
         <motion.section
-          initial={{ opacity: 0, y: 18 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="lg:col-span-2 xl:col-span-3 relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-600 via-blue-600 to-sky-500 text-white shadow-lg ring-1 ring-white/10 flex flex-col justify-between"
+          className="lg:col-span-2 xl:col-span-3 relative overflow-hidden rounded-[2rem] bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 p-5 sm:p-6 text-white shadow-xl border border-indigo-400/30 flex flex-col justify-between"
         >
-          <section className="relative overflow-hidden h-full rounded-[2rem] bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 p-4 sm:p-6 md:p-8 text-white shadow-lg ring-1 ring-white/10 flex flex-col justify-between">
-            <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
+          {/* Glowing Ambient Radial Overlays */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.2),transparent_50%)] pointer-events-none" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(56,189,248,0.25),transparent_50%)] pointer-events-none" />
+          <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-white/10 blur-3xl pointer-events-none" />
 
-            {/* Elegant bubble style translucent overlays matching the screenshot */}
-            <div className="absolute top-[20px] left-[320px] w-24 h-24 rounded-full bg-white/[0.08] pointer-events-none"></div>
-            <div className="absolute top-[-30px] right-[280px] w-28 h-28 rounded-full bg-white/[0.08] pointer-events-none"></div>
-            <div className="absolute bottom-[-55px] left-[50%] w-36 h-36 rounded-full bg-white/[0.08] pointer-events-none"></div>
-            <div className="absolute bottom-[-30px] right-[40px] w-24 h-24 rounded-full bg-white/[0.08] pointer-events-none"></div>
+          <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-5">
+            {/* Left Info Column */}
+            <div className="flex-1 space-y-2.5 min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-white/20 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white border border-white/30 backdrop-blur-md shadow-xs">
+                  <ShieldCheck className="h-3.5 w-3.5 text-blue-200 shrink-0" /> Parent Oversight Hub
+                </span>
+                <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-emerald-400/25 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-100 border border-emerald-300/30 backdrop-blur-md shadow-xs">
+                  Academic Year 2025–26
+                </span>
+              </div>
 
-            <div className="relative z-10 flex h-full flex-col justify-between space-y-6 md:pr-72">
               <div>
-                <div className="flex flex-wrap items-center gap-2 mb-4">
-                  <span className="rounded-md bg-white/10 px-2.5 py-1 text-[11px] font-black uppercase tracking-widest text-white/90 backdrop-blur-sm">
-                    Parent Portal
-                  </span>
-                  <span className="rounded-md bg-emerald-500/20 px-2.5 py-1 text-[11px] font-black uppercase tracking-widest text-emerald-200 backdrop-blur-sm">
-                    School Module
-                  </span>
-                </div>
-                <h1 className="font-display text-2xl font-black md:text-3xl text-white">
-                  Welcome, {user?.name || "Parent"}! 👋 🌟
+                <h1 className="font-display text-lg sm:text-2xl font-bold text-white tracking-tight leading-snug">
+                  Welcome, {user?.name || "Parent"} 👋
                 </h1>
-                <p className="mt-2 text-white/90 font-medium text-sm">
-                  A focused view of attendance, marks, homework, tests, and school updates for the week.
+                <p className="mt-0.5 text-white/90 font-medium text-xs sm:text-sm max-w-xl leading-relaxed">
+                  Weekly academic progress, attendance logs, homework tasks, and school notices for your children.
                 </p>
               </div>
 
-              <div className="flex flex-wrap gap-4">
-                <div className="flex flex-col rounded-2xl bg-white/10 px-4 py-3 backdrop-blur-md border border-white/20 shadow-inner">
-                  <p className="text-[9px] font-bold uppercase tracking-wider text-blue-200/80 mb-2">Active student</p>
-                  <div className="min-w-[220px] max-w-full">
-                    <ChildSwitcher
-                      activeChild={activeChild}
-                      activeChildId={activeChildId}
-                      childrenList={children}
-                      setActiveChildId={setActiveChildId}
-                    />
-                  </div>
+              {/* Quick Status Chips */}
+              <div className="pt-1 flex flex-wrap items-center gap-2 text-xs">
+                <div className="inline-flex items-center gap-2 whitespace-nowrap rounded-xl bg-white/20 px-3 py-1.5 border border-white/25 text-white backdrop-blur-md shadow-xs">
+                  <span className="h-2 w-2 rounded-full bg-emerald-300 animate-pulse shrink-0" />
+                  <span className="font-semibold text-xs text-white">Student: {activeChild?.name || "Selected"}</span>
                 </div>
+                {analytics.attendancePct !== null && (
+                  <div className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-white/20 px-3 py-1.5 border border-white/25 text-white backdrop-blur-md shadow-xs">
+                    <span className="text-xs font-bold text-emerald-300">{analytics.attendanceLabel}</span>
+                    <span className="text-[11px] text-white/90 font-medium">Attendance</span>
+                  </div>
+                )}
+                {analytics.averageMarksLabel !== "--" && (
+                  <div className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-white/20 px-3 py-1.5 border border-white/25 text-white backdrop-blur-md shadow-xs">
+                    <span className="text-xs font-bold text-amber-200">{analytics.averageMarksLabel}</span>
+                    <span className="text-[11px] text-white/90 font-medium">Avg Marks</span>
+                  </div>
+                )}
               </div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4, duration: 0.6, ease: "easeOut" }}
-                className="mt-4 self-start inline-flex items-center gap-2.5 rounded-full bg-white/10 px-5 py-2 backdrop-blur-md border border-white/20 shadow-sm"
-              >
-                <Sparkles className="h-5 w-5 text-blue-200" />
-                <span className="text-base font-semibold tracking-wide text-white">Manage Smarter. Educate Better.</span>
-              </motion.div>
             </div>
-          </section>
 
-          {/* Floating Illustrations allowing overflow (outside the overflow-hidden section) */}
-          <div className="absolute right-8 top-1/2 -translate-y-1/2 w-[280px] h-[210px] pointer-events-none hidden md:block z-20">
-            <motion.div
-              className="w-full h-full"
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            >
-              <img
-                src={StudentAvatar}
-                alt="Student Avatar"
-                className="w-full h-full object-contain"
-              />
-            </motion.div>
+            {/* Right Child Switcher Card */}
+            <div className="w-full xl:w-auto shrink-0 xl:min-w-[260px] max-w-full">
+              <div className="rounded-2xl bg-white/20 p-3.5 backdrop-blur-xl border border-white/30 shadow-xl">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-white/90 mb-2 flex items-center justify-between">
+                  <span>Active Student</span>
+                  <span className="text-[9px] text-white/80 font-normal">
+                    {children.length > 1 ? `${children.length} Children Linked` : "Linked Profile"}
+                  </span>
+                </div>
+                <ChildSwitcher
+                  activeChild={activeChild}
+                  activeChildId={activeChildId}
+                  childrenList={children}
+                  setActiveChildId={setActiveChildId}
+                />
+              </div>
+            </div>
           </div>
         </motion.section>
 

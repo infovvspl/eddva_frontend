@@ -719,8 +719,8 @@ export default function ParentLayout() {
 
         <MaintenanceNotice />
 
-        <main className="flex-1 overflow-x-hidden overflow-y-auto p-3 sm:p-5 lg:p-6">
-          <div className="h-full w-full erp-container">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto px-3 sm:px-6 lg:px-8 py-4 lg:py-6">
+          <div className="h-full w-full">
             <Suspense fallback={
               <div className="flex h-[50vh] w-full items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-blue-500" />

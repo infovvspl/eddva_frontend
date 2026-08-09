@@ -52,9 +52,9 @@ function StatCard({ title, value, icon: Icon, tone, delay, onClick }) {
       onClick={onClick}
       className="glass-panel-hover cursor-pointer rounded-lg p-5 shadow-soft transition-transform hover:-translate-y-1"
     >
-      <div className="mb-5 flex items-start justify-between">
-        <div className={`grid h-12 w-12 place-items-center rounded-lg ${tone}`}>
-          <Icon className="h-6 w-6" />
+      <div className="mb-5 flex items-center justify-between gap-2">
+        <div className={`w-12 h-12 min-w-12 min-h-12 shrink-0 flex items-center justify-center rounded-xl ${tone}`}>
+          <Icon className="w-6 h-6 min-w-6 min-h-6 shrink-0 stroke-[2.5]" />
         </div>
         <div className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-1 text-xs font-bold text-brand-700">
           <ArrowUpRight className="h-3.5 w-3.5" />

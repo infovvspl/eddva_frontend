@@ -37,14 +37,14 @@ const PlatformStatsPage = () => {
   };
 
   const topStats = [
-    { label: "Total Students", value: formatCount(stats?.totalStudents), trend: "+18%", icon: Users, color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-500/10" },
-    { label: "Active Institutes", value: stats?.activeTenants ?? stats?.activeInstitutes ?? "—", trend: "+5%", icon: Building2, color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-500/10" },
-    { label: "Total Teachers", value: formatCount(stats?.totalTeachers), trend: "+34%", icon: Swords, color: "text-purple-600 dark:text-purple-400", bg: "bg-purple-50 dark:bg-purple-500/10" },
-    { label: "Monthly Revenue", value: stats?.mrrEstimate != null ? `₹${(stats.mrrEstimate / 100000).toFixed(1)}L` : stats?.platformMrr != null ? `₹${(stats.platformMrr / 100000).toFixed(1)}L` : "—", trend: "+22%", icon: DollarSign, color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-500/10" },
+    { label: "Total Students", value: formatCount(stats?.totalStudents), trend: "+18%", icon: Users, color: "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-950/40 dark:border-emerald-900/50 dark:text-emerald-400" },
+    { label: "Active Institutes", value: stats?.activeTenants ?? stats?.activeInstitutes ?? "—", trend: "+5%", icon: Building2, color: "bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-950/40 dark:border-indigo-900/50 dark:text-indigo-400" },
+    { label: "Total Teachers", value: formatCount(stats?.totalTeachers), trend: "+34%", icon: Swords, color: "bg-violet-50 text-violet-600 border-violet-100 dark:bg-violet-950/40 dark:border-violet-900/50 dark:text-violet-400" },
+    { label: "Monthly Revenue", value: stats?.mrrEstimate != null ? `₹${(stats.mrrEstimate / 100000).toFixed(1)}L` : stats?.platformMrr != null ? `₹${(stats.platformMrr / 100000).toFixed(1)}L` : "—", trend: "+22%", icon: DollarSign, color: "bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/40 dark:border-amber-900/50 dark:text-amber-400" },
   ];
 
   return (
-    <div className="mx-auto max-w-7xl px-1 pt-0 pb-0 -mb-[6px] sm:-mb-0 sm:pb-8 sm:py-8 sm:px-6 lg:px-8 space-y-4 sm:space-y-8 font-sans text-slate-900">
+    <div className="w-full space-y-6 font-sans text-slate-900">
       <header className="mt-3 sm:mt-0 mb-4 sm:mb-8 bg-blue-50/50 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
         <h2 className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-indigo-600 mb-1">Ecosystem Intelligence</h2>
         <h1 className="text-2xl sm:text-[34px] lg:text-[40px] font-bold text-slate-900 tracking-tight leading-tight">Platform Analytics</h1>
@@ -52,22 +52,33 @@ const PlatformStatsPage = () => {
       </header>
 
         {/* Top Stats */}
-        <div className="grid grid-cols-2 gap-4 md:gap-6 mb-7 md:mb-10">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-7 md:mb-10">
           {topStats.map((s, i) => (
-            <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="bg-white p-5 md:p-7 rounded-[28px] md:rounded-[44px] border border-slate-100 shadow-sm relative overflow-hidden group">
-              <div className={`p-3 rounded-[16px] ${s.bg} ${s.color} w-fit mb-4 transition-transform group-hover:scale-110`}>
-                <s.icon className="w-5 h-5" />
-              </div>
-              <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">{s.label}</p>
-              <div className="flex items-baseline gap-2 mt-1">
-                <h3 className="text-xl md:text-[28px] font-bold text-slate-900">
-                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : String(s.value)}
-                </h3>
-                <span className="text-[10px] font-medium text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-md flex items-center gap-0.5">
-                  {s.trend} <ArrowUpRight className="w-3 h-3 stroke-[3]" />
+            <motion.div
+              key={s.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className="bg-white dark:bg-slate-900 p-5 rounded-2xl md:rounded-3xl border border-slate-200/70 dark:border-slate-800 shadow-sm hover:shadow-xl hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-300 flex flex-col justify-between"
+            >
+              <div className="flex items-center justify-between gap-2 mb-3">
+                {/* 48x48 Fixed Rounded Square Icon Container */}
+                <div className={`w-12 h-12 min-w-12 min-h-12 shrink-0 flex items-center justify-center rounded-2xl border ${s.color}`}>
+                  <s.icon className="w-6 h-6 min-w-6 min-h-6 shrink-0 stroke-[2.5]" />
+                </div>
+
+                {/* Trend Badge */}
+                <span className="inline-flex items-center gap-0.5 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300 shrink-0">
+                  {s.trend} <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[2.5]" />
                 </span>
               </div>
-              <div className="absolute top-0 right-0 h-24 w-24 bg-indigo-50/30 opacity-0 group-hover:opacity-100 blur-[40px] transition-opacity translate-x-12 -translate-y-12" />
+
+              <div className="space-y-1">
+                <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">{s.label}</p>
+                <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : String(s.value)}
+                </h3>
+              </div>
             </motion.div>
           ))}
         </div>

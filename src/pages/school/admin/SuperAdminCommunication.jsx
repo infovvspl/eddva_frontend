@@ -324,7 +324,7 @@ export default function SuperAdminCommunication() {
   const chatHeightClass = 'h-[calc(100dvh-340px)] md:h-[calc(100dvh-280px)]';
 
   return (
-    <div className="mx-auto max-w-7xl px-1 pt-0 pb-0 -mb-[6px] sm:-mb-0 sm:pb-8 sm:py-8 sm:px-6 lg:px-8 w-full flex flex-col">
+    <div className="w-full flex flex-col space-y-6">
 
       {/* ── Page header — always visible ─────────────────────────── */}
       <div className="pt-0">

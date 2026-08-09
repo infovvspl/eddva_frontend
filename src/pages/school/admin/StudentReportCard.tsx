@@ -482,7 +482,7 @@ export default function StudentReportCard() {
   const defaultSchoolLogo = student?.instituteLogo || '';
   const pageShellClass = isTeacherReportView
     ? 'w-full px-4 py-6 space-y-6'
-    : 'w-full max-w-7xl mx-auto px-4 py-6 space-y-6';
+    : 'w-full space-y-6';
 
   return (
     <div className={pageShellClass}>

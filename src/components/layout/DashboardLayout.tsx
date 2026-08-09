@@ -1627,15 +1627,15 @@ const DashboardLayout = () => {
         <main data-tour="main-content" className="relative min-h-0 flex-1 touch-pan-y overflow-y-auto overflow-x-hidden overscroll-y-contain [-webkit-overflow-scrolling:touch] custom-scrollbar">
           <div
             className={cn(
-              "mx-auto w-full transition-all duration-200",
+              "w-full transition-all duration-200",
               (location.pathname.includes("/live") && !location.pathname.includes("/live-classes")) || (location.pathname.includes("/quiz") && !location.pathname.includes("/quizzes")) || isFullWidthSuperAdminPage
                 ? "max-w-none p-0"
                 : location.pathname.startsWith("/super-admin") || isFullWidthCoachingAdminPage || isFullWidthCoachingStudentPage
                   ? cn(
-                    "max-w-none px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))] lg:pb-6",
+                    "w-full px-3 py-4 sm:px-6 lg:px-8 lg:py-6 pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))] lg:pb-6",
                     isCoachingSuperAdminMobile && "pt-1"
                   )
-                  : "max-w-screen-2xl px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))] lg:pb-6"
+                  : "w-full px-3 py-4 sm:px-6 lg:px-8 lg:py-6 pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))] lg:pb-6"
             )}
           >
             <PageErrorBoundary>
