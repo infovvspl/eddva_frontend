@@ -43,8 +43,8 @@ export default function SystemHealthPage() {
   const memPct = data ? Math.round((data.memory.usedMb / data.memory.totalMb) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-white p-4 md:p-6 lg:p-10 font-sans text-slate-900">
-      <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 bg-blue-50/50 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
+    <div className="w-full space-y-4 sm:space-y-6 font-sans text-slate-900">
+      <header className="mb-4 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 bg-blue-100 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
         <div>
           <h2 className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 mb-2">Platform Infrastructure</h2>
           <div className="flex items-center gap-3">

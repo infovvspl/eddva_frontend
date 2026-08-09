@@ -202,10 +202,10 @@ const AdminDashboard = () => {
 
       {/* ─── Top Stats ─── */}
       <section className="flex sm:grid overflow-x-auto sm:overflow-visible scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-1 py-2 sm:py-3 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-        <StatCard label="Total Students" value={stats.totalStudents} icon={Users} color="bg-blue-600" accentColor="bg-blue-500" delay={0} onClick={() => navigate("/admin/students")} />
-        <StatCard label="Active Batches" value={`${stats.activeBatches}/${stats.totalBatches}`} icon={BookOpen} color="bg-emerald-500 sm:bg-indigo-600" accentColor="bg-indigo-500" delay={0.1} onClick={() => navigate("/admin/batches")} />
-        <StatCard label="Total Lectures" value={stats.totalLectures} icon={Video} color="bg-purple-600" accentColor="bg-purple-500" delay={0.2} onClick={() => navigate("/teacher/recorded-lectures")} />
-        <StatCard label="Open Doubts" value={stats.openDoubts} icon={HelpCircle} color={stats.openDoubts > 0 ? "bg-orange-500" : "bg-emerald-500"} accentColor="bg-orange-500" delay={0.3} onClick={() => navigate("/teacher/doubts")} />
+        <StatCard label="Total Students" value={stats.totalStudents} icon={Users} color="bg-blue-600" delay={0} onClick={() => navigate("/admin/students")} />
+        <StatCard label="Active Batches" value={`${stats.activeBatches}/${stats.totalBatches}`} icon={BookOpen} color="bg-emerald-500 sm:bg-indigo-600" delay={0.1} onClick={() => navigate("/admin/batches")} />
+        <StatCard label="Total Lectures" value={stats.totalLectures} icon={Video} color="bg-purple-600" delay={0.2} onClick={() => navigate("/teacher/recorded-lectures")} />
+        <StatCard label="Open Doubts" value={stats.openDoubts} icon={HelpCircle} color={stats.openDoubts > 0 ? "bg-orange-500" : "bg-emerald-500"} delay={0.3} onClick={() => navigate("/teacher/doubts")} />
       </section>
 
       {/* ─── Analytics Section ─── */}

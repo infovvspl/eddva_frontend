@@ -292,14 +292,16 @@ const CoachingFeatureFlagsPage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 sm:px-8 pt-0 pb-24 sm:py-10 md:px-12 w-full font-sans text-slate-900">
-      <div className="mx-auto max-w-[1600px] space-y-4 sm:space-y-6">
+    <div className="w-full space-y-4 sm:space-y-6 font-sans text-slate-900">
+      <div className="w-full space-y-4 sm:space-y-6">
 
-        <header className="mt-4 sm:mt-0 border border-slate-200 rounded-2xl p-6 py-8 sm:pb-2 sm:p-0 sm:border-0 sm:rounded-none bg-white shadow-sm sm:shadow-none sm:bg-transparent">
-          <h1 className="text-3xl sm:text-[32px] font-bold text-blue-600 tracking-tight">Feature Flags</h1>
-          <p className="mt-1.5 sm:mt-2 font-medium text-slate-500 text-xs sm:text-[15px]">
-            Control AI features globally or per coaching institute.
-          </p>
+        <header className="mb-4 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 bg-blue-100 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
+          <div>
+            <h1 className="text-2xl sm:text-[32px] font-bold text-slate-900 tracking-tight">Feature Flags</h1>
+            <p className="mt-1 font-medium text-slate-500 text-xs sm:text-sm">
+              Control AI features globally or per coaching institute.
+            </p>
+          </div>
         </header>
 
         {/* ── Global Defaults ───────────────────────────────────────────────── */}

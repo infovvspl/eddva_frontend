@@ -95,17 +95,17 @@ export default function SecurityCenterPage() {
   const filteredSessions = sessions.filter(s => {
     const matchesSchool = (selectedSchool === 'All Schools' || selectedSchool === 'All Institutes' || s.schoolName === selectedSchool);
     const query = userSearchTerm.toLowerCase();
-    const matchesSearch = !query || 
+    const matchesSearch = !query ||
       (s.userName && s.userName.toLowerCase().includes(query)) ||
       (s.userId && s.userId.toLowerCase().includes(query)) ||
       (s.description && s.description.toLowerCase().includes(query)) ||
       (s.ipAddress && s.ipAddress.toLowerCase().includes(query)) ||
       (s.status && s.status.toLowerCase().includes(query));
-      
+
     return matchesSchool && matchesSearch;
   });
 
-  const filteredInstitutes = institutes.filter(inst => 
+  const filteredInstitutes = institutes.filter(inst =>
     inst.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -124,8 +124,8 @@ export default function SecurityCenterPage() {
 
 
   return (
-    <div className="w-full space-y-6">
-      <div className="mt-3 sm:mt-0 mb-4 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 bg-blue-50/50 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
+    <div className="w-full space-y-4 sm:space-y-6">
+      <div className="mb-4 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 bg-blue-100 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
         <div>
           <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">Security Center</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Monitor sessions, failed logins, and security alerts.</p>
@@ -181,7 +181,7 @@ export default function SecurityCenterPage() {
       <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b bg-surface-50 p-4 gap-4">
           <h2 className="font-bold text-surface-900">Active Sessions</h2>
-          
+
           <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
             {/* Search Input */}
             <div className="relative w-full sm:w-64">
@@ -202,11 +202,11 @@ export default function SecurityCenterPage() {
               {(selectedSchool !== 'All Schools' && selectedSchool !== 'All Institutes') ? (
                 <div className="flex w-full items-center justify-between rounded-md border border-primary-200 bg-primary-50 px-3 py-1.5 text-sm font-medium text-primary-700">
                   <span className="truncate">{selectedSchool}</span>
-                  <button 
+                  <button
                     onClick={() => {
                       setSelectedSchool(isSuperAdminRoute ? 'All Institutes' : 'All Schools');
                       setSearchTerm('');
-                    }} 
+                    }}
                     className="ml-2 flex-shrink-0 text-primary-400 hover:text-primary-600"
                   >
                     <X className="h-4 w-4" />
@@ -225,7 +225,7 @@ export default function SecurityCenterPage() {
                   <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                     <ChevronDown className="h-4 w-4 text-surface-400" />
                   </div>
-                  
+
                   {isSearchOpen && (
                     <div className="absolute right-0 top-full mt-1 max-h-60 w-full overflow-auto rounded-md border bg-white py-1 shadow-lg z-20">
                       <button
@@ -425,11 +425,10 @@ export default function SecurityCenterPage() {
                         key={pageNum}
                         onClick={() => setCurrentPage(pageNum)}
                         aria-current={currentPage === pageNum ? 'page' : undefined}
-                        className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold focus:z-20 ${
-                          currentPage === pageNum
+                        className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold focus:z-20 ${currentPage === pageNum
                             ? 'z-10 bg-primary-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600'
                             : 'text-surface-900 ring-1 ring-inset ring-surface-300 hover:bg-surface-50 focus:outline-offset-0'
-                        }`}
+                          }`}
                       >
                         {pageNum}
                       </button>

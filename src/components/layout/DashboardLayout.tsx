@@ -1037,9 +1037,7 @@ const DashboardLayout = () => {
   const isCoachingSuperAdminMobile = user?.role === 'super_admin' && isMobile;
 
   const navOpen = isCompactLayout ? mobileSidebarOpen : sidebarOpen;
-  const isFullWidthSuperAdminPage = [
-    "/super-admin/feature-flags",
-  ].includes(location.pathname);
+  const isFullWidthSuperAdminPage = [].includes(location.pathname);
   const isFullWidthCoachingAdminPage = [
     "/admin",
     "/admin/students",
@@ -1114,10 +1112,25 @@ const DashboardLayout = () => {
           }}
           profileCard={(isCollapsed) =>
             isCollapsed ? (
-              <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white text-xs">SA</div>
+              <div className="w-10 h-10 mx-auto rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 shadow-xs hover:scale-105 transition-all">
+                <User className="w-4 h-4 text-indigo-600" />
+              </div>
             ) : (
-              <div className="rounded-xl bg-blue-50 p-3 dark:bg-slate-900 text-center">
-                <p className="text-xs font-bold text-blue-700 dark:text-blue-300">Super Admin</p>
+              <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50/60 border border-slate-100/80 shadow-2xs">
+                <div className="w-10 h-10 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 shrink-0 shadow-xs">
+                  <User className="w-4 h-4 text-indigo-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-slate-900 truncate">{user.name || "Super Admin"}</p>
+                  <p className="text-[10px] font-semibold text-slate-500 capitalize truncate mt-0.5">Super Admin</p>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all shrink-0"
+                  title="Logout"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
               </div>
             )
           }
@@ -1627,13 +1640,13 @@ const DashboardLayout = () => {
         <main data-tour="main-content" className="relative min-h-0 flex-1 touch-pan-y overflow-y-auto overflow-x-hidden overscroll-y-contain [-webkit-overflow-scrolling:touch] custom-scrollbar">
           <div
             className={cn(
-              "w-full transition-all duration-200",
-              (location.pathname.includes("/live") && !location.pathname.includes("/live-classes")) || (location.pathname.includes("/quiz") && !location.pathname.includes("/quizzes")) || isFullWidthSuperAdminPage
+              "mx-auto w-full transition-all duration-200",
+              (location.pathname.startsWith("/live/") || (location.pathname.includes("/quiz") && !location.pathname.includes("/quizzes")) || isFullWidthSuperAdminPage)
                 ? "max-w-none p-0"
                 : location.pathname.startsWith("/super-admin") || isFullWidthCoachingAdminPage || isFullWidthCoachingStudentPage
                   ? cn(
-                    "w-full px-3 py-4 sm:px-6 lg:px-8 lg:py-6 pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))] lg:pb-6",
-                    isCoachingSuperAdminMobile && "pt-1"
+                    "max-w-none px-3 pt-2 pb-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))] lg:pb-6",
+                    (location.pathname.startsWith("/super-admin") || isCoachingSuperAdminMobile) && "mt-1 sm:mt-0 pt-2 sm:pt-4 lg:pt-6"
                   )
                   : "w-full px-3 py-4 sm:px-6 lg:px-8 lg:py-6 pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))] lg:pb-6"
             )}
