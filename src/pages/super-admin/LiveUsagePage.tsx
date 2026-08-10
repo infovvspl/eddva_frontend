@@ -351,6 +351,7 @@ export default function LiveUsagePage() {
             </table>
           </div>
         </div>
+      </div>
     </div>
   );
 }

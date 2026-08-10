@@ -203,7 +203,8 @@ const UsersPage = () => {
           </div>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
 export default UsersPage;

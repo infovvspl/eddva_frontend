@@ -1418,9 +1418,9 @@ function OverviewTab({
 // ── Billing Tab ────────────────────────────────────────────────────────────────
 
 function BillingTab({
-  fromDate, toDate, filterSchool = '', filterFeature = '',
+  fromDate, toDate, filterSchool = '', filterFeature = '', schools = [],
 }: {
-  fromDate: string; toDate: string; filterSchool?: string; filterFeature?: string;
+  fromDate: string; toDate: string; filterSchool?: string; filterFeature?: string; schools?: SchoolRow[];
 }) {
   const tenantType = useAuthStore(s => s.tenantType);
   const isCoaching = tenantType === 'coaching';
@@ -1636,6 +1636,11 @@ function AuditLogsTab({
   const [selectedLog, setSelectedLog] = useState<RawAiLog | null>(null);
   const [logSheetOpen, setLogSheetOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedSchool, setSelectedSchool] = useState(filterSchool);
+  const [selectedFeature, setSelectedFeature] = useState(filterFeature);
+
+  useEffect(() => { setSelectedSchool(filterSchool); }, [filterSchool]);
+  useEffect(() => { setSelectedFeature(filterFeature); }, [filterFeature]);
 
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 640 : false);
   useEffect(() => {
@@ -1653,9 +1658,9 @@ function AuditLogsTab({
     setLoading(true);
     try {
       const res = await getRawAiLogs({
-        instituteId: filterSchool || undefined,
+        instituteId: selectedSchool || undefined,
         product: productType,
-        feature: filterFeature || undefined,
+        feature: selectedFeature || undefined,
         from: fromDate || undefined,
         to: toDate || undefined,
         limit,
@@ -1665,9 +1670,9 @@ function AuditLogsTab({
       setTotal(res.total);
     } catch { /* silent */ }
     finally { setLoading(false); }
-  }, [filterSchool, filterFeature, fromDate, toDate, page, isSuper, productType, limit]);
+  }, [selectedSchool, selectedFeature, fromDate, toDate, page, isSuper, productType, limit]);
 
-  useEffect(() => { setPage(0); }, [filterSchool, filterFeature, filterStatus, fromDate, toDate]);
+  useEffect(() => { setPage(0); }, [selectedSchool, selectedFeature, filterStatus, fromDate, toDate]);
   useEffect(() => { void load(); }, [load]);
 
   const filteredByStatus = useMemo(() => {
@@ -1696,7 +1701,7 @@ function AuditLogsTab({
           <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 w-full sm:w-auto sm:border-l border-slate-100 mt-1 sm:mt-0 sm:pl-3 order-3 sm:order-2">
             {isSuper && (
               <div className="relative w-full sm:w-auto">
-                <select value={filterSchool} onChange={e => setFilterSchool(e.target.value)}
+                <select value={selectedSchool} onChange={e => setSelectedSchool(e.target.value)}
                   className="h-9 w-full sm:w-auto appearance-none rounded-xl border border-slate-200 pl-3 pr-8 text-xs sm:text-sm text-slate-700 outline-none focus:border-brand-400 bg-white font-semibold">
                   <option value="">{isCoaching ? "All Institutes" : "All Schools"}</option>
                   {schools.map(s => <option key={s.institute_id} value={s.institute_id}>{s.institute_name}</option>)}
@@ -1705,7 +1710,7 @@ function AuditLogsTab({
               </div>
             )}
             <div className="relative w-full sm:w-auto">
-              <select value={filterFeature} onChange={e => setFilterFeature(e.target.value)}
+              <select value={selectedFeature} onChange={e => setSelectedFeature(e.target.value)}
                 className="h-9 w-full sm:w-auto appearance-none rounded-xl border border-slate-200 pl-3 pr-8 text-xs sm:text-sm text-slate-700 outline-none focus:border-brand-400 bg-white font-semibold">
                 <option value="">All Features</option>
                 {AI_FEATURES.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
@@ -1722,12 +1727,7 @@ function AuditLogsTab({
               <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
             </div>
           </div>
-          </div>
-        </div>
-
-        <button onClick={() => void load()} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3.5 py-2 text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
-          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> Refresh
-        </button>
+        )}
       </div>
 
       <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
@@ -1990,7 +1990,7 @@ function FeatureControlTab() {
 
 export default function AiUsage() {
   const { user } = useAuth();
-  const isSuper = String((user as Record<string, unknown>)?.role ?? '').toUpperCase() === 'SUPER_ADMIN';
+  const isSuper = String((user as any)?.role ?? '').toUpperCase() === 'SUPER_ADMIN';
 
   // Global filters
   const [fromDate, setFromDate] = useState('');
@@ -2113,7 +2113,7 @@ export default function AiUsage() {
         if (!ovData || num(ovData.requests) === 0) {
           if (!isCoaching) {
             schoolApi.get('/ai-usage/me-debug').then(r => {
-              setDiagInfo((r.data as { user?: unknown; overview?: unknown })?.data ?? r.data);
+              setDiagInfo((r.data as any)?.data ?? r.data);
             }).catch(() => undefined);
           }
         } else {
@@ -2224,15 +2224,15 @@ export default function AiUsage() {
       {diagInfo && !loading && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800 space-y-1">
           <p className="font-bold text-sm text-amber-900 flex items-center gap-1"><Info size={14} />Diagnostic Info (why analytics shows 0)</p>
-          <p><strong>Your Role:</strong> {String((diagInfo as Record<string, unknown>)?.role ?? (diagInfo as Record<string, unknown>)?.user?.role ?? '—')}</p>
-          <p><strong>Your Institute ID:</strong> <code className="bg-amber-100 px-1 rounded">{String((diagInfo as Record<string, unknown>)?.instituteId ?? (diagInfo as Record<string, unknown>)?.user?.instituteId ?? 'null — not linked to any institute!')}</code></p>
+          <p><strong>Your Role:</strong> {String((diagInfo as any)?.role ?? (diagInfo as any)?.user?.role ?? '—')}</p>
+          <p><strong>Your Institute ID:</strong> <code className="bg-amber-100 px-1 rounded">{String((diagInfo as any)?.instituteId ?? (diagInfo as any)?.user?.instituteId ?? 'null — not linked to any institute!')}</code></p>
           <p><strong>DB query result for your institute:</strong> {(() => {
-            const ov = (diagInfo as Record<string, unknown>)?.overview as Record<string, unknown> | null;
+            const ov = (diagInfo as any)?.overview;
             if (!ov) return 'no data returned (institute may have no AI usage yet)';
             return `${ov.requests ?? 0} requests, ${ov.tokens ?? 0} tokens, $${Number(ov.cost ?? 0).toFixed(4)} cost`;
           })()}</p>
-          {(diagInfo as Record<string, unknown>)?.queryError && (
-            <p className="text-rose-700"><strong>Query error:</strong> {String((diagInfo as Record<string, unknown>).queryError)}</p>
+          {(diagInfo as any)?.queryError && (
+            <p className="text-rose-700"><strong>Query error:</strong> {String((diagInfo as any).queryError)}</p>
           )}
           <p className="text-amber-600 mt-1">If Institute ID is <em>null</em> or <em>wrong</em>, AI usage logs are stored under a different ID — contact support. If the DB result shows 0 requests, generate some AI content first on this site (dev.eddva.in) and refresh.</p>
         </div>

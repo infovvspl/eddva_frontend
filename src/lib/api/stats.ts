@@ -29,6 +29,10 @@ export interface PlatformStats {
     averageAttendanceRate: string;
     courseCompletionRate: string;
   };
+  storageUsage?: number;
+  aiRequestsToday?: number;
+  securityAlerts?: number;
+  systemHealth?: number;
 }
 
 // ---------------------------------------------------------------------------
