@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
-  Radio, Building2, Users, Clock, TrendingUp, Loader2, CheckCircle2, ArrowUpRight, ChevronDown,
+  Radio, Building2, Users, Clock, TrendingUp, Loader2, CheckCircle2, ArrowUpRight, ChevronDown, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -41,6 +41,8 @@ export default function LiveUsagePage() {
 
   const [statusFilter, setStatusFilter] = useState('');
   const [schoolFilter, setSchoolFilter] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const schoolOptions = useMemo(() => {
     const map = new Map<string, string>();
@@ -69,6 +71,23 @@ export default function LiveUsagePage() {
     }
     return list;
   }, [data?.recentLectures, statusFilter, schoolFilter]);
+
+  const totalPages = Math.ceil(filteredRecentLectures.length / pageSize) || 1;
+
+  const currentLectures = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredRecentLectures.slice(start, start + pageSize);
+  }, [filteredRecentLectures, currentPage, pageSize]);
+
+  const handleStatusFilterChange = (val: string) => {
+    setStatusFilter(val);
+    setCurrentPage(1);
+  };
+
+  const handleSchoolFilterChange = (val: string) => {
+    setSchoolFilter(val);
+    setCurrentPage(1);
+  };
 
   const s = data?.summary;
 
@@ -265,7 +284,7 @@ export default function LiveUsagePage() {
               <div className="relative">
                 <select
                   value={schoolFilter}
-                  onChange={e => setSchoolFilter(e.target.value)}
+                  onChange={e => handleSchoolFilterChange(e.target.value)}
                   className="h-9 appearance-none rounded-xl border border-slate-200 bg-white pl-3 pr-8 text-xs font-semibold text-slate-700 outline-none focus:border-indigo-500 transition-colors"
                 >
                   <option value="">All Institutes</option>
@@ -280,7 +299,7 @@ export default function LiveUsagePage() {
               <div className="relative">
                 <select
                   value={statusFilter}
-                  onChange={e => setStatusFilter(e.target.value)}
+                  onChange={e => handleStatusFilterChange(e.target.value)}
                   className="h-9 appearance-none rounded-xl border border-slate-200 bg-white pl-3 pr-8 text-xs font-semibold text-slate-700 outline-none focus:border-indigo-500 transition-colors"
                 >
                   <option value="">All Statuses</option>
@@ -293,7 +312,7 @@ export default function LiveUsagePage() {
 
               {(schoolFilter || statusFilter) && (
                 <button
-                  onClick={() => { setSchoolFilter(''); setStatusFilter(''); }}
+                  onClick={() => { handleSchoolFilterChange(''); handleStatusFilterChange(''); }}
                   className="h-9 px-3 text-xs font-semibold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors"
                 >
                   Clear
@@ -320,14 +339,14 @@ export default function LiveUsagePage() {
                       <Loader2 className="w-6 h-6 animate-spin mx-auto" />
                     </td>
                   </tr>
-                ) : !filteredRecentLectures.length ? (
+                ) : !currentLectures.length ? (
                   <tr>
                     <td colSpan={7} className="py-12 text-center text-slate-400 text-sm">
                       {statusFilter || schoolFilter ? 'No classes match your filter criteria' : 'No classes yet'}
                     </td>
                   </tr>
                 ) : (
-                  filteredRecentLectures.map((lec, i) => (
+                  currentLectures.map((lec, i) => (
                     <tr key={lec.id} className={i % 2 === 0 ? '' : 'bg-slate-50/40'}>
                       <td className="px-4 py-3 font-medium text-slate-800 max-w-[160px] truncate whitespace-nowrap">
                         {lec.title || 'Untitled'}
@@ -350,8 +369,66 @@ export default function LiveUsagePage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination controls */}
+          {filteredRecentLectures.length > 0 && (
+            <div className="px-5 py-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-medium text-slate-500 bg-slate-50/30">
+              <div className="flex items-center gap-3">
+                <span>
+                  Showing <span className="font-semibold text-slate-800">{(currentPage - 1) * pageSize + 1}</span> to{' '}
+                  <span className="font-semibold text-slate-800">
+                    {Math.min(currentPage * pageSize, filteredRecentLectures.length)}
+                  </span>{' '}
+                  of <span className="font-semibold text-slate-800">{filteredRecentLectures.length}</span> classes
+                </span>
+                <div className="relative">
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="h-8 appearance-none rounded-lg border border-slate-200 bg-white pl-2.5 pr-7 text-xs font-semibold text-slate-700 outline-none focus:border-indigo-500 transition-colors"
+                  >
+                    <option value={5}>5 / page</option>
+                    <option value={10}>10 / page</option>
+                    <option value={20}>20 / page</option>
+                    <option value={50}>50 / page</option>
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  title="Previous Page"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                <div className="flex items-center gap-1 px-2">
+                  <span className="text-xs font-semibold text-slate-700">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  title="Next Page"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
+

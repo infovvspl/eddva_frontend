@@ -1,8 +1,10 @@
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { TrendingUp, Building2, Users, DollarSign, AlertTriangle, ArrowUpRight, Loader2, Download } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { apiClient } from '@/lib/api/client';
+import { DataTablePagination } from '@/components/ui/data-table-pagination';
 
 function extract<T>(res: any): T {
   const d = res?.data;
@@ -43,6 +45,20 @@ function exportCSV(data: any) {
 
 export default function RevenueReportsPage() {
   const { data, isLoading } = useQuery({ queryKey: ['revenue-dashboard'], queryFn: getRevenueDashboard, refetchInterval: 60_000 });
+
+  const [expiringPage, setExpiringPage] = useState(1);
+  const [expiringLimit, setExpiringLimit] = useState(5);
+
+  const [topTenantsPage, setTopTenantsPage] = useState(1);
+  const [topTenantsLimit, setTopTenantsLimit] = useState(5);
+
+  const expiringPlans = data?.expiringPlans ?? [];
+  const expiringTotalPages = Math.ceil(expiringPlans.length / expiringLimit) || 1;
+  const currentExpiringPlans = expiringPlans.slice((expiringPage - 1) * expiringLimit, expiringPage * expiringLimit);
+
+  const topTenants = data?.topTenants ?? [];
+  const topTenantsTotalPages = Math.ceil(topTenants.length / topTenantsLimit) || 1;
+  const currentTopTenants = topTenants.slice((topTenantsPage - 1) * topTenantsLimit, topTenantsPage * topTenantsLimit);
 
   const kpis = [
     { label: 'MRR', value: data ? fmt(data.mrr) : '—', sub: 'Monthly Recurring', icon: DollarSign, color: 'text-indigo-600', bg: 'bg-indigo-50' },
@@ -150,59 +166,96 @@ export default function RevenueReportsPage() {
       </div>
 
       {/* Expiring plans */}
-      {(data?.expiringPlans?.length ?? 0) > 0 && (
+      {expiringPlans.length > 0 && (
         <div className="bg-white rounded-[28px] border border-amber-100 shadow-sm mb-8 overflow-hidden">
-          <div className="p-5 border-b border-amber-100 flex items-center gap-3 bg-amber-50/60">
-            <AlertTriangle className="w-5 h-5 text-amber-500" />
-            <h3 className="font-bold text-slate-900">Expiring Soon ({data.expiringPlans.length})</h3>
+          <div className="p-5 border-b border-amber-100 flex items-center justify-between bg-amber-50/60">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              <h3 className="font-bold text-slate-900">Expiring Soon ({expiringPlans.length})</h3>
+            </div>
           </div>
-          <table className="w-full text-sm">
-            <thead><tr className="border-b border-slate-100 bg-slate-50/40">
-              {['Institute', 'Plan', 'Status', 'Expiry', 'Days Left'].map(h => (
-                <th key={h} className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400">{h}</th>
-              ))}
-            </tr></thead>
-            <tbody>{data.expiringPlans.map((r: any, i: number) => (
-              <tr key={r.id} className={i % 2 === 0 ? '' : 'bg-slate-50/40'}>
-                <td className="px-4 py-3 font-medium text-slate-800">{r.name}</td>
-                <td className="px-4 py-3 capitalize text-slate-600">{r.plan}</td>
-                <td className="px-4 py-3 capitalize text-slate-600">{r.status}</td>
-                <td className="px-4 py-3 text-slate-500 text-xs">{new Date(r.trialEndsAt || r.planExpiresAt).toLocaleDateString()}</td>
-                <td className="px-4 py-3">
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${r.daysLeft <= 3 ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}`}>
-                    {r.daysLeft}d
-                  </span>
-                </td>
-              </tr>
-            ))}</tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="border-b border-slate-100 bg-slate-50/40">
+                {['Institute', 'Plan', 'Status', 'Expiry', 'Days Left'].map(h => (
+                  <th key={h} className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400">{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>{currentExpiringPlans.map((r: any, i: number) => (
+                <tr key={r.id} className={i % 2 === 0 ? '' : 'bg-slate-50/40'}>
+                  <td className="px-4 py-3 font-medium text-slate-800">{r.name}</td>
+                  <td className="px-4 py-3 capitalize text-slate-600">{r.plan}</td>
+                  <td className="px-4 py-3 capitalize text-slate-600">{r.status}</td>
+                  <td className="px-4 py-3 text-slate-500 text-xs">{new Date(r.trialEndsAt || r.planExpiresAt).toLocaleDateString()}</td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${r.daysLeft <= 3 ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}`}>
+                      {r.daysLeft}d
+                    </span>
+                  </td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+          <div className="border-t border-slate-100 bg-white p-2">
+            <DataTablePagination
+              page={expiringPage}
+              limit={expiringLimit}
+              total={expiringPlans.length}
+              totalPages={expiringTotalPages}
+              onPageChange={setExpiringPage}
+              onLimitChange={(newLimit) => {
+                setExpiringLimit(newLimit);
+                setExpiringPage(1);
+              }}
+            />
+          </div>
         </div>
       )}
 
       {/* Top tenants by revenue */}
       <div className="bg-white rounded-[28px] border border-slate-100 shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-slate-100 flex items-center gap-3">
-          <TrendingUp className="w-5 h-5 text-indigo-500" />
-          <h3 className="font-bold text-slate-900">Top Tenants by Revenue</h3>
+        <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <TrendingUp className="w-5 h-5 text-indigo-500" />
+            <h3 className="font-bold text-slate-900">Top Tenants by Revenue ({topTenants.length})</h3>
+          </div>
         </div>
-        <table className="w-full text-sm">
-          <thead><tr className="border-b border-slate-100 bg-slate-50/40">
-            {['Institute', 'Plan', 'Monthly Revenue', 'Plan Expiry'].map(h => (
-              <th key={h} className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400">{h}</th>
-            ))}
-          </tr></thead>
-          <tbody>{isLoading ? (
-            <tr><td colSpan={4} className="py-12 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-indigo-300" /></td></tr>
-          ) : (data?.topTenants ?? []).map((t: any, i: number) => (
-            <tr key={t.id} className={i % 2 === 0 ? '' : 'bg-slate-50/40'}>
-              <td className="px-4 py-3 font-medium text-slate-800">{t.name}</td>
-              <td className="px-4 py-3 capitalize text-slate-600">{t.plan}</td>
-              <td className="px-4 py-3 font-semibold text-emerald-600">{fmt(t.monthlyRevenue)}</td>
-              <td className="px-4 py-3 text-slate-400 text-xs">{t.planExpiresAt ? new Date(t.planExpiresAt).toLocaleDateString() : '—'}</td>
-            </tr>
-          ))}</tbody>
-        </table>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead><tr className="border-b border-slate-100 bg-slate-50/40">
+              {['Institute', 'Plan', 'Monthly Revenue', 'Plan Expiry'].map(h => (
+                <th key={h} className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400">{h}</th>
+              ))}
+            </tr></thead>
+            <tbody>{isLoading ? (
+              <tr><td colSpan={4} className="py-12 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-indigo-300" /></td></tr>
+            ) : topTenants.length === 0 ? (
+              <tr><td colSpan={4} className="py-8 text-center text-xs text-slate-400 font-medium">No tenants found</td></tr>
+            ) : (currentTopTenants.map((t: any, i: number) => (
+              <tr key={t.id} className={i % 2 === 0 ? '' : 'bg-slate-50/40'}>
+                <td className="px-4 py-3 font-medium text-slate-800">{t.name}</td>
+                <td className="px-4 py-3 capitalize text-slate-600">{t.plan}</td>
+                <td className="px-4 py-3 font-semibold text-emerald-600">{fmt(t.monthlyRevenue)}</td>
+                <td className="px-4 py-3 text-slate-400 text-xs">{t.planExpiresAt ? new Date(t.planExpiresAt).toLocaleDateString() : '—'}</td>
+              </tr>
+            )))}</tbody>
+          </table>
+        </div>
+        <div className="border-t border-slate-100 bg-white p-2">
+          <DataTablePagination
+            page={topTenantsPage}
+            limit={topTenantsLimit}
+            total={topTenants.length}
+            totalPages={topTenantsTotalPages}
+            onPageChange={setTopTenantsPage}
+            onLimitChange={(newLimit) => {
+              setTopTenantsLimit(newLimit);
+              setTopTenantsPage(1);
+            }}
+          />
+        </div>
       </div>
     </div>
   );
 }
+

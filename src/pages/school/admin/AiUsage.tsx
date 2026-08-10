@@ -36,6 +36,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { CustomSelect } from '@/components/ui/CustomSelect';
+import { DataTablePagination } from '@/components/ui/data-table-pagination';
 // Sheet is still used by AuditLogSheet for the log detail pop-out
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -1429,8 +1430,8 @@ function BillingTab({
   const [rows, setRows] = useState<BillingReportRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [mobilePage, setMobilePage] = useState(1);
-  const mobileLimit = 10;
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
@@ -1450,10 +1451,12 @@ function BillingTab({
     return true;
   }), [rows, filterSchool, filterFeature]);
 
-  useEffect(() => { setMobilePage(1); }, [filterSchool, filterFeature]);
+  useEffect(() => { setPage(1); }, [filterSchool, filterFeature, fromDate, toDate]);
 
-  const mobileTotalPages = Math.ceil(filtered.length / mobileLimit);
-  const mobileFiltered = filtered.slice((mobilePage - 1) * mobileLimit, mobilePage * mobileLimit);
+  const totalPages = Math.ceil(filtered.length / limit) || 1;
+  const paginatedRows = useMemo(() => {
+    return filtered.slice((page - 1) * limit, page * limit);
+  }, [filtered, page, limit]);
 
   const totals = useMemo(() => ({
     requests: filtered.reduce((s, r) => s + (Number(r.requests) || 0), 0),
@@ -1499,10 +1502,10 @@ function BillingTab({
             {/* Mobile View: Vertical Cards */}
             <div className="sm:hidden bg-white">
               <div className="divide-y divide-slate-100">
-                {mobileFiltered.length === 0 ? (
+                {paginatedRows.length === 0 ? (
                   <div className="py-12 text-center text-sm text-slate-400">No billing data for this period.</div>
                 ) : (
-                  mobileFiltered.map((r, i) => {
+                  paginatedRows.map((r, i) => {
                     const cpr = r.requests > 0 ? r.cost / r.requests : 0;
                     return (
                       <div key={i} className="p-4 space-y-2">
@@ -1526,38 +1529,6 @@ function BillingTab({
                   })
                 )}
               </div>
-
-              {/* Mobile Pagination Controls */}
-              {mobileTotalPages > 0 && (
-                <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
-                  <p className="text-xs font-semibold text-slate-400">
-                    Page {mobilePage} of {mobileTotalPages}
-                  </p>
-                  <div className="flex items-center gap-1">
-                    <button disabled={mobilePage === 1} onClick={() => setMobilePage(p => p - 1)}
-                      className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-30 hover:bg-slate-50 text-slate-600">
-                      <ChevronLeft size={14} />
-                    </button>
-                    {Array.from({ length: Math.min(3, mobileTotalPages) }).map((_, idx) => {
-                      let p = mobilePage;
-                      if (mobilePage === 1) p = 1 + idx;
-                      else if (mobilePage === mobileTotalPages) p = mobileTotalPages - 2 + idx;
-                      else p = mobilePage - 1 + idx;
-                      if (p < 1 || p > mobileTotalPages) return null;
-                      return (
-                        <button key={p} onClick={() => setMobilePage(p)}
-                          className={`w-7 h-7 rounded-lg text-xs font-bold transition-colors ${p === mobilePage ? 'bg-brand-600 text-white' : 'border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
-                          {p}
-                        </button>
-                      );
-                    })}
-                    <button disabled={mobilePage === mobileTotalPages} onClick={() => setMobilePage(p => p + 1)}
-                      className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-30 hover:bg-slate-50 text-slate-600">
-                      <ChevronRight size={14} />
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Desktop View: Table */}
@@ -1575,10 +1546,10 @@ function BillingTab({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {filtered.length === 0 ? (
+                  {paginatedRows.length === 0 ? (
                     <tr><td colSpan={7} className="py-12 text-center text-sm text-slate-400">No billing data for this period.</td></tr>
                   ) : (
-                    filtered.map((r, i) => {
+                    paginatedRows.map((r, i) => {
                       const cpr = r.requests > 0 ? r.cost / r.requests : 0;
                       return (
                         <tr key={i} className="hover:bg-slate-50/50 transition-colors">
@@ -1607,6 +1578,21 @@ function BillingTab({
                 )}
               </table>
             </div>
+
+            {/* Pagination Controls */}
+            <div className="border-t border-slate-100 bg-white p-2">
+              <DataTablePagination
+                page={page}
+                limit={limit}
+                total={filtered.length}
+                totalPages={totalPages}
+                onPageChange={setPage}
+                onLimitChange={(newLimit) => {
+                  setLimit(newLimit);
+                  setPage(1);
+                }}
+              />
+            </div>
           </>
         )}
       </div>
@@ -1631,6 +1617,7 @@ function AuditLogsTab({
   const [logs, setLogs] = useState<RawAiLog[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
+  const [limit, setLimit] = useState(10);
   const [loading, setLoading] = useState(false);
   const [filterStatus, setFilterStatus] = useState('');
   const [selectedLog, setSelectedLog] = useState<RawAiLog | null>(null);
@@ -1641,14 +1628,6 @@ function AuditLogsTab({
 
   useEffect(() => { setSelectedSchool(filterSchool); }, [filterSchool]);
   useEffect(() => { setSelectedFeature(filterFeature); }, [filterFeature]);
-
-  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 640 : false);
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 640);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-  const limit = isMobile ? 10 : 50;
 
   const tenantType = useAuthStore(s => s.tenantType);
   const isCoaching = tenantType === 'coaching';
@@ -1670,7 +1649,7 @@ function AuditLogsTab({
       setTotal(res.total);
     } catch { /* silent */ }
     finally { setLoading(false); }
-  }, [selectedSchool, selectedFeature, fromDate, toDate, page, isSuper, productType, limit]);
+  }, [selectedSchool, selectedFeature, fromDate, toDate, page, limit, isSuper, productType]);
 
   useEffect(() => { setPage(0); }, [selectedSchool, selectedFeature, filterStatus, fromDate, toDate]);
   useEffect(() => { void load(); }, [load]);
@@ -1684,6 +1663,8 @@ function AuditLogsTab({
   }, [logs, filterStatus]);
 
   const openLog = (log: RawAiLog) => { setSelectedLog(log); setLogSheetOpen(true); };
+
+  const totalPages = Math.ceil(total / limit) || 1;
 
   return (
     <div className="space-y-4">
@@ -1762,7 +1743,7 @@ function AuditLogsTab({
                       </div>
                     </div>
 
-                    <div className="flex justify-between text-xs text-slate-500">
+                    <div className="flex justify-between text-xs text-[#64748b]">
                       <span>{new Date(log.created_at).toLocaleString()}</span>
                       <span className="font-black text-amber-600">{money(log.est_cost)}</span>
                     </div>
@@ -1839,39 +1820,19 @@ function AuditLogsTab({
         )}
 
         {/* Pagination */}
-        {total > 0 && (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-t border-slate-100 px-5 py-4 sm:py-3 gap-3">
-            <p className="text-xs font-semibold text-slate-400 text-center sm:text-left">
-              Showing {page * limit + 1}–{Math.min((page + 1) * limit, total)} of {total.toLocaleString()} logs
-            </p>
-            <div className="flex items-center justify-center gap-1.5 sm:gap-2">
-              <button disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}
-                className="inline-flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 gap-1 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 disabled:opacity-30 hover:bg-slate-50 transition-colors">
-                <ChevronLeft size={14} /> <span className="hidden sm:inline">Previous</span>
-              </button>
-
-              {Array.from({ length: Math.min(3, Math.ceil(total / limit)) }).map((_, idx) => {
-                const totalPages = Math.ceil(total / limit);
-                let p = page + 1;
-                if (page === 0) p = 1 + idx;
-                else if (page === totalPages - 1) p = totalPages - 2 + idx;
-                else p = page + idx;
-                if (p < 1 || p > totalPages) return null;
-                return (
-                  <button key={p} onClick={() => setPage(p - 1)}
-                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-xs font-bold transition-colors ${p === page + 1 ? 'bg-brand-600 text-white shadow-sm' : 'border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
-                    {p}
-                  </button>
-                );
-              })}
-
-              <button disabled={(page + 1) * limit >= total} onClick={() => setPage(p => p + 1)}
-                className="inline-flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 gap-1 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 disabled:opacity-30 hover:bg-slate-50 transition-colors">
-                <span className="hidden sm:inline">Next</span> <ChevronRight size={14} />
-              </button>
-            </div>
-          </div>
-        )}
+        <div className="border-t border-slate-100 bg-white p-2">
+          <DataTablePagination
+            page={page + 1}
+            limit={limit}
+            total={total}
+            totalPages={totalPages}
+            onPageChange={(p) => setPage(p - 1)}
+            onLimitChange={(newLimit) => {
+              setLimit(newLimit);
+              setPage(0);
+            }}
+          />
+        </div>
       </div>
 
       <AuditLogSheet log={selectedLog} open={logSheetOpen} onClose={() => setLogSheetOpen(false)} />

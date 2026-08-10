@@ -512,6 +512,38 @@ export const formatMarkdown = (text?: string) => {
     }
   );
 
+  // Strip page reference tags like [p.5] or [p. 5] attached to math or text
+  formatted = formatted.replace(/\[p\.\s*\d+\]/gi, "").replace(/\[page\s*\d+\]/gi, "");
+
+  // Clean up 4 or 3 dollar sequences: $$$$ -> $$, $$$ -> $$
+  formatted = formatted.replace(/\$\$\$\$/g, "$$").replace(/\$\$\$/g, "$$");
+
+  // ── Step 1: Strip stray $ signs that appear inside prose function call arguments
+  // e.g. LCM(306, $657) or $657) → removes the stray $ before digits followed by ) or ,
+  formatted = formatted.replace(/\$(\d+)([),])/g, "$1$2");
+  // Strip orphan $ = $ patterns (dollar-wrapped equals signs): $ = $ → =
+  formatted = formatted.replace(/\$\s*=\s*\$/g, " = ");
+
+
+  // ── Step 2: Unnest single dollar signs inside double-dollar display math blocks $$ ... $$
+  formatted = formatted.replace(/\$\$([\s\S]*?)\$\$/g, (_m, inner) => {
+    const cleanedInner = inner.replace(/(?<!\$)\$(?!\$)/g, "");
+    return `$$\n${cleanedInner.trim()}\n$$`;
+  });
+
+  // ── Step 3: Fix partial inline math where left side of equation is outside $
+  // e.g. LCM(p, q, r) = $\frac{...}$ → $LCM(p, q, r) = \frac{...}$
+  formatted = formatted.replace(
+    /(^|\n)([ \t]*[A-Za-z0-9_(),\s]+\s*=\s*)\$([^$\n]+)\$/g,
+    (_m, newline, left, inner) => {
+      const words = (left.match(/\b[A-Za-z]{4,}\b/g) || []);
+      if (words.length > 2) return `${newline}${left}$${inner}$`;
+      const cleanInner = inner.replace(/\\quad\s*$/g, "").trim();
+      return `${newline}$${left.trim()} ${cleanInner}$`;
+    }
+  );
+
+
   formatted = normalizeBrokenMathText(formatted);
   formatted = unwrapMathCodeSpans(formatted);
   formatted = wrapFullEquationLines(formatted);
@@ -607,6 +639,12 @@ export const formatMarkdown = (text?: string) => {
   formatted = formatted.replace(/(Q\d+\..*?)\r?\n(A\..*?)/gi, '$1\n\n$2');
 
   formatted = replaceNewlinesOutsideMath(formatted);
+
+  // Separate adjacent inline math blocks that are on the same line separated only by spaces.
+  // remark-math fails to parse two $...$ blocks on the same line — inserting \n\n between
+  // them makes each its own paragraph which remark-math handles correctly.
+  // e.g. $LCM(...)$ $HCF(...)$ → $LCM(...)$\n\n$HCF(...)$
+  formatted = formatted.replace(/(\$)[ \t]+(\$)/g, '$1\n\n$2');
 
   // Pull standalone question numbers onto the same line as question text AFTER newlines normalization
   const pullRegex = /((?:^|\n)\s*(?:Q\s*)?\d{1,3}[.)])\s*(?:\r?\n)+\s*(?!(?:[A-E][.):]\s*|\([A-E]\)\s*|Q?\d{1,3}[.)]\s*|#{1,6}\s|[-*+]\s))/gi;
@@ -1120,7 +1158,7 @@ export function MarkdownRenderer({ content, className, imageMap, highlights = []
     <div className={cn("prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-slate-900 prose-pre:text-slate-100", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex]}
+        rehypePlugins={[[rehypeKatex, { strict: false, throwOnError: false }]] as any}
         components={customComponents}
       >
         {formatMarkdown(content)}

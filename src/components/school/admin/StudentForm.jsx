@@ -74,21 +74,7 @@ const SectionHeader = ({ title, description, badge }) => (
   </div>
 );
 
-const AIAssistantCard = ({ message }) => (
-  <motion.div 
-    initial={{ opacity: 0, scale: 0.95 }}
-    animate={{ opacity: 1, scale: 1 }}
-    className="bg-gradient-to-br from-blue-600/5 to-indigo-600/5 border border-blue-500/10 rounded-2xl p-5 mb-8 flex gap-4 items-start"
-  >
-    <div className="p-2 bg-blue-600 rounded-xl shadow-lg shadow-blue-600/20 shrink-0">
-      <Sparkles className="text-white" size={20} />
-    </div>
-    <div>
-      <h4 className="text-sm font-bold tracking-tight text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-1">EDDVA AI Insight</h4>
-      <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 leading-relaxed">{message}</p>
-    </div>
-  </motion.div>
-);
+const AIAssistantCard = () => null;
 
 export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoading }) {
   const [currentStep, setCurrentStep] = useState(1);
@@ -542,21 +528,7 @@ const SectionHeader = ({ title, description, badge }) => (
   </div>
 );
 
-const AIAssistantCard = ({ message }) => (
-  <motion.div 
-    initial={{ opacity: 0, scale: 0.95 }}
-    animate={{ opacity: 1, scale: 1 }}
-    className="bg-gradient-to-br from-blue-600/5 to-indigo-600/5 border border-blue-500/10 rounded-2xl p-5 mb-8 flex gap-4 items-start"
-  >
-    <div className="p-2 bg-blue-600 rounded-xl shadow-lg shadow-blue-600/20 shrink-0">
-      <Sparkles className="text-white" size={20} />
-    </div>
-    <div>
-      <h4 className="text-sm font-bold tracking-tight text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-1">EDDVA AI Insight</h4>
-      <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 leading-relaxed">{message}</p>
-    </div>
-  </motion.div>
-);
+const AIAssistantCard = () => null;
 
 // --- Main Component ---
 

@@ -148,21 +148,7 @@ const SectionHeader = ({ title, description, badge }) => (
   </div>
 );
 
-const AIAssistantCard = ({ message }) => (
-  <motion.div
-    initial={{ opacity: 0, scale: 0.95 }}
-    animate={{ opacity: 1, scale: 1 }}
-    className="bg-gradient-to-br from-blue-600/5 to-indigo-600/5 border border-blue-500/10 rounded-2xl p-5 mb-8 flex gap-4 items-start"
-  >
-    <div className="p-2 bg-blue-600 rounded-xl shadow-lg shadow-blue-600/20 shrink-0">
-      <Sparkles className="text-white" size={20} />
-    </div>
-    <div>
-      <h4 className="text-sm font-bold tracking-tight text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-1">EDDVA AI Insight</h4>
-      <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 leading-relaxed">{message}</p>
-    </div>
-  </motion.div>
-);
+const AIAssistantCard = () => null;
 
 const StepIntroCard = () => (
   <div className="rounded-[26px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -207,6 +193,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
   const [formData, setFormData] = useState({
     name: '', email: '', password: '', confirmPassword: '', phone: '',
     dob: '', gender: '', bloodGroup: '', nationalId: '', profileImage: null,
+    casteCategory: '', previousSchoolName: '', previousAdmissionNo: '', reasonForTransfer: '', boardRegistrationNo: '', boardName: '',
     enrollmentNo: '', rollNo: '', classId: '', sectionId: '', admissionDate: '',
     primaryContact: 'father', fatherName: '', fatherPhone: '', motherName: '', motherPhone: '', parentPhone: '', parentEmail: '', whatsappNumber: '', parentOccupation: '', annualIncome: '', guardianName: '', guardianRelation: '', guardianPhone: '', createParentLogin: true, sendViaSms: true, sendViaEmail: false,
     currentAddress: '', permanentAddress: '', city: '', state: '', pinCode: '',
@@ -300,6 +287,12 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
         ...student,
         ...profile,
         classId: studentClassId,
+        casteCategory: profile.casteCategory || profile.caste_category || student.casteCategory || '',
+        previousSchoolName: profile.previousSchoolName || profile.previous_school_name || student.previousSchoolName || '',
+        previousAdmissionNo: profile.previousAdmissionNo || profile.previous_admission_no || student.previousAdmissionNo || '',
+        reasonForTransfer: profile.reasonForTransfer || profile.reason_for_transfer || student.reasonForTransfer || '',
+        boardRegistrationNo: profile.boardRegistrationNo || profile.board_registration_no || student.boardRegistrationNo || '',
+        boardName: profile.boardName || profile.board_name || student.boardName || '',
         dob: formatInputDate(profile.dob || student.dob),
         admissionDate: formatInputDate(profile.admissionDate || student.admissionDate),
         primaryContact,
@@ -601,13 +594,14 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                 required
               />
               <FloatingSelect label="Blood Group" name="bloodGroup" value={formData.bloodGroup} onChange={handleChange} options={BLOOD_GROUP_OPTIONS} />
+              <FloatingSelect label="Category" name="casteCategory" value={formData.casteCategory} onChange={handleChange} options={['', 'General', 'OBC', 'SC', 'ST', 'EWS', 'Other']} />
             </div>
           </motion.div>
         );
       case 2:
         return (
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-            <SectionHeader title="Academic Details" description="Enrollment and class assignment." badge="Enrollment" />
+            <SectionHeader title="Academic & Previous School Details" description="Enrollment, class assignment, and previous school info." badge="Enrollment" />
             <div className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-2">
               <div className="flex gap-2">
                 <div className="flex-1">
@@ -648,6 +642,22 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                 error={errors.sectionId}
                 required
               />
+            </div>
+
+            {/* Previous School & Board Information */}
+            <div className="mb-6 p-4 rounded-2xl border border-slate-100 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-900/40">
+              <h4 className="text-xs font-black uppercase tracking-widest text-slate-700 dark:text-slate-200 mb-3">
+                Previous School & Board Details (For Transfer Students)
+              </h4>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <FloatingInput label="Previous School Name" name="previousSchoolName" value={formData.previousSchoolName} onChange={handleChange} icon={GraduationCap} />
+                <FloatingInput label="Previous Admission / Reg No" name="previousAdmissionNo" value={formData.previousAdmissionNo} onChange={handleChange} icon={Fingerprint} />
+                <FloatingInput label="Reason for Transfer" name="reasonForTransfer" value={formData.reasonForTransfer} onChange={handleChange} />
+                <div className="grid grid-cols-2 gap-2">
+                  <FloatingInput label="Board Name (CBSE/ICSE/State)" name="boardName" value={formData.boardName} onChange={handleChange} />
+                  <FloatingInput label="Board Reg No" name="boardRegistrationNo" value={formData.boardRegistrationNo} onChange={handleChange} />
+                </div>
+              </div>
             </div>
 
             {formData.sectionId && (
@@ -875,12 +885,25 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
       case 5:
         return (
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-            <SectionHeader title="Document Uploads" description="Upload necessary certificates." badge="Docs" />
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {['Birth Certificate', 'Aadhar Card', 'Previous Marksheet', 'Transfer Certificate'].map(doc => {
+            <SectionHeader title="Document Uploads" description="Upload student identity, previous school, board, and category documents." badge="Docs" />
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {[
+                'Birth Certificate',
+                'Aadhaar Card',
+                'Medical / Health Record',
+                'Transfer Certificate (TC)',
+                'Previous Report Card',
+                'Character Certificate',
+                'Fee Clearance Certificate',
+                'Migration Certificate',
+                'Promotion / Pass Certificate',
+                'Parent / Guardian ID',
+                'Address Proof',
+                'Caste / Category Certificate',
+              ].map(doc => {
                 const hasDoc = formData.documents?.[doc];
                 return (
-                  <div key={doc} className="relative min-h-40 p-5 rounded-3xl border-2 border-dashed border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col items-center justify-center group hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer overflow-hidden text-center">
+                  <div key={doc} className="relative min-h-36 p-4 rounded-2xl border-2 border-dashed border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col items-center justify-center group hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer overflow-hidden text-center">
                     <input
                       type="file"
                       accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
@@ -889,27 +912,27 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                     />
                     {hasDoc ? (
                       <div className="flex flex-col items-center">
-                        <CheckCircle className="text-emerald-500 mb-2" size={32} />
-                        <h6 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white mb-1">{doc} Uploaded</h6>
-                        <div className="flex gap-2 mt-2 relative z-20">
+                        <CheckCircle className="text-emerald-500 mb-1" size={24} />
+                        <h6 className="text-xs font-bold tracking-tight text-slate-900 dark:text-white mb-0.5">{doc} Uploaded</h6>
+                        <div className="flex gap-1.5 mt-1.5 relative z-20">
                           <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); if (hasDoc) window.open(hasDoc, '_blank', 'noopener,noreferrer'); }}
-                            className="px-3 py-1 bg-white text-blue-600 rounded-lg text-xs font-bold shadow-sm hover:bg-blue-50"
+                            className="px-2.5 py-0.5 bg-white text-blue-600 rounded-lg text-[10px] font-bold shadow-sm hover:bg-blue-50"
                           >Preview</button>
                           <a
                             href={hasDoc}
-                            download={`${doc.replace(' ', '_')}`}
+                            download={`${doc.replace(/\s+/g, '_')}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="px-3 py-1 bg-white text-emerald-600 rounded-lg text-xs font-bold shadow-sm hover:bg-emerald-50"
+                            className="px-2.5 py-0.5 bg-white text-emerald-600 rounded-lg text-[10px] font-bold shadow-sm hover:bg-emerald-50"
                           >Download</a>
                         </div>
                       </div>
                     ) : (
                       <>
-                        <Upload className="text-blue-500 mb-4 group-hover:scale-110 transition-transform" size={24} />
-                        <h6 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white mb-1">{doc}</h6>
-                        <p className="text-xs font-bold text-slate-400">PDF, DOC, JPG up to 5MB</p>
+                        <Upload className="text-blue-500 mb-2 group-hover:scale-110 transition-transform" size={20} />
+                        <h6 className="text-xs font-bold tracking-tight text-slate-900 dark:text-white mb-0.5">{doc}</h6>
+                        <p className="text-[10px] font-semibold text-slate-400">PDF, JPG up to 5MB</p>
                       </>
                     )}
                   </div>

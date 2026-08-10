@@ -89,6 +89,8 @@ function buildInstituteGroups(mods) {
         { path: '/school/admin/admins', label: 'Administrators', icon: Shield },
         { path: '/school/admin/academics', label: 'Classes & Curriculum', icon: Building2 },
         { path: '/school/admin/subjects', label: 'Subjects', icon: BookOpen },
+        { path: '/school/admin/syllabus-tracker', label: 'Syllabus Tracker', icon: BarChart3 },
+        { path: '/school/admin/syllabus-planner', label: 'Syllabus Planner', icon: FileText },
         { path: '/school/admin/textbook-coverage', label: 'Textbooks', icon: Library },
       ],
     },
@@ -140,6 +142,7 @@ function buildTeacherGroups(mods, aiFeats) {
       heading: 'Teaching',
       items: [
         { path: '/school/teacher', label: 'Dashboard', icon: LayoutDashboard, end: true },
+        { path: '/school/teacher/teaching-plan', label: 'My Teaching Plan', icon: ClipboardList },
         { path: '/school/teacher/course-content', label: 'Course Content', icon: BookOpen },
         { path: '/school/teacher/textbook-coverage', label: 'Textbook Coverage', icon: Library },
         liveEnabled && { path: '/school/teacher/classes', label: 'My Schedule', icon: Video },

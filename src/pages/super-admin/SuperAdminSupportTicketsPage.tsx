@@ -29,6 +29,7 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { CustomSelect } from '@/components/ui/CustomSelect';
+import { DataTablePagination } from '@/components/ui/data-table-pagination';
 
 export default function SuperAdminSupportTicketsPage() {
   const navigate = useNavigate();
@@ -38,7 +39,7 @@ export default function SuperAdminSupportTicketsPage() {
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const limit = 10;
+  const [limit, setLimit] = useState(10);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -57,7 +58,7 @@ export default function SuperAdminSupportTicketsPage() {
 
   useEffect(() => {
     loadTickets();
-  }, [activeTab, page, search, selectedCategory, selectedPriority, selectedStatus]);
+  }, [activeTab, page, limit, search, selectedCategory, selectedPriority, selectedStatus]);
 
   async function loadTickets() {
     setLoading(true);
@@ -97,6 +98,26 @@ export default function SuperAdminSupportTicketsPage() {
       setLoading(false);
     }
   }
+
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+    setPage(1);
+  };
+
+  const handleCategoryChange = (val: string) => {
+    setSelectedCategory(val);
+    setPage(1);
+  };
+
+  const handlePriorityChange = (val: string) => {
+    setSelectedPriority(val);
+    setPage(1);
+  };
+
+  const handleStatusChange = (val: string) => {
+    setSelectedStatus(val);
+    setPage(1);
+  };
 
   const totalPages = Math.ceil(total / limit) || 1;
 
@@ -195,7 +216,7 @@ export default function SuperAdminSupportTicketsPage() {
               type="text"
               placeholder="Search ID, subject, institute..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="w-full rounded-xl border border-slate-200 pl-10 pr-4 py-2 text-xs font-medium text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:outline-none"
             />
           </div>
@@ -203,7 +224,7 @@ export default function SuperAdminSupportTicketsPage() {
           <div>
             <CustomSelect
               value={selectedCategory}
-              onChange={(val) => setSelectedCategory(val)}
+              onChange={(val) => handleCategoryChange(val)}
               options={[
                 { value: "", label: "All Categories" },
                 ...TICKET_CATEGORIES.map((c) => ({ value: c, label: c })),
@@ -215,7 +236,7 @@ export default function SuperAdminSupportTicketsPage() {
           <div>
             <CustomSelect
               value={selectedPriority}
-              onChange={(val) => setSelectedPriority(val)}
+              onChange={(val) => handlePriorityChange(val)}
               options={[
                 { value: "", label: "All Priorities" },
                 ...TICKET_PRIORITIES.map((p) => ({
@@ -230,7 +251,7 @@ export default function SuperAdminSupportTicketsPage() {
           <div>
             <CustomSelect
               value={selectedStatus}
-              onChange={(val) => setSelectedStatus(val)}
+              onChange={(val) => handleStatusChange(val)}
               options={[
                 { value: "", label: "All Statuses" },
                 ...TICKET_STATUSES.map((s) => ({
@@ -427,30 +448,21 @@ export default function SuperAdminSupportTicketsPage() {
         </div>
 
         {/* Pagination Footer */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-slate-100 px-6 py-4 bg-white">
-            <p className="text-xs text-slate-500">
-              Showing page <strong>{page}</strong> of <strong>{totalPages}</strong> ({total} total tickets)
-            </p>
-            <div className="flex gap-2">
-              <button
-                disabled={page <= 1}
-                onClick={() => setPage((p) => p - 1)}
-                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
-              >
-                Previous
-              </button>
-              <button
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => p + 1)}
-                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
+        <div className="border-t border-slate-100 bg-white p-2">
+          <DataTablePagination
+            page={page}
+            limit={limit}
+            total={total}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            onLimitChange={(newLimit) => {
+              setLimit(newLimit);
+              setPage(1);
+            }}
+          />
+        </div>
       </div>
     </div>
   );
 }
+

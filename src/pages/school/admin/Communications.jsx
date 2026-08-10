@@ -838,30 +838,34 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]',
 
         {/* Column 1: Full Width Contacts List (Shown when no chat selected) */}
         <div className={`w-full border-r border-slate-100 flex flex-col shrink-0 min-h-0 bg-slate-50/10 transition-all ${selectedUser ? 'hidden' : 'flex-1 flex'}`}>
-          <div className="p-4 bg-white border-b border-slate-100/60 shrink-0 space-y-3">
-            {isSuperAdmin && institutes.length > 0 && (
-              <CustomSelect
-                value={instituteFilter}
-                onChange={(val) => setInstituteFilter(val)}
-                options={[
-                  { value: "", label: "All Schools" },
-                  ...institutes.map(inst => ({ value: inst.id, label: inst.name }))
-                ]}
-                className="w-full"
-              />
-            )}
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={`Search ${activePanel === 'TEACHER' ? 'teachers' :
-                    activePanel === 'PARENT' ? 'parents' :
-                      activePanel === 'INSTITUTE_ADMIN' ? 'institute admins' :
-                        'super admin'
-                  }...`}
-                className="w-full rounded-2xl border border-slate-100 bg-slate-50/50 py-2 pl-9 pr-3 text-xs font-semibold outline-none focus:border-blue-400 focus:bg-white transition"
-              />
+          <div className="p-4 bg-white border-b border-slate-100/60 shrink-0">
+            <div className="flex flex-col sm:flex-row items-center gap-2.5">
+              {isSuperAdmin && institutes.length > 0 && (
+                <div className="w-full sm:w-48 sm:shrink-0">
+                  <CustomSelect
+                    value={instituteFilter}
+                    onChange={(val) => setInstituteFilter(val)}
+                    options={[
+                      { value: "", label: "All Schools" },
+                      ...institutes.map(inst => ({ value: inst.id, label: inst.name }))
+                    ]}
+                    className="w-full"
+                  />
+                </div>
+              )}
+              <div className="relative flex-1 w-full">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={`Search ${activePanel === 'TEACHER' ? 'teachers' :
+                      activePanel === 'PARENT' ? 'parents' :
+                        activePanel === 'INSTITUTE_ADMIN' ? 'institute admins' :
+                          'super admin'
+                    }...`}
+                  className="w-full rounded-2xl border border-slate-100 bg-slate-50/50 py-2 pl-9 pr-3 text-xs font-semibold outline-none focus:border-blue-400 focus:bg-white transition"
+                />
+              </div>
             </div>
           </div>
 

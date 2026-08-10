@@ -607,8 +607,8 @@ export default function SuperAdminCommunication() {
           {/* Log ───────────────────────────────────────────────────── */}
           {activeTab === 'log' && (
             <div>
-              <div className="mb-4 flex flex-wrap items-center gap-3">
-                <div className="w-56 shrink-0">
+              <div className="mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="w-full sm:w-56 shrink-0">
                   <CustomSelect
                     onChange={setLogCategory}
                     value={logCategory}
@@ -620,7 +620,7 @@ export default function SuperAdminCommunication() {
                   />
                 </div>
                 {isSuperAdminRoute && institutes.length > 0 && (
-                  <div className="w-56 shrink-0">
+                  <div className="w-full sm:w-56 shrink-0">
                     <CustomSelect
                       value={logInstitute}
                       onChange={setLogInstitute}
@@ -632,7 +632,7 @@ export default function SuperAdminCommunication() {
                     />
                   </div>
                 )}
-                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 flex-1 min-w-48">
+                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 flex-1 min-w-48 w-full">
                   <Search className="h-4 w-4 shrink-0 text-slate-400" />
                   <input
                     placeholder="Search by title or message…"
