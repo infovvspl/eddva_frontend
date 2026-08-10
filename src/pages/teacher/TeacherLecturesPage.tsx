@@ -5626,12 +5626,70 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
       }),
     [live],
   );
+
+  const [coachingLiveStatusFilter, setCoachingLiveStatusFilter] = useState<'all' | 'scheduled' | 'ongoing' | 'finished'>('all');
+
+  const coachingLiveCounts = useMemo(() => {
+    let scheduled = 0;
+    let ongoing = 0;
+    let finished = 0;
+
+    sortedLive.forEach((l) => {
+      if (l.status === 'live') ongoing++;
+      else if (l.status === 'ended') finished++;
+      else scheduled++;
+    });
+
+    broadcastLectures.forEach((b) => {
+      if (resolvedBatchId && b.batchId && b.batchId !== resolvedBatchId) return;
+      const isLive = b.status === 'LIVE';
+      const isEnded = b.status === 'ENDED' || b.status === 'PROCESSED' || !!b.recordingUrl;
+      if (isLive) ongoing++;
+      else if (isEnded) finished++;
+      else scheduled++;
+    });
+
+    return { all: scheduled + ongoing + finished, scheduled, ongoing, finished };
+  }, [sortedLive, broadcastLectures, resolvedBatchId]);
+
+  const filteredLiveClasses = useMemo(() => {
+    return sortedLive.filter((l) => {
+      const isLive = l.status === 'live';
+      const isEnded = l.status === 'ended';
+      const isScheduled = !isLive && !isEnded;
+
+      if (coachingLiveStatusFilter === 'ongoing') return isLive;
+      if (coachingLiveStatusFilter === 'scheduled') return isScheduled;
+      if (coachingLiveStatusFilter === 'finished') return isEnded;
+      return true;
+    });
+  }, [sortedLive, coachingLiveStatusFilter]);
+
+  const filteredBroadcasts = useMemo(() => {
+    const list = broadcastLectures.filter(b => {
+      if (!resolvedBatchId) return true;
+      if (b.batchId) return b.batchId === resolvedBatchId;
+      return all.some(l => l.title.trim().toLowerCase() === b.title.trim().toLowerCase());
+    });
+
+    return list.filter((b) => {
+      const isLive = b.status === 'LIVE';
+      const isEnded = b.status === 'ENDED' || b.status === 'PROCESSED' || !!b.recordingUrl;
+      const isScheduled = !isLive && !isEnded;
+
+      if (coachingLiveStatusFilter === 'ongoing') return isLive;
+      if (coachingLiveStatusFilter === 'scheduled') return isScheduled;
+      if (coachingLiveStatusFilter === 'finished') return isEnded;
+      return true;
+    });
+  }, [broadcastLectures, resolvedBatchId, all, coachingLiveStatusFilter]);
   const initialBatchSize = isCompactLayout ? 8 : 14;
   const loadMoreBatchSize = isCompactLayout ? 6 : 10;
   const [recordedVisibleCount, setRecordedVisibleCount] = useState(initialBatchSize);
   const [liveVisibleCount, setLiveVisibleCount] = useState(initialBatchSize);
   const [showAllLiveClasses, setShowAllLiveClasses] = useState(false);
   const [showAllObsSessions, setShowAllObsSessions] = useState(false);
+  const [showAllCoachingRecordedLectures, setShowAllCoachingRecordedLectures] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -6055,11 +6113,11 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className={cn("w-full sm:pt-4 sm:pb-20 sm:px-6 lg:px-8 space-y-[30px] sm:space-y-[30px]", lightMotion && "lite-motion")}
+          className={cn("w-full space-y-6", lightMotion && "lite-motion")}
         >
 
           {/* ── Main Card Header ── */}
-          <div className="bg-sky-50/70 md:bg-white border border-blue-200/80 md:border-slate-100 rounded-3xl p-3.5 sm:p-6 shadow-md md:shadow-sm shadow-blue-100/40 flex items-center justify-between gap-2 flex-nowrap transition-all">
+          <div className="bg-blue-100 border border-blue-200/80 rounded-[2rem] p-4 sm:px-6 sm:py-5 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 flex items-center justify-between gap-2 flex-nowrap transition-all duration-300">
             <div className="min-w-0 flex-1">
               <h1 className="text-lg sm:text-2xl font-black text-slate-900 leading-tight whitespace-nowrap truncate">
                 {defaultTab === "live" ? "Live Classes" : "Recorded Lectures"}
@@ -6214,7 +6272,7 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
               </div>
             ) : (
               <div className="space-y-3">
-                {visibleRecorded.map(l => (
+                {(showAllCoachingRecordedLectures ? visibleRecorded : visibleRecorded.slice(0, 4)).map(l => (
                   <RecordedCard
                     key={l.id}
                     lecture={l}
@@ -6234,91 +6292,149 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
                     onAssignments={() => setAssignmentLecture(l)}
                   />
                 ))}
-                <p className="text-xs text-slate-500 px-1">
-                  Showing {visibleRecorded.length} of {recorded.length} recorded lectures
-                </p>
+                <div className="flex items-center justify-between px-1 flex-wrap gap-2 pt-1">
+                  <p className="text-xs text-slate-500">
+                    Showing {Math.min(showAllCoachingRecordedLectures ? recorded.length : 4, recorded.length)} of {recorded.length} recorded lectures
+                  </p>
+                  {recorded.length > 4 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllCoachingRecordedLectures(v => !v)}
+                      className="px-4 py-1.5 text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors inline-flex items-center gap-1.5"
+                    >
+                      <span>{showAllCoachingRecordedLectures ? "Show Less" : `Show ${recorded.length - 4} more`}</span>
+                      <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", showAllCoachingRecordedLectures ? "-rotate-90" : "rotate-90")} />
+                    </button>
+                  )}
+                </div>
               </div>
             )
           ) : (
             <div className="space-y-6">
+              {/* ── Status Filter Bar ── */}
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <span className="text-[11px] font-black uppercase tracking-widest text-slate-400 hidden sm:inline-block mr-1">Status</span>
+                {[
+                  { id: 'all', label: 'All Classes', count: coachingLiveCounts.all },
+                  { id: 'scheduled', label: 'Scheduled', count: coachingLiveCounts.scheduled },
+                  { id: 'ongoing', label: 'Ongoing (Live)', count: coachingLiveCounts.ongoing },
+                  { id: 'completed', label: 'Completed', count: coachingLiveCounts.completed ?? coachingLiveCounts.finished },
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setCoachingLiveStatusFilter(t.id as any)}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all',
+                      coachingLiveStatusFilter === t.id
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    )}
+                  >
+                    {t.id === 'ongoing' && (
+                      <span className="relative flex h-2 w-2">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
+                        <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-500" />
+                      </span>
+                    )}
+                    <span>{t.label}</span>
+                    <span className={cn(
+                      'rounded-md px-1.5 py-0.5 text-[10px] font-black',
+                      coachingLiveStatusFilter === t.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                    )}>
+                      {t.count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
               {/* ── Scheduled / Agora live classes ── */}
-              {live.length === 0 ? (
+              {filteredLiveClasses.length === 0 && filteredBroadcasts.length === 0 ? (
                 <div className="flex flex-col items-center justify-center p-6 sm:p-8 md:p-12 rounded-3xl border-2 border-dashed border-slate-200 text-center">
                   <Radio className="w-14 h-14 text-gray-800 mb-3" />
-                  <p className="text-sm font-bold text-slate-400">No live classes scheduled</p>
-                  <p className="text-xs text-gray-600 mt-1">Click "Schedule Live" to schedule your first class.</p>
+                  <p className="text-sm font-bold text-slate-400">
+                    {coachingLiveStatusFilter === 'ongoing'
+                      ? 'No ongoing live classes'
+                      : coachingLiveStatusFilter === 'scheduled'
+                        ? 'No scheduled live classes'
+                        : (coachingLiveStatusFilter === 'completed' || coachingLiveStatusFilter === 'finished')
+                          ? 'No completed live classes'
+                          : 'No live classes scheduled'}
+                  </p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    {coachingLiveStatusFilter === 'all'
+                      ? 'Click "Schedule Live" to schedule your first class.'
+                      : 'Try selecting a different status filter above.'}
+                  </p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {(showAllLiveClasses ? visibleLive : visibleLive.slice(0, 4)).map(l => (
-                      <LiveCard key={l.id} lecture={l} onDelete={() => handleDelete(l.id)}
-                        onStartClass={() => handleStartObsForLecture(l)} />
-                    ))}
-                  </div>
-                  <div className="flex items-center justify-between px-1 flex-wrap gap-2 pt-1">
-                    <p className="text-xs text-slate-500">
-                      Showing {Math.min(showAllLiveClasses ? visibleLive.length : 4, visibleLive.length)} of {sortedLive.length} live classes
-                    </p>
-                    {visibleLive.length > 4 && (
-                      <button
-                        type="button"
-                        onClick={() => setShowAllLiveClasses(v => !v)}
-                        className="px-4 py-1.5 text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors inline-flex items-center gap-1.5"
-                      >
-                        <span>{showAllLiveClasses ? "Show Less" : `Show ${visibleLive.length - 4} more`}</span>
-                        <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", showAllLiveClasses ? "-rotate-90" : "rotate-90")} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* ── OBS Broadcast lectures ── */}
-              {(() => {
-                const visibleBroadcasts = broadcastLectures.filter(b => {
-                  if (!resolvedBatchId) return true;
-                  if (b.batchId) return b.batchId === resolvedBatchId;
-                  return all.some(l => l.title.trim().toLowerCase() === b.title.trim().toLowerCase());
-                });
-                if (visibleBroadcasts.length === 0) return null;
-                const displayedBroadcasts = showAllObsSessions ? visibleBroadcasts : visibleBroadcasts.slice(0, 4);
-                return (
-                  <div className="space-y-3 pt-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-black uppercase tracking-widest text-slate-400">OBS Stream Sessions</span>
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">{visibleBroadcasts.length}</span>
+                <>
+                  {filteredLiveClasses.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {(showAllLiveClasses ? visibleLive : visibleLive.slice(0, 4)).map(l => (
+                          <LiveCard key={l.id} lecture={l} onDelete={() => handleDelete(l.id)}
+                            onStartClass={() => handleStartObsForLecture(l)} />
+                        ))}
                       </div>
-                      {visibleBroadcasts.length > 4 && (
-                        <button
-                          type="button"
-                          onClick={() => setShowAllObsSessions(v => !v)}
-                          className="px-3.5 py-1 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors inline-flex items-center gap-1.5"
-                        >
-                          <span>{showAllObsSessions ? "Show Less" : `Show ${visibleBroadcasts.length - 4} more`}</span>
-                          <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", showAllObsSessions ? "-rotate-90" : "rotate-90")} />
-                        </button>
-                      )}
+                      <div className="flex items-center justify-between px-1 flex-wrap gap-2 pt-1">
+                        <p className="text-xs text-slate-500">
+                          Showing {Math.min(showAllLiveClasses ? visibleLive.length : 4, visibleLive.length)} of {filteredLiveClasses.length} live classes
+                        </p>
+                        {visibleLive.length > 4 && (
+                          <button
+                            type="button"
+                            onClick={() => setShowAllLiveClasses(v => !v)}
+                            className="px-4 py-1.5 text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors inline-flex items-center gap-1.5"
+                          >
+                            <span>{showAllLiveClasses ? "Show Less" : `Show ${visibleLive.length - 4} more`}</span>
+                            <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", showAllLiveClasses ? "-rotate-90" : "rotate-90")} />
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {displayedBroadcasts.map(b => {
-                        const linkedLecture = all.find((lecture) =>
-                          lecture.title.trim().toLowerCase() === b.title.trim().toLowerCase()
-                          && (!b.batchId || (lecture.batchId || lecture.batch?.id) === b.batchId)
-                        );
-                        return <BroadcastCard
-                          key={b.id}
-                          broadcast={b}
-                          contentLecture={linkedLecture}
-                          onDelete={async () => {
-                            if (!window.confirm('Delete this OBS broadcast? This cannot be undone.')) return;
-                            try {
-                              await liveBroadcast.delete(b.id);
-                              setBroadcastLectures(prev => prev.filter(x => x.id !== b.id));
-                              toast({ title: "Broadcast deleted" });
-                            } catch { toast({ title: "Delete failed", variant: "destructive" }); }
-                          }}
+                  )}
+
+                  {/* ── OBS Broadcast lectures ── */}
+                  {(() => {
+                    if (filteredBroadcasts.length === 0) return null;
+                    const displayedBroadcasts = showAllObsSessions ? filteredBroadcasts : filteredBroadcasts.slice(0, 4);
+                    return (
+                      <div className="space-y-3 pt-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-black uppercase tracking-widest text-slate-400">OBS Stream Sessions</span>
+                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">{filteredBroadcasts.length}</span>
+                          </div>
+                          {filteredBroadcasts.length > 4 && (
+                            <button
+                              type="button"
+                              onClick={() => setShowAllObsSessions(v => !v)}
+                              className="px-3.5 py-1 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors inline-flex items-center gap-1.5"
+                            >
+                              <span>{showAllObsSessions ? "Show Less" : `Show ${filteredBroadcasts.length - 4} more`}</span>
+                              <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", showAllObsSessions ? "-rotate-90" : "rotate-90")} />
+                            </button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {displayedBroadcasts.map(b => {
+                            const linkedLecture = all.find((lecture) =>
+                              lecture.title.trim().toLowerCase() === b.title.trim().toLowerCase()
+                              && (!b.batchId || (lecture.batchId || lecture.batch?.id) === b.batchId)
+                            );
+                            return <BroadcastCard
+                              key={b.id}
+                              broadcast={b}
+                              contentLecture={linkedLecture}
+                              onDelete={async () => {
+                                if (!window.confirm('Delete this OBS broadcast? This cannot be undone.')) return;
+                                try {
+                                  await liveBroadcast.delete(b.id);
+                                  setBroadcastLectures(prev => prev.filter(x => x.id !== b.id));
+                                  toast({ title: "Broadcast deleted" });
+                                } catch { toast({ title: "Delete failed", variant: "destructive" }); }
+                              }}
                           onShowKey={() => {
                             if (b.streamKey && b.rtmpUrl) {
                               setObsCredentials({ lectureId: b.id, streamKey: b.streamKey, rtmpUrl: b.rtmpUrl, playbackUrl: '' });
@@ -6356,8 +6472,10 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
                   </div>
                 );
               })()}
-            </div>
+            </>
           )}
+        </div>
+      )}
 
           {canLoadMore && !isLoading && (
             <div ref={loadMoreRef} className="flex items-center justify-center py-2">

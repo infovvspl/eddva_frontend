@@ -53,8 +53,8 @@ const CourseDetailPage = () => {
   ] as const;
 
   return (
-    <div className="min-h-screen bg-slate-50/50 p-4 md:p-6 lg:p-10 font-sans text-slate-900">
-      <header className="max-w-7xl mx-auto mb-6">
+    <div className="w-full space-y-6 font-sans text-slate-900">
+      <header className="w-full mb-6">
         <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-colors text-[11px] font-medium uppercase tracking-wider mb-5">
           <ChevronLeft className="w-4 h-4" /> Return to Institute
         </button>
@@ -78,7 +78,7 @@ const CourseDetailPage = () => {
       </header>
 
       {/* Tabs */}
-      <div className="max-w-7xl mx-auto mb-8 border-b border-slate-200">
+      <div className="w-full mb-8 border-b border-slate-200">
         <div className="flex space-x-6 overflow-x-auto no-scrollbar">
           {tabs.map(tab => {
             const Icon = tab.icon;
@@ -102,7 +102,7 @@ const CourseDetailPage = () => {
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto">
+      <main className="w-full">
         {activeTab === "overview" && <OverviewTab course={course} />}
         {activeTab === "students" && <StudentsTab batchId={courseId} subdomain={subdomain} />}
         {activeTab === "curriculum" && <CurriculumTab batchId={courseId} subdomain={subdomain} />}

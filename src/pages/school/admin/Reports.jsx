@@ -91,7 +91,7 @@ export default function Reports() {
           <div 
             key={report.title} 
             onClick={() => setSelectedReport(report.title)}
-            className="rounded-lg border border-surface-200 bg-white p-6 shadow-sm hover:border-brand-300 hover:shadow-sm ring-1 ring-slate-100 transition-all cursor-pointer hover:scale-105"
+            className="rounded-lg border border-surface-200 bg-white p-6 shadow-sm hover:border-brand-300 hover:shadow-sm ring-1 ring-slate-100 transition-all cursor-pointer hover:scale-105 h-full flex flex-col justify-between"
           >
             <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-lg ${report.accent}`}>
               <report.icon className="h-6 w-6" />

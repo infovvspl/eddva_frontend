@@ -30,6 +30,8 @@ import {
   LogOut
 } from 'lucide-react';
 
+import { getPageLayoutConfig } from '@/config/layout-system';
+
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -49,18 +51,7 @@ export default function Layout() {
   const hasDoubts = useSchoolFeature('ai', 'ai_doubt_solver');
   const hasCareer = useSchoolFeature('ai', 'ai_career_guidance');
 
-  const isTakingAssessment = /^\/school\/student\/assessments\/[^/]+\/take\/?$/.test(location.pathname);
-
-  const isFullWidthPage = [
-    '/school/student/timetable',
-    '/school/student/calendar',
-    '/school/student/analytics',
-    '/school/student/planner',
-  ].includes(location.pathname);
-
-  const isFixedPage = [
-    '/school/student/chat',
-  ].includes(location.pathname) || location.pathname.includes('/live/');
+  const layoutConfig = getPageLayoutConfig(location.pathname);
 
   // Construct bottom navigation items dynamically
   const navItems = [
@@ -105,7 +96,7 @@ export default function Layout() {
         <MaintenanceNotice />
 
         {/* Scrollable Container */}
-        <main className={`flex-1 min-h-0 ${isFullWidthPage ? 'p-0' : 'px-4 pt-4 pb-4'} ${isFixedPage ? 'overflow-y-hidden' : 'overflow-y-auto'} scrollbar-none`}>
+        <main className={`flex-1 min-h-0 ${layoutConfig.type === 'immersive' ? 'p-0 overflow-y-hidden' : 'px-4 pt-4 pb-4 overflow-y-auto'} scrollbar-none`}>
           <AnimatePresence initial={false} mode="wait">
             <PageTransition key={location.pathname} duration={0.2}>
               <div className="h-full w-full">
@@ -222,10 +213,10 @@ export default function Layout() {
       >
         <Navbar onMenuClick={() => setSidebarOpen(true)} />
         <MaintenanceNotice />
-        <main className={`flex-1 overflow-x-hidden overflow-y-auto ${isFullWidthPage ? 'px-0 py-3 sm:py-5 lg:py-6' : 'p-3 sm:p-5 lg:p-6'}`}>
+        <main className={`flex-1 overflow-x-hidden ${layoutConfig.isScrollable ? 'overflow-y-auto' : 'overflow-y-hidden'} ${layoutConfig.mainPaddingClass}`}>
           <AnimatePresence initial={false} mode="wait">
             <PageTransition key={location.pathname} duration={0.2}>
-              <div className="h-full w-full">
+              <div className={layoutConfig.containerClass}>
                 <Suspense fallback={
                   <div className="flex h-[50vh] w-full items-center justify-center">
                     <Loader2 className="h-8 w-8 animate-spin text-blue-500" />

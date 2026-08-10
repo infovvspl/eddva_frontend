@@ -113,22 +113,24 @@ function KpiCard({ title, value, icon: Icon, subtext, trend, gradient, delay, fo
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay }}
-      className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-950"
+      className="group relative overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-100 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md dark:border-slate-800 dark:bg-slate-950 flex flex-col justify-between"
     >
-      <div className="absolute inset-0 opacity-0 transition-all duration-300 group-hover:opacity-100" style={{ background: `linear-gradient(135deg, ${gradient[0]}20, ${gradient[1]}20)` }} />
-      <div className="relative">
-        <div className="flex items-start justify-between gap-2 sm:gap-3">
-          <div className={`grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-2xl ${gradient[2]} text-white shadow-sm ring-1 ring-slate-100`}>
-            <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
-          </div>
-          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[9px] sm:text-[10px] font-bold text-slate-700 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:ring-slate-700">
-            <TrendIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-            {trendText}
-          </span>
+      <div className="absolute inset-0 opacity-0 transition-all duration-300 group-hover:opacity-100 pointer-events-none" style={{ background: `linear-gradient(135deg, ${gradient[0]}15, ${gradient[1]}15)` }} />
+      <div className="relative z-10 flex items-center justify-between gap-2 mb-2">
+        <div className={`w-11 h-11 sm:w-12 sm:h-12 min-w-[44px] min-h-[44px] sm:min-w-[48px] sm:min-h-[48px] shrink-0 flex items-center justify-center rounded-2xl ${gradient[2]} text-white shadow-sm ring-1 ring-slate-100/50`}>
+          <Icon className="w-5 h-5 sm:w-6 sm:h-6 shrink-0 stroke-[2.5]" />
         </div>
-        <p className="mt-3 sm:mt-4 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{title}</p>
-        <p className="mt-1 font-display text-xl sm:text-3xl font-bold text-slate-950 dark:text-white">{formatter ? formatter(value) : typeof value === 'number' ? formatNumber(value) : value}</p>
-        {subtext && <p className="mt-1 sm:mt-2 text-[10px] sm:text-xs font-semibold text-slate-600 dark:text-slate-400">{subtext}</p>}
+        <span className="inline-flex items-center gap-0.5 rounded-full bg-slate-100/80 px-2 py-0.5 text-[10px] font-bold text-slate-700 ring-1 ring-slate-200/60 dark:bg-slate-900 dark:text-slate-200 dark:ring-slate-700 shrink-0 whitespace-nowrap">
+          <TrendIcon className="w-3 h-3 shrink-0 stroke-[2.5]" />
+          {trendText}
+        </span>
+      </div>
+      <div className="relative z-10 min-w-0">
+        <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">{title}</p>
+        <p className="mt-0.5 font-display text-xl sm:text-2xl font-black text-slate-950 dark:text-white tracking-tight leading-tight truncate">
+          {formatter ? formatter(value) : typeof value === 'number' ? formatNumber(value) : value}
+        </p>
+        {subtext && <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">{subtext}</p>}
       </div>
     </motion.div>
   );
@@ -360,7 +362,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.15 }}
-        className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 sm:gap-4"
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 sm:gap-4"
       >
         <KpiCard
           title="Total Schools"
@@ -424,15 +426,6 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
           subtext="Registered parent accounts"
           trend={userTrend}
           gradient={['#F43F5E', '#FB7185', 'bg-gradient-to-br from-rose-500 to-rose-400']}
-          delay={0.2}
-        />
-        <KpiCard
-          title="Support Tickets"
-          value={stats?.openComplaints || 0}
-          icon={Ticket}
-          subtext="Open support tickets"
-          trend={stats?.openComplaints ? -8 : 0}
-          gradient={['#be185d', '#f472b6', 'bg-gradient-to-br from-pink-700 to-pink-400']}
           delay={0.24}
         />
         <KpiCard

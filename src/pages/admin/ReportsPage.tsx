@@ -110,7 +110,7 @@ export default function ReportsPage() {
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-blue-50/40 border border-blue-200/60 rounded-[2rem] p-4 sm:px-6 sm:py-5 shadow-md shadow-blue-100/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all mb-6"
+        className="bg-blue-100 border border-blue-200/80 rounded-[2rem] p-4 sm:px-6 sm:py-5 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 mb-6"
       >
         <div className="min-w-0 flex-1 pl-1 sm:pl-0">
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight whitespace-nowrap truncate flex items-center gap-3">
@@ -129,11 +129,11 @@ export default function ReportsPage() {
         </button>
       </motion.div>
 
-      {/* ── Live Pulse Banner ── */}
+      {/* ── Live Pulse Banner (Desktop) ── */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-[2rem] p-6 flex flex-nowrap sm:flex-wrap items-center gap-8 overflow-x-auto hide-scrollbar"
+        className="hidden sm:flex rounded-[2rem] p-6 items-center gap-8 overflow-x-auto hide-scrollbar"
         style={{ background: `linear-gradient(135deg, ${BLUE} 0%, ${BLUE_M} 100%)` }}
       >
         <div className="flex items-center gap-3 shrink-0">
@@ -151,6 +151,44 @@ export default function ReportsPage() {
             <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider mt-1">{label}</p>
           </div>
         ))}
+      </motion.div>
+
+      {/* ── Live Pulse Card (Mobile Only) ── */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="sm:hidden bg-white rounded-2xl border border-slate-100 shadow-md p-3.5 space-y-2.5"
+      >
+        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[11px] font-black uppercase tracking-wider text-slate-800">Live Right Now</span>
+          </div>
+          <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-blue-50 text-[#013889]">
+            Real-time
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { label: "Students Online", val: presence?.studentsOnline ?? 0, bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-100" },
+            { label: "Active Classes", val: presence?.liveClassesRunning ?? 0, bg: "bg-blue-50", text: "text-blue-600", border: "border-blue-100" },
+            { label: "Total Students", val: stats.totalStudents ?? 0, bg: "bg-indigo-50", text: "text-indigo-600", border: "border-indigo-100" },
+            { label: "Pending doubts", val: stats.openDoubts ?? 0, bg: "bg-orange-50", text: "text-orange-600", border: "border-orange-100" },
+          ].map(({ label, val, bg, text, border }) => (
+            <div
+              key={label}
+              className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-50/60 border border-slate-100 text-center"
+            >
+              <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black mb-1 border shadow-2xs", bg, text, border)}>
+                {val}
+              </div>
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider leading-tight">
+                {label}
+              </p>
+            </div>
+          ))}
+        </div>
       </motion.div>
 
       {/* ── Top KPI Grid ── */}

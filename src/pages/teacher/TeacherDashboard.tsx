@@ -159,7 +159,7 @@ const TeacherDashboard = () => {
     <motion.div
       initial={lightMotion ? undefined : { opacity: 0, y: 10 }}
       animate={lightMotion ? undefined : { opacity: 1, y: 0 }}
-      className="space-y-[30px] sm:space-y-[30px]"
+      className="space-y-[30px] sm:pt-4 lg:pb-4 sm:px-6"
     >
 
       {/* ── Header ── */}

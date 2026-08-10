@@ -16,22 +16,22 @@ import { CustomSelect } from "@/components/ui/CustomSelect";
 // ── Shared helpers ─────────────────────────────────────────────────────────
 
 const CATEGORIES = [
-  { value: 'GENERAL',        label: 'General',         color: 'bg-slate-100 text-slate-700' },
-  { value: 'ACADEMIC',       label: 'Academic',        color: 'bg-blue-100 text-blue-700' },
-  { value: 'ADMINISTRATIVE', label: 'Administrative',  color: 'bg-violet-100 text-violet-700' },
-  { value: 'MAINTENANCE',    label: 'Maintenance',     color: 'bg-amber-100 text-amber-800' },
-  { value: 'EMERGENCY',      label: 'Emergency',       color: 'bg-red-100 text-red-700' },
+  { value: 'GENERAL', label: 'General', color: 'bg-slate-100 text-slate-700' },
+  { value: 'ACADEMIC', label: 'Academic', color: 'bg-blue-100 text-blue-700' },
+  { value: 'ADMINISTRATIVE', label: 'Administrative', color: 'bg-violet-100 text-violet-700' },
+  { value: 'MAINTENANCE', label: 'Maintenance', color: 'bg-amber-100 text-amber-800' },
+  { value: 'EMERGENCY', label: 'Emergency', color: 'bg-red-100 text-red-700' },
 ];
 const PRIORITIES = [
   { value: 'NORMAL', label: 'Normal', color: 'bg-slate-100 text-slate-700' },
-  { value: 'HIGH',   label: 'High',   color: 'bg-orange-100 text-orange-700' },
+  { value: 'HIGH', label: 'High', color: 'bg-orange-100 text-orange-700' },
   { value: 'URGENT', label: 'Urgent', color: 'bg-red-100 text-red-700' },
 ];
 const ROLES_OPTIONS = [
-  { value: null,               label: 'All Users' },
-  { value: 'STUDENT',          label: 'Students Only' },
-  { value: 'TEACHER',          label: 'Teachers Only' },
-  { value: 'INSTITUTE_ADMIN',  label: 'Admins Only' },
+  { value: null, label: 'All Users' },
+  { value: 'STUDENT', label: 'Students Only' },
+  { value: 'TEACHER', label: 'Teachers Only' },
+  { value: 'INSTITUTE_ADMIN', label: 'Admins Only' },
 ];
 
 function catMeta(c) { return CATEGORIES.find(x => x.value === c) ?? CATEGORIES[0]; }
@@ -43,10 +43,10 @@ function fmtDate(d) {
 
 function StatCard({ icon, label, value, sub, tone }) {
   const tones = {
-    blue:   'bg-blue-50   border-blue-200   text-blue-700',
+    blue: 'bg-blue-50   border-blue-200   text-blue-700',
     violet: 'bg-violet-50 border-violet-200 text-violet-700',
-    emerald:'bg-emerald-50 border-emerald-200 text-emerald-700',
-    amber:  'bg-amber-50  border-amber-200  text-amber-700',
+    emerald: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+    amber: 'bg-amber-50  border-amber-200  text-amber-700',
   };
   return (
     <div className={`rounded-2xl border p-3 sm:p-5 ${tones[tone] ?? tones.blue}`}>
@@ -70,8 +70,8 @@ const EMPTY_FORM = {
 
 const TABS = [
   { id: 'compose', label: 'Compose Broadcast', icon: Megaphone },
-  { id: 'chat',    label: 'Institute Chats',   icon: MessageSquare },
-  { id: 'log',     label: 'Message Log',        icon: FileText },
+  { id: 'chat', label: 'Institute Chats', icon: MessageSquare },
+  { id: 'log', label: 'Message Log', icon: FileText },
 ];
 
 // ── Main page ──────────────────────────────────────────────────────────────
@@ -107,6 +107,7 @@ export default function SuperAdminCommunication() {
   const [error, setError] = useState(null);
   const [logSearch, setLogSearch] = useState('');
   const [logCategory, setLogCategory] = useState('');
+  const [hasSelectedUser, setHasSelectedUser] = useState(false);
   const [logInstitute, setLogInstitute] = useState('');
   const [instSearch, setInstSearch] = useState('');
   const [instDropOpen, setInstDropOpen] = useState(false);
@@ -124,13 +125,8 @@ export default function SuperAdminCommunication() {
   useEffect(() => {
     const mainEl = document.querySelector('main');
     if (!mainEl) return;
-    if (activeTab === 'chat') {
-      mainEl.classList.remove('overflow-y-auto');
-      mainEl.classList.add('overflow-y-hidden');
-    } else {
-      mainEl.classList.remove('overflow-y-hidden');
-      mainEl.classList.add('overflow-y-auto');
-    }
+    mainEl.classList.remove('overflow-y-hidden');
+    mainEl.classList.add('overflow-y-auto');
     return () => {
       mainEl.classList.remove('overflow-y-hidden');
       mainEl.classList.add('overflow-y-auto');
@@ -142,7 +138,7 @@ export default function SuperAdminCommunication() {
     client.get(endpoint).then(r => {
       const list = r.data?.items ?? r.data?.data?.items ?? r.data?.data?.data ?? r.data?.data ?? [];
       setInstitutes(Array.isArray(list) ? list : []);
-    }).catch(() => {});
+    }).catch(() => { });
   }, [isSuperAdminRoute, client]);
 
   const loadLog = useCallback(async () => {
@@ -152,7 +148,7 @@ export default function SuperAdminCommunication() {
       if (logCategory) params.category = logCategory;
       const endpoint = isSuperAdminRoute ? '/admin/announcements' : '/notices/platform';
       const r = await client.get(endpoint, { params });
-      
+
       const rawData = r.data;
       const list = isSuperAdminRoute
         ? (rawData?.announcements ?? rawData?.data?.announcements ?? [])
@@ -310,7 +306,7 @@ export default function SuperAdminCommunication() {
   const LOGS_PER_PAGE_MOBILE = 7;
   const totalMobilePages = Math.ceil(filteredLog.length / LOGS_PER_PAGE_MOBILE);
   const paginatedMobileLog = filteredLog.slice((logPage - 1) * LOGS_PER_PAGE_MOBILE, logPage * LOGS_PER_PAGE_MOBILE);
-  
+
   const LOGS_PER_PAGE_DESKTOP = 10;
   const totalDesktopPages = Math.ceil(filteredLog.length / LOGS_PER_PAGE_DESKTOP);
   const paginatedDesktopLog = filteredLog.slice((logPage - 1) * LOGS_PER_PAGE_DESKTOP, logPage * LOGS_PER_PAGE_DESKTOP);
@@ -321,86 +317,89 @@ export default function SuperAdminCommunication() {
     n => n.createdAt && new Date(n.createdAt).toDateString() === new Date().toDateString()
   ).length;
 
-  const chatHeightClass = 'h-[calc(100dvh-340px)] md:h-[calc(100dvh-280px)]';
+  const chatHeightClass = hasSelectedUser ? 'h-[calc(100vh-80px)] min-h-[550px]' : 'min-h-[550px] h-[calc(100vh-250px)]';
 
   return (
-    <div className="mx-auto max-w-7xl px-1 pt-0 pb-0 -mb-[6px] sm:-mb-0 sm:pb-8 sm:py-8 sm:px-6 lg:px-8 w-full flex flex-col">
+    <div className="w-full min-h-full p-4 sm:p-6 lg:p-8 flex flex-col">
 
-      {/* ── Page header — always visible ─────────────────────────── */}
-      <div className="pt-0">
-        <div className="mt-3 sm:mt-0 mb-4 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 bg-blue-50/50 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
-          <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-sm">
-              <Radio className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="font-display text-2xl font-bold text-slate-950 dark:text-white">
-                Platform Communication
-              </h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                Broadcast notices and chat directly with institute admins
-              </p>
+      {/* ── Page header — hidden while actively chatting in a specific conversation ─────────────────────────── */}
+      {!(activeTab === 'chat' && hasSelectedUser) && (
+        <div className="pt-0">
+          <div className="mb-4 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 bg-blue-100 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
+            <div className="flex items-center gap-3">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-sm">
+                <Radio className="h-5 w-5" />
+              </div>
+              <div>
+                <h1 className="font-display text-2xl font-bold text-slate-950 dark:text-white">
+                  Platform Communication
+                </h1>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  Broadcast notices and chat directly with institute admins
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Stat cards — hidden on chat tab to maximise chat height */}
-        {activeTab !== 'chat' && (
-          <div className="mb-5 grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
-            <StatCard
-              icon={<Building2 className="h-5 w-5 text-blue-600" />}
-              label="Total Institutes" value={institutes.length}
-              sub="active on platform" tone="blue"
-            />
-            <StatCard
-              icon={<Send className="h-5 w-5 text-violet-600" />}
-              label="Total Notices" value={log.length || '—'}
-              sub="platform-wide" tone="violet"
-            />
-            <StatCard
-              icon={<Bell className="h-5 w-5 text-emerald-650" />}
-              label="Today's Broadcasts" value={todayBroadcasts || '—'}
-              sub="sent today" tone="emerald"
-            />
-            <StatCard
-              icon={<AlertTriangle className="h-5 w-5 text-amber-600" />}
-              label="Urgent Notices" value={urgentNotices || '—'}
-              sub="high priority" tone="amber"
-            />
+          {/* Stat cards — hidden on chat tab to maximise chat height */}
+          {activeTab !== 'chat' && (
+            <div className="mb-5 grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
+              <StatCard
+                icon={<Building2 className="h-5 w-5 text-blue-600" />}
+                label="Total Institutes" value={institutes.length}
+                sub="active on platform" tone="blue"
+              />
+              <StatCard
+                icon={<Send className="h-5 w-5 text-violet-600" />}
+                label="Total Notices" value={log.length || '—'}
+                sub="platform-wide" tone="violet"
+              />
+              <StatCard
+                icon={<Bell className="h-5 w-5 text-emerald-650" />}
+                label="Today's Broadcasts" value={todayBroadcasts || '—'}
+                sub="sent today" tone="emerald"
+              />
+              <StatCard
+                icon={<AlertTriangle className="h-5 w-5 text-amber-600" />}
+                label="Urgent Notices" value={urgentNotices || '—'}
+                sub="high priority" tone="amber"
+              />
+            </div>
+          )}
+
+          {/* Tab bar */}
+          <div className="mb-0 flex flex-nowrap sm:flex-wrap overflow-x-auto sm:overflow-visible gap-2 sm:gap-1 rounded-none sm:rounded-xl border-0 sm:border sm:border-slate-200 bg-transparent sm:bg-slate-50 p-1 sm:w-fit dark:border-slate-700 dark:bg-slate-900 scrollbar-hide pb-2 sm:pb-1">
+            {TABS.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => handleTabChange(id)}
+                className={`flex items-center gap-2 whitespace-nowrap shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-all border sm:border-transparent ${activeTab === id
+                    ? 'bg-white border-blue-200 text-blue-700 shadow-sm dark:bg-slate-800 dark:text-blue-400'
+                    : 'bg-white border-slate-200 sm:bg-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'
+                  }`}
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+              </button>
+            ))}
           </div>
-        )}
-
-        {/* Tab bar */}
-        <div className="mb-0 flex flex-nowrap sm:flex-wrap overflow-x-auto sm:overflow-visible gap-2 sm:gap-1 rounded-none sm:rounded-xl border-0 sm:border sm:border-slate-200 bg-transparent sm:bg-slate-50 p-1 sm:w-fit dark:border-slate-700 dark:bg-slate-900 scrollbar-hide pb-2 sm:pb-1">
-          {TABS.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => handleTabChange(id)}
-              className={`flex items-center gap-2 whitespace-nowrap shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-all border sm:border-transparent ${
-                activeTab === id
-                  ? 'bg-white border-blue-200 text-blue-700 shadow-sm dark:bg-slate-800 dark:text-blue-400'
-                  : 'bg-white border-slate-200 sm:bg-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-            </button>
-          ))}
         </div>
-      </div>
+      )}
 
       {/* ── Chat Tab — full Communications component ──────────────── */}
       {activeTab === 'chat' && (
-        <Communications heightClass={chatHeightClass} institutes={institutes} />
+        <div className="flex-1 min-h-0 w-full flex flex-col pt-3">
+          <Communications heightClass={chatHeightClass} institutes={institutes} onSelectedUserChange={setHasSelectedUser} />
+        </div>
       )}
 
       {/* ── Compose / Log tabs ────────────────────────────────────── */}
       {activeTab !== 'chat' && (
-        <div className="px-4 sm:px-6 lg:px-8 pt-6 pb-24">
+        <div className="pt-6 pb-24">
 
           {/* Compose ──────────────────────────────────────────────── */}
           {activeTab === 'compose' && (
-            <form onSubmit={handleSend} className="max-w-2xl">
+            <form onSubmit={handleSend} className="w-full">
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900 space-y-5">
                 <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   <Globe className="h-4 w-4 text-blue-600" />
@@ -494,18 +493,17 @@ export default function SuperAdminCommunication() {
                   <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">Send To</label>
                   <div className="flex flex-col sm:flex-row gap-3">
                     {[
-                      { val: 'all',    label: `All Institutes (${institutes.length})`, Icon: Globe },
+                      { val: 'all', label: `All Institutes (${institutes.length})`, Icon: Globe },
                       { val: 'select', label: 'Select Institutes', Icon: Building2 },
                     ].map(({ val, label, Icon }) => (
                       <button
                         key={val}
                         type="button"
                         onClick={() => setField('scope', val)}
-                        className={`flex w-full sm:flex-1 items-center justify-center gap-2 rounded-xl border-2 py-3 text-sm font-semibold transition-all ${
-                          form.scope === val
+                        className={`flex w-full sm:flex-1 items-center justify-center gap-2 rounded-xl border-2 py-3 text-sm font-semibold transition-all ${form.scope === val
                             ? 'border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
                             : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300'
-                        } px-4`}
+                          } px-4`}
                       >
                         <Icon className="h-4 w-4" />{label}
                       </button>
@@ -557,9 +555,8 @@ export default function SuperAdminCommunication() {
                                   key={inst.id}
                                   type="button"
                                   onClick={() => toggleInstitute(inst.id)}
-                                  className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800 ${
-                                    sel ? 'text-blue-700 font-semibold dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'
-                                  }`}
+                                  className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800 ${sel ? 'text-blue-700 font-semibold dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'
+                                    }`}
                                 >
                                   <div className={`h-4 w-4 rounded border-2 transition-colors ${sel ? 'border-blue-600 bg-blue-600' : 'border-slate-300'} grid place-items-center`}>
                                     {sel && <CheckCircle2 className="h-3 w-3 text-white" />}
@@ -610,8 +607,8 @@ export default function SuperAdminCommunication() {
           {/* Log ───────────────────────────────────────────────────── */}
           {activeTab === 'log' && (
             <div>
-              <div className="mb-4 flex flex-wrap items-center gap-3">
-                <div className="w-56 shrink-0">
+              <div className="mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="w-full sm:w-56 shrink-0">
                   <CustomSelect
                     onChange={setLogCategory}
                     value={logCategory}
@@ -623,7 +620,7 @@ export default function SuperAdminCommunication() {
                   />
                 </div>
                 {isSuperAdminRoute && institutes.length > 0 && (
-                  <div className="w-56 shrink-0">
+                  <div className="w-full sm:w-56 shrink-0">
                     <CustomSelect
                       value={logInstitute}
                       onChange={setLogInstitute}
@@ -635,7 +632,7 @@ export default function SuperAdminCommunication() {
                     />
                   </div>
                 )}
-                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 flex-1 min-w-48">
+                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 flex-1 min-w-48 w-full">
                   <Search className="h-4 w-4 shrink-0 text-slate-400" />
                   <input
                     placeholder="Search by title or message…"
@@ -713,66 +710,66 @@ export default function SuperAdminCommunication() {
                       </thead>
                       <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                         {paginatedDesktopLog.map(n => {
-                        const cat = catMeta(n.category);
-                        const pri = priMeta(n.priority);
-                        const audience = n.targetRoles?.length
-                          ? n.targetRoles.map(r => r.charAt(0) + r.slice(1).toLowerCase()).join(', ')
-                          : 'All Users';
-                        return (
-                          <tr
-                            key={n.id}
-                            onClick={() => setSelectedNotice(n)}
-                            className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                          >
-                            <td className="px-4 py-3.5 max-w-xs">
-                              <p className="font-semibold text-slate-900 dark:text-white truncate">{n.title}</p>
-                              <p className="mt-0.5 text-xs text-slate-400 line-clamp-1">{n.content}</p>
-                            </td>
-                            <td className="px-4 py-3.5 text-slate-600 dark:text-slate-350 text-xs">
-                              {n.instituteName ?? n.instituteId?.slice(0, 8) ?? '—'}
-                            </td>
-                            <td className="hidden md:table-cell px-4 py-3.5">
-                              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${cat.color}`}>
-                                {cat.label}
-                              </span>
-                            </td>
-                            <td className="hidden md:table-cell px-4 py-3.5">
-                              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${pri.color}`}>
-                                {pri.label}
-                              </span>
-                            </td>
-                            <td className="hidden lg:table-cell px-4 py-3.5 text-xs text-slate-500">
-                              {fmtDate(n.postedDate ?? n.createdAt)}
-                            </td>
-                            <td className="hidden lg:table-cell px-4 py-3.5 text-xs text-slate-500">{audience}</td>
-                            <td className="px-4 py-3.5">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteLog(n.id);
-                                }}
-                                className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors dark:hover:bg-red-950"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                          const cat = catMeta(n.category);
+                          const pri = priMeta(n.priority);
+                          const audience = n.targetRoles?.length
+                            ? n.targetRoles.map(r => r.charAt(0) + r.slice(1).toLowerCase()).join(', ')
+                            : 'All Users';
+                          return (
+                            <tr
+                              key={n.id}
+                              onClick={() => setSelectedNotice(n)}
+                              className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                            >
+                              <td className="px-4 py-3.5 max-w-xs">
+                                <p className="font-semibold text-slate-900 dark:text-white truncate">{n.title}</p>
+                                <p className="mt-0.5 text-xs text-slate-400 line-clamp-1">{n.content}</p>
+                              </td>
+                              <td className="px-4 py-3.5 text-slate-600 dark:text-slate-350 text-xs">
+                                {n.instituteName ?? n.instituteId?.slice(0, 8) ?? '—'}
+                              </td>
+                              <td className="hidden md:table-cell px-4 py-3.5">
+                                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${cat.color}`}>
+                                  {cat.label}
+                                </span>
+                              </td>
+                              <td className="hidden md:table-cell px-4 py-3.5">
+                                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${pri.color}`}>
+                                  {pri.label}
+                                </span>
+                              </td>
+                              <td className="hidden lg:table-cell px-4 py-3.5 text-xs text-slate-500">
+                                {fmtDate(n.postedDate ?? n.createdAt)}
+                              </td>
+                              <td className="hidden lg:table-cell px-4 py-3.5 text-xs text-slate-500">{audience}</td>
+                              <td className="px-4 py-3.5">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteLog(n.id);
+                                  }}
+                                  className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors dark:hover:bg-red-950"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
-                  
+
                   {/* Footer / Pagination */}
                   <div className="border-t border-slate-100 bg-slate-50 px-4 py-2.5 dark:border-slate-700 dark:bg-slate-800 flex items-center justify-between">
                     <p className="text-xs text-slate-400">
                       {filteredLog.length} notice{filteredLog.length !== 1 ? 's' : ''}
                     </p>
-                    
+
                     {/* Mobile Pagination */}
                     {totalMobilePages > 1 && (
                       <div className="flex sm:hidden items-center gap-2">
-                        <button 
+                        <button
                           onClick={() => setLogPage(p => Math.max(1, p - 1))}
                           disabled={logPage === 1}
                           className="px-2 py-1 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded disabled:opacity-50"
@@ -780,7 +777,7 @@ export default function SuperAdminCommunication() {
                           Prev
                         </button>
                         <span className="text-xs text-slate-500 font-medium">{logPage} / {totalMobilePages}</span>
-                        <button 
+                        <button
                           onClick={() => setLogPage(p => Math.min(totalMobilePages, p + 1))}
                           disabled={logPage === totalMobilePages}
                           className="px-2 py-1 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded disabled:opacity-50"
@@ -793,7 +790,7 @@ export default function SuperAdminCommunication() {
                     {/* Desktop Pagination */}
                     {totalDesktopPages > 1 && (
                       <div className="hidden sm:flex items-center gap-2">
-                        <button 
+                        <button
                           onClick={() => setLogPage(p => Math.max(1, p - 1))}
                           disabled={logPage === 1}
                           className="px-2 py-1 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded disabled:opacity-50"
@@ -801,7 +798,7 @@ export default function SuperAdminCommunication() {
                           Prev
                         </button>
                         <span className="text-xs text-slate-500 font-medium">{logPage} / {totalDesktopPages}</span>
-                        <button 
+                        <button
                           onClick={() => setLogPage(p => Math.min(totalDesktopPages, p + 1))}
                           disabled={logPage === totalDesktopPages}
                           className="px-2 py-1 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded disabled:opacity-50"

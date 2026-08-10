@@ -411,7 +411,7 @@ export default function Calendar() {
                   ))}
                 </div>
                 <div className="grid grid-cols-7 gap-1.5">
-                  {monthDays.map((day, index) => {
+                  {calendarDays.map((day, index) => {
                     if (!day) return <div key={"empty-" + index} className="aspect-square" />;
                     const key = toDateKey(day);
                     const dayEvents = eventsByDate.get(key) || [];

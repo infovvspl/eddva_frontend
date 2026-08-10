@@ -28,7 +28,28 @@ function NoteImage({ src, alt }: { src?: string; alt?: string }) {
     return () => document.removeEventListener("keydown", onKey);
   }, [lightbox, closeLightbox]);
 
-  if (hidden || !src) return null;
+  if (!src) return null;
+
+  if (hidden) {
+    return (
+      <figure className="not-prose group relative my-6 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/80 p-4 shadow-sm text-center">
+        <div className="flex flex-col items-center justify-center py-5 text-slate-400">
+          <svg className="w-8 h-8 mb-2 text-blue-500/60 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <span className="text-xs font-bold text-slate-600">Loading educational diagram…</span>
+        </div>
+        {displayAlt && (
+          <figcaption className="flex items-start justify-center gap-2 border-t border-slate-200/60 px-4 py-2.5 text-xs font-medium leading-relaxed text-slate-600">
+            <svg className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" />
+            </svg>
+            {displayAlt}
+          </figcaption>
+        )}
+      </figure>
+    );
+  }
 
   const heightClass = fit === "full" ? "" : fit === "contain" ? "max-h-72" : "max-h-60";
   const objectClass = fit === "cover" ? "object-cover" : fit === "contain" ? "object-contain" : "object-contain";
@@ -491,6 +512,38 @@ export const formatMarkdown = (text?: string) => {
     }
   );
 
+  // Strip page reference tags like [p.5] or [p. 5] attached to math or text
+  formatted = formatted.replace(/\[p\.\s*\d+\]/gi, "").replace(/\[page\s*\d+\]/gi, "");
+
+  // Clean up 4 or 3 dollar sequences: $$$$ -> $$, $$$ -> $$
+  formatted = formatted.replace(/\$\$\$\$/g, "$$").replace(/\$\$\$/g, "$$");
+
+  // ── Step 1: Strip stray $ signs that appear inside prose function call arguments
+  // e.g. LCM(306, $657) or $657) → removes the stray $ before digits followed by ) or ,
+  formatted = formatted.replace(/\$(\d+)([),])/g, "$1$2");
+  // Strip orphan $ = $ patterns (dollar-wrapped equals signs): $ = $ → =
+  formatted = formatted.replace(/\$\s*=\s*\$/g, " = ");
+
+
+  // ── Step 2: Unnest single dollar signs inside double-dollar display math blocks $$ ... $$
+  formatted = formatted.replace(/\$\$([\s\S]*?)\$\$/g, (_m, inner) => {
+    const cleanedInner = inner.replace(/(?<!\$)\$(?!\$)/g, "");
+    return `$$\n${cleanedInner.trim()}\n$$`;
+  });
+
+  // ── Step 3: Fix partial inline math where left side of equation is outside $
+  // e.g. LCM(p, q, r) = $\frac{...}$ → $LCM(p, q, r) = \frac{...}$
+  formatted = formatted.replace(
+    /(^|\n)([ \t]*[A-Za-z0-9_(),\s]+\s*=\s*)\$([^$\n]+)\$/g,
+    (_m, newline, left, inner) => {
+      const words = (left.match(/\b[A-Za-z]{4,}\b/g) || []);
+      if (words.length > 2) return `${newline}${left}$${inner}$`;
+      const cleanInner = inner.replace(/\\quad\s*$/g, "").trim();
+      return `${newline}$${left.trim()} ${cleanInner}$`;
+    }
+  );
+
+
   formatted = normalizeBrokenMathText(formatted);
   formatted = unwrapMathCodeSpans(formatted);
   formatted = wrapFullEquationLines(formatted);
@@ -534,6 +587,41 @@ export const formatMarkdown = (text?: string) => {
     '\n$1. $2',
   );
 
+  // Give option A the blank line that B, C and D already get.
+  //
+  // The rules below separate the options from each other but leave only a
+  // single newline between the question and the first option. Markdown treats
+  // that as a soft wrap, so "1. The Latin word 'alga' means:" and "A. Small
+  // life" rendered as one paragraph while B, C and D became option cards —
+  // every question in the paper appeared to have its first option missing and
+  // its text running on. Requiring a following "B." line keeps prose that
+  // merely starts with "A." untouched.
+  formatted = formatted.replace(
+    /([^\n])\n([ \t]*A[.):][ \t]+[^\n]+)(?=\n\s*\n?[ \t]*B[.):][ \t])/g,
+    '$1\n\n$2',
+  );
+
+  // Pull a lone trailing option A off the end of a question line.
+  //
+  // The rule below only fires when all four options share a line. Models
+  // frequently emit just the first one inline and the rest on their own lines:
+  //
+  //   1. Corrosion happens when metals are exposed to: [p.6] A. Air only
+  //   B. Moisture only
+  //
+  // which left "A. Air only" rendered as part of the question while B, C and D
+  // became option cards. Requiring the next line to start with "B." is what
+  // distinguishes an option list from prose that merely contains an "A" —
+  // "Section A carries 10 marks" and "Vitamin A" are both left alone. The `$`
+  // and the lookahead match without consuming, so the newline survives.
+  // A blank line, not a single newline: Markdown treats one newline as a soft
+  // wrap, so the option would rejoin the question paragraph it was just split
+  // from — which is the bug this rule exists to fix.
+  formatted = formatted.replace(
+    /^([^\n]*?\S)[ \t]+\bA[.):]\s+([^\n]+)$(?=\n[ \t]*B[.):]\s)/gm,
+    '$1\n\nA. $2',
+  );
+
   // Split inline options onto newlines (e.g. A. Opt1 B. Opt2 -> A. Opt1 \n B. Opt2)
   // Protect "Section A", "Part A", "Group A" and general instructions from being misidentified as options
   formatted = formatted.replace(
@@ -551,6 +639,12 @@ export const formatMarkdown = (text?: string) => {
   formatted = formatted.replace(/(Q\d+\..*?)\r?\n(A\..*?)/gi, '$1\n\n$2');
 
   formatted = replaceNewlinesOutsideMath(formatted);
+
+  // Separate adjacent inline math blocks that are on the same line separated only by spaces.
+  // remark-math fails to parse two $...$ blocks on the same line — inserting \n\n between
+  // them makes each its own paragraph which remark-math handles correctly.
+  // e.g. $LCM(...)$ $HCF(...)$ → $LCM(...)$\n\n$HCF(...)$
+  formatted = formatted.replace(/(\$)[ \t]+(\$)/g, '$1\n\n$2');
 
   // Pull standalone question numbers onto the same line as question text AFTER newlines normalization
   const pullRegex = /((?:^|\n)\s*(?:Q\s*)?\d{1,3}[.)])\s*(?:\r?\n)+\s*(?!(?:[A-E][.):]\s*|\([A-E]\)\s*|Q?\d{1,3}[.)]\s*|#{1,6}\s|[-*+]\s))/gi;
@@ -650,9 +744,20 @@ export const formatMarkdown = (text?: string) => {
   });
 
   // Wrap chemical formulas with dots (e.g. Fe_2O_3 \cdot H_2O or (Fe_2O_3 . H_2O))
+  //
+  // An MCQ option label matches this shape exactly: in "A. Small life", "A" is
+  // an element symbol, "." is the hydrate dot and "Sm" is samarium. Every option
+  // in a biology paper came out as "$A. Sm$all life", italicised by KaTeX. A
+  // real hydrate always has a subscript or more than one element symbol on the
+  // left of the dot, so a bare single letter there is rejected below.
   formatted = formatted.replace(
-    /(^|[^$A-Za-z0-9\\])(\(?\s*[A-Z][a-z]?(?:_\{\d+\}|_\d+)?(?:[A-Z][a-z]?(?:_\{\d+\}|_\d+)?)*\s*(?:\\[cC]dot|\u22C5|\u2219|\.)\s*(?:\d+)?\s*[A-Z][a-z]?(?:_\{\d+\}|_\d+)?(?:[A-Z][a-z]?(?:_\{\d+\}|_\d+)?)*\s*\)?)(?![^$]*\$)/g,
-    "$1$$$2$"
+    /(^|[^$A-Za-z0-9\\])(\(?\s*([A-Z][a-z]?(?:_\{\d+\}|_\d+)?(?:[A-Z][a-z]?(?:_\{\d+\}|_\d+)?)*)\s*(?:\\[cC]dot|\u22C5|\u2219|\.)\s*(?:\d+)?\s*[A-Z][a-z]?(?:_\{\d+\}|_\d+)?(?:[A-Z][a-z]?(?:_\{\d+\}|_\d+)?)*\s*\)?)(?![^$]*\$)/g,
+    (match, lead: string, formula: string, leftSide: string) => {
+      const left = (leftSide || "").trim();
+      // "A", "B", "C"\u2026 on their own are option labels, not compounds.
+      const isSingleBareLetter = /^[A-Z]$/.test(left);
+      return isSingleBareLetter ? match : `${lead}$${formula}$`;
+    }
   );
 
   // Wrap compound un-delimited LaTeX expressions (e.g. chemical equations like
@@ -671,18 +776,18 @@ export const formatMarkdown = (text?: string) => {
       : segment)
     .join("$");
 
-  // 7. Tokenize to protect already-formatted math blocks ($...$ and $$...$$)
+  // 7. Tokenize to protect already-formatted math blocks ($...$ and $$...$$) and markdown image tags (![...]())
   const tokenize = (text: string) => {
-    const tokens: { type: "prose" | "math"; text: string }[] = [];
+    const tokens: { type: "prose" | "math" | "image"; text: string }[] = [];
     let lastIndex = 0;
-    const mathRegex = /(\$\$(?:[\s\S]*?)\$\$)|(\$(?:[^$]+?)\$)/g;
+    const mathRegex = /(\$\$(?:[\s\S]*?)\$\$)|(\$(?:[^$]+?)\$)|(!\[[\s\S]*?\]\([^\)]+\))/g;
     let match;
     while ((match = mathRegex.exec(text)) !== null) {
       const matchIndex = match.index;
       if (matchIndex > lastIndex) {
         tokens.push({ type: "prose", text: text.slice(lastIndex, matchIndex) });
       }
-      tokens.push({ type: "math", text: match[0] });
+      tokens.push({ type: match[3] ? "image" : "math", text: match[0] });
       lastIndex = mathRegex.lastIndex;
     }
     if (lastIndex < text.length) {
@@ -905,7 +1010,14 @@ const highlightChildren = (children: any, highlights: Array<{ text: string; colo
 export function MarkdownRenderer({ content, className, imageMap, highlights = [] }: MarkdownRendererProps) {
   const customComponents = {
     a: ({ node, ...props }: any) => <a target="_blank" rel="noopener noreferrer" {...props} />,
-    img: ({ node, alt, src }: any) => <NoteImage src={imageMap?.[src ?? ''] ?? src} alt={alt} />,
+    img: ({ node, alt, src }: any) => {
+      const cleanSrc = (src ?? '').split('?')[0];
+      const resolvedSrc = imageMap?.[src ?? ''] 
+        ?? imageMap?.[cleanSrc] 
+        ?? (cleanSrc ? Object.entries(imageMap || {}).find(([k]) => k.split('?')[0] === cleanSrc)?.[1] : undefined) 
+        ?? src;
+      return <NoteImage src={resolvedSrc} alt={alt} />;
+    },
     li: ({ node, children, ...props }: any) => {
       const textContent = getTextContent(children);
       
@@ -1046,7 +1158,7 @@ export function MarkdownRenderer({ content, className, imageMap, highlights = []
     <div className={cn("prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-slate-900 prose-pre:text-slate-100", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex]}
+        rehypePlugins={[[rehypeKatex, { strict: false, throwOnError: false }]] as any}
         components={customComponents}
       >
         {formatMarkdown(content)}

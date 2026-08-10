@@ -106,7 +106,7 @@ export default function StudentTestsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6 pb-32">
+    <div className="w-full space-y-6 pb-32">
       {/* Back */}
       <div className="mb-2">
         <button

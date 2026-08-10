@@ -1104,7 +1104,7 @@ export default function Navbar({ onMenuClick }) {
                 </div>
 
                 {/* Notifications List */}
-                <div className="max-h-[360px] overflow-y-auto custom-scrollbar">
+                <div className="max-h-[60vh] sm:max-h-[380px] overflow-y-auto custom-scrollbar">
                   {notifLoading ? (
                     <div className="flex flex-col items-center justify-center p-8 text-slate-400">
                       <Loader2 className="h-6 w-6 animate-spin text-blue-500 mb-2" />

@@ -3768,7 +3768,7 @@ function ContentBatchLayout() {
       </header>
 
       <main className="min-h-0 w-full min-w-0 flex-1 overflow-y-auto bg-white sm:pb-12">
-        <div className="w-full min-w-0 sm:px-6 sm:py-6 lg:px-8">
+        <div className="w-full space-y-6">
           <Outlet context={ctx} />
         </div>
       </main>
@@ -4317,15 +4317,15 @@ function ContentCoursePickerRoute() {
   });
 
   return (
-    <div className="w-full min-w-0 space-y-[30px] sm:space-y-[30px] sm:p-6 md:pb-20 lg:p-8">
+    <div className="w-full space-y-6">
       {/* ── Main Header Card ── */}
-      <div className="bg-blue-50/50 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300">
+      <div className="bg-blue-100 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300">
         <div className="space-y-1">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500">Content manager</p>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 flex items-center gap-2">
             Your courses
           </h1>
-          <p className="text-sm text-slate-500">
+          <p className="hidden sm:block text-sm text-slate-500">
             Choose a course to edit curriculum — same flow as the rest of admin.
           </p>
           <div className="flex flex-nowrap overflow-x-auto scrollbar-none items-center gap-2 pt-2 pb-1 -mb-1 max-w-full">
@@ -4437,7 +4437,7 @@ function ContentCoursePickerRoute() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
           <AnimatePresence>
             {filteredBatches.map(b => (
               <motion.div key={b.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>

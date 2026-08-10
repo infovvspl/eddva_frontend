@@ -2493,7 +2493,7 @@ export default function StudentStudyPlanPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 -mx-3 -mt-4 sm:-mx-4 lg:-mx-6 lg:-mt-6">
+    <div className="space-y-6">
 
       {!selectedCourseId ? (
         <div className="px-4 py-16 max-w-6xl mx-auto min-h-[85vh] flex flex-col justify-center">
@@ -2564,7 +2564,7 @@ export default function StudentStudyPlanPage() {
             initial={{ opacity: 0, y: -16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
-            className="relative overflow-hidden rounded-[2rem] m-4 sm:m-6 shadow-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 px-4 py-6 text-white sm:px-8 sm:py-10"
+            className="relative overflow-hidden rounded-[2rem] shadow-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 px-4 py-6 text-white sm:px-8 sm:py-10"
           >
             {/* Decorative blobs */}
             <div className="pointer-events-none absolute -top-8 -right-8 h-40 w-40 rounded-full bg-white/[0.06]" />
@@ -2698,7 +2698,7 @@ export default function StudentStudyPlanPage() {
             </div>
           </motion.section>
 
-          <div className="px-4 py-3">
+          <div className="py-1">
 
             {/* ══ TODAY TAB ══════════════════════════════════════════════════════════ */}
             {activeTab === "today" && (

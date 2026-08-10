@@ -842,14 +842,14 @@ export default function StudyMaterials() {
 
             {/* Breadcrumb when subject selected */}
             {selectedSubject && (
-              <div className="flex items-center gap-2 text-sm w-full sm:w-auto sm:ml-auto justify-between sm:justify-start">
+              <div className="flex items-center gap-2 text-sm w-full sm:w-auto sm:ml-auto justify-between sm:justify-start shrink-0">
                 <button
                   onClick={() => { setSelectedType('ALL'); setSearchParams(backParams); }}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-bold text-slate-600 transition hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-bold text-slate-600 transition hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 shrink-0"
                 >
-                  <ChevronRight size={14} className="rotate-180" /> {backLabel}
+                  <ChevronRight size={14} className="rotate-180 shrink-0" /> {backLabel}
                 </button>
-                <ChevronRight size={14} className="text-slate-300" />
+                <ChevronRight size={14} className="text-slate-300 shrink-0" />
                 <span className="font-black text-slate-900 truncate max-w-[150px] sm:max-w-[250px]" title={activeLabel}>
                   {activeLabel}
                 </span>

@@ -108,7 +108,9 @@ export interface Tenant {
   teacherCount: number;
   joinedAt: string;
   operationalModel?: "TEACHER_BASED" | "STAFF_BASED";
+  adminPortalEnabled?: boolean;
   teacherPortalEnabled?: boolean;
+  studentPortalEnabled?: boolean;
   parentPortalEnabled?: boolean;
   multiAdminEnabled?: boolean;
 }

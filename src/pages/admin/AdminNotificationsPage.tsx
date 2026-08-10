@@ -6,12 +6,14 @@ import {
   BookOpen, Loader2, ChevronRight, Filter,
 } from "lucide-react";
 
+import { useNavigate } from "react-router-dom";
 import {
   useNotifications,
   useMarkNotificationRead,
   useMarkAllRead,
 } from "@/hooks/use-notifications";
-import { Notification } from "@/lib/api/notifications";
+import { Notification, getCoachingNotificationLink } from "@/lib/api/notifications";
+import { useAuthStore } from "@/lib/auth-store";
 import { cn } from "@/lib/utils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -39,13 +41,24 @@ function formatTime(iso: string) {
 // ─── Notification Row ─────────────────────────────────────────────────────────
 
 function NotificationRow({ n }: { n: Notification }) {
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
   const markRead = useMarkNotificationRead();
   const isLead = n.type === "course_view";
   const phone = parsePhone(n.body ?? n.message);
   const email = parseEmail(n.body ?? n.message);
   const unread = !n.isRead;
 
-  function handleMarkRead() {
+  const targetLink = getCoachingNotificationLink(n, user?.role);
+
+  function handleClickCard(e: React.MouseEvent) {
+    if ((e.target as HTMLElement).closest("a, button")) return;
+    if (!n.isRead) markRead.mutate(n.id);
+    if (targetLink) navigate(targetLink);
+  }
+
+  function handleMarkRead(e: React.MouseEvent) {
+    e.stopPropagation();
     if (!n.isRead) markRead.mutate(n.id);
   }
 
@@ -53,10 +66,11 @@ function NotificationRow({ n }: { n: Notification }) {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
+      onClick={handleClickCard}
       className={cn(
-        "group relative flex gap-3 sm:gap-4 p-4 sm:p-5 rounded-2xl border transition-all",
+        "group relative flex gap-3 sm:gap-4 p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer hover:shadow-md",
         unread
-          ? "bg-indigo-50/60 border-indigo-100"
+          ? "bg-indigo-50/60 border-indigo-100 hover:border-indigo-200"
           : "bg-white border-slate-100 hover:border-slate-200"
       )}
     >
@@ -137,6 +151,7 @@ function NotificationRow({ n }: { n: Notification }) {
   );
 }
 
+
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
 function Empty({ tab }: { tab: string }) {
@@ -198,7 +213,7 @@ export default function AdminNotificationsPage() {
     <div className="w-full space-y-6">
 
       {/* ── Main Header Card ── */}
-      <div className="bg-blue-50/50 border border-blue-200/80 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300">
+      <div className="bg-blue-100 border border-blue-200/80 rounded-[2rem] p-4 sm:px-6 sm:py-5 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
             <Bell className="w-6 h-6 text-indigo-500" /> Notifications

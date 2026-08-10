@@ -2248,7 +2248,7 @@ export default function TeacherQuizzesPage() {
   return (
     <div className="w-full sm:pt-4 sm:pb-24 sm:px-6 lg:px-8 space-y-[30px] sm:space-y-[30px]">
       {/* Header */}
-      <div className="bg-sky-50/70 md:bg-white border border-blue-200/80 md:border-slate-100 rounded-3xl p-3.5 sm:p-6 shadow-md md:shadow-sm shadow-blue-100/40 flex items-center justify-between gap-2 flex-nowrap transition-all">
+      <div className="bg-blue-100 border border-blue-200/80 rounded-3xl p-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 flex items-center justify-between gap-2 flex-nowrap transition-all duration-300">
         <div className="min-w-0 flex-1">
           <h1 className="text-lg sm:text-2xl font-black text-slate-900 leading-tight whitespace-nowrap truncate">
             Quizzes & Tests

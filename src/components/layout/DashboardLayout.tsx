@@ -6,7 +6,7 @@ import type { UserRole } from "@/lib/types";
 import { UnifiedSidebar } from "@/components/layout/UnifiedSidebar";
 import {
   Home, Building2, Users, Megaphone, BarChart3, Settings,
-  BookOpen, GraduationCap, Calendar,
+  BookOpen, GraduationCap, Calendar, Presentation,
   Video, Layout, BarChart, Radio,
   Swords, Trophy, Brain, User, LogOut, Menu, X, MessageSquare, MessageCircle, Sparkles,
   LayoutDashboard, ClipboardList, Library, Bell, BellOff,
@@ -29,6 +29,7 @@ import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
 import { EnrollmentGate } from "@/components/student/EnrollmentGate";
 import MaintenanceNotice from "@/components/shared/MaintenanceNotice";
 import { useUnreadCount, useNotifications, useMarkNotificationRead, useMarkAllRead } from "@/hooks/use-notifications";
+import { getCoachingNotificationLink } from "@/lib/api/notifications";
 import { WelcomeWalkthrough } from "@/components/onboarding/WelcomeWalkthrough";
 import { useNavTour } from "@/components/onboarding/useNavTour";
 import { NavTourCard } from "@/components/onboarding/NavTourCard";
@@ -730,7 +731,7 @@ const DashboardLayout = () => {
       // Teacher-Based Coaching: Admin Sidebar
       return [
         { label: "Dashboard", path: "/admin", icon: Home },
-        { label: "Teachers", path: "/admin/teachers", icon: Users },
+        { label: "Teachers", path: "/admin/teachers", icon: Presentation },
         { label: "Students", path: "/admin/students", icon: Users },
         { label: "Batches", path: "/admin/batches", icon: Layout },
         { label: "Content", path: "/admin/content", icon: GraduationCap },
@@ -792,7 +793,7 @@ const DashboardLayout = () => {
     // Default (Director or Owner with Full Access)
     return [
       { label: "Dashboard", path: "/admin", icon: Home },
-      { label: "Staff", path: "/admin/teachers", icon: Users },
+      { label: "Staff", path: "/admin/teachers", icon: Presentation },
       { label: "Students", path: "/admin/students", icon: Users },
       { label: "Batches", path: "/admin/batches", icon: Layout },
       { label: "Content Library", path: "/admin/content", icon: GraduationCap },
@@ -857,15 +858,15 @@ const DashboardLayout = () => {
     const preferredByRole: Record<string, string[]> = {
       super_admin: ['/super-admin', '/super-admin/tenants', '/super-admin/analytics'],
       institute_admin: ['/admin', '/admin/teachers', '/admin/students'],
-      teacher: ['/teacher', '/teacher/doubts', '/teacher/lectures'],
-      student: ['/student', '/student/courses', '/student/doubts'],
+      teacher: ['/teacher', '/teacher/batches', '/teacher/doubts'],
+      student: ['/student', '/student/live-classes', '/student/doubts'],
     };
     const preferred = preferredByRole[user.role] || [];
     let primary = navItems.filter(item => preferred.includes(item.path));
     let remaining = navItems.filter(item => !preferred.includes(item.path));
 
-    // If the active tab is in the 'remaining' (More) list, swap it into primary so it gets highlighted (except for super_admin)
-    if (user.role !== 'super_admin') {
+    // If the active tab is in the 'remaining' (More) list, swap it into primary so it gets highlighted (except for fixed roles)
+    if (user.role !== 'super_admin' && user.role !== 'institute_admin' && user.role !== 'teacher' && user.role !== 'student') {
       const activeRemainingIndex = remaining.findIndex(item => isTabActive(item.path));
       if (activeRemainingIndex !== -1) {
         const activeItem = remaining.splice(activeRemainingIndex, 1)[0];
@@ -1038,29 +1039,64 @@ const DashboardLayout = () => {
   const navOpen = isCompactLayout ? mobileSidebarOpen : sidebarOpen;
   const isFullWidthSuperAdminPage = [
     "/super-admin/feature-flags",
-  ].includes(location.pathname);
+    "/super-admin/live-usage",
+    "/super-admin/storage-usage",
+    "/super-admin/ai-usage",
+    "/super-admin/analytics",
+    "/super-admin/audit-logs",
+    "/super-admin/communication",
+    "/super-admin/tenants",
+    "/super-admin/complaints",
+    "/super-admin/support-tickets",
+    "/super-admin/revenue",
+    "/super-admin/tenant-health",
+    "/super-admin/billing",
+    "/school/super-admin/live-usage",
+    "/school/super-admin/storage-usage",
+    "/school/super-admin/ai-usage",
+    "/school/super-admin/analytics",
+    "/school/super-admin/audit-logs",
+    "/school/super-admin/communication",
+    "/school/super-admin/institutes",
+    "/school/super-admin/complaints",
+    "/school/super-admin/support-tickets",
+    "/school/super-admin/revenue",
+    "/school/super-admin/tenant-health",
+    "/school/super-admin/billing",
+  ].some(p => location.pathname.endsWith(p));
   const isFullWidthCoachingAdminPage = [
     "/admin",
     "/admin/students",
+    "/admin/teachers",
+    "/admin/content",
+    "/admin/lectures",
     "/admin/mock-tests",
     "/admin/calendar",
     "/admin/reports",
     "/admin/communication",
     "/admin/notifications",
+    "/teacher",
     "/admin/settings",
     "/teacher/lectures",
     "/teacher/recorded-lectures",
     "/teacher/doubts",
+    "/teacher/calendar",
     "/teacher/analytics",
     "/teacher/communication",
+    "/teacher/support-tickets",
+    "/teacher/profile",
     "/teacher/quizzes",
   ].includes(location.pathname) ||
     location.pathname.startsWith("/admin/batches") ||
+    location.pathname.startsWith("/teacher/batches") ||
     location.pathname.startsWith("/admin/content") ||
+    location.pathname.startsWith("/teacher/content") ||
     location.pathname.startsWith("/admin/students/") ||
-    location.pathname.startsWith("/teacher/students/");
+    location.pathname.startsWith("/teacher/students/") ||
+    location.pathname.startsWith("/admin/teachers/");
   const isFullWidthCoachingStudentPage = [
     "/student",
+    "/student/live-classes",
     "/student/calendar",
     "/student/study-plan",
     "/student/doubts",
@@ -1069,7 +1105,13 @@ const DashboardLayout = () => {
     "/student/progress",
     "/student/profile",
     "/student/notifications",
-  ].includes(location.pathname) || location.pathname.startsWith("/student/courses") || location.pathname.startsWith("/student/learn");
+    "/student/communication",
+    "/student/lectures",
+    "/student/tests",
+  ].includes(location.pathname) ||
+    location.pathname.startsWith("/student/courses") ||
+    location.pathname.startsWith("/student/learn") ||
+    location.pathname.startsWith("/student/live-classes");
 
   return (
     <div
@@ -1096,10 +1138,25 @@ const DashboardLayout = () => {
           }}
           profileCard={(isCollapsed) =>
             isCollapsed ? (
-              <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white text-xs">SA</div>
+              <div className="w-10 h-10 mx-auto rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 shadow-xs hover:scale-105 transition-all">
+                <User className="w-4 h-4 text-indigo-600" />
+              </div>
             ) : (
-              <div className="rounded-xl bg-blue-50 p-3 dark:bg-slate-900 text-center">
-                <p className="text-xs font-bold text-blue-700 dark:text-blue-300">Super Admin</p>
+              <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50/60 border border-slate-100/80 shadow-2xs">
+                <div className="w-10 h-10 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 shrink-0 shadow-xs">
+                  <User className="w-4 h-4 text-indigo-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-slate-900 truncate">{user.name || "Super Admin"}</p>
+                  <p className="text-[10px] font-semibold text-slate-500 capitalize truncate mt-0.5">Super Admin</p>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all shrink-0"
+                  title="Logout"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
               </div>
             )
           }
@@ -1152,7 +1209,7 @@ const DashboardLayout = () => {
             setMobileSidebarOpen(false);
           }
         }}
-        inert={isCompactLayout && mobileSidebarOpen && isMobile ? "" : undefined}
+        {...(isCompactLayout && mobileSidebarOpen && isMobile ? ({ inert: "" } as any) : {})}
       >
         <header
           className={cn(
@@ -1268,30 +1325,7 @@ const DashboardLayout = () => {
                   <Menu className="h-4 w-4" />
                 </button>
 
-                {/* Coaching Teacher Panel: Back button on each page except home */}
-                {user?.role === "teacher" && location.pathname !== "/teacher" && location.pathname !== "/teacher/" && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (window.history.length > 1 && window.history.state?.idx > 0) {
-                        navigate(-1);
-                      } else {
-                        const pathSegments = location.pathname.split("/").filter(Boolean);
-                        if (pathSegments.length > 1) {
-                          pathSegments.pop();
-                          navigate("/" + pathSegments.join("/"));
-                        } else {
-                          navigate("/teacher");
-                        }
-                      }
-                    }}
-                    className="h-11 px-3 sm:px-4 rounded-2xl bg-slate-50 border border-slate-200/80 hover:bg-slate-100 hover:border-slate-300 text-slate-700 font-semibold text-xs sm:text-sm flex items-center gap-1 sm:gap-1.5 shadow-2xs transition-all shrink-0"
-                    title="Go back to parent page"
-                  >
-                    <ChevronLeft className="w-4 h-4 text-slate-600" />
-                    <span>Back</span>
-                  </button>
-                )}
+
 
                 {/* Mobile view only: Profile icon on left for coaching teacher and admin panels */}
                 {(user?.role === "teacher" || user?.role === "institute_admin") && (
@@ -1529,7 +1563,12 @@ const DashboardLayout = () => {
                               </div>
                             ) : notifs.slice(0, 3).map((n: any) => (
                               <button key={n.id}
-                                onClick={() => { if (!n.readAt) markRead.mutate(n.id); }}
+                                onClick={() => {
+                                  if (!n.readAt && !n.isRead) markRead.mutate(n.id);
+                                  setShowTeacherNotif(false);
+                                  const targetLink = getCoachingNotificationLink(n, user?.role);
+                                  if (targetLink) navigate(targetLink);
+                                }}
                                 className={`w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors ${!n.readAt ? "bg-indigo-50/50" : ""}`}
                               >
                                 <div className="flex gap-2">
@@ -1628,14 +1667,14 @@ const DashboardLayout = () => {
           <div
             className={cn(
               "mx-auto w-full transition-all duration-200",
-              (location.pathname.includes("/live") && !location.pathname.includes("/live-classes")) || (location.pathname.includes("/quiz") && !location.pathname.includes("/quizzes")) || isFullWidthSuperAdminPage
+              (location.pathname.startsWith("/live/") || (location.pathname.includes("/quiz") && !location.pathname.includes("/quizzes")) || isFullWidthSuperAdminPage)
                 ? "max-w-none p-0"
                 : location.pathname.startsWith("/super-admin") || isFullWidthCoachingAdminPage || isFullWidthCoachingStudentPage
                   ? cn(
-                    "max-w-none px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))]",
-                    isCoachingSuperAdminMobile && "pt-1"
+                    "max-w-none px-3 pt-2 pb-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))] lg:pb-6",
+                    (location.pathname.startsWith("/super-admin") || isCoachingSuperAdminMobile) && "mt-1 sm:mt-0 pt-2 sm:pt-4 lg:pt-6"
                   )
-                  : "max-w-screen-2xl px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))]"
+                  : "w-full px-3 py-4 sm:px-6 lg:px-8 lg:py-6 pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))] lg:pb-6"
             )}
           >
             <PageErrorBoundary>
@@ -1665,6 +1704,7 @@ const DashboardLayout = () => {
                 if (item.label === 'My Courses') return 'My Courses';
                 if (item.label === 'Live Classes') return 'Live';
                 if (item.label === 'Dashboard') return 'Home';
+                if (item.label === 'My Batches') return 'My Batches';
                 return item.label;
               })();
               return (

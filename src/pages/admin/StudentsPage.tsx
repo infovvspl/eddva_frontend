@@ -104,7 +104,7 @@ const StudentsPage = () => {
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-blue-50/40 border border-blue-200/60 rounded-[2rem] p-4 sm:px-6 sm:py-5 shadow-md shadow-blue-100/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all mb-6"
+        className="bg-blue-100 border border-blue-200/80 rounded-[2rem] p-4 sm:px-6 sm:py-5 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 mb-6"
       >
         <div className="min-w-0 flex-1 pl-1 sm:pl-0">
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight whitespace-nowrap truncate">Students</h1>
@@ -218,17 +218,19 @@ const StudentsPage = () => {
                     <ChevronRight className="w-5 h-5 text-slate-300" />
                   </div>
                   
-                  {(s._batchNames || []).length > 0 && (
+                  {(s._batchNames || []).filter((bName: string) => Boolean(bName && typeof bName === "string" && bName.trim().length > 0)).length > 0 && (
                     <div className="flex flex-wrap gap-1.5 pt-1">
-                      {(s._batchNames || []).map((bName: string, bIdx: number) => (
-                        <span
-                          key={bIdx}
-                          className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full"
-                          style={{ background: `${bStyle.from}15`, color: bStyle.from }}
-                        >
-                          {bName}
-                        </span>
-                      ))}
+                      {(s._batchNames || [])
+                        .filter((bName: string) => Boolean(bName && typeof bName === "string" && bName.trim().length > 0))
+                        .map((bName: string, bIdx: number) => (
+                          <span
+                            key={bIdx}
+                            className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full"
+                            style={{ background: `${bStyle.from}15`, color: bStyle.from }}
+                          >
+                            {bName}
+                          </span>
+                        ))}
                     </div>
                   )}
                 </div>
@@ -290,15 +292,17 @@ const StudentsPage = () => {
                       </td>
                       <td className="p-4 hidden md:table-cell">
                         <div className="flex flex-wrap gap-1.5 align-middle">
-                          {(s._batchNames || []).map((bName: string, bIdx: number) => (
-                            <span
-                              key={bIdx}
-                              className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-full"
-                              style={{ background: `${bStyle.from}15`, color: bStyle.from }}
-                            >
-                              {bName}
-                            </span>
-                          ))}
+                          {(s._batchNames || [])
+                            .filter((bName: string) => Boolean(bName && typeof bName === "string" && bName.trim().length > 0))
+                            .map((bName: string, bIdx: number) => (
+                              <span
+                                key={bIdx}
+                                className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-full"
+                                style={{ background: `${bStyle.from}15`, color: bStyle.from }}
+                              >
+                                {bName}
+                              </span>
+                            ))}
                         </div>
                       </td>
                       <td className="p-4 text-xs text-slate-400 hidden lg:table-cell">
@@ -311,17 +315,7 @@ const StudentsPage = () => {
                           ? new Date(s.lastLoginAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
                           : "Never"}
                       </td>
-                      <td className="p-4 flex justify-end gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/teacher/students/${sid}`);
-                          }}
-                          className="p-2 rounded-xl bg-primary/5 text-primary hover:bg-primary/10 transition-colors"
-                          title="View Advanced Progress"
-                        >
-                          <BarChart3 className="w-4 h-4" />
-                        </button>
+                      <td className="p-4 flex justify-end items-center">
                         <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" />
                       </td>
                     </tr>

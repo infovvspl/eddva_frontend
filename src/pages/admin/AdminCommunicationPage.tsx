@@ -20,8 +20,22 @@ const AdminCommunicationPage = () => {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState(() => {
     const params = new URLSearchParams(window.location.search);
-    return params.get("tab") || "broadcast";
+    const tab = params.get("tab");
+    if (tab) return tab;
+    if (params.get("userId") || params.get("chatId") || params.get("peerId")) return "chat";
+    return "broadcast";
   });
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    const hasChatParams = Boolean(params.get("userId") || params.get("chatId") || params.get("peerId"));
+    if (tab === "chat" || hasChatParams) {
+      setActiveTab("chat");
+    } else if (tab === "broadcast") {
+      setActiveTab("broadcast");
+    }
+  }, [window.location.search]);
 
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
@@ -96,32 +110,32 @@ const AdminCommunicationPage = () => {
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-blue-50/40 border border-blue-200/60 rounded-[2rem] p-4 sm:px-6 sm:py-5 shadow-md shadow-blue-100/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all mb-6"
+        className="bg-blue-100 border border-blue-200/80 rounded-[2rem] p-4 sm:px-6 sm:py-5 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 mb-6"
       >
         <div className="min-w-0 flex-1 pl-1 sm:pl-0">
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight whitespace-nowrap truncate">
             Communication Hub
           </h1>
-          <p className="text-xs sm:text-sm font-bold text-slate-500/80 mt-1 whitespace-nowrap truncate">
+          <p className="text-xs sm:text-sm font-bold text-slate-700 mt-1 whitespace-nowrap truncate">
             Managing institute-wide announcements and chats
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap shrink-0">
-          <div className="flex bg-slate-200/60 p-1 rounded-[1.25rem] mr-2">
+          <div className="flex bg-slate-200/80 p-1 rounded-[1.25rem] mr-2">
             <button
               onClick={() => handleTabChange('broadcast')}
-              className={`px-4 py-2 text-xs font-bold rounded-2xl transition-all ${activeTab === 'broadcast'
+              className={`px-4 py-2 text-xs font-black rounded-2xl transition-all ${activeTab === 'broadcast'
                   ? 'bg-white text-indigo-600 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
+                  : 'text-slate-700 hover:text-slate-900'
                 }`}
             >
               Broadcast Hub
             </button>
             <button
               onClick={() => handleTabChange('chat')}
-              className={`px-4 py-2 text-xs font-bold rounded-2xl transition-all flex items-center gap-2 ${activeTab === 'chat'
+              className={`px-4 py-2 text-xs font-black rounded-2xl transition-all flex items-center gap-2 ${activeTab === 'chat'
                   ? 'bg-white text-indigo-600 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
+                  : 'text-slate-700 hover:text-slate-900'
                 }`}
             >
               <MessageSquare className="w-3.5 h-3.5" /> Chats

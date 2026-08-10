@@ -161,6 +161,7 @@ const SchoolStudentRegistration = lazy(() => import("./pages/school/admin/Studen
 const SchoolStudentPromotion = lazy(() => import("./pages/school/admin/StudentPromotion"));
 const SchoolAdminStudentProfile = lazy(() => import("./pages/school/admin/StudentProfile"));
 const SchoolAdminStudentReportCard = lazy(() => import("./pages/school/admin/StudentReportCard"));
+const SchoolAdminStudentExitWorkflow = lazy(() => import("./pages/school/admin/StudentExitWorkflowPage"));
 const SchoolTeachers = lazy(() => import("./pages/school/admin/Teachers"));
 const SchoolAdmins = lazy(() => import("./pages/school/admin/Admins"));
 const SchoolTeacherRegistration = lazy(() => import("./pages/school/admin/TeacherRegistration"));
@@ -178,6 +179,12 @@ const SchoolAiUsage = lazy(() => import("./pages/school/admin/AiUsage"));
 const SchoolTimetable = lazy(() => import("./pages/school/admin/Timetable"));
 const SchoolAdminSettings = lazy(() => import("./pages/school/admin/AdminSettings"));
 const SchoolReports = lazy(() => import("./pages/school/admin/Reports"));
+const SchoolSyllabusPlanner = lazy(() => import("./pages/school/admin/SyllabusPlanner"));
+const SchoolSyllabusTracker = lazy(() => import("./pages/school/admin/SyllabusTracker"));
+const SchoolSyllabusAnalytics = lazy(() => import("./pages/school/admin/SyllabusAnalytics"));
+const SchoolTeacherTeachingPlan = lazy(() => import("./pages/school/teacher/TeacherTeachingPlan"));
+const SchoolStudentSyllabusView = lazy(() => import("./pages/school/student/StudentSyllabusView"));
+const SchoolParentSyllabusView = lazy(() => import("./pages/school/parent/ParentSyllabusView"));
 const SchoolFinance = lazy(() => import("./pages/school/admin/Finance"));
 const SchoolCommunications = lazy(() => import("./pages/school/admin/Communications"));
 const SchoolAuditLogs = lazy(() => import("./pages/school/admin/AuditLogs"));
@@ -260,6 +267,7 @@ const SchoolStudentSessionResult = lazy(() => import("./pages/school/student/Ses
 const SchoolStudentDoubts = lazy(() => import("./pages/school/student/Doubts"));
 const SchoolStudentBattleArena = lazy(() => import("./pages/school/student/BattleArena"));
 const SchoolStudentGamification = lazy(() => import("./pages/school/student/Gamification"));
+const SchoolStudentAstroProfile = lazy(() => import("./pages/school/student/AstroProfile"));
 const GameArenaShell = lazy(() => import("./components/school/student/GameArenaShell"));
 const SchoolStudentQuizRush = lazy(() => import("./pages/school/student/game-zone/QuizRush"));
 const SchoolStudentTreasureHunt = lazy(() => import("./pages/school/student/game-zone/TreasureHunt"));
@@ -462,6 +470,7 @@ const SchoolRoutes = () => (
       <Route path="students/:id/edit" element={<SchoolStudentRegistration />} />
       <Route path="students/:id" element={<SchoolAdminStudentProfile />} />
       <Route path="students/:id/report-card" element={<SchoolAdminStudentReportCard />} />
+      <Route path="students/:id/exit" element={<SchoolAdminStudentExitWorkflow />} />
       <Route path="student-promotion" element={<SchoolStudentPromotion />} />
       <Route path="teachers" element={<SchoolTeachers />} />
       <Route path="admins" element={<SchoolAdmins />} />
@@ -491,6 +500,9 @@ const SchoolRoutes = () => (
       <Route path="message-logs" element={<SchoolMessageLogs />} />
       <Route path="gamification" element={<SchoolAdminGamification />} />
       <Route path="document-generator" element={<SchoolDocumentGenerator />} />
+      <Route path="syllabus-planner" element={<SchoolSyllabusPlanner />} />
+      <Route path="syllabus-tracker" element={<SchoolSyllabusTracker />} />
+      <Route path="syllabus-analytics" element={<SchoolSyllabusAnalytics />} />
     </Route>
 
     {/* School Super Admin */}
@@ -541,6 +553,8 @@ const SchoolRoutes = () => (
       <Route path="live/:id/dashboard" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'live_classes' }}><SchoolTeacherLiveDashboard /></SchoolGuard>} />
       <Route path="topics" element={<Navigate to="/school/teacher/course-content" replace />} />
       <Route path="classes" element={<SchoolClassManagement />} />
+      <Route path="recorded-classes/:recordingId" element={<SchoolStudentRecordedClassDetails />} />
+      <Route path="teaching-plan" element={<SchoolTeacherTeachingPlan />} />
       <Route path="calendar" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'academic_calendar' }}><SchoolTeacherCalendar /></SchoolGuard>} />
       <Route path="attendance" element={<SchoolAttendanceSystem />} />
       <Route path="assignments" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'assignments' }}><SchoolAssignmentManagement /></SchoolGuard>} />
@@ -601,8 +615,13 @@ const SchoolRoutes = () => (
       <Route path="career/report" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_career_guidance' }}><SchoolStudentCareerReport /></SchoolGuard>} />
       <Route path="career/explore" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_career_guidance' }}><SchoolStudentCareerExplorer /></SchoolGuard>} />
       <Route path="career/explore/:careerId" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_career_guidance' }}><SchoolStudentCareerDetail /></SchoolGuard>} />
+      {/* Demo feature. Sits beside Career Guidance because it answers the same
+          question for a student, and shares its feature flag so an institute
+          that has career guidance turned off does not see it either. */}
+      <Route path="astro-profile" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_astro_profile' }}><SchoolStudentAstroProfile /></SchoolGuard>} />
       <Route path="announcements" element={<SchoolStudentAnnouncements />} />
       <Route path="chat" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'module', key: 'chat' }}><SchoolStudentChat /></SchoolGuard>} />
+      <Route path="syllabus" element={<SchoolStudentSyllabusView />} />
       <Route path="profile" element={<SchoolStudentProfile />} />
       <Route path="settings" element={<SchoolStudentSettings />} />
       <Route path="fees" element={<SchoolStudentFees />} />
@@ -629,6 +648,7 @@ const SchoolRoutes = () => (
       <Route path="communication" element={<SchoolGuard roles={["PARENT"]} feature={{ type: 'module', key: 'chat' }}><SchoolParentCommunication /></SchoolGuard>} />
       <Route path="notifications" element={<SchoolParentNotifications />} />
       <Route path="announcements" element={<SchoolParentAnnouncements />} />
+      <Route path="syllabus" element={<SchoolParentSyllabusView />} />
       <Route path="profile" element={<SchoolParentProfile />} />
     </Route>
   </>

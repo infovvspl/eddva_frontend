@@ -98,19 +98,6 @@ export default function Gamification() {
       btnGradient: 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-amber-500/20'
     },
     {
-      title: 'Math Sprint',
-      desc: '60-second rapid-fire arithmetic sums. Test your math speed!',
-      path: '/school/student/game-zone/math-sprint',
-      badge: 'Rapid Fire',
-      badgeColor: 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300',
-      gradient: 'from-rose-50/80 to-pink-50/50 dark:from-slate-900 dark:to-rose-950/20',
-      hoverBorder: 'hover:border-rose-400',
-      hoverTitle: 'group-hover:text-rose-600 dark:group-hover:text-rose-400',
-      icon: Zap,
-      iconColor: 'text-rose-600 dark:text-rose-400',
-      btnGradient: 'bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 shadow-rose-500/20'
-    },
-    {
       title: 'Memory Match',
       desc: 'Match definitions, terms, and NCERT diagrams in the fewest turns possible.',
       path: '/school/student/game-zone/memory-match',

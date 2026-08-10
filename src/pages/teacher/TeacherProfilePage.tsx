@@ -419,11 +419,11 @@ export default function TeacherProfilePage() {
   };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 w-full max-w-full overflow-x-hidden">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-6 w-full max-w-full overflow-x-hidden sm:pt-4 lg:pb-4 sm:px-6">
 
       {/* ── Profile Header ─────────────────────────────────────────────────── */}
       {/* Mobile View Layout: Per specifications inside sky blue background */}
-      <div className="block sm:hidden bg-gradient-to-br from-blue-100/90 via-indigo-50/80 to-blue-50/90 border border-blue-200/80 rounded-2xl p-4 shadow-sm space-y-3">
+      <div className="block sm:hidden bg-blue-100 border border-blue-200/80 rounded-2xl p-4 shadow-sm space-y-3">
         <div className="flex items-start gap-3">
           {/* Avatar + Teacher Badge Stacked */}
           <div className="flex flex-col items-center shrink-0 gap-1.5">
@@ -514,7 +514,7 @@ export default function TeacherProfilePage() {
       {/* Desktop View Layout: Untouched original layout */}
       <div className="hidden sm:block bg-card border border-border rounded-2xl overflow-hidden shadow-xs">
         {/* Banner */}
-        <div className="h-28 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/5" />
+        <div className="h-28 bg-blue-100 border-b border-blue-200/80" />
 
         <div className="px-6 pb-6">
           <div className="flex flex-row items-end justify-between -mt-12 mb-4 gap-4">

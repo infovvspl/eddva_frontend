@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { useSchoolFeature } from '@/hooks/use-school-feature';
@@ -11,6 +11,7 @@ import {
   CalendarDays,
   ClipboardList,
   Compass,
+  Sparkles,
   FileText,
   HelpCircle,
   LayoutDashboard,
@@ -33,6 +34,9 @@ const allItems = [
   { group: 'Academic Work', path: '/school/student/analytics', label: 'Performance Analytics', icon: BarChart3, featType: 'module', featKey: 'reports' },
   { group: 'Growth', path: '/school/student/doubts', label: 'My Doubts', icon: HelpCircle, featType: 'ai', featKey: 'ai_doubt_solver' },
   { group: 'Growth', path: '/school/student/career', label: 'Career Guidance', icon: Compass, badge: 'New', featType: 'ai', featKey: 'ai_career_guidance' },
+  // Demonstration feature — shares the career-guidance flag so it appears and
+  // disappears with the section it belongs to.
+  { group: 'Growth', path: '/school/student/astro-profile', label: 'AI Astro Profile', icon: Sparkles, badge: 'Demo', featType: 'ai', featKey: 'ai_astro_profile' },
   { group: 'Growth', path: '/school/student/gamification', label: 'Gamification', icon: Trophy, badge: 'New' },
   { group: 'Growth', path: '/school/student/timetable', label: 'Timetable', icon: CalendarDays, featType: 'module', featKey: 'timetable' },
   { group: 'Growth', path: '/school/student/calendar', label: 'Calendar', icon: CalendarDays, featType: 'module', featKey: 'academic_calendar' },
@@ -45,19 +49,27 @@ export default function Sidebar({ open, onClose }) {
   const isGameRoute = location.pathname.includes('/game-zone');
   const isGamificationRoute = location.pathname.includes('/gamification') || isGameRoute;
 
-  const [collapsed, setCollapsed] = useState(() => isGamificationRoute);
+  const prevIsGamificationRef = useRef(isGamificationRoute);
+  const [collapsed, setCollapsed] = useState(() => {
+    const saved = sessionStorage.getItem('pre_gamification_sidebar');
+    return saved === 'true';
+  });
 
   useEffect(() => {
     if (isGamificationRoute) {
-      // Auto collapse sidebar when entering Gamification or any game
+      if (!prevIsGamificationRef.current) {
+        // Save current sidebar state before entering gamification
+        sessionStorage.setItem('pre_gamification_sidebar', String(collapsed));
+      }
       setCollapsed(true);
     } else {
-      // Restore pre-gamification sidebar state when returning to main dashboard
-      const savedPreState = sessionStorage.getItem('pre_gamification_sidebar');
-      if (savedPreState !== null) {
+      if (prevIsGamificationRef.current) {
+        // Restore pre-gamification sidebar state when returning to dashboard
+        const savedPreState = sessionStorage.getItem('pre_gamification_sidebar');
         setCollapsed(savedPreState === 'true');
       }
     }
+    prevIsGamificationRef.current = isGamificationRoute;
   }, [location.pathname, isGamificationRoute]);
 
   const handleToggleCollapse = () => {
@@ -80,6 +92,7 @@ export default function Sidebar({ open, onClose }) {
   const hasPlanner = useSchoolFeature('ai', 'ai_study_planner');
   const hasDoubts = useSchoolFeature('ai', 'ai_doubt_solver');
   const hasCareer = useSchoolFeature('ai', 'ai_career_guidance');
+  const hasAstro = useSchoolFeature('ai', 'ai_astro_profile');
 
   if (isGamificationRoute) {
     return null;
@@ -104,6 +117,7 @@ export default function Sidebar({ open, onClose }) {
     if (item.featType === 'ai' && item.featKey === 'ai_study_planner' && !hasPlanner) return;
     if (item.featType === 'ai' && item.featKey === 'ai_doubt_solver' && !hasDoubts) return;
     if (item.featType === 'ai' && item.featKey === 'ai_career_guidance' && !hasCareer) return;
+    if (item.featType === 'ai' && item.featKey === 'ai_astro_profile' && !hasAstro) return;
 
     const group = filteredGroups.find(g => g.heading === item.group);
     if (group) group.items.push(item);
@@ -126,6 +140,8 @@ export default function Sidebar({ open, onClose }) {
               {(user?.name || 'S').charAt(0).toUpperCase()}
             </div>
           }
+          name={user?.name || 'Student'}
+          roleLabel={user?.role || 'Student'}
           title={user?.name || 'Student'}
           subtitle={user?.role || 'Student'}
         />

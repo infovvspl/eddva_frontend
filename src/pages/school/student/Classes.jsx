@@ -25,6 +25,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSchoolFeature } from '@/hooks/use-school-feature';
 import { CustomSelect } from '@/components/ui/CustomSelect';
+import { cn } from '@/lib/utils';
 
 
 function LiveRecordingCard({ rec }) {
@@ -63,40 +64,44 @@ function LiveRecordingCard({ rec }) {
           </span>
         )}
       </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap gap-1">
-          {isProcessing ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
-              <Loader2 size={8} className="animate-spin" /> Processing…
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400">
-              <Radio size={8} /> Live Recording
-            </span>
-          )}
-          {rec.subjectName && (
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] sm:text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-              {rec.subjectName}
-            </span>
-          )}
+      <div className="min-w-0 flex-1 flex flex-col justify-between">
+        <div>
+          <div className="flex flex-wrap gap-1">
+            {isProcessing ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
+                <Loader2 size={8} className="animate-spin" /> Processing…
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400">
+                <Radio size={8} /> Live Recording
+              </span>
+            )}
+            {rec.subjectName && (
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] sm:text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                {rec.subjectName}
+              </span>
+            )}
+          </div>
+          <h4 className="mt-1.5 line-clamp-2 text-xs sm:text-sm font-black text-slate-900 dark:text-white">{rec.title}</h4>
+          <p className="mt-0.5 text-[10px] sm:text-xs font-medium text-slate-500">
+            {rec.endedAt ? new Date(rec.endedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}
+            {rec.className ? ` · ${rec.className}` : ''}
+          </p>
         </div>
-        <h4 className="mt-1.5 line-clamp-2 text-xs sm:text-sm font-black text-slate-900 dark:text-white">{rec.title}</h4>
-        <p className="mt-0.5 text-[10px] sm:text-xs font-medium text-slate-500">
-          {rec.endedAt ? new Date(rec.endedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}
-          {rec.className ? ` · ${rec.className}` : ''}
-        </p>
         {isProcessing ? (
           <p className="mt-2 text-[10px] sm:text-xs font-medium text-amber-600 dark:text-amber-400">
             Recording is being saved — usually ready in 5–15 min
           </p>
         ) : (
-          <Link
-            to={`/school/student/live-classes/${rec.classRecordingId}/recording`}
-            className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-sky-50 px-3 py-1.5 text-[10px] sm:text-xs font-bold text-blue-600 transition hover:from-blue-100 hover:to-sky-100 hover:border-blue-300 hover:text-blue-700 disabled:opacity-60"
-          >
-            <PlayCircle size={12} />
-            Watch Recording
-          </Link>
+          <div className="mt-auto pt-2">
+            <Link
+              to={`/school/student/live-classes/${rec.classRecordingId}/recording`}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-sky-50 px-3 py-1.5 text-[10px] sm:text-xs font-bold text-blue-600 transition hover:from-blue-100 hover:to-sky-100 hover:border-blue-300 hover:text-blue-700 disabled:opacity-60"
+            >
+              <PlayCircle size={12} />
+              Watch Recording
+            </Link>
+          </div>
         )}
       </div>
     </div>
@@ -150,49 +155,51 @@ function RecordedClassCard({ recording, renderRecordingStatus }) {
           )}
         </Link>
 
-        <div className="min-w-0 flex-1 flex flex-col">
-          {/* Subject badge (desktop only) */}
-          {!isMobile && recording.subject_name && (
-            <div className="flex flex-wrap gap-2">
-              <span className="rounded-full bg-slate-50 dark:bg-slate-850 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300">
-                {recording.subject_name}
+        <div className="min-w-0 flex-1 flex flex-col justify-between">
+          <div>
+            {/* Subject badge (desktop only) */}
+            {!isMobile && recording.subject_name && (
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-slate-50 dark:bg-slate-850 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300">
+                  {recording.subject_name}
+                </span>
+              </div>
+            )}
+
+            <h3 className="mt-1 text-sm sm:text-base font-black text-slate-900 dark:text-white line-clamp-2 leading-snug sm:mt-3">
+              {recording.title}
+            </h3>
+            <p className="mt-0.5 line-clamp-1 text-xs font-medium text-slate-500">
+              {recording.chapter_name || 'General chapter'}
+              {recording.topic_name ? ` · ${recording.topic_name}` : ''}
+            </p>
+
+            {/* Status and metadata details pills */}
+            <div className="mt-2.5 flex flex-wrap gap-1.5 text-[10px] font-semibold text-slate-500 sm:mt-3 sm:text-[11px] sm:gap-2">
+              {renderRecordingStatus(recording)}
+              
+              <span className="inline-flex items-center gap-1 rounded-lg bg-slate-50 dark:bg-slate-800 px-2 py-0.5 sm:rounded-full sm:px-2.5 sm:py-1">
+                <CalendarDays size={11} />
+                {recording.recorded_date ? new Date(recording.recorded_date).toLocaleDateString('en-GB') : 'No date'}
               </span>
+
+              {hasNotes && (
+                <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-0.5 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-450 sm:rounded-full sm:px-2.5 sm:py-1">
+                  <Sparkles size={11} />
+                  Notes
+                </span>
+              )}
+              
+              {!hasNotes && hasTranscript && (
+                <span className="inline-flex items-center gap-1 rounded-lg bg-violet-50 px-2 py-0.5 text-violet-750 dark:bg-violet-950/20 dark:text-violet-400 sm:rounded-full sm:px-2.5 sm:py-1">
+                  <Download size={11} />
+                  Transcript
+                </span>
+              )}
             </div>
-          )}
-
-          <h3 className="mt-1 text-sm sm:text-base font-black text-slate-900 dark:text-white line-clamp-2 leading-snug sm:mt-3">
-            {recording.title}
-          </h3>
-          <p className="mt-0.5 line-clamp-1 text-xs font-medium text-slate-500">
-            {recording.chapter_name || 'General chapter'}
-            {recording.topic_name ? ` · ${recording.topic_name}` : ''}
-          </p>
-
-          {/* Status and metadata details pills */}
-          <div className="mt-2.5 flex flex-wrap gap-1.5 text-[10px] font-semibold text-slate-500 sm:mt-3 sm:text-[11px] sm:gap-2">
-            {renderRecordingStatus(recording)}
-            
-            <span className="inline-flex items-center gap-1 rounded-lg bg-slate-50 dark:bg-slate-800 px-2 py-0.5 sm:rounded-full sm:px-2.5 sm:py-1">
-              <CalendarDays size={11} />
-              {recording.recorded_date ? new Date(recording.recorded_date).toLocaleDateString('en-GB') : 'No date'}
-            </span>
-
-            {hasNotes && (
-              <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-0.5 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-450 sm:rounded-full sm:px-2.5 sm:py-1">
-                <Sparkles size={11} />
-                Notes
-              </span>
-            )}
-            
-            {!hasNotes && hasTranscript && (
-              <span className="inline-flex items-center gap-1 rounded-lg bg-violet-50 px-2 py-0.5 text-violet-750 dark:bg-violet-950/20 dark:text-violet-400 sm:rounded-full sm:px-2.5 sm:py-1">
-                <Download size={11} />
-                Transcript
-              </span>
-            )}
           </div>
 
-          <div className="mt-3.5 sm:mt-4">
+          <div className="mt-auto pt-3 sm:pt-4">
             <Link
               to={`/school/student/recorded-classes/${recording.id}${canWatch ? '?play=1' : ''}`}
               target="_blank"
@@ -215,6 +222,10 @@ export default function Classes() {
   const [liveClasses, setLiveClasses] = useState([]);
   const [obsLive, setObsLive] = useState([]);
   const [recordings, setRecordings] = useState([]);
+  const [showAllSchoolStudentRecordings, setShowAllSchoolStudentRecordings] = useState(false);
+  const [showAllSchoolStudentLive, setShowAllSchoolStudentLive] = useState(false);
+  const [showAllSchoolStudentLiveRecordings, setShowAllSchoolStudentLiveRecordings] = useState(false);
+  const [schoolStudentLiveFilter, setSchoolStudentLiveFilter] = useState('all');
   const hasNotesGen = useSchoolFeature('ai', 'ai_notes_generator');
   const [liveRecordings, setLiveRecordings] = useState([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
@@ -483,10 +494,86 @@ export default function Classes() {
   const obsLiveLectures = obsLive.filter((l) => l.status === 'LIVE');
   const obsScheduledLectures = obsLive.filter((l) => l.status === 'SCHEDULED');
 
+  const ongoingCount = obsLiveLectures.length;
+  const scheduledCount = obsScheduledLectures.length + liveClasses.length;
+  const completedCount = liveRecordings.length;
+  const totalLiveClassesCount = ongoingCount + scheduledCount + completedCount;
+
+  const showOngoing = schoolStudentLiveFilter === 'all' || schoolStudentLiveFilter === 'ongoing';
+  const showScheduled = schoolStudentLiveFilter === 'all' || schoolStudentLiveFilter === 'scheduled';
+  const showCompleted = schoolStudentLiveFilter === 'all' || schoolStudentLiveFilter === 'completed' || schoolStudentLiveFilter === 'finished';
+
   const liveClassesView = (
     <div className="space-y-5">
+      {/* ── Status filter bar ── */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <button
+          type="button"
+          onClick={() => setSchoolStudentLiveFilter('all')}
+          className={cn(
+            "px-4 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 flex items-center gap-1.5",
+            schoolStudentLiveFilter === 'all'
+              ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+              : "bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800"
+          )}
+        >
+          All Classes
+          <span className={cn("px-1.5 py-0.5 rounded-full text-[10px] font-black", schoolStudentLiveFilter === 'all' ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400")}>
+            {totalLiveClassesCount}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSchoolStudentLiveFilter('scheduled')}
+          className={cn(
+            "px-4 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 flex items-center gap-1.5",
+            schoolStudentLiveFilter === 'scheduled'
+              ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+              : "bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800"
+          )}
+        >
+          Scheduled
+          <span className={cn("px-1.5 py-0.5 rounded-full text-[10px] font-black", schoolStudentLiveFilter === 'scheduled' ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400")}>
+            {scheduledCount}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSchoolStudentLiveFilter('ongoing')}
+          className={cn(
+            "px-4 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 flex items-center gap-1.5",
+            schoolStudentLiveFilter === 'ongoing'
+              ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+              : "bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800"
+          )}
+        >
+          Ongoing (Live)
+          <span className={cn("px-1.5 py-0.5 rounded-full text-[10px] font-black", schoolStudentLiveFilter === 'ongoing' ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400")}>
+            {ongoingCount}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSchoolStudentLiveFilter('completed')}
+          className={cn(
+            "px-4 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 flex items-center gap-1.5",
+            schoolStudentLiveFilter === 'completed' || schoolStudentLiveFilter === 'finished'
+              ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+              : "bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800"
+          )}
+        >
+          Completed
+          <span className={cn("px-1.5 py-0.5 rounded-full text-[10px] font-black", schoolStudentLiveFilter === 'completed' || schoolStudentLiveFilter === 'finished' ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400")}>
+            {completedCount}
+          </span>
+        </button>
+      </div>
+
       {/* Live Now — OBS broadcasts currently streaming */}
-      {obsLiveLectures.length > 0 && (
+      {showOngoing && obsLiveLectures.length > 0 && (
         <div className="space-y-3">
           <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-indigo-650">
             <span className="relative flex h-2.5 w-2.5">
@@ -521,7 +608,7 @@ export default function Classes() {
       )}
 
       {/* Scheduled — OBS broadcasts not yet started */}
-      {obsScheduledLectures.length > 0 && (
+      {showScheduled && obsScheduledLectures.length > 0 && (
         <div className="space-y-3">
           <h3 className="flex items-center gap-2 text-xs sm:text-sm font-black uppercase tracking-wider text-blue-600">
             <CalendarDays size={14} />
@@ -554,80 +641,129 @@ export default function Classes() {
         </div>
       )}
 
-      {liveClasses.length === 0 && obsLive.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl sm:rounded-[2rem] border border-dashed border-slate-200 bg-white p-8 sm:p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <Radio className="mb-3 sm:mb-4 h-10 w-10 sm:h-12 sm:w-12 text-slate-300 dark:text-slate-700" />
-          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">No live classes scheduled</h3>
-          <p className="mt-1 text-xs sm:text-sm text-slate-500">
-            Live sessions assigned by your school will appear here.
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-4 sm:gap-5 lg:grid-cols-2">
-          {liveClasses.map((cls, index) => (
-            <div
-              key={`${cls.day}-${cls.startTime}-${cls.subject}-${index}`}
-              className="rounded-2xl sm:rounded-[1.5rem] border border-slate-100 bg-white p-4 sm:p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-            >
-              <div className="flex items-start justify-between gap-3 sm:gap-4">
-                <div className="min-w-0">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-0.5 text-[9px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-blue-700">
-                    <Radio size={11} />
-                    Live Class
-                  </span>
-                  <h3 className="mt-3 sm:mt-4 text-sm sm:text-xl font-black text-slate-900 dark:text-white">{cls.subject || 'Live session'}</h3>
-                  <p className="mt-0.5 text-xs sm:text-sm font-semibold text-slate-500">{cls.teacher || 'Teacher not assigned'}</p>
+      {/* Timetable scheduled live classes */}
+      {showScheduled && liveClasses.length > 0 && (
+        <div className="space-y-3">
+          <div className="grid gap-4 sm:gap-5 lg:grid-cols-2">
+            {(showAllSchoolStudentLive ? liveClasses : liveClasses.slice(0, 4)).map((cls, index) => (
+              <div
+                key={`${cls.day}-${cls.startTime}-${cls.subject}-${index}`}
+                className="rounded-2xl sm:rounded-[1.5rem] border border-slate-100 bg-white p-4 sm:p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+              >
+                <div className="flex items-start justify-between gap-3 sm:gap-4">
+                  <div className="min-w-0">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-0.5 text-[9px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-blue-700">
+                      <Radio size={11} />
+                      Live Class
+                    </span>
+                    <h3 className="mt-3 sm:mt-4 text-sm sm:text-xl font-black text-slate-900 dark:text-white">{cls.subject || 'Live session'}</h3>
+                    <p className="mt-0.5 text-xs sm:text-sm font-semibold text-slate-500">{cls.teacher || 'Teacher not assigned'}</p>
+                  </div>
+                  <div className="rounded-xl bg-slate-50 p-2 sm:p-3 text-blue-600 dark:bg-slate-800 shrink-0">
+                    <Video size={18} />
+                  </div>
                 </div>
-                <div className="rounded-xl bg-slate-50 p-2 sm:p-3 text-blue-600 dark:bg-slate-800 shrink-0">
-                  <Video size={18} />
+
+                <div className="mt-4 sm:mt-5 flex flex-wrap gap-1.5 text-[10px] sm:text-xs font-bold text-slate-500">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800">
+                    <CalendarDays size={11} />
+                    {cls.day || 'Scheduled day'}
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800">
+                    <Clock3 size={11} />
+                    {cls.startTime || '00:00'} - {cls.endTime || '00:00'}
+                  </span>
+                </div>
+
+                <div className="mt-4 sm:mt-5">
+                  {cls.meetingLink ? (
+                    <a
+                      href={cls.meetingLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs sm:text-sm font-bold text-white transition hover:bg-blue-700"
+                    >
+                      <Radio size={13} />
+                      Join Class
+                    </a>
+                  ) : (
+                    <span className="inline-flex items-center rounded-lg bg-slate-100 px-3 py-1.5 text-xs sm:text-sm font-bold text-slate-500 dark:bg-slate-800">
+                      Join link not added yet
+                    </span>
+                  )}
                 </div>
               </div>
-
-              <div className="mt-4 sm:mt-5 flex flex-wrap gap-1.5 text-[10px] sm:text-xs font-bold text-slate-500">
-                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800">
-                  <CalendarDays size={11} />
-                  {cls.day || 'Scheduled day'}
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800">
-                  <Clock3 size={11} />
-                  {cls.startTime || '00:00'} - {cls.endTime || '00:00'}
-                </span>
-              </div>
-
-              <div className="mt-4 sm:mt-5">
-                {cls.meetingLink ? (
-                  <a
-                    href={cls.meetingLink}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs sm:text-sm font-bold text-white transition hover:bg-blue-700"
-                  >
-                    <Radio size={13} />
-                    Join Class
-                  </a>
-                ) : (
-                  <span className="inline-flex items-center rounded-lg bg-slate-100 px-3 py-1.5 text-xs sm:text-sm font-bold text-slate-500 dark:bg-slate-800">
-                    Join link not added yet
-                  </span>
-                )}
-              </div>
+            ))}
+          </div>
+          {liveClasses.length > 4 && (
+            <div className="flex items-center justify-between px-1 flex-wrap gap-2 pt-1">
+              <p className="text-xs text-slate-500">
+                Showing {Math.min(showAllSchoolStudentLive ? liveClasses.length : 4, liveClasses.length)} of {liveClasses.length} live classes
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowAllSchoolStudentLive((v) => !v)}
+                className="px-4 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors inline-flex items-center gap-1.5"
+              >
+                <span>{showAllSchoolStudentLive ? "Show Less" : `Show ${liveClasses.length - 4} more`}</span>
+                <ChevronRight size={14} className={showAllSchoolStudentLive ? "-rotate-90 transition-transform" : "rotate-90 transition-transform"} />
+              </button>
             </div>
-          ))}
+          )}
         </div>
       )}
 
       {/* Past Live Class Recordings — auto-saved when a live session ends */}
-      {liveRecordings.length > 0 && (
+      {showCompleted && liveRecordings.length > 0 && (
         <div className="space-y-3">
           <h3 className="flex items-center gap-2 text-xs sm:text-sm font-black uppercase tracking-wider text-indigo-700">
             <Radio size={14} />
             Past Live Class Recordings
           </h3>
-          <div className="grid gap-4 xl:grid-cols-2">
-            {liveRecordings.map((rec) => (
-              <LiveRecordingCard key={rec.id} rec={rec} />
-            ))}
+          <div className="space-y-3">
+            <div className="grid gap-4 xl:grid-cols-2">
+              {(showAllSchoolStudentLiveRecordings ? liveRecordings : liveRecordings.slice(0, 4)).map((rec) => (
+                <LiveRecordingCard key={rec.id} rec={rec} />
+              ))}
+            </div>
+            {liveRecordings.length > 4 && (
+              <div className="flex items-center justify-between px-1 flex-wrap gap-2 pt-1">
+                <p className="text-xs text-slate-500">
+                  Showing {Math.min(showAllSchoolStudentLiveRecordings ? liveRecordings.length : 4, liveRecordings.length)} of {liveRecordings.length} recordings
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowAllSchoolStudentLiveRecordings((v) => !v)}
+                  className="px-4 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors inline-flex items-center gap-1.5"
+                >
+                  <span>{showAllSchoolStudentLiveRecordings ? "Show Less" : `Show ${liveRecordings.length - 4} more`}</span>
+                  <ChevronRight size={14} className={showAllSchoolStudentLiveRecordings ? "-rotate-90 transition-transform" : "rotate-90 transition-transform"} />
+                </button>
+              </div>
+            )}
           </div>
+        </div>
+      )}
+
+      {/* Filter empty state */}
+      {((schoolStudentLiveFilter === 'ongoing' && ongoingCount === 0) ||
+        (schoolStudentLiveFilter === 'scheduled' && scheduledCount === 0) ||
+        ((schoolStudentLiveFilter === 'completed' || schoolStudentLiveFilter === 'finished') && completedCount === 0) ||
+        (totalLiveClassesCount === 0)) && (
+        <div className="flex flex-col items-center justify-center rounded-2xl sm:rounded-[2rem] border border-dashed border-slate-200 bg-white p-8 sm:p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <Radio className="mb-3 sm:mb-4 h-10 w-10 sm:h-12 sm:w-12 text-slate-300 dark:text-slate-700" />
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+            {schoolStudentLiveFilter === 'ongoing' ? 'No ongoing live classes' :
+             schoolStudentLiveFilter === 'scheduled' ? 'No scheduled live classes' :
+             (schoolStudentLiveFilter === 'completed' || schoolStudentLiveFilter === 'finished') ? 'No completed live classes' :
+             'No live classes found'}
+          </h3>
+          <p className="mt-1 text-xs sm:text-sm text-slate-500">
+            {schoolStudentLiveFilter === 'ongoing' ? 'There are currently no active live streams in progress.' :
+             schoolStudentLiveFilter === 'scheduled' ? 'No upcoming live classes are currently scheduled.' :
+             (schoolStudentLiveFilter === 'completed' || schoolStudentLiveFilter === 'finished') ? 'No past live class recordings are available.' :
+             'Live sessions assigned by your school will appear here.'}
+          </p>
         </div>
       )}
     </div>
@@ -757,14 +893,31 @@ export default function Classes() {
           </button>
         </div>
       ) : (
-        <div className="grid gap-5 xl:grid-cols-2">
-          {filteredRecordings.map((recording) => (
-            <RecordedClassCard
-              key={recording.id}
-              recording={recording}
-              renderRecordingStatus={renderRecordingStatus}
-            />
-          ))}
+        <div className="space-y-3">
+          <div className="grid gap-5 xl:grid-cols-2">
+            {(showAllSchoolStudentRecordings ? filteredRecordings : filteredRecordings.slice(0, 4)).map((recording) => (
+              <RecordedClassCard
+                key={recording.id}
+                recording={recording}
+                renderRecordingStatus={renderRecordingStatus}
+              />
+            ))}
+          </div>
+          {filteredRecordings.length > 4 && (
+            <div className="flex items-center justify-between px-1 flex-wrap gap-2 pt-1">
+              <p className="text-xs text-slate-500">
+                Showing {Math.min(showAllSchoolStudentRecordings ? filteredRecordings.length : 4, filteredRecordings.length)} of {filteredRecordings.length} recorded lectures
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowAllSchoolStudentRecordings((v) => !v)}
+                className="px-4 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors inline-flex items-center gap-1.5"
+              >
+                <span>{showAllSchoolStudentRecordings ? "Show Less" : `Show ${filteredRecordings.length - 4} more`}</span>
+                <ChevronRight size={14} className={showAllSchoolStudentRecordings ? "-rotate-90 transition-transform" : "rotate-90 transition-transform"} />
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

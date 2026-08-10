@@ -3634,7 +3634,7 @@ const MockTestsPage = () => {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-blue-50/40 border border-blue-200/60 rounded-[2rem] p-4 sm:px-6 sm:py-5 shadow-md shadow-blue-100/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all mb-6"
+          className="bg-blue-100 border border-blue-200/80 rounded-[2rem] p-4 sm:px-6 sm:py-5 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 mb-6"
         >
           <div className="min-w-0 flex-1 pl-1 sm:pl-0">
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight whitespace-nowrap truncate">Mock Tests</h1>
@@ -3644,11 +3644,11 @@ const MockTestsPage = () => {
 
         {/* Search */}
         <div className="relative mb-5 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-4 sm:left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             value={batchSearch} onChange={e => setBatchSearch(e.target.value)}
             placeholder="Search courses…"
-            className="h-10 w-full pl-9 pr-4 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:border-[#013889] focus:ring-2 focus:ring-[#013889]/10 shadow-sm"
+            className="h-10 w-full pl-10 sm:pl-9 pr-4 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:border-[#013889] focus:ring-2 focus:ring-[#013889]/10 shadow-sm"
           />
         </div>
 

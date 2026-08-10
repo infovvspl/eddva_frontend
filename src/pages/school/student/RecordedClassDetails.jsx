@@ -215,8 +215,7 @@ export default function RecordedClassDetails() {
 
   // Fetch notes images as data URIs (R2 bucket has no CORS for direct browser <img> loads)
   useEffect(() => {
-    const imgs = Array.isArray(recording?.notes_images) ? recording.notes_images : [];
-    if (!recording?.id || imgs.length === 0) {
+    if (!recording?.id || !recording?.notes) {
       setNotesImageMap({});
       return;
     }
@@ -229,7 +228,7 @@ export default function RecordedClassDetails() {
       })
       .catch(() => { if (!cancelled) setNotesImageMap({}); });
     return () => { cancelled = true; };
-  }, [recording?.id, recording?.notes_images?.length]);
+  }, [recording?.id, recording?.notes]);
 
   useEffect(() => {
     const root = notesContentRef.current;
@@ -976,7 +975,7 @@ export default function RecordedClassDetails() {
     return (
       <div className="space-y-6">
         <Link
-          to="/school/student/recorded-classes"
+          to={isTeacher ? "/school/teacher/classes" : "/school/student/recorded-classes"}
           className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-blue-600"
         >
           <ArrowLeft size={16} />
@@ -999,7 +998,7 @@ export default function RecordedClassDetails() {
       <div className="border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6 lg:shrink-0">
         <div className="flex w-full items-center gap-3">
           <Link
-            to="/school/student/recorded-classes"
+            to={isTeacher ? "/school/teacher/classes" : "/school/student/recorded-classes"}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-blue-600 hover:text-white"
             aria-label="Back to recorded classes"
           >

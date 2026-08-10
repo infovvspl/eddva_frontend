@@ -228,21 +228,30 @@ const Dashboard: React.FC = () => {
                 { label: 'Create Assignment', desc: 'New homework task', icon: <PlusCircle className="h-5 w-5 sm:h-6 sm:w-6" />, color: 'blue', path: '/school/teacher/assignments' },
                 { label: 'Create Assessment', desc: 'New test or exam', icon: <ClipboardList className="h-5 w-5 sm:h-6 sm:w-6" />, color: 'violet', path: '/school/teacher/assessments' },
                 { label: 'Start Live Class', desc: 'Go live instantly', icon: <Video className="h-5 w-5 sm:h-6 sm:w-6" />, color: 'rose', path: '/school/teacher/classes', state: { scheduleLive: true } },
-              ].map(({ label, desc, icon, color, path, state }) => (
-                <button
-                  key={label}
-                  onClick={() => navigate(path, { state })}
-                  className={`flex flex-col items-center text-center gap-1.5 p-2 sm:p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-${color}-50 dark:hover:bg-${color}-900/20 hover:border-${color}-200 dark:hover:border-${color}-700 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-md shadow-sm group`}
-                >
-                  <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl bg-${color}-100 dark:bg-${color}-900/40 flex items-center justify-center group-hover:bg-${color}-200 dark:group-hover:bg-${color}-800/50 transition-colors text-${color}-600 dark:text-${color}-400 shrink-0`}>
-                    {icon}
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <p className="text-[10px] sm:text-xs font-bold text-slate-800 dark:text-white leading-tight">{label}</p>
-                    <p className="text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 hidden sm:block">{desc}</p>
-                  </div>
-                </button>
-              ))}
+              ].map(({ label, desc, icon, color, path, state }) => {
+                const colorMap: Record<string, { hoverBg: string; hoverBorder: string; iconBg: string; text: string }> = {
+                  emerald: { hoverBg: 'hover:bg-emerald-50 dark:hover:bg-emerald-950/20', hoverBorder: 'hover:border-emerald-200 dark:hover:border-emerald-800', iconBg: 'bg-emerald-100 dark:bg-emerald-950/40', text: 'text-emerald-600 dark:text-emerald-400' },
+                  blue:    { hoverBg: 'hover:bg-blue-50 dark:hover:bg-blue-950/20',       hoverBorder: 'hover:border-blue-200 dark:hover:border-blue-800',       iconBg: 'bg-blue-100 dark:bg-blue-950/40',       text: 'text-blue-600 dark:text-blue-400' },
+                  violet:  { hoverBg: 'hover:bg-violet-50 dark:hover:bg-violet-950/20',   hoverBorder: 'hover:border-violet-200 dark:hover:border-violet-800',   iconBg: 'bg-violet-100 dark:bg-violet-950/40',   text: 'text-violet-600 dark:text-violet-400' },
+                  rose:    { hoverBg: 'hover:bg-rose-50 dark:hover:bg-rose-950/20',       hoverBorder: 'hover:border-rose-200 dark:hover:border-rose-800',       iconBg: 'bg-rose-100 dark:bg-rose-950/40',       text: 'text-rose-600 dark:text-rose-400' },
+                };
+                const style = colorMap[color] || colorMap.blue;
+                return (
+                  <button
+                    key={label}
+                    onClick={() => navigate(path, { state })}
+                    className={`flex flex-col items-center text-center gap-1.5 p-2 sm:p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 ${style.hoverBg} ${style.hoverBorder} transition-all duration-300 hover:-translate-y-1.5 hover:shadow-md shadow-sm group`}
+                  >
+                    <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl ${style.iconBg} flex items-center justify-center transition-colors ${style.text} shrink-0`}>
+                      {icon}
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <p className="text-[10px] sm:text-xs font-bold text-slate-800 dark:text-white leading-tight">{label}</p>
+                      <p className="text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 hidden sm:block">{desc}</p>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </GlassCard>
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -30,7 +30,8 @@ import {
   Smile,
   Calendar,
   User,
-  ChevronDown
+  ChevronDown,
+  ArrowLeft
 } from 'lucide-react';
 import schoolApi from '@/lib/api/school-client';
 import { apiClient } from '@/lib/api/client';
@@ -81,8 +82,13 @@ export default function CoachingCommunications({ heightClass = 'h-[calc(100dvh-1
     ];
 
   const [activePanel, setActivePanel] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const requestedPanel = params.get('panel') || params.get('role');
+    const validPanelKeys = isSuperAdmin ? ['INSTITUTE_ADMIN'] : ['TEACHER', 'PARENT', 'SUPER_ADMIN'];
+    if (requestedPanel && validPanelKeys.includes(requestedPanel)) {
+      return requestedPanel;
+    }
     if (userRole === 'SUPER_ADMIN') return 'INSTITUTE_ADMIN';
-    if (userRole === 'INSTITUTE_ADMIN') return 'SUPER_ADMIN';
     return 'TEACHER';
   });
   const [conversations, setConversations] = useState([]);
@@ -97,51 +103,57 @@ export default function CoachingCommunications({ heightClass = 'h-[calc(100dvh-1
     };
   }, [selectedUser]);
 
-  // Handle userId query parameter on load/change
+  const handlePanelChange = useCallback((panelKey) => {
+    setActivePanel(panelKey);
+    setSelectedUser(null);
+    const params = new URLSearchParams(window.location.search);
+    params.set('panel', panelKey);
+    params.delete('userId');
+    params.delete('chatId');
+    params.delete('peerId');
+    params.delete('ticketId');
+    const newSearch = `?${params.toString()}`;
+    window.history.replaceState(null, '', newSearch);
+  }, []);
+
+  const handleBackToContacts = useCallback(() => {
+    setSelectedUser(null);
+    const params = new URLSearchParams(window.location.search);
+    params.delete('userId');
+    params.delete('chatId');
+    params.delete('peerId');
+    params.delete('ticketId');
+    params.set('panel', activePanel);
+    const newSearch = params.toString() ? `?${params.toString()}` : window.location.pathname;
+    window.history.replaceState(null, '', newSearch);
+  }, [activePanel]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (selectedUser) {
+        setSelectedUser(null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [selectedUser]);
+
+  // Handle userId query parameter on initial load
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const requestedPanel = params.get('panel') || params.get('role');
-    const validPanelKeys = isSuperAdmin
-      ? ['INSTITUTE_ADMIN']
-      : ['TEACHER', 'PARENT', 'SUPER_ADMIN'];
-
-    if (requestedPanel && validPanelKeys.includes(requestedPanel) && requestedPanel !== activePanel) {
-      setActivePanel(requestedPanel);
-      return;
-    }
-
     const ticketIdParam = params.get('ticketId');
     const userIdParam = params.get('userId') || (ticketIdParam ? users[0]?.id : null);
     if (!userIdParam || users.length === 0) return;
 
-    const peer = users.find((u) => String(u.id) === String(userIdParam));
-    if (peer) {
-      if (!selectedUser || String(selectedUser.id) !== String(userIdParam)) {
-        openConversation(peer);
-      }
-    } else {
-      // If not in current panel, search the remaining panels so deep links can open the right chat.
-      const checkOtherPanel = async () => {
-        const panelsToCheck = validPanelKeys.filter((panel) => panel !== activePanel);
-        try {
-          for (const nextPanel of panelsToCheck) {
-            const res = await api.get('/chat/users', { params: { role: nextPanel } });
-            const otherUsers = res.data?.data ?? [];
-            const found = otherUsers.find((u) => String(u.id) === String(userIdParam));
-            if (found) {
-              setActivePanel(nextPanel);
-              setUsers(otherUsers);
-              openConversation(found);
-              break;
-            }
-          }
-        } catch (e) {
-          console.error("Error looking up user in other chat panels:", e);
-        }
-      };
-      void checkOtherPanel();
+    if (selectedUser && String(selectedUser.id) === String(userIdParam)) {
+      return;
     }
-  }, [users, activePanel, isSuperAdmin, selectedUser]);
+
+    const peer = users.find((u) => String(u.id) === String(userIdParam));
+    if (peer && !selectedUser) {
+      openConversation(peer);
+    }
+  }, [users, selectedUser]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -162,7 +174,7 @@ export default function CoachingCommunications({ heightClass = 'h-[calc(100dvh-1
   const [socketConnected, setSocketConnected] = useState(false);
 
   // Layout Columns & Details Toggle
-  const [showDetails, setShowDetails] = useState(true);
+  const [showDetails, setShowDetails] = useState(false);
 
   // Message Action States
   const [contextMenu, setContextMenu] = useState(null);
@@ -502,6 +514,7 @@ export default function CoachingCommunications({ heightClass = 'h-[calc(100dvh-1
 
     const params = new URLSearchParams(window.location.search);
     params.set('userId', peer.id);
+    params.set('panel', activePanel);
     window.history.replaceState(null, '', '?' + params.toString());
 
     setLoading(true);
@@ -509,6 +522,7 @@ export default function CoachingCommunications({ heightClass = 'h-[calc(100dvh-1
     setEditingMessage(null);
     setInChatSearch('');
     setShowChatSearch(false);
+    setShowDetails(false);
     try {
       const res = await api.get(`/chat/messages/${peer.id}`);
       const list = res.data?.data ?? [];
@@ -778,8 +792,8 @@ export default function CoachingCommunications({ heightClass = 'h-[calc(100dvh-1
   };
 
   return (
-    <div className={`flex ${heightClass} min-h-0 w-full flex-col overflow-hidden px-2 sm:px-4 lg:px-6`}>
-      {!isSuperAdmin && (
+    <div className={`flex ${selectedUser ? 'h-[calc(100dvh-100px)] sm:h-[calc(100dvh-120px)]' : 'h-auto max-h-[calc(100dvh-180px)]'} min-h-0 w-full flex-col overflow-hidden px-2 sm:px-4 lg:px-6 pb-6 sm:pb-8`}>
+      {!selectedUser && !isSuperAdmin && (
         <div className="shrink-0 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
           {[
             { label: 'Active Chats', val: stats.active, sub: 'This month' },
@@ -787,129 +801,137 @@ export default function CoachingCommunications({ heightClass = 'h-[calc(100dvh-1
             { label: 'Online Teachers', val: stats.onlineTeachers, sub: 'Live on system' },
             { label: 'Online Parents', val: stats.onlineParents, sub: 'Connected now' },
           ].map((item, idx) => (
-            <div key={idx} className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{item.label}</p>
+            <div key={idx} className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-sm hover:shadow-md transition">
+              <p className="text-[11px] font-black text-slate-700 uppercase tracking-wider">{item.label}</p>
               <div className="mt-1.5 flex items-baseline gap-2">
-                <span className={`text-xl font-black ${item.alert ? 'text-red-500' : 'text-slate-800'}`}>{item.val}</span>
-                <span className="text-[9px] font-bold leading-none text-slate-400">{item.sub}</span>
+                <span className={`text-2xl font-black ${item.alert ? 'text-rose-600' : 'text-slate-900'}`}>{item.val}</span>
+                <span className="text-[10px] font-bold leading-none text-slate-600">{item.sub}</span>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Tabs */}
-      <div className={`${isSuperAdmin ? '' : 'mt-3'} flex w-fit max-w-full shrink-0 gap-1.5 rounded-2xl border border-slate-100/60 bg-slate-50/50 p-1`}>
-        {PANELS.map((panel) => (
-          <button
-            key={panel.key}
-            onClick={() => setActivePanel(panel.key)}
-            className={`flex-1 rounded-xl px-4 py-2 text-xs font-bold transition-all ${activePanel === panel.key
-              ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-              }`}
-          >
-            {panel.label}
-          </button>
-        ))}
-      </div>
+      {/* Tabs - shown when no chat is open */}
+      {!selectedUser && (
+        <div className={`${isSuperAdmin ? '' : 'mt-3'} flex w-fit max-w-full shrink-0 gap-1.5 rounded-2xl border border-slate-200/80 bg-slate-100/80 p-1.5`}>
+          {PANELS.map((panel) => (
+            <button
+              key={panel.key}
+              onClick={() => handlePanelChange(panel.key)}
+              className={`flex-1 rounded-xl px-4 py-2 text-xs font-black transition-all ${activePanel === panel.key
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                : 'text-slate-700 hover:bg-white hover:text-slate-900'
+                }`}
+            >
+              {panel.label}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {/* 3-Column Redesigned Layout */}
-      <div className="mt-3 flex-1 min-h-0 overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-xl flex flex-col md:flex-row relative">
+      {/* Redesigned Layout */}
+      <div className={`${selectedUser ? 'mt-1 mb-2 h-full' : 'mt-3 mb-4 sm:mb-6 h-auto max-h-[calc(100dvh-240px)] shrink-0'} min-h-0 flex-1 overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-xl flex flex-col md:flex-row relative`}>
 
-        {/* Column 1: Contacts Sidebar */}
-        <div className={`w-full md:w-[320px] lg:w-[350px] border-r border-slate-100 flex flex-col shrink-0 min-h-0 bg-slate-50/10 transition-all ${selectedUser ? 'hidden md:flex' : 'flex'}`}>
-          <div className="p-4 bg-white border-b border-slate-100/60 shrink-0">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={`Search ${activePanel === 'TEACHER' ? 'teachers' :
-                  activePanel === 'PARENT' ? 'parents' :
-                    activePanel === 'INSTITUTE_ADMIN' ? 'institute admins' :
-                      'super admin'
-                  }...`}
-                className="w-full rounded-2xl border border-slate-100 bg-slate-50/50 py-2 pl-9 pr-3 text-xs font-semibold outline-none focus:border-blue-400 focus:bg-white transition"
-              />
+        {/* Column 1: Contacts Sidebar (hidden when a chat is open) */}
+        {!selectedUser && (
+          <div className="w-full md:w-[320px] lg:w-[350px] border-r border-slate-100 flex flex-col shrink-0 min-h-0 bg-slate-50/10 transition-all">
+            <div className="p-4 bg-white border-b border-slate-100/60 shrink-0">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={`Search ${activePanel === 'TEACHER' ? 'teachers' :
+                    activePanel === 'PARENT' ? 'parents' :
+                      activePanel === 'INSTITUTE_ADMIN' ? 'institute admins' :
+                        'super admin'
+                    }...`}
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs font-bold text-slate-900 placeholder:text-slate-500 outline-none focus:border-blue-500 focus:bg-white transition"
+                />
+              </div>
             </div>
-          </div>
 
-          <div className="flex-1 overflow-y-auto p-2 space-y-1">
-            {loadingUsers ? (
-              <div className="space-y-2 p-2">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-100/60 shadow-xs animate-pulse">
-                    <div className="h-10 w-10 bg-slate-100 rounded-xl" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-3 w-1/3 bg-slate-100 rounded" />
-                      <div className="h-2 w-2/3 bg-slate-50 rounded" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : mergedList.length === 0 ? (
-              <div className="flex flex-col items-center justify-center p-8 text-center opacity-65">
-                <Users className="h-8 w-8 text-slate-350 mb-2" />
-                <p className="text-xs font-bold text-slate-500">
-                  {activePanel === 'SUPER_ADMIN' ? 'No super admin found.' :
-                    activePanel === 'INSTITUTE_ADMIN' ? 'No institute admins found.' :
-                      'No users found.'}
-                </p>
-                {activePanel === 'SUPER_ADMIN' && (
-                  <p className="text-[10px] text-slate-400 mt-1">The platform super admin will appear here once registered.</p>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {mergedList.map((item) => {
-                  const unread = Number(item.unread_count || 0);
-                  const active = selectedUser?.id === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => openConversation(item)}
-                      className={`w-full flex items-center gap-3 rounded-2xl p-3 text-left transition ${active
-                        ? 'bg-blue-50/80 border border-blue-100/50 shadow-xs'
-                        : 'hover:bg-slate-50/60 border border-transparent'
-                        }`}
-                    >
-                      <div className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white shadow-sm">
-                        {(item.name || 'U').slice(0, 1).toUpperCase()}
-                        {item.online && (
-                          <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-white bg-emerald-500" />
-                        )}
+            <div className="flex-1 overflow-y-auto p-2 space-y-1 min-h-[80px] pb-4 sm:pb-6">
+              {loadingUsers ? (
+                <div className="space-y-2 p-2">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-100/60 shadow-xs animate-pulse">
+                      <div className="h-10 w-10 bg-slate-100 rounded-xl" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3 w-1/3 bg-slate-100 rounded" />
+                        <div className="h-2 w-2/3 bg-slate-50 rounded" />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-slate-800 truncate">{item.name}</span>
-                          <span className="text-[9px] font-semibold text-slate-400 shrink-0">
-                            {item.created_at ? new Date(item.created_at).toLocaleDateString() : ''}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between mt-0.5">
-                          <p className="text-[11px] font-semibold text-slate-500 truncate">
-                            {item.last_message || (activePanel === 'INSTITUTE_ADMIN' && item.institute_name ? item.institute_name : 'No messages yet')}
-                          </p>
-                          {unread > 0 && (
-                            <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-600 px-1 text-[9px] font-black text-white shrink-0">
-                              {unread}
-                            </span>
+                    </div>
+                  ))}
+                </div>
+              ) : mergedList.length === 0 ? (
+                <div className="flex flex-col items-center justify-center p-8 text-center opacity-75">
+                  <Users className="h-8 w-8 text-slate-400 mb-2" />
+                  <p className="text-xs font-bold text-slate-700">
+                    {activePanel === 'SUPER_ADMIN' ? 'No super admin found.' :
+                      activePanel === 'INSTITUTE_ADMIN' ? 'No institute admins found.' :
+                        'No users found.'}
+                  </p>
+                  {activePanel === 'SUPER_ADMIN' && (
+                    <p className="text-[10px] font-semibold text-slate-500 mt-1">The platform super admin will appear here once registered.</p>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {mergedList.map((item) => {
+                    const unread = Number(item.unread_count || 0);
+                    const active = selectedUser?.id === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => openConversation(item)}
+                        className={`w-full flex items-center gap-3 rounded-2xl p-3 text-left transition ${active
+                          ? 'bg-blue-50/80 border border-blue-100/50 shadow-xs'
+                          : 'hover:bg-slate-50/60 border border-transparent'
+                          }`}
+                      >
+                        <div className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white shadow-sm">
+                          {(item.name || 'U').slice(0, 1).toUpperCase()}
+                          {item.online && (
+                            <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-white bg-emerald-500" />
                           )}
                         </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-black text-slate-900 truncate">{item.name}</span>
+                            <span className="text-[10px] font-bold text-slate-500 shrink-0">
+                              {item.created_at ? new Date(item.created_at).toLocaleDateString() : ''}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between mt-0.5">
+                            <p className="text-[11px] font-bold text-slate-600 truncate">
+                              {item.last_message || (activePanel === 'INSTITUTE_ADMIN' && item.institute_name ? item.institute_name : 'No messages yet')}
+                            </p>
+                            {unread > 0 && (
+                              <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-600 px-1 text-[9px] font-black text-white shrink-0">
+                                {unread}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Column 2: Chat Conversation Panel */}
-        <div className={`flex-1 flex flex-col min-w-0 min-h-0 bg-white ${!selectedUser ? 'hidden md:flex' : 'flex'}`}>
+        {/* Column 2: Dedicated Chat Conversation Panel */}
+        <div className={`flex-1 flex flex-col min-w-0 min-h-0 bg-white ${
+          !selectedUser
+            ? 'hidden md:flex'
+            : 'fixed inset-0 z-[120] bg-white flex flex-col w-full h-full md:relative md:inset-auto md:z-auto'
+        }`}>
           {!selectedUser ? (
-            <div className="flex h-full flex-col items-center justify-center text-center p-6 opacity-60 bg-slate-50/10">
+            <div className="flex flex-col items-center justify-center text-center p-6 opacity-60 bg-slate-50/10 py-8 min-h-[140px]">
               <MessageSquare className="h-10 w-10 text-slate-350 mb-2" />
               <h3 className="text-sm font-bold text-slate-700">Select a conversation</h3>
               <p className="text-xs text-slate-400">Choose a contact to start messaging</p>
@@ -917,10 +939,16 @@ export default function CoachingCommunications({ heightClass = 'h-[calc(100dvh-1
           ) : (
             <>
               {/* Conversation Header */}
-              <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white shrink-0 shadow-xs z-10">
-                <div className="flex items-center gap-3 min-w-0">
-                  <button className="md:hidden p-1.5 -ml-1 rounded-xl hover:bg-slate-100 text-slate-500" onClick={() => setSelectedUser(null)}>
-                    <ChevronRight size={18} className="rotate-180" />
+              <div className="flex items-center justify-between p-3 sm:p-4 border-b border-slate-100 bg-white shrink-0 shadow-xs z-10">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                  <button
+                    type="button"
+                    onClick={handleBackToContacts}
+                    className="flex items-center justify-center h-9 w-9 shrink-0 rounded-full bg-slate-100 text-slate-800 hover:bg-slate-200 transition active:scale-95 -ml-1"
+                    aria-label="Back to overview"
+                    title="Back to contacts / overview"
+                  >
+                    <ArrowLeft className="w-5 h-5 text-slate-800 stroke-[2.5]" />
                   </button>
                   <div className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white">
                     {(selectedUser.name || 'U').slice(0, 1).toUpperCase()}
@@ -1235,124 +1263,160 @@ export default function CoachingCommunications({ heightClass = 'h-[calc(100dvh-1
           )}
         </div>
 
-        {/* Column 3: Contact Details Sidebar */}
+        {/* Column 3: Contact Details Sidebar & Full-screen Mobile Takeover */}
         {showDetails && selectedUser && (
-          <aside className="hidden xl:flex w-[280px] flex-col border-l border-slate-100 bg-slate-50/10 shrink-0">
-            <div className="p-6 text-center border-b border-slate-100 bg-white shrink-0">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-base font-black text-white shadow-md">
-                {(selectedUser.name || 'U').slice(0, 1).toUpperCase()}
-              </div>
-              <h4 className="mt-3 text-xs font-bold text-slate-900">{selectedUser.name}</h4>
-              <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider mt-0.5">{selectedUser.role}</p>
-              <p className="text-[11px] font-medium text-slate-500 truncate mt-1">{selectedUser.email}</p>
-            </div>
+          <>
+            {/* Mobile Backdrop Overlay */}
+            <div
+              className="fixed inset-0 z-[140] bg-slate-900/40 backdrop-blur-xs lg:hidden"
+              onClick={() => setShowDetails(false)}
+            />
 
-            <div className="grid grid-cols-2 gap-2 px-4 py-4 border-b border-slate-100 bg-white shrink-0 lg:grid-cols-4">
-              {[
-                { label: 'Profile', icon: <User size={14} />, act: () => setShowProfileDrawer(true) },
-                { label: 'Shared Files', icon: <FileText size={14} />, act: () => setShowSharedFilesModal(true) },
-                { label: 'Info', icon: <Info size={14} />, act: () => setShowDetails(true) },
-                { label: 'More', icon: <MoreVertical size={14} />, act: () => setShowMoreOptions(true) },
-              ].map((btn, idx) => (
-                <button key={idx} onClick={btn.act} className="flex flex-col items-center gap-1 hover:opacity-80 transition">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-50 border border-slate-100 text-slate-500 shadow-xs">
-                    {btn.icon}
+            <aside className="fixed inset-0 z-[150] w-full max-w-full bg-white flex flex-col lg:relative lg:inset-auto lg:z-auto lg:shadow-none lg:w-[360px] xl:w-[380px] 2xl:w-[420px] lg:max-w-none lg:border-l lg:border-slate-100 lg:bg-slate-50/10 shrink-0">
+              {/* Header with Back & Close Buttons for Mobile (Full Screen Takeover) */}
+              <div className="flex lg:hidden items-center justify-between p-4 border-b border-slate-100 bg-white shrink-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowDetails(false)}
+                    className="p-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition shrink-0"
+                    aria-label="Back to chat"
+                  >
+                    <ArrowLeft size={18} />
+                  </button>
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-extrabold text-slate-900 leading-tight">Contact Details</h3>
+                    <p className="text-[10px] font-bold text-slate-600 truncate mt-0.5">{selectedUser.name}</p>
                   </div>
-                  <span className="text-[9px] font-bold text-slate-400">{btn.label}</span>
-                </button>
-              ))}
-            </div>
-
-            <div className="p-4 border-b border-slate-100 bg-white shrink-0">
-              <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Search in Chat</label>
-              <div className="relative mt-1.5">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-                <input
-                  value={inChatSearch}
-                  onChange={(e) => setInChatSearch(e.target.value)}
-                  placeholder="Search messages..."
-                  className="w-full rounded-xl border border-slate-100 bg-slate-50/50 py-1.5 pl-8 pr-3 text-xs font-semibold outline-none focus:border-blue-400 focus:bg-white"
-                />
-              </div>
-            </div>
-            {inChatSearch.trim() && (
-              <div className="px-4 pb-2 max-h-[140px] overflow-y-auto space-y-1 bg-slate-50 p-2 rounded-xl border border-slate-100/60 no-scrollbar mx-4 mb-2">
-                {messages
-                  .filter((m) => (m.content || m.text || '').toLowerCase().includes(inChatSearch.toLowerCase()))
-                  .map((m) => (
-                    <button
-                      key={m.id}
-                      onClick={() => {
-                        const el = document.getElementById(`msg-${m.id}`);
-                        if (el) {
-                          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                          setHighlightedMessageId(m.id);
-                          setTimeout(() => setHighlightedMessageId(null), 2000);
-                          showToast('Message located', 'info');
-                        }
-                      }}
-                      className="w-full text-left text-[10px] font-semibold text-slate-700 hover:text-blue-600 truncate block py-1 border-b border-slate-100 last:border-0"
-                    >
-                      <span className="font-bold text-slate-400">{(isMe(m.sender_id)) ? 'Me: ' : 'Them: '}</span>
-                      {m.content || m.text}
-                    </button>
-                  ))}
-                {messages.filter((m) => (m.content || m.text || '').toLowerCase().includes(inChatSearch.toLowerCase())).length === 0 && (
-                  <p className="text-[9px] text-slate-400 text-center py-1">No matches found</p>
-                )}
-              </div>
-            )}
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Shared Files ({sharedFiles.length})</h5>
-                  <button className="text-[9px] font-bold text-blue-600 hover:underline" onClick={() => setShowSharedFilesModal(true)}>View all</button>
                 </div>
-                <div className="space-y-2">
-                  {sharedFiles.slice(0, 3).map((file) => (
-                    <div key={file.id} className="flex items-center gap-2 rounded-xl bg-white p-2 border border-slate-100 shadow-xs">
-                      <FileText className="h-5 w-5 shrink-0 text-blue-500" />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[10px] font-bold text-slate-800">{file.attachment_name}</p>
-                        <span className="text-[9px] text-slate-400">Shared recently</span>
-                      </div>
-                      <a
-                        href={file.attachment_url}
-                        download
-                        className="rounded p-1 text-slate-400 hover:bg-slate-50 transition"
-                      >
-                        <Download className="h-3.5 w-3.5" />
-                      </a>
+                <button
+                  type="button"
+                  onClick={() => setShowDetails(false)}
+                  className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition shrink-0"
+                  aria-label="Close details"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="p-6 text-center border-b border-slate-100 bg-white shrink-0">
+                <div className="mx-auto flex h-20 w-20 lg:h-16 lg:w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-xl lg:text-base font-black text-white shadow-md">
+                  {(selectedUser.name || 'U').slice(0, 1).toUpperCase()}
+                </div>
+                <h4 className="mt-3 text-sm xl:text-xs font-black text-slate-900">{selectedUser.name}</h4>
+                <div className="mt-1">
+                  <span className="text-[10px] font-black uppercase text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-full inline-block tracking-wider">{selectedUser.role}</span>
+                </div>
+                <p className="text-[11px] font-bold text-slate-700 truncate mt-1.5">{selectedUser.email}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 px-4 py-4 border-b border-slate-100 bg-white shrink-0 lg:grid-cols-4">
+                {[
+                  { label: 'Profile', icon: <User size={14} />, act: () => setShowProfileDrawer(true) },
+                  { label: 'Shared Files', icon: <FileText size={14} />, act: () => setShowSharedFilesModal(true) },
+                  { label: 'Info', icon: <Info size={14} />, act: () => setShowDetails(true) },
+                  { label: 'More', icon: <MoreVertical size={14} />, act: () => setShowMoreOptions(true) },
+                ].map((btn, idx) => (
+                  <button key={idx} onClick={btn.act} className="flex flex-col items-center gap-1 hover:opacity-80 transition">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 border border-slate-200 text-slate-700 shadow-xs">
+                      {btn.icon}
                     </div>
-                  ))}
-                  {sharedFiles.length === 0 && (
-                    <p className="text-[10px] font-semibold text-slate-400 text-center py-2">No files shared yet</p>
+                    <span className="text-[10px] font-extrabold text-slate-700">{btn.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="p-4 border-b border-slate-100 bg-white shrink-0">
+                <label className="text-[10px] font-black uppercase text-slate-700 tracking-wider">Search in Chat</label>
+                <div className="relative mt-1.5">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
+                  <input
+                    value={inChatSearch}
+                    onChange={(e) => setInChatSearch(e.target.value)}
+                    placeholder="Search messages..."
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-3 text-xs font-bold text-slate-800 placeholder:text-slate-500 outline-none focus:border-blue-500 focus:bg-white"
+                  />
+                </div>
+              </div>
+              {inChatSearch.trim() && (
+                <div className="px-4 pb-2 max-h-[140px] overflow-y-auto space-y-1 bg-slate-50 p-2 rounded-xl border border-slate-100/60 no-scrollbar mx-4 mb-2">
+                  {messages
+                    .filter((m) => (m.content || m.text || '').toLowerCase().includes(inChatSearch.toLowerCase()))
+                    .map((m) => (
+                      <button
+                        key={m.id}
+                        onClick={() => {
+                          const el = document.getElementById(`msg-${m.id}`);
+                          if (el) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            setHighlightedMessageId(m.id);
+                            setTimeout(() => setHighlightedMessageId(null), 2000);
+                            showToast('Message located', 'info');
+                          }
+                        }}
+                        className="w-full text-left text-[10px] font-semibold text-slate-700 hover:text-blue-600 truncate block py-1 border-b border-slate-100 last:border-0"
+                      >
+                        <span className="font-bold text-slate-500">{(isMe(m.sender_id)) ? 'Me: ' : 'Them: '}</span>
+                        {m.content || m.text}
+                      </button>
+                    ))}
+                  {messages.filter((m) => (m.content || m.text || '').toLowerCase().includes(inChatSearch.toLowerCase())).length === 0 && (
+                    <p className="text-[10px] text-slate-600 font-bold text-center py-1">No matches found</p>
+                  )}
+                </div>
+              )}
+
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <h5 className="text-[10px] font-black uppercase text-slate-700 tracking-wider">Shared Files ({sharedFiles.length})</h5>
+                    <button className="text-[10px] font-bold text-blue-600 hover:underline" onClick={() => setShowSharedFilesModal(true)}>View all</button>
+                  </div>
+                  <div className="space-y-2">
+                    {sharedFiles.slice(0, 3).map((file) => (
+                      <div key={file.id} className="flex items-center gap-2 rounded-xl bg-white p-2 border border-slate-100 shadow-xs">
+                        <FileText className="h-5 w-5 shrink-0 text-blue-500" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[10px] font-bold text-slate-800">{file.attachment_name}</p>
+                          <span className="text-[9px] font-semibold text-slate-600">Shared recently</span>
+                        </div>
+                        <a
+                          href={file.attachment_url}
+                          download
+                          className="rounded p-1 text-slate-500 hover:bg-slate-50 transition"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                        </a>
+                      </div>
+                    ))}
+                    {sharedFiles.length === 0 && (
+                      <p className="text-[10px] font-bold text-slate-600 text-center py-2">No files shared yet</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <h5 className="text-[10px] font-black uppercase text-slate-700 tracking-wider">Media</h5>
+                    <button className="text-[10px] font-bold text-blue-600 hover:underline" onClick={() => setShowMediaGalleryModal(true)}>View all</button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {sharedFiles
+                      .filter(f => f.attachment_name?.toLowerCase().match(/\.(jpg|jpeg|png)$/))
+                      .slice(0, 3)
+                      .map((file) => (
+                        <div key={file.id} className="relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-100 group cursor-pointer" onClick={() => setMediaLightboxUrl(file.attachment_url)}>
+                          <img src={file.attachment_url} alt="media" className="h-full w-full object-cover group-hover:scale-105 transition duration-200" />
+                        </div>
+                      ))}
+                  </div>
+                  {sharedFiles.filter(f => f.attachment_name?.toLowerCase().match(/\.(jpg|jpeg|png)$/)).length === 0 && (
+                    <p className="text-[10px] font-bold text-slate-600 text-center py-2">No media shared yet</p>
                   )}
                 </div>
               </div>
-
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Media</h5>
-                  <button className="text-[9px] font-bold text-blue-600 hover:underline" onClick={() => setShowMediaGalleryModal(true)}>View all</button>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {sharedFiles
-                    .filter(f => f.attachment_name?.toLowerCase().match(/\.(jpg|jpeg|png)$/))
-                    .slice(0, 3)
-                    .map((file) => (
-                      <div key={file.id} className="relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-100 group cursor-pointer" onClick={() => setMediaLightboxUrl(file.attachment_url)}>
-                        <img src={file.attachment_url} alt="media" className="h-full w-full object-cover group-hover:scale-105 transition duration-200" />
-                      </div>
-                    ))}
-                </div>
-                {sharedFiles.filter(f => f.attachment_name?.toLowerCase().match(/\.(jpg|jpeg|png)$/)).length === 0 && (
-                  <p className="text-[10px] font-semibold text-slate-400 text-center py-2">No media shared yet</p>
-                )}
-              </div>
-            </div>
-          </aside>
+            </aside>
+          </>
         )}
       </div>
 

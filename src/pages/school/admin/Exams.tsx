@@ -125,7 +125,7 @@ export default function Exams() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredExams.map(exam => (
-            <div key={exam.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-sm ring-1 ring-slate-100 transition-shadow">
+            <div key={exam.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-sm ring-1 ring-slate-100 transition-shadow h-full flex flex-col justify-between">
               <div className="flex justify-between items-start mb-4">
                 <div className="p-3 bg-indigo-50 rounded-lg">
                   <FileText className="w-6 h-6 text-indigo-600" />

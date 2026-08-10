@@ -59,7 +59,7 @@ export interface UnifiedSidebarProps {
 
 /* ─────────────────────── Dimension constants ──────────────────────── */
 
-const EXPANDED_WIDTH = 280;
+const EXPANDED_WIDTH = 295;
 const COLLAPSED_WIDTH = 72;
 
 /* ──────────────────────── Tooltip Component ───────────────────────── */
@@ -142,30 +142,29 @@ function SidebarItem({
         onClick={() => onNavClick?.(item.path)}
         className={({ isActive }) =>
           cn(
-            "group relative flex items-center rounded-xl text-[13px] font-bold tracking-tight transition-all duration-200",
+            "group relative flex items-center rounded-2xl text-[15px] font-medium transition-all duration-300 tracking-tight",
             collapsed
-              ? "h-[46px] w-[46px] mx-auto justify-center"
-              : "h-[50px] gap-3.5 px-3.5",
+              ? "h-11 w-11 mx-auto justify-center my-0.5"
+              : "gap-3.5 px-4 py-3.5 my-0.5",
             isActive
               ? collapsed
-                ? "bg-blue-600 text-white shadow-lg shadow-blue-500/25"
-                : "bg-blue-50/70 text-blue-600 dark:bg-blue-900/15 dark:text-blue-400"
-              : "text-slate-600 hover:text-slate-900 hover:bg-slate-50/80 hover:translate-x-0.5 dark:text-slate-400 dark:hover:text-slate-250 dark:hover:bg-slate-800/40"
+                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/25"
+                : "bg-indigo-50/60 text-indigo-600 border border-indigo-100/60 scale-[1.01] z-10 font-bold shadow-xs dark:bg-indigo-950/40 dark:border-indigo-900/50 dark:text-indigo-400"
+              : "text-slate-600 hover:text-slate-950 hover:bg-slate-50/60 hover:translate-x-0.5 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/40"
           )
         }
       >
         {({ isActive }) => (
           <>
-            {/* Left active indicator bar — expanded only */}
-            {isActive && !collapsed && (
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3.5px] h-[18px] rounded-r-full bg-blue-600 dark:bg-blue-400" />
-            )}
-
+            {/* Active rounded icon badge container */}
             <div className={cn(
-              "flex items-center justify-center shrink-0 transition-all duration-200 group-hover:scale-105",
-              collapsed ? "w-5 h-5" : "w-[18px] h-[18px]",
+              "flex items-center justify-center rounded-xl shrink-0 transition-all duration-300",
+              collapsed ? "w-5 h-5" : "w-7.5 h-7.5",
+              isActive
+                ? cn("bg-indigo-600 text-white", !collapsed && "shadow-md shadow-indigo-500/20")
+                : "bg-transparent text-slate-500 group-hover:text-slate-800 dark:text-slate-400"
             )}>
-              <item.icon className={cn("w-full h-full", isActive && collapsed ? "text-white" : "")} />
+              <item.icon className={cn("w-4.5 h-4.5", isActive ? "text-white" : "text-current")} />
             </div>
 
             {!collapsed && (
@@ -277,7 +276,7 @@ function SidebarInner({
           <div key={group.heading} className={cn(gi > 0 && "mt-4")}>
             {/* Section heading — hidden when collapsed */}
             {(!collapsed || isMobileDrawer) && (
-              <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500 select-none">
+              <p className="mb-2 px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 select-none">
                 {group.heading}
               </p>
             )}
@@ -424,16 +423,23 @@ export function SidebarProfileCard({
   avatar,
   name,
   roleLabel,
+  title,
+  subtitle,
   statusColor = "bg-emerald-500",
   onLogout,
 }: {
   collapsed: boolean;
   avatar: React.ReactNode;
-  name: string;
-  roleLabel: string;
+  name?: string;
+  roleLabel?: string;
+  title?: string;
+  subtitle?: string;
   statusColor?: string;
   onLogout?: () => void;
 }) {
+  const displayName = name || title || "";
+  const displayRole = roleLabel || subtitle || "";
+
   return (
     <div className={cn(
       "flex items-center rounded-xl transition-all duration-200",
@@ -447,10 +453,10 @@ export function SidebarProfileCard({
       {/* Name + role — hidden when collapsed */}
       {!collapsed && (
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[12px] font-semibold text-slate-900 dark:text-white">{name}</p>
+          <p className="truncate text-[12px] font-semibold text-slate-900 dark:text-white">{displayName}</p>
           <div className="flex items-center gap-1.5 mt-0.5">
             <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", statusColor)} />
-            <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate">{roleLabel}</span>
+            <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate">{displayRole}</span>
           </div>
         </div>
       )}

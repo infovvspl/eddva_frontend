@@ -81,7 +81,7 @@ function splitPracticeContent(content: string, typeId: string) {
   if (!content || (typeId !== 'pyq' && typeId !== 'dpp')) return null;
   const patterns = typeId === 'pyq'
     ? [/^detailed\s+solutions?\b/i, /^solutions?\b/i, /^answer\s+key\b/i]
-    : [/^answer\s+key\b/i, /^answers?\b/i, /^solutions?\b/i];
+    : [/^detailed\s+solutions?\b/i, /^answer\s+key\b/i, /^answers?\b/i, /^solutions?\b/i];
   const splitAt = findSectionStart(content, patterns);
   if (splitAt <= 0) return null;
   const questions = content.slice(0, splitAt).trim();
