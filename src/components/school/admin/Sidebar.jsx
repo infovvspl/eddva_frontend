@@ -117,6 +117,7 @@ function buildInstituteGroups(mods) {
       heading: 'Administration',
       items: [
         { path: '/school/admin/users', label: 'User Management', icon: Users },
+        { path: '/school/admin/document-generator', label: 'Document Generator', icon: FileText },
         { path: '/school/admin/audit-logs', label: 'Audit Logs', icon: FileText },
         { path: '/school/admin/complaints', label: 'Support Tickets', icon: Shield },
       ],

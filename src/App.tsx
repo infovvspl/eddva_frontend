@@ -140,6 +140,7 @@ const LiveClassRoom = lazy(() => import("./pages/live/LiveClassRoom"));
 const TeacherLiveDashboard = lazy(() => import("./pages/teacher/TeacherLiveDashboard"));
 const StudentLiveRoomPage = lazy(() => import("./pages/student/StudentLiveRoomPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const IdCardVerificationPage = lazy(() => import("./pages/public/IdCardVerificationPage"));
 const JoinBatchPage = lazy(() => import("./pages/JoinBatchPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const RegisterWithOtpPage = lazy(() => import("./pages/RegisterWithOtpPage"));
@@ -152,7 +153,7 @@ const TermsOfServicePage = lazy(() => import("./pages/landing/TermsOfServicePage
 const CookiePolicyPage = lazy(() => import("./pages/landing/CookiePolicyPage"));
 const SuspendedPage = lazy(() => import("./pages/SuspendedPage"));
 
-// â”€â”€ School admin pages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ——————————————————————————————————————————————————————————————————————————— School admin pages ———————————————————————————————————————————————————————————————————————————
 const SchoolAdminLayout = lazy(() => import("./components/school/admin/Layout"));
 const SchoolAdminDashboard = lazy(() => import("./pages/school/admin/AdminDashboard"));
 const SchoolStudents = lazy(() => import("./pages/school/admin/Students"));
@@ -198,6 +199,7 @@ const SchoolFeeDefaulters = lazy(() => import("./pages/school/admin/FeeDefaulter
 const SchoolMessageLogs = lazy(() => import("./pages/school/admin/MessageLogs"));
 const SchoolAiInsights = lazy(() => import("./pages/school/admin/AiInsights"));
 const SchoolStudentPerformance = lazy(() => import("./pages/school/admin/StudentPerformance"));
+const SchoolDocumentGenerator = lazy(() => import("./pages/school/admin/DocumentGenerator"));
 const SchoolAttendanceAnalytics = lazy(() => import("./pages/school/admin/AttendanceAnalytics"));
 const SchoolCustomReports = lazy(() => import("./pages/school/admin/CustomReports"));
 const SchoolInstitutes = lazy(() => import("./pages/school/admin/Institutes"));
@@ -209,8 +211,8 @@ const SuperAdminCommunication = lazy(() => import("./pages/school/admin/SuperAdm
 const SchoolStorageUsage = lazy(() => import("./pages/school/admin/StorageUsage"));
 const SchoolAdminGamification = lazy(() => import("./pages/school/admin/AdminGamificationPanel"));
 
-// â”€â”€ School teacher pages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// SchoolTeacherLayout intentionally reuses SchoolAdminLayout â€” the single
+// ——————————————————————————————————————————————————————————————————————————— School teacher pages ———————————————————————————————————————————————————————————————————————————
+// SchoolTeacherLayout intentionally reuses SchoolAdminLayout — the single
 // components/school/admin/Layout renders role-aware sidebar nav via SchoolAuthContext.
 const SchoolTeacherLayout = SchoolAdminLayout;
 const SchoolTeacherDashboard = lazy(() => import("./pages/school/teacher/Dashboard"));
@@ -241,7 +243,7 @@ const SchoolTeacherLiveDashboard = lazy(() => import("./pages/school/teacher/liv
 const SchoolStudentLivePlayer = lazy(() => import("./pages/school/student/live/StudentLivePlayer"));
 const SchoolMaterialViewPage = lazy(() => import("./pages/school/MaterialViewPage"));
 
-// â”€â”€ School student pages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ——————————————————————————————————————————————————————————————————————————— School student pages ———————————————————————————————————————————————————————————————————————————
 const SchoolStudentLayout = lazy(() => import("./components/school/student/Layout"));
 const SchoolStudentDashboard = lazy(() => import("./pages/school/student/Dashboard"));
 const SchoolStudentClasses = lazy(() => import("./pages/school/student/Classes"));
@@ -283,7 +285,7 @@ const SchoolStudentCareerDetail = lazy(() => import("./pages/school/student/care
 const SchoolStudentAiStudyPage = lazy(() => import("./pages/school/student/SchoolStudentAiStudyPage"));
 const SchoolStudentTopicQuizPage = lazy(() => import("./pages/school/student/SchoolStudentTopicQuizPage"));
 
-// â”€â”€ School parent pages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ——————————————————————————————————————————————————————————————————————————— School parent pages ———————————————————————————————————————————————————————————————————————————
 const SchoolParentLayout = lazy(() => import("./components/school/parent/ParentLayout"));
 const SchoolParentAuthGuard = lazy(() => import("./components/school/parent/ParentAuthGuard").then(m => ({ default: m.ParentAuthGuard })));
 const SchoolParentDashboard = lazy(() => import("./pages/school/parent/Dashboard"));
@@ -294,7 +296,7 @@ const SchoolStudentNotifications = lazy(() => import("./pages/school/student/Not
 const SchoolParentProfile = lazy(() => import("./pages/school/parent/Profile"));
 const SchoolParentAnnouncements = lazy(() => import("./pages/school/student/Announcements"));
 
-// â”€â”€ Super-admin school pages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ——————————————————————————————————————————————————————————————————————————— Super-admin school pages ———————————————————————————————————————————————————————————————————————————
 const SuperAdminSchoolPage = lazy(() => import("./pages/super-admin/SchoolPage"));
 const SuperAdminSchoolDetailPage = lazy(() => import("./pages/super-admin/SchoolDetailPage"));
 const CreateSchoolPage = lazy(() => import("./pages/super-admin/CreateSchoolPage"));
@@ -303,7 +305,7 @@ const SuperAdminCourseDetailPage = lazy(() => import("./pages/super-admin/Course
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60_000,           // 1 min base â€” individual queries override upward
+      staleTime: 60_000,           // 1 min base — individual queries override upward
       gcTime: 10 * 60_000,         // keep unused data 10 min before garbage-collecting
       retry: 1,                    // one retry on failure, not the default 3
       refetchOnWindowFocus: false, // tab-switching must not hammer the API
@@ -355,7 +357,7 @@ const AdminRoutes = () => (
   </Route>
 );
 
-// PYQ management â€” institute admin only
+// PYQ management — institute admin only
 const PYQRoute = () => (
   <Route element={<ProtectedRoute allowedRoles={["institute_admin"]}><DashboardLayout /></ProtectedRoute>}>
     <Route path="/admin/pyq" element={<PYQManagementPage />} />
@@ -444,7 +446,7 @@ const StudentRoutes = () => (
   </>
 );
 
-// â”€â”€ School routes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ——————————————————————————————————————————————————————————————————————————— School routes ———————————————————————————————————————————————————————————————————————————
 const SchoolRoutes = () => (
   <>
     {/* School Admin */}
@@ -488,6 +490,7 @@ const SchoolRoutes = () => (
       <Route path="subjects/:classId" element={<SchoolClassSubjects />} />
       <Route path="message-logs" element={<SchoolMessageLogs />} />
       <Route path="gamification" element={<SchoolAdminGamification />} />
+      <Route path="document-generator" element={<SchoolDocumentGenerator />} />
     </Route>
 
     {/* School Super Admin */}
@@ -631,7 +634,7 @@ const SchoolRoutes = () => (
   </>
 );
 
-// Super-admin routes â€” available in BOTH tenant and platform contexts so a
+// Super-admin routes — available in BOTH tenant and platform contexts so a
 // super-admin visiting on localhost (with a stored tenant subdomain) doesn't get 404.
 const SuperAdminRoutes = () => (
   <>
@@ -701,6 +704,8 @@ const TenantRoutes = () => (
     <Route path="/register-admin" element={<RegisterWithOtpPage />} />
     <Route path="/reset-password" element={<ResetPasswordPage />} />
     <Route path="/join" element={<JoinBatchPage />} />
+    {/* Public ID Card Verification */}
+    <Route path="/verify/id-card/:code" element={<IdCardVerificationPage />} />
     {/* Super-admin always accessible even if a tenant subdomain is cached */}
     {SuperAdminRoutes()}
     {AdminRoutes()}
