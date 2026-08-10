@@ -92,12 +92,12 @@ const UsersPage = () => {
               value={roleFilter}
               onChange={setRoleFilter}
               options={[
-              { value: "all", label: "Every Role" },
-              { value: "super_admin", label: "Core Admins" },
-              { value: "institute_admin", label: "Partnerships" },
-              { value: "teacher", label: "Active Faculty" },
-              { value: "student", label: "Academic Hub" },
-            ]}
+                { value: "all", label: "Every Role" },
+                { value: "super_admin", label: "Core Admins" },
+                { value: "institute_admin", label: "Partnerships" },
+                { value: "teacher", label: "Active Faculty" },
+                { value: "student", label: "Academic Hub" },
+              ]}
               className="w-full"
             />
           </div>
@@ -118,7 +118,7 @@ const UsersPage = () => {
               <table className="w-full">
                 <thead>
                   <tr className="bg-secondary/50 border-b border-border">
-                    <th className="text-left px-5 md:px-7 py-4 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">User Details</th>
+                    <th className="text-left px-5 md:px-7 py-4 text-[11px] font-medium uppercase tracking-wider text-muted-foreground sticky left-0 z-20 bg-slate-50 border-b border-slate-200">User Details</th>
                     <th className="text-left px-5 md:px-7 py-4 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Access Role</th>
                     <th className="text-left px-5 md:px-7 py-4 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Organization</th>
                     <th className="text-left px-5 md:px-7 py-4 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Status</th>
@@ -137,7 +137,7 @@ const UsersPage = () => {
                       const userStatus = (user.status || "active").toLowerCase();
                       return (
                         <motion.tr key={user.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }} className="group hover:bg-slate-50 transition-colors">
-                          <td className="px-5 md:px-7 py-4">
+                          <td className="px-5 md:px-7 py-4 sticky left-0 z-20 bg-white dark:bg-slate-900 group-hover:bg-slate-50 transition-colors">
                             <div className="flex items-center gap-3 md:gap-4">
                               <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-xs font-medium text-slate-400 border border-slate-50 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm shrink-0">
                                 {name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
@@ -203,8 +203,7 @@ const UsersPage = () => {
           </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
 export default UsersPage;

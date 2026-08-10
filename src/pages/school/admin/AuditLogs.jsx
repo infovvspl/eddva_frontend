@@ -280,7 +280,7 @@ export default function AuditLogsPage() {
   return (
     <div className="w-full min-h-full p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-8">
       {/* Upper Header Card */}
-      <div className="mt-3 sm:mt-0 mb-4 sm:mb-8 relative rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-4 md:p-8 shadow-xl overflow-hidden border border-indigo-900/30">
+      <div className="mb-4 sm:mb-8 relative rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-4 md:p-8 shadow-xl overflow-hidden border border-indigo-900/30">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(99,102,241,0.15),transparent)] pointer-events-none" />
         <div className="relative flex flex-row justify-between items-center gap-4">
           <div className="min-w-0 flex-1">
@@ -670,216 +670,216 @@ export default function AuditLogsPage() {
           <>
             {/* Desktop View */}
             <div className="hidden md:block overflow-x-auto">
-            <table className="w-full min-w-[1000px] table-auto text-left text-sm border-collapse">
-              <thead>
-                <tr className="bg-slate-50/75 border-b border-slate-200/80 text-slate-600 font-semibold">
-                  <th className="px-5 py-4 w-44">Timestamp</th>
-                  {isSuperAdmin && <th className="px-5 py-4 w-48">Institute</th>}
-                  <th className="px-5 py-4 w-48">Actor</th>
-                  <th className="px-5 py-4 w-32">Role</th>
-                  <th className="px-5 py-4 w-32">Module</th>
-                  <th className="px-5 py-4 w-40">Action</th>
-                  <th className="px-5 py-4">Description</th>
-                  <th className="px-5 py-4 w-36">IP Address</th>
-                  <th className="px-5 py-4 w-28 text-center">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {logs.length === 0 ? (
-                  <tr>
-                    <td colSpan={isSuperAdmin ? 9 : 8} className="px-5 py-16 text-center text-slate-400 bg-slate-50/20">
-                      <div className="flex flex-col items-center justify-center space-y-2">
-                        <svg className="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        <p className="font-semibold text-slate-500">No logs matching details were found</p>
-                        <p className="text-xs text-slate-400">Try broadening your search term or adjusting filters.</p>
-                        {isFiltered && (
-                          <button
-                            onClick={resetFilters}
-                            className="mt-2 text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline transition-colors"
-                          >
-                            Reset all filters
-                          </button>
-                        )}
-                      </div>
-                    </td>
+              <table className="w-full min-w-[1000px] table-auto text-left text-sm border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/75 border-b border-slate-200/80 text-slate-600 font-semibold">
+                    <th className="px-5 py-4 w-44">Timestamp</th>
+                    {isSuperAdmin && <th className="px-5 py-4 w-48">Institute</th>}
+                    <th className="px-5 py-4 w-48">Actor</th>
+                    <th className="px-5 py-4 w-32">Role</th>
+                    <th className="px-5 py-4 w-32">Module</th>
+                    <th className="px-5 py-4 w-40">Action</th>
+                    <th className="px-5 py-4">Description</th>
+                    <th className="px-5 py-4 w-36">IP Address</th>
+                    <th className="px-5 py-4 w-28 text-center">Status</th>
                   </tr>
-                ) : (
-                  logs.map((l) => (
-                    <tr key={l.id} className="hover:bg-slate-50/50 transition-colors group">
-                      {/* Timestamp */}
-                      <td className="px-5 py-3.5 text-slate-500 whitespace-nowrap">
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {logs.length === 0 ? (
+                    <tr>
+                      <td colSpan={isSuperAdmin ? 9 : 8} className="px-5 py-16 text-center text-slate-400 bg-slate-50/20">
+                        <div className="flex flex-col items-center justify-center space-y-2">
+                          <svg className="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                          <p className="font-semibold text-slate-500">No logs matching details were found</p>
+                          <p className="text-xs text-slate-400">Try broadening your search term or adjusting filters.</p>
+                          {isFiltered && (
+                            <button
+                              onClick={resetFilters}
+                              className="mt-2 text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline transition-colors"
+                            >
+                              Reset all filters
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    logs.map((l) => (
+                      <tr key={l.id} className="hover:bg-slate-50/50 transition-colors group">
+                        {/* Timestamp */}
+                        <td className="px-5 py-3.5 text-slate-500 whitespace-nowrap">
+                          {new Date(l.createdAt || l.created_at).toLocaleString([], {
+                            month: 'short',
+                            day: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                          })}
+                        </td>
+
+                        {/* Institute */}
+                        {isSuperAdmin && (
+                          <td className="px-5 py-3.5 font-semibold text-slate-700 whitespace-nowrap truncate max-w-[150px]" title={l.instituteId}>
+                            {getInstituteName(l)}
+                          </td>
+                        )}
+
+                        {/* User Info */}
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-3">
+                            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200">
+                              <span className="text-xs font-bold text-slate-700 uppercase">
+                                {(l.userName || l.user_name || 'Sys')[0]}
+                              </span>
+                            </div>
+                            <div className="truncate max-w-[140px]">
+                              <p className="font-semibold text-slate-800 leading-tight truncate">
+                                {l.userName || l.user_name || 'System'}
+                              </p>
+                              {l.userId && (
+                                <p className="text-[10px] text-slate-400 font-mono leading-none mt-1 truncate" title={l.userId}>
+                                  ID: {l.userId.slice(0, 8)}...
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Role Badge */}
+                        <td className="px-5 py-3.5 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold border ${getRoleBadgeStyle(l.role)}`}>
+                            {l.role || 'SYSTEM'}
+                          </span>
+                        </td>
+
+                        {/* Module */}
+                        <td className="px-5 py-3.5 whitespace-nowrap font-semibold text-slate-600">
+                          {l.module || '-'}
+                        </td>
+
+                        {/* Action */}
+                        <td className="px-5 py-3.5 whitespace-nowrap">
+                          <span className="font-mono text-xs font-bold bg-slate-100 text-slate-700 px-2 py-1 rounded border border-slate-200/50">
+                            {l.action || '-'}
+                          </span>
+                        </td>
+
+                        {/* Description */}
+                        <td className="px-5 py-3.5 text-slate-600 break-words max-w-[300px]" title={l.description}>
+                          {formatDescription(l.description, l.action)}
+                        </td>
+
+                        {/* IP Address */}
+                        <td className="px-5 py-3.5 font-mono text-xs text-slate-500 whitespace-nowrap">
+                          {l.ipAddress || l.ip_address || '-'}
+                        </td>
+
+                        {/* Status */}
+                        <td className="px-5 py-3.5 text-center whitespace-nowrap">
+                          {l.status === 'Success' ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/50">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                              Success
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200/50" title={l.description}>
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                              Failure
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile View */}
+            <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+              {logs.length === 0 ? (
+                <div className="p-10 text-center text-sm font-semibold text-slate-500">
+                  No logs matching details were found.
+                </div>
+              ) : (
+                logs.map((l) => (
+                  <div key={l.id} className="p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-3 text-xs">
+                      <span className="text-slate-500">
                         {new Date(l.createdAt || l.created_at).toLocaleString([], {
                           month: 'short',
                           day: '2-digit',
                           year: 'numeric',
                           hour: '2-digit',
                           minute: '2-digit',
-                          second: '2-digit',
                         })}
-                      </td>
-
-                      {/* Institute */}
-                      {isSuperAdmin && (
-                        <td className="px-5 py-3.5 font-semibold text-slate-700 whitespace-nowrap truncate max-w-[150px]" title={l.instituteId}>
-                          {getInstituteName(l)}
-                        </td>
-                      )}
-
-                      {/* User Info */}
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-3">
-                          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200">
-                            <span className="text-xs font-bold text-slate-700 uppercase">
-                              {(l.userName || l.user_name || 'Sys')[0]}
-                            </span>
-                          </div>
-                          <div className="truncate max-w-[140px]">
-                            <p className="font-semibold text-slate-800 leading-tight truncate">
-                              {l.userName || l.user_name || 'System'}
-                            </p>
-                            {l.userId && (
-                              <p className="text-[10px] text-slate-400 font-mono leading-none mt-1 truncate" title={l.userId}>
-                                ID: {l.userId.slice(0, 8)}...
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Role Badge */}
-                      <td className="px-5 py-3.5 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold border ${getRoleBadgeStyle(l.role)}`}>
-                          {l.role || 'SYSTEM'}
-                        </span>
-                      </td>
-
-                      {/* Module */}
-                      <td className="px-5 py-3.5 whitespace-nowrap font-semibold text-slate-600">
-                        {l.module || '-'}
-                      </td>
-
-                      {/* Action */}
-                      <td className="px-5 py-3.5 whitespace-nowrap">
-                        <span className="font-mono text-xs font-bold bg-slate-100 text-slate-700 px-2 py-1 rounded border border-slate-200/50">
-                          {l.action || '-'}
-                        </span>
-                      </td>
-
-                      {/* Description */}
-                      <td className="px-5 py-3.5 text-slate-600 break-words max-w-[300px]" title={l.description}>
-                        {formatDescription(l.description, l.action)}
-                      </td>
-
-                      {/* IP Address */}
-                      <td className="px-5 py-3.5 font-mono text-xs text-slate-500 whitespace-nowrap">
-                        {l.ipAddress || l.ip_address || '-'}
-                      </td>
-
-                      {/* Status */}
-                      <td className="px-5 py-3.5 text-center whitespace-nowrap">
+                      </span>
+                      <div>
                         {l.status === 'Success' ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/50">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/50">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                             Success
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200/50" title={l.description}>
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200/50">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                             Failure
                           </span>
                         )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile View */}
-          <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800">
-            {logs.length === 0 ? (
-              <div className="p-10 text-center text-sm font-semibold text-slate-500">
-                No logs matching details were found.
-              </div>
-            ) : (
-              logs.map((l) => (
-                <div key={l.id} className="p-4 space-y-3">
-                  <div className="flex items-center justify-between gap-3 text-xs">
-                    <span className="text-slate-500">
-                      {new Date(l.createdAt || l.created_at).toLocaleString([], {
-                        month: 'short',
-                        day: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
-                    <div>
-                      {l.status === 'Success' ? (
-                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/50">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                          Success
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200/50">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                          Failure
-                        </span>
-                      )}
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-3">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200">
-                      <span className="text-xs font-bold text-slate-700 uppercase">
-                        {(l.userName || l.user_name || 'Sys')[0]}
-                      </span>
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-semibold text-slate-800 leading-tight truncate">
-                        {l.userName || l.user_name || 'System'}
-                      </p>
-                      {l.userId && (
-                        <p className="text-[10px] text-slate-400 font-mono leading-none mt-1 truncate" title={l.userId}>
-                          ID: {l.userId}
+                    <div className="flex items-center gap-3">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200">
+                        <span className="text-xs font-bold text-slate-700 uppercase">
+                          {(l.userName || l.user_name || 'Sys')[0]}
+                        </span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-slate-800 leading-tight truncate">
+                          {l.userName || l.user_name || 'System'}
                         </p>
+                        {l.userId && (
+                          <p className="text-[10px] text-slate-400 font-mono leading-none mt-1 truncate" title={l.userId}>
+                            ID: {l.userId}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 text-[10px] font-bold">
+                      <span className={`px-2 py-0.5 rounded-full border ${getRoleBadgeStyle(l.role)}`}>
+                        {l.role || 'SYSTEM'}
+                      </span>
+                      <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200/50">
+                        {l.module || '-'}
+                      </span>
+                      <span className="font-mono bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200/50">
+                        {l.action || '-'}
+                      </span>
+                    </div>
+
+                    <div className="text-xs text-slate-600 bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 break-words leading-relaxed">
+                      {formatDescription(l.description, l.action)}
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-400 font-medium">
+                      {isSuperAdmin && (
+                        <span className="truncate max-w-[180px]">
+                          School: <span className="font-semibold text-slate-600">{getInstituteName(l)}</span>
+                        </span>
                       )}
+                      <span>IP: <span className="font-mono">{l.ipAddress || l.ip_address || '-'}</span></span>
                     </div>
                   </div>
-
-                  <div className="flex flex-wrap gap-2 text-[10px] font-bold">
-                    <span className={`px-2 py-0.5 rounded-full border ${getRoleBadgeStyle(l.role)}`}>
-                      {l.role || 'SYSTEM'}
-                    </span>
-                    <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200/50">
-                      {l.module || '-'}
-                    </span>
-                    <span className="font-mono bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200/50">
-                      {l.action || '-'}
-                    </span>
-                  </div>
-
-                  <div className="text-xs text-slate-600 bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 break-words leading-relaxed">
-                    {formatDescription(l.description, l.action)}
-                  </div>
-
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-400 font-medium">
-                    {isSuperAdmin && (
-                      <span className="truncate max-w-[180px]">
-                        School: <span className="font-semibold text-slate-600">{getInstituteName(l)}</span>
-                      </span>
-                    )}
-                    <span>IP: <span className="font-mono">{l.ipAddress || l.ip_address || '-'}</span></span>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </>
-      )}
+                ))
+              )}
+            </div>
+          </>
+        )}
 
         {/* Footer Paginate Bar */}
         {!loading && logs.length > 0 && (

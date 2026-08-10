@@ -109,8 +109,7 @@ const EnrollmentsPage = () => {
   const hasFilters = !!tenantId || !!batchId || !!debouncedSearch;
 
   return (
-    <div className="min-h-screen bg-white p-4 md:p-6 lg:p-10 font-sans text-slate-900">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="w-full space-y-6 font-sans text-slate-900">
 
         {/* ── Header ── */}
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6 md:pb-8">
@@ -355,7 +354,6 @@ const EnrollmentsPage = () => {
           </div>
         </div>
 
-      </div>
     </div>
   );
 };

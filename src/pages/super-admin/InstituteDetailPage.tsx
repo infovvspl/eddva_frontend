@@ -173,8 +173,8 @@ const InstituteDetailPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white p-4 md:p-6 lg:p-10 font-sans text-slate-900">
-      <header className="max-w-7xl mx-auto mb-7 md:mb-10 border-b border-slate-100 pb-6 md:pb-8">
+    <div className="w-full space-y-6 font-sans text-slate-900">
+      <header className="w-full mb-7 md:mb-10 border-b border-slate-100 pb-6 md:pb-8">
         <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-colors text-[11px] font-medium uppercase tracking-wider mb-5">
           <ChevronLeft className="w-4 h-4" /> Return to Directory
         </button>
@@ -221,7 +221,7 @@ const InstituteDetailPage = () => {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto space-y-5">
+      <main className="w-full space-y-5">
         {/* Quick Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {statsCards.map((s, i) => (

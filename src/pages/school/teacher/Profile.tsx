@@ -351,7 +351,7 @@ const Profile: React.FC = () => {
 
           <div className="profile-card">
             <h2>Performance Summary</h2>
-            <div className="grid grid-cols-3 md:grid-cols-3 gap-1.5 sm:gap-4 md:gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 md:gap-5">
               <div className="text-center p-2 sm:p-5 bg-slate-50 dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
                 <Users size={isMobile ? 14 : 20} className="mx-auto mb-1.5 sm:mb-3 text-indigo-500" />
                 <p className="text-[8px] sm:text-[10px] text-slate-500 uppercase font-bold tracking-tight mb-1">Students</p>

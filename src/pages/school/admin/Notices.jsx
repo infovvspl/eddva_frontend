@@ -123,7 +123,7 @@ export default function Notices() {
           </div>
         ) : (
           notices.map(notice => (
-            <div key={notice.id} className="rounded-2xl border border-surface-200 bg-white p-4 shadow-sm sm:p-6">
+            <div key={notice.id} className="rounded-2xl border border-surface-200 bg-white p-4 shadow-sm sm:p-6 h-full flex flex-col justify-between">
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0 flex-1">
                   <div className="mb-2 flex flex-wrap items-center gap-2">

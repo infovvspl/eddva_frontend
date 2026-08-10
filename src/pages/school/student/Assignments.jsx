@@ -437,13 +437,13 @@ export default function Assignments() {
 
       {submitTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-900">
-            <div className="mb-4 flex items-start justify-between gap-3">
+          <div className="erp-modal-container max-w-lg">
+            <div className="flex items-start justify-between gap-3 p-5 border-b border-slate-100 dark:border-slate-800">
               <div>
                 <h2 className="text-lg font-bold text-slate-900 dark:text-white">
                   Submit: {submitTarget.title}
                 </h2>
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-0.5 text-xs text-slate-500">
                   Upload your completed work (PDF, image, or document).
                 </p>
               </div>
@@ -452,38 +452,42 @@ export default function Assignments() {
                 onClick={closeSubmit}
                 className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp"
-              onChange={(e) => setSubmitFile(e.target.files?.[0] || null)}
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 py-8 text-sm font-semibold text-slate-600 hover:border-blue-400 hover:bg-blue-50/50 dark:border-slate-700 dark:text-slate-300"
-            >
-              <UploadCloud size={28} className="text-blue-500" />
-              {submitFile ? submitFile.name : 'Choose file to upload'}
-            </button>
+            <div className="erp-modal-body space-y-4">
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp"
+                onChange={(e) => setSubmitFile(e.target.files?.[0] || null)}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 py-7 text-sm font-semibold text-slate-600 hover:border-blue-400 hover:bg-blue-50/50 dark:border-slate-700 dark:text-slate-300"
+              >
+                <UploadCloud size={28} className="text-blue-500" />
+                {submitFile ? submitFile.name : 'Choose file to upload'}
+              </button>
 
-            <label className="mt-4 block text-xs font-bold uppercase tracking-widest text-slate-500">
-              Notes (optional)
-            </label>
-            <textarea
-              className="mt-2 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800"
-              rows={3}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Any comment for your teacher..."
-            />
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-widest text-slate-500">
+                  Notes (optional)
+                </label>
+                <textarea
+                  className="mt-1.5 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800"
+                  rows={3}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Any comment for your teacher..."
+                />
+              </div>
+            </div>
 
-            <div className="mt-6 flex justify-end gap-3">
+            <div className="erp-modal-footer">
               <button
                 type="button"
                 onClick={closeSubmit}

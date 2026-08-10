@@ -3143,7 +3143,7 @@ export default function SchoolStudentStudyPlanner() {
                     >
                       <Icon className="h-5 w-5" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-black text-slate-800">{item.label}</p>
+                        <p className="truncate text-sm font-black text-slate-800">{item.label}</p>
                       </div>
                       <p className="text-xl font-black">{item.value}</p>
                     </button>

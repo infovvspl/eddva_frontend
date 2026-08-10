@@ -103,7 +103,7 @@ export default function SuperAdminSupportTicketsPage() {
   return (
     <div className="w-full min-h-full p-4 sm:p-6 lg:p-8 flex flex-col space-y-4 sm:space-y-8">
       {/* Page Header */}
-      <div className="mt-3 sm:mt-0 mb-4 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 bg-blue-50/50 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
+      <div className="mb-4 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 bg-blue-100 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
         <div>
           <div className="flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
@@ -336,7 +336,7 @@ export default function SuperAdminSupportTicketsPage() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                      <th className="px-5 py-3.5">Ticket ID</th>
+                      <th className="px-5 py-3.5 sticky left-0 z-20 bg-slate-50 border-b border-slate-100">Ticket ID</th>
                       <th className="px-5 py-3.5">Subject</th>
                       <th className="px-5 py-3.5">Institute</th>
                       <th className="px-5 py-3.5">Raised By</th>
@@ -358,7 +358,7 @@ export default function SuperAdminSupportTicketsPage() {
                           onClick={() => navigate(`/super-admin/support-tickets/${t.id}`)}
                           className="hover:bg-slate-50/80 cursor-pointer transition-colors"
                         >
-                          <td className="px-5 py-4 font-bold text-indigo-600">{t.ticketNumber}</td>
+                          <td className="px-5 py-4 font-bold text-indigo-600 sticky left-0 z-20 bg-white dark:bg-slate-900 group-hover:bg-slate-50 transition-colors">{t.ticketNumber}</td>
                           <td className="px-5 py-4 font-bold text-slate-900 max-w-xs truncate">
                             {t.subject}
                           </td>
