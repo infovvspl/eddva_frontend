@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Bell, CheckCircle2, KeyRound, Lock, Monitor, Moon, ShieldCheck, Smartphone, Sun } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function Settings() {
   const [theme, setTheme] = useState(() => localStorage.getItem('eddva-theme') || 'light');
@@ -101,11 +102,19 @@ export default function Settings() {
               </div>
             </div>
             <div className="mt-4 sm:mt-5 space-y-2.5 sm:space-y-3">
-              <button className="flex w-full items-center gap-2.5 sm:gap-3 rounded-xl border border-slate-200 p-3 text-left hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800">
+              <button 
+                type="button"
+                onClick={() => toast.success("Password reset link sent to your registered email.")}
+                className="flex w-full items-center gap-2.5 sm:gap-3 rounded-xl border border-slate-200 p-3 text-left hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800"
+              >
                 <KeyRound className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-blue-600 shrink-0" />
                 <span className="text-xs sm:text-sm font-black text-slate-950 dark:text-white">Change Password</span>
               </button>
-              <button className="flex w-full items-center gap-2.5 sm:gap-3 rounded-xl border border-slate-200 p-3 text-left hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800">
+              <button 
+                type="button"
+                onClick={() => toast.info("Privacy settings are managed by your school administrator.")}
+                className="flex w-full items-center gap-2.5 sm:gap-3 rounded-xl border border-slate-200 p-3 text-left hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800"
+              >
                 <Lock className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-rose-600 shrink-0" />
                 <span className="text-xs sm:text-sm font-black text-slate-950 dark:text-white">Review Privacy</span>
               </button>

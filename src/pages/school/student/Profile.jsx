@@ -167,7 +167,7 @@ export default function Profile() {
       </section>
 
       {/* Top-line metric stats */}
-      <div className="grid gap-2.5 sm:gap-6 grid-cols-3 md:grid-cols-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6">
         {/* Attendance Card */}
         <div className="relative overflow-hidden p-3 sm:p-6 rounded-2xl sm:rounded-3xl bg-slate-50/30 dark:bg-slate-900/10 border border-slate-100 dark:border-slate-800/80 hover:shadow-lg hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-300 group">
           <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform duration-300 hidden sm:block">

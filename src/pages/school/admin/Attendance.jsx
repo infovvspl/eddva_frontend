@@ -416,7 +416,7 @@ export default function Attendance() {
           <table className="min-w-[800px] w-full text-left text-sm">
             <thead className="bg-surface-50 text-surface-500">
               <tr>
-                <th className="px-6 py-4 font-semibold">Name</th>
+                <th className="px-6 py-4 font-semibold sticky left-0 z-20 bg-surface-50 dark:bg-slate-850 shadow-sm">Name</th>
                 <th className="px-6 py-4 font-semibold">Role</th>
                 {selectedRole === 'STUDENT' && <th className="px-6 py-4 font-semibold">Class / Section</th>}
                 <th className="px-6 py-4 font-semibold">Date</th>
@@ -435,7 +435,7 @@ export default function Attendance() {
               ) : (
                 attendance.map(record => (
                   <tr key={record.id} className="hover:bg-surface-50 transition-colors">
-                    <td className="px-6 py-4 font-semibold text-surface-950">{record.user?.name || '-'}</td>
+                    <td className="px-6 py-4 font-semibold text-surface-950 sticky left-0 z-20 bg-white dark:bg-slate-900">{record.user?.name || '-'}</td>
                     <td className="px-6 py-4">
                       {hasRole(record.user?.role, 'STUDENT') ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">

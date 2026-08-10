@@ -19,6 +19,10 @@
 
 .data-table thead {
   background: rgba(124, 58, 237, 0.03);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  width: 100%;
 }
 
 .data-table th {

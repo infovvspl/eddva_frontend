@@ -824,7 +824,7 @@ const AssignmentManagement: React.FC = () => {
                 const subCount = a.submissionCount ?? a.submission_count ?? 0;
                 const pending = a.pendingGradeCount ?? a.pending_grade_count ?? 0;
                 return (
-                <GlassCard key={a.id} className="flex flex-col p-5">
+                <GlassCard key={a.id} className="flex flex-col justify-between h-full p-5">
                   <div className="flex justify-between items-start mb-3">
                     <h3 className="font-semibold text-lg text-gray-900 leading-tight pr-4 line-clamp-2">
                       {a.title}

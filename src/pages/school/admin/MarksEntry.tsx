@@ -59,7 +59,7 @@ export default function MarksEntry() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 z-20 bg-gray-50 dark:bg-slate-850 shadow-sm">Student</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exam</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Score</th>
@@ -69,7 +69,7 @@ export default function MarksEntry() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredSessions.map(session => (
                   <tr key={session.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap sticky left-0 z-20 bg-white dark:bg-slate-900">
                       <div className="text-sm font-medium text-gray-900">{session.student?.user?.name || 'Unknown Student'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

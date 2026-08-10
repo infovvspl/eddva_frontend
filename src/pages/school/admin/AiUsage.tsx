@@ -283,11 +283,10 @@ function FilterBar({
           <button
             type="button"
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg border transition ${
-              showFilters
+            className={`flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg border transition ${showFilters
                 ? "bg-blue-600 border-blue-700 text-white shadow-xs"
                 : "bg-slate-50 border-slate-200 text-slate-700"
-            }`}
+              }`}
           >
             <span>{showFilters ? "Hide" : "Show Filters"}</span>
             <ChevronDown size={12} className={`transition-transform duration-250 ${showFilters ? "rotate-180" : ""}`} />
@@ -655,7 +654,7 @@ function SchoolDetailView({
       {/* ── Charts ── */}
       {chartData.some(d => d.requests > 0) && (
         <div className="rounded-2xl border border-slate-100 sm:border-0 sm:bg-transparent bg-white shadow-sm sm:shadow-none overflow-hidden">
-          <div 
+          <div
             className="flex items-center justify-between p-5 sm:p-0 sm:hidden cursor-pointer hover:bg-slate-50 transition-colors"
             onClick={() => setShowGraphsMobile(p => !p)}
           >
@@ -674,12 +673,12 @@ function SchoolDetailView({
                 <div className="h-[180px] sm:h-[240px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 12, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                <XAxis type="number" tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} allowDecimals={false} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} axisLine={false} width={120} />
-                <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }} cursor={{ fill: '#f8fafc' }} />
-                <Bar dataKey="requests" name="Requests" fill="#6366f1" radius={[0, 4, 4, 0]} maxBarSize={16} />
-                  </BarChart>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                      <XAxis type="number" tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} allowDecimals={false} />
+                      <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} axisLine={false} width={120} />
+                      <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }} cursor={{ fill: '#f8fafc' }} />
+                      <Bar dataKey="requests" name="Requests" fill="#6366f1" radius={[0, 4, 4, 0]} maxBarSize={16} />
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
               </div>
@@ -689,12 +688,12 @@ function SchoolDetailView({
                 <div className="h-[180px] sm:h-[240px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 12, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                <XAxis type="number" tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : String(v)} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} axisLine={false} width={120} />
-                <Tooltip formatter={(v: number) => [v >= 1_000_000 ? `${(v / 1_000_000).toFixed(2)}M` : v >= 1000 ? `${(v / 1000).toFixed(1)}K` : String(v), 'Tokens']} contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }} cursor={{ fill: '#f8fafc' }} />
-                <Bar dataKey="tokens" name="Tokens" fill="#8b5cf6" radius={[0, 4, 4, 0]} maxBarSize={16} />
-                  </BarChart>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                      <XAxis type="number" tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : String(v)} />
+                      <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} axisLine={false} width={120} />
+                      <Tooltip formatter={(v: number) => [v >= 1_000_000 ? `${(v / 1_000_000).toFixed(2)}M` : v >= 1000 ? `${(v / 1000).toFixed(1)}K` : String(v), 'Tokens']} contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }} cursor={{ fill: '#f8fafc' }} />
+                      <Bar dataKey="tokens" name="Tokens" fill="#8b5cf6" radius={[0, 4, 4, 0]} maxBarSize={16} />
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
               </div>
@@ -704,12 +703,12 @@ function SchoolDetailView({
                 <div className="h-[180px] sm:h-[240px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 12, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                <XAxis type="number" tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} tickFormatter={(v: number) => `$${v.toFixed(3)}`} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} axisLine={false} width={120} />
-                <Tooltip formatter={(v: number) => [`$${v.toFixed(4)}`, 'Cost']} contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }} cursor={{ fill: '#f8fafc' }} />
-                <Bar dataKey="cost" name="Cost" fill="#f59e0b" radius={[0, 4, 4, 0]} maxBarSize={16} />
-                  </BarChart>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                      <XAxis type="number" tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} tickFormatter={(v: number) => `$${v.toFixed(3)}`} />
+                      <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} axisLine={false} width={120} />
+                      <Tooltip formatter={(v: number) => [`$${v.toFixed(4)}`, 'Cost']} contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }} cursor={{ fill: '#f8fafc' }} />
+                      <Bar dataKey="cost" name="Cost" fill="#f59e0b" radius={[0, 4, 4, 0]} maxBarSize={16} />
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
               </div>
@@ -729,8 +728,8 @@ function SchoolDetailView({
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
                 className={`mr-4 pb-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${activeCategory === cat
-                    ? 'border-brand-600 text-brand-600'
-                    : 'border-transparent text-slate-400 hover:text-slate-600'
+                  ? 'border-brand-600 text-brand-600'
+                  : 'border-transparent text-slate-400 hover:text-slate-600'
                   }`}
               >
                 {CATEGORY_LABELS[cat]}
@@ -759,7 +758,7 @@ function SchoolDetailView({
                     </div>
                     <Switch checked={enabled} onCheckedChange={next => void handleToggle(f, next)} />
                   </div>
-                  
+
                   {f.monthlyLimit != null && f.monthlyLimit > 0 && (
                     <div className="flex items-center gap-2">
                       <Progress value={pct(f.currentUsage, f.monthlyLimit)} className="h-1.5 flex-1" />
@@ -783,12 +782,12 @@ function SchoolDetailView({
                       <span className="font-bold text-amber-600">{money(f.cost)}</span>
                     </div>
                     <div className="rounded-md border border-slate-100 bg-slate-50 px-2 py-1.5 flex items-center justify-between">
-                        <span className="text-slate-400">Success</span>
-                        <span className="font-bold text-slate-700">{num(f.successRate)}%</span>
+                      <span className="text-slate-400">Success</span>
+                      <span className="font-bold text-slate-700">{num(f.successRate)}%</span>
                     </div>
                     <div className="col-span-2 rounded-md border border-slate-100 bg-slate-50 px-2 py-1.5 flex items-center justify-between">
-                        <span className="text-slate-400">Latency</span>
-                        <span className="font-bold text-slate-700">{f.avgLatencyMs}ms</span>
+                      <span className="text-slate-400">Latency</span>
+                      <span className="font-bold text-slate-700">{f.avgLatencyMs}ms</span>
                     </div>
                   </div>
 
@@ -975,11 +974,11 @@ function OverviewTab({
   search, sortKey, sortDir, onSort, onViewSchool, isSuper,
 }: OverviewProps) {
   const isCoaching = useAuthStore(s => s.tenantType) === 'coaching';
-  
+
   // Mobile accordion/display states
   const [showAllAlerts, setShowAllAlerts] = useState(false);
   const [expandedGraphs, setExpandedGraphs] = useState<Set<string>>(new Set(['daily-requests']));
-  
+
   const toggleGraph = (id: string) => {
     setExpandedGraphs(prev => {
       const next = new Set(prev);
@@ -1132,7 +1131,7 @@ function OverviewTab({
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* Daily Requests — Bar */}
         <div className="lg:col-span-2 rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
-          <div 
+          <div
             className="flex items-center justify-between p-5 cursor-pointer sm:pointer-events-none hover:bg-slate-50 sm:hover:bg-transparent transition-colors"
             onClick={() => toggleGraph('daily-requests')}
           >
@@ -1143,24 +1142,24 @@ function OverviewTab({
           </div>
           <div className={`px-5 pb-5 sm:block ${expandedGraphs.has('daily-requests') ? 'block' : 'hidden'}`}>
             {trendData.length === 0 ? (
-            <p className="py-10 text-center text-sm text-slate-400">No data for this period.</p>
-          ) : (
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={trendData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} allowDecimals={false} />
-                <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }} cursor={{ fill: '#f8fafc' }} />
-                <Bar dataKey="requests" name="Requests" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={28} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
+              <p className="py-10 text-center text-sm text-slate-400">No data for this period.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={trendData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} allowDecimals={false} />
+                  <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }} cursor={{ fill: '#f8fafc' }} />
+                  <Bar dataKey="requests" name="Requests" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={28} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
         {/* Feature Cost — Pie */}
         <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
-          <div 
+          <div
             className="flex items-center justify-between p-5 cursor-pointer sm:pointer-events-none hover:bg-slate-50 sm:hover:bg-transparent transition-colors"
             onClick={() => toggleGraph('feature-cost')}
           >
@@ -1171,35 +1170,35 @@ function OverviewTab({
           </div>
           <div className={`px-5 pb-5 sm:block ${expandedGraphs.has('feature-cost') ? 'block' : 'hidden'}`}>
             {pieData.length === 0 ? (
-            <p className="py-10 text-center text-sm text-slate-400">No cost data.</p>
-          ) : (
-            <ResponsiveContainer width="100%" height={180}>
-              <PieChart>
-                <Pie data={pieData} cx="50%" cy="50%" innerRadius={48} outerRadius={72} paddingAngle={2} dataKey="value">
-                  {pieData.map((_, idx) => (
-                    <Cell key={idx} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(v: number) => [moneyShort(v), 'Cost']}
-                  contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          )}
-          {pieData.length > 0 && (
-            <div className="mt-2 space-y-1">
-              {pieData.slice(0, 8).map((d, i) => (
-                <div key={d.name} className="flex items-center justify-between text-[11px]">
-                  <div className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full shrink-0" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
-                    <span className="text-slate-600 truncate max-w-[110px]">{d.name}</span>
+              <p className="py-10 text-center text-sm text-slate-400">No cost data.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={180}>
+                <PieChart>
+                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={48} outerRadius={72} paddingAngle={2} dataKey="value">
+                    {pieData.map((_, idx) => (
+                      <Cell key={idx} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(v: number) => [moneyShort(v), 'Cost']}
+                    contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+            {pieData.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {pieData.slice(0, 8).map((d, i) => (
+                  <div key={d.name} className="flex items-center justify-between text-[11px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full shrink-0" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                      <span className="text-slate-600 truncate max-w-[110px]">{d.name}</span>
+                    </div>
+                    <span className="font-semibold text-slate-700">{moneyShort(d.value)}</span>
                   </div>
-                  <span className="font-semibold text-slate-700">{moneyShort(d.value)}</span>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1207,7 +1206,7 @@ function OverviewTab({
       {/* Daily Cost — Line */}
       {trendData.some(d => d.cost > 0) && (
         <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
-          <div 
+          <div
             className="flex items-center justify-between p-5 cursor-pointer sm:pointer-events-none hover:bg-slate-50 sm:hover:bg-transparent transition-colors"
             onClick={() => toggleGraph('daily-cost')}
           >
@@ -1218,14 +1217,14 @@ function OverviewTab({
           </div>
           <div className={`px-5 pb-5 sm:block ${expandedGraphs.has('daily-cost') ? 'block' : 'hidden'}`}>
             <ResponsiveContainer width="100%" height={140}>
-            <LineChart data={trendData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} tickFormatter={v => `$${v.toFixed(2)}`} />
-              <Tooltip formatter={(v: number) => [`$${v.toFixed(4)}`, 'Cost']} contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }} />
-              <Line type="monotone" dataKey="cost" stroke="#f59e0b" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
+              <LineChart data={trendData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} tickFormatter={v => `$${v.toFixed(2)}`} />
+                <Tooltip formatter={(v: number) => [`$${v.toFixed(4)}`, 'Cost']} contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }} />
+                <Line type="monotone" dataKey="cost" stroke="#f59e0b" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </div>
       )}
@@ -1233,7 +1232,7 @@ function OverviewTab({
       {/* Feature Analytics Cards */}
       {features.length > 0 && (
         <div className="rounded-2xl border border-slate-100 sm:border-0 sm:bg-transparent bg-white shadow-sm sm:shadow-none overflow-hidden">
-          <div 
+          <div
             className="flex items-center justify-between p-5 sm:p-0 sm:mb-4 cursor-pointer sm:pointer-events-none hover:bg-slate-50 sm:hover:bg-transparent transition-colors"
             onClick={() => toggleGraph('feature-analytics')}
           >
@@ -1244,33 +1243,33 @@ function OverviewTab({
           </div>
           <div className={`px-5 pb-5 sm:p-0 sm:block ${expandedGraphs.has('feature-analytics') ? 'block' : 'hidden'}`}>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {features.slice(0, 20).map(f => {
-              const sr = num(f.success_rate ?? 100);
-              return (
-                <div key={String(f.feature)} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-                  <p className="text-xs font-black text-slate-700 truncate">{featureLabel(String(f.feature))}</p>
-                  <div className="mt-3 space-y-2">
-                    {[
-                      { label: 'Requests', value: num(f.requests).toLocaleString() },
-                      { label: 'Tokens', value: num(f.tokens).toLocaleString() },
-                      { label: 'Est. Cost', value: moneyShort(f.cost) },
-                    ].map(r => (
-                      <div key={r.label} className="flex justify-between text-xs">
-                        <span className="text-slate-400">{r.label}</span>
-                        <span className="font-bold text-slate-700">{r.value}</span>
+              {features.slice(0, 20).map(f => {
+                const sr = num(f.success_rate ?? 100);
+                return (
+                  <div key={String(f.feature)} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                    <p className="text-xs font-black text-slate-700 truncate">{featureLabel(String(f.feature))}</p>
+                    <div className="mt-3 space-y-2">
+                      {[
+                        { label: 'Requests', value: num(f.requests).toLocaleString() },
+                        { label: 'Tokens', value: num(f.tokens).toLocaleString() },
+                        { label: 'Est. Cost', value: moneyShort(f.cost) },
+                      ].map(r => (
+                        <div key={r.label} className="flex justify-between text-xs">
+                          <span className="text-slate-400">{r.label}</span>
+                          <span className="font-bold text-slate-700">{r.value}</span>
+                        </div>
+                      ))}
+                      <div>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-slate-400">Success</span>
+                          <span className={`font-bold ${sr >= 95 ? 'text-emerald-600' : sr >= 80 ? 'text-amber-600' : 'text-rose-600'}`}>{sr}%</span>
+                        </div>
+                        <Progress value={sr} className="h-1" />
                       </div>
-                    ))}
-                    <div>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-slate-400">Success</span>
-                        <span className={`font-bold ${sr >= 95 ? 'text-emerald-600' : sr >= 80 ? 'text-amber-600' : 'text-rose-600'}`}>{sr}%</span>
-                      </div>
-                      <Progress value={sr} className="h-1" />
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
             </div>
           </div>
         </div>
@@ -1520,7 +1519,7 @@ function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) 
                   })
                 )}
               </div>
-              
+
               {/* Mobile Pagination Controls */}
               {mobileTotalPages > 0 && (
                 <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
@@ -1631,7 +1630,7 @@ function AuditLogsTab({
   const [selectedLog, setSelectedLog] = useState<RawAiLog | null>(null);
   const [logSheetOpen, setLogSheetOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  
+
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 640 : false);
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 640);
@@ -1679,7 +1678,7 @@ function AuditLogsTab({
         <button onClick={() => setShowFilters(f => !f)} className="w-[calc(50%-5px)] sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors order-1">
           <SlidersHorizontal size={14} /> Filters {showFilters ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
         </button>
-        
+
         <button onClick={() => void load()} className="w-[calc(50%-5px)] sm:w-auto justify-center sm:ml-auto inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-50 order-2 sm:order-3">
           <RefreshCw size={12} /> Refresh
         </button>
@@ -1734,22 +1733,21 @@ function AuditLogsTab({
                     <div className="flex justify-between items-start mb-1">
                       <div>
                         {isSuper && (
-                           <p className="font-semibold text-brand-600 text-sm">
-                             {schoolNameMap.get(log.institute_id) ?? (log.institute_id ? log.institute_id.slice(0, 12) + '…' : '—')}
-                           </p>
+                          <p className="font-semibold text-brand-600 text-sm">
+                            {schoolNameMap.get(log.institute_id) ?? (log.institute_id ? log.institute_id.slice(0, 12) + '…' : '—')}
+                          </p>
                         )}
                         <p className="font-semibold text-slate-700 text-xs">{featureLabel(log.feature)}</p>
                       </div>
                       <div className="text-right">
-                         <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                           log.success ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
-                         }`}>
-                           {log.success ? <CheckCircle2 size={10} /> : <XCircle size={10} />}
-                           {log.success ? 'Success' : 'Failed'}
-                         </span>
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${log.success ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+                          }`}>
+                          {log.success ? <CheckCircle2 size={10} /> : <XCircle size={10} />}
+                          {log.success ? 'Success' : 'Failed'}
+                        </span>
                       </div>
                     </div>
-                    
+
                     <div className="flex justify-between text-xs text-slate-500">
                       <span>{new Date(log.created_at).toLocaleString()}</span>
                       <span className="font-black text-amber-600">{money(log.est_cost)}</span>
@@ -1764,7 +1762,7 @@ function AuditLogsTab({
                 ))
               )}
             </div>
-            
+
             {/* Desktop View: Table */}
             <div className="hidden sm:block overflow-x-auto">
               <table className="w-full min-w-[850px] text-sm">
@@ -1837,7 +1835,7 @@ function AuditLogsTab({
                 className="inline-flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 gap-1 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 disabled:opacity-30 hover:bg-slate-50 transition-colors">
                 <ChevronLeft size={14} /> <span className="hidden sm:inline">Previous</span>
               </button>
-              
+
               {Array.from({ length: Math.min(3, Math.ceil(total / limit)) }).map((_, idx) => {
                 const totalPages = Math.ceil(total / limit);
                 let p = page + 1;
@@ -1877,7 +1875,7 @@ function FeatureControlTab() {
   const [flags, setFlags] = useState<GlobalFeatureFlag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   // For mobile accordion state
   const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set(['teacher']));
   const toggleCat = (cat: string) => {
@@ -1933,11 +1931,11 @@ function FeatureControlTab() {
       {(['teacher', 'content', 'student', 'shared'] as const).map(cat => {
         const catFeatures = AI_FEATURES.filter(f => f.category === cat);
         const isExpanded = expandedCats.has(cat);
-        
+
         return (
           <div key={cat} className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
-            <button 
-              onClick={() => toggleCat(cat)} 
+            <button
+              onClick={() => toggleCat(cat)}
               className="w-full flex items-center justify-between p-5 pb-2 sm:pointer-events-none hover:bg-slate-50 sm:hover:bg-transparent transition-colors text-left"
             >
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{CATEGORY_LABELS[cat]}</p>
@@ -1945,7 +1943,7 @@ function FeatureControlTab() {
                 {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               </div>
             </button>
-            
+
             <div className={`px-5 pb-5 divide-y divide-slate-50 ${isExpanded ? 'block' : 'hidden sm:block'}`}>
               {catFeatures.map(f => {
                 const flag = flagMap.get(f.id);
@@ -2024,7 +2022,7 @@ export default function AiUsage() {
     setLoadError(null);
     try {
       const client = isCoaching ? apiClient : schoolApi;
-      
+
       const [ov, byF, tr] = await Promise.all([
         client.get(`/ai-usage/overview${vq}`),
         client.get(`/ai-usage/by-feature${vq}`),
@@ -2161,16 +2159,16 @@ export default function AiUsage() {
       {/* Diagnostic panel — shown when data is empty or on error */}
       {diagInfo && !loading && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800 space-y-1">
-          <p className="font-bold text-sm text-amber-900 flex items-center gap-1"><Info size={14}/>Diagnostic Info (why analytics shows 0)</p>
-          <p><strong>Your Role:</strong> {String((diagInfo as Record<string,unknown>)?.role ?? (diagInfo as Record<string,unknown>)?.user?.role ?? '—')}</p>
-          <p><strong>Your Institute ID:</strong> <code className="bg-amber-100 px-1 rounded">{String((diagInfo as Record<string,unknown>)?.instituteId ?? (diagInfo as Record<string,unknown>)?.user?.instituteId ?? 'null — not linked to any institute!')}</code></p>
+          <p className="font-bold text-sm text-amber-900 flex items-center gap-1"><Info size={14} />Diagnostic Info (why analytics shows 0)</p>
+          <p><strong>Your Role:</strong> {String((diagInfo as Record<string, unknown>)?.role ?? (diagInfo as Record<string, unknown>)?.user?.role ?? '—')}</p>
+          <p><strong>Your Institute ID:</strong> <code className="bg-amber-100 px-1 rounded">{String((diagInfo as Record<string, unknown>)?.instituteId ?? (diagInfo as Record<string, unknown>)?.user?.instituteId ?? 'null — not linked to any institute!')}</code></p>
           <p><strong>DB query result for your institute:</strong> {(() => {
-            const ov = (diagInfo as Record<string,unknown>)?.overview as Record<string,unknown> | null;
+            const ov = (diagInfo as Record<string, unknown>)?.overview as Record<string, unknown> | null;
             if (!ov) return 'no data returned (institute may have no AI usage yet)';
             return `${ov.requests ?? 0} requests, ${ov.tokens ?? 0} tokens, $${Number(ov.cost ?? 0).toFixed(4)} cost`;
           })()}</p>
-          {(diagInfo as Record<string,unknown>)?.queryError && (
-            <p className="text-rose-700"><strong>Query error:</strong> {String((diagInfo as Record<string,unknown>).queryError)}</p>
+          {(diagInfo as Record<string, unknown>)?.queryError && (
+            <p className="text-rose-700"><strong>Query error:</strong> {String((diagInfo as Record<string, unknown>).queryError)}</p>
           )}
           <p className="text-amber-600 mt-1">If Institute ID is <em>null</em> or <em>wrong</em>, AI usage logs are stored under a different ID — contact support. If the DB result shows 0 requests, generate some AI content first on this site (dev.eddva.in) and refresh.</p>
         </div>

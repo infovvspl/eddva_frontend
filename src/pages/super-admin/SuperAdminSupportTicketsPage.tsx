@@ -336,7 +336,7 @@ export default function SuperAdminSupportTicketsPage() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                      <th className="px-5 py-3.5">Ticket ID</th>
+                      <th className="px-5 py-3.5 sticky left-0 z-20 bg-slate-50 border-b border-slate-100">Ticket ID</th>
                       <th className="px-5 py-3.5">Subject</th>
                       <th className="px-5 py-3.5">Institute</th>
                       <th className="px-5 py-3.5">Raised By</th>
@@ -358,7 +358,7 @@ export default function SuperAdminSupportTicketsPage() {
                           onClick={() => navigate(`/super-admin/support-tickets/${t.id}`)}
                           className="hover:bg-slate-50/80 cursor-pointer transition-colors"
                         >
-                          <td className="px-5 py-4 font-bold text-indigo-600">{t.ticketNumber}</td>
+                          <td className="px-5 py-4 font-bold text-indigo-600 sticky left-0 z-20 bg-white dark:bg-slate-900 group-hover:bg-slate-50 transition-colors">{t.ticketNumber}</td>
                           <td className="px-5 py-4 font-bold text-slate-900 max-w-xs truncate">
                             {t.subject}
                           </td>

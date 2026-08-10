@@ -850,7 +850,7 @@ export default function Assessments() {
 
       {submitTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="max-h-[90vh] w-full max-w-6xl overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-slate-900">
+          <div className="erp-modal-container max-w-6xl">
             <div className="flex items-start justify-between gap-4 border-b border-slate-100 p-5 dark:border-slate-800">
               <div>
                 <h2 className="text-lg font-black text-slate-900 dark:text-white">
@@ -868,7 +868,7 @@ export default function Assessments() {
                 <X size={20} />
               </button>
             </div>
-            <div className="max-h-[70vh] overflow-auto p-5">
+            <div className="erp-modal-body p-5">
               {getStructuredQuestions(submitTarget).length ? (() => {
                 const questions = getStructuredQuestions(submitTarget);
                 const currentQuestion = questions[Math.min(currentQuestionIndex, questions.length - 1)];
@@ -993,7 +993,7 @@ export default function Assessments() {
                 </>
               )}
             </div>
-            <div className="flex justify-end gap-3 border-t border-slate-100 p-5 dark:border-slate-800">
+            <div className="erp-modal-footer">
               <button
                 type="button"
                 onClick={closeSubmit}

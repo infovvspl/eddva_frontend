@@ -945,7 +945,7 @@ export default function Timetable() {
                 <table className="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-50 dark:bg-slate-850">
-                      <th className="px-4 py-4 text-xs font-black uppercase tracking-wider text-slate-500 border-r border-slate-100 dark:border-slate-800 w-[120px]">
+                      <th className="px-4 py-4 text-xs font-black uppercase tracking-wider text-slate-500 border-r border-slate-100 dark:border-slate-800 w-[120px] sticky left-0 top-0 z-40 bg-slate-50 dark:bg-slate-850 shadow-sm">
                         Day
                       </th>
                       {sortedPeriods.map(period => (
@@ -959,7 +959,7 @@ export default function Timetable() {
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
                     {days.map(day => (
                       <tr key={day} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/20">
-                        <td className="px-4 py-4 text-xs font-black uppercase text-slate-700 dark:text-slate-350 border-r border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                        <td className="px-4 py-4 text-xs font-black uppercase text-slate-700 dark:text-slate-350 border-r border-slate-100 dark:border-slate-800 sticky left-0 z-20 bg-slate-50 dark:bg-slate-900">
                           {day}
                         </td>
                         {sortedPeriods.map(period => {

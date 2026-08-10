@@ -144,10 +144,10 @@ function StatBadge({ label, value, trend, trendValue, color = 'blue', formatter 
 // ---------------------------------------------------------------------------
 
 function StatCard({
-  label, value, icon: Icon, delay = 0, trend, onClick,
+  label, value, icon: Icon, color, delay = 0, trend, onClick,
 }: {
-  label: string; value: string | number;
-  delay?: number; trend?: string; onClick?: () => void;
+  label: string; value: string | number; icon: any;
+  color?: string; delay?: number; trend?: string; onClick?: () => void;
 }) {
   const shouldReduceMotion = useReducedMotion();
   const isFirstRender = React.useRef(true);
@@ -166,6 +166,8 @@ function StatCard({
     ? { delay, duration: 0.45, ease: [0.16, 1, 0.3, 1] }
     : undefined;
 
+  const colorStyles = color || "bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-950/40 dark:border-indigo-900/50 dark:text-indigo-400";
+
   return (
     <motion.div
       initial={initialProps}
@@ -173,26 +175,32 @@ function StatCard({
       transition={transitionProps}
       onClick={onClick}
       className={cn(
-        "group relative flex flex-col p-3.5 sm:p-5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-lg transition-all duration-300",
+        "group relative flex flex-col justify-between p-4 sm:p-5 rounded-2xl md:rounded-3xl border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:shadow-xl hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-300",
         onClick && "cursor-pointer hover:-translate-y-1"
       )}
     >
-      <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-4">
-        <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400 shrink-0" />
-        <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 leading-tight">
-          {label.split(' ').map((word, idx) => (
-            <span key={idx} className="block">{word}</span>
-          ))}
+      <div className="flex items-center justify-between gap-2 mb-3">
+        {/* Rounded Square Icon Badge (Fixed 48x48px, 16px radius) */}
+        <div className={cn("w-12 h-12 min-w-12 min-h-12 shrink-0 flex items-center justify-center rounded-2xl border transition-transform group-hover:scale-105 duration-200", colorStyles)}>
+          <Icon className="w-6 h-6 min-w-6 min-h-6 shrink-0 stroke-[2.5]" />
         </div>
-      </div>
-      <div className="flex items-end justify-between mt-auto gap-1">
-        <span className="text-xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight leading-none">{value}</span>
+
+        {/* Trend Badge */}
         {trend && (
-          <span className="flex items-center gap-0.5 text-[10px] sm:text-xs font-bold text-emerald-600 dark:text-emerald-500 shrink-0 mb-0.5">
-            <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+          <span className="inline-flex items-center gap-0.5 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300 shrink-0">
+            <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[2.5]" />
             {trend.replace('+', '')}
           </span>
         )}
+      </div>
+
+      <div className="space-y-1">
+        <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">
+          {label}
+        </p>
+        <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+          {value}
+        </h3>
       </div>
     </motion.div>
   );
@@ -352,10 +360,10 @@ const SuperAdminDashboard = () => {
   };
 
   const metrics = [
-    { label: "Partner Institutes", value: statsLoading ? "—" : formatCount(platformStats?.totalTenants), icon: Building2, color: "bg-indigo-500", trend: "+12.5%", path: "/super-admin/tenants" },
-    { label: "Active Faculty", value: statsLoading ? "—" : formatCount(platformStats?.totalTeachers), icon: GraduationCap, color: "bg-purple-500", trend: "+5.2%", path: "/super-admin/users" },
-    { label: "Global Students", value: statsLoading ? "—" : formatCount(platformStats?.totalStudents), icon: Users, color: "bg-blue-500", trend: "+18.4%", path: "/super-admin/enrollments" },
-    { label: "Revenue", value: statsLoading ? "—" : formatCurrencyLocal(platformStats?.monthlyRevenue ?? platformStats?.platformMrr ?? 0), icon: TrendingUp, color: "bg-emerald-500", trend: "+22.4%", path: "/super-admin/revenue" },
+    { label: "Partner Institutes", value: statsLoading ? "—" : formatCount(platformStats?.totalTenants), icon: Building2, color: "bg-indigo-50 text-indigo-600 border-indigo-100/70 dark:bg-indigo-950/40 dark:border-indigo-900/50 dark:text-indigo-400", trend: "+12.5%", path: "/super-admin/tenants" },
+    { label: "Active Faculty", value: statsLoading ? "—" : formatCount(platformStats?.totalTeachers), icon: GraduationCap, color: "bg-violet-50 text-violet-600 border-violet-100/70 dark:bg-violet-950/40 dark:border-violet-900/50 dark:text-violet-400", trend: "+5.2%", path: "/super-admin/users" },
+    { label: "Global Students", value: statsLoading ? "—" : formatCount(platformStats?.totalStudents), icon: Users, color: "bg-emerald-50 text-emerald-600 border-emerald-100/70 dark:bg-emerald-950/40 dark:border-emerald-900/50 dark:text-emerald-400", trend: "+18.4%", path: "/super-admin/tenants" },
+    { label: "Revenue", value: statsLoading ? "—" : formatCurrencyLocal(platformStats?.monthlyRevenue ?? platformStats?.platformMrr ?? 0), icon: TrendingUp, color: "bg-amber-50 text-amber-600 border-amber-100/70 dark:bg-amber-950/40 dark:border-amber-900/50 dark:text-amber-400", trend: "+22.4%", path: "/super-admin/analytics" },
   ];
 
   // ── Chart data: mapped from database stats ──
@@ -535,6 +543,7 @@ const SuperAdminDashboard = () => {
               label={m.label}
               value={m.value}
               icon={m.icon}
+              color={m.color}
               trend={m.trend}
               delay={i * 0.08}
               onClick={() => navigate(m.path)}
