@@ -778,7 +778,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]',
 
 
   return (
-    <div className={`flex ${heightClass} min-h-0 w-full flex-col overflow-hidden px-2 sm:px-4 lg:px-6 pb-6 sm:pb-8`}>
+    <div className={cn("flex min-h-0 w-full flex-col overflow-hidden", heightClass)}>
       {!isSuperAdmin && (
         <div className={cn("shrink-0 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3", selectedUser && "hidden md:grid")}>
           {[
@@ -799,27 +799,29 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]',
       )}
 
       {/* Tabs */}
-      <div className={cn(
-        isSuperAdmin ? '' : 'mt-3',
-        "flex w-fit max-w-full shrink-0 gap-1.5 rounded-2xl border border-slate-100/60 bg-slate-50/50 p-1",
-        selectedUser && "hidden md:flex"
-      )}>
-        {PANELS.map((panel) => (
-          <button
-            key={panel.key}
-            onClick={() => setActivePanel(panel.key)}
-            className={`flex-1 rounded-xl px-4 py-2 text-xs font-bold transition-all ${activePanel === panel.key
-              ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-              }`}
-          >
-            {panel.label}
-          </button>
-        ))}
-      </div>
+      {PANELS.length > 1 && (
+        <div className={cn(
+          isSuperAdmin ? '' : 'mt-3',
+          "flex w-fit max-w-full shrink-0 gap-1.5 rounded-2xl border border-slate-100/60 bg-slate-50/50 p-1 mb-2",
+          selectedUser && "hidden md:flex"
+        )}>
+          {PANELS.map((panel) => (
+            <button
+              key={panel.key}
+              onClick={() => setActivePanel(panel.key)}
+              className={`flex-1 rounded-xl px-4 py-2 text-xs font-bold transition-all ${activePanel === panel.key
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+            >
+              {panel.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* 3-Column Redesigned Layout */}
-      <div className="mt-3 mb-4 sm:mb-6 flex-1 min-h-0 overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-xl flex flex-col md:flex-row relative">
+      <div className="mt-2 mb-2 flex-1 min-h-0 overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-xl flex flex-col md:flex-row relative">
 
         {/* Column 1: Contacts Sidebar */}
         <div className={`w-full md:w-[320px] lg:w-[350px] border-r border-slate-100 flex flex-col shrink-0 min-h-0 bg-slate-50/10 transition-all ${selectedUser ? 'hidden md:flex' : 'flex'}`}>

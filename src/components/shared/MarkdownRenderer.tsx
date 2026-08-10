@@ -28,7 +28,28 @@ function NoteImage({ src, alt }: { src?: string; alt?: string }) {
     return () => document.removeEventListener("keydown", onKey);
   }, [lightbox, closeLightbox]);
 
-  if (hidden || !src) return null;
+  if (!src) return null;
+
+  if (hidden) {
+    return (
+      <figure className="not-prose group relative my-6 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/80 p-4 shadow-sm text-center">
+        <div className="flex flex-col items-center justify-center py-5 text-slate-400">
+          <svg className="w-8 h-8 mb-2 text-blue-500/60 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <span className="text-xs font-bold text-slate-600">Loading educational diagram…</span>
+        </div>
+        {displayAlt && (
+          <figcaption className="flex items-start justify-center gap-2 border-t border-slate-200/60 px-4 py-2.5 text-xs font-medium leading-relaxed text-slate-600">
+            <svg className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" />
+            </svg>
+            {displayAlt}
+          </figcaption>
+        )}
+      </figure>
+    );
+  }
 
   const heightClass = fit === "full" ? "" : fit === "contain" ? "max-h-72" : "max-h-60";
   const objectClass = fit === "cover" ? "object-cover" : fit === "contain" ? "object-contain" : "object-contain";
@@ -717,18 +738,18 @@ export const formatMarkdown = (text?: string) => {
       : segment)
     .join("$");
 
-  // 7. Tokenize to protect already-formatted math blocks ($...$ and $$...$$)
+  // 7. Tokenize to protect already-formatted math blocks ($...$ and $$...$$) and markdown image tags (![...]())
   const tokenize = (text: string) => {
-    const tokens: { type: "prose" | "math"; text: string }[] = [];
+    const tokens: { type: "prose" | "math" | "image"; text: string }[] = [];
     let lastIndex = 0;
-    const mathRegex = /(\$\$(?:[\s\S]*?)\$\$)|(\$(?:[^$]+?)\$)/g;
+    const mathRegex = /(\$\$(?:[\s\S]*?)\$\$)|(\$(?:[^$]+?)\$)|(!\[[\s\S]*?\]\([^\)]+\))/g;
     let match;
     while ((match = mathRegex.exec(text)) !== null) {
       const matchIndex = match.index;
       if (matchIndex > lastIndex) {
         tokens.push({ type: "prose", text: text.slice(lastIndex, matchIndex) });
       }
-      tokens.push({ type: "math", text: match[0] });
+      tokens.push({ type: match[3] ? "image" : "math", text: match[0] });
       lastIndex = mathRegex.lastIndex;
     }
     if (lastIndex < text.length) {
@@ -951,7 +972,14 @@ const highlightChildren = (children: any, highlights: Array<{ text: string; colo
 export function MarkdownRenderer({ content, className, imageMap, highlights = [] }: MarkdownRendererProps) {
   const customComponents = {
     a: ({ node, ...props }: any) => <a target="_blank" rel="noopener noreferrer" {...props} />,
-    img: ({ node, alt, src }: any) => <NoteImage src={imageMap?.[src ?? ''] ?? src} alt={alt} />,
+    img: ({ node, alt, src }: any) => {
+      const cleanSrc = (src ?? '').split('?')[0];
+      const resolvedSrc = imageMap?.[src ?? ''] 
+        ?? imageMap?.[cleanSrc] 
+        ?? (cleanSrc ? Object.entries(imageMap || {}).find(([k]) => k.split('?')[0] === cleanSrc)?.[1] : undefined) 
+        ?? src;
+      return <NoteImage src={resolvedSrc} alt={alt} />;
+    },
     li: ({ node, children, ...props }: any) => {
       const textContent = getTextContent(children);
       

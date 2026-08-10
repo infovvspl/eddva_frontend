@@ -36,7 +36,7 @@ const allItems = [
   { group: 'Growth', path: '/school/student/career', label: 'Career Guidance', icon: Compass, badge: 'New', featType: 'ai', featKey: 'ai_career_guidance' },
   // Demonstration feature — shares the career-guidance flag so it appears and
   // disappears with the section it belongs to.
-  { group: 'Growth', path: '/school/student/astro-profile', label: 'AI Astro Profile', icon: Sparkles, badge: 'Demo', featType: 'ai', featKey: 'ai_career_guidance' },
+  { group: 'Growth', path: '/school/student/astro-profile', label: 'AI Astro Profile', icon: Sparkles, badge: 'Demo', featType: 'ai', featKey: 'ai_astro_profile' },
   { group: 'Growth', path: '/school/student/gamification', label: 'Gamification', icon: Trophy, badge: 'New' },
   { group: 'Growth', path: '/school/student/timetable', label: 'Timetable', icon: CalendarDays, featType: 'module', featKey: 'timetable' },
   { group: 'Growth', path: '/school/student/calendar', label: 'Calendar', icon: CalendarDays, featType: 'module', featKey: 'academic_calendar' },
@@ -92,6 +92,7 @@ export default function Sidebar({ open, onClose }) {
   const hasPlanner = useSchoolFeature('ai', 'ai_study_planner');
   const hasDoubts = useSchoolFeature('ai', 'ai_doubt_solver');
   const hasCareer = useSchoolFeature('ai', 'ai_career_guidance');
+  const hasAstro = useSchoolFeature('ai', 'ai_astro_profile');
 
   if (isGamificationRoute) {
     return null;
@@ -116,6 +117,7 @@ export default function Sidebar({ open, onClose }) {
     if (item.featType === 'ai' && item.featKey === 'ai_study_planner' && !hasPlanner) return;
     if (item.featType === 'ai' && item.featKey === 'ai_doubt_solver' && !hasDoubts) return;
     if (item.featType === 'ai' && item.featKey === 'ai_career_guidance' && !hasCareer) return;
+    if (item.featType === 'ai' && item.featKey === 'ai_astro_profile' && !hasAstro) return;
 
     const group = filteredGroups.find(g => g.heading === item.group);
     if (group) group.items.push(item);

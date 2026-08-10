@@ -777,8 +777,7 @@ const ClassManagement: React.FC = () => {
 
   // Fetch notes images as data URIs (R2 bucket has no CORS for direct browser <img> loads)
   useEffect(() => {
-    const imgs = Array.isArray(detailRec?.notes_images) ? detailRec.notes_images : [];
-    if (!detailRec?.id || imgs.length === 0) {
+    if (!detailRec?.id || !detailRec?.notes) {
       setNotesImageMap({});
       return;
     }
@@ -789,7 +788,7 @@ const ClassManagement: React.FC = () => {
       })
       .catch(() => { if (!cancelled) setNotesImageMap({}); });
     return () => { cancelled = true; };
-  }, [detailRec?.id, detailRec?.notes_images?.length]);
+  }, [detailRec?.id, detailRec?.notes]);
 
   // Curriculum filters for the recorded list
   useEffect(() => {
@@ -1272,24 +1271,8 @@ const ClassManagement: React.FC = () => {
           {isEnded && lec.recordingUrl && (
             <button
               onClick={() => {
-                const savedRecording = recordedClassData.find((recording: any) => recording.id === lec.classRecordingId);
-                setDetailRec(savedRecording || {
-                  id: lec.classRecordingId || lec.id,
-                  title: lec.title,
-                  video_url: lec.recordingUrl,
-                  thumbnail_url: lec.thumbnailUrl,
-                  description: lec.description,
-                  duration: lec.recordingDurationSeconds ? String(Math.round(lec.recordingDurationSeconds / 60)) : '45',
-                  recorded_date: lec.endedAt || lec.createdAt,
-                  source: 'live_stream',
-                  notes: lec.notes || null,
-                  notes_status: lec.notesStatus || null,
-                  transcript_status: lec.transcriptStatus || null,
-                  quiz_status: lec.quizStatus || null,
-                  language: lec.language || 'en'
-                });
-                setDetailTab('overview');
-                setDetailPanelOpen(true);
+                const recId = lec.classRecordingId || lec.id;
+                navigate(`/school/teacher/recorded-classes/${recId}`);
               }}
               className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-gradient-to-r hover:from-blue-50 hover:to-sky-50 hover:text-blue-600 hover:border-blue-300"
             >
@@ -1530,7 +1513,7 @@ const ClassManagement: React.FC = () => {
             return (
               <div key={rec.id} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:shadow-md">
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-3.5 sm:gap-4">
-                  <button onClick={() => { setDetailRec(rec); setDetailTab(rec.notes ? 'notes' : 'transcript'); setDetailPanelOpen(true); }}
+                  <button onClick={() => navigate(`/school/teacher/recorded-classes/${rec.id}`)}
                     className="group/thumb relative h-36 w-full sm:h-16 sm:w-28 shrink-0 overflow-hidden rounded-xl bg-slate-900">
                     {rec.thumbnail_url ? (
                       <img src={rec.thumbnail_url} alt={rec.title} className="h-full w-full object-cover transition-transform duration-300 group-hover/thumb:scale-105" loading="lazy" />
@@ -1551,11 +1534,17 @@ const ClassManagement: React.FC = () => {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <h4 className="truncate font-bold text-slate-900 text-sm sm:text-base leading-snug" title={rec.title}>{rec.title}</h4>
+                        <h4
+                          onClick={() => navigate(`/school/teacher/recorded-classes/${rec.id}`)}
+                          className="truncate font-bold text-slate-900 text-sm sm:text-base leading-snug cursor-pointer hover:text-blue-600 transition-colors"
+                          title={rec.title}
+                        >
+                          {rec.title}
+                        </h4>
                         <p className="mt-0.5 truncate text-xs font-medium text-slate-500">
                           · {[rec.topic_name, rec.subject_name, rec.class_name].filter(Boolean)[0] || 'Lecture'} · {date}
                         </p>
-                        <button onClick={() => { setDetailRec(rec); setDetailTab(rec.notes ? 'notes' : 'transcript'); setDetailPanelOpen(true); }}
+                        <button onClick={() => navigate(`/school/teacher/recorded-classes/${rec.id}`)}
                           className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:underline">
                           <ChevronRight size={13} /> Click to view details
                         </button>
@@ -1564,7 +1553,7 @@ const ClassManagement: React.FC = () => {
                         <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-black uppercase text-emerald-600">Published</span>
                         <TranscriptStatusBadge
                           rec={rec}
-                          onView={() => { setDetailRec(rec); setDetailTab('transcript'); }}
+                          onView={() => navigate(`/school/teacher/recorded-classes/${rec.id}`)}
                           onRetry={() => handleRetranscribe(rec.id)}
                         />
                       </div>
@@ -1572,7 +1561,7 @@ const ClassManagement: React.FC = () => {
                     <div className="mt-3 flex items-start justify-between gap-3 border-t border-slate-100 pt-2">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <button onClick={() => { setDetailRec(rec); setDetailTab('overview'); setDetailPanelOpen(true); }}
+                          <button onClick={() => navigate(`/school/teacher/recorded-classes/${rec.id}`)}
                             className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50">
                             <BarChart3 size={14} /> Live Stats
                           </button>

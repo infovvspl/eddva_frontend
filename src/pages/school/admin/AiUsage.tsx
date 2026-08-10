@@ -162,6 +162,22 @@ const moneyShort = (v: unknown) => `$${num(v).toFixed(2)}`;
 const featureLabel = (f: string) => AI_FEATURES.find(x => x.id === f)?.label ?? FEATURE_LABELS[f] ?? f;
 const pct = (part: number, total: number) => total > 0 ? Math.round((part / total) * 100) : 0;
 
+function formatSchoolName(id?: string, name?: string, isCoaching = false): string {
+  if (name && name !== id) return name;
+  if (!id) return isCoaching ? 'Unknown Institute' : 'Unknown School';
+  const cleanId = String(id).replace(/-/g, '');
+  const displayId = cleanId.length > 8 ? cleanId.slice(0, 8).toUpperCase() : cleanId;
+  return `${isCoaching ? 'Institute' : 'School'} #${displayId}`;
+}
+
+const DUMMY_INSTITUTE_PATTERNS = ['00000000', '11111111', '22222222', '33333333', 'aaaaaaaa', '73a505c3'];
+
+function isDummyInstitute(id?: string): boolean {
+  if (!id) return false;
+  const clean = String(id).toLowerCase();
+  return DUMMY_INSTITUTE_PATTERNS.some(pattern => clean.includes(pattern));
+}
+
 function successBadge(rate: number) {
   if (rate >= 95) return <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 font-semibold">{rate}%</Badge>;
   if (rate >= 80) return <Badge className="bg-amber-50 text-amber-700 border-amber-100 font-semibold">{rate}%</Badge>;
@@ -324,7 +340,7 @@ function FilterBar({
                   onChange={onSearch}
                   options={[
                     { value: '', label: isCoaching ? 'All Institutes' : 'All Schools' },
-                    ...schools.map(s => ({ value: s.institute_name, label: s.institute_name }))
+                    ...schools.map(s => ({ value: s.institute_id, label: s.institute_name }))
                   ]}
                   className="w-full"
                 />
@@ -396,9 +412,9 @@ function FilterBar({
               onChange={onSearch}
               options={[
                 { value: '', label: isCoaching ? 'All Institutes' : 'All Schools' },
-                ...schools.map(s => ({ value: s.institute_name, label: s.institute_name }))
+                ...schools.map(s => ({ value: s.institute_id, label: s.institute_name }))
               ]}
-              className="w-44"
+              className="w-48"
             />
           ) : (
             <>
@@ -1402,7 +1418,11 @@ function OverviewTab({
 
 // ── Billing Tab ────────────────────────────────────────────────────────────────
 
-function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) {
+function BillingTab({
+  fromDate, toDate, filterSchool = '', filterFeature = '',
+}: {
+  fromDate: string; toDate: string; filterSchool?: string; filterFeature?: string;
+}) {
   const tenantType = useAuthStore(s => s.tenantType);
   const isCoaching = tenantType === 'coaching';
   const productType = isCoaching ? 'coaching' : 'school';
@@ -1410,8 +1430,6 @@ function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) 
   const [rows, setRows] = useState<BillingReportRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [filterSchool, setFilterSchool] = useState('');
-  const [filterFeature, setFilterFeature] = useState('');
   const [mobilePage, setMobilePage] = useState(1);
   const mobileLimit = 10;
 
@@ -1427,7 +1445,8 @@ function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) 
   useEffect(() => { void load(); }, [load]);
 
   const filtered = useMemo(() => rows.filter(r => {
-    if (filterSchool && !String(r.institute_name ?? '').toLowerCase().includes(filterSchool.toLowerCase())) return false;
+    if (isDummyInstitute(r.institute_id)) return false;
+    if (filterSchool && r.institute_id !== filterSchool && !String(r.institute_name ?? '').toLowerCase().includes(filterSchool.toLowerCase())) return false;
     if (filterFeature && r.feature !== filterFeature) return false;
     return true;
   }), [rows, filterSchool, filterFeature]);
@@ -1458,25 +1477,13 @@ function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) 
 
   return (
     <div className="space-y-4">
-      {/* Filters row */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 rounded-2xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-sm">
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <div className="relative w-[50%] sm:w-auto">
-            <Search size={13} className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input value={filterSchool} onChange={e => setFilterSchool(e.target.value)} placeholder={isCoaching ? "Filter institute…" : "Filter school…"}
-              className="h-9 w-full sm:w-44 rounded-xl border border-slate-200 pl-7 sm:pl-8 pr-2 sm:pr-3 text-[11px] sm:text-sm outline-none focus:border-brand-400" />
-          </div>
-          <div className="relative w-[50%] sm:w-auto">
-            <select value={filterFeature} onChange={e => setFilterFeature(e.target.value)}
-              className="h-9 w-full appearance-none rounded-xl border border-slate-200 pl-3 pr-7 sm:pr-8 text-[11px] sm:text-sm text-slate-700 outline-none focus:border-brand-400 font-semibold bg-white truncate">
-              <option value="">All Features</option>
-              {AI_FEATURES.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
-            </select>
-            <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          </div>
-        </div>
+      {/* Top action header */}
+      <div className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-sm">
+        <p className="text-xs sm:text-sm font-bold text-slate-700">
+          Showing <span className="text-brand-600">{filtered.length}</span> billing items
+        </p>
         <button onClick={exportCsv} disabled={filtered.length === 0}
-          className="w-full sm:w-auto justify-center sm:ml-auto inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-xs sm:text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-40">
+          className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-xs sm:text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-40 shadow-sm transition-colors">
           <Download size={14} /> Export CSV
         </button>
       </div>
@@ -1502,7 +1509,7 @@ function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) 
                       <div key={i} className="p-4 space-y-2">
                         <div className="flex justify-between items-start">
                           <div>
-                            <p className="font-semibold text-brand-600 text-sm">{r.institute_name || r.institute_id}</p>
+                            <p className="font-semibold text-brand-600 text-sm">{formatSchoolName(r.institute_id, r.institute_name, isCoaching)}</p>
                             <p className="text-xs text-slate-500">{featureLabel(r.feature)}</p>
                           </div>
                           <div className="text-right">
@@ -1577,7 +1584,7 @@ function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) 
                       return (
                         <tr key={i} className="hover:bg-slate-50/50 transition-colors">
                           <td className="px-5 py-3 text-slate-500 font-medium whitespace-nowrap">{r.month}</td>
-                          <td className="px-4 py-3 font-semibold text-brand-600 whitespace-nowrap">{r.institute_name || r.institute_id}</td>
+                          <td className="px-4 py-3 font-semibold text-brand-600 whitespace-nowrap">{formatSchoolName(r.institute_id, r.institute_name, isCoaching)}</td>
                           <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{featureLabel(r.feature)}</td>
                           <td className="px-4 py-3 text-right text-slate-600">{r.requests.toLocaleString()}</td>
                           <td className="px-4 py-3 text-right text-slate-500">{r.tokens.toLocaleString()}</td>
@@ -1611,26 +1618,24 @@ function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) 
 // ── Audit Logs Tab ─────────────────────────────────────────────────────────────
 
 function AuditLogsTab({
-  fromDate, toDate, schools, isSuper, onViewSchool,
+  fromDate, toDate, filterSchool = '', filterFeature = '', schools = [], isSuper, onViewSchool,
 }: {
   fromDate: string; toDate: string;
-  schools: SchoolRow[]; isSuper: boolean;
+  filterSchool?: string; filterFeature?: string;
+  schools?: SchoolRow[]; isSuper: boolean;
   onViewSchool: (id: string, name: string) => void;
 }) {
   const schoolNameMap = useMemo(
-    () => new Map(schools.map(s => [s.institute_id, s.institute_name])),
+    () => new Map((schools || []).map(s => [s.institute_id, s.institute_name])),
     [schools]
   );
   const [logs, setLogs] = useState<RawAiLog[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [filterSchool, setFilterSchool] = useState('');
-  const [filterFeature, setFilterFeature] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [selectedLog, setSelectedLog] = useState<RawAiLog | null>(null);
   const [logSheetOpen, setLogSheetOpen] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
   
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 640 : false);
   useEffect(() => {
@@ -1660,61 +1665,40 @@ function AuditLogsTab({
       setTotal(res.total);
     } catch { /* silent */ }
     finally { setLoading(false); }
-  }, [filterSchool, filterFeature, fromDate, toDate, page, isSuper, productType]);
+  }, [filterSchool, filterFeature, fromDate, toDate, page, isSuper, productType, limit]);
 
   useEffect(() => { setPage(0); }, [filterSchool, filterFeature, filterStatus, fromDate, toDate]);
   useEffect(() => { void load(); }, [load]);
 
   const filteredByStatus = useMemo(() => {
-    if (!filterStatus) return logs;
-    return logs.filter(l => filterStatus === 'success' ? l.success : !l.success);
+    let result = logs.filter(l => !isDummyInstitute(l.institute_id));
+    if (filterStatus) {
+      result = result.filter(l => filterStatus === 'success' ? l.success : !l.success);
+    }
+    return result;
   }, [logs, filterStatus]);
 
   const openLog = (log: RawAiLog) => { setSelectedLog(log); setLogSheetOpen(true); };
 
   return (
     <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 rounded-2xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-sm">
-        <button onClick={() => setShowFilters(f => !f)} className="w-[calc(50%-5px)] sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors order-1">
-          <SlidersHorizontal size={14} /> Filters {showFilters ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
-        </button>
-        
-        <button onClick={() => void load()} className="w-[calc(50%-5px)] sm:w-auto justify-center sm:ml-auto inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-50 order-2 sm:order-3">
-          <RefreshCw size={12} /> Refresh
-        </button>
-
-        {showFilters && (
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 w-full sm:w-auto sm:border-l border-slate-100 mt-1 sm:mt-0 sm:pl-3 order-3 sm:order-2">
-            {isSuper && (
-              <div className="relative w-full sm:w-auto">
-                <select value={filterSchool} onChange={e => setFilterSchool(e.target.value)}
-                  className="h-9 w-full sm:w-auto appearance-none rounded-xl border border-slate-200 pl-3 pr-8 text-xs sm:text-sm text-slate-700 outline-none focus:border-brand-400 bg-white font-semibold">
-                  <option value="">{isCoaching ? "All Institutes" : "All Schools"}</option>
-                  {schools.map(s => <option key={s.institute_id} value={s.institute_id}>{s.institute_name}</option>)}
-                </select>
-                <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              </div>
-            )}
-            <div className="relative w-full sm:w-auto">
-              <select value={filterFeature} onChange={e => setFilterFeature(e.target.value)}
-                className="h-9 w-full sm:w-auto appearance-none rounded-xl border border-slate-200 pl-3 pr-8 text-xs sm:text-sm text-slate-700 outline-none focus:border-brand-400 bg-white font-semibold">
-                <option value="">All Features</option>
-                {AI_FEATURES.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
-              </select>
-              <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            </div>
-            <div className="relative w-full sm:w-auto">
-              <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-                className="h-9 w-full sm:w-auto appearance-none rounded-xl border border-slate-200 pl-3 pr-8 text-xs sm:text-sm text-slate-700 outline-none focus:border-brand-400 bg-white font-semibold">
-                <option value="">All Status</option>
-                <option value="success">Success</option>
-                <option value="failed">Failed</option>
-              </select>
-              <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            </div>
+      {/* Top action header */}
+      <div className="flex items-center justify-between gap-2.5 rounded-2xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-sm">
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+              className="h-9 appearance-none rounded-xl border border-slate-200 pl-3 pr-8 text-xs sm:text-sm text-slate-700 outline-none focus:border-brand-400 bg-white font-semibold">
+              <option value="">All Status</option>
+              <option value="success">Success</option>
+              <option value="failed">Failed</option>
+            </select>
+            <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
           </div>
-        )}
+        </div>
+
+        <button onClick={() => void load()} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3.5 py-2 text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
+          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> Refresh
+        </button>
       </div>
 
       <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
@@ -1735,7 +1719,7 @@ function AuditLogsTab({
                       <div>
                         {isSuper && (
                            <p className="font-semibold text-brand-600 text-sm">
-                             {schoolNameMap.get(log.institute_id) ?? (log.institute_id ? log.institute_id.slice(0, 12) + '…' : '—')}
+                             {formatSchoolName(log.institute_id, schoolNameMap.get(log.institute_id), isCoaching)}
                            </p>
                         )}
                         <p className="font-semibold text-slate-700 text-xs">{featureLabel(log.feature)}</p>
@@ -1793,11 +1777,11 @@ function AuditLogsTab({
                           <td className="px-4 py-2.5 text-xs whitespace-nowrap">
                             {log.institute_id ? (
                               <button
-                                onClick={e => { e.stopPropagation(); onViewSchool(log.institute_id, schoolNameMap.get(log.institute_id) ?? log.institute_id); }}
+                                onClick={e => { e.stopPropagation(); onViewSchool(log.institute_id, formatSchoolName(log.institute_id, schoolNameMap.get(log.institute_id), isCoaching)); }}
                                 className="max-w-[140px] truncate font-semibold text-brand-600 hover:underline text-left"
-                                title={schoolNameMap.get(log.institute_id) ?? log.institute_id}
+                                title={formatSchoolName(log.institute_id, schoolNameMap.get(log.institute_id), isCoaching)}
                               >
-                                {schoolNameMap.get(log.institute_id) ?? log.institute_id.slice(0, 12) + '…'}
+                                {formatSchoolName(log.institute_id, schoolNameMap.get(log.institute_id), isCoaching)}
                               </button>
                             ) : <span className="text-slate-400">—</span>}
                           </td>
@@ -2008,9 +1992,57 @@ export default function AiUsage() {
   const [schoolDetailId, setSchoolDetailId] = useState<string | null>(null);
   const [schoolDetailName, setSchoolDetailName] = useState('');
 
+  const [registeredSchools, setRegisteredSchools] = useState<{ id: string; name: string }[]>([]);
+
   const tenantType = useAuthStore(s => s.tenantType);
   const isCoaching = tenantType === 'coaching';
   const productType = isCoaching ? 'coaching' : 'school';
+
+  useEffect(() => {
+    if (isSuper) {
+      if (isCoaching) {
+        apiClient.get('/admin/tenants?limit=500').then(res => {
+          const list = res.data?.items ?? res.data?.data?.items ?? res.data?.data ?? (res.data || []);
+          if (Array.isArray(list)) {
+            setRegisteredSchools(list.map((x: any) => ({ id: x.id || x.tenantId, name: x.name })));
+          }
+        }).catch(() => undefined);
+      } else {
+        schoolApi.get('/institutes', { params: { perPage: 500 } }).then(res => {
+          const list = res.data?.data || res.data?.items || res.data || [];
+          if (Array.isArray(list) && list.length > 0) {
+            setRegisteredSchools(list.map((x: any) => ({ id: x.id, name: x.name })));
+          }
+        }).catch(() => undefined);
+      }
+    }
+  }, [isSuper, isCoaching]);
+
+  const allSchoolOptions = useMemo<SchoolRow[]>(() => {
+    const map = new Map<string, string>();
+    (registeredSchools || []).forEach(s => {
+      if (s.id && !isDummyInstitute(s.id)) {
+        map.set(s.id, formatSchoolName(s.id, s.name, isCoaching));
+      }
+    });
+    (schools || []).forEach(s => {
+      if (s.institute_id && !isDummyInstitute(s.institute_id)) {
+        if (!map.has(s.institute_id)) {
+          map.set(s.institute_id, formatSchoolName(s.institute_id, s.institute_name, isCoaching));
+        }
+      }
+    });
+    return Array.from(map.entries()).map(([id, name]) => ({
+      institute_id: id,
+      institute_name: name,
+      requests: 0,
+      tokens: 0,
+      cost: 0,
+      avg_latency_ms: 0,
+      success_rate: 100,
+      last_activity: '',
+    }));
+  }, [registeredSchools, schools, isCoaching]);
 
   const vq = useMemo(() => {
     const p = new URLSearchParams({ vertical: productType });
@@ -2038,7 +2070,7 @@ export default function AiUsage() {
         const list = ((inst.data as { data?: unknown[] })?.data ?? []) as Record<string, unknown>[];
         setSchools(list.map(i => ({
           institute_id: String(i.institute_id ?? ''),
-          institute_name: String(i.institute_name ?? i.institute_id ?? ''),
+          institute_name: formatSchoolName(String(i.institute_id ?? ''), String(i.institute_name ?? ''), isCoaching),
           requests: num(i.requests),
           tokens: num(i.tokens),
           cost: num(i.cost),
@@ -2051,9 +2083,11 @@ export default function AiUsage() {
       try {
         const ovData = (ov.data as { data?: Record<string, unknown> })?.data;
         if (!ovData || num(ovData.requests) === 0) {
-          schoolApi.get('/ai-usage/me-debug').then(r => {
-            setDiagInfo((r.data as { user?: unknown; overview?: unknown })?.data ?? r.data);
-          }).catch(() => undefined);
+          if (!isCoaching) {
+            schoolApi.get('/ai-usage/me-debug').then(r => {
+              setDiagInfo((r.data as { user?: unknown; overview?: unknown })?.data ?? r.data);
+            }).catch(() => undefined);
+          }
         } else {
           setDiagInfo(null);
         }
@@ -2064,9 +2098,11 @@ export default function AiUsage() {
       const errStr = msg || (status ? `HTTP ${status}` : String(e));
       setLoadError(errStr);
       // Still fetch diag info even on error
-      schoolApi.get('/ai-usage/me-debug').then(r => {
-        setDiagInfo((r.data as { data?: unknown })?.data ?? r.data);
-      }).catch(() => undefined);
+      if (!isCoaching) {
+        schoolApi.get('/ai-usage/me-debug').then(r => {
+          setDiagInfo((r.data as { data?: unknown })?.data ?? r.data);
+        }).catch(() => undefined);
+      }
       console.error('AI usage load error', e);
     } finally {
       setLoading(false);
@@ -2081,7 +2117,7 @@ export default function AiUsage() {
   };
 
   const sortedFilteredSchools = useMemo(() => {
-    let list = [...schools];
+    let list = schools.filter(s => !isDummyInstitute(s.institute_id));
     if (searchSchool.trim()) {
       const q = searchSchool.toLowerCase();
       list = list.filter(s => s.institute_name.toLowerCase().includes(q));
@@ -2127,10 +2163,8 @@ export default function AiUsage() {
     );
   }
 
-
-
   return (
-    <div className="mx-auto max-w-7xl px-1 pt-0 pb-0 -mb-[6px] sm:-mb-0 sm:pb-8 sm:py-8 sm:px-6 lg:px-8 space-y-4 sm:space-y-8">
+    <div className="w-full min-h-full p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-8">
       {/* Header */}
       <div className="mt-3 sm:mt-0 mb-4 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 bg-blue-50/50 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
         <div>
@@ -2181,7 +2215,7 @@ export default function AiUsage() {
         fromDate={fromDate} toDate={toDate} search={searchSchool} featureFilter={featureFilter}
         onFromDate={setFromDate} onToDate={setToDate} onSearch={setSearchSchool} onFeatureFilter={setFeatureFilter}
         onClear={() => { setFromDate(''); setToDate(''); setSearchSchool(''); setFeatureFilter(''); }}
-        schools={isSuper ? schools : undefined}
+        schools={isSuper ? allSchoolOptions : undefined}
       />
 
       {/* Tab Nav */}
@@ -2219,12 +2253,22 @@ export default function AiUsage() {
         />
       )}
       {activeTab === 'billing' && isSuper && (
-        <BillingTab fromDate={fromDate} toDate={toDate} />
+        <BillingTab
+          fromDate={fromDate}
+          toDate={toDate}
+          filterSchool={searchSchool}
+          filterFeature={featureFilter}
+          schools={allSchoolOptions}
+        />
       )}
       {activeTab === 'logs' && (
         <AuditLogsTab
-          fromDate={fromDate} toDate={toDate}
-          schools={schools} isSuper={isSuper}
+          fromDate={fromDate}
+          toDate={toDate}
+          filterSchool={searchSchool}
+          filterFeature={featureFilter}
+          schools={allSchoolOptions}
+          isSuper={isSuper}
           onViewSchool={handleViewSchool}
         />
       )}

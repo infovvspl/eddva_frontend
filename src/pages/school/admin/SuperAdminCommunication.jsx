@@ -321,10 +321,10 @@ export default function SuperAdminCommunication() {
     n => n.createdAt && new Date(n.createdAt).toDateString() === new Date().toDateString()
   ).length;
 
-  const chatHeightClass = 'h-[calc(100dvh-340px)] md:h-[calc(100dvh-280px)]';
+  const chatHeightClass = 'h-[calc(100dvh-210px)] flex-1';
 
   return (
-    <div className="mx-auto max-w-7xl px-1 pt-0 pb-0 -mb-[6px] sm:-mb-0 sm:pb-8 sm:py-8 sm:px-6 lg:px-8 w-full flex flex-col">
+    <div className="w-full min-h-full p-4 sm:p-6 lg:p-8 flex flex-col">
 
       {/* ── Page header — always visible ─────────────────────────── */}
       <div className="pt-0">
@@ -391,16 +391,18 @@ export default function SuperAdminCommunication() {
 
       {/* ── Chat Tab — full Communications component ──────────────── */}
       {activeTab === 'chat' && (
-        <Communications heightClass={chatHeightClass} institutes={institutes} />
+        <div className="flex-1 min-h-0 w-full flex flex-col pt-3">
+          <Communications heightClass={chatHeightClass} institutes={institutes} />
+        </div>
       )}
 
       {/* ── Compose / Log tabs ────────────────────────────────────── */}
       {activeTab !== 'chat' && (
-        <div className="px-4 sm:px-6 lg:px-8 pt-6 pb-24">
+        <div className="pt-6 pb-24">
 
           {/* Compose ──────────────────────────────────────────────── */}
           {activeTab === 'compose' && (
-            <form onSubmit={handleSend} className="max-w-2xl">
+            <form onSubmit={handleSend} className="w-full">
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900 space-y-5">
                 <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   <Globe className="h-4 w-4 text-blue-600" />

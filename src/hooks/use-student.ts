@@ -41,9 +41,11 @@ export const studentKeys = {
 // ─── Auth / Me ────────────────────────────────────────────────────────────────
 
 export function useStudentMe() {
+  const { user } = useAuthStore();
   return useQuery({
     queryKey: studentKeys.me,
     queryFn: studentApi.getMe,
+    enabled: user?.role === "student",
     // XP, streak, profile — only changes via explicit mutations that invalidate this key.
     staleTime: 5 * 60_000,
     gcTime: 30 * 60_000,
@@ -62,9 +64,11 @@ export function usePublicBatches(examTarget?: string) {
 // ─── My Courses ───────────────────────────────────────────────────────────────
 
 export function useMyCourses() {
+  const { user } = useAuthStore();
   return useQuery({
     queryKey: studentKeys.myCourses,
     queryFn: studentApi.getMyCourses,
+    enabled: user?.role === "student",
     staleTime: 60_000,
     retry: false,
   });
@@ -118,9 +122,11 @@ export function useCourseTopicDetail(batchId: string, topicId: string) {
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
 export function useStudentDashboard() {
+  const { user } = useAuthStore();
   return useQuery({
     queryKey: studentKeys.dashboard,
     queryFn: studentApi.getStudentDashboard,
+    enabled: user?.role === "student",
     staleTime: 30_000,
     retry: false,
   });
@@ -275,18 +281,22 @@ export function useSessionResult(sessionId: string) {
 // ─── Study Plan ───────────────────────────────────────────────────────────────
 
 export function useCoursePlanSummaries() {
+  const { user } = useAuthStore();
   return useQuery({
     queryKey: studentKeys.coursePlanSummaries,
     queryFn: studentApi.getCoursePlanSummaries,
+    enabled: user?.role === "student",
     staleTime: 30_000,
     retry: false,
   });
 }
 
 export function useTodaysPlan(batchId?: string) {
+  const { user } = useAuthStore();
   return useQuery({
     queryKey: batchId ? studentKeys.todayPlanByBatch(batchId) : studentKeys.plan,
     queryFn: () => studentApi.getTodaysPlan(batchId),
+    enabled: user?.role === "student",
     staleTime: 5 * 60_000,
     gcTime: 30 * 60_000,
     retry: false,

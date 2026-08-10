@@ -25,8 +25,12 @@ export default function Complaints() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const isInstituteAdmin = user?.role === 'INSTITUTE_ADMIN';
-  const isSuperAdminRoute = location.pathname.startsWith('/super-admin');
-  const client = isSuperAdminRoute ? apiClient : api;
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const isCoachingSuperAdminRoute = location.pathname.startsWith('/super-admin');
+  const isSchoolSuperAdminRoute = location.pathname.startsWith('/school/super-admin');
+  const isSuperAdminView = isCoachingSuperAdminRoute || isSchoolSuperAdminRoute || isSuperAdmin;
+  const isSuperAdminRoute = isCoachingSuperAdminRoute;
+  const client = isCoachingSuperAdminRoute ? apiClient : api;
 
   const [activeTab, setActiveTab] = useState(() => {
     const tab = searchParams.get('tab');
@@ -44,14 +48,30 @@ export default function Complaints() {
 
   const [institutes, setInstitutes] = useState([]);
   const [selectedInstitute, setSelectedInstitute] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState('all');
 
   useEffect(() => {
-    if (isSuperAdminRoute) {
-      client.get('/admin/institutes').then((res) => {
-        setInstitutes(res.data?.data || res.data || []);
-      }).catch(console.error);
+    if (isSuperAdminView) {
+      api.get('/institutes', { params: { perPage: 500 } }).then((res) => {
+        const list = res.data?.data || res.data?.items || res.data || [];
+        if (Array.isArray(list) && list.length > 0) {
+          setInstitutes(list);
+          return;
+        }
+        throw new Error('Empty');
+      }).catch(() => {
+        client.get('/admin/tenants?limit=500').then((res) => {
+          const list = res.data?.items ?? res.data?.data?.items ?? res.data?.data ?? (res.data || []);
+          setInstitutes(Array.isArray(list) ? list : []);
+        }).catch(() => {
+          client.get('/admin/institutes').then((res) => {
+            const list = res.data?.data || res.data || [];
+            setInstitutes(Array.isArray(list) ? list : []);
+          }).catch(console.error);
+        });
+      });
     }
-  }, [isSuperAdminRoute]);
+  }, [isSuperAdminView]);
 
   // Reply states
   const [replyText, setReplyText] = useState('');
@@ -84,11 +104,14 @@ export default function Complaints() {
       searchParams.append('page', page.toString());
       searchParams.append('limit', limit.toString());
       if (query.trim()) searchParams.append('search', query.trim());
-      if (isSuperAdminRoute && selectedInstitute !== 'all') {
+      if (isSuperAdminView && selectedInstitute !== 'all') {
         searchParams.append('instituteId', selectedInstitute);
       }
+      if (selectedStatus !== 'all') {
+        searchParams.append('status', selectedStatus);
+      }
 
-      const complaintsEndpoint = isSuperAdminRoute ? '/admin/complaints' : '/complaints';
+      const complaintsEndpoint = isCoachingSuperAdminRoute ? '/admin/complaints' : '/complaints';
       const res = await client.get(`${complaintsEndpoint}?${searchParams.toString()}`);
       const list = res.data?.data || res.data || [];
       setComplaints(list);
@@ -114,7 +137,7 @@ export default function Complaints() {
   }
 
   async function loadGrievances() {
-    if (isSuperAdminRoute) {
+    if (isSuperAdminView && !isSchoolSuperAdminRoute) {
       setGrievances([]);
       return;
     }
@@ -124,6 +147,9 @@ export default function Complaints() {
       searchParams.append('page', page.toString());
       searchParams.append('limit', limit.toString());
       if (query.trim()) searchParams.append('search', query.trim());
+      if (selectedStatus !== 'all') {
+        searchParams.append('status', selectedStatus);
+      }
 
       const res = await client.get(`/grievances?${searchParams.toString()}`);
       const list = res.data?.data || res.data || [];
@@ -158,10 +184,23 @@ export default function Complaints() {
       }
     }, 300);
     return () => clearTimeout(delayDebounceFn);
-  }, [user, activeTab, page, limit, query, selectedInstitute]);
+  }, [user, activeTab, page, limit, query, selectedInstitute, selectedStatus, isSuperAdminView]);
 
-  const filteredComplaints = complaints;
-  const filteredGrievances = grievances;
+  const filteredComplaints = useMemo(() => {
+    let result = complaints;
+    if (isSuperAdminView && selectedInstitute !== 'all') {
+      result = result.filter(c => c.instituteId === selectedInstitute || c.institute?.id === selectedInstitute || c.institute_id === selectedInstitute);
+    }
+    if (selectedStatus !== 'all') {
+      result = result.filter(c => String(c.status || '').toUpperCase() === selectedStatus);
+    }
+    return result;
+  }, [complaints, selectedInstitute, selectedStatus, isSuperAdminView]);
+
+  const filteredGrievances = useMemo(() => {
+    if (selectedStatus === 'all') return grievances;
+    return grievances.filter(g => String(g.status || '').toUpperCase() === selectedStatus);
+  }, [grievances, selectedStatus]);
 
   const counts = useMemo(() => {
     return complaints.reduce(
@@ -350,7 +389,7 @@ export default function Complaints() {
 
 
   return (
-    <div className="w-full px-3 sm:px-5 lg:px-8 xl:px-10 pb-12 space-y-6">
+    <div className="w-full min-h-full p-4 sm:p-6 lg:p-8 space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold text-surface-950">Support Operations</h1>
@@ -361,7 +400,7 @@ export default function Complaints() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-          {isSuperAdminRoute && (
+          {isSuperAdminView && (
             <div className="w-full sm:w-48 shrink-0">
               <CustomSelect
                 value={selectedInstitute}
@@ -377,6 +416,23 @@ export default function Complaints() {
               />
             </div>
           )}
+          <div className="w-full sm:w-44 shrink-0">
+            <CustomSelect
+              value={selectedStatus}
+              onChange={(val) => {
+                setSelectedStatus(val);
+                setPage(1);
+              }}
+              options={[
+                { value: 'all', label: 'All Statuses' },
+                { value: 'OPEN', label: 'Open' },
+                { value: 'IN_PROGRESS', label: 'In Progress' },
+                { value: 'RESOLVED', label: 'Resolved' },
+                { value: 'CLOSED', label: 'Closed' },
+              ]}
+              className="w-full"
+            />
+          </div>
           <div className="relative w-full lg:w-80">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input

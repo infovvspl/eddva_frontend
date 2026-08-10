@@ -136,7 +136,7 @@ export default function Users() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [limit, setLimit] = useState(20);
+  const [limit, setLimit] = useState(10);
   const [maxVisiblePages, setMaxVisiblePages] = useState(getPaginationWindowSize);
 
   const [error, setError] = useState('');
@@ -289,7 +289,7 @@ export default function Users() {
 
 
   return (
-    <div className="w-full px-3 sm:px-5 lg:px-8 xl:px-10 pb-12 space-y-6">
+    <div className="w-full min-h-full p-4 sm:p-6 lg:p-8 space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold text-surface-950">Registered Users</h1>

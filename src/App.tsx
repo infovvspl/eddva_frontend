@@ -539,6 +539,7 @@ const SchoolRoutes = () => (
       <Route path="live/:id/dashboard" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'live_classes' }}><SchoolTeacherLiveDashboard /></SchoolGuard>} />
       <Route path="topics" element={<Navigate to="/school/teacher/course-content" replace />} />
       <Route path="classes" element={<SchoolClassManagement />} />
+      <Route path="recorded-classes/:recordingId" element={<SchoolStudentRecordedClassDetails />} />
       <Route path="calendar" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'academic_calendar' }}><SchoolTeacherCalendar /></SchoolGuard>} />
       <Route path="attendance" element={<SchoolAttendanceSystem />} />
       <Route path="assignments" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'assignments' }}><SchoolAssignmentManagement /></SchoolGuard>} />
@@ -602,7 +603,7 @@ const SchoolRoutes = () => (
       {/* Demo feature. Sits beside Career Guidance because it answers the same
           question for a student, and shares its feature flag so an institute
           that has career guidance turned off does not see it either. */}
-      <Route path="astro-profile" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_career_guidance' }}><SchoolStudentAstroProfile /></SchoolGuard>} />
+      <Route path="astro-profile" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_astro_profile' }}><SchoolStudentAstroProfile /></SchoolGuard>} />
       <Route path="announcements" element={<SchoolStudentAnnouncements />} />
       <Route path="chat" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'module', key: 'chat' }}><SchoolStudentChat /></SchoolGuard>} />
       <Route path="profile" element={<SchoolStudentProfile />} />

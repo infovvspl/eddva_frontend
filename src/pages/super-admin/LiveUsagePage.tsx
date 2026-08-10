@@ -1,7 +1,8 @@
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
-  Radio, Building2, Users, Clock, TrendingUp, Loader2, CheckCircle2, ArrowUpRight,
+  Radio, Building2, Users, Clock, TrendingUp, Loader2, CheckCircle2, ArrowUpRight, ChevronDown,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -38,6 +39,37 @@ export default function LiveUsagePage() {
     refetchInterval: 30_000,
   });
 
+  const [statusFilter, setStatusFilter] = useState('');
+  const [schoolFilter, setSchoolFilter] = useState('');
+
+  const schoolOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    (data?.recentLectures ?? []).forEach(lec => {
+      if (lec.instituteName && lec.instituteName !== '—') {
+        map.set(lec.instituteName, lec.instituteName);
+      }
+    });
+    (data?.perInstitute ?? []).forEach(inst => {
+      if (inst.instituteName && inst.instituteName !== '—') {
+        map.set(inst.instituteName, inst.instituteName);
+      }
+    });
+    return Array.from(map.values()).sort();
+  }, [data]);
+
+  const statusOptions = ['LIVE', 'ENDED', 'PROCESSED', 'SCHEDULED'];
+
+  const filteredRecentLectures = useMemo(() => {
+    let list = data?.recentLectures ?? [];
+    if (statusFilter) {
+      list = list.filter(lec => lec.status === statusFilter);
+    }
+    if (schoolFilter) {
+      list = list.filter(lec => lec.instituteName === schoolFilter);
+    }
+    return list;
+  }, [data?.recentLectures, statusFilter, schoolFilter]);
+
   const s = data?.summary;
 
   const kpis = [
@@ -72,7 +104,7 @@ export default function LiveUsagePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-white p-4 md:p-6 lg:p-10 font-poppins text-slate-900">
+    <div className="w-full min-h-full bg-white p-4 md:p-6 lg:p-10 font-poppins text-slate-900">
       <div className="w-full">
         <header className="mb-7 md:mb-10 bg-blue-50/50 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
           <h2 className="text-[10px] md:text-[11px] font-bold uppercase tracking-wider text-indigo-600 mb-2">
@@ -217,10 +249,59 @@ export default function LiveUsagePage() {
 
         {/* Recent classes */}
         <div className="bg-white rounded-[28px] border border-slate-100 shadow-sm overflow-hidden">
-          <div className="p-5 md:p-8 border-b border-slate-100 flex items-center gap-3">
-            <Radio className="w-5 h-5 text-indigo-500" />
-            <h3 className="text-base md:text-lg font-bold text-slate-900 tracking-tight">Recent Classes</h3>
+          <div className="p-5 md:p-8 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Radio className="w-5 h-5 text-indigo-500" />
+              <h3 className="text-base md:text-lg font-bold text-slate-900 tracking-tight">Recent Classes</h3>
+              {filteredRecentLectures.length > 0 && (
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-500">
+                  {filteredRecentLectures.length}
+                </span>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              {/* Institute/School Filter */}
+              <div className="relative">
+                <select
+                  value={schoolFilter}
+                  onChange={e => setSchoolFilter(e.target.value)}
+                  className="h-9 appearance-none rounded-xl border border-slate-200 bg-white pl-3 pr-8 text-xs font-semibold text-slate-700 outline-none focus:border-indigo-500 transition-colors"
+                >
+                  <option value="">All Institutes</option>
+                  {schoolOptions.map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              </div>
+
+              {/* Status Filter */}
+              <div className="relative">
+                <select
+                  value={statusFilter}
+                  onChange={e => setStatusFilter(e.target.value)}
+                  className="h-9 appearance-none rounded-xl border border-slate-200 bg-white pl-3 pr-8 text-xs font-semibold text-slate-700 outline-none focus:border-indigo-500 transition-colors"
+                >
+                  <option value="">All Statuses</option>
+                  {statusOptions.map(st => (
+                    <option key={st} value={st}>{st === 'LIVE' ? '🔴 Live' : st}</option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              </div>
+
+              {(schoolFilter || statusFilter) && (
+                <button
+                  onClick={() => { setSchoolFilter(''); setStatusFilter(''); }}
+                  className="h-9 px-3 text-xs font-semibold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
+
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -239,12 +320,14 @@ export default function LiveUsagePage() {
                       <Loader2 className="w-6 h-6 animate-spin mx-auto" />
                     </td>
                   </tr>
-                ) : !data?.recentLectures?.length ? (
+                ) : !filteredRecentLectures.length ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-slate-400 text-sm">No classes yet</td>
+                    <td colSpan={7} className="py-12 text-center text-slate-400 text-sm">
+                      {statusFilter || schoolFilter ? 'No classes match your filter criteria' : 'No classes yet'}
+                    </td>
                   </tr>
                 ) : (
-                  data.recentLectures.map((lec, i) => (
+                  filteredRecentLectures.map((lec, i) => (
                     <tr key={lec.id} className={i % 2 === 0 ? '' : 'bg-slate-50/40'}>
                       <td className="px-4 py-3 font-medium text-slate-800 max-w-[160px] truncate whitespace-nowrap">
                         {lec.title || 'Untitled'}

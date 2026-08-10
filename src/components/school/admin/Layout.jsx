@@ -85,6 +85,13 @@ export default function Layout() {
     '/communications',
     '/audit-logs',
     '/feature-flags',
+    '/users',
+    '/complaints',
+    '/analytics',
+    '/ai-usage',
+    '/storage-usage',
+    '/live-usage',
+    '/security',
   ].some(p => location.pathname.endsWith(p)) || [
     '/school/teacher/timetable',
     '/school/teacher/calendar',

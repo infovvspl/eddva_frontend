@@ -1039,7 +1039,31 @@ const DashboardLayout = () => {
   const navOpen = isCompactLayout ? mobileSidebarOpen : sidebarOpen;
   const isFullWidthSuperAdminPage = [
     "/super-admin/feature-flags",
-  ].includes(location.pathname);
+    "/super-admin/live-usage",
+    "/super-admin/storage-usage",
+    "/super-admin/ai-usage",
+    "/super-admin/analytics",
+    "/super-admin/audit-logs",
+    "/super-admin/communication",
+    "/super-admin/tenants",
+    "/super-admin/complaints",
+    "/super-admin/support-tickets",
+    "/super-admin/revenue",
+    "/super-admin/tenant-health",
+    "/super-admin/billing",
+    "/school/super-admin/live-usage",
+    "/school/super-admin/storage-usage",
+    "/school/super-admin/ai-usage",
+    "/school/super-admin/analytics",
+    "/school/super-admin/audit-logs",
+    "/school/super-admin/communication",
+    "/school/super-admin/institutes",
+    "/school/super-admin/complaints",
+    "/school/super-admin/support-tickets",
+    "/school/super-admin/revenue",
+    "/school/super-admin/tenant-health",
+    "/school/super-admin/billing",
+  ].some(p => location.pathname.endsWith(p));
   const isFullWidthCoachingAdminPage = [
     "/admin",
     "/admin/students",

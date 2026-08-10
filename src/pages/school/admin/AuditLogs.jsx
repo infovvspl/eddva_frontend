@@ -278,7 +278,7 @@ export default function AuditLogsPage() {
   const totalPages = Math.ceil(total / limit) || 1;
 
   return (
-    <div className="mx-auto max-w-7xl px-1 pt-0 pb-0 -mb-[6px] sm:-mb-0 sm:pb-8 sm:py-8 sm:px-6 lg:px-8 space-y-4 sm:space-y-8 min-h-screen">
+    <div className="w-full min-h-full p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-8">
       {/* Upper Header Card */}
       <div className="mt-3 sm:mt-0 mb-4 sm:mb-8 relative rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-4 md:p-8 shadow-xl overflow-hidden border border-indigo-900/30">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(99,102,241,0.15),transparent)] pointer-events-none" />
