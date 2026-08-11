@@ -1,0 +1,363 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   Quiz Rush — "Neon Arena"
+
+   The arena commits to dark regardless of the app theme. A quiz game that
+   inherits a white dashboard surface reads as a form with a timer on it; the
+   dark cabinet is what makes it read as a game, so it is deliberate rather
+   than a missing dark-mode variant.
+
+   Every animation here is transform/opacity only so the 30-second timer and
+   the answer transitions stay smooth on the low-end Android tablets schools
+   actually buy.
+   ────────────────────────────────────────────────────────────────────────── */
+
+.qr-arena {
+  --qr-void: #05060f;
+  --qr-deep: #0a0d1f;
+  --qr-cyan: #22d3ee;
+  --qr-magenta: #e879f9;
+  --qr-lime: #a3e635;
+  --qr-rose: #fb7185;
+  --qr-amber: #fbbf24;
+  --qr-ink: #f0f9ff;
+  --qr-muted: #7c8db5;
+
+  font-family: 'Chakra Petch', 'Poppins', system-ui, sans-serif;
+  color: var(--qr-ink);
+}
+
+/* Question and answer copy stays in Poppins — NCERT text has to be read
+   quickly under time pressure, and the angular display face costs legibility
+   at paragraph sizes. */
+.qr-read {
+  font-family: 'Poppins', system-ui, sans-serif;
+}
+
+.qr-display {
+  font-family: 'Chakra Petch', system-ui, sans-serif;
+  letter-spacing: 0.02em;
+}
+
+/* ── Shell chrome ───────────────────────────────────────────────────────────
+   GameArenaShell is shared with the other four games and stays light in light
+   mode. While Quiz Rush is mounted, `body.qr-immersive` restyles just that bar
+   so it belongs to the arena; unmounting removes the class and the shell goes
+   back to normal for every other game. */
+
+body.qr-immersive [data-arena-header] {
+  background: rgba(5, 6, 15, 0.82) !important;
+  border-color: rgba(34, 211, 238, 0.2) !important;
+  color: #f0f9ff;
+}
+body.qr-immersive [data-arena-header] span {
+  color: #e0f2fe;
+  font-family: 'Chakra Petch', system-ui, sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+body.qr-immersive [data-arena-header] button {
+  background: rgba(251, 113, 133, 0.1) !important;
+  border-color: rgba(251, 113, 133, 0.32) !important;
+  color: #fda4af !important;
+}
+body.qr-immersive [data-arena-header] button:hover {
+  background: rgba(251, 113, 133, 0.25) !important;
+  color: #fff1f2 !important;
+}
+
+/* ── Backdrop ───────────────────────────────────────────────────────────── */
+
+.qr-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 80% at 50% -10%, #17204a 0%, transparent 60%),
+    radial-gradient(80% 60% at 10% 100%, #2a1040 0%, transparent 65%),
+    linear-gradient(180deg, var(--qr-void) 0%, var(--qr-deep) 55%, #060814 100%);
+}
+
+/* Slow-drifting colour fields. Large, blurred and few — three cheap layers
+   read as atmosphere where a dozen small ones would just cost frames. */
+.qr-aurora {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.5;
+  will-change: transform;
+}
+.qr-aurora--a {
+  width: 46vw; height: 46vw; min-width: 320px; min-height: 320px;
+  top: -12%; left: -8%;
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.55), transparent 70%);
+  animation: qr-drift-a 22s ease-in-out infinite;
+}
+.qr-aurora--b {
+  width: 40vw; height: 40vw; min-width: 280px; min-height: 280px;
+  top: 8%; right: -10%;
+  background: radial-gradient(circle, rgba(232, 121, 249, 0.5), transparent 70%);
+  animation: qr-drift-b 26s ease-in-out infinite;
+}
+.qr-aurora--c {
+  width: 52vw; height: 34vw; min-width: 320px; min-height: 240px;
+  bottom: -14%; left: 22%;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.45), transparent 70%);
+  animation: qr-drift-c 30s ease-in-out infinite;
+}
+
+@keyframes qr-drift-a {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50%      { transform: translate3d(6vw, 4vh, 0) scale(1.12); }
+}
+@keyframes qr-drift-b {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1.08); }
+  50%      { transform: translate3d(-5vw, 6vh, 0) scale(1); }
+}
+@keyframes qr-drift-c {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50%      { transform: translate3d(-4vw, -5vh, 0) scale(1.15); }
+}
+
+/* Perspective floor — the single strongest "arcade cabinet" cue, and it is
+   one element rather than a mesh of divs. */
+.qr-floor {
+  position: absolute;
+  left: -50%;
+  right: -50%;
+  bottom: -10%;
+  height: 55%;
+  background-image:
+    linear-gradient(to right, rgba(34, 211, 238, 0.25) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(232, 121, 249, 0.22) 1px, transparent 1px);
+  background-size: 62px 62px;
+  transform: perspective(320px) rotateX(62deg);
+  transform-origin: bottom center;
+  mask-image: linear-gradient(to bottom, transparent, #000 45%, #000 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 45%, #000 100%);
+  animation: qr-floor-run 6s linear infinite;
+}
+@keyframes qr-floor-run {
+  from { background-position: 0 0, 0 0; }
+  to   { background-position: 0 62px, 0 62px; }
+}
+
+/* CRT scanlines + grain. Kept faint: enough to add texture, not enough to
+   fight the question text for attention. */
+.qr-scanlines {
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.028) 0px,
+    rgba(255, 255, 255, 0.028) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  mix-blend-mode: overlay;
+}
+.qr-grain {
+  position: absolute;
+  inset: -150%;
+  opacity: 0.16;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  animation: qr-grain-shift 700ms steps(3) infinite;
+  pointer-events: none;
+}
+@keyframes qr-grain-shift {
+  0%   { transform: translate3d(0, 0, 0); }
+  33%  { transform: translate3d(-2%, 1%, 0); }
+  66%  { transform: translate3d(1%, -2%, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+.qr-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(75% 60% at 50% 45%, transparent 40%, rgba(2, 3, 10, 0.75) 100%);
+}
+
+/* ── Panels ─────────────────────────────────────────────────────────────── */
+
+/* Cut corners rather than rounded ones — the HUD language of a cabinet. */
+.qr-panel {
+  position: relative;
+  background: linear-gradient(160deg, rgba(16, 22, 48, 0.92), rgba(8, 11, 28, 0.94));
+  border: 1px solid rgba(34, 211, 238, 0.24);
+  clip-path: polygon(
+    16px 0, 100% 0, 100% calc(100% - 16px),
+    calc(100% - 16px) 100%, 0 100%, 0 16px
+  );
+  backdrop-filter: blur(8px);
+}
+.qr-panel--magenta { border-color: rgba(232, 121, 249, 0.28); }
+.qr-panel--flat { clip-path: none; }
+
+.qr-chip {
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+}
+
+/* ── Neon ───────────────────────────────────────────────────────────────── */
+
+.qr-neon {
+  text-shadow:
+    0 0 6px rgba(34, 211, 238, 0.85),
+    0 0 22px rgba(34, 211, 238, 0.45),
+    0 0 44px rgba(34, 211, 238, 0.22);
+}
+.qr-neon--magenta {
+  text-shadow:
+    0 0 6px rgba(232, 121, 249, 0.85),
+    0 0 22px rgba(232, 121, 249, 0.45),
+    0 0 44px rgba(232, 121, 249, 0.22);
+}
+.qr-neon--amber {
+  text-shadow:
+    0 0 6px rgba(251, 191, 36, 0.9),
+    0 0 20px rgba(251, 191, 36, 0.5);
+}
+.qr-glow-cyan { box-shadow: 0 0 18px rgba(34, 211, 238, 0.3), inset 0 0 22px rgba(34, 211, 238, 0.08); }
+.qr-glow-rose { box-shadow: 0 0 26px rgba(251, 113, 133, 0.45), inset 0 0 22px rgba(251, 113, 133, 0.12); }
+.qr-glow-lime { box-shadow: 0 0 26px rgba(163, 230, 53, 0.45), inset 0 0 22px rgba(163, 230, 53, 0.12); }
+
+/* ── Arcade buttons ─────────────────────────────────────────────────────── */
+
+/* The hard bottom edge is what makes a button feel physical; pressing it
+   removes the edge and drops the button by exactly that height. */
+.qr-key {
+  position: relative;
+  isolation: isolate;
+  transition: transform 90ms ease, box-shadow 90ms ease, filter 160ms ease;
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+}
+.qr-key:not(:disabled):hover { transform: translateY(-2px); filter: brightness(1.12); }
+.qr-key:not(:disabled):active { transform: translateY(4px); }
+
+/* Light sweep on hover — reads as glass catching the arena lights. */
+.qr-key::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.35) 50%, transparent 65%);
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+.qr-key:not(:disabled):hover::after { animation: qr-sweep 620ms ease; }
+@keyframes qr-sweep {
+  to { transform: translateX(120%); }
+}
+
+/* ── Feedback ───────────────────────────────────────────────────────────── */
+
+.qr-shake { animation: qr-shake 420ms cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+@keyframes qr-shake {
+  10%, 90% { transform: translate3d(-2px, 0, 0); }
+  20%, 80% { transform: translate3d(4px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-7px, 0, 0); }
+  40%, 60% { transform: translate3d(7px, 0, 0); }
+}
+
+.qr-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  animation: qr-flash 420ms ease-out forwards;
+}
+@keyframes qr-flash {
+  0%   { opacity: 0.5; }
+  100% { opacity: 0; }
+}
+
+.qr-pop { animation: qr-pop 340ms cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+@keyframes qr-pop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.qr-rise { animation: qr-rise 460ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+@keyframes qr-rise {
+  0%   { transform: translateY(14px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+/* Combo callout — punches in, holds, drifts up and out. */
+.qr-combo { animation: qr-combo 1100ms cubic-bezier(0.2, 1.3, 0.4, 1) both; }
+@keyframes qr-combo {
+  0%   { transform: translateY(0) scale(0.4); opacity: 0; }
+  22%  { transform: translateY(0) scale(1.12); opacity: 1; }
+  36%  { transform: translateY(0) scale(1); opacity: 1; }
+  75%  { opacity: 1; }
+  100% { transform: translateY(-42px) scale(0.95); opacity: 0; }
+}
+
+/* Timer urgency — only runs in the last seconds so it stays meaningful. */
+.qr-urgent { animation: qr-urgent 620ms ease-in-out infinite; }
+@keyframes qr-urgent {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.09); }
+}
+
+.qr-breathe { animation: qr-breathe 3.4s ease-in-out infinite; }
+@keyframes qr-breathe {
+  0%, 100% { opacity: 0.75; }
+  50%      { opacity: 1; }
+}
+
+/* "Insert coin" blink for the lobby CTA. */
+.qr-blink { animation: qr-blink 1.6s steps(1) infinite; }
+@keyframes qr-blink {
+  0%, 60%   { opacity: 1; }
+  61%, 100% { opacity: 0.25; }
+}
+
+.qr-float { animation: qr-float 4.5s ease-in-out infinite; }
+@keyframes qr-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-7px); }
+}
+
+/* Staggered entrance for lists — one orchestrated reveal beats scattered
+   per-element motion. */
+.qr-stagger > * { animation: qr-rise 500ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.qr-stagger > *:nth-child(1) { animation-delay: 40ms; }
+.qr-stagger > *:nth-child(2) { animation-delay: 90ms; }
+.qr-stagger > *:nth-child(3) { animation-delay: 140ms; }
+.qr-stagger > *:nth-child(4) { animation-delay: 190ms; }
+.qr-stagger > *:nth-child(5) { animation-delay: 240ms; }
+.qr-stagger > *:nth-child(6) { animation-delay: 290ms; }
+.qr-stagger > *:nth-child(7) { animation-delay: 340ms; }
+.qr-stagger > *:nth-child(8) { animation-delay: 390ms; }
+
+/* Scrollbar inside the arena, so the cabinet does not get a stock grey bar. */
+.qr-arena ::-webkit-scrollbar { width: 8px; height: 8px; }
+.qr-arena ::-webkit-scrollbar-track { background: rgba(8, 11, 28, 0.6); }
+.qr-arena ::-webkit-scrollbar-thumb {
+  background: rgba(34, 211, 238, 0.35);
+  border-radius: 99px;
+}
+.qr-arena ::-webkit-scrollbar-thumb:hover { background: rgba(34, 211, 238, 0.6); }
+
+/* Respect users who ask for less motion: the atmosphere holds its position
+   and the feedback animations collapse to instant state changes. */
+@media (prefers-reduced-motion: reduce) {
+  .qr-aurora,
+  .qr-floor,
+  .qr-grain,
+  .qr-urgent,
+  .qr-breathe,
+  .qr-blink,
+  .qr-float {
+    animation: none !important;
+  }
+  .qr-shake,
+  .qr-pop,
+  .qr-rise,
+  .qr-combo,
+  .qr-stagger > * {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+  .qr-key:not(:disabled):hover::after { animation: none; }
+}
