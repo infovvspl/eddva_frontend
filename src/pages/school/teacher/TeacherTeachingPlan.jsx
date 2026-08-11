@@ -146,6 +146,38 @@ export default function TeacherTeachingPlan() {
         )}
       </div>
 
+      {/* Assigned Syllabus Allocations */}
+      {data?.publishedPlans && data.publishedPlans.length > 0 && (
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Assigned Annual Syllabus Targets</h3>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {data.publishedPlans.map(plan => (
+              <div key={plan.id} className="rounded-2xl border border-blue-100 bg-blue-50/30 p-4 dark:border-blue-900/30 dark:bg-blue-950/20 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold text-blue-700 dark:text-blue-300">
+                    {plan.class_name} {plan.section_name ? `(Section ${plan.section_name})` : ''}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">{plan.term || 'Term 1'}</span>
+                </div>
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">{plan.subject_name || 'Subject Target'}</h4>
+                <div className="flex items-center justify-between text-xs text-slate-500 font-semibold pt-1">
+                  <span>Target Periods: {plan.planned_periods || 1}</span>
+                  <button
+                    onClick={() => {
+                      setSelectedTimetableSlot({ classId: plan.class_id, sectionId: plan.section_id, subjectId: plan.subject_id });
+                      setCreateModalOpen(true);
+                    }}
+                    className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1"
+                  >
+                    <Plus size={13} /> Create Plan
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Lesson Plans List */}
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
         <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">All Lesson Plans</h3>

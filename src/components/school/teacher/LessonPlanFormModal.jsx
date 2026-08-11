@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   X, Sparkles, Save, BookOpen, Calendar, Clock, Layers, CheckCircle2, Loader2, Edit3 
 } from 'lucide-react';
-import api from '@/lib/api/school-client';
+import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import { toast } from 'sonner';
 
 export default function LessonPlanFormModal({ isOpen, onClose, onSuccess, initialTimetableSlot = null }) {
@@ -41,7 +41,7 @@ export default function LessonPlanFormModal({ isOpen, onClose, onSuccess, initia
 
   useEffect(() => {
     if (isOpen) {
-      fetchClasses();
+      fetchClasses(form.academicYear);
       if (initialTimetableSlot) {
         setForm(prev => ({
           ...prev,
@@ -52,23 +52,47 @@ export default function LessonPlanFormModal({ isOpen, onClose, onSuccess, initia
         }));
       }
     }
-  }, [isOpen, initialTimetableSlot]);
+  }, [isOpen, initialTimetableSlot, form.academicYear]);
 
-  const fetchClasses = async () => {
+  const [sections, setSections] = useState([]);
+
+  const fetchClasses = async (year) => {
     try {
-      const res = await api.get('/academic/classes');
-      setClasses(Array.isArray(res.data) ? res.data : []);
+      const selectedYear = year || form.academicYear;
+      let res = await api.get('/academic/classes', { params: selectedYear ? { academicYear: selectedYear } : {} }).catch(() => ({ data: [] }));
+      let classList = unwrapSchoolList(res);
+      if (classList.length === 0 && selectedYear) {
+        res = await api.get('/academic/classes').catch(() => ({ data: [] }));
+        classList = unwrapSchoolList(res);
+      }
+      classList.sort((a, b) => {
+        const numA = parseInt((a.name || '').replace(/\D/g, ''), 10) || 0;
+        const numB = parseInt((b.name || '').replace(/\D/g, ''), 10) || 0;
+        if (numA !== numB) return numA - numB;
+        return (a.name || '').localeCompare(b.name || '');
+      });
+      setClasses(classList);
     } catch (e) {
       console.error(e);
     }
   };
 
   const handleClassChange = async (cid) => {
-    setForm(prev => ({ ...prev, classId: cid, subjectId: '', chapterId: '', topicId: '' }));
+    setForm(prev => ({ ...prev, classId: cid, sectionId: '', subjectId: '', chapterId: '', topicId: '' }));
+    setSections([]);
+    setSubjects([]);
+    setChapters([]);
+    setTopics([]);
+    if (!cid) return;
     try {
-      const res = await api.get(`/academic/classes/${cid}/subjects`);
-      setSubjects(Array.isArray(res.data) ? res.data : []);
+      const [secRes, subRes] = await Promise.all([
+        api.get('/academic/sections', { params: { classId: cid } }).catch(() => ({ data: [] })),
+        api.get('/subjects', { params: { classId: cid, limit: 200 } }).catch(() => ({ data: [] }))
+      ]);
+      setSections(unwrapSchoolList(secRes));
+      setSubjects(unwrapSchoolList(subRes));
     } catch {
+      setSections([]);
       setSubjects([]);
     }
   };
@@ -76,8 +100,8 @@ export default function LessonPlanFormModal({ isOpen, onClose, onSuccess, initia
   const handleSubjectChange = async (sid) => {
     setForm(prev => ({ ...prev, subjectId: sid, chapterId: '', topicId: '' }));
     try {
-      const res = await api.get(`/subjects/${sid}/chapters`);
-      setChapters(Array.isArray(res.data) ? res.data : []);
+      const res = await api.get('/topics/chapters', { params: { subjectId: sid } });
+      setChapters(unwrapSchoolList(res));
     } catch {
       setChapters([]);
     }
@@ -86,8 +110,8 @@ export default function LessonPlanFormModal({ isOpen, onClose, onSuccess, initia
   const handleChapterChange = async (chid) => {
     setForm(prev => ({ ...prev, chapterId: chid, topicId: '' }));
     try {
-      const res = await api.get(`/chapters/${chid}/topics`);
-      setTopics(Array.isArray(res.data) ? res.data : []);
+      const res = await api.get('/topics', { params: { chapterId: chid } });
+      setTopics(unwrapSchoolList(res));
     } catch {
       setTopics([]);
     }
@@ -240,7 +264,25 @@ export default function LessonPlanFormModal({ isOpen, onClose, onSuccess, initia
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Academic Session</label>
+                <select
+                  value={form.academicYear}
+                  onChange={e => {
+                    const yr = e.target.value;
+                    setForm(f => ({ ...f, academicYear: yr, classId: '', sectionId: '', subjectId: '' }));
+                    fetchClasses(yr);
+                  }}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                >
+                  <option value="2026-2027">2026-2027</option>
+                  <option value="2025-2026">2025-2026</option>
+                  <option value="2024-2025">2024-2025</option>
+                  <option value="2026">2026</option>
+                </select>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Class *</label>
                 <select
@@ -250,7 +292,24 @@ export default function LessonPlanFormModal({ isOpen, onClose, onSuccess, initia
                 >
                   <option value="">Select Class</option>
                   {classes.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
+                    <option key={c.id} value={c.id}>
+                      {c.name} {c.academic_year ? `(${c.academic_year})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Section</label>
+                <select
+                  value={form.sectionId}
+                  onChange={e => setForm(f => ({ ...f, sectionId: e.target.value }))}
+                  disabled={!form.classId}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                >
+                  <option value="">All / Any Section</option>
+                  {sections.map(sec => (
+                    <option key={sec.id} value={sec.id}>Section {sec.name}</option>
                   ))}
                 </select>
               </div>
