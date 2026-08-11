@@ -116,20 +116,20 @@ export default function WhyChooseUsSection() {
           {/* Main Headline */}
           <motion.h2 
             variants={fadeInUp}
-            className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-[#002966] leading-[1.1] mb-6"
+            className="text-4xl sm:text-5xl lg:text-5xl font-black tracking-tight text-[#002966] leading-[1.1] mb-6"
           >
-            Why industry leaders
+            Why forward-thinking 
             <span className="font-spicy block bg-gradient-to-r from-[#004499] via-[#0066cc] to-[#00a6ff] bg-clip-text text-transparent">
-              choose our platform
+              schools choose EDDVA
             </span>
           </motion.h2>
 
           {/* Subtitle */}
           <motion.p 
             variants={fadeInUp}
-            className="text-md sm:text-xl text-slate-500 font-medium leading-relaxed max-w-2xl mx-auto mb-10"
+            className="text-md sm:text-md text-slate-500 font-medium leading-relaxed max-w-2xl mx-auto mb-10"
           >
-            We don't do bootcamps, and we don't do boring multi-hour lecture dumps. Our ecosystem is custom-tuned for high-impact knowledge synthesis and rapid technical execution.
+            We don’t just digitize classrooms. EDDVA goes beyond traditional teaching with an intelligent ecosystem for personalized learning, smarter assessments, and better student outcomes, making education smarter, engaging, and future-ready.
           </motion.p>
         </motion.div>
 
@@ -161,7 +161,7 @@ export default function WhyChooseUsSection() {
                 </div>
 
                 <div className="space-y-3">
-                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight">
                     {feat.title}
                   </h3>
                   <p className="text-base text-slate-500 font-medium leading-relaxed">
