@@ -151,6 +151,39 @@ export function ArenaTimer({ seconds, total = 30, size = 68 }) {
   );
 }
 
+/**
+ * Circular progress, used for level progress in the lobby. Same visual family
+ * as ArenaTimer but driven by a percentage rather than a countdown, and without
+ * the urgency colouring — progress toward a level is never alarming.
+ */
+export function ArenaRing({ percent = 0, size = 92, stroke = '#22d3ee', children }) {
+  const pct = Math.max(0, Math.min(100, Number(percent) || 0)) / 100;
+  const r = (size - 10) / 2;
+  const circumference = 2 * Math.PI * r;
+
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle
+          cx={size / 2} cy={size / 2} r={r}
+          fill="none" stroke="rgba(255,255,255,0.09)" strokeWidth="5"
+        />
+        <circle
+          cx={size / 2} cy={size / 2} r={r}
+          fill="none" stroke={stroke} strokeWidth="5" strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference * (1 - pct)}
+          style={{
+            transition: 'stroke-dashoffset 900ms cubic-bezier(0.16,1,0.3,1)',
+            filter: `drop-shadow(0 0 7px ${stroke})`,
+          }}
+        />
+      </svg>
+      <div className="qr-ring-label">{children}</div>
+    </div>
+  );
+}
+
 /** Full-bleed colour wash used to punctuate a correct or wrong answer. */
 export function ArenaFlash({ tone }) {
   if (!tone) return null;

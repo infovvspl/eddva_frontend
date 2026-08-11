@@ -67,6 +67,15 @@ body.qr-immersive [data-arena-header] button:hover {
 
 /* ── Backdrop ───────────────────────────────────────────────────────────── */
 
+/* Contained variant, for the arcade lobby.
+   The lobby lives inside the student dashboard layout, so a fixed backdrop
+   would paint over the sidebar. This one is absolute, filling only its own
+   rounded container — a window into the arcade rather than the whole room. */
+.qr-backdrop--inset {
+  position: absolute;
+  border-radius: inherit;
+}
+
 .qr-backdrop {
   position: fixed;
   inset: 0;
@@ -360,4 +369,75 @@ body.qr-immersive [data-arena-header] button:hover {
     animation-delay: 0ms !important;
   }
   .qr-key:not(:disabled):hover::after { animation: none; }
+}
+
+/* ── Arcade lobby ────────────────────────────────────────────────────────────
+   The hub the student passes through before choosing a cabinet. Same language
+   as the arena, but contained inside the dashboard layout. */
+
+/* Frames a light sub-panel (wallet, achievements, leaderboards) inside the dark
+   surface. Those tabs render their own existing components; the inset makes
+   them read as a screen set into the cabinet rather than a styling mistake. */
+.qr-inset {
+  background: #f8fafc;
+  border: 1px solid rgba(34, 211, 238, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5), 0 0 26px rgba(34, 211, 238, 0.12);
+}
+:is(.dark) .qr-inset { background: #0b1020; }
+
+/* Game cabinet. The lift on hover is what makes a grid of cards read as a row
+   of machines you could walk up to. */
+.qr-cab {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 180ms ease;
+  clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px);
+}
+.qr-cab:hover { transform: translateY(-4px); }
+
+/* Colour wash keyed per game, so each cabinet has its own identity at a glance
+   without needing four separate stylesheets. */
+.qr-cab::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(120% 90% at 50% 0%, var(--cab) 0%, transparent 62%);
+  opacity: 0.5;
+  transition: opacity 220ms ease;
+}
+.qr-cab:hover::before { opacity: 0.95; }
+
+/* Marquee light along the top edge — the detail that reads "arcade". */
+.qr-cab::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 18px; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cab), transparent);
+  opacity: 0.65;
+}
+
+/* Level ring label sits dead centre regardless of digit count. */
+.qr-ring-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* Streak flame — a slow flicker, not a loop that demands attention. */
+.qr-flicker { animation: qr-flicker 2.6s ease-in-out infinite; }
+@keyframes qr-flicker {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  45%      { opacity: 0.82; transform: scale(0.96); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qr-cab:hover { transform: none; }
+  .qr-flicker { animation: none; }
 }

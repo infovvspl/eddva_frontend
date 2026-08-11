@@ -1,14 +1,11 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '@/lib/api/school-client';
 import { soundEngine } from '@/lib/audioManager';
 import {
-  Award, BookOpen, CheckCircle2, Medal, Star, Target, Trophy, UserCheck,
-  Gamepad2, Map, Zap, Grid, Coins, Wallet, Brain, Volume2, VolumeX, Flame,
-  Sparkles, Compass, HelpCircle, Music, Swords, ChevronRight, Settings,
-  Crown, ArrowLeft
+  Award, BookOpen, Medal, Trophy, Gamepad2, Wallet, Brain, Volume2, VolumeX,
+  Flame, Compass, Music, ChevronRight, Settings, ArrowLeft, Coins, Star,
 } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 // Import sub-components
 import RewardWalletTab from './RewardWalletTab';
@@ -16,9 +13,52 @@ import AchievementsTab from './AchievementsTab';
 import MultiLeaderboardTab from './MultiLeaderboardTab';
 import AudioSettingsModal from '@/components/school/student/AudioSettingsModal';
 
+// The lobby shares the arcade's design system rather than inventing a second
+// one, so walking from here into Quiz Rush feels like moving between rooms of
+// the same building instead of between two products.
+import './game-zone/quiz-rush/arena.css';
+import { ArenaLabel, ArenaRing } from './game-zone/quiz-rush/ArenaKit';
+
+// Each cabinet gets one accent colour, used for its wash, marquee light and
+// call to action. Kept here so a new game is one entry rather than a spread of
+// Tailwind classes.
+const GAMES = [
+  {
+    title: 'Quiz Rush',
+    desc: 'Rapid-fire NCERT questions. Three lives, thirty seconds each, and it only gets harder.',
+    path: '/school/student/game-zone/quiz-rush',
+    badge: 'Speed Run',
+    icon: Trophy,
+    accent: '#22d3ee',
+  },
+  {
+    title: 'Treasure Hunt',
+    desc: 'Clear checkpoints, unlock the map and open the chest at the end of the trail.',
+    path: '/school/student/game-zone/treasure-hunt',
+    badge: 'Adventure',
+    icon: Compass,
+    accent: '#fbbf24',
+  },
+  {
+    title: 'Memory Match',
+    desc: 'Pair up definitions, terms and diagrams in as few turns as you can manage.',
+    path: '/school/student/game-zone/memory-match',
+    badge: 'Brain Training',
+    icon: Brain,
+    accent: '#a3e635',
+  },
+  {
+    title: 'Word Master',
+    desc: 'Unscramble the letters to match the clue. Academic vocabulary, against the clock.',
+    path: '/school/student/game-zone/word-master',
+    badge: 'Vocab Puzzle',
+    icon: BookOpen,
+    accent: '#e879f9',
+  },
+];
+
 export default function Gamification() {
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState('games');
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -70,288 +110,255 @@ export default function Gamification() {
     { key: 'leaderboards', label: 'Leaderboards', icon: Medal },
   ];
 
-  const gamesList = [
-    {
-      title: 'Quiz Rush',
-      desc: 'Rapid-fire NCERT quiz. Climb the leaderboards with speed and correct answers.',
-      path: '/school/student/game-zone/quiz-rush',
-      badge: 'Speed Run',
-      badgeColor: 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300',
-      gradient: 'from-violet-50/80 to-indigo-50/50 dark:from-slate-900 dark:to-violet-950/20',
-      hoverBorder: 'hover:border-violet-400',
-      hoverTitle: 'group-hover:text-violet-600 dark:group-hover:text-violet-400',
-      icon: Trophy,
-      iconColor: 'text-violet-600 dark:text-violet-400',
-      btnGradient: 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 shadow-violet-500/20'
-    },
-    {
-      title: 'Treasure Hunt',
-      desc: 'Brave checkpoints, unlock mysterious maps, and retrieve epic treasure chest rewards.',
-      path: '/school/student/game-zone/treasure-hunt',
-      badge: 'Adventure',
-      badgeColor: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
-      gradient: 'from-amber-50/80 to-orange-50/50 dark:from-slate-900 dark:to-amber-950/20',
-      hoverBorder: 'hover:border-amber-400',
-      hoverTitle: 'group-hover:text-amber-600 dark:group-hover:text-amber-400',
-      icon: Compass,
-      iconColor: 'text-amber-600 dark:text-amber-400',
-      btnGradient: 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-amber-500/20'
-    },
-    {
-      title: 'Memory Match',
-      desc: 'Match definitions, terms, and NCERT diagrams in the fewest turns possible.',
-      path: '/school/student/game-zone/memory-match',
-      badge: 'Brain Exercise',
-      badgeColor: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
-      gradient: 'from-emerald-50/80 to-teal-50/50 dark:from-slate-900 dark:to-emerald-950/20',
-      hoverBorder: 'hover:border-emerald-400',
-      hoverTitle: 'group-hover:text-emerald-600 dark:group-hover:text-emerald-400',
-      icon: Brain,
-      iconColor: 'text-emerald-600 dark:text-emerald-400',
-      btnGradient: 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 shadow-emerald-500/20'
-    },
-    {
-      title: 'Word Master',
-      desc: 'Scrambled definitions puzzles. Unscramble letters to match the academic clue.',
-      path: '/school/student/game-zone/word-master',
-      badge: 'Vocab Puzzle',
-      badgeColor: 'bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-950 dark:text-fuchsia-300',
-      gradient: 'from-fuchsia-50/80 to-purple-50/50 dark:from-slate-900 dark:to-fuchsia-950/20',
-      hoverBorder: 'hover:border-fuchsia-400',
-      hoverTitle: 'group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400',
-      icon: BookOpen,
-      iconColor: 'text-fuchsia-600 dark:text-fuchsia-400',
-      btnGradient: 'bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:from-fuchsia-600 hover:to-purple-700 shadow-fuchsia-500/20'
-    }
-  ];
-
   if (loading) {
     return (
-      <div className="flex h-[60vh] flex-col items-center justify-center gap-3">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-sky-500 border-t-transparent" />
-        <p className="text-xs font-bold text-slate-500">Loading EDDVA Gamification Engine...</p>
+      <div className="qr-arena relative overflow-hidden rounded-3xl">
+        <div className="qr-backdrop qr-backdrop--inset" aria-hidden="true">
+          <div className="qr-aurora qr-aurora--a" />
+          <div className="qr-aurora qr-aurora--b" />
+          <div className="qr-vignette" />
+        </div>
+        <div className="relative z-10 flex h-[60vh] flex-col items-center justify-center gap-4">
+          <div className="qr-float qr-display text-3xl font-bold tracking-[0.3em] text-cyan-300 qr-neon">
+            ARCADE
+          </div>
+          <ArenaLabel tone="cyan">Loading your player profile</ArenaLabel>
+        </div>
       </div>
     );
   }
 
+  const iconBtn =
+    'qr-chip inline-flex items-center gap-1.5 border px-3 py-2 text-[11px] font-bold uppercase tracking-wider transition';
+
   return (
-    <div className="space-y-6 pb-8">
+    <div className="qr-arena relative overflow-hidden rounded-3xl pb-8">
+      {/* Contained atmosphere — the dashboard sidebar stays visible beside it. */}
+      <div className="qr-backdrop qr-backdrop--inset" aria-hidden="true">
+        <div className="qr-aurora qr-aurora--a" />
+        <div className="qr-aurora qr-aurora--b" />
+        <div className="qr-aurora qr-aurora--c" />
+        <div className="qr-floor" />
+        <div className="qr-scanlines" />
+        <div className="qr-grain" />
+        <div className="qr-vignette" />
+      </div>
+
       <AudioSettingsModal isOpen={isAudioModalOpen} onClose={() => setIsAudioModalOpen(false)} />
 
-      {/* Top Header Row */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-3">
-        <div>
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-sky-100 dark:bg-sky-950/50 px-2.5 py-0.5 text-[10px] font-black uppercase text-sky-800 dark:text-sky-300">
-            <Sparkles className="h-3 w-3 text-sky-500" />
-            AI Gamified Learning Arena
-          </div>
-          <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white mt-1">
-            Student Gamification & Arcade
-          </h1>
-          <p className="text-xs font-medium text-slate-500">
-            Play educational games, complete daily missions, unlock badges, and earn reward wallet credits!
-          </p>
-        </div>
-
-        {/* Quick Audio & Settings Controls */}
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={toggleSound}
-            className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition shadow-xs ${
-              isMuted
-                ? 'border-red-200 bg-red-50 text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400'
-                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200'
-            }`}
-            title={isMuted ? 'Unmute Sound Effects' : 'Mute Sound Effects'}
-          >
-            {isMuted ? <VolumeX className="h-4 w-4 text-red-500" /> : <Volume2 className="h-4 w-4 text-emerald-500" />}
-            <span className="hidden sm:inline">{isMuted ? 'Muted' : 'Sound ON'}</span>
-          </button>
-
-          <button
-            onClick={toggleMusic}
-            className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition shadow-xs ${
-              isMusicOn
-                ? 'border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-900/40 dark:bg-indigo-950/30 dark:text-indigo-300'
-                : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400'
-            }`}
-            title={isMusicOn ? 'Pause Background Music' : 'Play Background Music'}
-          >
-            <Music className={`h-4 w-4 ${isMusicOn ? 'text-indigo-600 animate-pulse dark:text-indigo-400' : 'text-slate-400'}`} />
-            <span className="hidden sm:inline">{isMusicOn ? 'BGM On' : 'BGM Off'}</span>
-          </button>
-
-          <button
-            onClick={() => {
-              soundEngine.playButtonClick();
-              setIsAudioModalOpen(true);
-            }}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-            title="Audio Settings"
-          >
-            <Settings className="h-4 w-4 text-amber-500" />
-            <span className="hidden sm:inline">Settings</span>
-          </button>
-
-          <button
-            onClick={() => {
-              soundEngine.playButtonClick();
-              navigate('/school/student');
-            }}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-black text-slate-700 shadow-xs transition hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-            title="Exit Gamification to Main Dashboard"
-          >
-            <ArrowLeft className="h-4 w-4 text-amber-500" />
-            <span className="hidden sm:inline">Exit Dashboard</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Hero Profile & Economy Card (EDDVA Light Blue Theme) */}
-      <section className="relative overflow-hidden rounded-2xl border border-sky-200/90 bg-gradient-to-r from-sky-50 via-blue-50/60 to-indigo-50/80 p-4 sm:p-5 shadow-xs dark:border-sky-950 dark:from-slate-900 dark:via-blue-950/40 dark:to-indigo-950 flex">
-        {/* EDDVA Brand Left Accent Line */}
-        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-sky-400 via-blue-500 to-indigo-600 rounded-l-2xl" />
-
-        <div className="flex-1 flex flex-col lg:flex-row lg:items-center justify-between gap-5 pl-2">
-          {/* Left: Avatar & Profile Info */}
-          <div className="flex items-center gap-4">
-            <div className="relative shrink-0">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-400 via-blue-500 to-indigo-600 text-xl font-black text-white shadow-md ring-2 ring-sky-300/30">
-                {levelTitle[0]}
-              </div>
-              <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-[10px] font-black text-sky-300 ring-2 ring-white dark:ring-slate-900">
-                {level}
+      <div className="relative z-10 space-y-6 p-5 sm:p-7">
+        {/* ── Header ──────────────────────────────────────────────────────── */}
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+          <div>
+            <p className="qr-display text-[11px] font-bold uppercase tracking-[0.4em] text-fuchsia-300/80">
+              Player HQ
+            </p>
+            <h1 className="qr-display relative mt-1.5 text-3xl font-bold uppercase tracking-[0.06em] text-white sm:text-4xl">
+              <span aria-hidden="true" className="absolute inset-0 translate-x-[2px] text-fuchsia-500/60 blur-[1px]">
+                Game Arcade
               </span>
-            </div>
-
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">{levelTitle}</h2>
-                <span className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-sky-500 to-blue-600 text-white px-2 py-0.5 text-[10px] font-black uppercase shadow-xs">
-                  <Crown className="h-3 w-3" /> Level {level}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2.5 text-xs font-bold text-slate-600 dark:text-slate-300">
-                <span className="flex items-center gap-1 text-orange-600 dark:text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-md border border-orange-500/20">
-                  <Flame className="h-3.5 w-3.5 fill-orange-500 text-orange-500" /> {currentStreak} Day Streak
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Center: Level Progress */}
-          <div className="flex-1 max-w-sm space-y-1.5 bg-white/80 dark:bg-slate-950/60 p-3 rounded-xl border border-sky-100 dark:border-slate-800 shadow-2xs">
-            <div className="flex items-center justify-between text-xs font-black">
-              <span className="text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                <Sparkles className="h-3.5 w-3.5 text-sky-500" /> Level {level} Progress
+              <span aria-hidden="true" className="absolute inset-0 -translate-x-[2px] text-cyan-400/60 blur-[1px]">
+                Game Arcade
               </span>
-              <span className="text-sky-600 dark:text-sky-400">{levelProgress}%</span>
-            </div>
-            <div className="h-2 w-full rounded-full bg-sky-100 dark:bg-slate-800 overflow-hidden">
-              <div className="h-full rounded-full bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-600 transition-all duration-500" style={{ width: `${levelProgress}%` }} />
-            </div>
+              <span className="relative">Game Arcade</span>
+            </h1>
+            <p className="qr-read mt-2 max-w-md text-xs font-medium text-slate-400">
+              Play, climb the boards, unlock badges and turn what you learn into
+              reward credits.
+            </p>
           </div>
 
-          {/* Right: Economy Branded Stat Cards */}
-          <div className="grid grid-cols-3 gap-2 shrink-0">
-            <div className="rounded-xl bg-white/80 p-2.5 border border-sky-200/80 dark:bg-sky-950/40 dark:border-sky-900/40 text-center min-w-[88px] shadow-2xs">
-              <p className="text-[9px] font-black uppercase text-sky-600 dark:text-sky-300 tracking-wider">XP Points</p>
-              <p className="text-sm sm:text-base font-black text-slate-900 dark:text-white mt-0.5">{xp}</p>
-            </div>
-
-            <div className="rounded-xl bg-white/80 p-2.5 border border-blue-200/80 dark:bg-blue-950/40 dark:border-blue-900/40 text-center min-w-[88px] shadow-2xs">
-              <p className="text-[9px] font-black uppercase text-blue-600 dark:text-blue-300 tracking-wider">EDDVA Coins</p>
-              <p className="text-sm sm:text-base font-black text-slate-900 dark:text-white mt-0.5">{coins}</p>
-            </div>
-
-            <div className="rounded-xl bg-white/80 p-2.5 border border-teal-200/80 dark:bg-teal-950/40 dark:border-teal-900/40 text-center min-w-[88px] shadow-2xs">
-              <p className="text-[9px] font-black uppercase text-emerald-600 dark:text-emerald-300 tracking-wider">Reward Wallet</p>
-              <p className="text-sm sm:text-base font-black text-emerald-600 dark:text-emerald-400 mt-0.5">₹{walletInr.toFixed(2)}</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Sub-Navigation Bar */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-        {navTabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.key;
-          return (
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
             <button
-              key={tab.key}
-              onClick={() => {
-                soundEngine.playButtonClick();
-                setActiveTab(tab.key);
-              }}
-              className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition shrink-0 ${
-                isActive
-                  ? 'bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-sm shadow-blue-500/20'
-                  : 'bg-white text-slate-600 border border-slate-200/90 hover:bg-sky-50/50 hover:text-sky-600 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800'
+              onClick={toggleSound}
+              title={isMuted ? 'Unmute Sound Effects' : 'Mute Sound Effects'}
+              className={`${iconBtn} ${
+                isMuted
+                  ? 'border-rose-400/35 bg-rose-500/10 text-rose-300'
+                  : 'border-lime-400/30 bg-lime-400/10 text-lime-300'
               }`}
             >
-              <Icon className="h-4 w-4" />
-              <span>{tab.label}</span>
-              {tab.badge && (
-                <span className={`rounded-md px-1.5 py-0.5 text-[9px] font-black ${
-                  isActive ? 'bg-white/20 text-white' : 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300'
-                }`}>
-                  {tab.badge}
-                </span>
-              )}
+              {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+              <span className="hidden sm:inline">{isMuted ? 'Muted' : 'Sound'}</span>
             </button>
-          );
-        })}
-      </div>
 
-      {/* Tab Contents */}
-      {activeTab === 'games' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 animate-fade-in">
-          {gamesList.map((game, i) => {
-            const GameIcon = game.icon;
-            return (
-              <div
-                key={i}
-                className={`group flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/90 bg-gradient-to-br p-4 sm:p-5 shadow-xs transition hover:shadow-md dark:border-slate-800 dark:bg-slate-900 ${game.gradient} ${game.hoverBorder}`}
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${game.badgeColor}`}>
-                      {game.badge}
-                    </span>
-                    <GameIcon className={`h-5 w-5 ${game.iconColor}`} />
-                  </div>
+            <button
+              onClick={toggleMusic}
+              title={isMusicOn ? 'Pause Background Music' : 'Play Background Music'}
+              className={`${iconBtn} ${
+                isMusicOn
+                  ? 'border-fuchsia-400/35 bg-fuchsia-500/10 text-fuchsia-300'
+                  : 'border-white/10 bg-white/[0.03] text-slate-400'
+              }`}
+            >
+              <Music className={`h-4 w-4 ${isMusicOn ? 'animate-pulse' : ''}`} />
+              <span className="hidden sm:inline">{isMusicOn ? 'BGM On' : 'BGM Off'}</span>
+            </button>
 
-                  <div className="space-y-1">
-                    <h3 className={`text-base font-black text-slate-900 dark:text-white transition-colors ${game.hoverTitle}`}>
-                      {game.title}
-                    </h3>
-                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 leading-relaxed min-h-[36px]">
-                      {game.desc}
-                    </p>
-                  </div>
-                </div>
+            <button
+              onClick={() => { soundEngine.playButtonClick(); setIsAudioModalOpen(true); }}
+              title="Audio Settings"
+              className={`${iconBtn} border-white/10 bg-white/[0.03] text-slate-300 hover:border-cyan-400/30`}
+            >
+              <Settings className="h-4 w-4" />
+              <span className="hidden sm:inline">Settings</span>
+            </button>
 
-                <div className="pt-4 flex justify-end">
-                  <Link
-                    to={game.path}
-                    onClick={() => soundEngine.playXpChime()}
-                    className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-black text-white transition shadow-xs ${game.btnGradient}`}
-                  >
-                    <span>Enter Game Arena</span>
-                    <ChevronRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
-                  </Link>
-                </div>
+            <button
+              onClick={() => { soundEngine.playButtonClick(); navigate('/school/student'); }}
+              title="Exit to dashboard"
+              className={`${iconBtn} border-white/10 bg-white/[0.03] text-slate-300 hover:border-rose-400/35 hover:text-rose-300`}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Exit</span>
+            </button>
+          </div>
+        </div>
+
+        {/* ── Player card ─────────────────────────────────────────────────── */}
+        <section className="qr-panel qr-rise flex flex-col items-center gap-6 p-5 sm:flex-row sm:p-6">
+          {/* Level ring — progress toward the next level, read at a glance. */}
+          <ArenaRing percent={levelProgress} size={104}>
+            <span className="qr-display text-[9px] font-bold uppercase tracking-[0.2em] text-slate-500">
+              Level
+            </span>
+            <span className="qr-display text-3xl font-bold leading-none text-cyan-300 qr-neon">
+              {level}
+            </span>
+            <span className="qr-display text-[9px] font-bold text-slate-500">
+              {levelProgress}%
+            </span>
+          </ArenaRing>
+
+          <div className="min-w-0 flex-1 text-center sm:text-left">
+            <ArenaLabel tone="muted">Current rank</ArenaLabel>
+            <h2 className="qr-display mt-1 truncate text-2xl font-bold uppercase tracking-wider text-white">
+              {levelTitle}
+            </h2>
+            <div className="mt-2.5 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+              <span className="qr-chip qr-flicker inline-flex items-center gap-1.5 border border-orange-400/35 bg-orange-500/10 px-2.5 py-1 text-[11px] font-bold text-orange-300">
+                <Flame className="h-3.5 w-3.5 fill-current" />
+                {currentStreak} day streak
+              </span>
+              <span className="qr-read text-[11px] font-medium text-slate-500">
+                {levelProgress}% toward level {level + 1}
+              </span>
+            </div>
+          </div>
+
+          {/* Economy */}
+          <div className="grid w-full grid-cols-3 gap-2.5 sm:w-auto">
+            {[
+              { label: 'XP', value: xp.toLocaleString(), icon: Star, tone: 'text-amber-300', glow: 'qr-neon--amber' },
+              { label: 'Coins', value: coins.toLocaleString(), icon: Coins, tone: 'text-fuchsia-300', glow: 'qr-neon--magenta' },
+              { label: 'Wallet', value: `₹${walletInr.toFixed(0)}`, icon: Wallet, tone: 'text-lime-300', glow: '' },
+            ].map((s) => (
+              <div key={s.label} className="qr-chip border border-white/10 bg-white/[0.03] px-3 py-2.5 text-center sm:min-w-[92px]">
+                <s.icon className={`mx-auto h-3.5 w-3.5 ${s.tone}`} />
+                <p className={`qr-display mt-1.5 text-lg font-bold tabular-nums leading-none ${s.tone} ${s.glow}`}>
+                  {s.value}
+                </p>
+                <ArenaLabel tone="muted" className="mt-1 block">{s.label}</ArenaLabel>
               </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Tabs ────────────────────────────────────────────────────────── */}
+        <div className="scrollbar-none flex items-center gap-2 overflow-x-auto pb-1">
+          {navTabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => { soundEngine.playButtonClick(); setActiveTab(tab.key); }}
+                className={`qr-chip qr-display flex shrink-0 items-center gap-2 border px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider transition ${
+                  isActive
+                    ? 'border-cyan-400/60 bg-cyan-400/15 text-cyan-200 qr-glow-cyan'
+                    : 'border-white/10 bg-white/[0.03] text-slate-400 hover:border-cyan-400/30 hover:text-cyan-200'
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                <span>{tab.label}</span>
+                {tab.badge && (
+                  <span className={`rounded px-1.5 py-0.5 text-[9px] font-bold ${
+                    isActive ? 'bg-cyan-400/20 text-cyan-100' : 'bg-white/10 text-slate-300'
+                  }`}>
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
             );
           })}
         </div>
-      )}
 
-      {activeTab === 'wallet' && <RewardWalletTab profile={profile} onRefresh={fetchProfile} />}
-      {activeTab === 'achievements' && <AchievementsTab />}
-      {activeTab === 'leaderboards' && <MultiLeaderboardTab currentProfile={profile} />}
+        {/* ── Cabinets ────────────────────────────────────────────────────── */}
+        {activeTab === 'games' && (
+          <div className="qr-stagger grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {GAMES.map((game) => {
+              const GameIcon = game.icon;
+              return (
+                <Link
+                  key={game.title}
+                  to={game.path}
+                  onClick={() => soundEngine.playXpChime()}
+                  style={{ '--cab': game.accent }}
+                  className="qr-cab group flex flex-col justify-between border border-white/10 bg-slate-950/60 p-5"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <span
+                        className="qr-chip qr-display border px-2 py-1 text-[9px] font-bold uppercase tracking-[0.16em]"
+                        style={{ borderColor: `${game.accent}55`, color: game.accent, background: `${game.accent}14` }}
+                      >
+                        {game.badge}
+                      </span>
+                      <GameIcon
+                        className="h-6 w-6 shrink-0 transition-transform duration-300 group-hover:scale-110"
+                        style={{ color: game.accent }}
+                      />
+                    </div>
+
+                    <h3 className="qr-display text-lg font-bold uppercase tracking-wide text-white">
+                      {game.title}
+                    </h3>
+                    <p className="qr-read min-h-[52px] text-[11px] font-medium leading-relaxed text-slate-400">
+                      {game.desc}
+                    </p>
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between">
+                    <span
+                      className="qr-display text-[10px] font-bold uppercase tracking-[0.2em] transition-opacity"
+                      style={{ color: game.accent }}
+                    >
+                      Insert coin
+                    </span>
+                    <span
+                      className="flex h-8 w-8 items-center justify-center rounded-full border transition-transform duration-300 group-hover:translate-x-1"
+                      style={{ borderColor: `${game.accent}55`, color: game.accent, background: `${game.accent}14` }}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+
+        {/* The other tabs render their existing light components. Framing them
+            as an inset screen keeps them looking deliberate against the dark
+            cabinet rather than like an unstyled panel. */}
+        {activeTab !== 'games' && (
+          <div className="qr-inset qr-rise rounded-2xl p-4 sm:p-5">
+            {activeTab === 'wallet' && <RewardWalletTab profile={profile} onRefresh={fetchProfile} />}
+            {activeTab === 'achievements' && <AchievementsTab />}
+            {activeTab === 'leaderboards' && <MultiLeaderboardTab currentProfile={profile} />}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
