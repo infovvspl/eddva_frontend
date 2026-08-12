@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, BookOpen, Calendar, Clock, User, Layers, 
-  Sparkles, CheckCircle2, AlertCircle, Edit3, Shield, ListTree, ChevronRight
+  Sparkles, CheckCircle2, AlertCircle, Edit3, Shield, ListTree, ChevronRight, Plus, Loader2
 } from 'lucide-react';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import { toast } from 'sonner';
@@ -13,6 +13,23 @@ export default function SyllabusPlanDetailsPage() {
   const navigate = useNavigate();
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const [updatingTopic, setUpdatingTopic] = useState(null);
+  const [topicProgressForm, setTopicProgressForm] = useState({
+    status: 'in_progress',
+    progress: 50,
+    actualPeriods: 2,
+    remarks: '',
+    delayReason: '',
+    carryForwardDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+    startDate: new Date().toISOString().split('T')[0],
+    completionDate: ''
+  });
+
+  const [addingTopicChapter, setAddingTopicChapter] = useState(null);
+  const [newTopicName, setNewTopicName] = useState('');
+  const [newTopicPeriods, setNewTopicPeriods] = useState(2);
+  const [submittingTopic, setSubmittingTopic] = useState(false);
 
   useEffect(() => {
     fetchPlan();
@@ -91,6 +108,72 @@ export default function SyllabusPlanDetailsPage() {
 
   const totalTopicsCount = allocs.reduce((acc, c) => acc + (Array.isArray(c.topics) ? c.topics.length : 0), 0);
 
+  const handleOpenTopicModal = (t) => {
+    setUpdatingTopic(t);
+    setTopicProgressForm({
+      status: t.status || (t.progress >= 100 ? 'completed' : 'in_progress'),
+      progress: t.progress ?? (t.status === 'completed' ? 100 : 50),
+      actualPeriods: t.actualPeriods || t.periods || 2,
+      remarks: t.remarks || '',
+      delayReason: t.delayReason || '',
+      carryForwardDate: t.carryForwardDate || new Date(Date.now() + 86400000).toISOString().split('T')[0],
+      startDate: t.startDate || new Date().toISOString().split('T')[0],
+      completionDate: t.completionDate || (t.status === 'completed' ? new Date().toISOString().split('T')[0] : '')
+    });
+  };
+
+  const handleAddTopicToChapter = async (e) => {
+    e.preventDefault();
+    if (!newTopicName.trim() || !addingTopicChapter) return;
+    setSubmittingTopic(true);
+    try {
+      await api.patch(`/syllabus/plans/${planId}/progress`, {
+        chapterId: addingTopicChapter.chapterId || addingTopicChapter.chapterName,
+        newTopicName: newTopicName.trim(),
+        periods: parseInt(newTopicPeriods, 10) || 2
+      });
+      toast.success('New topic added to syllabus plan successfully!');
+      setAddingTopicChapter(null);
+      setNewTopicName('');
+      setNewTopicPeriods(2);
+      fetchPlan();
+    } catch (err) {
+      console.error('Failed to add topic to chapter:', err);
+      toast.error('Failed to add topic to plan');
+    } finally {
+      setSubmittingTopic(false);
+    }
+  };
+
+  const handleSaveTopicProgress = async () => {
+    if (!updatingTopic) return;
+    try {
+      await api.patch(`/syllabus/plans/${planId}/progress`, {
+        topicId: updatingTopic.topicId || updatingTopic.id,
+        status: topicProgressForm.status,
+        progress: parseInt(topicProgressForm.progress, 10) || 0,
+        actualPeriods: parseInt(topicProgressForm.actualPeriods, 10) || 1,
+        remarks: topicProgressForm.remarks,
+        delayReason: topicProgressForm.status !== 'completed' ? topicProgressForm.delayReason : null,
+        carryForwardDate: topicProgressForm.status !== 'completed' ? topicProgressForm.carryForwardDate : null,
+        startDate: topicProgressForm.startDate,
+        completionDate: topicProgressForm.status === 'completed' ? (topicProgressForm.completionDate || new Date().toISOString().split('T')[0]) : null
+      });
+      toast.success(
+        topicProgressForm.status === 'completed' 
+          ? 'Topic marked as completed!' 
+          : 'Topic set as In Progress / Partial and carried forward as pending.'
+      );
+      setUpdatingTopic(null);
+      fetchPlan();
+    } catch (err) {
+      console.error('Failed to update topic progress:', err);
+      toast.error('Failed to update topic progress');
+    }
+  };
+
+  const isTeacherView = typeof window !== 'undefined' && window.location.pathname.includes('/school/teacher');
+
   const renderChapterCard = (c, i, accentColor) => {
     const rawTopics = Array.isArray(c.topics) ? c.topics : [];
     const uniqueMap = new Map();
@@ -101,6 +184,10 @@ export default function SyllabusPlanDetailsPage() {
       }
     });
     const topics = Array.from(uniqueMap.values());
+    const chapterPeriods = c.periods || c.plannedPeriods || (topics.length > 0 ? topics.length * 2 : 4);
+    const completedTopicsCount = topics.filter(t => t.status === 'completed' || t.progress >= 100).length;
+    const isChapterFullyCompleted = topics.length > 0 && completedTopicsCount === topics.length;
+
     return (
       <div key={c.chapterId || i} className="p-5 rounded-3xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 space-y-3 shadow-xs">
         <div className="flex items-center justify-between">
@@ -109,23 +196,125 @@ export default function SyllabusPlanDetailsPage() {
             <h4 className="text-sm font-black text-slate-900 dark:text-white">
               Chapter {i + 1}: {c.chapterName}
             </h4>
+            {isChapterFullyCompleted && (
+              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                Completed
+              </span>
+            )}
           </div>
-          <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300">
-            {topics.length > 0 ? `${topics.length} Topics` : 'All Topics Included'}
-          </span>
+          <div className="flex items-center gap-2">
+            {isTeacherView && (
+              <button
+                type="button"
+                onClick={() => {
+                  setAddingTopicChapter(c);
+                  setNewTopicName('');
+                  setNewTopicPeriods(2);
+                }}
+                className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-blue-600 hover:bg-blue-700 text-white transition-all flex items-center gap-1 shadow-xs"
+              >
+                <Plus size={11} /> Add Topic
+              </button>
+            )}
+            <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 flex items-center gap-1">
+              <Clock size={11} /> {chapterPeriods} Periods
+            </span>
+            <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300">
+              {topics.length > 0 ? `${completedTopicsCount}/${topics.length} Done` : 'All Topics Included'}
+            </span>
+          </div>
         </div>
 
         {topics.length > 0 ? (
           <div className="pl-4 space-y-2 border-l-2 border-slate-200 dark:border-slate-800">
-            {topics.map((t, tIdx) => (
-              <div key={t.topicId || tIdx} className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-slate-100 dark:border-slate-850">
-                <span className="flex items-center gap-2">
-                  <span className="text-blue-500 font-bold">•</span>
-                  Topic {tIdx + 1}: {t.topicName || t.name}
-                </span>
-                <span className="text-[10px] font-bold text-slate-400">Included in Plan</span>
-              </div>
-            ))}
+            {topics.map((t, tIdx) => {
+              const isTopicDone = t.status === 'completed' || t.progress >= 100;
+              const topicProg = t.progress ?? (isTopicDone ? 100 : 0);
+              const actualP = t.actualPeriods || t.periods || '—';
+
+              return (
+                <div key={t.topicId || tIdx} className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-100 dark:border-slate-850 gap-2">
+                  <div className="space-y-1">
+                    <span className="flex items-center gap-2">
+                      <span className={isTopicDone ? "text-emerald-500 font-bold" : "text-blue-500 font-bold"}>•</span>
+                      <span className={isTopicDone ? "line-through text-slate-400 font-bold" : "font-bold text-slate-900 dark:text-white"}>
+                        Topic {tIdx + 1}: {t.topicName || t.name}
+                      </span>
+                    </span>
+                    {(t.remarks || t.actualPeriods || t.progress !== undefined || t.delayReason) && (
+                      <div className="flex flex-wrap items-center gap-2 pl-4 text-[10px] text-slate-500">
+                        <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 font-extrabold text-blue-600 dark:text-blue-400">
+                          Progress: {topicProg}%
+                        </span>
+                        <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 font-bold">
+                          Spent: {actualP} Periods
+                        </span>
+                        {!isTopicDone && topicProg > 0 && (
+                          <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-extrabold border border-amber-200">
+                            Carried Forward (Pending Execution)
+                          </span>
+                        )}
+                        {t.delayReason && (
+                          <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300 font-bold italic">
+                            Reason: {t.delayReason}
+                          </span>
+                        )}
+                        {t.remarks && <span className="italic text-slate-400">"{t.remarks}"</span>}
+                      </div>
+                    )}
+                  </div>
+
+                  {isTeacherView ? (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenTopicModal(t)}
+                        className="text-[11px] font-extrabold px-3 py-1.5 rounded-xl bg-blue-600 text-white shadow-sm hover:bg-blue-700 transition-all flex items-center gap-1"
+                      >
+                        <Edit3 size={13} /> Update Progress & Details
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTopicProgressForm({
+                            status: isTopicDone ? 'pending' : 'completed',
+                            progress: isTopicDone ? 0 : 100,
+                            actualPeriods: t.actualPeriods || 2,
+                            remarks: isTopicDone ? 'Reopened' : 'Finished topic coverage',
+                            startDate: new Date().toISOString().split('T')[0],
+                            completionDate: isTopicDone ? '' : new Date().toISOString().split('T')[0]
+                          });
+                          setUpdatingTopic(t);
+                        }}
+                        className={`text-[11px] font-black px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 ${
+                          isTopicDone 
+                            ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 dark:bg-emerald-950 dark:text-emerald-300' 
+                            : 'bg-emerald-600 text-white shadow-sm hover:bg-emerald-700'
+                        }`}
+                      >
+                        <CheckCircle2 size={13} /> {isTopicDone ? 'Marked Done' : 'Mark Done'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-end gap-1 text-[11px]">
+                      <div className="flex items-center gap-2">
+                        <span className="font-extrabold text-blue-600 dark:text-blue-400">{topicProg}% Completed</span>
+                        <span className="font-bold text-slate-500">({actualP} Periods Spent)</span>
+                        <span className={`font-black px-2.5 py-1 rounded-lg ${isTopicDone ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : (t.status === 'in_progress' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300' : 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300')}`}>
+                          {isTopicDone ? 'Completed' : t.status === 'in_progress' ? 'In Progress' : 'Pending'}
+                        </span>
+                      </div>
+                      {!isTopicDone && topicProg > 0 && (
+                        <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300">
+                          ⚡ Carried forward as pending execution
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         ) : (
           <p className="text-xs text-slate-400 italic pl-4 border-l-2 border-slate-200 dark:border-slate-800">
@@ -136,7 +325,8 @@ export default function SyllabusPlanDetailsPage() {
     );
   };
 
-  const isTeacherView = window.location.pathname.includes('/school/teacher');
+  const totalAllocatedPeriods = allocs.reduce((acc, c) => acc + (parseInt(c.periods || c.plannedPeriods, 10) || 4), 0);
+  const displayTotalPeriods = totalAllocatedPeriods > 0 ? totalAllocatedPeriods : (plan.planned_periods || 1);
 
   return (
     <div className="space-y-6 font-poppins pb-12">
@@ -203,7 +393,7 @@ export default function SyllabusPlanDetailsPage() {
           <div className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase mb-1">
             <Clock size={16} className="text-indigo-500" /> Planned Periods
           </div>
-          <span className="text-xl font-black text-indigo-600 dark:text-indigo-400">{plan.planned_periods || 1} Periods</span>
+          <span className="text-xl font-black text-indigo-600 dark:text-indigo-400">{displayTotalPeriods} Periods</span>
         </div>
 
         <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
@@ -310,6 +500,195 @@ export default function SyllabusPlanDetailsPage() {
           )}
         </div>
       </div>
+
+      {/* UPDATE TOPIC PROGRESS & DETAILS MODAL FOR TEACHER */}
+      {updatingTopic && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900 space-y-4 font-poppins">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <h3 className="text-base font-black text-slate-900 dark:text-white">Update Topic Execution & Progress</h3>
+                <p className="text-xs text-slate-500">{updatingTopic.topicName || updatingTopic.name}</p>
+              </div>
+              <button
+                onClick={() => setUpdatingTopic(null)}
+                className="p-1 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Execution Status *</label>
+                <select
+                  value={topicProgressForm.status}
+                  onChange={e => {
+                    const st = e.target.value;
+                    setTopicProgressForm(f => ({
+                      ...f,
+                      status: st,
+                      progress: st === 'completed' ? 100 : (st === 'pending' ? 0 : (f.progress || 50))
+                    }));
+                  }}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                >
+                  <option value="pending">Pending / Scheduled</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="completed">Completed (Mark Done)</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Completion Progress (%) *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={topicProgressForm.progress}
+                    onChange={e => setTopicProgressForm(f => ({ ...f, progress: parseInt(e.target.value, 10) || 0 }))}
+                    className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Actual Periods Spent *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={topicProgressForm.actualPeriods}
+                    onChange={e => setTopicProgressForm(f => ({ ...f, actualPeriods: parseInt(e.target.value, 10) || 1 }))}
+                    className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Execution Remarks & Class Notes</label>
+                <textarea
+                  rows="2"
+                  value={topicProgressForm.remarks}
+                  onChange={e => setTopicProgressForm(f => ({ ...f, remarks: e.target.value }))}
+                  placeholder="e.g. Completed theory & solved exercise problems with students..."
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-2 font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                />
+              </div>
+
+              {/* Carry Forward & Delay Reason fields if topic is not fully completed */}
+              {topicProgressForm.status !== 'completed' && topicProgressForm.progress < 100 && (
+                <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 space-y-3">
+                  <div className="flex items-center gap-2 font-extrabold text-amber-900 dark:text-amber-200 text-xs">
+                    <AlertCircle size={15} /> Carry Forward & Delay Reason
+                  </div>
+                  <div>
+                    <label className="block font-bold text-amber-900 dark:text-amber-300 text-[11px] mb-1">Reason for Non-Completion / Partial Progress *</label>
+                    <input
+                      type="text"
+                      value={topicProgressForm.delayReason}
+                      onChange={e => setTopicProgressForm(f => ({ ...f, delayReason: e.target.value }))}
+                      placeholder="e.g. Doubts clarification took extra time, sports assembly delay..."
+                      className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2 text-xs font-semibold outline-none dark:bg-slate-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-amber-900 dark:text-amber-300 text-[11px] mb-1">Carried Forward Rescheduled Date</label>
+                    <input
+                      type="date"
+                      value={topicProgressForm.carryForwardDate}
+                      onChange={e => setTopicProgressForm(f => ({ ...f, carryForwardDate: e.target.value }))}
+                      className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2 text-xs font-semibold outline-none dark:bg-slate-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setUpdatingTopic(null)}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 dark:border-slate-800 dark:text-slate-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveTopicProgress}
+                className="px-5 py-2 rounded-xl bg-blue-600 text-xs font-extrabold text-white shadow-md hover:bg-blue-700 transition-all flex items-center gap-1.5"
+              >
+                <CheckCircle2 size={15} /> Save & Update Plan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADD NEW TOPIC TO CHAPTER MODAL FOR TEACHER */}
+      {addingTopicChapter && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+          <form onSubmit={handleAddTopicToChapter} className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900 space-y-4 font-poppins">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <h3 className="text-base font-black text-slate-900 dark:text-white">Add Topic to Syllabus Plan</h3>
+                <p className="text-xs text-slate-500">Chapter: {addingTopicChapter.chapterName}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAddingTopicChapter(null)}
+                className="p-1 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Topic Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={newTopicName}
+                  onChange={e => setNewTopicName(e.target.value)}
+                  placeholder="e.g. Sub-topic 3: Practice Problem Solving"
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Allocated Periods *</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="20"
+                  required
+                  value={newTopicPeriods}
+                  onChange={e => setNewTopicPeriods(parseInt(e.target.value, 10) || 1)}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setAddingTopicChapter(null)}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 dark:border-slate-800 dark:text-slate-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submittingTopic}
+                className="px-5 py-2 rounded-xl bg-blue-600 text-xs font-extrabold text-white shadow-md hover:bg-blue-700 transition-all flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {submittingTopic ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />} Add Topic to Plan
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

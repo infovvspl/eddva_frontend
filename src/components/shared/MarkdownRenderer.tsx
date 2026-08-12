@@ -161,10 +161,10 @@ function replaceNewlinesOutsideMath(text: string): string {
         
         result += lines[k];
         if (k < lines.length - 1) {
-          const endsWithOperator = /[+\-/=,\\&|]$/.test(currentLine);
-          const startsWithOperator = /^[+\/=)\]},]/.test(nextLine) || /^-[^ ]/.test(nextLine) || /^\(\d+\)\s*[+\-/=]/.test(nextLine);
+          const endsWithOperator = /[+\-/=,\\&|]$/.test(currentLine) || /^[+=><\u2212\u2013-]{1,3}$/.test(currentLine);
+          const startsWithOperator = /^[+\/=)\]},=>\u2212\u2013-]/.test(nextLine) || /^-[^ ]/.test(nextLine) || /^\(\d+\)\s*[+\-/=]/.test(nextLine);
           // Don't insert double-newlines after lone question numbers (e.g. "1." or "Q1.") or option tags
-          const isLoneNumberOrMarker = /^(?:Q\s*)?\d{1,3}[.)]\s*$/i.test(currentLine) || /^\([a-zA-Z0-9]{1,3}\)\s*$/.test(currentLine) || /^[-*+]\s*$/.test(currentLine);
+          const isLoneNumberOrMarker = /^(?:Q\s*)?\d{1,3}[.)]\s*$/i.test(currentLine) || /^\([a-zA-Z0-9]{1,3}\)\s*$/.test(currentLine) || /^[-*+]\s*$/.test(currentLine) || /^[0-9]+$/.test(currentLine);
           
           // Check if current or next line is a bullet/numbered list item
           const isListItem = /^[-*+]\s+/.test(currentLine) || /^\d+[.)]\s+/.test(currentLine);
@@ -209,14 +209,19 @@ function normalizeBrokenMathText(text: string): string {
 
 function unwrapMathCodeSpans(text: string): string {
   return text.replace(/(`+)([\s\S]*?)\1/g, (match, _ticks, inner) => {
-    const isLikelyCode = /\b(?:const|let|var|function|return|import|export|class|interface|type)\b/.test(inner);
+    const trimmed = inner.trim();
+    const isLikelyCode = /\b(?:const|let|var|function|return|import|export|class|interface|type)\b/.test(trimmed);
     const isLikelyMath =
-      /(?:^|[\s(])[A-Za-z]{1,3}\s*=/.test(inner) ||
-      /[A-Za-z]{1,4}_[A-Za-z0-9]{1,4}/.test(inner) ||
-      /[A-Za-z0-9_{}^)\]][ \t]*\\[ \t\r\n]+[A-Za-z0-9_{}^(]/.test(inner) ||
-      /\\(?:frac|sqrt|cdot|times|theta|alpha|beta|gamma|delta|pi)\b/.test(inner);
+      /[=+\-*/^_\u2260\u2264\u2265\u2192]/.test(trimmed) ||
+      /\b[a-zA-Z]{1,3}\d{1,2}\b/.test(trimmed) ||
+      /\\(?:frac|sqrt|cdot|times|theta|alpha|beta|gamma|delta|pi)\b/.test(trimmed);
 
-    return isLikelyMath && !isLikelyCode ? inner : match;
+    if (isLikelyMath && !isLikelyCode) {
+      // Fix subscript variables e.g. a1 -> a_1, b1^2 -> b_1^2
+      const formattedMath = trimmed.replace(/\b([a-zA-Z]{1,2})(\d{1,2})\b/g, '$1_$2');
+      return `$${formattedMath}$`;
+    }
+    return match;
   });
 }
 
@@ -495,8 +500,13 @@ export const formatMarkdown = (text?: string) => {
     .replace(/\x0B/g, "\\v")
     .replace(/\x07/g, "\\a")
     .replace(/\x08/g, "\\b")
-    // 3. Keep carriage returns as simple newlines
+    // 3. Convert LaTeX delimiters from \[ \] and \( \) to $$ and $ for remark-math / KaTeX parsing
+    .replace(/\\\[/g, "$$").replace(/\\\]/g, "$$")
+    .replace(/\\\(/g, "$").replace(/\\\)/g, "$")
+    // 4. Keep carriage returns as simple newlines
     .replace(/\\n(?![a-zA-Z])/g, "\n");
+
+  formatted = unwrapMathCodeSpans(formatted);
 
   // Remove redundant caption/figure lines that follow right after an image tag.
   // e.g. ![caption](url)\n*caption* or ![caption](url)\n*Figure: caption*
@@ -521,8 +531,15 @@ export const formatMarkdown = (text?: string) => {
   // ── Step 1: Strip stray $ signs that appear inside prose function call arguments
   // e.g. LCM(306, $657) or $657) → removes the stray $ before digits followed by ) or ,
   formatted = formatted.replace(/\$(\d+)([),])/g, "$1$2");
-  // Strip orphan $ = $ patterns (dollar-wrapped equals signs): $ = $ → =
+  // Strip orphan $ = $ or $=$ patterns (dollar-wrapped equals signs): $=$ → =
   formatted = formatted.replace(/\$\s*=\s*\$/g, " = ");
+
+  // Clean up broken OCR/LLM multi-line equals and implication arrows:
+  // e.g. "=\n=\n6" -> "= 6", "=\n>\n=>" -> "=>", "=\n−\n2" -> "= -2"
+  formatted = formatted
+    .replace(/(?:=\s*){2,}/g, "= ")
+    .replace(/=\s*>\s*=?/g, "=> ")
+    .replace(/=\s*[\u2212\u2013-]\s*/g, "= -");
 
 
   // ── Step 2: Unnest single dollar signs inside double-dollar display math blocks $$ ... $$
@@ -797,36 +814,7 @@ export const formatMarkdown = (text?: string) => {
   };
 
   const tokens = tokenize(formatted);
-
-  const englishWords = '(?:is|as|if|of|to|by|we|do|in|on|an|the|and|or|for|but|yet|so|at|then|with|from|into|over|under|above|below|between|among|through|during|before|after|against|about|like|throughout|upon|within|without|since|until|here|there|when|where|why|how|all|any|both|each|few|more|most|some|such|no|nor|not|only|own|same|than|too|very|can|will|should|would|could|may|might|must|shall|derivative|limit|function|chapter|topic|question|answer|solution|rule|power|quotient|product|sum|difference|value|rate|change|input|output|average|state|find|show|prove|calculate|determine|evaluate|solve|check|verify|logic|explanation|reason|key|concept|step|example)';
-  const mathWord = `(?:\\b(?:sin|cos|tan|log|ln|lim|pi|theta|alpha|beta|gamma|delta|phi|psi|omega|lambda|sigma|mu|nu|zeta|eta|iota|kappa|tau|upsilon|xi|chi|rho|cdot|times)\\b|\\b(?!${englishWords}\\b)[a-zA-Z]{1,2}\\b|\\d+)`;
-  const opPattern = `[ \\t]*[()+\\-*\\/^=<>\'_\\-{}#\\cdot\u22C5\u2219.][ \\t]*`;
-  const commandPattern = `[ \\t]*\\\\[a-zA-Z]+[ \\t]*`;
-
-  const mathToken = `(?:${mathWord}|${opPattern}|${commandPattern})`;
-
-  const mathPattern = `(?:^|[^a-zA-Z0-9_$])(?:${mathToken}){0,10}\\^(?:${mathToken}){0,10}(?![\\w$])`;
-  const subscriptPattern = `(?:^|[^a-zA-Z0-9_$])(?:${mathToken}){0,10}_(?:${mathToken}){0,10}(?![\\w$])`;
-  const equationPattern = `(?:^|[^a-zA-Z0-9_$])(?:${mathToken}){0,10}=(?:${mathToken}){0,10}(?![\\w$])`;
-  const latexPattern = `(?:^|[^a-zA-Z0-9_$])(?:${mathToken}){0,10}(?:${commandPattern})(?:${mathToken}){0,10}(?![\\w$])`;
-  const functionPattern = `(?:^|[^a-zA-Z0-9_$])[a-zA-Z]'?\\(x\\)(?![\\w$])`;
-
-  const combinedRegex = new RegExp(`${mathPattern}|${subscriptPattern}|${equationPattern}|${latexPattern}|${functionPattern}`, "gi");
-
-  for (const token of tokens) {
-    if (token.type === "prose") {
-      token.text = token.text.replace(combinedRegex, (match) => {
-        const leadChar = /^[^a-zA-Z0-9_\$\\()]/.test(match) ? match[0] : "";
-        const body = leadChar ? match.slice(1) : match;
-        // Don't double wrap if already contains $
-        if (body.includes("$")) return match;
-        return `${leadChar} $${body.trim()}$ `;
-      });
-    }
-  }
-
   formatted = tokens.map((t) => t.text).join("");
-  formatted = wrapStandaloneSubscriptVariables(formatted);
 
   return formatted
     .replace(/\n{3,}/g, "\n\n")
@@ -1072,82 +1060,6 @@ export function MarkdownRenderer({ content, className, imageMap, highlights = []
       );
       if (hasImage) {
         return <div {...props} className="my-2">{highlightChildren(children, highlights)}</div>;
-      }
-
-      const text = getTextContent(children);
-      const optionMatch = text.match(/^\s*\(?\b([A-D])\b\)?[\s.:]+(.*)/i);
-      if (optionMatch) {
-        const label = optionMatch[1].toUpperCase();
-        const restChildren = modifyChildrenToRemoveTag(children, optionMatch[0].length - optionMatch[2].length);
-        return (
-          <div className="my-2.5 flex items-center gap-3.5 rounded-2xl border border-slate-100 dark:border-slate-800/40 bg-slate-50/30 dark:bg-slate-900/10 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 hover:border-slate-200 dark:hover:bg-slate-900/30 dark:hover:border-slate-700/60 transition-all shadow-sm/5">
-            <span className="w-7 h-7 rounded-xl bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400 flex items-center justify-center font-black text-xs shrink-0 shadow-sm border border-violet-200/30">
-              {label}
-            </span>
-            <span className="flex-1 leading-relaxed">{highlightChildren(restChildren, highlights)}</span>
-          </div>
-        );
-      }
-
-      const faqAnswerMatch = text.match(/^\s*\bA\b[\s.:]+(.*)/i);
-      if (faqAnswerMatch) {
-        const restChildren = modifyChildrenToRemoveTag(children, faqAnswerMatch[0].length - faqAnswerMatch[1].length);
-        return (
-          <div className="my-2.5 flex items-start gap-3.5 rounded-2xl border border-emerald-100/60 dark:border-emerald-950/20 bg-emerald-50/20 dark:bg-emerald-950/5 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-emerald-50/40 hover:border-emerald-200/60 transition-all">
-            <span className="w-7 h-7 rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-450 flex items-center justify-center font-black text-xs shrink-0 shadow-sm border border-emerald-200/30">
-              ANS
-            </span>
-            <span className="flex-1 leading-relaxed text-slate-600 dark:text-slate-400">{highlightChildren(restChildren, highlights)}</span>
-          </div>
-        );
-      }
-
-      const faqQuestionMatch = text.match(/^\s*\bQ\d+\b[\s.:]+(.*)/i);
-      if (faqQuestionMatch) {
-        const label = text.match(/^\s*\b(Q\d+)\b/i)?.[1].toUpperCase() || "Q";
-        const rawChildren = modifyChildrenToRemoveTag(children, text.match(/^\s*\bQ\d+\b[\s.:]+/i)?.[0].length || 0);
-
-        let tag = "";
-        let tagLengthToRemove = 0;
-        let shouldRemovePattern = false;
-        let patternTextToReplace = "";
-
-        const plainTextContent = getTextContent(rawChildren);
-        const startTagMatch = plainTextContent.match(/^\s*\[EXAMTAG:\s*([^\]]+)\]\s*/i);
-        if (startTagMatch) {
-          tag = startTagMatch[1];
-          tagLengthToRemove = startTagMatch[0].length;
-        } else {
-          const patternTagMatch = plainTextContent.match(/(?:\r?\n|^|\s+)\(?(?:Pattern|Exam):\s*(CBSE(?:\s+Class\s+\d+)?\s+\d{4}|CLASS\s+\d+\s+\d{4}|NEET\s+\d{4}|JEE(?:\s+(?:Main|Advanced))?\s+\d{4}(?:\s+[a-zA-Z0-9]+)?|[^\n\)]+)\)?\s*$/i);
-          if (patternTagMatch) {
-            tag = patternTagMatch[1];
-            shouldRemovePattern = true;
-            patternTextToReplace = patternTagMatch[0];
-          }
-        }
-
-        let finalChildren = rawChildren;
-        if (tagLengthToRemove > 0) {
-          finalChildren = removeExamTagFromChildren(rawChildren);
-        } else if (shouldRemovePattern && patternTextToReplace) {
-          finalChildren = removePatternFromChildren(rawChildren, patternTextToReplace);
-        }
-
-        const formattedTag = tag ? formatExamTag(tag) : "";
-
-        return (
-          <div className="my-3 flex items-start gap-3.5 rounded-2xl border border-sky-100/60 dark:border-sky-950/20 bg-sky-50/20 dark:bg-sky-950/5 px-4 py-3 pr-28 text-sm font-black text-slate-800 dark:text-slate-200 hover:bg-sky-50/40 hover:border-sky-200/60 transition-all">
-            <span className="w-7 h-7 rounded-xl bg-sky-100 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400 flex items-center justify-center font-black text-xs shrink-0 shadow-sm border border-sky-200/30">
-              {label}
-            </span>
-            <span className="flex-1 leading-relaxed">{highlightChildren(finalChildren, highlights)}</span>
-            {formattedTag && (
-              <span className="absolute right-2.5 top-3 select-none text-[10px] font-black uppercase tracking-wider bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-400 border border-violet-200/50 dark:border-violet-800/30 px-2 py-0.5 rounded-lg font-mono">
-                {formattedTag}
-              </span>
-            )}
-          </div>
-        );
       }
 
       return <p {...props} className="my-2">{highlightChildren(children, highlights)}</p>;

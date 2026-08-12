@@ -741,32 +741,64 @@ export default function SyllabusPlanner() {
                     else fallbackTerm = 'Term 2';
 
                     const currentTerm = currentAlloc?.term || fallbackTerm;
+                    const currentPeriods = currentAlloc?.periods ?? (currentAlloc?.plannedPeriods ?? 4);
 
                     return (
                       <div key={ch.id} className="flex items-center justify-between gap-2 p-2.5 rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 shadow-2xs">
                         <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate flex-1" title={ch.name}>
                           {idx + 1}. {ch.name}
                         </span>
-                        <select
-                          value={currentTerm}
-                          onChange={(e) => {
-                            const newTerm = e.target.value;
-                            setForm(prev => {
-                              const existingList = prev.chapterAllocations || [];
-                              const filtered = existingList.filter(a => a.chapterId !== ch.id);
-                              return {
-                                ...prev,
-                                chapterAllocations: [...filtered, { chapterId: ch.id, chapterName: ch.name, term: newTerm }]
-                              };
-                            });
-                          }}
-                          className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-bold outline-none text-blue-700 dark:border-slate-700 dark:bg-slate-800 dark:text-blue-300"
-                        >
-                          <option value="Unit 1">Unit 1 (PT-1)</option>
-                          <option value="Term 1">Term 1 (Half Yearly)</option>
-                          <option value="Unit 2">Unit 2 (PT-2)</option>
-                          <option value="Term 2">Term 2 (Final Exam)</option>
-                        </select>
+
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-0.5">
+                            <span className="text-[10px] font-bold text-slate-400">Periods:</span>
+                            <input
+                              type="number"
+                              min="1"
+                              max="100"
+                              value={currentPeriods}
+                              onChange={(e) => {
+                                const newP = parseInt(e.target.value, 10) || 1;
+                                setForm(prev => {
+                                  const existingList = prev.chapterAllocations || [];
+                                  const filtered = existingList.filter(a => a.chapterId !== ch.id);
+                                  const existingItem = existingList.find(a => a.chapterId === ch.id);
+                                  const newAlloc = { chapterId: ch.id, chapterName: ch.name, term: existingItem?.term || currentTerm, periods: newP, plannedPeriods: newP, topics: existingItem?.topics || [] };
+                                  const updatedAllocations = [...filtered, newAlloc];
+                                  const newTotalPeriods = updatedAllocations.reduce((sum, item) => sum + (parseInt(item.periods || item.plannedPeriods, 10) || 0), 0);
+                                  return {
+                                    ...prev,
+                                    chapterAllocations: updatedAllocations,
+                                    plannedPeriods: newTotalPeriods > 0 ? newTotalPeriods : prev.plannedPeriods
+                                  };
+                                });
+                              }}
+                              className="w-12 bg-transparent text-[11px] font-bold outline-none text-indigo-700 dark:text-indigo-300 text-center"
+                            />
+                          </div>
+
+                          <select
+                            value={currentTerm}
+                            onChange={(e) => {
+                              const newTerm = e.target.value;
+                              setForm(prev => {
+                                const existingList = prev.chapterAllocations || [];
+                                const filtered = existingList.filter(a => a.chapterId !== ch.id);
+                                const existingItem = existingList.find(a => a.chapterId === ch.id);
+                                return {
+                                  ...prev,
+                                  chapterAllocations: [...filtered, { chapterId: ch.id, chapterName: ch.name, term: newTerm, periods: existingItem?.periods || currentPeriods, plannedPeriods: existingItem?.periods || currentPeriods, topics: existingItem?.topics || [] }]
+                                };
+                              });
+                            }}
+                            className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-bold outline-none text-blue-700 dark:border-slate-700 dark:bg-slate-800 dark:text-blue-300"
+                          >
+                            <option value="Unit 1">Unit 1 (PT-1)</option>
+                            <option value="Term 1">Term 1 (Half Yearly)</option>
+                            <option value="Unit 2">Unit 2 (PT-2)</option>
+                            <option value="Term 2">Term 2 (Final Exam)</option>
+                          </select>
+                        </div>
                       </div>
                     );
                   })}
@@ -897,29 +929,60 @@ export default function SyllabusPlanner() {
               {/* Edit Chapter Milestones in Modal */}
               {Array.isArray(editForm.chapterAllocations) && editForm.chapterAllocations.length > 0 && (
                 <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">Chapter Exam Milestones ({editForm.chapterAllocations.length} Chapters)</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">Chapter Allocations & Periods ({editForm.chapterAllocations.length} Chapters)</label>
                   <div className="grid gap-2 max-h-48 overflow-y-auto p-1 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-950/30">
-                    {editForm.chapterAllocations.map((ch, idx) => (
-                      <div key={ch.chapterId || idx} className="flex items-center justify-between gap-2 p-2 rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 text-xs">
-                        <span className="font-semibold text-slate-800 dark:text-slate-200 truncate flex-1">{idx + 1}. {ch.chapterName}</span>
-                        <select
-                          value={ch.term || 'Unit 1'}
-                          onChange={(e) => {
-                            const newTerm = e.target.value;
-                            setEditForm(prev => {
-                              const updated = prev.chapterAllocations.map(a => a.chapterId === ch.chapterId ? { ...a, term: newTerm } : a);
-                              return { ...prev, chapterAllocations: updated };
-                            });
-                          }}
-                          className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-bold text-blue-700 dark:border-slate-700 dark:bg-slate-800 dark:text-blue-300"
-                        >
-                          <option value="Unit 1">Unit 1 (PT-1)</option>
-                          <option value="Term 1">Term 1 (Half Yearly)</option>
-                          <option value="Unit 2">Unit 2 (PT-2)</option>
-                          <option value="Term 2">Term 2 (Final Exam)</option>
-                        </select>
-                      </div>
-                    ))}
+                    {editForm.chapterAllocations.map((ch, idx) => {
+                      const chPeriods = ch.periods ?? (ch.plannedPeriods ?? 4);
+                      return (
+                        <div key={ch.chapterId || idx} className="flex items-center justify-between gap-2 p-2 rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 text-xs">
+                          <span className="font-semibold text-slate-800 dark:text-slate-200 truncate flex-1">{idx + 1}. {ch.chapterName}</span>
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-1.5 py-0.5">
+                              <span className="text-[9px] font-bold text-slate-400">P:</span>
+                              <input
+                                type="number"
+                                min="1"
+                                max="100"
+                                value={chPeriods}
+                                onChange={(e) => {
+                                  const newP = parseInt(e.target.value, 10) || 1;
+                                  setEditForm(prev => {
+                                    const updated = prev.chapterAllocations.map(a => 
+                                      (a.chapterId === ch.chapterId || a.chapterName === ch.chapterName)
+                                        ? { ...a, periods: newP, plannedPeriods: newP }
+                                        : a
+                                    );
+                                    const newTotalPeriods = updated.reduce((sum, item) => sum + (parseInt(item.periods || item.plannedPeriods, 10) || 0), 0);
+                                    return { ...prev, chapterAllocations: updated, plannedPeriods: newTotalPeriods > 0 ? newTotalPeriods : prev.plannedPeriods };
+                                  });
+                                }}
+                                className="w-10 bg-transparent text-[10px] font-bold outline-none text-indigo-700 dark:text-indigo-300 text-center"
+                              />
+                            </div>
+                            <select
+                              value={ch.term || 'Unit 1'}
+                              onChange={(e) => {
+                                const newTerm = e.target.value;
+                                setEditForm(prev => {
+                                  const updated = prev.chapterAllocations.map(a => 
+                                    (a.chapterId === ch.chapterId || a.chapterName === ch.chapterName)
+                                      ? { ...a, term: newTerm }
+                                      : a
+                                  );
+                                  return { ...prev, chapterAllocations: updated };
+                                });
+                              }}
+                              className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-bold text-blue-700 dark:border-slate-700 dark:bg-slate-800 dark:text-blue-300"
+                            >
+                              <option value="Unit 1">Unit 1 (PT-1)</option>
+                              <option value="Term 1">Term 1 (Half Yearly)</option>
+                              <option value="Unit 2">Unit 2 (PT-2)</option>
+                              <option value="Term 2">Term 2 (Final Exam)</option>
+                            </select>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

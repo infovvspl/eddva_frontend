@@ -236,15 +236,6 @@ export default function TeacherTeachingPlan() {
           >
             <Layers size={15} /> Lesson Templates
           </button>
-          <button
-            onClick={() => {
-              setSelectedTimetableSlot(null);
-              setCreateModalOpen(true);
-            }}
-            className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-blue-600/20 hover:brightness-110 transition-all"
-          >
-            <Plus size={15} /> Create Lesson Plan
-          </button>
         </div>
       </div>
 
@@ -462,35 +453,16 @@ export default function TeacherTeachingPlan() {
                   </h4>
                   <p className="text-xs text-slate-500 font-semibold mt-0.5">Assigned Target Periods: <strong className="text-slate-800 dark:text-slate-200">{plan.planned_periods || plan.plannedPeriods || 24}</strong></p>
                 </div>
-                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedTimetableSlot({
-                        classId: plan.class_id,
-                        sectionId: plan.section_id,
-                        subjectId: plan.subject_id,
-                        className: plan.class_name,
-                        sectionName: plan.section_name,
-                        subjectName: plan.subject_name
-                      });
-                      setCreateModalOpen(true);
-                    }}
-                    className="flex-1 flex items-center justify-center gap-1 py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs"
-                  >
-                    <Plus size={14} /> Add Lesson Plan
-                  </button>
-
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       navigate(`/school/teacher/syllabus-planner/${plan.id}`);
                     }}
-                    className="flex-1 flex items-center justify-center gap-1 py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all"
+                    className="w-full flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 text-white text-xs font-extrabold transition-all shadow-md shadow-blue-600/20"
                   >
-                    View Curriculum →
+                    <CheckSquare size={15} /> Update Progress & Execution Details →
                   </button>
                 </div>
               </div>
