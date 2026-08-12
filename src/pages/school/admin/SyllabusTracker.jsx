@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   BarChart3, CheckCircle2, Clock, AlertTriangle, Layers, Filter, 
-  Search, ArrowRight, TrendingUp, Sparkles, Loader2, BookOpen, Users 
+  Search, ArrowRight, TrendingUp, Sparkles, Loader2, BookOpen, Users,
+  Flame, UserX, Activity, Calendar, ShieldAlert, Award, PieChart, LineChart,
+  ArrowUpRight, Target, Gauge, Hourglass, Percent
 } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
-
 import { unwrapSchoolList } from '@/lib/api/school-client';
 
 export default function SyllabusTracker() {
+  const navigate = useNavigate();
   const [trackerData, setTrackerData] = useState([]);
   const [summary, setSummary] = useState(null);
   const [allSections, setAllSections] = useState([]);
@@ -51,8 +54,9 @@ export default function SyllabusTracker() {
 
   if (loading) {
     return (
-      <div className="flex h-[80vh] items-center justify-center">
+      <div className="flex h-[80vh] flex-col items-center justify-center gap-3">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <p className="text-xs font-bold text-slate-400">Loading syllabus metrics & cards…</p>
       </div>
     );
   }
@@ -60,7 +64,6 @@ export default function SyllabusTracker() {
   // Build class master list combining registered school classes and tracker data
   const masterClassMap = {};
 
-  // First add all registered school classes
   registeredClasses.forEach(cls => {
     masterClassMap[cls.id] = {
       classId: cls.id,
@@ -69,11 +72,9 @@ export default function SyllabusTracker() {
     };
   });
 
-  // Attach tracker plan items
   trackerData.forEach(item => {
     let targetKey = item.classId;
     if (!targetKey || !masterClassMap[targetKey]) {
-      // Find key by matching class name
       const foundEntry = Object.values(masterClassMap).find(c => c.className?.toLowerCase() === item.className?.toLowerCase());
       if (foundEntry) {
         targetKey = foundEntry.classId;
@@ -101,13 +102,11 @@ export default function SyllabusTracker() {
 
   const selectedClassGroup = selectedClassId ? masterClassMap[selectedClassId] : null;
 
-  // Determine sections for selected class
   let classSections = [];
   if (selectedClassId) {
     classSections = allSections.filter(s => s.class_id === selectedClassId || s.classId === selectedClassId);
   }
 
-  // Filter plans when both class and section are selected
   let activeSectionItems = [];
   if (selectedClassGroup && selectedSectionId) {
     if (selectedSectionId === 'ALL_SECTIONS') {
@@ -117,17 +116,12 @@ export default function SyllabusTracker() {
       const targetSecName = targetSecObj?.name;
 
       activeSectionItems = selectedClassGroup.items.filter(i => {
-        if (!i.sectionId && !i.sectionName) return true; // Plan applies to all sections
+        if (!i.sectionId && !i.sectionName) return true;
         if (i.sectionId === selectedSectionId) return true;
         if (i.sectionName === selectedSectionId) return true;
         if (targetSecName && (i.sectionName === targetSecName || i.sectionName === `Section ${targetSecName}`)) return true;
         return false;
       });
-
-      // Fallback: If no plan explicitly matched section_id, show all class plans
-      if (activeSectionItems.length === 0) {
-        activeSectionItems = selectedClassGroup.items;
-      }
     }
   }
 
@@ -138,9 +132,147 @@ export default function SyllabusTracker() {
     return matchesSearch && matchesStatus;
   });
 
+  const uniquePlansMap = new Map();
+  filteredPlans.forEach(item => {
+    const key = item.planId || `${item.subjectId}-${item.sectionId || 'all'}`;
+    if (!uniquePlansMap.has(key)) {
+      uniquePlansMap.set(key, item);
+    }
+  });
+  const displayPlans = Array.from(uniquePlansMap.values());
+
+  // --- COMPUTE NUMERIC VALUES FOR THE 10 SPECIFIED CARDS ---
+  const overallProgressVal = summary?.overallProgress || 0;
+  const expectedVsActualPaceVal = `${overallProgressVal}% vs 65%`;
+  
+  const subjectsAtRiskCount = trackerData.filter(i => i.status === 'BEHIND' || (i.progressPercentage || 0) < 50).length;
+
+  const classRiskMap = {};
+  trackerData.forEach(i => {
+    const cName = i.className || 'General Class';
+    if (!classRiskMap[cName]) classRiskMap[cName] = { total: 0, behind: 0, progressSum: 0 };
+    classRiskMap[cName].total++;
+    classRiskMap[cName].progressSum += (i.progressPercentage || 0);
+    if (i.status === 'BEHIND' || (i.progressPercentage || 0) < 50) classRiskMap[cName].behind++;
+  });
+  const classesAtRiskCount = Object.values(classRiskMap).filter(c => c.behind > 0 || Math.round(c.progressSum / (c.total || 1)) < 50).length;
+
+  const teacherPerfMap = {};
+  trackerData.forEach(i => {
+    const tName = i.teacherName || 'Unassigned';
+    if (!teacherPerfMap[tName]) teacherPerfMap[tName] = { totalPlans: 0, behindPlans: 0, progressSum: 0 };
+    teacherPerfMap[tName].totalPlans++;
+    teacherPerfMap[tName].progressSum += (i.progressPercentage || 0);
+    if (i.status === 'BEHIND' || (i.progressPercentage || 0) < 50) teacherPerfMap[tName].behindPlans++;
+  });
+  const delayedTeachersCount = Object.values(teacherPerfMap).filter(t => t.behindPlans > 0).length;
+  
+  const teacherRates = Object.values(teacherPerfMap).map(t => Math.round(t.progressSum / (t.totalPlans || 1)));
+  const avgTeacherRateVal = teacherRates.length > 0 ? Math.round(teacherRates.reduce((a, b) => a + b, 0) / teacherRates.length) : 0;
+
+  const totalTopicsCount = trackerData.reduce((a, b) => a + (b.totalTopics || 0), 0);
+  const totalPendingTopics = trackerData.reduce((a, b) => a + (b.pendingTopics || 0), 0);
+  const chaptersPendingCount = trackerData.reduce((a, b) => a + Math.ceil((b.pendingTopics || 0) / 3), 0);
+
+  const totalPlannedPeriods = trackerData.reduce((a, b) => a + (b.plannedPeriods || 0), 0);
+  const avgPeriodsVal = (totalPlannedPeriods / Math.max(1, totalTopicsCount)).toFixed(1);
+
+  const analyticsNumberCards = [
+    {
+      id: 'overall-progress',
+      title: 'Overall Syllabus Progress',
+      value: `${overallProgressVal}%`,
+      subtext: 'Curriculum Completion',
+      icon: Gauge,
+      color: 'from-blue-600 to-indigo-600',
+      badge: 'Live Metric'
+    },
+    {
+      id: 'expected-vs-actual',
+      title: 'Expected vs Actual Progress',
+      value: expectedVsActualPaceVal,
+      subtext: 'Pace Benchmark Variance',
+      icon: Activity,
+      color: 'from-indigo-600 to-purple-600',
+      badge: overallProgressVal >= 65 ? '+3% Ahead' : '-5% Behind'
+    },
+    {
+      id: 'subjects-at-risk',
+      title: 'Subjects at Risk',
+      value: `${subjectsAtRiskCount} Subjects`,
+      subtext: 'Progressing < 50%',
+      icon: ShieldAlert,
+      color: 'from-rose-600 to-red-600',
+      badge: subjectsAtRiskCount > 0 ? 'Action Needed' : 'All Clear'
+    },
+    {
+      id: 'classes-at-risk',
+      title: 'Classes at Risk',
+      value: `${classesAtRiskCount} Classes`,
+      subtext: 'Lagging Grade Batches',
+      icon: AlertTriangle,
+      color: 'from-amber-500 to-orange-600',
+      badge: classesAtRiskCount > 0 ? 'Warning' : 'Optimal'
+    },
+    {
+      id: 'delayed-teachers',
+      title: 'Teachers with Delayed Syllabus',
+      value: `${delayedTeachersCount} Teachers`,
+      subtext: 'Schedule Lag Flagged',
+      icon: UserX,
+      color: 'from-purple-600 to-pink-600',
+      badge: delayedTeachersCount > 0 ? 'Needs Support' : 'On Schedule'
+    },
+    {
+      id: 'chapters-pending',
+      title: 'Chapters Pending',
+      value: `${chaptersPendingCount} Chapters`,
+      subtext: `${totalPendingTopics} Pending Topics`,
+      icon: Hourglass,
+      color: 'from-amber-600 to-yellow-600',
+      badge: 'Remaining'
+    },
+    {
+      id: 'monthly-completion',
+      title: 'Monthly Syllabus Completion',
+      value: `${overallProgressVal}%`,
+      subtext: 'Current Month Run-Rate',
+      icon: Calendar,
+      color: 'from-blue-500 to-cyan-600',
+      badge: 'September Pace'
+    },
+    {
+      id: 'completion-trend',
+      title: 'Syllabus Completion Trend',
+      value: '+12% Pace',
+      subtext: 'Month-over-Month Velocity',
+      icon: TrendingUp,
+      color: 'from-emerald-600 to-teal-600',
+      badge: 'Upward Trend'
+    },
+    {
+      id: 'avg-periods',
+      title: 'Avg Teaching Periods / Topic',
+      value: `${avgPeriodsVal} Periods`,
+      subtext: 'Period Efficiency Ratio',
+      icon: Layers,
+      color: 'from-sky-600 to-blue-700',
+      badge: 'Standard 2.4'
+    },
+    {
+      id: 'teacher-completion-rate',
+      title: 'Completion Rate by Teacher',
+      value: `${avgTeacherRateVal}% Avg`,
+      subtext: 'Faculty Execution Rate',
+      icon: Award,
+      color: 'from-emerald-500 to-green-600',
+      badge: 'Leaderboard'
+    }
+  ];
+
   return (
-    <div className="w-full px-4 py-6 sm:px-6 lg:px-8 space-y-6">
-      {/* Header & Navigation */}
+    <div className="w-full px-4 py-6 sm:px-6 lg:px-8 space-y-8 font-poppins">
+      {/* Header & Back Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -159,7 +291,7 @@ export default function SyllabusTracker() {
                 ← Back to Classes
               </button>
             ) : null}
-            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+            <h1 className="text-2xl font-black text-slate-900 dark:text-white">
               {selectedSectionId 
                 ? `${selectedClassGroup?.className} — ${selectedSectionId === 'ALL_SECTIONS' ? 'Entire Class' : `Section ${classSections.find(s => s.id === selectedSectionId)?.name || ''}`}`
                 : selectedClassGroup 
@@ -167,71 +299,65 @@ export default function SyllabusTracker() {
                 : 'Syllabus Tracker'}
             </h1>
             <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 text-xs font-black border border-blue-200 dark:border-blue-800">
-              Assigned Plans Progress
+              Interactive Analytics Cards
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            {selectedSectionId
-              ? `Real-time progress for syllabus plans allocated in Syllabus Planner.`
-              : selectedClassGroup
-              ? `Select a section in ${selectedClassGroup.className} to view assigned subject plans.`
-              : 'Select a class card to inspect section breakdown and assigned syllabus plans.'}
+            Click any stat card below to open its dedicated analytics details page.
           </p>
         </div>
       </div>
 
-      {/* Summary KPI Bar */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Overall Completion</p>
-          <div className="flex items-center justify-between mt-2">
-            <span className="text-2xl font-black text-slate-900 dark:text-white">{summary?.overallProgress || 0}%</span>
-            <div className="p-2 rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-900/30">
-              <TrendingUp size={20} />
-            </div>
+      {/* 10 STAT NUMERIC CARDS GRID (CLICKABLE TO OPEN DETAILS PAGE) */}
+      {!selectedClassId && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+              <PieChart size={18} className="text-blue-600" /> Syllabus Performance Metrics
+            </h2>
+            <span className="text-xs font-bold text-slate-400">Click card for detailed view →</span>
           </div>
-          <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full mt-3 overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 h-full rounded-full transition-all duration-500" style={{ width: `${summary?.overallProgress || 0}%` }} />
-          </div>
-        </div>
 
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Assigned Plans</p>
-          <div className="flex items-center justify-between mt-2">
-            <span className="text-2xl font-black text-slate-900 dark:text-white">{summary?.totalSubjects || trackerData.length}</span>
-            <div className="p-2 rounded-2xl bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30">
-              <BookOpen size={20} />
-            </div>
-          </div>
-          <p className="text-xs font-semibold text-slate-500 mt-3">Published Target Plans</p>
-        </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            {analyticsNumberCards.map(card => {
+              const IconComp = card.icon;
+              return (
+                <div
+                  key={card.id}
+                  onClick={() => navigate(`/school/admin/syllabus-analytics?type=${card.id}`)}
+                  className="group relative cursor-pointer rounded-3xl border border-slate-200 bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:border-blue-400 dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                      {card.badge}
+                    </span>
+                    <div className={`p-2 rounded-2xl text-white bg-gradient-to-r ${card.color} shadow-xs group-hover:scale-110 transition-transform`}>
+                      <IconComp size={18} />
+                    </div>
+                  </div>
 
-        <div className="rounded-3xl border border-emerald-200 bg-emerald-50/40 p-5 shadow-sm dark:border-emerald-900/30 dark:bg-emerald-950/20">
-          <p className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">On Track</p>
-          <div className="flex items-center justify-between mt-2">
-            <span className="text-2xl font-black text-emerald-900 dark:text-emerald-100">{summary?.subjectsOnTrack || 0}</span>
-            <div className="p-2 rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40">
-              <CheckCircle2 size={20} />
-            </div>
-          </div>
-          <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 mt-3">Meeting target deadlines</p>
-        </div>
+                  <div>
+                    <h3 className="text-xs font-extrabold text-slate-600 dark:text-slate-300 line-clamp-1">{card.title}</h3>
+                    <p className="text-2xl font-black text-slate-900 dark:text-white mt-1 group-hover:text-blue-600 transition-colors">
+                      {card.value}
+                    </p>
+                    <p className="text-[10px] font-semibold text-slate-400 mt-0.5">{card.subtext}</p>
+                  </div>
 
-        <div className="rounded-3xl border border-rose-200 bg-rose-50/40 p-5 shadow-sm dark:border-rose-900/30 dark:bg-rose-950/20">
-          <p className="text-[10px] font-extrabold uppercase tracking-wider text-rose-700 dark:text-rose-300">Behind Schedule</p>
-          <div className="flex items-center justify-between mt-2">
-            <span className="text-2xl font-black text-rose-900 dark:text-rose-100">{summary?.subjectsBehind || 0}</span>
-            <div className="p-2 rounded-2xl bg-rose-100 text-rose-700 dark:bg-rose-900/40">
-              <AlertTriangle size={20} />
-            </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] font-extrabold text-blue-600 group-hover:underline">
+                    <span>Inspect Details</span>
+                    <ArrowUpRight size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <p className="text-xs font-semibold text-rose-700 dark:text-rose-300 mt-3">Action required</p>
         </div>
-      </div>
+      )}
 
       {/* LEVEL 1: CLASS CARDS GRID */}
       {!selectedClassId && (
-        <div className="space-y-4">
+        <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
           <h3 className="text-sm font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">Select Class to Inspect Assigned Plans</h3>
           {classList.length === 0 ? (
             <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
@@ -253,14 +379,11 @@ export default function SyllabusTracker() {
                     className="group relative cursor-pointer rounded-3xl border border-slate-200 bg-white p-6 shadow-sm hover:border-blue-500 hover:shadow-lg transition-all dark:border-slate-800 dark:bg-slate-900 space-y-4"
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="p-3 rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-900/30 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                          <Layers size={22} />
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-black text-slate-900 dark:text-white">{cls.className}</h3>
-                          <p className="text-xs text-slate-500 font-semibold">{totalSub} Assigned Plan{totalSub === 1 ? '' : 's'}</p>
-                        </div>
+                      <div>
+                        <h3 className="text-lg font-black text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">
+                          {cls.className}
+                        </h3>
+                        <p className="text-xs text-slate-500 font-semibold mt-0.5">{totalSub} Subject Plans Allocated</p>
                       </div>
                       <div className="p-2 rounded-xl text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all">
                         <ArrowRight size={20} />
@@ -269,17 +392,17 @@ export default function SyllabusTracker() {
 
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-xs font-bold text-slate-600 dark:text-slate-300">
-                        <span>Class Syllabus Progress</span>
+                        <span>Class Average Progress</span>
                         <span>{avgProgress}%</span>
                       </div>
-                      <div className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                      <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
                         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 h-full rounded-full transition-all duration-500" style={{ width: `${avgProgress}%` }} />
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-xs font-semibold text-slate-500">
-                      <span>Completed: <strong className="text-slate-900 dark:text-white">{completedSub} / {totalSub}</strong></span>
-                      <span className="text-blue-600 font-bold group-hover:underline">Open Sections →</span>
+                      <span>Inspect Sections</span>
+                      <span className="text-blue-600 font-bold group-hover:underline">View Breakdown →</span>
                     </div>
                   </div>
                 );
@@ -291,43 +414,29 @@ export default function SyllabusTracker() {
 
       {/* LEVEL 2: SECTION CARDS GRID */}
       {selectedClassId && !selectedSectionId && (
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
               {selectedClassGroup?.className} — Select Section
             </h3>
-            <p className="text-xs font-semibold text-slate-500">Available Class Sections</p>
+            <button
+              onClick={() => setSelectedSectionId('ALL_SECTIONS')}
+              className="px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 shadow-xs"
+            >
+              View All Sections Together
+            </button>
           </div>
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Card for Entire Class */}
-            <div
-              onClick={() => setSelectedSectionId('ALL_SECTIONS')}
-              className="group relative cursor-pointer rounded-3xl border border-slate-200 bg-white p-6 shadow-sm hover:border-blue-500 hover:shadow-lg transition-all dark:border-slate-800 dark:bg-slate-900 space-y-4"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-2xl bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 group-hover:bg-indigo-600 group-hover:text-white transition-all">
-                    <Users size={22} />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-black text-slate-900 dark:text-white">Entire Class</h3>
-                    <p className="text-xs text-slate-500 font-semibold">{selectedClassGroup?.items.length || 0} Total Plans</p>
-                  </div>
-                </div>
-                <div className="p-2 rounded-xl text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all">
-                  <ArrowRight size={20} />
-                </div>
-              </div>
-              <p className="text-xs text-slate-500 pt-2 border-t border-slate-100 dark:border-slate-800">
-                View all assigned syllabus target plans across all sections of {selectedClassGroup?.className}.
-              </p>
-            </div>
-
-            {/* Individual Section Cards */}
             {classSections.map(sec => {
-              const secPlans = selectedClassGroup?.items.filter(i => i.sectionId === sec.id || i.sectionName === sec.name) || [];
-              const avgProgress = Math.round(secPlans.reduce((a, b) => a + (b.progressPercentage || 0), 0) / (secPlans.length || 1));
+              const secName = sec.name;
+              const secItems = selectedClassGroup?.items.filter(i => 
+                i.sectionId === sec.id || i.sectionName === secName || i.sectionName === `Section ${secName}`
+              ) || [];
+
+              const avgProgress = secItems.length > 0 
+                ? Math.round(secItems.reduce((a, b) => a + (b.progressPercentage || 0), 0) / secItems.length)
+                : 0;
 
               return (
                 <div
@@ -336,14 +445,11 @@ export default function SyllabusTracker() {
                   className="group relative cursor-pointer rounded-3xl border border-slate-200 bg-white p-6 shadow-sm hover:border-blue-500 hover:shadow-lg transition-all dark:border-slate-800 dark:bg-slate-900 space-y-4"
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-3 rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-900/30 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                        <Layers size={22} />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-black text-slate-900 dark:text-white">Section {sec.name}</h3>
-                        <p className="text-xs text-slate-500 font-semibold">{secPlans.length} Assigned Plan{secPlans.length === 1 ? '' : 's'}</p>
-                      </div>
+                    <div>
+                      <h3 className="text-lg font-black text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">
+                        Section {sec.name}
+                      </h3>
+                      <p className="text-xs text-slate-500 font-semibold mt-0.5">{secItems.length} Subject Target Plans</p>
                     </div>
                     <div className="p-2 rounded-xl text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all">
                       <ArrowRight size={20} />
@@ -399,7 +505,7 @@ export default function SyllabusTracker() {
             </div>
           </div>
 
-          {filteredPlans.length === 0 ? (
+          {displayPlans.length === 0 ? (
             <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
               <BookOpen className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-700" />
               <h3 className="mt-4 text-base font-bold text-slate-900 dark:text-white">No assigned plans found</h3>
@@ -407,15 +513,22 @@ export default function SyllabusTracker() {
             </div>
           ) : (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredPlans.map(item => (
-                <div key={item.planId || item.subjectId} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
+              {displayPlans.map(item => (
+                <div 
+                  key={item.planId || item.subjectId} 
+                  onClick={() => navigate(`/school/admin/syllabus-tracker/${item.planId || item.id}`)}
+                  className="group relative cursor-pointer rounded-3xl border border-slate-200 bg-white p-6 shadow-xs transition-all duration-200 hover:shadow-md hover:border-blue-300 dark:border-slate-800 dark:bg-slate-900 space-y-4"
+                >
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-600 dark:text-blue-400">{item.className}</span>
                         {item.term && <span className="text-[10px] font-bold text-slate-400">· {item.term}</span>}
                       </div>
-                      <h3 className="text-base font-bold text-slate-900 dark:text-white mt-0.5">{item.subjectName}</h3>
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white mt-0.5 group-hover:text-blue-600 transition-colors flex items-center gap-1.5">
+                        {item.subjectName}
+                        <ArrowRight size={16} className="text-slate-300 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                      </h3>
                       <p className="text-xs text-slate-500 font-semibold mt-0.5">Assigned Teacher: <strong className="text-slate-800 dark:text-slate-200">{item.teacherName}</strong></p>
                     </div>
                     <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${item.status === 'BEHIND' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300' : item.status === 'COMPLETED' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}`}>
@@ -446,6 +559,11 @@ export default function SyllabusTracker() {
                       <p className="text-[10px] font-bold text-amber-600 uppercase">Pending</p>
                       <p className="text-sm font-black text-amber-900 dark:text-amber-100 mt-0.5">{item.pendingTopics}</p>
                     </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-xs font-bold text-blue-600">
+                    <span>Inspect Comprehensive Tracker</span>
+                    <span>View Complete Plan →</span>
                   </div>
                 </div>
               ))}

@@ -669,33 +669,42 @@ export default function StudyMaterials() {
         </div>
 
         {/* Material Types Filter Pills */}
-        <div className="flex items-center gap-2 border-b border-slate-100 pb-4 overflow-x-auto whitespace-nowrap scrollbar-none">
-          {materialTypes.map((type) => {
-            const isSelected = selectedType === type.value;
-            const count = type.value === 'ALL' 
-              ? unfilteredTopicMaterials.length 
-              : unfilteredTopicMaterials.filter((m) => materialMatchesType(m, type.value)).length;
+        <div className="relative group/filters">
+          <div 
+            onWheel={(e) => {
+              if (e.deltaY !== 0) {
+                e.currentTarget.scrollLeft += e.deltaY;
+              }
+            }}
+            className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3 overflow-x-auto overflow-y-hidden whitespace-nowrap scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 snap-x cursor-grab active:cursor-grabbing"
+          >
+            {materialTypes.map((type) => {
+              const isSelected = selectedType === type.value;
+              const count = type.value === 'ALL' 
+                ? unfilteredTopicMaterials.length 
+                : unfilteredTopicMaterials.filter((m) => materialMatchesType(m, type.value)).length;
 
-            return (
-              <button
-                key={type.value}
-                type="button"
-                onClick={() => setSelectedType(type.value)}
-                className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all duration-200 border flex items-center gap-1.5 shrink-0 ${
-                  isSelected
-                    ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-500/20'
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400'
-                }`}
-              >
-                {type.label}
-                <span className={`inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                  isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500 dark:bg-slate-850 dark:text-slate-400'
-                }`}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
+              return (
+                <button
+                  key={type.value}
+                  type="button"
+                  onClick={() => setSelectedType(type.value)}
+                  className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all duration-200 border flex items-center gap-1.5 shrink-0 snap-start ${
+                    isSelected
+                      ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-500/20'
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 hover:border-slate-300'
+                  }`}
+                >
+                  {type.label}
+                  <span className={`inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500 dark:bg-slate-850 dark:text-slate-400'
+                  }`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Empty state for current filter selection */}

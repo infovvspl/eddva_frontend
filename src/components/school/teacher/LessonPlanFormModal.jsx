@@ -5,9 +5,13 @@ import {
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import { toast } from 'sonner';
 
-export default function LessonPlanFormModal({ isOpen, onClose, onSuccess, initialTimetableSlot = null }) {
+export default function LessonPlanFormModal({ open, isOpen, onClose, onSuccess, timetableSlot = null, initialTimetableSlot = null }) {
+  const isVisible = open ?? isOpen;
+  const activeSlot = timetableSlot || initialTimetableSlot;
+
   const [activeTab, setActiveTab] = useState('form'); // 'form' or 'ai'
   const [classes, setClasses] = useState([]);
+  const [sections, setSections] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [chapters, setChapters] = useState([]);
   const [topics, setTopics] = useState([]);
@@ -40,21 +44,39 @@ export default function LessonPlanFormModal({ isOpen, onClose, onSuccess, initia
   });
 
   useEffect(() => {
-    if (isOpen) {
+    if (isVisible) {
       fetchClasses(form.academicYear);
-      if (initialTimetableSlot) {
-        setForm(prev => ({
-          ...prev,
-          classId: initialTimetableSlot.classId || '',
-          sectionId: initialTimetableSlot.sectionId || '',
-          subjectId: initialTimetableSlot.subjectId || '',
-          timetableId: initialTimetableSlot.id || null
-        }));
+      const targetCid = activeSlot?.classId || activeSlot?.class_id || form.classId;
+      const targetSecId = activeSlot?.sectionId || activeSlot?.section_id || form.sectionId;
+      const rawSubId = activeSlot?.subjectId || activeSlot?.subject_id || form.subjectId;
+      const rawSubName = activeSlot?.subjectName || activeSlot?.subject_name || activeSlot?.subject || '';
+
+      if (targetCid) {
+        handleClassChange(targetCid).then((fetchedSubList) => {
+          let resolvedSubId = rawSubId;
+          const subList = Array.isArray(fetchedSubList) ? fetchedSubList : subjects;
+          if (!resolvedSubId && rawSubName && subList.length > 0) {
+            const matched = subList.find(s => s.name?.toLowerCase() === rawSubName.toLowerCase());
+            if (matched) resolvedSubId = matched.id;
+          }
+          if (resolvedSubId) {
+            setForm(prev => ({
+              ...prev,
+              classId: targetCid,
+              sectionId: targetSecId || '',
+              subjectId: resolvedSubId,
+              timetableId: initialTimetableSlot?.id || null
+            }));
+            handleSubjectChange(resolvedSubId, targetCid, targetSecId);
+          }
+        });
+      } else {
+        api.get('/subjects', { params: { limit: 200 } }).then(res => {
+          setSubjects(unwrapSchoolList(res));
+        }).catch(() => {});
       }
     }
-  }, [isOpen, initialTimetableSlot, form.academicYear]);
-
-  const [sections, setSections] = useState([]);
+  }, [isVisible, activeSlot, form.academicYear]);
 
   const fetchClasses = async (year) => {
     try {
@@ -80,27 +102,45 @@ export default function LessonPlanFormModal({ isOpen, onClose, onSuccess, initia
   const handleClassChange = async (cid) => {
     setForm(prev => ({ ...prev, classId: cid, sectionId: '', subjectId: '', chapterId: '', topicId: '' }));
     setSections([]);
-    setSubjects([]);
     setChapters([]);
     setTopics([]);
-    if (!cid) return;
+    if (!cid) {
+      try {
+        const subRes = await api.get('/subjects', { params: { limit: 200 } }).catch(() => ({ data: [] }));
+        setSubjects(unwrapSchoolList(subRes));
+      } catch {}
+      return;
+    }
     try {
       const [secRes, subRes] = await Promise.all([
         api.get('/academic/sections', { params: { classId: cid } }).catch(() => ({ data: [] })),
         api.get('/subjects', { params: { classId: cid, limit: 200 } }).catch(() => ({ data: [] }))
       ]);
       setSections(unwrapSchoolList(secRes));
-      setSubjects(unwrapSchoolList(subRes));
+      let subList = unwrapSchoolList(subRes);
+      if (subList.length === 0) {
+        const allSubRes = await api.get('/subjects', { params: { limit: 200 } }).catch(() => ({ data: [] }));
+        subList = unwrapSchoolList(allSubRes);
+      }
+      setSubjects(subList);
+      return subList;
     } catch {
       setSections([]);
       setSubjects([]);
+      return [];
     }
   };
 
-  const handleSubjectChange = async (sid) => {
+  const handleSubjectChange = async (sid, overrideClassId, overrideSectionId) => {
+    const targetCid = overrideClassId !== undefined ? overrideClassId : form.classId;
+    const targetSecId = overrideSectionId !== undefined ? overrideSectionId : form.sectionId;
     setForm(prev => ({ ...prev, subjectId: sid, chapterId: '', topicId: '' }));
+    setChapters([]);
+    setTopics([]);
+    if (!sid) return;
+
     try {
-      const res = await api.get('/topics/chapters', { params: { subjectId: sid } });
+      const res = await api.get('/topics/chapters', { params: { subjectId: sid, classId: targetCid || undefined, sectionId: targetSecId || undefined } });
       setChapters(unwrapSchoolList(res));
     } catch {
       setChapters([]);
@@ -109,6 +149,8 @@ export default function LessonPlanFormModal({ isOpen, onClose, onSuccess, initia
 
   const handleChapterChange = async (chid) => {
     setForm(prev => ({ ...prev, chapterId: chid, topicId: '' }));
+    setTopics([]);
+    if (!chid) return;
     try {
       const res = await api.get('/topics', { params: { chapterId: chid } });
       setTopics(unwrapSchoolList(res));
@@ -120,12 +162,17 @@ export default function LessonPlanFormModal({ isOpen, onClose, onSuccess, initia
   const handleGenerateAiTemplate = async () => {
     setGeneratingAi(true);
     try {
-      const selSubject = subjects.find(s => s.id === form.subjectId)?.name || 'Subject';
-      const selClass = classes.find(c => c.id === form.classId)?.name || 'Class';
-      const selTopic = topics.find(t => t.id === form.topicId)?.name || 'Core Topic';
+      const selSubject = subjects.find(s => s.id === form.subjectId)?.name || '';
+      const selClass = classes.find(c => c.id === form.classId)?.name || '';
+      const selChapter = chapters.find(c => c.id === form.chapterId)?.name || '';
+      const selTopic = topics.find(t => t.id === form.topicId)?.name || '';
 
       const res = await api.post('/syllabus/lessons/ai-template', {
+        subjectId: form.subjectId,
+        chapterId: form.chapterId,
+        topicId: form.topicId,
         subjectName: selSubject,
+        chapterName: selChapter,
         className: selClass,
         topicName: selTopic
       });
@@ -147,7 +194,7 @@ export default function LessonPlanFormModal({ isOpen, onClose, onSuccess, initia
           teacherNotes: templateData.teacherNotes || prev.teacherNotes
         }));
         setActiveTab('form');
-        toast.success('AI Starter Template generated! You can now review and edit the fields.');
+        toast.success(res.data?.message || 'AI Starter Template generated! You can now review and edit the fields.');
       }
     } catch (err) {
       console.error('Failed to generate AI template:', err);
@@ -176,7 +223,7 @@ export default function LessonPlanFormModal({ isOpen, onClose, onSuccess, initia
     }
   };
 
-  if (!isOpen) return null;
+  if (!isVisible) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm overflow-y-auto">
@@ -222,9 +269,9 @@ export default function LessonPlanFormModal({ isOpen, onClose, onSuccess, initia
               </p>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Class</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Class *</label>
                 <select
                   value={form.classId}
                   onChange={e => handleClassChange(e.target.value)}
@@ -238,7 +285,22 @@ export default function LessonPlanFormModal({ isOpen, onClose, onSuccess, initia
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Subject</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Section</label>
+                <select
+                  value={form.sectionId}
+                  onChange={e => setForm(f => ({ ...f, sectionId: e.target.value }))}
+                  disabled={!form.classId}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                >
+                  <option value="">All / Any Section</option>
+                  {sections.map(sec => (
+                    <option key={sec.id} value={sec.id}>Section {sec.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Subject *</label>
                 <select
                   value={form.subjectId}
                   onChange={e => handleSubjectChange(e.target.value)}
@@ -247,6 +309,36 @@ export default function LessonPlanFormModal({ isOpen, onClose, onSuccess, initia
                   <option value="">Select Subject</option>
                   {subjects.map(s => (
                     <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Chapter (Subject Curriculum)</label>
+                <select
+                  value={form.chapterId}
+                  onChange={e => handleChapterChange(e.target.value)}
+                  disabled={!form.subjectId}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                >
+                  <option value="">Select Chapter ({chapters.length} available)</option>
+                  {chapters.map(ch => (
+                    <option key={ch.id} value={ch.id}>{ch.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Topic</label>
+                <select
+                  value={form.topicId}
+                  onChange={e => setForm(f => ({ ...f, topicId: e.target.value }))}
+                  disabled={!form.chapterId}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                >
+                  <option value="">All / Specific Topic ({topics.length} available)</option>
+                  {topics.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
                   ))}
                 </select>
               </div>
@@ -264,7 +356,7 @@ export default function LessonPlanFormModal({ isOpen, onClose, onSuccess, initia
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Academic Session</label>
                 <select
@@ -324,6 +416,36 @@ export default function LessonPlanFormModal({ isOpen, onClose, onSuccess, initia
                   <option value="">Select Subject</option>
                   {subjects.map(s => (
                     <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Chapter (Subject Curriculum)</label>
+                <select
+                  value={form.chapterId}
+                  onChange={e => handleChapterChange(e.target.value)}
+                  disabled={!form.subjectId}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                >
+                  <option value="">Select Chapter ({chapters.length} available)</option>
+                  {chapters.map(ch => (
+                    <option key={ch.id} value={ch.id}>{ch.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Topic</label>
+                <select
+                  value={form.topicId}
+                  onChange={e => setForm(f => ({ ...f, topicId: e.target.value }))}
+                  disabled={!form.chapterId}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                >
+                  <option value="">All / Specific Topic ({topics.length} available)</option>
+                  {topics.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
                   ))}
                 </select>
               </div>
