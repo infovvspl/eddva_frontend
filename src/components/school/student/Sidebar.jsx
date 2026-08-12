@@ -27,7 +27,6 @@ const allItems = [
   { group: 'My Learning', path: '/school/student/live-classes', label: 'Live Classes', icon: MonitorPlay, featType: 'module', featKey: 'live_classes' },
   { group: 'My Learning', path: '/school/student/recorded-classes', label: 'Recorded Classes', icon: Video },
   { group: 'My Learning', path: '/school/student/study-materials', label: 'Study Materials', icon: BookOpen },
-  { group: 'My Learning', path: '/school/student/syllabus', label: 'Syllabus Progress', icon: BarChart3 },
   { group: 'My Learning', path: '/school/student/planner', label: 'AI Study Planner', icon: BrainCircuit, featType: 'ai', featKey: 'ai_study_planner' },
   { group: 'Academic Work', path: '/school/student/assignments', label: 'Assignments', icon: FileText, featType: 'module', featKey: 'assignments' },
   { group: 'Academic Work', path: '/school/student/assessments', label: 'Assessments', icon: ClipboardList, featType: 'module', featKey: 'assessments' },

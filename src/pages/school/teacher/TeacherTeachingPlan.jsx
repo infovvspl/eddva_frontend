@@ -164,39 +164,62 @@ export default function TeacherTeachingPlan() {
   const filteredPlans = Array.from(new Map(publishedPlans.map(plan => [plan.id, plan])).values()).filter(matchesFilter);
   const filteredLessons = lessons.filter(matchesFilter);
 
-  // --- COMPUTE THE 8 REQUIRED ITEMS EXACTLY ---
+  // Flatten all topics from filteredPlans (syllabus plan chapter_allocations)
+  const planTopicsList = filteredPlans.flatMap(plan => {
+    const allocs = Array.isArray(plan.chapter_allocations) ? plan.chapter_allocations : [];
+    return allocs.flatMap(ch => {
+      const topics = Array.isArray(ch.topics) && ch.topics.length > 0
+        ? ch.topics
+        : [{ topicId: `placeholder-${ch.chapterId || ch.chapterName}`, topicName: `All topics in ${ch.chapterName}`, status: 'pending', progress: 0 }];
+      return topics.map(t => ({
+        ...t,
+        planId: plan.id,
+        chapterName: ch.chapterName,
+        subject_name: plan.subject_name || plan.subjectName,
+        class_name: plan.class_name || plan.className,
+        section_name: plan.section_name || plan.sectionName,
+      }));
+    });
+  });
+
+  // Map activeTab to plan topics
+  const getDisplayPlanTopics = () => {
+    switch (activeTab) {
+      case 'TODAY':
+      case 'UPCOMING': return planTopicsList.filter(t => t.status === 'pending' || !t.status);
+      case 'PENDING':   return planTopicsList.filter(t => t.status === 'pending' || !t.status);
+      case 'COMPLETED': return planTopicsList.filter(t => t.status === 'completed' || t.progress >= 100);
+      case 'DELAYED':   return planTopicsList.filter(t => t.delayReason && t.status !== 'completed');
+      default:          return planTopicsList;
+    }
+  };
+  const displayPlanTopics = getDisplayPlanTopics();
+
+  // --- COMPUTE THE DASHBOARD METRIC CARDS DYNAMICALLY FROM SYLLABUS PLAN TOPICS ---
   const todayStr = new Date().toISOString().split('T')[0];
 
-  // 1. Today's lessons
-  const todaysLessons = filteredLessons.filter(l => {
-    const d = l.date ? new Date(l.date).toISOString().split('T')[0] : '';
-    return d === todayStr || l.status === 'TODAY';
-  });
+  // 1. Today's lessons / topics scheduled today
+  const todaysLessons = planTopicsList.filter(t => t.status === 'in_progress' || t.startDate === todayStr);
 
-  // 2. Upcoming lessons
-  const upcomingLessons = filteredLessons.filter(l => {
-    const d = l.date ? new Date(l.date).toISOString().split('T')[0] : '';
-    return d > todayStr || l.status === 'SCHEDULED' || l.status === 'UPCOMING';
-  });
+  // 2. Upcoming lessons: count of in_progress topics
+  const upcomingLessons = planTopicsList.filter(t => t.status === 'in_progress');
 
-  // 3. Pending lessons
-  const pendingLessons = filteredLessons.filter(l => l.status === 'PENDING' || l.status === 'PLANNED' || (!l.status || l.status === 'DRAFT'));
+  // 3. Pending lessons: count of topics with no updates yet or status = 'pending'
+  const pendingLessons = planTopicsList.filter(t => !t.status || t.status === 'pending');
 
-  // 4. Completed lessons
-  const completedLessons = filteredLessons.filter(l => l.status === 'COMPLETED' || l.is_completed);
+  // 4. Completed topics
+  const completedLessons = planTopicsList.filter(t => t.status === 'completed' || t.progress >= 100);
 
-  // 5. Delayed lessons
-  const delayedLessons = filteredLessons.filter(l => {
-    const d = l.date ? new Date(l.date).toISOString().split('T')[0] : '';
-    return l.status === 'DELAYED' || (d && d < todayStr && l.status !== 'COMPLETED');
-  });
+  // 5. Delayed topics
+  const delayedLessons = planTopicsList.filter(t => t.delayReason && t.status !== 'completed');
 
   // 6. Syllabus completion %
-  const totalLessonsCount = filteredLessons.length || 1;
-  const syllabusCompletionPercentage = Math.round((completedLessons.length / totalLessonsCount) * 100);
+  const rawTotalTopicsCount = planTopicsList.length;
+  const totalTopicsCount = rawTotalTopicsCount || 1;
+  const syllabusCompletionPercentage = Math.round((completedLessons.length / totalTopicsCount) * 100);
 
-  // 7. Topics remaining
-  const topicsRemainingCount = Math.max(0, totalLessonsCount - completedLessons.length);
+  // 7. Topics remaining = total topics - completed topics
+  const topicsRemainingCount = Math.max(0, rawTotalTopicsCount - completedLessons.length);
 
   // 8. Topics behind schedule
   const topicsBehindScheduleCount = delayedLessons.length;
@@ -239,8 +262,8 @@ export default function TeacherTeachingPlan() {
         </div>
       </div>
 
-      {/* DASHBOARD: ALL 8 REQUIRED METRIC CARDS GRID */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* DASHBOARD: METRIC CARDS GRID */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {/* 1. Today's lessons */}
         <div 
           onClick={() => setActiveTab('TODAY')}
@@ -262,13 +285,13 @@ export default function TeacherTeachingPlan() {
           className={`cursor-pointer rounded-3xl border p-5 transition-all shadow-xs ${activeTab === 'UPCOMING' ? 'border-purple-500 bg-purple-50/50 dark:bg-purple-950/30' : 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900'}`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-400">2. Upcoming Lessons</span>
+            <span className="text-[10px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-400">2. In Progress Lessons</span>
             <div className="p-2 rounded-2xl bg-purple-100 text-purple-700 dark:bg-purple-900/40">
               <Calendar size={18} />
             </div>
           </div>
           <p className="text-3xl font-black text-slate-900 dark:text-white mt-2">{upcomingLessons.length}</p>
-          <p className="text-xs font-semibold text-slate-500 mt-1">Scheduled future sessions</p>
+          <p className="text-xs font-semibold text-slate-500 mt-1">In progress topics</p>
         </div>
 
         {/* 3. Pending lessons */}
@@ -301,25 +324,10 @@ export default function TeacherTeachingPlan() {
           <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 mt-1">Classroom verified</p>
         </div>
 
-        {/* 5. Delayed lessons */}
-        <div 
-          onClick={() => setActiveTab('DELAYED')}
-          className={`cursor-pointer rounded-3xl border p-5 transition-all shadow-xs ${activeTab === 'DELAYED' ? 'border-rose-500 bg-rose-50/50 dark:bg-rose-950/30' : 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900'}`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-400">5. Delayed Lessons</span>
-            <div className="p-2 rounded-2xl bg-rose-100 text-rose-700 dark:bg-rose-900/40">
-              <AlertCircle size={18} />
-            </div>
-          </div>
-          <p className="text-3xl font-black text-rose-900 dark:text-rose-100 mt-2">{delayedLessons.length}</p>
-          <p className="text-xs font-semibold text-rose-700 dark:text-rose-300 mt-1">Overdue timeline</p>
-        </div>
-
-        {/* 6. Syllabus completion % */}
+        {/* 5. Syllabus completion % */}
         <div className="rounded-3xl border border-blue-200 bg-blue-50/40 p-5 shadow-xs dark:border-blue-900/40 dark:bg-blue-950/20">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase tracking-wider text-blue-700 dark:text-blue-300">6. Syllabus Completion %</span>
+            <span className="text-[10px] font-black uppercase tracking-wider text-blue-700 dark:text-blue-300">5. Syllabus Completion %</span>
             <div className="p-2 rounded-2xl bg-blue-100 text-blue-700 dark:bg-blue-900/40">
               <TrendingUp size={18} />
             </div>
@@ -330,22 +338,13 @@ export default function TeacherTeachingPlan() {
           </div>
         </div>
 
-        {/* 7. Topics remaining */}
-        <div className="rounded-3xl border border-indigo-200 bg-indigo-50/40 p-5 shadow-xs dark:border-indigo-900/40 dark:bg-indigo-950/20">
+        {/* 6. Topics behind schedule */}
+        <div 
+          onClick={() => setActiveTab('DELAYED')}
+          className={`cursor-pointer rounded-3xl border p-5 transition-all shadow-xs ${activeTab === 'DELAYED' ? 'border-rose-500 bg-rose-50/50 dark:bg-rose-950/30' : 'border-rose-200 bg-rose-50/40 dark:border-rose-900/40 dark:bg-rose-950/20'}`}
+        >
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase tracking-wider text-indigo-700 dark:text-indigo-300">7. Topics Remaining</span>
-            <div className="p-2 rounded-2xl bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40">
-              <BookOpen size={18} />
-            </div>
-          </div>
-          <p className="text-3xl font-black text-indigo-900 dark:text-indigo-100 mt-2">{topicsRemainingCount}</p>
-          <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 mt-1">Pending syllabus topics</p>
-        </div>
-
-        {/* 8. Topics behind schedule */}
-        <div className="rounded-3xl border border-rose-200 bg-rose-50/40 p-5 shadow-xs dark:border-rose-900/40 dark:bg-rose-950/20">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase tracking-wider text-rose-700 dark:text-rose-300">8. Topics Behind Schedule</span>
+            <span className="text-[10px] font-black uppercase tracking-wider text-rose-700 dark:text-rose-300">6. Topics Behind Schedule</span>
             <div className="p-2 rounded-2xl bg-rose-100 text-rose-700 dark:bg-rose-900/40">
               <AlertTriangle size={18} />
             </div>
@@ -511,7 +510,7 @@ export default function TeacherTeachingPlan() {
         )}
       </div>
 
-      {/* Lesson Execution & Topic Progress List */}
+      {/* Lesson Plans & Topic Execution — sourced directly from syllabus plan */}
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-3">
@@ -520,7 +519,7 @@ export default function TeacherTeachingPlan() {
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Lesson Plans & Topic Execution</h3>
-              <p className="text-xs text-slate-500">Log classroom completion, actual periods spent, and topic coverage.</p>
+              <p className="text-xs text-slate-500">Topics from your assigned syllabus plan. Click a topic to update progress.</p>
             </div>
           </div>
 
@@ -537,56 +536,80 @@ export default function TeacherTeachingPlan() {
           </div>
         </div>
 
-        {displayLessonsList.length === 0 ? (
+        {displayPlanTopics.length === 0 ? (
           <div className="p-8 text-center space-y-2">
-            <p className="text-xs text-slate-400 font-semibold">No lesson plans found under this filter.</p>
+            <p className="text-xs text-slate-400 font-semibold">No topics found under this filter.</p>
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {displayLessonsList.map((lesson, idx) => (
-              <div key={lesson.id || idx} className="rounded-2xl border border-slate-200 p-5 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900 space-y-3 flex flex-col justify-between">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-                      {lesson.class_name || lesson.className} ({lesson.section_name || lesson.sectionName})
-                    </span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${lesson.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : lesson.status === 'DELAYED' ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'}`}>
-                      {lesson.status || 'Planned'}
-                    </span>
+            {displayPlanTopics.map((topic, idx) => {
+              const isDone = topic.status === 'completed' || topic.progress >= 100;
+              const isInProgress = topic.status === 'in_progress' && !isDone;
+              const hasDelay = !isDone && topic.delayReason;
+              return (
+                <div
+                  key={topic.topicId || idx}
+                  className="rounded-2xl border border-slate-200 p-5 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900 space-y-3 flex flex-col justify-between"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                        {topic.class_name} {topic.section_name ? `(${topic.section_name})` : ''}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                        isDone ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                        : isInProgress ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                        : hasDelay ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                        : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                      }`}>
+                        {isDone ? 'Completed' : isInProgress ? 'In Progress' : hasDelay ? 'Delayed' : 'Pending'}
+                      </span>
+                    </div>
+
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                      {topic.topicName || topic.name}
+                    </h4>
+                    <p className="text-xs text-slate-500 font-semibold">
+                      Chapter: <strong className="text-slate-800 dark:text-slate-200">{topic.chapterName}</strong>
+                    </p>
+                    <p className="text-xs text-slate-500 font-semibold">
+                      Subject: <strong className="text-slate-800 dark:text-slate-200">{topic.subject_name}</strong>
+                    </p>
+
+                    {/* Progress bar */}
+                    {topic.progress !== undefined && (
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[11px] font-bold">
+                          <span className="text-slate-500">Progress</span>
+                          <span className={isDone ? 'text-emerald-600' : 'text-blue-600'}>{topic.progress ?? (isDone ? 100 : 0)}%</span>
+                        </div>
+                        <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${isDone ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                            style={{ width: `${topic.progress ?? (isDone ? 100 : 0)}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {hasDelay && (
+                      <p className="text-[10px] font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1">
+                        <AlertCircle size={11} /> {topic.delayReason}
+                      </p>
+                    )}
                   </div>
 
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                    {lesson.topic_name || lesson.topicName || lesson.chapter_name || 'Lesson Session'}
-                  </h4>
-                  <p className="text-xs text-slate-500 font-semibold">Subject: <strong className="text-slate-800 dark:text-slate-200">{lesson.subject_name || lesson.subjectName}</strong></p>
-
-                  {lesson.date && (
-                    <p className="text-[11px] text-slate-400 font-semibold flex items-center gap-1">
-                      <Clock size={13} /> Date: {new Date(lesson.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </p>
-                  )}
-                </div>
-
-                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-500">Periods: {lesson.periods_allocated || 1}</span>
-                  {lesson.status !== 'COMPLETED' ? (
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
                     <button
-                      onClick={() => {
-                        setSelectedLesson(lesson);
-                        setCompletionModalOpen(true);
-                      }}
-                      className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-colors flex items-center gap-1"
+                      onClick={() => navigate(`/school/teacher/syllabus-planner/${topic.planId}`)}
+                      className="w-full flex items-center justify-center gap-1.5 py-2 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 text-white text-xs font-extrabold transition-all shadow-sm"
                     >
-                      <CheckCircle2 size={13} /> Mark Complete
+                      <ArrowRight size={13} /> {isDone ? 'View in Plan' : 'Update Progress →'}
                     </button>
-                  ) : (
-                    <span className="text-xs font-black text-emerald-600 flex items-center gap-1">
-                      <CheckCircle2 size={14} /> Completed
-                    </span>
-                  )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

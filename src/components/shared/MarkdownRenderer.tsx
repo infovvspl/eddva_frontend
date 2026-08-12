@@ -170,15 +170,14 @@ function replaceNewlinesOutsideMath(text: string): string {
           const isListItem = /^[-*+]\s+/.test(currentLine) || /^\d+[.)]\s+/.test(currentLine);
           const nextIsListItem = /^[-*+]\s+/.test(nextLine) || /^\d+[.)]\s+/.test(nextLine);
 
-          const isContinuation = endsWithOperator || startsWithOperator || isLoneNumberOrMarker;
+          const isLoneParen = /^\s*[\(\)]\s*$/.test(currentLine) || /^\s*[\(\)]\s*$/.test(nextLine);
+          const isContinuation = endsWithOperator || startsWithOperator || isLoneNumberOrMarker || isLoneParen;
           
           if (isContinuation) {
             result += " ";
-          } else if (isListItem || nextIsListItem) {
-            // Keep single newline between list items so Markdown list parser functions naturally
-            result += "\n";
           } else {
-            result += "\n\n";
+            // Add trailing double-space so Markdown preserves hard line breaks (each step on new line)
+            result += "  \n";
           }
         }
       }
@@ -218,7 +217,9 @@ function unwrapMathCodeSpans(text: string): string {
 
     if (isLikelyMath && !isLikelyCode) {
       // Fix subscript variables e.g. a1 -> a_1, b1^2 -> b_1^2
-      const formattedMath = trimmed.replace(/\b([a-zA-Z]{1,2})(\d{1,2})\b/g, '$1_$2');
+      // Collapse internal linebreaks inside equation blocks so "x\n=\n10" stays on one line "x = 10"
+      const cleanMath = trimmed.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ');
+      const formattedMath = cleanMath.replace(/\b([a-zA-Z]{1,2})(\d{1,2})\b/g, '$1_$2');
       return `$${formattedMath}$`;
     }
     return match;
@@ -244,17 +245,27 @@ function wrapFullEquationLines(text: string): string {
     .map((line) => {
       const trimmed = line.trim();
       if (!trimmed || trimmed.includes("$")) return line;
-      if (!/[=]/.test(trimmed)) return line;
-      if (!/^[A-Za-z0-9_{}^()[\].=+\-*/\\\s]+$/.test(trimmed)) return line;
+      // Must contain = or a Unicode math relation (≠ ≤ ≥ ≈)
+      const hasEquals = /[=]/.test(trimmed);
+      const hasUnicodeMathRel = /[\u2260\u2264\u2265\u2248]/.test(trimmed);
+      if (!hasEquals && !hasUnicodeMathRel) return line;
+      // Allow ASCII math chars + Unicode math relations/symbols
+      if (!/^[A-Za-z0-9_{}^()[\].=+\-*/\\\s\u2260\u2264\u2265\u2248\u2212\u00B2\u00B3\u2070-\u2079\u207F]+$/.test(trimmed)) return line;
 
-      const startsLikeEquation = /^[A-Za-z]{1,4}(?:_[A-Za-z0-9]{1,4})?\s*=/.test(trimmed);
+      const startsLikeEquation = /^[A-Za-z]{1,4}(?:_[A-Za-z0-9]{1,4})?(?:\s*[=\u2260\u2264\u2265]|\^)/.test(trimmed);
       const hasRepeatedEquals = (trimmed.match(/=/g) ?? []).length >= 2;
-      const hasMathOperator = /(?:\\cdot|[+\-*/^_])/.test(trimmed);
+      const hasMathOperator = /(?:\\cdot|[+\-*/^_\u2260\u2264\u2265\u2248])/.test(trimmed);
       if (!startsLikeEquation || (!hasRepeatedEquals && !hasMathOperator)) return line;
 
       const prefix = line.match(/^\s*/)?.[0] ?? "";
       const suffix = line.match(/\s*$/)?.[0] ?? "";
-      return `${prefix}$${trimmed}$${suffix}`;
+      // Convert Unicode math relations to LaTeX equivalents inside the math block
+      const latexTrimmed = trimmed
+        .replace(/\u2260/g, "\\neq ")
+        .replace(/\u2264/g, "\\leq ")
+        .replace(/\u2265/g, "\\geq ")
+        .replace(/\u2248/g, "\\approx ");
+      return `${prefix}$${latexTrimmed}$${suffix}`;
     })
     .join("\n");
 }
@@ -522,9 +533,6 @@ export const formatMarkdown = (text?: string) => {
     }
   );
 
-  // Strip page reference tags like [p.5] or [p. 5] attached to math or text
-  formatted = formatted.replace(/\[p\.\s*\d+\]/gi, "").replace(/\[page\s*\d+\]/gi, "");
-
   // Clean up 4 or 3 dollar sequences: $$$$ -> $$, $$$ -> $$
   formatted = formatted.replace(/\$\$\$\$/g, "$$").replace(/\$\$\$/g, "$$");
 
@@ -534,8 +542,25 @@ export const formatMarkdown = (text?: string) => {
   // Strip orphan $ = $ or $=$ patterns (dollar-wrapped equals signs): $=$ → =
   formatted = formatted.replace(/\$\s*=\s*\$/g, " = ");
 
-  // Clean up broken OCR/LLM multi-line equals and implication arrows:
-  // e.g. "=\n=\n6" -> "= 6", "=\n>\n=>" -> "=>", "=\n−\n2" -> "= -2"
+  // Join equation labels that appear on a separate line: "...equation text\n(Equation 1)" -> "...equation text ... (Equation 1)"
+  // Also handles bare "(1)", "(2)" etc.
+  formatted = formatted.replace(
+    /([A-Za-z0-9_+=\-*\/^.\u2260\u2264\u2265]+)[ \t]*\r?\n[ \t]*(\(?(?:Equation|Eq\.?)?[ \t]*\d{1,2}\)?)/gi,
+    "$1 ... ($2)"
+  );
+  // Simpler: line ending with 0 or equation chars followed by newline then just "(1)" or "(Equation 1)"
+  formatted = formatted.replace(
+    /(\S)[ \t]*\r?\n[ \t]*(\((?:Equation\s*)?\d{1,2}\))/gi,
+    "$1 $2"
+  );
+
+  // Clean up broken equation numbering splits e.g. "a1x + b1y + c1 = 0 ... \n (\n 1." -> "a1x + b1y + c1 = 0 ... (1)"
+  formatted = formatted.replace(/\.\.\.\s*\n\s*\(\s*\n\s*(\d{1,2})[.)]/g, "... ($1)");
+
+  // Clean up vertical line breaks around operators e.g. "x \n = \n 10" -> "x = 10"
+  formatted = formatted.replace(/([A-Za-z0-9_]+)\s*\r?\n\s*(=|\+|-|\*|\/)\s*\r?\n\s*([A-Za-z0-9_]+)/g, "$1 $2 $3");
+  formatted = formatted.replace(/([A-Za-z0-9_]+)\s*\r?\n\s*(=|\+|-|\*|\/)/g, "$1 $2");
+  formatted = formatted.replace(/(=|\+|-|\*|\/)\s*\r?\n\s*([A-Za-z0-9_]+)/g, "$1 $2");
   formatted = formatted
     .replace(/(?:=\s*){2,}/g, "= ")
     .replace(/=\s*>\s*=?/g, "=> ")
@@ -689,9 +714,11 @@ export const formatMarkdown = (text?: string) => {
 
   // Step-based and final answer formatting
   formatted = formatted
-    .replace(/(Step\s*\d+[^a-zA-Z0-9\s]?|Final\s*Answer\s*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1")
-    // Theory-specific 5-part numerical/theory headers
-    .replace(/(\(\d\)\s*(?=[a-zA-Z])[a-zA-Z][a-zA-Z\s/-]*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1")
+    .replace(/(?:\r?\n|^)[ \t]*(\*\*Step\s*\d+[^:]*:\*\*|Step\s*\d+[^:\n]*:?|Final\s*Answer\s*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1\n")
+    // Format action steps (e.g. "Add y to both sides:", "Minus 10 from both sides:", "Divide both sides by 2:") onto newlines
+    .replace(/([^\n])\s+((?:Add|Subtract|Minus|Multiply|Divide|Substitute|Replacing|Using|Pick)\s+[^:\n]{3,40}:)/g, "$1\n\n$2\n")
+    // Theory-specific 5-part numerical/theory headers - only match standalone (1), (2) etc at START of line or after explicit heading context
+    .replace(/(?:^|\n)(\(\d\)\s*(?=[A-Z])[A-Z][a-zA-Z\s/-]*[:\u2014\u2013\u002D.]?)/gm, "\n\n$1")
     // Legacy sub-headers
     .replace(/(?:\r?\n|^)(\s*(?:[-*+]\s+)?(?:\*\*|__)?)(Reason\s*[:\u2014\u2013\u002D.]?|Explanation\s*[:\u2014\u2013\u002D.]?|Logic\s*[:\u2014\u2013\u002D.]?|Key\s*Concept\s*[:\u2014\u2013\u002D.]?|Verification\s*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1$2");
 
@@ -717,9 +744,9 @@ export const formatMarkdown = (text?: string) => {
     .replace(/\\text\{([A-Za-z0-9_]+)\}\s*\/\s*\(([^)]+)\)/g, "$1($2)")
     .replace(/\\text\{([^}]+)\}/g, "$1");
 
-  // Separate numbered observation headers and headings onto newlines (e.g. Observation:... -> \n\nObservation:...)
+  // Separate numbered observation headers and headings onto newlines - only when number is at start of a new line context
   formatted = formatted
-    .replace(/([^\n])\s*(Observation\s*[:\u2014\u2013-]?|Balanced Chemical Equation\s*[:\u2014\u2013-]?|\d+[.)]\s*[A-Z])/gi, "$1\n\n$2");
+    .replace(/([^\n])\s*(Observation\s*[:\u2014\u2013-]?|Balanced Chemical Equation\s*[:\u2014\u2013-]?)/gi, "$1\n\n$2");
 
   // Automatically wrap un-delimited chemical reaction equations (containing -> or \rightarrow with + and chemical terms) into KaTeX math blocks
   formatted = formatted.replace(
