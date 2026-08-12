@@ -1,13 +1,22 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import QuizRushHome from './QuizRushHome';
 import QuizRushPlay from './QuizRushPlay';
 import QuizRushResult from './QuizRushResult';
 import QuizRushLeaderboard from './QuizRushLeaderboard';
+import './quiz-rush/arena.css';
 
 export default function QuizRush() {
   const [stage, setStage] = useState('home'); // 'home' | 'play' | 'result' | 'leaderboard'
   const [sessionData, setSessionData] = useState(null); // { sessionId, questions }
   const [resultData, setResultData] = useState(null); // API response from submit
+
+  // Flags the shared GameArenaShell chrome as part of the arena for as long as
+  // Quiz Rush is mounted. Removed on unmount so the other games in the shell
+  // keep their normal light/dark header.
+  useEffect(() => {
+    document.body.classList.add('qr-immersive');
+    return () => document.body.classList.remove('qr-immersive');
+  }, []);
 
   const handleStartGame = (data) => {
     setSessionData(data);

@@ -11,7 +11,14 @@ export default function GameArenaShell({ children }) {
 
   return (
     <div className="fixed inset-0 z-40 flex flex-col bg-slate-50 font-poppins dark:bg-slate-950">
-      <header className="sticky top-0 z-50 flex items-center justify-between gap-3 border-b border-slate-200 bg-white/90 px-4 py-2.5 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90">
+      {/* data-arena-header is a styling hook, not behaviour: a game that runs
+          its own immersive backdrop (see quiz-rush/arena.css) restyles this bar
+          to match rather than leaving a light dashboard header floating over a
+          dark arena. Games that don't opt in are unaffected. */}
+      <header
+        data-arena-header
+        className="sticky top-0 z-50 flex items-center justify-between gap-3 border-b border-slate-200 bg-white/90 px-4 py-2.5 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90"
+      >
         <div className="flex items-center gap-2 text-sm font-black text-slate-900 dark:text-white">
           <Gamepad2 className="h-5 w-5 text-amber-500" />
           <span>Gaming Arena</span>

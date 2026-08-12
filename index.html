@@ -25,6 +25,16 @@
       href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900&display=swap"
       rel="stylesheet"
     />
+    <!-- Display face for the student Game Zone arena (Quiz Rush HUD). Angular
+         and technical, so scores and timers read as a game rather than a
+         dashboard. Loaded lazily via media=print/onload so it never blocks
+         first paint for the ~99% of routes that do not use it. -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&display=swap"
+      rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
+    />
 
     <!-- LCP: hero on landing — stable URL, early fetch (see Index.tsx same path) -->
 
