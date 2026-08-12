@@ -61,6 +61,7 @@
     "driver.js": "^1.4.0",
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.36.0",
+    "handlebars": "^4.7.9",
     "hls.js": "^1.6.16",
     "html2canvas": "^1.4.1",
     "input-otp": "^1.4.2",

@@ -7,10 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import schoolApi from '@/lib/api/school-client';
-import { Loader2, Download, Plus, CheckCircle2, XCircle, FileWarning, UploadCloud } from 'lucide-react';
+import { Loader2, Download, Plus, CheckCircle2, XCircle, FileWarning, UploadCloud, AlertTriangle } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { useSchoolAuth } from '@/context/SchoolAuthContext';
+import Handlebars from 'handlebars';
 
 export default function DocumentGenerator() {
   const { toast } = useToast();
@@ -27,7 +29,8 @@ export default function DocumentGenerator() {
   const [students, setStudents] = useState<any[]>([]);
 
   // Staff Filters
-  const [staffIds, setStaffIds] = useState('');
+  const [staffList, setStaffList] = useState<any[]>([]);
+  const [staffId, setStaffId] = useState('');
 
   // Admit Card Filters
   const [examId, setExamId] = useState('');
@@ -40,12 +43,25 @@ export default function DocumentGenerator() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewFilename, setPreviewFilename] = useState<string>('');
   
+  const { institute } = useSchoolAuth();
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [editTemplateObj, setEditTemplateObj] = useState<any>(null);
+  const [schoolLogo, setSchoolLogo] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+
+  useEffect(() => {
+    // Check if the institute has a logo
+    if (institute?.logo) {
+      setSchoolLogo(institute.logo);
+    }
+  }, [institute]);
 
   useEffect(() => {
     const init = async () => {
       await fetchClasses();
+      await fetchStaff();
       await fetchTemplates(selectedType);
+      await loadHistory();
     };
     init();
   }, [selectedType]);
@@ -78,11 +94,11 @@ export default function DocumentGenerator() {
     }
   };
 
-  const fetchStudents = async (cId: string, sId: string) => {
+  const fetchStudents = async (cId: string, sId: string, preserveSelection = false) => {
     try {
       const res = await schoolApi.get(`/students?classId=${cId}&sectionId=${sId}`);
       setStudents(res.data?.data || res.data || []);
-      setStudentId('');
+      if (!preserveSelection) setStudentId('');
     } catch (err) {
       console.error('Failed to fetch students', err);
     }
@@ -94,6 +110,15 @@ export default function DocumentGenerator() {
       setClasses(res.data?.data || res.data || []);
     } catch (err) {
       console.error('Failed to fetch classes', err);
+    }
+  };
+
+  const fetchStaff = async () => {
+    try {
+      const res = await schoolApi.get('/teachers?limit=100');
+      setStaffList(res.data?.data || res.data?.items || res.data || []);
+    } catch (err) {
+      console.error('Failed to fetch staff', err);
     }
   };
 
@@ -121,6 +146,125 @@ export default function DocumentGenerator() {
       toast({ title: 'Error', description: 'Failed to load card history', variant: 'destructive' });
     }
   };
+  // Helper to convert base64 to Blob URL
+  const base64ToBlobUrl = (base64: string, type = 'application/pdf') => {
+    const binaryString = window.atob(base64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const blob = new Blob([bytes], { type });
+    return URL.createObjectURL(blob);
+  };
+
+  // Generate a realistic preview for templates
+  const getMockHtml = (htmlContent: string) => {
+    const injectedStyles = `
+      <style>
+        html { overflow: hidden !important; }
+        body { margin: 0 !important; padding: 0 !important; overflow: hidden !important; background: transparent !important; scrollbar-width: none; }
+        ::-webkit-scrollbar { display: none !important; }
+        .card-page { width: 100% !important; max-width: 100% !important; min-height: 100vh !important; margin: 0 !important; box-shadow: none !important; border: none !important; }
+        .card-page:nth-of-type(n+2) { display: none !important; }
+      </style>
+    `;
+
+    // Replace variables with mock data based on selected type
+    const mockData: any = selectedType === 'ID_CARD_STAFF' ? {
+      schoolLogo: schoolLogo || 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=100&h=100&fit=crop',
+      schoolName: institute?.name || 'Eddva School',
+      schoolAddress: institute?.address || '123 Education Lane, City, State 12345',
+      fullName: 'Johnathan Doe',
+      firstName: 'Johnathan',
+      lastName: 'Doe',
+      department: 'Academic',
+      employeeId: 'EMP-12345',
+      profileImage: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=200&h=200&fit=crop',
+      qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=MockQR',
+      bloodGroup: 'O+',
+      phone: '+1 234-567-8900'
+    } : {
+      schoolLogo: schoolLogo || 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=100&h=100&fit=crop',
+      schoolName: institute?.name || 'Eddva School',
+      schoolAddress: institute?.address || '123 Education Lane, City, State 12345',
+      fullName: 'Johnathan Doe',
+      firstName: 'Johnathan',
+      lastName: 'Doe',
+      fatherName: 'Richard Doe',
+      motherName: 'Jane Doe',
+      parentName: 'Richard Doe',
+      className: 'Class 10',
+      section: 'A',
+      dob: '15/08/2008',
+      profileImage: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=200&h=200&fit=crop',
+      qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=MockQR',
+      center: 'Main Campus Hall',
+      examName: examId || 'MID-TERM 2026',
+      timetable: [
+        { subject: 'Mathematics', date: '10 Oct 2026', time: '10:00 AM - 01:00 PM' },
+        { subject: 'Science', date: '12 Oct 2026', time: '10:00 AM - 01:00 PM' },
+        { subject: 'English', date: '14 Oct 2026', time: '10:00 AM - 01:00 PM' }
+      ]
+    };
+
+    let renderedHtml = '';
+    try {
+      const template = Handlebars.compile(htmlContent || '');
+      if (htmlContent?.includes('{{#each items}}') || htmlContent?.includes('{{#each this.items}}')) {
+        renderedHtml = template({ items: [mockData] });
+      } else if (htmlContent?.includes('{{#each this}}')) {
+        renderedHtml = template([mockData]);
+      } else {
+        renderedHtml = template(mockData);
+      }
+    } catch (err: any) {
+      renderedHtml = '<div style="color:red; padding:20px; font-family:sans-serif;">Template Error: ' + err.message + '</div>';
+    }
+
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          ${injectedStyles}
+        </head>
+        <body>
+          <div id="preview-root">${renderedHtml}</div>
+        </body>
+      </html>
+    `;
+  };
+
+  const getIframeStyles = (t: any) => {
+    // ID Cards default to 380x560 to account for the 20px margin in their CSS templates
+    let width = 380;
+    let height = 560;
+    
+    let dims = t.dimensions;
+    if (typeof dims === 'string') {
+      try { dims = JSON.parse(dims); } catch(e) {}
+    }
+    
+    if (t.type === 'ADMIT_CARD' && dims?.width && dims?.height) {
+      // Admit Cards CSS uses physical dimensions (mm) which scale perfectly
+      width = dims.width * 3.78;
+      height = dims.height * 3.78;
+    }
+    // ID Cards default to 340x520 as per their CSS templates
+    
+    // Target display width inside the thumbnail
+    const targetDisplayWidth = 210; 
+    const scale = targetDisplayWidth / width;
+    
+    return {
+      width: `${width}px`,
+      height: `${height}px`,
+      maxWidth: 'none',
+      transform: `scale(${scale})`,
+      transformOrigin: 'top left',
+      left: '5px', // Center the 210px scaled width inside the 220px container
+      border: 'none'
+    };
+  };
 
   const handleGenerateIdCard = async (target: 'STUDENT' | 'STAFF') => {
     if (!selectedTemplate) {
@@ -130,13 +274,23 @@ export default function DocumentGenerator() {
     const cId = (classId && classId !== 'none') ? classId : undefined;
     const sId = (sectionId && sectionId !== 'none') ? sectionId : undefined;
     const stId = (studentId && studentId !== 'none') ? studentId : undefined;
+    const tId = (staffId && staffId !== 'none') ? staffId : undefined;
+
+    let targetType = 'INDIVIDUAL';
+    if (target === 'STUDENT') {
+      if (stId) targetType = 'INDIVIDUAL';
+      else if (cId) targetType = 'CLASS';
+    } else {
+      if (tId) targetType = 'STAFF_INDIVIDUAL';
+      else targetType = 'STAFF'; // all staff
+    }
 
     const payload = {
-      targetType: cId ? 'CLASS' : 'INDIVIDUAL',
+      targetType,
       classId: cId,
       sectionId: sId,
       studentIds: stId ? [stId] : undefined,
-      staffIds: staffIds ? staffIds.split(',').map(s => s.trim()) : undefined,
+      staffIds: tId ? [tId] : undefined,
       templateId: selectedTemplate,
     };
 
@@ -146,7 +300,7 @@ export default function DocumentGenerator() {
       const base64Data = res.data?.pdfBase64 || res.data?.data?.pdfBase64;
       if (!base64Data) throw new Error('Invalid PDF format returned from server');
       
-      const fileUrl = `data:application/pdf;base64,${base64Data}`;
+      const fileUrl = base64ToBlobUrl(base64Data);
       console.log('PDF Base64 size (ID Card):', base64Data.length);
       
       toast({ title: 'Success', description: `${target} ID Cards generated successfully!` });
@@ -184,7 +338,7 @@ export default function DocumentGenerator() {
       const base64Data = res.data?.pdfBase64 || res.data?.data?.pdfBase64;
       if (!base64Data) throw new Error('Invalid PDF format returned from server');
       
-      const fileUrl = `data:application/pdf;base64,${base64Data}`;
+      const fileUrl = base64ToBlobUrl(base64Data);
       console.log('PDF Base64 size (Admit Card):', base64Data.length);
       
       toast({ title: 'Success', description: 'Admit Cards generated successfully!' });
@@ -209,6 +363,35 @@ export default function DocumentGenerator() {
     }
   };
 
+  const previewHistoryCard = async (log: any) => {
+    try {
+      setLoading(true);
+      // Fetch templates for the log document type just to get the active ID
+      const tRes = await schoolApi.get(`/institute-admin/document/template/${log.documentType || 'ID_CARD_STUDENT'}`);
+      const tId = (tRes.data?.data || tRes.data)?.[0]?.id;
+      if (!tId) throw new Error("Template not found for preview.");
+
+      const payload = {
+        targetType: log.targetType === 'STUDENT' ? 'INDIVIDUAL' : 'STAFF',
+        studentIds: log.targetType === 'STUDENT' ? [log.targetId] : undefined,
+        staffIds: log.targetType === 'STAFF' ? [log.targetId] : undefined,
+        templateId: tId,
+      };
+
+      const res = await schoolApi.post('/institute-admin/document/generate/id-card', payload);
+      const base64Data = res.data?.pdfBase64 || res.data?.data?.pdfBase64;
+      if (!base64Data) throw new Error('Invalid PDF format returned from server');
+      
+      const fileUrl = base64ToBlobUrl(base64Data);
+      setPreviewUrl(fileUrl);
+      setPreviewFilename(`Preview-${log.targetId}.pdf`);
+    } catch (err: any) {
+      toast({ title: 'Preview Failed', description: err.response?.data?.message || err.message, variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleUploadPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!studentId || studentId === 'none') return;
     const file = e.target.files?.[0];
@@ -221,22 +404,49 @@ export default function DocumentGenerator() {
       formData.append('type', 'image');
       formData.append('path', 'student-profiles');
       
-      const uploadRes = await schoolApi.post('/media/upload', formData, {
+      const uploadRes = await schoolApi.post('/materials/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      const photoUrl = uploadRes.data?.data?.url || uploadRes.data?.url;
+      const photoUrl = uploadRes.data?.data?.fileUrl || uploadRes.data?.fileUrl || uploadRes.data?.data?.url || uploadRes.data?.url;
       
       if (!photoUrl) throw new Error('Upload failed');
       
-      await schoolApi.put(`/institute-admin/student/${studentId}`, { profileImage: photoUrl });
+      await schoolApi.put(`/students/${studentId}`, { profileImage: photoUrl });
       toast({ title: 'Success', description: 'Student photo uploaded and saved.' });
       
       // refresh students
-      if (classId && sectionId) fetchStudents(classId, sectionId);
+      if (classId && sectionId) fetchStudents(classId, sectionId, true);
     } catch (err: any) {
       toast({ title: 'Upload Failed', description: err.response?.data?.message || err.message, variant: 'destructive' });
     } finally {
       setUploadingPhoto(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleUploadLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingLogo(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', 'image');
+      formData.append('path', 'institute-logos');
+      const uploadRes = await schoolApi.post('/materials/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      const logoUrl = uploadRes.data?.data?.fileUrl || uploadRes.data?.fileUrl || uploadRes.data?.data?.url || uploadRes.data?.url;
+      if (!logoUrl) throw new Error('Upload failed');
+
+      // Update institute with the new logo
+      await schoolApi.put(`/institute-admin/institute/${institute?.id}`, { logo: logoUrl });
+      setSchoolLogo(logoUrl);
+      toast({ title: 'Success', description: 'School logo uploaded successfully! It will appear on all generated ID cards.' });
+    } catch (err: any) {
+      toast({ title: 'Upload Failed', description: err.response?.data?.message || err.message, variant: 'destructive' });
+    } finally {
+      setUploadingLogo(false);
       e.target.value = '';
     }
   };
@@ -248,10 +458,39 @@ export default function DocumentGenerator() {
           <h1 className="text-2xl font-bold tracking-tight">Document Generator</h1>
           <p className="text-muted-foreground">Generate and manage printable ID Cards and Admit Cards in bulk.</p>
         </div>
-        <Button onClick={() => toast({ title: "Coming Soon", description: "Template Builder UI is under construction." })}>
-          <Plus className="w-4 h-4 mr-2" /> New Template
-        </Button>
       </div>
+
+      {/* School Logo Warning Banner */}
+      {!schoolLogo && (
+        <div className="flex items-center gap-3 p-4 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700">
+          <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-300">No School Logo Found</p>
+            <p className="text-xs text-amber-600 dark:text-amber-400">Upload your school logo so it appears on all generated ID cards.</p>
+          </div>
+          <label>
+            <input type="file" accept="image/*" className="hidden" onChange={handleUploadLogo} disabled={uploadingLogo} />
+            <Button variant="outline" size="sm" asChild className="cursor-pointer border-amber-400">
+              <span>{uploadingLogo ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <UploadCloud className="w-4 h-4 mr-1" />} Upload Logo</span>
+            </Button>
+          </label>
+        </div>
+      )}
+      {schoolLogo && (
+        <div className="flex items-center gap-3 p-3 rounded-lg border border-green-200 bg-green-50 dark:bg-green-950/30 dark:border-green-700">
+          <img src={schoolLogo} alt="School Logo" className="w-10 h-10 rounded-full object-cover border" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-green-800 dark:text-green-300">School Logo Active</p>
+            <p className="text-xs text-green-600 dark:text-green-400">This logo will appear on all generated ID cards.</p>
+          </div>
+          <label>
+            <input type="file" accept="image/*" className="hidden" onChange={handleUploadLogo} disabled={uploadingLogo} />
+            <Button variant="ghost" size="sm" asChild className="cursor-pointer">
+              <span>{uploadingLogo ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Change'}</span>
+            </Button>
+          </label>
+        </div>
+      )}
 
       <Tabs defaultValue="id-cards" className="w-full" onValueChange={(v) => {
         if (v === 'id-cards') setSelectedType('ID_CARD_STUDENT');
@@ -330,22 +569,54 @@ export default function DocumentGenerator() {
                     </div>
                   )}
                 </div>
-                <div className="space-y-2 md:col-span-1">
-                  <Label>Template</Label>
-                  <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a template" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {templates.length === 0 && <SelectItem value="none" disabled>No templates found</SelectItem>}
-                      {templates.map(t => (
-                        <SelectItem key={t?.id} value={t?.id || 'none'}>{t?.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-3 md:col-span-2 mt-4">
+                  <div className="flex justify-between items-center">
+                    <Label className="text-base font-semibold">Select Template Theme</Label>
+                  </div>
+                  
+                  {templates.length === 0 ? (
+                    <div className="p-8 text-center border rounded-xl border-dashed bg-slate-50 dark:bg-slate-900 text-muted-foreground">
+                      No templates available. Please seed templates or create one.
+                    </div>
+                  ) : (
+                    <div className="flex gap-4 overflow-x-auto pb-4 pt-2 snap-x px-2">
+                      {templates.map(t => {
+                        const isSelected = selectedTemplate === t.id;
+                        return (
+                          <div 
+                            key={t.id} 
+                            onClick={() => setSelectedTemplate(t.id)}
+                            className={`snap-center flex-shrink-0 cursor-pointer group relative rounded-xl border-2 transition-all duration-200 overflow-hidden bg-white ${
+                              isSelected ? 'border-primary ring-4 ring-primary/20 shadow-lg scale-[1.02]' : 'border-border hover:border-primary/50 hover:shadow-md hover:-translate-y-1'
+                            }`}
+                            style={{ width: '220px' }}
+                          >
+                            <div className="bg-slate-100 relative h-[330px] overflow-hidden rounded-t-lg flex items-center justify-center">
+                              <iframe 
+                                srcDoc={getMockHtml(t.htmlContent)}
+                                scrolling="no"
+                                className="absolute top-0 left-0 pointer-events-none"
+                                style={getIframeStyles(t)}
+                                title={t.name}
+                              />
+                              {isSelected && (
+                                <div className="absolute top-2 right-2 bg-primary text-white rounded-full p-1 shadow-md z-10">
+                                  <CheckCircle2 className="w-5 h-5" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="p-3 bg-white dark:bg-slate-950 border-t">
+                              <h3 className="font-semibold text-sm truncate">{t.name}</h3>
+                              <p className="text-xs text-muted-foreground mt-1">Click to select</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
-              <Button onClick={() => handleGenerateIdCard('STUDENT')} disabled={loading} className="w-full md:w-auto">
+              <Button onClick={() => handleGenerateIdCard('STUDENT')} disabled={loading} className="w-full md:w-auto mt-6">
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {!loading && <Download className="mr-2 h-4 w-4" />}
                 Generate Student ID Cards
@@ -359,30 +630,72 @@ export default function DocumentGenerator() {
           <Card>
             <CardHeader>
               <CardTitle>Generate Staff ID Cards</CardTitle>
-              <CardDescription>Enter staff IDs to generate professional employee ID cards.</CardDescription>
+              <CardDescription>Select a teacher to generate professional employee ID cards.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2 md:col-span-2">
-                  <Label>Staff User IDs</Label>
-                  <Input placeholder="Comma separated user UUIDs" value={staffIds} onChange={(e) => setStaffIds(e.target.value)} />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label>Template</Label>
-                  <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                  <Label>Specific Teacher (Optional)</Label>
+                  <Select value={staffId} onValueChange={setStaffId}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a template" />
+                      <SelectValue placeholder="All Teachers" />
                     </SelectTrigger>
                     <SelectContent>
-                      {templates.length === 0 && <SelectItem value="none" disabled>No templates found</SelectItem>}
-                      {templates.map(t => (
-                        <SelectItem key={t?.id} value={t?.id || 'none'}>{t?.name}</SelectItem>
+                      <SelectItem value="none">All Teachers</SelectItem>
+                      {staffList.map((st: any) => (
+                        <SelectItem key={st?.id} value={st?.id || 'none'}>{st?.name || 'Unknown Teacher'}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-3 md:col-span-2 mt-4">
+                  <div className="flex justify-between items-center">
+                    <Label className="text-base font-semibold">Select Template Theme</Label>
+                  </div>
+                  
+                  {templates.length === 0 ? (
+                    <div className="p-8 text-center border rounded-xl border-dashed bg-slate-50 dark:bg-slate-900 text-muted-foreground">
+                      No templates available. Please seed templates or create one.
+                    </div>
+                  ) : (
+                    <div className="flex gap-4 overflow-x-auto pb-4 pt-2 snap-x px-2">
+                      {templates.map(t => {
+                        const isSelected = selectedTemplate === t.id;
+                        return (
+                          <div 
+                            key={t.id} 
+                            onClick={() => setSelectedTemplate(t.id)}
+                            className={`snap-center flex-shrink-0 cursor-pointer group relative rounded-xl border-2 transition-all duration-200 overflow-hidden bg-white ${
+                              isSelected ? 'border-primary ring-4 ring-primary/20 shadow-lg scale-[1.02]' : 'border-border hover:border-primary/50 hover:shadow-md hover:-translate-y-1'
+                            }`}
+                            style={{ width: '220px' }}
+                          >
+                            <div className="bg-slate-100 relative h-[330px] overflow-hidden rounded-t-lg flex items-center justify-center">
+                              <iframe 
+                                srcDoc={getMockHtml(t.htmlContent)}
+                                scrolling="no"
+                                className="absolute top-0 left-0 pointer-events-none"
+                                style={getIframeStyles(t)}
+                                title={t.name}
+                              />
+                              {isSelected && (
+                                <div className="absolute top-2 right-2 bg-primary text-white rounded-full p-1 shadow-md z-10">
+                                  <CheckCircle2 className="w-5 h-5" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="p-3 bg-white dark:bg-slate-950 border-t">
+                              <h3 className="font-semibold text-sm truncate">{selectedType === 'ID_CARD_STAFF' ? t.name.replace(/Student/ig, 'Staff') : t.name}</h3>
+                              <p className="text-xs text-muted-foreground mt-1">Click to select</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
-              <Button onClick={() => handleGenerateIdCard('STAFF')} disabled={loading} className="w-full md:w-auto">
+              <Button onClick={() => handleGenerateIdCard('STAFF')} disabled={loading} className="w-full md:w-auto mt-6">
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {!loading && <Download className="mr-2 h-4 w-4" />}
                 Generate Staff ID Cards
@@ -418,19 +731,81 @@ export default function DocumentGenerator() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label>Template</Label>
-                  <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                <div className="space-y-2">
+                  <Label>Section (Optional)</Label>
+                  <Select value={sectionId} onValueChange={setSectionId} disabled={!classId || classId === 'none'}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a template" />
+                      <SelectValue placeholder="All Sections" />
                     </SelectTrigger>
                     <SelectContent>
-                      {templates.length === 0 && <SelectItem value="none" disabled>No templates found</SelectItem>}
-                      {templates.map(t => (
-                        <SelectItem key={t?.id} value={t?.id || 'none'}>{t?.name}</SelectItem>
+                      <SelectItem value="none">All Sections</SelectItem>
+                      {sections.map((s: any) => (
+                        <SelectItem key={s?.id} value={s?.id || 'none'}>{s?.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Specific Student (Optional)</Label>
+                  <Select value={studentId} onValueChange={setStudentId} disabled={!sectionId || sectionId === 'none'}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Students" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">All Students</SelectItem>
+                      {students.map((st: any) => (
+                        <SelectItem key={st?.id} value={st?.id || 'none'}>
+                          {st?.name} ({st?.studentProfile?.enrollmentNo || st?.studentProfile?.rollNo || 'No Reg'})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-3 md:col-span-2 mt-4">
+                  <div className="flex justify-between items-center">
+                    <Label className="text-base font-semibold">Select Template Theme</Label>
+                  </div>
+                  
+                  {templates.length === 0 ? (
+                    <div className="p-8 text-center border rounded-xl border-dashed bg-slate-50 dark:bg-slate-900 text-muted-foreground">
+                      No templates available. Please seed templates or create one.
+                    </div>
+                  ) : (
+                    <div className="flex gap-4 overflow-x-auto pb-4 pt-2 snap-x px-2">
+                      {templates.map(t => {
+                        const isSelected = selectedTemplate === t.id;
+                        return (
+                          <div 
+                            key={t.id} 
+                            onClick={() => setSelectedTemplate(t.id)}
+                            className={`snap-center flex-shrink-0 cursor-pointer group relative rounded-xl border-2 transition-all duration-200 overflow-hidden bg-white ${
+                              isSelected ? 'border-primary ring-4 ring-primary/20 shadow-lg scale-[1.02]' : 'border-border hover:border-primary/50 hover:shadow-md hover:-translate-y-1'
+                            }`}
+                            style={{ width: '220px' }}
+                          >
+                            <div className="bg-slate-100 relative h-[330px] overflow-hidden rounded-t-lg flex items-center justify-center">
+                              <iframe 
+                                srcDoc={getMockHtml(t.htmlContent)}
+                                scrolling="no"
+                                className="absolute top-0 left-0 pointer-events-none"
+                                style={getIframeStyles(t)}
+                                title={t.name}
+                              />
+                              {isSelected && (
+                                <div className="absolute top-2 right-2 bg-primary text-white rounded-full p-1 shadow-md z-10">
+                                  <CheckCircle2 className="w-5 h-5" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="p-3 bg-white dark:bg-slate-950 border-t">
+                              <h3 className="font-semibold text-sm truncate">{selectedType === 'ID_CARD_STAFF' ? t.name.replace(/Student/ig, 'Staff') : t.name}</h3>
+                              <p className="text-xs text-muted-foreground mt-1">Click to select</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
               <Button onClick={handleGenerateAdmitCard} disabled={loading} className="w-full md:w-auto">
@@ -481,6 +856,9 @@ export default function DocumentGenerator() {
                       </TableCell>
                       <TableCell>{log?.issuedAt ? new Date(log.issuedAt).toLocaleDateString() : 'N/A'}</TableCell>
                       <TableCell className="text-right space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => previewHistoryCard(log)}>
+                          Preview
+                        </Button>
                         {log?.status === 'ACTIVE' && (
                           <Button variant="outline" size="sm" onClick={() => updateStatus(log.id, 'LOST')}>
                             Mark Lost
@@ -550,6 +928,39 @@ export default function DocumentGenerator() {
               <Download className="w-4 h-4 mr-2" />
               Download PDF
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Template HTML Modal */}
+      <Dialog open={!!editTemplateObj} onOpenChange={(open) => !open && setEditTemplateObj(null)}>
+        <DialogContent className="max-w-5xl h-[85vh] flex flex-col p-6 rounded-2xl border-none shadow-2xl bg-white dark:bg-slate-950">
+          <DialogHeader className="flex-shrink-0 mb-2">
+            <DialogTitle className="text-2xl font-bold">Template HTML Source</DialogTitle>
+            <p className="text-sm text-muted-foreground">Modify the raw Handlebars HTML for this template. Be careful not to break the Handlebars variables (e.g. {`{{firstName}}`}).</p>
+          </DialogHeader>
+          
+          <div className="flex-1 w-full relative min-h-0 rounded-xl overflow-hidden shadow-inner border border-border">
+            <textarea 
+              className="w-full h-full p-4 font-mono text-[13px] bg-slate-900 text-emerald-400 focus:outline-none resize-none whitespace-pre"
+              value={editTemplateObj?.htmlContent || ''}
+              onChange={(e) => setEditTemplateObj({ ...editTemplateObj, htmlContent: e.target.value })}
+              spellCheck={false}
+            />
+          </div>
+          
+          <DialogFooter className="mt-4 flex justify-end gap-2 flex-shrink-0">
+            <Button variant="outline" onClick={() => setEditTemplateObj(null)}>Cancel</Button>
+            <Button onClick={async () => {
+              try {
+                await schoolApi.put(`/institute-admin/document/template/${editTemplateObj.id}`, { htmlContent: editTemplateObj.htmlContent });
+                toast({ title: 'Success', description: 'Template design updated successfully!' });
+                setEditTemplateObj(null);
+                fetchTemplates(selectedType);
+              } catch (err) {
+                toast({ title: 'Error', description: 'Failed to update template', variant: 'destructive' });
+              }
+            }}>Save Template</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
