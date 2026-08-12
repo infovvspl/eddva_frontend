@@ -1,7 +1,9 @@
+// SyllabusPlanner - Annual Subject Syllabus Planner and Milestone Manager
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   BookOpen, Calendar, Plus, Save, Layers, CheckCircle2, 
-  Sparkles, Loader2, Filter, AlertCircle, Users, ArrowRight 
+  Sparkles, Loader2, Filter, AlertCircle, Users, ArrowRight, Eye, ChevronRight 
 } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
@@ -9,6 +11,7 @@ import { toast } from 'sonner';
 import { unwrapSchoolList } from '@/lib/api/school-client';
 
 export default function SyllabusPlanner() {
+  const navigate = useNavigate();
   const [classes, setClasses] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +41,7 @@ export default function SyllabusPlanner() {
   const [subjectTeachers, setSubjectTeachers] = useState([]);
   const [publishedPlans, setPublishedPlans] = useState([]);
   const [editingPlan, setEditingPlan] = useState(null);
+  const [selectedPlanView, setSelectedPlanView] = useState(null);
   const [editForm, setEditForm] = useState({});
 
   useEffect(() => {
@@ -126,17 +130,59 @@ export default function SyllabusPlanner() {
   };
 
   const handleSubjectChange = async (sid) => {
-    setForm(prev => ({ ...prev, subjectId: sid, teacherId: '', chapterId: '', topicId: '' }));
+    setForm(prev => ({ ...prev, subjectId: sid, teacherId: '', chapterId: '', topicId: '', chapterAllocations: [] }));
+    setTopics([]);
     if (form.sectionId && sid) {
       lookupAssignedTeacher(form.sectionId, sid);
     } else if (form.classId && sid && sections.length > 0) {
       lookupAssignedTeacher(sections[0].id, sid);
     }
+
     try {
-      const res = await api.get('/topics/chapters', { params: { subjectId: sid } }).catch(() => ({ data: [] }));
-      setChapters(unwrapSchoolList(res));
+      const res = await api.get('/topics/chapters', { params: { subjectId: sid, classId: form.classId || undefined, sectionId: form.sectionId || undefined } }).catch(() => ({ data: [] }));
+      const chList = unwrapSchoolList(res);
+      setChapters(chList);
+
+      // Fetch topics for all chapters in parallel so nothing is optional
+      const chapterAllocations = await Promise.all(chList.map(async (ch, idx) => {
+        let term = 'Unit 1';
+        const ratio = chList.length > 0 ? (idx + 1) / chList.length : 0;
+        if (ratio <= 0.25) term = 'Unit 1';
+        else if (ratio <= 0.50) term = 'Term 1';
+        else if (ratio <= 0.75) term = 'Unit 2';
+        else term = 'Term 2';
+
+        let topicItems = [];
+        try {
+          const topRes = await api.get('/topics', { params: { chapterId: ch.id } }).catch(() => ({ data: [] }));
+          topicItems = unwrapSchoolList(topRes).map(t => ({ topicId: t.id, topicName: t.name }));
+        } catch {}
+
+        return {
+          chapterId: ch.id,
+          chapterName: ch.name,
+          term,
+          topics: topicItems
+        };
+      }));
+
+      setForm(prev => ({ ...prev, chapterAllocations }));
     } catch {
       setChapters([]);
+    }
+  };
+
+  const handleChapterChange = async (cid) => {
+    setForm(prev => ({ ...prev, chapterId: cid, topicId: '' }));
+    if (!cid) {
+      setTopics([]);
+      return;
+    }
+    try {
+      const res = await api.get('/topics', { params: { chapterId: cid } }).catch(() => ({ data: [] }));
+      setTopics(unwrapSchoolList(res));
+    } catch {
+      setTopics([]);
     }
   };
 
@@ -217,15 +263,55 @@ export default function SyllabusPlanner() {
     }
   };
 
-  const handleOpenEdit = (plan) => {
+  const handleOpenEdit = async (plan) => {
     setEditingPlan(plan);
+    let allocs = Array.isArray(plan.chapter_allocations) ? plan.chapter_allocations : [];
+    
+    // If no chapter allocations saved yet, fetch chapters for this plan's subject
+    if (allocs.length === 0 && plan.subject_id) {
+      try {
+        const res = await api.get('/topics/chapters', { params: { subjectId: plan.subject_id, classId: plan.class_id } }).catch(() => ({ data: [] }));
+        const chList = unwrapSchoolList(res);
+        allocs = chList.map((ch, idx) => {
+          let term = 'Unit 1';
+          const ratio = (idx + 1) / chList.length;
+          if (ratio <= 0.25) term = 'Unit 1';
+          else if (ratio <= 0.50) term = 'Term 1';
+          else if (ratio <= 0.75) term = 'Unit 2';
+          else term = 'Term 2';
+          return { chapterId: ch.id, chapterName: ch.name, term };
+        });
+      } catch {}
+    }
+
+    const startDateStr = plan.planned_start_date ? new Date(plan.planned_start_date).toISOString().split('T')[0] : '';
+    const endDateStr = plan.planned_completion_date ? new Date(plan.planned_completion_date).toISOString().split('T')[0] : '';
+
+    // Autofill main target creation form
+    if (plan.subject_id) {
+      handleSubjectChange(plan.subject_id);
+    }
+    setForm(prev => ({
+      ...prev,
+      subjectId: plan.subject_id || prev.subjectId,
+      teacherId: plan.teacher_id || prev.teacherId,
+      term: plan.term || 'Annual Plan',
+      plannedPeriods: plan.planned_periods || prev.plannedPeriods,
+      plannedStartDate: startDateStr || prev.plannedStartDate,
+      plannedCompletionDate: endDateStr || prev.plannedCompletionDate,
+      priority: plan.priority || 'NORMAL',
+      chapterAllocations: allocs
+    }));
+
+    // Autofill Edit Modal
     setEditForm({
       teacherId: plan.teacher_id || '',
-      term: plan.term || 'Term 1',
+      term: plan.term || 'Annual Plan',
       plannedPeriods: plan.planned_periods || 4,
-      plannedStartDate: plan.planned_start_date ? new Date(plan.planned_start_date).toISOString().split('T')[0] : '',
-      plannedCompletionDate: plan.planned_completion_date ? new Date(plan.planned_completion_date).toISOString().split('T')[0] : '',
+      plannedStartDate: startDateStr,
+      plannedCompletionDate: endDateStr,
       priority: plan.priority || 'NORMAL',
+      chapterAllocations: allocs
     });
   };
 
@@ -239,6 +325,70 @@ export default function SyllabusPlanner() {
     } catch (err) {
       console.error(err);
       toast.error('Failed to update syllabus target');
+    }
+  };
+
+  const handleAutoGenerateAllSubjects = async () => {
+    if (!form.classId) {
+      return toast.error('Please select a Class first');
+    }
+    setSubmitting(true);
+    try {
+      let count = 0;
+      for (const sub of subjects) {
+        const chRes = await api.get('/topics/chapters', { params: { subjectId: sub.id, classId: form.classId } }).catch(() => ({ data: [] }));
+        const chList = unwrapSchoolList(chRes);
+
+        const chapterAllocations = await Promise.all(chList.map(async (ch, idx) => {
+          let term = 'Unit 1';
+          const ratio = chList.length > 0 ? (idx + 1) / chList.length : 0;
+          if (ratio <= 0.25) term = 'Unit 1';
+          else if (ratio <= 0.50) term = 'Term 1';
+          else if (ratio <= 0.75) term = 'Unit 2';
+          else term = 'Term 2';
+
+          let topicItems = [];
+          try {
+            const topRes = await api.get('/topics', { params: { chapterId: ch.id } }).catch(() => ({ data: [] }));
+            topicItems = unwrapSchoolList(topRes).map(t => ({ topicId: t.id, topicName: t.name }));
+          } catch {}
+
+          return { chapterId: ch.id, chapterName: ch.name, term, topics: topicItems };
+        }));
+
+        const secId = form.sectionId === 'ALL_SECTIONS' ? (sections[0]?.id || null) : form.sectionId;
+        let assignedTeacherId = form.teacherId;
+        if (secId) {
+          const secRes = await api.get(`/academic/sections/${secId}/teaching-map`).catch(() => null);
+          const data = secRes?.data?.data || secRes?.data;
+          const found = data?.subjects?.find(s => s.subjectId === sub.id);
+          if (found?.teachers && found.teachers.length > 0) {
+            assignedTeacherId = found.teachers[0].userId;
+          }
+        }
+
+        await api.post('/syllabus/plans', {
+          academicYear: form.academicYear,
+          classId: form.classId,
+          sectionId: form.sectionId === 'ALL_SECTIONS' ? null : form.sectionId,
+          subjectId: sub.id,
+          teacherId: assignedTeacherId || null,
+          plannedPeriods: Math.max(chList.length * 4, 12),
+          plannedStartDate: form.plannedStartDate,
+          plannedCompletionDate: form.plannedCompletionDate,
+          priority: 'NORMAL',
+          term: 'Annual Plan',
+          chapterAllocations
+        });
+        count++;
+      }
+      toast.success(`Published full syllabus annual plans for all ${count} subjects!`);
+      fetchInitialData();
+    } catch (err) {
+      console.error('Failed auto-generating full syllabus:', err);
+      toast.error('Failed to auto-generate full syllabus targets');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -463,6 +613,36 @@ export default function SyllabusPlanner() {
               </div>
 
               <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Chapter (Optional)</label>
+                <select
+                  value={form.chapterId}
+                  onChange={e => handleChapterChange(e.target.value)}
+                  disabled={!form.subjectId}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white disabled:opacity-50"
+                >
+                  <option value="">All / Entire Subject Chapters ({chapters.length} Available)</option>
+                  {chapters.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Topic (Optional)</label>
+                <select
+                  value={form.topicId}
+                  onChange={e => setForm(f => ({ ...f, topicId: e.target.value }))}
+                  disabled={!form.chapterId}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white disabled:opacity-50"
+                >
+                  <option value="">All / Entire Chapter Topics ({topics.length} Available)</option>
+                  {topics.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Assigned Teacher *</label>
                 <select
                   required
@@ -538,14 +718,111 @@ export default function SyllabusPlanner() {
               </div>
             </div>
 
-            <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
+            {/* Annual Chapter Milestones Setup (Unit 1, Term 1, Unit 2, Term 2) */}
+            {form.subjectId && chapters.length > 0 && (
+              <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    Annual Chapter Breakdown & Exam Milestones ({chapters.length} Chapters)
+                  </h4>
+                  <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">
+                    Assign chapters to Unit 1, Term 1, Unit 2, or Term 2
+                  </span>
+                </div>
+
+                <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 max-h-60 overflow-y-auto p-1 border border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-950/30">
+                  {chapters.map((ch, idx) => {
+                    const currentAlloc = (form.chapterAllocations || []).find(a => a.chapterId === ch.id);
+                    let fallbackTerm = 'Unit 1';
+                    const ratio = (idx + 1) / chapters.length;
+                    if (ratio <= 0.25) fallbackTerm = 'Unit 1';
+                    else if (ratio <= 0.50) fallbackTerm = 'Term 1';
+                    else if (ratio <= 0.75) fallbackTerm = 'Unit 2';
+                    else fallbackTerm = 'Term 2';
+
+                    const currentTerm = currentAlloc?.term || fallbackTerm;
+                    const currentPeriods = currentAlloc?.periods ?? (currentAlloc?.plannedPeriods ?? 4);
+
+                    return (
+                      <div key={ch.id} className="flex items-center justify-between gap-2 p-2.5 rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 shadow-2xs">
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate flex-1" title={ch.name}>
+                          {idx + 1}. {ch.name}
+                        </span>
+
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-0.5">
+                            <span className="text-[10px] font-bold text-slate-400">Periods:</span>
+                            <input
+                              type="number"
+                              min="1"
+                              max="100"
+                              value={currentPeriods}
+                              onChange={(e) => {
+                                const newP = parseInt(e.target.value, 10) || 1;
+                                setForm(prev => {
+                                  const existingList = prev.chapterAllocations || [];
+                                  const filtered = existingList.filter(a => a.chapterId !== ch.id);
+                                  const existingItem = existingList.find(a => a.chapterId === ch.id);
+                                  const newAlloc = { chapterId: ch.id, chapterName: ch.name, term: existingItem?.term || currentTerm, periods: newP, plannedPeriods: newP, topics: existingItem?.topics || [] };
+                                  const updatedAllocations = [...filtered, newAlloc];
+                                  const newTotalPeriods = updatedAllocations.reduce((sum, item) => sum + (parseInt(item.periods || item.plannedPeriods, 10) || 0), 0);
+                                  return {
+                                    ...prev,
+                                    chapterAllocations: updatedAllocations,
+                                    plannedPeriods: newTotalPeriods > 0 ? newTotalPeriods : prev.plannedPeriods
+                                  };
+                                });
+                              }}
+                              className="w-12 bg-transparent text-[11px] font-bold outline-none text-indigo-700 dark:text-indigo-300 text-center"
+                            />
+                          </div>
+
+                          <select
+                            value={currentTerm}
+                            onChange={(e) => {
+                              const newTerm = e.target.value;
+                              setForm(prev => {
+                                const existingList = prev.chapterAllocations || [];
+                                const filtered = existingList.filter(a => a.chapterId !== ch.id);
+                                const existingItem = existingList.find(a => a.chapterId === ch.id);
+                                return {
+                                  ...prev,
+                                  chapterAllocations: [...filtered, { chapterId: ch.id, chapterName: ch.name, term: newTerm, periods: existingItem?.periods || currentPeriods, plannedPeriods: existingItem?.periods || currentPeriods, topics: existingItem?.topics || [] }]
+                                };
+                              });
+                            }}
+                            className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-bold outline-none text-blue-700 dark:border-slate-700 dark:bg-slate-800 dark:text-blue-300"
+                          >
+                            <option value="Unit 1">Unit 1 (PT-1)</option>
+                            <option value="Term 1">Term 1 (Half Yearly)</option>
+                            <option value="Unit 2">Unit 2 (PT-2)</option>
+                            <option value="Term 2">Term 2 (Final Exam)</option>
+                          </select>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={handleAutoGenerateAllSubjects}
+                disabled={submitting || !form.classId}
+                className="flex items-center gap-2 rounded-2xl border border-indigo-200 bg-indigo-50 px-5 py-2.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950/50 dark:text-indigo-300 transition-all disabled:opacity-50"
+              >
+                <Sparkles size={16} /> Auto-Generate All Subject Targets
+              </button>
+
               <button
                 type="submit"
                 disabled={submitting}
                 className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 text-xs font-extrabold text-white shadow-lg shadow-blue-600/20 hover:brightness-110 transition-all disabled:opacity-50"
               >
                 {submitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                Publish Annual Syllabus Plan
+                Publish Annual Subject Syllabus Plan
               </button>
             </div>
           </form>
@@ -561,7 +838,7 @@ export default function SyllabusPlanner() {
                   <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                     Allocated Syllabus Targets for {selectedClassObj?.name} {form.sectionId === 'ALL_SECTIONS' ? '(Entire Class)' : `(Section ${sections.find(s => s.id === form.sectionId)?.name || ''})`}
                   </h3>
-                  <p className="text-xs text-slate-500">Active target plans published for this section.</p>
+                  <p className="text-xs text-slate-500">Active annual target plans published for this section.</p>
                 </div>
               </div>
             </div>
@@ -575,36 +852,13 @@ export default function SyllabusPlanner() {
                 {publishedPlans
                   .filter(p => (p.class_id === form.classId || p.class_name?.toLowerCase() === selectedClassObj?.name.toLowerCase()) && (form.sectionId === 'ALL_SECTIONS' || p.section_id === form.sectionId || p.section_name?.toLowerCase() === sections.find(s => s.id === form.sectionId)?.name.toLowerCase()))
                   .map(plan => (
-                    <div key={plan.id} className="rounded-2xl border border-slate-200 p-4 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-950/30 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-extrabold text-blue-600 dark:text-blue-400">{plan.class_name} {plan.section_name ? `(${plan.section_name})` : ''}</span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">{plan.term || 'Term 1'}</span>
-                      </div>
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white">{plan.subject_name || 'Subject Plan'}</h4>
-                      <p className="text-xs text-slate-500 font-semibold">Teacher: <span className="text-slate-800 dark:text-slate-200 font-bold">{plan.teacher_name || 'Unassigned'}</span></p>
-                      
-                      <div className="flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-200/60 dark:border-slate-800">
-                        <span>Periods: <strong className="text-slate-700 dark:text-slate-300">{plan.planned_periods || 1}</strong></span>
-                        <span>{plan.planned_start_date ? new Date(plan.planned_start_date).toLocaleDateString() : ''} - {plan.planned_completion_date ? new Date(plan.planned_completion_date).toLocaleDateString() : ''}</span>
-                      </div>
-
-                      <div className="flex gap-2 pt-2 border-t border-slate-200/60 dark:border-slate-800">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenEdit(plan)}
-                          className="flex-1 py-1.5 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950/50 dark:text-blue-300 text-xs font-bold hover:bg-blue-100 transition-all text-center"
-                        >
-                          Edit Target
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeletePlan(plan.id)}
-                          className="px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-300 text-xs font-bold hover:bg-rose-100 transition-all"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
+                    <SyllabusPlanCard
+                      key={plan.id}
+                      plan={plan}
+                      onViewPlan={(p) => navigate(`/school/admin/syllabus-planner/${p.id}`)}
+                      onEdit={handleOpenEdit}
+                      onDelete={handleDeletePlan}
+                    />
                   ))}
               </div>
             )}
@@ -656,7 +910,7 @@ export default function SyllabusPlanner() {
                   >
                     <option value="Term 1">Term 1</option>
                     <option value="Term 2">Term 2</option>
-                    <option value="Annual">Annual</option>
+                    <option value="Annual Plan">Annual Plan</option>
                   </select>
                 </div>
 
@@ -671,6 +925,67 @@ export default function SyllabusPlanner() {
                   />
                 </div>
               </div>
+
+              {/* Edit Chapter Milestones in Modal */}
+              {Array.isArray(editForm.chapterAllocations) && editForm.chapterAllocations.length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">Chapter Allocations & Periods ({editForm.chapterAllocations.length} Chapters)</label>
+                  <div className="grid gap-2 max-h-48 overflow-y-auto p-1 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-950/30">
+                    {editForm.chapterAllocations.map((ch, idx) => {
+                      const chPeriods = ch.periods ?? (ch.plannedPeriods ?? 4);
+                      return (
+                        <div key={ch.chapterId || idx} className="flex items-center justify-between gap-2 p-2 rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 text-xs">
+                          <span className="font-semibold text-slate-800 dark:text-slate-200 truncate flex-1">{idx + 1}. {ch.chapterName}</span>
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-1.5 py-0.5">
+                              <span className="text-[9px] font-bold text-slate-400">P:</span>
+                              <input
+                                type="number"
+                                min="1"
+                                max="100"
+                                value={chPeriods}
+                                onChange={(e) => {
+                                  const newP = parseInt(e.target.value, 10) || 1;
+                                  setEditForm(prev => {
+                                    const updated = prev.chapterAllocations.map(a => 
+                                      (a.chapterId === ch.chapterId || a.chapterName === ch.chapterName)
+                                        ? { ...a, periods: newP, plannedPeriods: newP }
+                                        : a
+                                    );
+                                    const newTotalPeriods = updated.reduce((sum, item) => sum + (parseInt(item.periods || item.plannedPeriods, 10) || 0), 0);
+                                    return { ...prev, chapterAllocations: updated, plannedPeriods: newTotalPeriods > 0 ? newTotalPeriods : prev.plannedPeriods };
+                                  });
+                                }}
+                                className="w-10 bg-transparent text-[10px] font-bold outline-none text-indigo-700 dark:text-indigo-300 text-center"
+                              />
+                            </div>
+                            <select
+                              value={ch.term || 'Unit 1'}
+                              onChange={(e) => {
+                                const newTerm = e.target.value;
+                                setEditForm(prev => {
+                                  const updated = prev.chapterAllocations.map(a => 
+                                    (a.chapterId === ch.chapterId || a.chapterName === ch.chapterName)
+                                      ? { ...a, term: newTerm }
+                                      : a
+                                  );
+                                  return { ...prev, chapterAllocations: updated };
+                                });
+                              }}
+                              className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-bold text-blue-700 dark:border-slate-700 dark:bg-slate-800 dark:text-blue-300"
+                            >
+                              <option value="Unit 1">Unit 1 (PT-1)</option>
+                              <option value="Term 1">Term 1 (Half Yearly)</option>
+                              <option value="Unit 2">Unit 2 (PT-2)</option>
+                              <option value="Term 2">Term 2 (Final Exam)</option>
+                            </select>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -712,6 +1027,74 @@ export default function SyllabusPlanner() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function SyllabusPlanCard({ plan, onViewPlan, onEdit, onDelete }) {
+  const allocs = Array.isArray(plan.chapter_allocations) ? plan.chapter_allocations : [];
+  const totalChapters = allocs.length;
+
+  return (
+    <div 
+      onClick={() => onViewPlan(plan)}
+      className="group relative rounded-3xl border border-slate-200 bg-white p-5 shadow-xs transition-all duration-200 hover:shadow-md hover:border-blue-300 dark:border-slate-800 dark:bg-slate-900 cursor-pointer space-y-4"
+    >
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-black uppercase text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-2.5 py-1 rounded-full border border-blue-100 dark:border-blue-900">
+          {plan.class_name} {plan.section_name ? `(${plan.section_name})` : ''}
+        </span>
+        <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+          {plan.term || 'Annual Plan'}
+        </span>
+      </div>
+
+      <div>
+        <h4 className="text-base font-black text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors flex items-center justify-between">
+          {plan.subject_name || 'Subject Plan'}
+          <ChevronRight size={18} className="text-slate-300 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
+        </h4>
+        <p className="text-xs font-semibold text-slate-500 mt-1">
+          Teacher: <span className="text-slate-800 dark:text-slate-200 font-bold">{plan.teacher_name || 'Unassigned'}</span>
+        </p>
+      </div>
+
+      <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-slate-850 flex items-center justify-between text-xs">
+        <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-bold">
+          <BookOpen size={15} className="text-blue-500" />
+          <span>{totalChapters > 0 ? `${totalChapters} Chapters Mapped` : 'Syllabus Mapped'}</span>
+        </div>
+        <span className="text-[11px] font-extrabold text-blue-600 dark:text-blue-400">Unit 1 to Term 2</span>
+      </div>
+
+      <div className="flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
+        <span>Planned Periods: <strong className="text-slate-700 dark:text-slate-300 font-bold">{plan.planned_periods || 1}</strong></span>
+        <span>{plan.planned_start_date ? new Date(plan.planned_start_date).toLocaleDateString() : ''} - {plan.planned_completion_date ? new Date(plan.planned_completion_date).toLocaleDateString() : ''}</span>
+      </div>
+
+      <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800" onClick={e => e.stopPropagation()}>
+        <button
+          type="button"
+          onClick={() => onViewPlan(plan)}
+          className="flex-1 py-2 rounded-xl bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 text-xs font-extrabold hover:bg-blue-100 transition-all text-center flex items-center justify-center gap-1.5"
+        >
+          <Eye size={14} /> Open Full Plan
+        </button>
+        <button
+          type="button"
+          onClick={() => onEdit(plan)}
+          className="px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 text-xs font-bold hover:bg-slate-50 transition-all"
+        >
+          Edit
+        </button>
+        <button
+          type="button"
+          onClick={() => onDelete(plan.id)}
+          className="px-3 py-2 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-300 text-xs font-bold hover:bg-rose-100 transition-all"
+        >
+          Remove
+        </button>
+      </div>
     </div>
   );
 }

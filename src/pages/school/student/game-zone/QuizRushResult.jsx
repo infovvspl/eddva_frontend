@@ -1,8 +1,34 @@
 import React from 'react';
-import { Trophy, Star, Coins, Zap, Award, RefreshCw, Milestone, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Trophy, Star, Coins, Zap, Award, RefreshCw, ArrowLeft, Clock, Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { clearStudentDashboardCache } from '@/lib/school/student-dashboard-cache';
 import { soundEngine } from '@/lib/audioManager';
+import './quiz-rush/arena.css';
+import { ArenaBackdrop, ArenaButton, ArenaLabel, ArenaPanel } from './quiz-rush/ArenaKit';
+
+/**
+ * Counts a number up on mount. A reward that lands instantly reads as a
+ * number; one that climbs reads as something you won.
+ */
+function useCountUp(target = 0, duration = 900) {
+  const [n, setN] = React.useState(0);
+  React.useEffect(() => {
+    const end = Number(target) || 0;
+    if (end === 0) { setN(0); return; }
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { setN(end); return; }
+    let raf;
+    const t0 = performance.now();
+    const tick = (t) => {
+      const p = Math.min(1, (t - t0) / duration);
+      // Ease-out so it decelerates into the final value.
+      setN(Math.round(end * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return n;
+}
 
 export default function QuizRushResult({ result, onPlayAgain, onViewLeaderboard }) {
   const {
@@ -25,6 +51,9 @@ export default function QuizRushResult({ result, onPlayAgain, onViewLeaderboard 
 
   const scorePct = Math.round((correctAnswers / totalQuestions) * 100) || 0;
 
+  const xpCount = useCountUp(xpEarned);
+  const coinCount = useCountUp(coinsEarned, 750);
+
   React.useEffect(() => {
     clearStudentDashboardCache();
     if (scorePct >= 50) {
@@ -34,126 +63,162 @@ export default function QuizRushResult({ result, onPlayAgain, onViewLeaderboard 
     }
   }, []);
 
+  const strong = scorePct >= 80;
+  const decent = scorePct >= 50;
+
+  const verdict = strong ? 'Flawless Run' : decent ? 'Run Complete' : 'Run Ended';
+  const verdictTone = strong ? 'text-amber-300' : decent ? 'text-cyan-300' : 'text-rose-300';
+  const verdictGlow = strong ? 'qr-neon--amber' : decent ? 'qr-neon' : '';
+
   return (
-    <div className="space-y-6 max-w-xl mx-auto py-8">
-      <div className="flex justify-start">
+    <div className="qr-arena relative">
+      <ArenaBackdrop />
+
+      <div className="relative z-10 mx-auto max-w-xl space-y-4 pb-8">
         <Link
           to="/school/student/gamification"
-          className="inline-flex items-center gap-1.5 text-xs font-black text-slate-500 hover:text-slate-800 dark:hover:text-white transition uppercase tracking-wider"
+          className="qr-display inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 transition hover:text-cyan-300"
         >
-          <ArrowLeft className="h-3 w-3" /> Back to Gamification Center
+          <ArrowLeft className="h-3 w-3" /> Gamification Center
         </Link>
-      </div>
 
-      {/* Celebration Header */}
-      <div className="text-center space-y-3">
-        <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-amber-100 text-amber-500 animate-bounce dark:bg-amber-950/40">
-          <Trophy className="h-10 w-10" />
-        </div>
-        <h1 className="text-3xl font-black text-slate-900 dark:text-white">
-          {scorePct >= 80 ? 'Incredible Performance!' : scorePct >= 50 ? 'Well Done!' : 'Good Try!'}
-        </h1>
-        <p className="text-sm font-medium text-slate-500">
-          You answered <strong>{correctAnswers} of {totalQuestions}</strong> questions correctly ({scorePct}% accuracy).
-        </p>
-      </div>
-
-      {/* Rewards Grid */}
-      <div className="grid grid-cols-2 gap-3">
-        {/* XP Card */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between">
-          <div className="flex items-center gap-1.5 text-amber-500">
-            <Star className="h-4 w-4 fill-current" />
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">XP Earned</span>
+        {/* ── Verdict ─────────────────────────────────────────────────── */}
+        <div className="qr-rise py-4 text-center">
+          <div
+            className={`qr-pop mx-auto flex h-20 w-20 items-center justify-center border ${
+              strong
+                ? 'border-amber-400/40 bg-amber-400/10 text-amber-300'
+                : decent
+                ? 'border-cyan-400/40 bg-cyan-400/10 text-cyan-300'
+                : 'border-rose-400/40 bg-rose-500/10 text-rose-300'
+            }`}
+            style={{ clipPath: 'polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)' }}
+          >
+            <Trophy className="h-9 w-9" />
           </div>
-          <p className="mt-3 text-3xl font-black text-slate-950 dark:text-white">+{xpEarned}</p>
-        </div>
+          <h1 className={`qr-display mt-4 text-4xl font-bold uppercase tracking-[0.06em] ${verdictTone} ${verdictGlow}`}>
+            {verdict}
+          </h1>
+          {isPerfectScore && (
+            <p className="qr-display mt-1 text-[11px] font-bold uppercase tracking-[0.3em] text-amber-300">
+              ★ Perfect Score ★
+            </p>
+          )}
 
-        {/* Coins Card */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between">
-          <div className="flex items-center gap-1.5 text-yellow-500">
-            <Coins className="h-4 w-4 fill-current" />
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Coins Earned</span>
+          {/* Accuracy bar — the headline number, given room to be the headline. */}
+          <div className="mx-auto mt-5 max-w-xs">
+            <div className="flex items-end justify-between">
+              <ArenaLabel tone="muted">Accuracy</ArenaLabel>
+              <span className="qr-display text-2xl font-bold tabular-nums text-white">{scorePct}%</span>
+            </div>
+            <div className="mt-1.5 h-2 overflow-hidden bg-white/[0.06]">
+              <div
+                className={`h-full transition-[width] duration-1000 ease-out ${
+                  strong ? 'bg-amber-400' : decent ? 'bg-cyan-400' : 'bg-rose-400'
+                }`}
+                style={{ width: `${scorePct}%`, boxShadow: '0 0 12px currentColor' }}
+              />
+            </div>
+            <p className="qr-read mt-1.5 text-[11px] font-medium text-slate-500">
+              {correctAnswers} of {totalQuestions} correct
+            </p>
           </div>
-          <p className="mt-3 text-3xl font-black text-slate-950 dark:text-white">+{coinsEarned}</p>
         </div>
-      </div>
 
-      {/* Streaks and Speed Stats */}
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950/40 space-y-3">
-        <div className="flex items-center justify-between text-xs font-bold text-slate-600 dark:text-slate-400">
-          <span className="flex items-center gap-1"><Zap className="h-3.5 w-3.5 text-yellow-400 fill-current" /> Max Combo Streak</span>
-          <span className="font-black text-slate-950 dark:text-white">{maxStreak} streak</span>
-        </div>
-        <div className="flex items-center justify-between text-xs font-bold text-slate-600 dark:text-slate-400">
-          <span className="flex items-center gap-1">⚡ Speed Bonuses</span>
-          <span className="font-black text-slate-950 dark:text-white">{speedBonusCount} answers under 5s</span>
-        </div>
-        <div className="flex items-center justify-between text-xs font-bold text-slate-600 dark:text-slate-400">
-          <span className="flex items-center gap-1">⏱️ Total Time Taken</span>
-          <span className="font-black text-slate-950 dark:text-white">{timeTakenSeconds} seconds</span>
-        </div>
-      </div>
+        {/* ── Rewards ─────────────────────────────────────────────────── */}
+        <div className="grid grid-cols-2 gap-3">
+          <ArenaPanel className="p-5">
+            <div className="flex items-center gap-1.5">
+              <Star className="h-3.5 w-3.5 fill-current text-amber-300" />
+              <ArenaLabel tone="amber">XP Earned</ArenaLabel>
+            </div>
+            <p className="qr-display mt-2 text-3xl font-bold tabular-nums text-amber-300 qr-neon--amber">
+              +{xpCount}
+            </p>
+          </ArenaPanel>
 
-      {/* Level Up Banner */}
-      {hasLeveledUp && (
-        <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-5 dark:border-indigo-900 dark:bg-indigo-950/40 text-center space-y-2">
-          <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400">Rank Promo</p>
-          <h2 className="text-xl font-black text-indigo-950 dark:text-white flex items-center justify-center gap-2">
-            🎉 LEVEL UP! Level {newLevel} reached!
-          </h2>
-          <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
-            You are now recognized as a <strong>{newTitle}</strong>. Keep running!
+          <ArenaPanel tone="magenta" className="p-5">
+            <div className="flex items-center gap-1.5">
+              <Coins className="h-3.5 w-3.5 fill-current text-fuchsia-300" />
+              <ArenaLabel tone="magenta">Coins</ArenaLabel>
+            </div>
+            <p className="qr-display mt-2 text-3xl font-bold tabular-nums text-fuchsia-300 qr-neon--magenta">
+              +{coinCount}
+            </p>
+          </ArenaPanel>
+        </div>
+
+        {/* ── Run stats ───────────────────────────────────────────────── */}
+        <ArenaPanel className="qr-stagger divide-y divide-white/[0.06]">
+          {[
+            { icon: Zap, tone: 'text-fuchsia-300', label: 'Max Combo', value: `${maxStreak}` },
+            { icon: Target, tone: 'text-lime-300', label: 'Speed Bonuses', value: `${speedBonusCount} under 5s` },
+            { icon: Clock, tone: 'text-cyan-300', label: 'Total Time', value: `${timeTakenSeconds}s` },
+          ].map((s) => (
+            <div key={s.label} className="flex items-center justify-between px-5 py-3.5">
+              <span className="flex items-center gap-2.5">
+                <s.icon className={`h-4 w-4 ${s.tone}`} />
+                <ArenaLabel tone="muted">{s.label}</ArenaLabel>
+              </span>
+              <span className="qr-display text-sm font-bold tabular-nums text-white">{s.value}</span>
+            </div>
+          ))}
+        </ArenaPanel>
+
+        {/* ── Level up ────────────────────────────────────────────────── */}
+        {hasLeveledUp && (
+          <ArenaPanel className="qr-pop border-amber-400/40 p-5 text-center qr-glow-lime">
+            <ArenaLabel tone="amber">Rank Promotion</ArenaLabel>
+            <h2 className="qr-display mt-2 text-2xl font-bold uppercase tracking-wider text-amber-300 qr-neon--amber">
+              Level {newLevel}
+            </h2>
+            <p className="qr-read mt-1 text-xs font-medium text-slate-400">
+              You are now a <strong className="text-white">{newTitle}</strong>.
+            </p>
+          </ArenaPanel>
+        )}
+
+        {/* ── Badge ───────────────────────────────────────────────────── */}
+        {badgeUnlocked && (
+          <ArenaPanel className="qr-pop border-lime-400/40 p-5 text-center">
+            <div className="qr-float mx-auto flex h-14 w-14 items-center justify-center border border-lime-400/40 bg-lime-400/10 text-lime-300">
+              <Award className="h-7 w-7" />
+            </div>
+            <ArenaLabel tone="muted" className="mt-3 block">Badge Unlocked</ArenaLabel>
+            <h2 className="qr-display mt-1 text-lg font-bold uppercase tracking-wider text-lime-300">
+              {badgeUnlocked}
+            </h2>
+          </ArenaPanel>
+        )}
+
+        {/* ── Progress to next rank ───────────────────────────────────── */}
+        <ArenaPanel className="p-5">
+          <div className="flex items-center justify-between">
+            <ArenaLabel tone="cyan">Level {newLevel} · {newTitle}</ArenaLabel>
+            <span className="qr-display text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+              Next · {newLevel + 1}
+            </span>
+          </div>
+          <div className="mt-3 h-2.5 overflow-hidden bg-white/[0.06]">
+            <div
+              className="h-full bg-gradient-to-r from-cyan-400 to-fuchsia-500 transition-[width] duration-1000 ease-out"
+              style={{ width: `${levelProgress}%`, boxShadow: '0 0 14px rgba(34,211,238,0.6)' }}
+            />
+          </div>
+          <p className="qr-read mt-2 text-center text-[10px] font-medium text-slate-500">
+            {levelProgress}% toward the next rank
           </p>
-        </div>
-      )}
+        </ArenaPanel>
 
-      {/* Badge Banner */}
-      {badgeUnlocked && (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-900 dark:bg-emerald-950/40 text-center space-y-3">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40 animate-pulse">
-            <Award className="h-6 w-6" />
-          </div>
-          <h2 className="text-lg font-black text-emerald-950 dark:text-white">
-            🏆 New Badge Earned: {badgeUnlocked}!
-          </h2>
-          <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-            Awarded for a survival milestone in Quiz Rush. Go display it on your profile!
-          </p>
+        {/* ── Actions ─────────────────────────────────────────────────── */}
+        <div className="space-y-2.5 pt-1">
+          <ArenaButton type="button" onClick={onPlayAgain} tone="cyan" className="w-full py-4 text-base">
+            <RefreshCw className="h-5 w-5" /> Run It Back
+          </ArenaButton>
+          <ArenaButton type="button" onClick={onViewLeaderboard} tone="ghost" className="w-full">
+            <Trophy className="h-4 w-4 text-amber-300" /> Hall of Fame
+          </ArenaButton>
         </div>
-      )}
-
-      {/* Level Progress */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-3">
-        <h2 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-          <Milestone className="h-4 w-4 text-violet-500" /> Rank Milestones
-        </h2>
-        <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-          <span>Level {newLevel} ({newTitle})</span>
-          <span>Next: Level {newLevel + 1}</span>
-        </div>
-        <div className="h-3 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-          <div className="h-full rounded-full bg-indigo-500" style={{ width: `${levelProgress}%` }} />
-        </div>
-        <p className="text-[10px] text-slate-500 font-semibold text-center">{levelProgress}% progress toward the next level milestone.</p>
-      </section>
-
-      {/* Navigation Buttons */}
-      <div className="grid gap-2">
-        <button
-          type="button"
-          onClick={onPlayAgain}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-sm font-black text-white shadow transition hover:bg-indigo-700"
-        >
-          <RefreshCw className="h-4 w-4" /> Play Again
-        </button>
-        <button
-          type="button"
-          onClick={onViewLeaderboard}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 py-3 text-sm font-black text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-950 transition"
-        >
-          <Trophy className="h-4 w-4 text-amber-500" /> View Leaderboard
-        </button>
       </div>
     </div>
   );

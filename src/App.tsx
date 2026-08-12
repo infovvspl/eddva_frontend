@@ -180,7 +180,9 @@ const SchoolTimetable = lazy(() => import("./pages/school/admin/Timetable"));
 const SchoolAdminSettings = lazy(() => import("./pages/school/admin/AdminSettings"));
 const SchoolReports = lazy(() => import("./pages/school/admin/Reports"));
 const SchoolSyllabusPlanner = lazy(() => import("./pages/school/admin/SyllabusPlanner"));
+const SchoolSyllabusPlanDetails = lazy(() => import("./pages/school/admin/SyllabusPlanDetailsPage"));
 const SchoolSyllabusTracker = lazy(() => import("./pages/school/admin/SyllabusTracker"));
+const SchoolSyllabusTrackerDetails = lazy(() => import("./pages/school/admin/SyllabusTrackerDetailsPage"));
 const SchoolSyllabusAnalytics = lazy(() => import("./pages/school/admin/SyllabusAnalytics"));
 const SchoolTeacherTeachingPlan = lazy(() => import("./pages/school/teacher/TeacherTeachingPlan"));
 const SchoolStudentSyllabusView = lazy(() => import("./pages/school/student/StudentSyllabusView"));
@@ -501,7 +503,9 @@ const SchoolRoutes = () => (
       <Route path="gamification" element={<SchoolAdminGamification />} />
       <Route path="document-generator" element={<SchoolDocumentGenerator />} />
       <Route path="syllabus-planner" element={<SchoolSyllabusPlanner />} />
+      <Route path="syllabus-planner/:planId" element={<SchoolSyllabusPlanDetails />} />
       <Route path="syllabus-tracker" element={<SchoolSyllabusTracker />} />
+      <Route path="syllabus-tracker/:planId" element={<SchoolSyllabusTrackerDetails />} />
       <Route path="syllabus-analytics" element={<SchoolSyllabusAnalytics />} />
     </Route>
 
@@ -555,6 +559,7 @@ const SchoolRoutes = () => (
       <Route path="classes" element={<SchoolClassManagement />} />
       <Route path="recorded-classes/:recordingId" element={<SchoolStudentRecordedClassDetails />} />
       <Route path="teaching-plan" element={<SchoolTeacherTeachingPlan />} />
+      <Route path="syllabus-planner/:planId" element={<SchoolSyllabusPlanDetails />} />
       <Route path="calendar" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'academic_calendar' }}><SchoolTeacherCalendar /></SchoolGuard>} />
       <Route path="attendance" element={<SchoolAttendanceSystem />} />
       <Route path="assignments" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'assignments' }}><SchoolAssignmentManagement /></SchoolGuard>} />
@@ -609,6 +614,7 @@ const SchoolRoutes = () => (
       <Route path="calendar" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'module', key: 'academic_calendar' }}><SchoolStudentCalendar /></SchoolGuard>} />
       <Route path="analytics" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'module', key: 'reports' }}><SchoolStudentAnalytics /></SchoolGuard>} />
       <Route path="analytics/report-card" element={<SchoolGuard roles={["STUDENT"]}><SchoolAdminStudentReportCard /></SchoolGuard>} />
+      <Route path="syllabus" element={<SchoolStudentSyllabusView />} />
       <Route path="career" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_career_guidance' }}><SchoolStudentCareer /></SchoolGuard>} />
       <Route path="career/quiz" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_career_guidance' }}><SchoolStudentCareerQuiz /></SchoolGuard>} />
       <Route path="career/quiz/result" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_career_guidance' }}><SchoolStudentCareerQuizResult /></SchoolGuard>} />
