@@ -1470,21 +1470,21 @@ const ClassManagement: React.FC = () => {
       ) : (
         <div className="space-y-3">
           <div className="grid gap-4 sm:grid-cols-2">
-            {(showAllObsLectures ? filteredObsLectures : filteredObsLectures.slice(0, 4)).map((lec) => (
+            {(showAllObsLectures ? filteredObsLectures : filteredObsLectures.slice(0, 10)).map((lec) => (
               <LiveClassCard key={lec.id} lec={lec} />
             ))}
           </div>
-          {filteredObsLectures.length > 4 && (
+          {filteredObsLectures.length > 10 && (
             <div className="flex items-center justify-between px-1 flex-wrap gap-2 pt-1">
               <p className="text-xs text-slate-500">
-                Showing {Math.min(showAllObsLectures ? filteredObsLectures.length : 4, filteredObsLectures.length)} of {filteredObsLectures.length} live classes
+                Showing {Math.min(showAllObsLectures ? filteredObsLectures.length : 10, filteredObsLectures.length)} of {filteredObsLectures.length} live classes
               </p>
               <button
                 type="button"
                 onClick={() => setShowAllObsLectures((v) => !v)}
                 className="px-4 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors inline-flex items-center gap-1.5"
               >
-                <span>{showAllObsLectures ? "Show Less" : `Show ${filteredObsLectures.length - 4} more`}</span>
+                <span>{showAllObsLectures ? "Show Less" : `Show ${filteredObsLectures.length - 10} more`}</span>
                 <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", showAllObsLectures ? "-rotate-90" : "rotate-90")} />
               </button>
             </div>
@@ -1508,7 +1508,7 @@ const ClassManagement: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-3">
-          {(showAllRecordedLectures ? uploadedRecordings : uploadedRecordings.slice(0, 4)).map((rec: any) => {
+          {(showAllRecordedLectures ? uploadedRecordings : uploadedRecordings.slice(0, 10)).map((rec: any) => {
             const date = rec.recorded_date ? new Date(rec.recorded_date).toLocaleDateString('en-GB') : '';
             return (
               <div key={rec.id} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:shadow-md">
@@ -1597,17 +1597,17 @@ const ClassManagement: React.FC = () => {
               </div>
             );
           })}
-          {uploadedRecordings.length > 4 && (
+          {uploadedRecordings.length > 10 && (
             <div className="flex items-center justify-between px-1 flex-wrap gap-2 pt-1">
               <p className="text-xs text-slate-500">
-                Showing {Math.min(showAllRecordedLectures ? uploadedRecordings.length : 4, uploadedRecordings.length)} of {uploadedRecordings.length} recorded lectures
+                Showing {Math.min(showAllRecordedLectures ? uploadedRecordings.length : 10, uploadedRecordings.length)} of {uploadedRecordings.length} recorded lectures
               </p>
               <button
                 type="button"
                 onClick={() => setShowAllRecordedLectures((v) => !v)}
                 className="px-4 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors inline-flex items-center gap-1.5"
               >
-                <span>{showAllRecordedLectures ? "Show Less" : `Show ${uploadedRecordings.length - 4} more`}</span>
+                <span>{showAllRecordedLectures ? "Show Less" : `Show ${uploadedRecordings.length - 10} more`}</span>
                 <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", showAllRecordedLectures ? "-rotate-90" : "rotate-90")} />
               </button>
             </div>

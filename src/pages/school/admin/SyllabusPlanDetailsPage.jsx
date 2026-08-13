@@ -35,8 +35,8 @@ export default function SyllabusPlanDetailsPage() {
     fetchPlan();
   }, [planId]);
 
-  const fetchPlan = async () => {
-    setLoading(true);
+  const fetchPlan = async (isBackground = false) => {
+    if (!isBackground) setLoading(true);
     try {
       const res = await api.get('/syllabus/plans');
       const allPlans = unwrapSchoolList(res);
@@ -44,24 +44,24 @@ export default function SyllabusPlanDetailsPage() {
       if (found) {
         let allocs = Array.isArray(found.chapter_allocations) ? found.chapter_allocations : [];
         
-        // Fetch exact topics for each chapter and deduplicate by topic name
         allocs = await Promise.all(allocs.map(async (c) => {
-          let topList = Array.isArray(c.topics) ? c.topics : [];
+          let topList = Array.isArray(c.topics) ? [...c.topics] : [];
           if (c.chapterId) {
             try {
               const topRes = await api.get('/topics', { params: { chapterId: c.chapterId } }).catch(() => ({ data: [] }));
-              topList = unwrapSchoolList(topRes).map(t => ({ topicId: t.id, topicName: t.name }));
+              const dbTopics = unwrapSchoolList(topRes);
+              dbTopics.forEach(dbt => {
+                const existing = topList.find(t => String(t.topicId || t.id) === String(dbt.id) || (t.topicName || t.name || '').toLowerCase().trim() === (dbt.name || '').toLowerCase().trim());
+                if (!existing) {
+                  topList.push({ topicId: dbt.id, topicName: dbt.name, status: 'pending', progress: 0 });
+                } else {
+                  if (!existing.topicId) existing.topicId = dbt.id;
+                  if (!existing.topicName) existing.topicName = dbt.name;
+                }
+              });
             } catch {}
           }
-          // Unique topics by name
-          const uniqueMap = new Map();
-          topList.forEach(t => {
-            const name = (t.topicName || t.name || '').trim();
-            if (name && !uniqueMap.has(name.toLowerCase())) {
-              uniqueMap.set(name.toLowerCase(), { topicId: t.topicId || t.id, topicName: name });
-            }
-          });
-          return { ...c, topics: Array.from(uniqueMap.values()) };
+          return { ...c, topics: topList };
         }));
 
         found.chapter_allocations = allocs;
@@ -73,7 +73,7 @@ export default function SyllabusPlanDetailsPage() {
       console.error('Failed to load plan details:', err);
       toast.error('Error loading syllabus plan');
     } finally {
-      setLoading(false);
+      if (!isBackground) setLoading(false);
     }
   };
 
@@ -108,17 +108,18 @@ export default function SyllabusPlanDetailsPage() {
 
   const totalTopicsCount = allocs.reduce((acc, c) => acc + (Array.isArray(c.topics) ? c.topics.length : 0), 0);
 
-  const handleOpenTopicModal = (t) => {
-    setUpdatingTopic(t);
+  const handleOpenTopicModal = (t, plannedPeriodsForTopic = 2) => {
+    const currentStatus = t.status || 'pending';
+    setUpdatingTopic({ ...t, plannedPeriodsForTopic });
     setTopicProgressForm({
-      status: t.status || (t.progress >= 100 ? 'completed' : 'in_progress'),
-      progress: t.progress ?? (t.status === 'completed' ? 100 : 50),
-      actualPeriods: t.actualPeriods || t.periods || 2,
+      status: currentStatus,
+      progress: t.progress ?? (currentStatus === 'completed' ? 100 : 0),
+      actualPeriods: t.actualPeriods ?? (currentStatus === 'pending' ? 0 : (t.periods || 1)),
       remarks: t.remarks || '',
       delayReason: t.delayReason || '',
       carryForwardDate: t.carryForwardDate || new Date(Date.now() + 86400000).toISOString().split('T')[0],
       startDate: t.startDate || new Date().toISOString().split('T')[0],
-      completionDate: t.completionDate || (t.status === 'completed' ? new Date().toISOString().split('T')[0] : '')
+      completionDate: t.completionDate || (currentStatus === 'completed' ? new Date().toISOString().split('T')[0] : '')
     });
   };
 
@@ -148,24 +149,60 @@ export default function SyllabusPlanDetailsPage() {
   const handleSaveTopicProgress = async () => {
     if (!updatingTopic) return;
     try {
+      const topicIdToUpdate = updatingTopic.topicId || updatingTopic.id;
+      const topicNameToUpdate = (updatingTopic.topicName || updatingTopic.name || '').trim().toLowerCase();
+      const updatedStatus = topicProgressForm.status;
+      const updatedProgress = parseInt(topicProgressForm.progress, 10) || 0;
+      const updatedActualPeriods = parseInt(topicProgressForm.actualPeriods, 10) || 1;
+
       await api.patch(`/syllabus/plans/${planId}/progress`, {
-        topicId: updatingTopic.topicId || updatingTopic.id,
-        status: topicProgressForm.status,
-        progress: parseInt(topicProgressForm.progress, 10) || 0,
-        actualPeriods: parseInt(topicProgressForm.actualPeriods, 10) || 1,
+        topicId: topicIdToUpdate,
+        topicName: updatingTopic.topicName || updatingTopic.name,
+        chapterId: updatingTopic.chapterId,
+        chapterName: updatingTopic.chapterName,
+        status: updatedStatus,
+        progress: updatedProgress,
+        actualPeriods: updatedActualPeriods,
         remarks: topicProgressForm.remarks,
-        delayReason: topicProgressForm.status !== 'completed' ? topicProgressForm.delayReason : null,
-        carryForwardDate: topicProgressForm.status !== 'completed' ? topicProgressForm.carryForwardDate : null,
+        delayReason: updatedStatus !== 'completed' ? topicProgressForm.delayReason : null,
+        carryForwardDate: updatedStatus !== 'completed' ? topicProgressForm.carryForwardDate : null,
         startDate: topicProgressForm.startDate,
-        completionDate: topicProgressForm.status === 'completed' ? (topicProgressForm.completionDate || new Date().toISOString().split('T')[0]) : null
+        completionDate: updatedStatus === 'completed' ? (topicProgressForm.completionDate || new Date().toISOString().split('T')[0]) : null
       });
+
+      // Optimistically update local plan state so UI reflects changes immediately without relying solely on refetching
+      if (plan && Array.isArray(plan.chapter_allocations)) {
+        const updatedAllocations = plan.chapter_allocations.map((ch) => {
+          const topics = Array.isArray(ch.topics) ? ch.topics : [];
+          const updatedTopics = topics.map((t) => {
+            const tId = String(t.topicId || t.id || '').trim();
+            const tName = String(t.topicName || t.name || '').trim().toLowerCase();
+            const isMatch = (tId && String(topicIdToUpdate) === tId) || (tName && topicNameToUpdate && tName === topicNameToUpdate);
+            if (isMatch) {
+              return {
+                ...t,
+                status: updatedStatus,
+                progress: updatedProgress,
+                actualPeriods: updatedActualPeriods,
+                remarks: topicProgressForm.remarks,
+                delayReason: updatedStatus !== 'completed' ? topicProgressForm.delayReason : null,
+                carryForwardDate: updatedStatus !== 'completed' ? topicProgressForm.carryForwardDate : null
+              };
+            }
+            return t;
+          });
+          return { ...ch, topics: updatedTopics };
+        });
+        setPlan({ ...plan, chapter_allocations: updatedAllocations });
+      }
+
       toast.success(
-        topicProgressForm.status === 'completed' 
+        updatedStatus === 'completed' 
           ? 'Topic marked as completed!' 
           : 'Topic set as In Progress / Partial and carried forward as pending.'
       );
       setUpdatingTopic(null);
-      fetchPlan();
+      fetchPlan(true);
     } catch (err) {
       console.error('Failed to update topic progress:', err);
       toast.error('Failed to update topic progress');
@@ -175,16 +212,9 @@ export default function SyllabusPlanDetailsPage() {
   const isTeacherView = typeof window !== 'undefined' && window.location.pathname.includes('/school/teacher');
 
   const renderChapterCard = (c, i, accentColor) => {
-    const rawTopics = Array.isArray(c.topics) ? c.topics : [];
-    const uniqueMap = new Map();
-    rawTopics.forEach(t => {
-      const name = (t.topicName || t.name || '').trim();
-      if (name && !uniqueMap.has(name.toLowerCase())) {
-        uniqueMap.set(name.toLowerCase(), t);
-      }
-    });
-    const topics = Array.from(uniqueMap.values());
+    const topics = Array.isArray(c.topics) ? c.topics : [];
     const chapterPeriods = c.periods || c.plannedPeriods || (topics.length > 0 ? topics.length * 2 : 4);
+    const plannedPeriodsPerTopic = Math.max(1, Math.ceil(chapterPeriods / Math.max(1, topics.length)));
     const completedTopicsCount = topics.filter(t => t.status === 'completed' || t.progress >= 100).length;
     const isChapterFullyCompleted = topics.length > 0 && completedTopicsCount === topics.length;
 
@@ -229,8 +259,9 @@ export default function SyllabusPlanDetailsPage() {
           <div className="pl-4 space-y-2 border-l-2 border-slate-200 dark:border-slate-800">
             {topics.map((t, tIdx) => {
               const isTopicDone = t.status === 'completed' || t.progress >= 100;
+              const isPending = !t.status || t.status === 'pending';
               const topicProg = t.progress ?? (isTopicDone ? 100 : 0);
-              const actualP = t.actualPeriods || t.periods || '—';
+              const actualP = t.actualPeriods ?? (isPending ? 0 : (t.periods || 0));
 
               return (
                 <div key={t.topicId || tIdx} className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-100 dark:border-slate-850 gap-2">
@@ -268,39 +299,43 @@ export default function SyllabusPlanDetailsPage() {
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => handleOpenTopicModal(t)}
+                        onClick={() => handleOpenTopicModal({ ...t, chapterId: c.chapterId, chapterName: c.chapterName }, plannedPeriodsPerTopic)}
                         className="text-[11px] font-extrabold px-3 py-1.5 rounded-xl bg-blue-600 text-white shadow-sm hover:bg-blue-700 transition-all flex items-center gap-1"
                       >
                         <Edit3 size={13} /> Update Progress & Details
                       </button>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setTopicProgressForm({
-                            status: isTopicDone ? 'pending' : 'completed',
-                            progress: isTopicDone ? 0 : 100,
-                            actualPeriods: t.actualPeriods || 2,
-                            remarks: isTopicDone ? 'Reopened' : 'Finished topic coverage',
-                            startDate: new Date().toISOString().split('T')[0],
-                            completionDate: isTopicDone ? '' : new Date().toISOString().split('T')[0]
-                          });
-                          setUpdatingTopic(t);
-                        }}
-                        className={`text-[11px] font-black px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 ${
-                          isTopicDone 
-                            ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 dark:bg-emerald-950 dark:text-emerald-300' 
-                            : 'bg-emerald-600 text-white shadow-sm hover:bg-emerald-700'
-                        }`}
-                      >
-                        <CheckCircle2 size={13} /> {isTopicDone ? 'Marked Done' : 'Mark Done'}
-                      </button>
+                      {!isTopicDone && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTopicProgressForm({
+                              status: 'completed',
+                              progress: 100,
+                              actualPeriods: t.actualPeriods || 2,
+                              remarks: 'Finished topic coverage',
+                              startDate: new Date().toISOString().split('T')[0],
+                              completionDate: new Date().toISOString().split('T')[0]
+                            });
+                            setUpdatingTopic(t);
+                          }}
+                          className="text-[11px] font-black px-3 py-1.5 rounded-xl bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all flex items-center gap-1"
+                        >
+                          <CheckCircle2 size={13} /> Mark Done
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <div className="flex flex-col items-end gap-1 text-[11px]">
                       <div className="flex items-center gap-2">
                         <span className="font-extrabold text-blue-600 dark:text-blue-400">{topicProg}% Completed</span>
                         <span className="font-bold text-slate-500">({actualP} Periods Spent)</span>
+                        {/* Overrun badge: shown when actual periods exceed per-topic planned share */}
+                        {typeof actualP === 'number' && actualP > plannedPeriodsPerTopic && (
+                          <span className="font-black px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-900 flex items-center gap-1">
+                            <AlertCircle size={10} /> Overrun: +{actualP - plannedPeriodsPerTopic} Periods
+                          </span>
+                        )}
                         <span className={`font-black px-2.5 py-1 rounded-lg ${isTopicDone ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : (t.status === 'in_progress' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300' : 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300')}`}>
                           {isTopicDone ? 'Completed' : t.status === 'in_progress' ? 'In Progress' : 'Pending'}
                         </span>
@@ -528,7 +563,8 @@ export default function SyllabusPlanDetailsPage() {
                     setTopicProgressForm(f => ({
                       ...f,
                       status: st,
-                      progress: st === 'completed' ? 100 : (st === 'pending' ? 0 : (f.progress || 50))
+                      progress: st === 'completed' ? 100 : (st === 'pending' ? 0 : (f.progress || 50)),
+                      actualPeriods: st === 'pending' ? 0 : (f.actualPeriods || 1)
                     }));
                   }}
                   className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
@@ -564,6 +600,19 @@ export default function SyllabusPlanDetailsPage() {
                   />
                 </div>
               </div>
+
+              {/* Overrun warning — shown live as teacher types */}
+              {updatingTopic && topicProgressForm.actualPeriods > (updatingTopic.plannedPeriodsForTopic || 2) && (
+                <div className="flex items-start gap-2 p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200">
+                  <AlertCircle size={15} className="mt-0.5 shrink-0 text-amber-600" />
+                  <div>
+                    <p className="text-xs font-extrabold">Exceeds planned periods</p>
+                    <p className="text-[11px] font-semibold mt-0.5">
+                      Planned: <strong>{updatingTopic.plannedPeriodsForTopic || 2} periods</strong> — you are spending <strong>{topicProgressForm.actualPeriods} periods</strong>, which is <strong>+{topicProgressForm.actualPeriods - (updatingTopic.plannedPeriodsForTopic || 2)}</strong> over budget. This will be flagged to the admin.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Execution Remarks & Class Notes</label>

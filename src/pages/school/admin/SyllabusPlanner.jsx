@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   BookOpen, Calendar, Plus, Save, Layers, CheckCircle2, 
-  Sparkles, Loader2, Filter, AlertCircle, Users, ArrowRight, Eye, ChevronRight 
+  Sparkles, Loader2, Filter, AlertCircle, Users, ArrowRight, Eye, ChevronRight,
+  CalendarDays, Hourglass, TrendingUp, AlertTriangle
 } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
@@ -594,6 +595,111 @@ export default function SyllabusPlanner() {
             <span className="text-xs font-bold text-blue-700 dark:text-blue-300">Session {form.academicYear}</span>
           </div>
 
+          {/* DYNAMIC 6 DASHBOARD METRIC CARDS FOR SELECTED CLASS & SECTION */}
+          {(() => {
+            const secPlans = publishedPlans.filter(p => 
+              (p.class_id === form.classId || p.class_name?.toLowerCase() === selectedClassObj?.name?.toLowerCase()) &&
+              (form.sectionId === 'ALL_SECTIONS' || p.section_id === form.sectionId || p.section_name?.toLowerCase() === sections.find(s => s.id === form.sectionId)?.name?.toLowerCase())
+            );
+
+            const allTopics = secPlans.flatMap(plan => {
+              const allocs = Array.isArray(plan.chapter_allocations) ? plan.chapter_allocations : [];
+              return allocs.flatMap(ch => {
+                const topics = Array.isArray(ch.topics) && ch.topics.length > 0
+                  ? ch.topics
+                  : [{ topicId: `placeholder-${ch.chapterId || ch.chapterName}`, topicName: ch.chapterName, status: 'pending', progress: 0 }];
+                return topics;
+              });
+            });
+
+            const todayStr = new Date().toISOString().split('T')[0];
+            const todaysLessons = allTopics.filter(t => t.status === 'in_progress' || t.startDate === todayStr);
+            const inProgressLessons = allTopics.filter(t => t.status === 'in_progress');
+            const pendingLessons = allTopics.filter(t => !t.status || t.status === 'pending');
+            const completedLessons = allTopics.filter(t => t.status === 'completed' || t.progress >= 100);
+            const delayedLessons = allTopics.filter(t => t.delayReason && t.status !== 'completed');
+            const totalCount = allTopics.length || 1;
+            const completionPct = Math.round((completedLessons.length / totalCount) * 100);
+
+            return (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {/* 1. Today's lessons */}
+                <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">1. Today's Lessons</span>
+                    <div className="p-2 rounded-2xl bg-blue-100 text-blue-700 dark:bg-blue-900/40">
+                      <CalendarDays size={18} />
+                    </div>
+                  </div>
+                  <p className="text-3xl font-black text-slate-900 dark:text-white mt-2">{todaysLessons.length}</p>
+                  <p className="text-xs font-semibold text-slate-500 mt-1">Scheduled for today</p>
+                </div>
+
+                {/* 2. In Progress Lessons */}
+                <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-400">2. In Progress Lessons</span>
+                    <div className="p-2 rounded-2xl bg-purple-100 text-purple-700 dark:bg-purple-900/40">
+                      <Calendar size={18} />
+                    </div>
+                  </div>
+                  <p className="text-3xl font-black text-slate-900 dark:text-white mt-2">{inProgressLessons.length}</p>
+                  <p className="text-xs font-semibold text-slate-500 mt-1">In progress topics</p>
+                </div>
+
+                {/* 3. Pending Lessons */}
+                <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">3. Pending Lessons</span>
+                    <div className="p-2 rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-900/40">
+                      <Hourglass size={18} />
+                    </div>
+                  </div>
+                  <p className="text-3xl font-black text-amber-900 dark:text-amber-100 mt-2">{pendingLessons.length}</p>
+                  <p className="text-xs font-semibold text-amber-700 dark:text-amber-300 mt-1">Awaiting execution</p>
+                </div>
+
+                {/* 4. Completed Lessons */}
+                <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">4. Completed Lessons</span>
+                    <div className="p-2 rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40">
+                      <CheckCircle2 size={18} />
+                    </div>
+                  </div>
+                  <p className="text-3xl font-black text-emerald-900 dark:text-emerald-100 mt-2">{completedLessons.length}</p>
+                  <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 mt-1">Classroom verified</p>
+                </div>
+
+                {/* 5. Syllabus Completion % */}
+                <div className="rounded-3xl border border-blue-200 bg-blue-50/40 p-5 shadow-xs dark:border-blue-900/40 dark:bg-blue-950/20">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-blue-700 dark:text-blue-300">5. Syllabus Completion %</span>
+                    <div className="p-2 rounded-2xl bg-blue-100 text-blue-700 dark:bg-blue-900/40">
+                      <TrendingUp size={18} />
+                    </div>
+                  </div>
+                  <p className="text-3xl font-black text-blue-900 dark:text-blue-100 mt-2">{completionPct}%</p>
+                  <div className="w-full bg-blue-200 dark:bg-blue-900 h-2 rounded-full mt-2 overflow-hidden">
+                    <div className="bg-blue-600 h-full rounded-full transition-all duration-500" style={{ width: `${completionPct}%` }} />
+                  </div>
+                </div>
+
+                {/* 6. Topics Behind Schedule */}
+                <div className="rounded-3xl border border-rose-200 bg-rose-50/40 p-5 shadow-xs dark:border-rose-900/40 dark:bg-rose-950/20">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-rose-700 dark:text-rose-300">6. Topics Behind Schedule</span>
+                    <div className="p-2 rounded-2xl bg-rose-100 text-rose-700 dark:bg-rose-900/40">
+                      <AlertTriangle size={18} />
+                    </div>
+                  </div>
+                  <p className="text-3xl font-black text-rose-900 dark:text-rose-100 mt-2">{delayedLessons.length}</p>
+                  <p className="text-xs font-semibold text-rose-700 dark:text-rose-300 mt-1">Requires priority coverage</p>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Form with redundant class and section dropdowns REMOVED */}
           <form onSubmit={handleSubmit} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-6">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -613,36 +719,6 @@ export default function SyllabusPlanner() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Chapter (Optional)</label>
-                <select
-                  value={form.chapterId}
-                  onChange={e => handleChapterChange(e.target.value)}
-                  disabled={!form.subjectId}
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white disabled:opacity-50"
-                >
-                  <option value="">All / Entire Subject Chapters ({chapters.length} Available)</option>
-                  {chapters.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Topic (Optional)</label>
-                <select
-                  value={form.topicId}
-                  onChange={e => setForm(f => ({ ...f, topicId: e.target.value }))}
-                  disabled={!form.chapterId}
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white disabled:opacity-50"
-                >
-                  <option value="">All / Entire Chapter Topics ({topics.length} Available)</option>
-                  {topics.map(t => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Assigned Teacher *</label>
                 <select
                   required
@@ -656,19 +732,6 @@ export default function SyllabusPlanner() {
                     const tName = t.name || t.user?.name || `Teacher (${t.employee_id || 'Staff'})`;
                     return <option key={tid} value={tid}>{tName}</option>;
                   })}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Term Target</label>
-                <select
-                  value={form.term}
-                  onChange={e => setForm(f => ({ ...f, term: e.target.value }))}
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-                >
-                  <option value="Term 1">Term 1 / Mid Term</option>
-                  <option value="Term 2">Term 2 / Final Exam</option>
-                  <option value="Annual">Full Academic Year</option>
                 </select>
               </div>
 

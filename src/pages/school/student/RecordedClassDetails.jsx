@@ -774,9 +774,15 @@ export default function RecordedClassDetails() {
 
     if (detailTab === 'transcript') {
       if (recording.transcript) {
+        // Remove speech-to-text artificial line numbers (0., 1., 2., etc.) and smooth line breaks
+        const cleanedTranscript = recording.transcript
+          .replace(/(?:\r?\n|^)\s*\d+[\.:)]\s*/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+
         return (
           <div className="rounded-2xl bg-slate-50 dark:bg-slate-900 p-5 text-sm leading-7 text-slate-700 dark:text-slate-200">
-            <MarkdownRenderer content={recording.transcript} className="prose-slate dark:prose-invert max-w-none" />
+            <p className="whitespace-pre-wrap leading-relaxed">{cleanedTranscript}</p>
           </div>
         );
       }
@@ -1198,16 +1204,16 @@ export default function RecordedClassDetails() {
               </section>
             </main>
 
-          <aside className={`min-w-0 ${isSidebarExpanded ? 'block' : 'hidden lg:hidden'} lg:h-full lg:min-h-0 lg:flex lg:flex-col lg:overflow-hidden`}>
-            <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col h-[650px] lg:h-[calc(100vh-140px)] overflow-hidden">
-              <div className="shrink-0 border-b border-slate-100 dark:border-slate-800">
+          <aside className={`min-w-0 ${isSidebarExpanded ? 'block' : 'hidden lg:hidden'} lg:h-full lg:min-h-0`}>
+            <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col h-[600px] lg:h-[calc(100vh-140px)] overflow-hidden">
+              <div className="shrink-0 w-full min-w-0 overflow-hidden">
                 <CourseTabs
                   activeTab={detailTab}
                   onChange={setDetailTab}
                   availableTabs={availableTabs}
                 />
               </div>
-              <div className="p-5 overflow-y-scroll flex-1 custom-scrollbar">{renderStudyPanel()}</div>
+              <div className="p-5 overflow-y-auto flex-1 scrollbar-hide">{renderStudyPanel()}</div>
             </section>
           </aside>
         </div>

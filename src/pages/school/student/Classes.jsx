@@ -645,7 +645,7 @@ export default function Classes() {
       {showScheduled && liveClasses.length > 0 && (
         <div className="space-y-3">
           <div className="grid gap-4 sm:gap-5 lg:grid-cols-2">
-            {(showAllSchoolStudentLive ? liveClasses : liveClasses.slice(0, 4)).map((cls, index) => (
+            {(showAllSchoolStudentLive ? liveClasses : liveClasses.slice(0, 10)).map((cls, index) => (
               <div
                 key={`${cls.day}-${cls.startTime}-${cls.subject}-${index}`}
                 className="rounded-2xl sm:rounded-[1.5rem] border border-slate-100 bg-white p-4 sm:p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
@@ -695,17 +695,17 @@ export default function Classes() {
               </div>
             ))}
           </div>
-          {liveClasses.length > 4 && (
+          {liveClasses.length > 10 && (
             <div className="flex items-center justify-between px-1 flex-wrap gap-2 pt-1">
               <p className="text-xs text-slate-500">
-                Showing {Math.min(showAllSchoolStudentLive ? liveClasses.length : 4, liveClasses.length)} of {liveClasses.length} live classes
+                Showing {Math.min(showAllSchoolStudentLive ? liveClasses.length : 10, liveClasses.length)} of {liveClasses.length} live classes
               </p>
               <button
                 type="button"
                 onClick={() => setShowAllSchoolStudentLive((v) => !v)}
                 className="px-4 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors inline-flex items-center gap-1.5"
               >
-                <span>{showAllSchoolStudentLive ? "Show Less" : `Show ${liveClasses.length - 4} more`}</span>
+                <span>{showAllSchoolStudentLive ? "Show Less" : `Show ${liveClasses.length - 10} more`}</span>
                 <ChevronRight size={14} className={showAllSchoolStudentLive ? "-rotate-90 transition-transform" : "rotate-90 transition-transform"} />
               </button>
             </div>
@@ -722,21 +722,21 @@ export default function Classes() {
           </h3>
           <div className="space-y-3">
             <div className="grid gap-4 xl:grid-cols-2">
-              {(showAllSchoolStudentLiveRecordings ? liveRecordings : liveRecordings.slice(0, 4)).map((rec) => (
+              {(showAllSchoolStudentLiveRecordings ? liveRecordings : liveRecordings.slice(0, 10)).map((rec) => (
                 <LiveRecordingCard key={rec.id} rec={rec} />
               ))}
             </div>
-            {liveRecordings.length > 4 && (
+            {liveRecordings.length > 10 && (
               <div className="flex items-center justify-between px-1 flex-wrap gap-2 pt-1">
                 <p className="text-xs text-slate-500">
-                  Showing {Math.min(showAllSchoolStudentLiveRecordings ? liveRecordings.length : 4, liveRecordings.length)} of {liveRecordings.length} recordings
+                  Showing {Math.min(showAllSchoolStudentLiveRecordings ? liveRecordings.length : 10, liveRecordings.length)} of {liveRecordings.length} recordings
                 </p>
                 <button
                   type="button"
                   onClick={() => setShowAllSchoolStudentLiveRecordings((v) => !v)}
                   className="px-4 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors inline-flex items-center gap-1.5"
                 >
-                  <span>{showAllSchoolStudentLiveRecordings ? "Show Less" : `Show ${liveRecordings.length - 4} more`}</span>
+                  <span>{showAllSchoolStudentLiveRecordings ? "Show Less" : `Show ${liveRecordings.length - 10} more`}</span>
                   <ChevronRight size={14} className={showAllSchoolStudentLiveRecordings ? "-rotate-90 transition-transform" : "rotate-90 transition-transform"} />
                 </button>
               </div>
@@ -895,7 +895,7 @@ export default function Classes() {
       ) : (
         <div className="space-y-3">
           <div className="grid gap-5 xl:grid-cols-2">
-            {(showAllSchoolStudentRecordings ? filteredRecordings : filteredRecordings.slice(0, 4)).map((recording) => (
+            {(showAllSchoolStudentRecordings ? filteredRecordings : filteredRecordings.slice(0, 10)).map((recording) => (
               <RecordedClassCard
                 key={recording.id}
                 recording={recording}
@@ -903,17 +903,17 @@ export default function Classes() {
               />
             ))}
           </div>
-          {filteredRecordings.length > 4 && (
+          {filteredRecordings.length > 10 && (
             <div className="flex items-center justify-between px-1 flex-wrap gap-2 pt-1">
               <p className="text-xs text-slate-500">
-                Showing {Math.min(showAllSchoolStudentRecordings ? filteredRecordings.length : 4, filteredRecordings.length)} of {filteredRecordings.length} recorded lectures
+                Showing {Math.min(showAllSchoolStudentRecordings ? filteredRecordings.length : 10, filteredRecordings.length)} of {filteredRecordings.length} recorded lectures
               </p>
               <button
                 type="button"
                 onClick={() => setShowAllSchoolStudentRecordings((v) => !v)}
                 className="px-4 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors inline-flex items-center gap-1.5"
               >
-                <span>{showAllSchoolStudentRecordings ? "Show Less" : `Show ${filteredRecordings.length - 4} more`}</span>
+                <span>{showAllSchoolStudentRecordings ? "Show Less" : `Show ${filteredRecordings.length - 10} more`}</span>
                 <ChevronRight size={14} className={showAllSchoolStudentRecordings ? "-rotate-90 transition-transform" : "rotate-90 transition-transform"} />
               </button>
             </div>
