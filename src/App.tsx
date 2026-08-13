@@ -72,6 +72,7 @@ const TenantHealthPage = lazy(() => import("./pages/super-admin/TenantHealthPage
 const SystemHealthPage = lazy(() => import("./pages/super-admin/SystemHealthPage"));
 const BillingManagementPage = lazy(() => import("./pages/super-admin/BillingManagementPage"));
 const SettingsPage = lazy(() => import("./pages/super-admin/SettingsPage"));
+const SuperAdminErpModulesPage = lazy(() => import("./pages/super-admin/SuperAdminErpModulesPage"));
 
 const EnrollmentsPage = lazy(() => import("./pages/super-admin/EnrollmentsPage"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
@@ -213,7 +214,7 @@ const SchoolAttendanceAnalytics = lazy(() => import("./pages/school/admin/Attend
 const SchoolCustomReports = lazy(() => import("./pages/school/admin/CustomReports"));
 const SchoolInstitutes = lazy(() => import("./pages/school/admin/Institutes"));
 const SchoolAdminUsers = lazy(() => import("./pages/school/admin/Users"));
-const SchoolAdminRoles = lazy(() => import("./pages/school/admin/Roles"));
+// const SchoolAdminRoles = lazy(() => import("./pages/school/admin/Roles"));
 const SchoolAdminERP = lazy(() => import("./pages/school/admin/ERPWorkspace"));
 const SchoolAdminNotifications = lazy(() => import("./pages/school/admin/NotificationsCenter"));
 const SchoolInstituteProfile = lazy(() => import("./pages/school/admin/InstituteProfile"));
@@ -469,7 +470,7 @@ const SchoolRoutes = () => (
       <Route index element={<SchoolAdminDashboard />} />
       <Route path="textbook-coverage" element={<SchoolTextbookCoverage />} />
       <Route path="users" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]}><SchoolAdminUsers /></SchoolGuard>} />
-      <Route path="roles" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]}><SchoolAdminRoles /></SchoolGuard>} />
+      {/* <Route path="roles" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]}><SchoolAdminRoles /></SchoolGuard>} /> */}
       <Route path="erp" element={<SchoolGuard roles={["INSTITUTE_ADMIN", "STAFF"]} feature={{ type: 'module', key: 'erp' }}><SchoolAdminERP /></SchoolGuard>} />
       <Route path="students" element={<SchoolStudents />} />
       <Route path="students/new" element={<SchoolStudentRegistration />} />
@@ -540,6 +541,7 @@ const SchoolRoutes = () => (
       <Route path="settings" element={<SchoolAdminSettings />} />
       <Route path="notifications" element={<SchoolAdminNotifications />} />
       <Route path="storage" element={<SchoolStorageUsage />} />
+      <Route path="erp-modules" element={<SuperAdminErpModulesPage />} />
     </Route>
 
     {/* School Teacher */}

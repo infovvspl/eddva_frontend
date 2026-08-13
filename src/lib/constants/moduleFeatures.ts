@@ -15,7 +15,6 @@ export const MASTER_MODULE_FEATURES: ModuleFeature[] = [
   { key: 'timetable', label: 'Timetable', description: 'Class timetable and period scheduling', icon: 'CalendarCheck', defaultEnabled: true },
   { key: 'reports', label: 'Reports & Analytics', description: 'Performance reports and progress tracking', icon: 'BarChart3', defaultEnabled: true },
   { key: 'meetings', label: 'Meetings', description: 'Parent-teacher and staff meetings', icon: 'Users', defaultEnabled: true },
-  { key: 'erp', label: 'ERP (Sales & Purchase)', description: 'Sales and Purchase Management', icon: 'BarChart3', defaultEnabled: true },
 ];
 
 export interface RoleFeatureGroup {
@@ -39,7 +38,6 @@ export const ROLE_MODULE_FEATURES: RoleFeatureGroup[] = [
       { key: 'admin_timetable', parentKey: 'timetable', label: 'Manage Timetable', description: 'Create and edit class timetables', defaultEnabled: true },
       { key: 'admin_reports', parentKey: 'reports', label: 'View School Reports & Analytics', description: 'View school-wide analytics and reports', defaultEnabled: true },
       { key: 'admin_meetings', parentKey: 'meetings', label: 'Manage Meetings', description: 'Schedule and manage all meetings', defaultEnabled: true },
-      { key: 'admin_erp', parentKey: 'erp', label: 'Manage ERP', description: 'Access ERP Dashboard (Sales & Purchase)', defaultEnabled: true },
     ]
   },
   {

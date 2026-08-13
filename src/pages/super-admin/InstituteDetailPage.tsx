@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useTenant, useTenantStats, useSuspendTenant, useActivateTenant, useUpdateTenant } from "@/hooks/use-tenants";
 import { toast } from "sonner";
 import { useConfirm } from "@/context/ConfirmContext";
+import InstituteErpModulesTab from "./components/InstituteErpModulesTab";
 
 const AI_FEATURE_OPTIONS = [
   { key: "ai_study_assistant", label: "AI Study Assistant", desc: "AI tutor & interactive study sessions" },
@@ -73,6 +74,7 @@ const InstituteDetailPage = () => {
     { id: "overview", label: "Overview" },
     { id: "courses", label: "Course Analytics" },
     { id: "ai", label: "AI Features" },
+    { id: "erp", label: "ERP Modules" },
     { id: "stats", label: "Deep Stats" },
     { id: "billing", label: "Billing" },
     { id: "activity", label: "Logs" },
@@ -410,6 +412,7 @@ const InstituteDetailPage = () => {
 
             {activeTab === "ai" && (
               <div className="bg-white rounded-[28px] md:rounded-[44px] border border-slate-100 shadow-sm p-5 md:p-8">
+                {/* AI Features Content */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-slate-100">
                   <div className="flex items-center gap-4">
                     <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
@@ -485,6 +488,10 @@ const InstituteDetailPage = () => {
                   </div>
                 )}
               </div>
+            )}
+
+            {activeTab === "erp" && id && (
+              <InstituteErpModulesTab instituteId={id} />
             )}
 
             {activeTab === "stats" && (

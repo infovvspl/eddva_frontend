@@ -42,6 +42,7 @@ const superAdminGroups = [
       { path: '/school/super-admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
       { path: '/school/super-admin/institutes', label: 'Schools', icon: Building2 },
       { path: '/school/super-admin/users', label: 'User Management', icon: Users },
+      { path: '/school/super-admin/erp-modules', label: 'ERP Modules', icon: BookOpen },
     ],
   },
   {
