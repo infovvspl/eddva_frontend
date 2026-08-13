@@ -46,6 +46,7 @@ const emptyForm = {
     ai_parent_reports: false,
     ai_content_recommend: false,
   },
+  activeModules: [] as string[],
 };
 
 function readLogoFile(file?: File) {
@@ -133,6 +134,7 @@ const CreateSchoolPage = () => {
           logo: data?.logo || "",
           aiEnabled: data?.aiEnabled ?? data?.ai_enabled ?? false,
           aiFeatures: data?.aiFeatures || data?.ai_features || { ...emptyForm.aiFeatures },
+          activeModules: data?.activeModules ?? [],
           adminPassword: "",
         });
       } catch (err: any) {
@@ -216,6 +218,7 @@ const CreateSchoolPage = () => {
         totalTeachers: form.totalTeachers,
         aiEnabled: form.aiEnabled,
         aiFeatures: form.aiFeatures,
+        activeModules: form.activeModules,
       };
 
       if (isEditMode) {
@@ -405,6 +408,56 @@ const CreateSchoolPage = () => {
                     ))}
                   </div>
                 )}
+              </div>
+
+              <div className="rounded-xl border border-surface-200 bg-surface-50 p-4 sm:p-5">
+                <div className="mb-4">
+                  <h3 className="font-display text-sm font-bold text-surface-950">Operational Modules</h3>
+                  <p className="text-xs text-surface-500">Enable additional modules for this school</p>
+                </div>
+                
+                <div className="mt-2 space-y-2 border-t border-surface-200 pt-4">
+                  {[
+                    { key: "FRONTOFFICE", label: "Front Office", description: "Manage visitors and inquiries" },
+                    { key: "CANTEEN", label: "Canteen", description: "Manage cafeteria menus and orders" },
+                    { key: "TRANSPORT", label: "Transport", description: "Manage fleet and bus routes" }
+                  ].map((module) => (
+                    <div key={module.key} className="flex items-center justify-between gap-4 py-2">
+                      <div>
+                        <p className={`text-sm font-medium ${form.activeModules?.includes(module.key) ? "text-surface-800" : "text-surface-400"}`}>{module.label}</p>
+                        <p className="text-xs text-surface-400">{module.description}</p>
+                      </div>
+                      <Toggle
+                        enabled={form.activeModules?.includes(module.key) || false}
+                        onChange={(value) => {
+                          const newModules = value 
+                            ? [...(form.activeModules || []), module.key]
+                            : (form.activeModules || []).filter(m => m !== module.key);
+                          update("activeModules", newModules);
+                        }}
+                        size="sm"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-surface-200 bg-surface-50 p-4 sm:p-5">
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <h3 className="font-display text-sm font-bold text-surface-950">Enterprise Resource Planning (ERP)</h3>
+                    <p className="text-xs text-surface-500">Sales, Purchase, and Inventory Management</p>
+                  </div>
+                  <Toggle
+                    enabled={form.activeModules?.includes("erp") || false}
+                    onChange={(value) => {
+                      const newModules = value 
+                        ? [...(form.activeModules || []), "erp"]
+                        : (form.activeModules || []).filter(m => m !== "erp");
+                      update("activeModules", newModules);
+                    }}
+                  />
+                </div>
               </div>
             </div>
           </div>

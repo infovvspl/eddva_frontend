@@ -116,6 +116,12 @@ function buildInstituteGroups(mods) {
     //   ],
     // },
     {
+      heading: 'ERP',
+      items: [
+        isModuleEnabled(mods, 'erp') && { path: '/school/admin/erp', label: 'ERP Dashboard', icon: BarChart3 },
+      ].filter(Boolean),
+    },
+    {
       heading: 'Administration',
       items: [
         { path: '/school/admin/users', label: 'User Management', icon: Users },
@@ -124,7 +130,7 @@ function buildInstituteGroups(mods) {
         { path: '/school/admin/complaints', label: 'Support Tickets', icon: Shield },
       ],
     },
-  ];
+  ].filter(group => group.items && group.items.length > 0);
 }
 
 function buildTeacherGroups(mods, aiFeats) {

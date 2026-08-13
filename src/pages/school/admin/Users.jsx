@@ -10,6 +10,7 @@ import {
   X,
   Eye,
   EyeOff,
+  UserPlus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -112,6 +113,119 @@ function ResetPasswordModal({ targetUser, onClose }) {
   );
 }
 
+// ─── Add Staff Modal ─────────────────────────────────────────────────────────
+function AddStaffModal({ onClose, onSuccess }) {
+  const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', customRoleId: '' });
+  const [saving, setSaving] = useState(false);
+  const [roles, setRoles] = useState([]);
+
+  useEffect(() => {
+    async function loadRoles() {
+      try {
+        const res = await api.get('/roles');
+        setRoles(res.data?.data || []);
+      } catch (err) {
+        console.error('Failed to load roles', err);
+      }
+    }
+    loadRoles();
+  }, []);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (form.password.length < 6) return toast.error('Password must be at least 6 characters.');
+    setSaving(true);
+    try {
+      await api.post('/staff', form);
+      toast.success(`Staff user ${form.name} created successfully.`);
+      onSuccess();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to create staff.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-md rounded-xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-surface-100 px-5 py-4">
+          <div>
+            <h2 className="font-bold text-surface-950">Add New Staff / User</h2>
+            <p className="text-xs text-surface-500 mt-0.5">Create a generic staff user account.</p>
+          </div>
+          <button onClick={onClose} className="rounded-lg p-1 hover:bg-surface-100 transition">
+            <X className="h-4 w-4 text-surface-500" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-surface-700 mb-1.5">Full Name *</label>
+              <input
+                value={form.name}
+                onChange={e => setForm({ ...form, name: e.target.value })}
+                placeholder="E.g., John Doe"
+                className="w-full rounded-lg border border-surface-200 bg-surface-50 py-2.5 px-3 text-sm font-medium outline-none transition focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-surface-700 mb-1.5">Email Address *</label>
+              <input
+                type="email"
+                value={form.email}
+                onChange={e => setForm({ ...form, email: e.target.value })}
+                placeholder="john@example.com"
+                className="w-full rounded-lg border border-surface-200 bg-surface-50 py-2.5 px-3 text-sm font-medium outline-none transition focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-surface-700 mb-1.5">Phone (Optional)</label>
+              <input
+                value={form.phone}
+                onChange={e => setForm({ ...form, phone: e.target.value })}
+                placeholder="+1 234 567 890"
+                className="w-full rounded-lg border border-surface-200 bg-surface-50 py-2.5 px-3 text-sm font-medium outline-none transition focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-surface-700 mb-1.5">Password *</label>
+              <input
+                type="text"
+                value={form.password}
+                onChange={e => setForm({ ...form, password: e.target.value })}
+                placeholder="Min. 6 characters"
+                className="w-full rounded-lg border border-surface-200 bg-surface-50 py-2.5 px-3 text-sm font-medium outline-none transition focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                required
+                minLength={6}
+              />
+            </div>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 rounded-lg border border-surface-200 bg-white py-2 text-sm font-bold text-surface-700 hover:bg-surface-50 transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 rounded-lg bg-brand-600 py-2 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-50 transition"
+            >
+              {saving ? 'Creating...' : 'Create Staff'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function Users() {
@@ -123,6 +237,7 @@ export default function Users() {
   const [loading, setLoading] = useState(true);
   const [institutes, setInstitutes] = useState([]);
   const [resetTarget, setResetTarget] = useState(null);
+  const [showAddStaff, setShowAddStaff] = useState(false);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -298,6 +413,15 @@ export default function Users() {
           </p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          {!isSuperAdmin && (
+            <button
+              onClick={() => setShowAddStaff(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-brand-700 sm:px-4 sm:py-2 sm:text-sm self-start sm:self-auto"
+            >
+              <UserPlus className="h-4 w-4" />
+              Add Staff / User
+            </button>
+          )}
           <button
             onClick={exportData}
             className="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 bg-white px-3 py-2 text-xs font-bold text-surface-700 transition hover:bg-surface-50 hover:text-brand-600 self-start sm:self-auto sm:px-4 sm:py-2 sm:text-sm"
@@ -354,6 +478,7 @@ export default function Users() {
                   { value: "PARENT", label: "Parents" },
                   { value: "TEACHER", label: "Teacher" },
                   { value: "STUDENT", label: "Student" },
+                  { value: "STAFF", label: "Staff" },
                 ]}
                 className="w-full"
               />
@@ -395,6 +520,7 @@ export default function Users() {
                 { value: "PARENT", label: "Parents" },
                 { value: "TEACHER", label: "Teacher" },
                 { value: "STUDENT", label: "Student" },
+                { value: "STAFF", label: "Staff" },
               ]}
               className="w-full"
             />
@@ -643,7 +769,19 @@ export default function Users() {
       </div>
 
       {resetTarget && (
-        <ResetPasswordModal targetUser={resetTarget} onClose={() => setResetTarget(null)} />
+        <ResetPasswordModal
+          targetUser={resetTarget}
+          onClose={() => setResetTarget(null)}
+        />
+      )}
+      {showAddStaff && (
+        <AddStaffModal
+          onClose={() => setShowAddStaff(false)}
+          onSuccess={() => {
+            setShowAddStaff(false);
+            loadUsers();
+          }}
+        />
       )}
     </div>
   );

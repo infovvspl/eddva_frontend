@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
   Sparkles, MessageCircleQuestion, FileText, ClipboardList, CalendarCheck,
   Compass, Video, MessageSquare, Loader2, ChevronDown, ChevronUp, Search, Filter,
-  Zap, Presentation, Languages, FileSearch, GraduationCap, Users, Settings, Shield, User
+  Zap, Presentation, Languages, FileSearch, GraduationCap, Users, Settings, Shield, User, BarChart3
 } from "lucide-react";
 import { AI_FEATURES } from "@/lib/constants/aiFeatures";
 import { MASTER_MODULE_FEATURES, ROLE_MODULE_FEATURES, isModuleEnabled, DEFAULT_MODULES } from "@/lib/constants/moduleFeatures";
@@ -17,7 +17,7 @@ import { cn } from "@/components/school/admin/Skeleton";
 const IconMap: Record<string, React.FC<any>> = {
   MessageCircleQuestion, FileText, ClipboardList, CalendarCheck,
   Compass, Video, MessageSquare, Sparkles,
-  Zap, Presentation, Languages, FileSearch, GraduationCap, Users, Settings, Shield, User
+  Zap, Presentation, Languages, FileSearch, GraduationCap, Users, Settings, Shield, User, BarChart3
 };
 
 // ── Toggle ───────────────────────────────────────────────────────────────────
@@ -62,7 +62,7 @@ const FeatureGroupCard = ({
               <Icon className="h-6 w-6" />
             </div>
             <div className="flex items-baseline gap-2 min-w-0 flex-1">
-              <p className={`text-sm font-bold truncate shrink-0 max-w-[140px] ${isMasterEnabled ? "text-slate-900" : "text-slate-500"}`}>{master.label}</p>
+              <p className={`text-sm font-bold truncate shrink-0 ${isMasterEnabled ? "text-slate-900" : "text-slate-500"}`}>{master.label}</p>
               <p className="text-xs text-slate-500 truncate hidden sm:block">&mdash; {master.description}</p>
             </div>
           </div>
