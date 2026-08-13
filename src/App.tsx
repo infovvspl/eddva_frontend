@@ -213,6 +213,8 @@ const SchoolAttendanceAnalytics = lazy(() => import("./pages/school/admin/Attend
 const SchoolCustomReports = lazy(() => import("./pages/school/admin/CustomReports"));
 const SchoolInstitutes = lazy(() => import("./pages/school/admin/Institutes"));
 const SchoolAdminUsers = lazy(() => import("./pages/school/admin/Users"));
+const SchoolAdminRoles = lazy(() => import("./pages/school/admin/Roles"));
+const SchoolAdminERP = lazy(() => import("./pages/school/admin/ERPWorkspace"));
 const SchoolAdminNotifications = lazy(() => import("./pages/school/admin/NotificationsCenter"));
 const SchoolInstituteProfile = lazy(() => import("./pages/school/admin/InstituteProfile"));
 const SchoolTopInstitutes = lazy(() => import("./pages/school/admin/TopInstitutes"));
@@ -467,6 +469,8 @@ const SchoolRoutes = () => (
       <Route index element={<SchoolAdminDashboard />} />
       <Route path="textbook-coverage" element={<SchoolTextbookCoverage />} />
       <Route path="users" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]}><SchoolAdminUsers /></SchoolGuard>} />
+      <Route path="roles" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]}><SchoolAdminRoles /></SchoolGuard>} />
+      <Route path="erp" element={<SchoolGuard roles={["INSTITUTE_ADMIN", "STAFF"]} feature={{ type: 'module', key: 'erp' }}><SchoolAdminERP /></SchoolGuard>} />
       <Route path="students" element={<SchoolStudents />} />
       <Route path="students/new" element={<SchoolStudentRegistration />} />
       <Route path="students/:id/edit" element={<SchoolStudentRegistration />} />

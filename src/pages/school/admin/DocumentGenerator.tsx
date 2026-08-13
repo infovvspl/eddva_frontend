@@ -183,6 +183,21 @@ export default function DocumentGenerator() {
       qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=MockQR',
       bloodGroup: 'O+',
       phone: '+1 234-567-8900'
+    } : selectedType === 'CERTIFICATE' ? {
+      schoolLogo: schoolLogo || 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=100&h=100&fit=crop',
+      schoolName: institute?.name || 'Eddva School',
+      schoolAddress: institute?.address || '123 Education Lane, City, State 12345',
+      fullName: 'Johnathan Doe',
+      firstName: 'Johnathan',
+      lastName: 'Doe',
+      parentName: 'Richard Doe',
+      className: 'Class 10',
+      section: 'A',
+      dob: '15/08/2008',
+      rollNo: 'ADM-2023-100',
+      issueDate: new Date().toLocaleDateString(),
+      reasonForTransfer: 'Graduation / Passed out',
+      qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=MockQR',
     } : {
       schoolLogo: schoolLogo || 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=100&h=100&fit=crop',
       schoolName: institute?.name || 'Eddva School',
@@ -248,6 +263,10 @@ export default function DocumentGenerator() {
       // Admit Cards CSS uses physical dimensions (mm) which scale perfectly
       width = dims.width * 3.78;
       height = dims.height * 3.78;
+    } else if (t.type === 'CERTIFICATE' && dims?.width && dims?.height) {
+      // Certificates use physical dimensions (pixels) usually A4 794x1123
+      width = dims.width;
+      height = dims.height;
     }
     // ID Cards default to 340x520 as per their CSS templates
     
@@ -353,6 +372,41 @@ export default function DocumentGenerator() {
     }
   };
 
+  const handleGenerateCertificate = async () => {
+    if (!selectedTemplate) {
+      return toast({ title: 'Error', description: 'Please select a certificate template.', variant: 'destructive' });
+    }
+    setLoading(true);
+
+    const cId = (classId && classId !== 'none') ? classId : undefined;
+    const sId = (sectionId && sectionId !== 'none') ? sectionId : undefined;
+    const stId = (studentId && studentId !== 'none') ? studentId : undefined;
+
+    const payload = {
+      classId: cId,
+      sectionId: sId,
+      studentIds: stId ? [stId] : undefined,
+      templateId: selectedTemplate,
+    };
+
+    try {
+      const res = await schoolApi.post('/institute-admin/document/generate/certificate', payload);
+      const base64Data = res.data?.pdfBase64 || res.data?.data?.pdfBase64;
+      if (!base64Data) throw new Error('Invalid PDF format returned from server');
+      
+      const fileUrl = base64ToBlobUrl(base64Data);
+      
+      toast({ title: 'Success', description: 'Certificates generated successfully!' });
+      
+      setPreviewUrl(fileUrl);
+      setPreviewFilename(`Certificates-${new Date().getTime()}.pdf`);
+    } catch (err: any) {
+      toast({ title: 'Generation Failed', description: 'Could not generate certificates.', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const updateStatus = async (id: string, status: string) => {
     try {
       await schoolApi.post(`/institute-admin/document/id-card/${id}/status`, { status });
@@ -452,7 +506,7 @@ export default function DocumentGenerator() {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    <div className="p-6 w-full space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Document Generator</h1>
@@ -496,12 +550,14 @@ export default function DocumentGenerator() {
         if (v === 'id-cards') setSelectedType('ID_CARD_STUDENT');
         else if (v === 'staff-cards') setSelectedType('ID_CARD_STAFF');
         else if (v === 'admit-cards') setSelectedType('ADMIT_CARD');
+        else if (v === 'CERTIFICATE') setSelectedType('CERTIFICATE');
         else if (v === 'history') loadHistory();
       }}>
         <TabsList className="mb-4">
           <TabsTrigger value="id-cards">Student ID Cards</TabsTrigger>
           <TabsTrigger value="staff-cards">Staff ID Cards</TabsTrigger>
           <TabsTrigger value="admit-cards">Admit Cards</TabsTrigger>
+          <TabsTrigger value="CERTIFICATE">Certificates</TabsTrigger>
           <TabsTrigger value="history">Card History</TabsTrigger>
         </TabsList>
 
@@ -812,6 +868,125 @@ export default function DocumentGenerator() {
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {!loading && <Download className="mr-2 h-4 w-4" />}
                 Generate Admit Cards PDF
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* CERTIFICATES */}
+        <TabsContent value="CERTIFICATE">
+          <Card>
+            <CardHeader>
+              <CardTitle>Generate Certificates</CardTitle>
+              <CardDescription>Generate A4 certificates (e.g. Transfer, Bonafide) for students.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Class</Label>
+                  <Select value={classId} onValueChange={setClassId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a Class" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {classes.length === 0 && <SelectItem value="none" disabled>No classes found</SelectItem>}
+                      {classes.map((c: any) => (
+                        <SelectItem key={c?.id} value={c?.id || 'none'}>{c?.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Section</Label>
+                  <Select value={sectionId} onValueChange={setSectionId} disabled={!classId || classId === 'none'}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a Section" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sections.length === 0 && <SelectItem value="none" disabled>No sections</SelectItem>}
+                      {sections.map((s: any) => (
+                        <SelectItem key={s?.id} value={s?.id || 'none'}>{s?.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Specific Student (Required for some certificates)</Label>
+                  <Select value={studentId} onValueChange={setStudentId} disabled={!sectionId || sectionId === 'none'}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Students" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">All Students</SelectItem>
+                      {students.map((st: any) => (
+                        <SelectItem key={st?.id} value={st?.id || 'none'}>
+                          {st?.name} ({st?.studentProfile?.enrollmentNo || st?.studentProfile?.rollNo || 'No Reg'})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-3 md:col-span-2 mt-4">
+                  <div className="flex justify-between items-center">
+                    <Label className="text-base font-semibold">Select Template Theme</Label>
+                  </div>
+                  
+                  {templates.length === 0 ? (
+                    <div className="p-8 text-center border rounded-xl border-dashed bg-slate-50 dark:bg-slate-900 text-muted-foreground">
+                      No templates available. Please seed templates or create one.
+                    </div>
+                  ) : (
+                    <div className="flex gap-4 overflow-x-auto pb-4 pt-2 snap-x px-2">
+                      {templates.map(t => {
+                        const isSelected = selectedTemplate === t.id;
+                        const styles = getIframeStyles(t);
+                        const rawWidth = parseFloat(styles.width as string) || 794;
+                        const rawHeight = parseFloat(styles.height as string) || 1123;
+                        const scaledWidth = rawWidth * 0.28;
+                        const scaledHeight = rawHeight * 0.28;
+
+                        return (
+                          <div 
+                            key={t.id} 
+                            onClick={() => setSelectedTemplate(t.id)}
+                            className={`snap-center flex-shrink-0 cursor-pointer group relative rounded-xl border-2 transition-all duration-200 overflow-hidden bg-white ${
+                              isSelected ? 'border-primary ring-4 ring-primary/20 shadow-lg scale-[1.02]' : 'border-border hover:border-primary/50 hover:shadow-md hover:-translate-y-1'
+                            }`}
+                            style={{ width: `${Math.max(220, scaledWidth)}px` }}
+                          >
+                            <div className="bg-slate-100 relative overflow-hidden rounded-t-lg flex items-center justify-center" style={{ height: `${scaledHeight}px` }}>
+                              <iframe 
+                                srcDoc={getMockHtml(t.htmlContent)}
+                                scrolling="no"
+                                className="absolute top-0 left-0 pointer-events-none"
+                                style={{
+                                  ...styles,
+                                  transform: 'scale(0.28)',
+                                  transformOrigin: 'top left',
+                                }}
+                                title={t.name}
+                              />
+                              {isSelected && (
+                                <div className="absolute top-2 right-2 bg-primary text-white rounded-full p-1 shadow-md z-10">
+                                  <CheckCircle2 className="w-5 h-5" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="p-3 bg-white dark:bg-slate-950 border-t">
+                              <h3 className="font-semibold text-sm truncate">{t.name}</h3>
+                              <p className="text-xs text-muted-foreground mt-1">Click to select</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <Button onClick={handleGenerateCertificate} disabled={loading} className="w-full md:w-auto">
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {!loading && <Download className="mr-2 h-4 w-4" />}
+                Generate Certificates PDF
               </Button>
             </CardContent>
           </Card>
