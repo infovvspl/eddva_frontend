@@ -182,12 +182,14 @@ export default function TeacherTeachingPlan() {
     });
   });
 
+  // --- COMPUTE THE DASHBOARD METRIC CARDS DYNAMICALLY FROM SYLLABUS PLAN TOPICS ---
+  const todayStr = new Date().toISOString().split('T')[0];
+
   // Map activeTab to plan topics
   const getDisplayPlanTopics = () => {
     switch (activeTab) {
-      case 'TODAY':
-      case 'UPCOMING': return planTopicsList.filter(t => t.status === 'pending' || !t.status);
-      case 'PENDING':   return planTopicsList.filter(t => t.status === 'pending' || !t.status);
+      case 'TODAY': return planTopicsList.filter(t => t.status === 'in_progress' || t.startDate === todayStr);
+      case 'PENDING':   return planTopicsList.filter(t => t.status === 'pending' || !t.status || t.status === 'in_progress');
       case 'COMPLETED': return planTopicsList.filter(t => t.status === 'completed' || t.progress >= 100);
       case 'DELAYED':   return planTopicsList.filter(t => t.delayReason && t.status !== 'completed');
       default:          return planTopicsList;
@@ -195,40 +197,30 @@ export default function TeacherTeachingPlan() {
   };
   const displayPlanTopics = getDisplayPlanTopics();
 
-  // --- COMPUTE THE DASHBOARD METRIC CARDS DYNAMICALLY FROM SYLLABUS PLAN TOPICS ---
-  const todayStr = new Date().toISOString().split('T')[0];
-
-  // 1. Today's lessons / topics scheduled today
+  // 1. Today's lessons / topics scheduled today or in_progress
   const todaysLessons = planTopicsList.filter(t => t.status === 'in_progress' || t.startDate === todayStr);
 
-  // 2. Upcoming lessons: count of in_progress topics
-  const upcomingLessons = planTopicsList.filter(t => t.status === 'in_progress');
+  // 2. Pending lessons: count of topics with no updates yet or status = 'pending' or 'in_progress'
+  const pendingLessons = planTopicsList.filter(t => !t.status || t.status === 'pending' || t.status === 'in_progress');
 
-  // 3. Pending lessons: count of topics with no updates yet or status = 'pending'
-  const pendingLessons = planTopicsList.filter(t => !t.status || t.status === 'pending');
-
-  // 4. Completed topics
+  // 3. Completed topics
   const completedLessons = planTopicsList.filter(t => t.status === 'completed' || t.progress >= 100);
 
-  // 5. Delayed topics
+  // 4. Delayed topics
   const delayedLessons = planTopicsList.filter(t => t.delayReason && t.status !== 'completed');
 
-  // 6. Syllabus completion %
+  // 5. Syllabus completion %
   const rawTotalTopicsCount = planTopicsList.length;
   const totalTopicsCount = rawTotalTopicsCount || 1;
   const syllabusCompletionPercentage = Math.round((completedLessons.length / totalTopicsCount) * 100);
 
-  // 7. Topics remaining = total topics - completed topics
-  const topicsRemainingCount = Math.max(0, rawTotalTopicsCount - completedLessons.length);
-
-  // 8. Topics behind schedule
+  // 6. Topics behind schedule
   const topicsBehindScheduleCount = delayedLessons.length;
 
   // Filter lessons based on selected tab
   const getDisplayLessons = () => {
     switch (activeTab) {
       case 'TODAY': return todaysLessons.length > 0 ? todaysLessons : filteredLessons;
-      case 'UPCOMING': return upcomingLessons;
       case 'PENDING': return pendingLessons;
       case 'COMPLETED': return completedLessons;
       case 'DELAYED': return delayedLessons;
@@ -279,28 +271,13 @@ export default function TeacherTeachingPlan() {
           <p className="text-xs font-semibold text-slate-500 mt-1">Scheduled for today</p>
         </div>
 
-        {/* 2. Upcoming lessons */}
-        <div 
-          onClick={() => setActiveTab('UPCOMING')}
-          className={`cursor-pointer rounded-3xl border p-5 transition-all shadow-xs ${activeTab === 'UPCOMING' ? 'border-purple-500 bg-purple-50/50 dark:bg-purple-950/30' : 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900'}`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-400">2. In Progress Lessons</span>
-            <div className="p-2 rounded-2xl bg-purple-100 text-purple-700 dark:bg-purple-900/40">
-              <Calendar size={18} />
-            </div>
-          </div>
-          <p className="text-3xl font-black text-slate-900 dark:text-white mt-2">{upcomingLessons.length}</p>
-          <p className="text-xs font-semibold text-slate-500 mt-1">In progress topics</p>
-        </div>
-
-        {/* 3. Pending lessons */}
+        {/* 2. Pending lessons */}
         <div 
           onClick={() => setActiveTab('PENDING')}
           className={`cursor-pointer rounded-3xl border p-5 transition-all shadow-xs ${activeTab === 'PENDING' ? 'border-amber-500 bg-amber-50/50 dark:bg-amber-950/30' : 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900'}`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">3. Pending Lessons</span>
+            <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">2. Pending Lessons</span>
             <div className="p-2 rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-900/40">
               <Hourglass size={18} />
             </div>
@@ -309,13 +286,13 @@ export default function TeacherTeachingPlan() {
           <p className="text-xs font-semibold text-amber-700 dark:text-amber-300 mt-1">Awaiting execution</p>
         </div>
 
-        {/* 4. Completed lessons */}
+        {/* 3. Completed lessons */}
         <div 
           onClick={() => setActiveTab('COMPLETED')}
           className={`cursor-pointer rounded-3xl border p-5 transition-all shadow-xs ${activeTab === 'COMPLETED' ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30' : 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900'}`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">4. Completed Lessons</span>
+            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">3. Completed Lessons</span>
             <div className="p-2 rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40">
               <CheckCircle2 size={18} />
             </div>
@@ -324,10 +301,10 @@ export default function TeacherTeachingPlan() {
           <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 mt-1">Classroom verified</p>
         </div>
 
-        {/* 5. Syllabus completion % */}
+        {/* 4. Syllabus completion % */}
         <div className="rounded-3xl border border-blue-200 bg-blue-50/40 p-5 shadow-xs dark:border-blue-900/40 dark:bg-blue-950/20">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase tracking-wider text-blue-700 dark:text-blue-300">5. Syllabus Completion %</span>
+            <span className="text-[10px] font-black uppercase tracking-wider text-blue-700 dark:text-blue-300">4. Syllabus Completion %</span>
             <div className="p-2 rounded-2xl bg-blue-100 text-blue-700 dark:bg-blue-900/40">
               <TrendingUp size={18} />
             </div>
@@ -338,13 +315,13 @@ export default function TeacherTeachingPlan() {
           </div>
         </div>
 
-        {/* 6. Topics behind schedule */}
+        {/* 5. Topics behind schedule */}
         <div 
           onClick={() => setActiveTab('DELAYED')}
           className={`cursor-pointer rounded-3xl border p-5 transition-all shadow-xs ${activeTab === 'DELAYED' ? 'border-rose-500 bg-rose-50/50 dark:bg-rose-950/30' : 'border-rose-200 bg-rose-50/40 dark:border-rose-900/40 dark:bg-rose-950/20'}`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase tracking-wider text-rose-700 dark:text-rose-300">6. Topics Behind Schedule</span>
+            <span className="text-[10px] font-black uppercase tracking-wider text-rose-700 dark:text-rose-300">5. Topics Behind Schedule</span>
             <div className="p-2 rounded-2xl bg-rose-100 text-rose-700 dark:bg-rose-900/40">
               <AlertTriangle size={18} />
             </div>
@@ -524,7 +501,7 @@ export default function TeacherTeachingPlan() {
           </div>
 
           <div className="flex gap-2">
-            {['ALL', 'TODAY', 'UPCOMING', 'PENDING', 'COMPLETED', 'DELAYED'].map(tab => (
+            {['ALL', 'TODAY', 'PENDING', 'COMPLETED', 'DELAYED'].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
