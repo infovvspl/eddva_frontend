@@ -1196,11 +1196,17 @@ export default function TeacherLiveDashboard() {
                   <div className="absolute inset-0 rounded-full border-2 border-dashed border-blue-500/30 animate-spin" />
                   <Radio className="h-10 w-10 text-blue-500 animate-pulse" />
                 </div>
-                <h4 className="text-white font-black text-base tracking-wide mb-1.5">Waiting for teacher to start broadcasting</h4>
-                <p className="text-[13px] text-slate-400 leading-relaxed max-w-xs mx-auto mb-4">Please connect your OBS Studio to the RTMP endpoint and start streaming to go live.</p>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800 border border-slate-700 text-[13px] font-bold text-slate-400 shadow-sm">
+                <h4 className="text-white font-black text-base tracking-wide mb-1.5">Ready to go live</h4>
+                <p className="text-[13px] text-slate-400 leading-relaxed max-w-xs mx-auto mb-4">Broadcast right from your browser — share your screen, use the whiteboard, and present slides. No OBS needed.</p>
+                <button
+                  onClick={() => navigate(`/school/teacher/live/${id}/studio`)}
+                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white shadow-lg transition hover:bg-blue-700 active:scale-95"
+                >
+                  <Monitor className="h-4 w-4" /> Go Live from Browser (Studio)
+                </button>
+                <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800 border border-slate-700 text-[12px] font-bold text-slate-400 shadow-sm">
                   <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-                  OBS Connection Status: Idle
+                  Or connect OBS to the RTMP endpoint
                 </div>
               </div>
             )}
