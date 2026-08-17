@@ -236,6 +236,7 @@ const SchoolTeacherSettings = lazy(() => import("./pages/school/teacher/Settings
 const SchoolTeacherTimetable = lazy(() => import("./pages/school/teacher/Timetable"));
 const SchoolTeacherCreateLive = lazy(() => import("./pages/school/teacher/live/TeacherCreateLive"));
 const SchoolTeacherLiveDashboard = lazy(() => import("./pages/school/teacher/live/TeacherLiveDashboard"));
+const SchoolTeacherStudio = lazy(() => import("./pages/school/teacher/live/StudioBroadcaster"));
 const SchoolStudentLivePlayer = lazy(() => import("./pages/school/student/live/StudentLivePlayer"));
 const SchoolMaterialViewPage = lazy(() => import("./pages/school/MaterialViewPage"));
 
@@ -529,6 +530,7 @@ const SchoolRoutes = () => (
       <Route path="course-content/materials/:materialId" element={<SchoolMaterialViewPage />} />
       <Route path="live" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'live_classes' }}><SchoolTeacherCreateLive /></SchoolGuard>} />
       <Route path="live/:id/dashboard" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'live_classes' }}><SchoolTeacherLiveDashboard /></SchoolGuard>} />
+      <Route path="live/:id/studio" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'live_classes' }}><SchoolTeacherStudio /></SchoolGuard>} />
       <Route path="topics" element={<Navigate to="/school/teacher/course-content" replace />} />
       <Route path="classes" element={<SchoolClassManagement />} />
       <Route path="calendar" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'academic_calendar' }}><SchoolTeacherCalendar /></SchoolGuard>} />

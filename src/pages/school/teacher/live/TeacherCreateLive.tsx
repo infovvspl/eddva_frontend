@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Check, Copy, Eye, EyeOff, Radio, Loader2, ArrowRight } from 'lucide-react';
+import { Check, Copy, Eye, EyeOff, Radio, Loader2, ArrowRight, MonitorUp, ChevronDown } from 'lucide-react';
 import { schoolLive, type CreatedLecture } from '@/lib/api/school-live';
 
 export default function TeacherCreateLive() {
@@ -11,6 +11,7 @@ export default function TeacherCreateLive() {
   const [created, setCreated] = useState<CreatedLecture | null>(null);
   const [showKey, setShowKey] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const [showObs, setShowObs] = useState(false);
 
   const create = async () => {
     if (!title.trim()) { toast.warning('Enter a lecture title'); return; }
@@ -42,7 +43,7 @@ export default function TeacherCreateLive() {
         </div>
         <div>
           <h1 className="text-xl font-black text-slate-900 dark:text-white">Create Live Class</h1>
-          <p className="text-sm text-slate-500">Go live with OBS — students watch in real time.</p>
+          <p className="text-sm text-slate-500">Go live from your browser — students watch in real time.</p>
         </div>
       </div>
 
@@ -75,35 +76,69 @@ export default function TeacherCreateLive() {
           </div>
 
           <div className="space-y-4 p-6">
-            <Field label="RTMP URL" value={created.rtmpUrl} copied={copied === 'rtmp'} onCopy={() => copy('rtmp', created.rtmpUrl)} />
-            <div>
-              <div className="mb-1.5 flex items-center justify-between">
-                <span className="text-xs font-black uppercase tracking-wider text-slate-500">Stream Key</span>
-                <div className="flex gap-2">
-                  <button onClick={() => setShowKey((s) => !s)} className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
-                    {showKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />} {showKey ? 'Hide' : 'Show'}
-                  </button>
-                  <button onClick={() => copy('key', created.streamKey)} className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700">
-                    {copied === 'key' ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />} Copy
-                  </button>
+            {/* Primary: broadcast from the browser (screen share, whiteboard, slides) */}
+            <div className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-5 dark:border-blue-900/50 dark:from-blue-900/20 dark:to-indigo-900/20">
+              <div className="flex items-start gap-3">
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-600 text-white">
+                  <MonitorUp className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-black text-slate-900 dark:text-white">Broadcast from your browser</h3>
+                  <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300">
+                    Share your screen, present slides, and use the whiteboard — no OBS or setup needed. Recommended.
+                  </p>
                 </div>
               </div>
-              <code className="block w-full overflow-x-auto rounded-xl bg-slate-100 px-4 py-3 font-mono text-sm text-slate-800 dark:bg-slate-800 dark:text-slate-200">
-                {showKey ? created.streamKey : '•'.repeat(Math.min(created.streamKey.length, 32))}
-              </code>
+              <button
+                onClick={() => navigate(`/school/teacher/live/${created.lectureId}/studio`)}
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white transition hover:bg-blue-700"
+              >
+                <Radio className="h-4 w-4" /> Open Studio & Go Live
+              </button>
             </div>
 
-            <ol className="space-y-1.5 rounded-xl bg-slate-50 p-4 text-sm text-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
-              <li><b>Step 1:</b> Open OBS Studio</li>
-              <li><b>Step 2:</b> Settings → Stream → Service: <i>Custom</i></li>
-              <li><b>Step 3:</b> Paste the RTMP URL and Stream Key above</li>
-              <li><b>Step 4:</b> Settings → Output → Encoding → Keyframe Interval: <b>1</b> (second) — keeps latency low</li>
-              <li><b>Step 5:</b> Click <b>Start Streaming</b> — you go LIVE automatically</li>
-            </ol>
+            {/* Secondary: OBS (advanced) */}
+            <button
+              onClick={() => setShowObs((s) => !s)}
+              className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-left text-sm font-bold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+            >
+              <span>Advanced: stream with OBS instead</span>
+              <ChevronDown className={`h-4 w-4 transition-transform ${showObs ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showObs && (
+              <div className="space-y-4">
+                <Field label="RTMP URL" value={created.rtmpUrl} copied={copied === 'rtmp'} onCopy={() => copy('rtmp', created.rtmpUrl)} />
+                <div>
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-500">Stream Key</span>
+                    <div className="flex gap-2">
+                      <button onClick={() => setShowKey((s) => !s)} className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+                        {showKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />} {showKey ? 'Hide' : 'Show'}
+                      </button>
+                      <button onClick={() => copy('key', created.streamKey)} className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700">
+                        {copied === 'key' ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />} Copy
+                      </button>
+                    </div>
+                  </div>
+                  <code className="block w-full overflow-x-auto rounded-xl bg-slate-100 px-4 py-3 font-mono text-sm text-slate-800 dark:bg-slate-800 dark:text-slate-200">
+                    {showKey ? created.streamKey : '•'.repeat(Math.min(created.streamKey.length, 32))}
+                  </code>
+                </div>
+
+                <ol className="space-y-1.5 rounded-xl bg-slate-50 p-4 text-sm text-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
+                  <li><b>Step 1:</b> Open OBS Studio</li>
+                  <li><b>Step 2:</b> Settings → Stream → Service: <i>Custom</i></li>
+                  <li><b>Step 3:</b> Paste the RTMP URL and Stream Key above</li>
+                  <li><b>Step 4:</b> Settings → Output → Encoding → Keyframe Interval: <b>1</b> (second) — keeps latency low</li>
+                  <li><b>Step 5:</b> Click <b>Start Streaming</b> — you go LIVE automatically</li>
+                </ol>
+              </div>
+            )}
 
             <button
               onClick={() => navigate(`/school/teacher/live/${created.lectureId}/dashboard`)}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
             >
               Go to Live Dashboard <ArrowRight className="h-4 w-4" />
             </button>

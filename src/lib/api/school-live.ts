@@ -202,6 +202,22 @@ export function createLiveSocket(): Socket {
 }
 
 /**
+ * Connect to the `/school-broadcast` relay namespace — used by the in-browser
+ * Studio to stream composited WebM chunks to the server, which pipes them
+ * through ffmpeg to the same RTMP ingest OBS uses. No OBS required.
+ */
+export function createBroadcastRelaySocket(): Socket {
+  const explicit = (import.meta.env.VITE_SOCKET_URL as string | undefined)?.trim();
+  const base = explicit || getApiOrigin() || window.location.origin;
+  return io(`${base}/school-broadcast`, {
+    transports: ['websocket', 'polling'],
+    withCredentials: true,
+    // Binary WebM chunks — keep the buffer generous so 1s chunks aren't dropped.
+    forceNew: true,
+  });
+}
+
+/**
  * Same-origin HLS URL via the backend proxy — avoids the CORS block on the
  * public R2 (`pub-*.r2.dev`) domain, which serves HLS without CORS headers.
  */
