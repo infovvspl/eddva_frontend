@@ -9,6 +9,7 @@ import { schoolLive } from '@/lib/api/school-live';
 import { useStudioBroadcast, type StudioSource } from '@/components/school/live/studio/useStudioBroadcast';
 import Whiteboard from '@/components/school/live/studio/Whiteboard';
 import SlidePresenter from '@/components/school/live/studio/SlidePresenter';
+import StudioLivePanel from '@/components/school/live/studio/StudioLivePanel';
 
 function fmt(sec: number) {
   const h = Math.floor(sec / 3600);
@@ -136,7 +137,7 @@ export default function StudioBroadcaster() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl p-3 sm:p-5">
+    <div className="mx-auto max-w-7xl p-3 sm:p-5">
       {/* Header */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -177,6 +178,9 @@ export default function StudioBroadcaster() {
         </div>
       </div>
 
+      <div className="flex flex-col gap-4 lg:flex-row">
+        {/* Left: broadcast area */}
+        <div className="min-w-0 flex-1">
       {/* Preview */}
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-900 shadow-sm dark:border-slate-700">
         <div className="relative aspect-video w-full">
@@ -299,6 +303,13 @@ export default function StudioBroadcaster() {
       <p className="mt-3 text-center text-xs text-slate-400">
         Tip: for best quality use Chrome or Edge on a laptop. Students watch with a few seconds of delay (HLS).
       </p>
+        </div>
+
+        {/* Right: live interactions */}
+        <div className="h-[70vh] shrink-0 lg:h-auto lg:w-80">
+          <StudioLivePanel lectureId={id} isLive={studio.isLive} />
+        </div>
+      </div>
     </div>
   );
 }
