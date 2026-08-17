@@ -1031,6 +1031,15 @@ export default function TeacherLiveDashboard() {
 
         {/* Top Status Chips */}
         <div className="flex items-center gap-2">
+          {/* Open the in-browser Studio (whiteboard / screen share / slides). */}
+          <button
+            onClick={() => navigate(`/school/teacher/live/${id}/studio`)}
+            className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-3 py-1.5 text-[13px] font-black text-white shadow-sm transition hover:bg-blue-700 active:scale-95"
+            title="Whiteboard, screen share & slides — broadcast from your browser"
+          >
+            <Monitor className="h-3.5 w-3.5" /> Whiteboard / Screen
+          </button>
+
           {/* Status Badge */}
           <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-black uppercase tracking-wider shadow-xs transition-all ${
             live 
