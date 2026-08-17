@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { SchoolVideoPlayer } from '@/components/school/SchoolVideoPlayer';
-import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Upload, Youtube, Image as ImageIcon, FileText, Loader2, BarChart3, Download, ChevronRight, X, Sparkles, TrendingUp, XCircle, CheckCircle, ListChecks, Trophy, Copy, Eye, EyeOff, ArrowLeft, ArrowRight, ImagePlus, RefreshCw, CalendarClock, AlarmClock, PanelRightClose, PanelRightOpen, CalendarDays, Clock3, Tag, BookOpen, MessageCircle, Send, MessagesSquare, HelpCircle, User } from 'lucide-react';
+import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Upload, Youtube, Image as ImageIcon, FileText, Loader2, BarChart3, Download, ChevronRight, X, Sparkles, TrendingUp, XCircle, CheckCircle, ListChecks, Trophy, Copy, Eye, EyeOff, ArrowLeft, ArrowRight, ImagePlus, RefreshCw, CalendarClock, AlarmClock, PanelRightClose, PanelRightOpen, CalendarDays, Clock3, Tag, BookOpen, MessageCircle, Send, MessagesSquare, HelpCircle, User, Monitor } from 'lucide-react';
 import { schoolLive, type CreatedLecture, type LiveLecture } from '@/lib/api/school-live';
 import { Highlight } from '@/types/highlight';
 import { HighlightRenderer } from '@/lib/highlight-renderer';
@@ -1277,6 +1277,15 @@ const ClassManagement: React.FC = () => {
               className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-gradient-to-r hover:from-blue-50 hover:to-sky-50 hover:text-blue-600 hover:border-blue-300"
             >
               <PlayCircle size={13} /> Watch Video
+            </button>
+          )}
+          {!isEnded && !isLive && (
+            <button
+              onClick={() => navigate(`/school/teacher/live/${lec.id}/studio`)}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-black text-white transition hover:bg-blue-700"
+              title="Go live from your browser — screen share, whiteboard, slides"
+            >
+              <Monitor size={13} /> Studio
             </button>
           )}
           <button
