@@ -42,6 +42,27 @@ function pickMimeType(): string {
   return candidates.find((t) => MediaRecorder.isTypeSupported(t)) || 'video/webm';
 }
 
+/** Fraction of the width the content occupies in split layout (rest = whiteboard). */
+export const SPLIT_CONTENT_RATIO = 0.62;
+
+/** Draw a source contained within a region [rx,ry,rw,rh], preserving aspect ratio. */
+function drawContainAt(
+  ctx: CanvasRenderingContext2D,
+  src: CanvasImageSource,
+  srcW: number,
+  srcH: number,
+  rx: number,
+  ry: number,
+  rw: number,
+  rh: number,
+) {
+  if (!srcW || !srcH) return;
+  const scale = Math.min(rw / srcW, rh / srcH);
+  const w = srcW * scale;
+  const h = srcH * scale;
+  ctx.drawImage(src, rx + (rw - w) / 2, ry + (rh - h) / 2, w, h);
+}
+
 /** Draw a source (video/image/canvas) into `ctx` preserving aspect ratio ("contain"). */
 function drawContain(
   ctx: CanvasRenderingContext2D,
@@ -51,13 +72,7 @@ function drawContain(
   destW: number,
   destH: number,
 ) {
-  if (!srcW || !srcH) return;
-  const scale = Math.min(destW / srcW, destH / srcH);
-  const w = srcW * scale;
-  const h = srcH * scale;
-  const x = (destW - w) / 2;
-  const y = (destH - h) / 2;
-  ctx.drawImage(src, x, y, w, h);
+  drawContainAt(ctx, src, srcW, srcH, 0, 0, destW, destH);
 }
 
 export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
@@ -72,6 +87,7 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(false);
   const [elapsedSec, setElapsedSec] = useState(0);
+  const [layout, setLayoutState] = useState<'single' | 'split'>('single');
 
   // ── Media element refs (detached, not mounted in the DOM) ──────────────────
   const screenVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -98,6 +114,7 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const activeSourceRef = useRef<StudioSource>('screen');
   const camOnRef = useRef(false);
+  const layoutRef = useRef<'single' | 'split'>('single');
 
   const updateStatus = useCallback(
     (s: StudioStatus) => {
@@ -110,6 +127,11 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
   const setActiveSource = useCallback((s: StudioSource) => {
     activeSourceRef.current = s;
     setActiveSourceState(s);
+  }, []);
+
+  const setLayout = useCallback((l: 'single' | 'split') => {
+    layoutRef.current = l;
+    setLayoutState(l);
   }, []);
 
   // Keep camOnRef in sync for the RAF loop (which reads refs, not state).
@@ -128,8 +150,47 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
     if (canvas.width !== width) canvas.width = width;
     if (canvas.height !== height) canvas.height = height;
 
-    // Background
     const source = activeSourceRef.current;
+
+    // ── Split layout: content on the left, whiteboard on the right ──────────
+    if (layoutRef.current === 'split') {
+      const cw = Math.round(width * SPLIT_CONTENT_RATIO);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, width, height);
+
+      // Left: the active content (screen or slides; falls back to camera).
+      if (source === 'slides') {
+        const img = slideImageRef.current;
+        if (img) drawContainAt(ctx, img, slideSizeRef.current.w, slideSizeRef.current.h, 0, 0, cw, height);
+      } else {
+        const v = screenVideoRef.current;
+        if (v && v.readyState >= 2) drawContainAt(ctx, v, v.videoWidth, v.videoHeight, 0, 0, cw, height);
+      }
+
+      // Right: whiteboard on white.
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(cw, 0, width - cw, height);
+      const wbCanvas = whiteboardCanvasRef.current;
+      if (wbCanvas) ctx.drawImage(wbCanvas, cw, 0, width - cw, height);
+
+      // Divider.
+      ctx.fillStyle = 'rgba(148,163,184,0.5)';
+      ctx.fillRect(cw - 1, 0, 2, height);
+
+      // Camera PiP in the bottom-left content corner.
+      if (camOnRef.current) {
+        const cam = cameraVideoRef.current;
+        if (cam && cam.readyState >= 2) {
+          const pipW = Math.round(cw * 0.28);
+          const pipH = Math.round((pipW * cam.videoHeight) / (cam.videoWidth || 1)) || Math.round(pipW * 0.5625);
+          ctx.drawImage(cam, PIP_MARGIN, height - pipH - PIP_MARGIN, pipW, pipH);
+        }
+      }
+      rafRef.current = requestAnimationFrame(renderFrame);
+      return;
+    }
+
+    // Background
     if (source === 'whiteboard') {
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, width, height);
@@ -460,6 +521,7 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
     micOn,
     camOn,
     elapsedSec,
+    layout,
     isLive: status === 'live',
     // actions
     startBroadcast,
@@ -469,6 +531,7 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
     toggleCam,
     toggleMic,
     setActiveSource,
+    setLayout,
     setMicDeviceId,
     setCamDeviceId,
     // layer feeders (Phase 2 / 3)

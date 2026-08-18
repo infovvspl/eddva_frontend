@@ -4,10 +4,10 @@ import { toast } from 'sonner';
 import {
   MonitorUp, Mic, MicOff, Video, VideoOff, Radio, Loader2, ArrowLeft,
   AlertTriangle, PenLine, Presentation, PanelRightClose, PanelRightOpen,
-  Circle, Users, PhoneOff,
+  Circle, Users, PhoneOff, Columns2,
 } from 'lucide-react';
 import { schoolLive } from '@/lib/api/school-live';
-import { useStudioBroadcast } from '@/components/school/live/studio/useStudioBroadcast';
+import { useStudioBroadcast, SPLIT_CONTENT_RATIO } from '@/components/school/live/studio/useStudioBroadcast';
 import Whiteboard from '@/components/school/live/studio/Whiteboard';
 import SlidePresenter from '@/components/school/live/studio/SlidePresenter';
 import StudioLivePanel from '@/components/school/live/studio/StudioLivePanel';
@@ -83,10 +83,20 @@ export default function StudioBroadcaster() {
   }, [annotate]);
 
   const src = studio.activeSource;
-  const canAnnotate = src === 'screen' || src === 'slides';
-  const showWhiteboard = src === 'whiteboard' || (annotate && canAnnotate);
+  const isSplit = studio.layout === 'split';
+  // In split mode the whiteboard lives on the right; annotate-overlay is single-only.
+  const canAnnotate = !isSplit && (src === 'screen' || src === 'slides');
+  const showWhiteboard = isSplit || src === 'whiteboard' || (annotate && canAnnotate);
   const canGoLive =
-    !!streamKey && (studio.screenOn || studio.camOn || src === 'whiteboard' || (src === 'slides' && slideLoaded));
+    !!streamKey && (isSplit || studio.screenOn || studio.camOn || src === 'whiteboard' || (src === 'slides' && slideLoaded));
+
+  const toggleSplit = () => {
+    if (isSplit) return studio.setLayout('single');
+    // Left side needs real content — default to screen if we're on the blank board.
+    if (src === 'whiteboard') studio.setActiveSource('screen');
+    studio.setLayout('split');
+  };
+  const wbWidth = isSplit ? Math.round(1920 * (1 - SPLIT_CONTENT_RATIO)) : 1920;
 
   // Turning off annotate when switching to a source that can't be annotated.
   useEffect(() => {
@@ -221,13 +231,25 @@ export default function StudioBroadcaster() {
             <div className="relative inline-flex max-h-full max-w-full overflow-hidden rounded-2xl bg-slate-900 shadow-2xl ring-1 ring-white/10">
               <canvas ref={canvasRef} className="block max-h-full max-w-full" style={{ aspectRatio: '16 / 9' }} />
 
-              {/* Whiteboard overlay — aligned 1:1 with the canvas */}
-              <div className="absolute inset-0" style={{ visibility: showWhiteboard ? 'visible' : 'hidden' }}>
-                <Whiteboard width={1920} height={1080} active={showWhiteboard} onReady={(c) => studio.setWhiteboardCanvas(c)} />
+              {/* Whiteboard overlay. Single: fills the stage. Split: right region only. */}
+              <div
+                className="absolute"
+                style={
+                  isSplit
+                    ? { left: `${SPLIT_CONTENT_RATIO * 100}%`, right: 0, top: 0, bottom: 0, visibility: 'visible' }
+                    : ({ inset: 0, visibility: showWhiteboard ? 'visible' : 'hidden' } as React.CSSProperties)
+                }
+              >
+                <Whiteboard key={isSplit ? 'split' : 'single'} width={wbWidth} height={1080} active={showWhiteboard} onReady={(c) => studio.setWhiteboardCanvas(c)} />
               </div>
+              {isSplit && !studio.screenOn && src !== 'slides' && (
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center" style={{ width: `${SPLIT_CONTENT_RATIO * 100}%` }}>
+                  <p className="w-full px-4 text-center text-sm font-semibold text-slate-400">Share a window/tab or pick Slides for the left side</p>
+                </div>
+              )}
 
-              {/* Empty states */}
-              {src === 'screen' && !studio.screenOn && (
+              {/* Empty states (single layout only — split shows its own left hint) */}
+              {!isSplit && src === 'screen' && !studio.screenOn && (
                 <StageHint
                   icon={MonitorUp}
                   title="Share a window or a browser tab"
@@ -240,7 +262,7 @@ export default function StudioBroadcaster() {
                   }
                 />
               )}
-              {src === 'slides' && !slideLoaded && (
+              {!isSplit && src === 'slides' && !slideLoaded && (
                 <StageHint icon={Presentation} title="Load slides to present" sub="Upload a PDF in the strip below, then flip through slides live." />
               )}
 
@@ -283,16 +305,17 @@ export default function StudioBroadcaster() {
             )}
             <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-center gap-1.5 rounded-2xl border border-white/10 bg-slate-900/80 p-2 backdrop-blur">
               {/* What students see */}
-              <Ctrl active={src === 'screen'} onClick={onShareScreen} icon={MonitorUp} label={studio.screenOn ? 'Screen' : 'Share'} activeClass="bg-blue-600" />
-              <Ctrl active={src === 'whiteboard'} onClick={() => studio.setActiveSource('whiteboard')} icon={PenLine} label="Whiteboard" activeClass="bg-blue-600" />
-              <Ctrl active={src === 'slides'} onClick={() => studio.setActiveSource('slides')} icon={Presentation} label="Slides" activeClass="bg-blue-600" />
+              <Ctrl active={!isSplit && src === 'screen'} onClick={onShareScreen} icon={MonitorUp} label={studio.screenOn ? 'Screen' : 'Share'} activeClass="bg-blue-600" />
+              <Ctrl active={!isSplit && src === 'whiteboard'} onClick={() => studio.setActiveSource('whiteboard')} icon={PenLine} label="Whiteboard" activeClass="bg-blue-600" disabled={isSplit} title={isSplit ? 'Whiteboard is on the right in split view' : 'Blank whiteboard'} />
+              <Ctrl active={!isSplit && src === 'slides'} onClick={() => studio.setActiveSource('slides')} icon={Presentation} label="Slides" activeClass="bg-blue-600" />
+              <Ctrl active={isSplit} onClick={toggleSplit} icon={Columns2} label="Split" activeClass="bg-blue-600" title="Screen/slides on the left, whiteboard on the right" />
 
               <span className="mx-1 h-8 w-px bg-white/10" />
 
               {/* Devices / overlays */}
               <Ctrl active={studio.camOn} onClick={studio.toggleCam} icon={studio.camOn ? Video : VideoOff} label="Camera" activeClass="bg-emerald-600" />
               <Ctrl active={studio.micOn} onClick={studio.toggleMic} icon={studio.micOn ? Mic : MicOff} label="Mic" activeClass="bg-white/20" disabled={!studio.isLive} title={!studio.isLive ? 'Mic activates when you go live' : 'Toggle mic'} />
-              <Ctrl active={annotate && canAnnotate} onClick={() => setAnnotate((a) => !a)} icon={PenLine} label="Annotate" activeClass="bg-amber-500" disabled={!canAnnotate} title={canAnnotate ? 'Draw over the screen/slide' : "You're already on the whiteboard"} />
+              <Ctrl active={annotate && canAnnotate} onClick={() => setAnnotate((a) => !a)} icon={PenLine} label="Annotate" activeClass="bg-amber-500" disabled={!canAnnotate} title={canAnnotate ? 'Draw over the screen/slide' : (isSplit ? 'Use the whiteboard on the right' : "You're already on the whiteboard")} />
 
               <span className="mx-1 h-8 w-px bg-white/10" />
 
