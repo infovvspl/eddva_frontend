@@ -280,7 +280,7 @@ export default function Assignments() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 xl:gap-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 xl:gap-5">
           {filteredAssignments.map((assignment) => {
             const teacherUrl = resolveTeacherFileUrl(assignment.filePath || assignment.file_path);
             const due = assignment.dueDate || assignment.due_date;
@@ -292,142 +292,135 @@ export default function Assignments() {
             return (
               <div
                 key={assignment.id}
-                className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900"
+                className="flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 sm:p-5"
               >
-                <div className="h-1 w-full bg-slate-200 dark:bg-slate-800" />
+                <div>
+                  {/* Header Row: Title & Details on left, Status Badge on right */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white line-clamp-1 sm:text-base" title={assignment.title}>
+                        {assignment.title}
+                      </h3>
+                      {(assignment.subjectName || assignment.className || assignment.sectionName) && (
+                        <p className="mt-0.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400 truncate">
+                          {[assignment.subjectName, assignment.className, assignment.sectionName].filter(Boolean).join(' · ')}
+                        </p>
+                      )}
+                    </div>
 
-                <div className="flex flex-1 flex-col p-4 sm:p-6">
-                  <div className="mb-3 flex items-center justify-between sm:mb-4">
-                    <span
-                      className="rounded-lg bg-slate-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-slate-600 dark:bg-slate-800 dark:text-slate-300 sm:px-2.5 sm:py-1 sm:text-[10px]"
-                    >
-                      {statusLabels[assignment.bucket] || assignment.bucket}
-                    </span>
-                    {assignment.daysLeft !== null && assignment.bucket === 'pending' && (
-                      <span className="rounded-lg bg-blue-50 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-blue-600 dark:bg-blue-950/40 dark:text-blue-300 sm:px-2.5 sm:py-1 sm:text-[10px]">
-                        {assignment.daysLeft <= 0 ? 'Due today' : `${assignment.daysLeft}d left`}
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <span
+                        className={cn(
+                          "rounded-md px-2 py-0.5 text-[9px] font-black uppercase tracking-wider border",
+                          assignment.bucket === 'evaluated'
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200/60 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/40"
+                            : assignment.bucket === 'submitted'
+                            ? "bg-blue-50 text-blue-700 border-blue-200/60 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/40"
+                            : assignment.bucket === 'overdue'
+                            ? "bg-rose-50 text-rose-700 border-rose-200/60 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/40"
+                            : "bg-amber-50 text-amber-700 border-amber-200/60 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/40"
+                        )}
+                      >
+                        {statusLabels[assignment.bucket] || assignment.bucket}
                       </span>
-                    )}
+                      {assignment.daysLeft !== null && assignment.bucket === 'pending' && (
+                        <span className="text-[9px] font-bold text-blue-600 dark:text-blue-400">
+                          {assignment.daysLeft <= 0 ? 'Due today' : `${assignment.daysLeft}d left`}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  <h3 className="mb-0.5 text-base sm:text-lg font-bold text-slate-900 dark:text-white line-clamp-2 leading-snug">
-                    {assignment.title}
-                  </h3>
-                  {(assignment.subjectName || assignment.className || assignment.sectionName) && (
-                    <p className="mb-2.5 sm:mb-3 text-[11px] sm:text-xs font-semibold text-slate-500">
-                      {[assignment.subjectName, assignment.className, assignment.sectionName].filter(Boolean).join(' · ')}
-                    </p>
-                  )}
-
+                  {/* Description / Instructions */}
                   {instructionsText && (
-                    <p className="mb-3.5 line-clamp-2 sm:line-clamp-3 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                    <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
                       {instructionsText}
                     </p>
                   )}
 
-                  {/* Compact Info Grid on Mobile */}
-                  <div className="mb-4 grid grid-cols-2 gap-2 text-[10px] font-semibold text-slate-500 sm:flex sm:flex-col sm:space-y-2 sm:mb-6 sm:text-xs">
+                  {/* Metadata Row (Inline flex wrap) */}
+                  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-slate-500 dark:text-slate-400">
                     {due && (
-                      <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/40 px-2 py-1 rounded-lg sm:bg-transparent sm:px-0 sm:py-0">
+                      <div className="flex items-center gap-1">
                         <Calendar size={13} className="text-slate-400 shrink-0" />
-                        <span className="truncate">Due: {new Date(due).toLocaleDateString()}</span>
+                        <span>Due: {new Date(due).toLocaleDateString()}</span>
                       </div>
                     )}
-                    <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/40 px-2 py-1 rounded-lg sm:bg-transparent sm:px-0 sm:py-0">
+                    <div className="flex items-center gap-1">
                       <History size={13} className="text-slate-400 shrink-0" />
-                      <span className="truncate">{assignment.submissionHistory?.length || 0} sub(s)</span>
+                      <span>{assignment.submissionHistory?.length || 0} sub(s)</span>
                     </div>
                     {assignment.marksObtained != null && (
-                      <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/40 px-2 py-1 rounded-lg sm:bg-transparent sm:px-0 sm:py-0">
-                        <CheckCircle2 size={13} className="text-slate-400 shrink-0" />
-                        <span className="truncate">Marks: {assignment.marksObtained}</span>
-                      </div>
-                    )}
-                    {!isMobile && !assignment.feedback && (
-                      <div className="flex items-center gap-2">
-                        <MessageSquare size={14} className="text-slate-400" />
-                        <span>Teacher feedback pending</span>
+                      <div className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-200">
+                        <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
+                        <span>Marks: {assignment.marksObtained}</span>
                       </div>
                     )}
                   </div>
 
+                  {/* Teacher Feedback (Compact Box) */}
                   {assignment.feedback && (
-                    <div className="mb-4 rounded-xl border border-blue-50 bg-blue-50/20 p-2.5 text-xs text-blue-700 dark:border-blue-900/20 dark:bg-blue-950/10 dark:text-blue-300">
-                      <p className="font-bold uppercase tracking-wider text-[9px] text-blue-500">Teacher Feedback</p>
-                      <p className="mt-0.5 font-semibold italic">"{assignment.feedback}"</p>
+                    <div className="mt-3 rounded-lg border-l-2 border-blue-500 bg-blue-50/40 p-2 dark:bg-blue-950/20">
+                      <p className="text-[9px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Teacher Feedback</p>
+                      <p className="mt-0.5 text-xs font-medium italic text-slate-700 dark:text-slate-300">"{assignment.feedback}"</p>
                     </div>
                   )}
 
+                  {/* Attachments */}
                   {teacherUrl && (
-                    <div className="mb-4 flex gap-3">
+                    <div className="mt-3 flex items-center gap-3 text-xs font-semibold">
                       <a
                         href={teacherUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700"
+                        className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 dark:text-blue-400"
                       >
                         <Eye size={13} />
-                        View Attachment
+                        <span>View Attachment</span>
                       </a>
                       <a
                         href={teacherUrl}
                         target="_blank"
                         rel="noreferrer"
                         download
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700"
+                        className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 dark:text-blue-400"
                       >
                         <Download size={13} />
-                        Download
+                        <span>Download</span>
                       </a>
                     </div>
                   )}
+                </div>
 
-                  <div className="mt-auto border-t border-slate-100 pt-4 dark:border-slate-800">
-                    {assignment.bucket === 'evaluated' ? (
-                      <div className="flex flex-col gap-2">
-                        <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-2.5 text-xs font-bold text-slate-500 dark:bg-slate-800/50 sm:py-3 sm:text-sm">
-                          <CheckCircle2 size={15} className="text-slate-500" />
-                          Evaluated
-                        </div>
-                        {assignment.mySubmission?.id && (
-                          <button
-                            type="button"
-                            onClick={() => openSubmissionFile(assignment.mySubmission.id).catch((e) => toast.error(e.message))}
-                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-50 py-2.5 text-xs font-bold text-blue-600 hover:bg-blue-100 transition-colors sm:py-3 sm:text-sm"
-                          >
-                            <FileText size={15} />
-                            View my submission
-                          </button>
-                        )}
+                {/* Footer Actions */}
+                <div className="mt-4 border-t border-slate-100 pt-3 dark:border-slate-800">
+                  {assignment.bucket === 'evaluated' || assignment.bucket === 'submitted' ? (
+                    <div className="flex items-center gap-2">
+                      <div className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-slate-100 py-1.5 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        <CheckCircle2 size={13} className="text-emerald-500" />
+                        <span className="capitalize">{assignment.bucket}</span>
                       </div>
-                    ) : assignment.bucket === 'submitted' ? (
-                      <div className="flex flex-col gap-2">
-                        <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-2.5 text-xs font-bold text-slate-500 dark:bg-slate-800/50 sm:py-3 sm:text-sm">
-                          <CheckCircle2 size={15} className="text-slate-500" />
-                          Submitted
-                        </div>
-                        {assignment.mySubmission?.id && (
-                          <button
-                            type="button"
-                            onClick={() => openSubmissionFile(assignment.mySubmission.id).catch((e) => toast.error(e.message))}
-                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-50 py-2.5 text-xs font-bold text-blue-600 hover:bg-blue-100 transition-colors sm:py-3 sm:text-sm"
-                          >
-                            <FileText size={15} />
-                            View my submission
-                          </button>
-                        )}
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => openSubmit(assignment)}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-2.5 text-xs font-bold text-white transition-colors hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-600/20 sm:py-3 sm:text-sm"
-                      >
-                        <UploadCloud size={15} />
-                        Submit work
-                      </button>
-                    )}
-                  </div>
+                      {assignment.mySubmission?.id && (
+                        <button
+                          type="button"
+                          onClick={() => openSubmissionFile(assignment.mySubmission.id).catch((e) => toast.error(e.message))}
+                          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-blue-50 py-1.5 text-xs font-bold text-blue-600 transition-colors hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/40"
+                        >
+                          <FileText size={13} />
+                          <span>Submission</span>
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => openSubmit(assignment)}
+                      className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-blue-600 py-2 text-xs font-bold text-white transition-colors hover:bg-blue-700 shadow-sm"
+                    >
+                      <UploadCloud size={14} />
+                      <span>Submit Work</span>
+                    </button>
+                  )}
                 </div>
               </div>
             );
