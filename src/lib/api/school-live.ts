@@ -48,6 +48,13 @@ export interface LiveLecture {
   className?: string | null;
   sectionName?: string | null;
   subjectName?: string | null;
+  // Populated after a class ends (LEFT JOIN class_recordings on the server).
+  recordingUrl?: string | null;
+  classRecordingId?: string | null;
+  notesStatus?: string | null;
+  transcriptStatus?: string | null;
+  quizStatus?: string | null;
+  notes?: string | null;
 }
 
 export interface CreatedLecture {
