@@ -35,6 +35,9 @@ export default function StudioBroadcaster() {
   const [slideLoaded, setSlideLoaded] = useState(false);
   const [panelOpen, setPanelOpen] = useState(true);
   const [stats, setStats] = useState({ viewers: 0, students: 0 });
+  // True when the class is already LIVE on load — i.e. OBS (or another session)
+  // is streaming to this key. Going live from the browser too would collide.
+  const [externalLive, setExternalLive] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -44,6 +47,7 @@ export default function StudioBroadcaster() {
         if (!active) return;
         setStreamKey(info?.streamKey || null);
         if (info?.title) setTitle(info.title);
+        setExternalLive(String(info?.status).toUpperCase() === 'LIVE');
         if (!info?.streamKey) setLoadError('This live class has no stream key.');
       } catch (e: any) {
         if (active) setLoadError(e?.response?.data?.message || 'Failed to load live class');
@@ -91,6 +95,14 @@ export default function StudioBroadcaster() {
     if (!canGoLive) {
       toast.warning('Pick a source first — share your screen, open the whiteboard, or load slides.');
       return;
+    }
+    if (externalLive && !studio.isLive) {
+      const ok = window.confirm(
+        'This class already appears to be streaming (from OBS or another window). ' +
+        'Going live here as well can break the stream. Stop the other stream first.\n\n' +
+        'Go live from the Studio anyway?',
+      );
+      if (!ok) return;
     }
     await studio.startBroadcast();
   };
@@ -164,6 +176,14 @@ export default function StudioBroadcaster() {
           </button>
         </div>
       </header>
+
+      {/* Collision warning — class already streaming via OBS / another window. */}
+      {externalLive && !studio.isLive && (
+        <div className="flex shrink-0 items-center justify-center gap-2 border-b border-amber-500/20 bg-amber-500/15 px-4 py-2 text-center text-xs font-bold text-amber-200">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          This class is already streaming (OBS or another window). Stop that stream before going live here, or they'll collide.
+        </div>
+      )}
 
       {/* ── Body ────────────────────────────────────────────────────────── */}
       <div className="flex min-h-0 flex-1">
