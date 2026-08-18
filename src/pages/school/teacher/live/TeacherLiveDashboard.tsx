@@ -1143,60 +1143,42 @@ export default function TeacherLiveDashboard() {
             <FloatingReactionLayer items={reactions} />
             
             {live ? (
-              <div className="relative w-full h-full">
-                <video
-                  ref={webcamVideoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-full object-contain bg-slate-950"
-                />
+              // Live status — teachers don't need to watch their own delayed
+              // stream; show recording state + who's watching instead.
+              <div className="text-center px-6 max-w-md animate-fade-in">
+                <div className="relative mx-auto mb-5 grid h-24 w-24 place-items-center rounded-full bg-red-500/15 border border-red-500/30">
+                  <span className="absolute inset-0 rounded-full border-2 border-red-500/30 animate-ping" />
+                  <span className="relative flex h-4 w-4">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+                    <span className="relative inline-flex h-4 w-4 rounded-full bg-red-500" />
+                  </span>
+                </div>
+                <h4 className="text-white font-black text-lg tracking-wide mb-1.5">You're live — recording in progress</h4>
+                <p className="text-[13px] text-slate-400 leading-relaxed max-w-xs mx-auto mb-5">
+                  Students are watching your stream. The recording and AI notes will be ready after you end the class.
+                </p>
 
-                {/* Buffering Loader overlay */}
-                {buffering && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-xs z-10">
-                    <div className="text-center">
-                      <Loader2 className="h-8 w-8 animate-spin text-blue-500 mx-auto mb-2" />
-                      <p className="text-[13px] font-semibold text-slate-200">Buffering Live Feed...</p>
-                    </div>
+                <div className="flex items-center justify-center gap-3">
+                  <div className="rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 min-w-[92px]">
+                    <div className="flex items-center justify-center gap-1.5 text-slate-400 text-[11px] font-bold uppercase tracking-wider"><Clock className="h-3.5 w-3.5" /> Duration</div>
+                    <div className="text-white font-mono font-black text-base mt-0.5">{duration}</div>
                   </div>
-                )}
-
-                {/* Custom Overlay Details (fade-in on hover) */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-5 pointer-events-none z-10">
-                  {/* Top overlay row */}
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center gap-2">
-                      <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-600 text-white text-[13px] font-black uppercase tracking-wider shadow-sm">
-                        <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
-                        LIVE
-                      </span>
-                      <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/40 border border-white/10 text-emerald-400 text-[13px] font-black uppercase tracking-wider backdrop-blur-sm">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        OBS Connected
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-1 rounded-lg bg-black/40 border border-white/10 text-white/80 text-[13px] font-mono font-bold backdrop-blur-sm">
-                        1080p Full HD
-                      </span>
-                      <span className="px-2 py-1 rounded-lg bg-black/40 border border-white/10 text-white/80 text-[13px] font-mono font-bold backdrop-blur-sm">
-                        {currentBitrate} kbps
-                      </span>
-                    </div>
+                  <div className="rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 min-w-[92px]">
+                    <div className="flex items-center justify-center gap-1.5 text-slate-400 text-[11px] font-bold uppercase tracking-wider"><Users className="h-3.5 w-3.5" /> Watching</div>
+                    <div className="text-white font-black text-base mt-0.5">{viewerCount}</div>
                   </div>
-
-                  {/* Bottom overlay row */}
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center gap-1.5">
-                      <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/20 border border-red-500/30 text-red-200 text-[13px] font-black uppercase tracking-wider backdrop-blur-sm">
-                        <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-ping" />
-                        REC ACTIVE
-                      </span>
-                    </div>
+                  <div className="rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 min-w-[92px]">
+                    <div className="flex items-center justify-center gap-1.5 text-slate-400 text-[11px] font-bold uppercase tracking-wider"><UserCheck className="h-3.5 w-3.5" /> Students</div>
+                    <div className="text-white font-black text-base mt-0.5">{students.length}</div>
                   </div>
                 </div>
+
+                <button
+                  onClick={() => navigate(`/school/teacher/live/${id}/studio`)}
+                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white shadow-lg transition hover:bg-blue-700 active:scale-95"
+                >
+                  <Monitor className="h-4 w-4" /> Open Studio (Whiteboard / Screen)
+                </button>
               </div>
             ) : (
               // waiting screen when offline
