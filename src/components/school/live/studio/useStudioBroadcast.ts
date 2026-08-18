@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Socket } from 'socket.io-client';
+import { toast } from 'sonner';
 import { createBroadcastRelaySocket, getLiveToken } from '@/lib/api/school-live';
 
 /**
@@ -283,14 +284,28 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
       const canvas = canvasRef.current;
       if (!canvas) throw new Error('Studio canvas not ready');
 
-      // Mic audio
-      const mic = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-      micStreamRef.current = mic;
-      const audioTrack = mic.getAudioTracks()[0];
-      micTrackRef.current = audioTrack || null;
-      if (audioTrack) audioTrack.enabled = micOn;
+      // Mic audio — OPTIONAL. Machines without a microphone (or with mic
+      // permission denied) should still be able to broadcast video-only,
+      // otherwise a "Requested device not found" error blocks going live.
+      let audioTrack: MediaStreamTrack | null = null;
+      try {
+        const mic = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        micStreamRef.current = mic;
+        audioTrack = mic.getAudioTracks()[0] || null;
+        micTrackRef.current = audioTrack;
+        if (audioTrack) audioTrack.enabled = micOn;
+      } catch (micErr: any) {
+        micTrackRef.current = null;
+        setMicOn(false);
+        const name = micErr?.name || '';
+        if (name === 'NotAllowedError' || name === 'SecurityError') {
+          toast.warning('Microphone blocked — going live without audio. Allow mic access to be heard.');
+        } else {
+          toast.warning('No microphone found — going live without audio. Students won’t hear you.');
+        }
+      }
 
-      // Canvas video track + mic → one stream
+      // Canvas video track + (optional) mic → one stream
       const canvasStream = canvas.captureStream(fps);
       captureStreamRef.current = canvasStream;
       const videoTrack = canvasStream.getVideoTracks()[0];
