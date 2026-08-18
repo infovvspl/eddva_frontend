@@ -154,7 +154,7 @@ export default function StudioBroadcaster() {
               <Circle className="h-2.5 w-2.5 animate-pulse fill-white text-white" /> REC · {fmt(studio.elapsedSec)}
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-black text-slate-300">OFFLINE</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-black text-slate-300">NOT LIVE</span>
           )}
           <span className="hidden items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-slate-200 sm:inline-flex">
             <Users className="h-3.5 w-3.5" /> {stats.viewers}
@@ -206,6 +206,23 @@ export default function StudioBroadcaster() {
 
           {/* ── Floating control bar (Zoom-style) ───────────────────────── */}
           <div className="shrink-0 px-3 pb-3 pt-1">
+            {/* Not-broadcasting-yet hint — sharing/whiteboard is only the setup;
+                students see nothing until "Go Live" is pressed. */}
+            {!studio.isLive && (
+              <div className="mx-auto mb-1.5 flex max-w-2xl items-center justify-center">
+                <span className={[
+                  'inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold',
+                  canGoLive
+                    ? 'bg-red-500/15 text-red-200 ring-1 ring-red-500/30'
+                    : 'bg-white/5 text-slate-400 ring-1 ring-white/10',
+                ].join(' ')}>
+                  <Circle className="h-2.5 w-2.5" />
+                  {canGoLive
+                    ? 'You are NOT broadcasting yet — click “Go Live” so students can see this.'
+                    : 'Pick a source (share screen, whiteboard, or slides), then click “Go Live”.'}
+                </span>
+              </div>
+            )}
             <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-center gap-1.5 rounded-2xl border border-white/10 bg-slate-900/80 p-2 backdrop-blur">
               {/* What students see */}
               <Ctrl active={src === 'screen'} onClick={onShareScreen} icon={MonitorUp} label={studio.screenOn ? 'Screen' : 'Share'} activeClass="bg-blue-600" />
@@ -224,7 +241,10 @@ export default function StudioBroadcaster() {
               {/* Go live / end */}
               {!studio.isLive ? (
                 <button onClick={handleGoLive} disabled={studio.status === 'starting' || !canGoLive}
-                  className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 text-sm font-black transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40">
+                  className={[
+                    'inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 text-sm font-black transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40',
+                    canGoLive && studio.status === 'idle' ? 'animate-pulse ring-2 ring-red-400/70 ring-offset-2 ring-offset-slate-900' : '',
+                  ].join(' ')}>
                   {studio.status === 'starting' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Radio className="h-4 w-4" />}
                   {studio.status === 'starting' ? 'Going live…' : 'Go Live'}
                 </button>
