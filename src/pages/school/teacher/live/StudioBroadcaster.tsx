@@ -11,6 +11,7 @@ import { useStudioBroadcast } from '@/components/school/live/studio/useStudioBro
 import Whiteboard from '@/components/school/live/studio/Whiteboard';
 import SlidePresenter from '@/components/school/live/studio/SlidePresenter';
 import StudioLivePanel from '@/components/school/live/studio/StudioLivePanel';
+import DeviceSettings from '@/components/school/live/studio/DeviceSettings';
 
 function fmt(sec: number) {
   const h = Math.floor(sec / 3600);
@@ -38,6 +39,8 @@ export default function StudioBroadcaster() {
   // True when the class is already LIVE on load — i.e. OBS (or another session)
   // is streaming to this key. Going live from the browser too would collide.
   const [externalLive, setExternalLive] = useState(false);
+  const [micDeviceId, setMicDeviceId] = useState<string | null>(null);
+  const [camDeviceId, setCamDeviceId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -171,6 +174,12 @@ export default function StudioBroadcaster() {
           <span className="hidden items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-slate-200 sm:inline-flex">
             <Users className="h-3.5 w-3.5" /> {stats.viewers}
           </span>
+          <DeviceSettings
+            micDeviceId={micDeviceId}
+            camDeviceId={camDeviceId}
+            onMicChange={(d) => { setMicDeviceId(d); studio.setMicDeviceId(d); }}
+            onCamChange={(d) => { setCamDeviceId(d); studio.setCamDeviceId(d); }}
+          />
           <button onClick={() => setPanelOpen((o) => !o)} className="grid h-9 w-9 place-items-center rounded-xl text-slate-300 hover:bg-white/10" title={panelOpen ? 'Hide panel' : 'Show panel'}>
             {panelOpen ? <PanelRightClose className="h-5 w-5" /> : <PanelRightOpen className="h-5 w-5" />}
           </button>

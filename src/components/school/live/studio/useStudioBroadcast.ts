@@ -78,6 +78,9 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
   const micTrackRef = useRef<MediaStreamTrack | null>(null);
+  // Selected input devices (null = system default).
+  const micDeviceIdRef = useRef<string | null>(null);
+  const camDeviceIdRef = useRef<string | null>(null);
 
   // ── External layer sources fed by later phases ─────────────────────────────
   const whiteboardCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -221,7 +224,10 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
   const startCamera = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 360, frameRate: fps },
+        video: {
+          width: 640, height: 360, frameRate: fps,
+          ...(camDeviceIdRef.current ? { deviceId: { exact: camDeviceIdRef.current } } : {}),
+        },
         audio: false,
       });
       cameraStreamRef.current = stream;
@@ -260,6 +266,16 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
     setMicOn(track.enabled);
   }, []);
 
+  // ── Device selection ────────────────────────────────────────────────────────
+  // Mic selection applies at Go Live; camera selection restarts the camera live.
+  const setMicDeviceId = useCallback((id: string | null) => {
+    micDeviceIdRef.current = id;
+  }, []);
+  const setCamDeviceId = useCallback((id: string | null) => {
+    camDeviceIdRef.current = id;
+    if (camOnRef.current) { stopCamera(); void startCamera(); }
+  }, [stopCamera, startCamera]);
+
   // ── Layer feeders for later phases ─────────────────────────────────────────
   const setWhiteboardCanvas = useCallback((c: HTMLCanvasElement | null) => {
     whiteboardCanvasRef.current = c;
@@ -289,7 +305,9 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
       // otherwise a "Requested device not found" error blocks going live.
       let audioTrack: MediaStreamTrack | null = null;
       try {
-        const mic = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        const audioConstraint: MediaTrackConstraints | boolean =
+          micDeviceIdRef.current ? { deviceId: { exact: micDeviceIdRef.current } } : true;
+        const mic = await navigator.mediaDevices.getUserMedia({ audio: audioConstraint, video: false });
         micStreamRef.current = mic;
         audioTrack = mic.getAudioTracks()[0] || null;
         micTrackRef.current = audioTrack;
@@ -434,6 +452,8 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
     toggleCam,
     toggleMic,
     setActiveSource,
+    setMicDeviceId,
+    setCamDeviceId,
     // layer feeders (Phase 2 / 3)
     setWhiteboardCanvas,
     setWhiteboardOverlay,
