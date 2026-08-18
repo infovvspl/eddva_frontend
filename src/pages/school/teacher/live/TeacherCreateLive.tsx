@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Check, Copy, Eye, EyeOff, Radio, Loader2, ArrowRight, MonitorUp, ChevronDown } from 'lucide-react';
-import { schoolLive, type CreatedLecture } from '@/lib/api/school-live';
+import { Check, Copy, Eye, EyeOff, Radio, Loader2, ArrowRight, MonitorUp, ChevronDown, Monitor, LayoutDashboard } from 'lucide-react';
+import { schoolLive, type CreatedLecture, type LiveLecture } from '@/lib/api/school-live';
 
 export default function TeacherCreateLive() {
   const navigate = useNavigate();
@@ -12,6 +12,20 @@ export default function TeacherCreateLive() {
   const [showKey, setShowKey] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [showObs, setShowObs] = useState(false);
+  const [lectures, setLectures] = useState<LiveLecture[]>([]);
+  const [loadingList, setLoadingList] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    schoolLive.listLectures()
+      .then((rows) => { if (active) setLectures(rows); })
+      .catch(() => undefined)
+      .finally(() => { if (active) setLoadingList(false); });
+    return () => { active = false; };
+  }, []);
+
+  const liveNow = lectures.filter((l) => l.status === 'LIVE');
+  const scheduled = lectures.filter((l) => l.status === 'SCHEDULED');
 
   const create = async () => {
     if (!title.trim()) { toast.warning('Enter a lecture title'); return; }
@@ -42,13 +56,67 @@ export default function TeacherCreateLive() {
           <Radio className="h-6 w-6" />
         </div>
         <div>
-          <h1 className="text-xl font-black text-slate-900 dark:text-white">Create Live Class</h1>
+          <h1 className="text-xl font-black text-slate-900 dark:text-white">Live Classes</h1>
           <p className="text-sm text-slate-500">Go live from your browser — students watch in real time.</p>
         </div>
       </div>
 
+      {/* Ongoing + scheduled classes so a teacher can rejoin instead of re-creating. */}
+      {!created && (
+        <div className="mb-6 space-y-3">
+          {loadingList ? (
+            <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900">
+              <Loader2 className="h-4 w-4 animate-spin" /> Loading your classes…
+            </div>
+          ) : (
+            <>
+              {liveNow.map((lec) => (
+                <div key={lec.id} className="flex flex-wrap items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-900/40 dark:bg-red-900/15">
+                  <span className="relative flex h-3 w-3">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                    <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-black text-slate-900 dark:text-white">{lec.title}</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-red-500">Live now</p>
+                  </div>
+                  <button
+                    onClick={() => navigate(`/school/teacher/live/${lec.id}/dashboard`)}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-sm font-black text-white transition hover:bg-red-700"
+                  >
+                    <LayoutDashboard className="h-4 w-4" /> Rejoin
+                  </button>
+                </div>
+              ))}
+
+              {scheduled.map((lec) => (
+                <div key={lec.id} className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{lec.title}</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Scheduled</p>
+                  </div>
+                  <button
+                    onClick={() => navigate(`/school/teacher/live/${lec.id}/studio`)}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white transition hover:bg-blue-700"
+                  >
+                    <Monitor className="h-4 w-4" /> Studio
+                  </button>
+                  <button
+                    onClick={() => navigate(`/school/teacher/live/${lec.id}/dashboard`)}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                  >
+                    Dashboard
+                  </button>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      )}
+
       {!created ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+          <h2 className="mb-3 text-sm font-black text-slate-900 dark:text-white">Start a new live class</h2>
           <label className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Lecture title</label>
           <input
             value={title}
