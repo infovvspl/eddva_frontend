@@ -81,10 +81,16 @@ export default function TeacherCreateLive() {
                     <p className="text-xs font-bold uppercase tracking-wider text-red-500">Live now</p>
                   </div>
                   <button
-                    onClick={() => navigate(`/school/teacher/live/${lec.id}/dashboard`)}
+                    onClick={() => navigate(`/school/teacher/live/${lec.id}/studio`)}
                     className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-sm font-black text-white transition hover:bg-red-700"
                   >
-                    <LayoutDashboard className="h-4 w-4" /> Rejoin
+                    <Monitor className="h-4 w-4" /> Rejoin Studio
+                  </button>
+                  <button
+                    onClick={() => navigate(`/school/teacher/live/${lec.id}/dashboard`)}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-red-300 px-4 py-2 text-sm font-bold text-red-600 transition hover:bg-red-100 dark:border-red-900/50 dark:text-red-300 dark:hover:bg-red-900/20"
+                  >
+                    <LayoutDashboard className="h-4 w-4" /> Dashboard
                   </button>
                 </div>
               ))}
