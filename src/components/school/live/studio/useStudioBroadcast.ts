@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Socket } from 'socket.io-client';
+import { toast } from 'sonner';
 import { createBroadcastRelaySocket, getLiveToken } from '@/lib/api/school-live';
 
 /**
@@ -41,6 +42,27 @@ function pickMimeType(): string {
   return candidates.find((t) => MediaRecorder.isTypeSupported(t)) || 'video/webm';
 }
 
+/** Fraction of the width the content occupies in split layout (rest = whiteboard). */
+export const SPLIT_CONTENT_RATIO = 0.62;
+
+/** Draw a source contained within a region [rx,ry,rw,rh], preserving aspect ratio. */
+function drawContainAt(
+  ctx: CanvasRenderingContext2D,
+  src: CanvasImageSource,
+  srcW: number,
+  srcH: number,
+  rx: number,
+  ry: number,
+  rw: number,
+  rh: number,
+) {
+  if (!srcW || !srcH) return;
+  const scale = Math.min(rw / srcW, rh / srcH);
+  const w = srcW * scale;
+  const h = srcH * scale;
+  ctx.drawImage(src, rx + (rw - w) / 2, ry + (rh - h) / 2, w, h);
+}
+
 /** Draw a source (video/image/canvas) into `ctx` preserving aspect ratio ("contain"). */
 function drawContain(
   ctx: CanvasRenderingContext2D,
@@ -50,17 +72,13 @@ function drawContain(
   destW: number,
   destH: number,
 ) {
-  if (!srcW || !srcH) return;
-  const scale = Math.min(destW / srcW, destH / srcH);
-  const w = srcW * scale;
-  const h = srcH * scale;
-  const x = (destW - w) / 2;
-  const y = (destH - h) / 2;
-  ctx.drawImage(src, x, y, w, h);
+  drawContainAt(ctx, src, srcW, srcH, 0, 0, destW, destH);
 }
 
 export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
-  const { streamKey, canvasRef, width = 1280, height = 720, fps = 30, onStatusChange } = opts;
+  // 1080p output — screen shares are detail-heavy (small text/code), so 720p
+  // looked blurry. Higher res + bitrate keeps shared screens legible.
+  const { streamKey, canvasRef, width = 1920, height = 1080, fps = 30, onStatusChange } = opts;
 
   const [status, setStatus] = useState<StudioStatus>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -69,6 +87,7 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(false);
   const [elapsedSec, setElapsedSec] = useState(0);
+  const [layout, setLayoutState] = useState<'single' | 'split'>('single');
 
   // ── Media element refs (detached, not mounted in the DOM) ──────────────────
   const screenVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -77,6 +96,9 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
   const micTrackRef = useRef<MediaStreamTrack | null>(null);
+  // Selected input devices (null = system default).
+  const micDeviceIdRef = useRef<string | null>(null);
+  const camDeviceIdRef = useRef<string | null>(null);
 
   // ── External layer sources fed by later phases ─────────────────────────────
   const whiteboardCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -92,6 +114,7 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const activeSourceRef = useRef<StudioSource>('screen');
   const camOnRef = useRef(false);
+  const layoutRef = useRef<'single' | 'split'>('single');
 
   const updateStatus = useCallback(
     (s: StudioStatus) => {
@@ -104,6 +127,11 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
   const setActiveSource = useCallback((s: StudioSource) => {
     activeSourceRef.current = s;
     setActiveSourceState(s);
+  }, []);
+
+  const setLayout = useCallback((l: 'single' | 'split') => {
+    layoutRef.current = l;
+    setLayoutState(l);
   }, []);
 
   // Keep camOnRef in sync for the RAF loop (which reads refs, not state).
@@ -122,8 +150,47 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
     if (canvas.width !== width) canvas.width = width;
     if (canvas.height !== height) canvas.height = height;
 
-    // Background
     const source = activeSourceRef.current;
+
+    // ── Split layout: content on the left, whiteboard on the right ──────────
+    if (layoutRef.current === 'split') {
+      const cw = Math.round(width * SPLIT_CONTENT_RATIO);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, width, height);
+
+      // Left: the active content (screen or slides; falls back to camera).
+      if (source === 'slides') {
+        const img = slideImageRef.current;
+        if (img) drawContainAt(ctx, img, slideSizeRef.current.w, slideSizeRef.current.h, 0, 0, cw, height);
+      } else {
+        const v = screenVideoRef.current;
+        if (v && v.readyState >= 2) drawContainAt(ctx, v, v.videoWidth, v.videoHeight, 0, 0, cw, height);
+      }
+
+      // Right: whiteboard on white.
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(cw, 0, width - cw, height);
+      const wbCanvas = whiteboardCanvasRef.current;
+      if (wbCanvas) ctx.drawImage(wbCanvas, cw, 0, width - cw, height);
+
+      // Divider.
+      ctx.fillStyle = 'rgba(148,163,184,0.5)';
+      ctx.fillRect(cw - 1, 0, 2, height);
+
+      // Camera PiP in the bottom-left content corner.
+      if (camOnRef.current) {
+        const cam = cameraVideoRef.current;
+        if (cam && cam.readyState >= 2) {
+          const pipW = Math.round(cw * 0.28);
+          const pipH = Math.round((pipW * cam.videoHeight) / (cam.videoWidth || 1)) || Math.round(pipW * 0.5625);
+          ctx.drawImage(cam, PIP_MARGIN, height - pipH - PIP_MARGIN, pipW, pipH);
+        }
+      }
+      rafRef.current = requestAnimationFrame(renderFrame);
+      return;
+    }
+
+    // Background
     if (source === 'whiteboard') {
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, width, height);
@@ -182,10 +249,21 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
   // ── Screen share ───────────────────────────────────────────────────────────
   const startScreenShare = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { frameRate: fps },
+      // Steer toward window/tab capture and exclude the Studio's own tab, so
+      // sharing doesn't capture itself in an infinite "hall of mirrors" (which
+      // happens when the whole screen is shared with the Studio visible on it).
+      const displayOpts: any = {
+        video: {
+          frameRate: { ideal: fps, max: 30 },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+          displaySurface: 'window',
+        },
         audio: false,
-      });
+        selfBrowserSurface: 'exclude',
+        surfaceSwitching: 'include',
+      };
+      const stream = await navigator.mediaDevices.getDisplayMedia(displayOpts);
       screenStreamRef.current = stream;
       let v = screenVideoRef.current;
       if (!v) {
@@ -220,7 +298,10 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
   const startCamera = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 360, frameRate: fps },
+        video: {
+          width: 640, height: 360, frameRate: fps,
+          ...(camDeviceIdRef.current ? { deviceId: { exact: camDeviceIdRef.current } } : {}),
+        },
         audio: false,
       });
       cameraStreamRef.current = stream;
@@ -259,6 +340,16 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
     setMicOn(track.enabled);
   }, []);
 
+  // ── Device selection ────────────────────────────────────────────────────────
+  // Mic selection applies at Go Live; camera selection restarts the camera live.
+  const setMicDeviceId = useCallback((id: string | null) => {
+    micDeviceIdRef.current = id;
+  }, []);
+  const setCamDeviceId = useCallback((id: string | null) => {
+    camDeviceIdRef.current = id;
+    if (camOnRef.current) { stopCamera(); void startCamera(); }
+  }, [stopCamera, startCamera]);
+
   // ── Layer feeders for later phases ─────────────────────────────────────────
   const setWhiteboardCanvas = useCallback((c: HTMLCanvasElement | null) => {
     whiteboardCanvasRef.current = c;
@@ -283,14 +374,30 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
       const canvas = canvasRef.current;
       if (!canvas) throw new Error('Studio canvas not ready');
 
-      // Mic audio
-      const mic = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-      micStreamRef.current = mic;
-      const audioTrack = mic.getAudioTracks()[0];
-      micTrackRef.current = audioTrack || null;
-      if (audioTrack) audioTrack.enabled = micOn;
+      // Mic audio — OPTIONAL. Machines without a microphone (or with mic
+      // permission denied) should still be able to broadcast video-only,
+      // otherwise a "Requested device not found" error blocks going live.
+      let audioTrack: MediaStreamTrack | null = null;
+      try {
+        const audioConstraint: MediaTrackConstraints | boolean =
+          micDeviceIdRef.current ? { deviceId: { exact: micDeviceIdRef.current } } : true;
+        const mic = await navigator.mediaDevices.getUserMedia({ audio: audioConstraint, video: false });
+        micStreamRef.current = mic;
+        audioTrack = mic.getAudioTracks()[0] || null;
+        micTrackRef.current = audioTrack;
+        if (audioTrack) audioTrack.enabled = micOn;
+      } catch (micErr: any) {
+        micTrackRef.current = null;
+        setMicOn(false);
+        const name = micErr?.name || '';
+        if (name === 'NotAllowedError' || name === 'SecurityError') {
+          toast.warning('Microphone blocked — going live without audio. Allow mic access to be heard.');
+        } else {
+          toast.warning('No microphone found — going live without audio. Students won’t hear you.');
+        }
+      }
 
-      // Canvas video track + mic → one stream
+      // Canvas video track + (optional) mic → one stream
       const canvasStream = canvas.captureStream(fps);
       captureStreamRef.current = canvasStream;
       const videoTrack = canvasStream.getVideoTracks()[0];
@@ -302,6 +409,8 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
       const socket = createBroadcastRelaySocket();
       socketRef.current = socket;
       const sessionId = `${streamKey}-${Date.now()}`;
+      // Tell the relay our resolution so ffmpeg encodes to match (no upscaling).
+      const startPayload = { token: getLiveToken(), sessionId, streamKey, width, height };
 
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => reject(new Error('Relay did not start (timeout)')), 15000);
@@ -314,10 +423,10 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
           reject(new Error(p?.message || 'Relay error'));
         });
         socket.on('connect', () => {
-          socket.emit('broadcast:start', { token: getLiveToken(), sessionId, streamKey });
+          socket.emit('broadcast:start', { ...startPayload, token: getLiveToken() });
         });
         if (socket.connected) {
-          socket.emit('broadcast:start', { token: getLiveToken(), sessionId, streamKey });
+          socket.emit('broadcast:start', startPayload);
         }
       });
 
@@ -329,7 +438,9 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
 
       // Start recording → chunks
       const mimeType = pickMimeType();
-      const recorder = new MediaRecorder(combined, { mimeType, videoBitsPerSecond: 2_500_000 });
+      // Scale bitrate to resolution: 1080p needs ~6Mbps for crisp text, 720p ~3Mbps.
+      const videoBitsPerSecond = height >= 1080 ? 6_000_000 : 3_000_000;
+      const recorder = new MediaRecorder(combined, { mimeType, videoBitsPerSecond });
       recorderRef.current = recorder;
       recorder.ondataavailable = (ev: BlobEvent) => {
         if (ev.data && ev.data.size > 0 && socket.connected) {
@@ -410,6 +521,7 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
     micOn,
     camOn,
     elapsedSec,
+    layout,
     isLive: status === 'live',
     // actions
     startBroadcast,
@@ -419,6 +531,9 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
     toggleCam,
     toggleMic,
     setActiveSource,
+    setLayout,
+    setMicDeviceId,
+    setCamDeviceId,
     // layer feeders (Phase 2 / 3)
     setWhiteboardCanvas,
     setWhiteboardOverlay,

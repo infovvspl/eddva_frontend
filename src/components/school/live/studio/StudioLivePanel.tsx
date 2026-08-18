@@ -85,7 +85,7 @@ export default function StudioLivePanel({ lectureId, isLive, onStats }: { lectur
   const TabBtn = ({ id, icon: Icon, label, badge }: { id: typeof tab; icon: typeof Users; label: string; badge?: number }) => (
     <button
       onClick={() => setTab(id)}
-      className={`relative flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-black transition ${tab === id ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'}`}
+      className={`relative flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-black transition ${tab === id ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
     >
       <Icon className="h-4 w-4" /> <span className="hidden lg:inline">{label}</span>
       {!!badge && <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-amber-500 px-1 text-[10px] font-black text-white">{badge}</span>}
@@ -93,19 +93,19 @@ export default function StudioLivePanel({ lectureId, isLive, onStats }: { lectur
   );
 
   return (
-    <div className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+    <div className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-900 text-slate-200">
       <FloatingReactionLayer items={reactions} />
 
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2 dark:border-slate-800">
-        <span className="text-xs font-black uppercase tracking-wider text-slate-500">Live Class</span>
-        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+      <div className="flex items-center justify-between border-b border-white/10 px-3 py-2">
+        <span className="text-xs font-black uppercase tracking-wider text-slate-400">Live Class</span>
+        <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-xs font-bold text-slate-200">
           <Eye className="h-3.5 w-3.5" /> {viewers}
         </span>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-slate-100 p-2 dark:border-slate-800">
+      <div className="flex gap-1 border-b border-white/10 p-2">
         <TabBtn id="chat" icon={MessageSquare} label="Chat" />
         <TabBtn id="students" icon={Users} label="Students" badge={students.length || undefined} />
         <TabBtn id="hands" icon={Hand} label="Hands" badge={hands.length || undefined} />
@@ -119,9 +119,9 @@ export default function StudioLivePanel({ lectureId, isLive, onStats }: { lectur
           ) : (
             <div className="space-y-2">
               {messages.map((m, i) => (
-                <div key={m.id || i} className={`rounded-xl px-3 py-2 text-sm ${m.role === 'teacher' ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-slate-50 dark:bg-slate-800/60'}`}>
-                  <span className={`mr-1.5 text-xs font-black ${m.role === 'teacher' ? 'text-blue-600' : 'text-slate-500'}`}>{m.role === 'teacher' ? 'You' : m.userName}</span>
-                  <span className="text-slate-700 dark:text-slate-200">{m.text}</span>
+                <div key={m.id || i} className={`rounded-xl px-3 py-2 text-sm ${m.role === 'teacher' ? 'bg-blue-600/20' : 'bg-white/5'}`}>
+                  <span className={`mr-1.5 text-xs font-black ${m.role === 'teacher' ? 'text-blue-300' : 'text-slate-400'}`}>{m.role === 'teacher' ? 'You' : m.userName}</span>
+                  <span className="text-slate-100">{m.text}</span>
                 </div>
               ))}
               <div ref={chatEndRef} />
@@ -135,9 +135,9 @@ export default function StudioLivePanel({ lectureId, isLive, onStats }: { lectur
           ) : (
             <div className="space-y-1.5">
               {students.map((s) => (
-                <div key={s.userId} className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-800/60">
-                  <span className="grid h-7 w-7 place-items-center rounded-full bg-blue-100 text-xs font-black text-blue-600 dark:bg-blue-900/40">{s.userName?.[0]?.toUpperCase() || '?'}</span>
-                  <span className="truncate text-sm font-semibold text-slate-700 dark:text-slate-200">{s.userName}</span>
+                <div key={s.userId} className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-white/5">
+                  <span className="grid h-7 w-7 place-items-center rounded-full bg-blue-600/30 text-xs font-black text-blue-200">{s.userName?.[0]?.toUpperCase() || '?'}</span>
+                  <span className="truncate text-sm font-semibold text-slate-100">{s.userName}</span>
                 </div>
               ))}
             </div>
@@ -150,12 +150,12 @@ export default function StudioLivePanel({ lectureId, isLive, onStats }: { lectur
           ) : (
             <div className="space-y-1.5">
               {hands.map((h) => (
-                <div key={h.userId} className="flex items-center justify-between gap-2 rounded-lg bg-amber-50 px-2 py-1.5 dark:bg-amber-900/20">
+                <div key={h.userId} className="flex items-center justify-between gap-2 rounded-lg bg-amber-500/15 px-2 py-1.5">
                   <span className="flex items-center gap-2 truncate">
-                    <Hand className="h-4 w-4 text-amber-500" />
-                    <span className="truncate text-sm font-semibold text-slate-700 dark:text-slate-200">{h.userName}</span>
+                    <Hand className="h-4 w-4 text-amber-400" />
+                    <span className="truncate text-sm font-semibold text-slate-100">{h.userName}</span>
                   </span>
-                  <button onClick={() => lowerHand(h.userId)} className="rounded-lg px-2 py-1 text-xs font-bold text-slate-500 hover:bg-white hover:text-slate-700 dark:hover:bg-slate-800">Lower</button>
+                  <button onClick={() => lowerHand(h.userId)} className="rounded-lg px-2 py-1 text-xs font-bold text-slate-300 hover:bg-white/10 hover:text-white">Lower</button>
                 </div>
               ))}
             </div>
@@ -165,7 +165,7 @@ export default function StudioLivePanel({ lectureId, isLive, onStats }: { lectur
 
       {/* Chat input */}
       {tab === 'chat' && (
-        <div className="border-t border-slate-100 p-2 dark:border-slate-800">
+        <div className="border-t border-white/10 p-2">
           <div className="flex items-center gap-2">
             <input
               value={draft}
@@ -173,7 +173,7 @@ export default function StudioLivePanel({ lectureId, isLive, onStats }: { lectur
               onKeyDown={(e) => e.key === 'Enter' && send()}
               placeholder={isLive ? 'Message students…' : 'Go live to chat'}
               disabled={!isLive}
-              className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              className="flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-500 disabled:opacity-50"
             />
             <button onClick={send} disabled={!isLive || !draft.trim()} className="grid h-9 w-9 place-items-center rounded-xl bg-blue-600 text-white transition hover:bg-blue-700 disabled:opacity-40">
               <Send className="h-4 w-4" />
@@ -189,9 +189,9 @@ function EmptyState({ icon: Icon, title, sub }: { icon: typeof Users; title: str
   return (
     <div className="grid h-full place-items-center text-center">
       <div>
-        <Icon className="mx-auto mb-2 h-8 w-8 text-slate-300" />
-        <p className="text-sm font-bold text-slate-500">{title}</p>
-        <p className="text-xs text-slate-400">{sub}</p>
+        <Icon className="mx-auto mb-2 h-8 w-8 text-slate-600" />
+        <p className="text-sm font-bold text-slate-300">{title}</p>
+        <p className="text-xs text-slate-500">{sub}</p>
       </div>
     </div>
   );

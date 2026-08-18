@@ -48,6 +48,13 @@ export interface LiveLecture {
   className?: string | null;
   sectionName?: string | null;
   subjectName?: string | null;
+  // Populated after a class ends (LEFT JOIN class_recordings on the server).
+  recordingUrl?: string | null;
+  classRecordingId?: string | null;
+  notesStatus?: string | null;
+  transcriptStatus?: string | null;
+  quizStatus?: string | null;
+  notes?: string | null;
 }
 
 export interface CreatedLecture {
@@ -238,6 +245,24 @@ export function getLiveToken(): string {
     return localStorage.getItem('eddva_access_token') || '';
   } catch {
     return '';
+  }
+}
+
+/**
+ * Best-effort "end lecture" that survives page unload (tab close / navigation),
+ * so a browser broadcast doesn't leave the class stuck in a LIVE status.
+ * Uses fetch `keepalive` (sendBeacon can't set the auth header).
+ */
+export function endLectureBeacon(id: string): void {
+  try {
+    const token = getLiveToken();
+    void fetch(`${getApiBaseUrl()}/school/live/lectures/${id}/end`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      keepalive: true,
+    }).catch(() => undefined);
+  } catch {
+    /* ignore — best effort */
   }
 }
 

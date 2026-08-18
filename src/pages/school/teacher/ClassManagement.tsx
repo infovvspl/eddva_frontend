@@ -460,6 +460,21 @@ const ClassManagement: React.FC = () => {
     fetchAcademicData();
   }, [user?.id]);
 
+  // Auto-refresh live lectures while any recording/notes are still processing,
+  // so cards flip from "Processing…" to "Watch Video" without a manual reload.
+  useEffect(() => {
+    const anyProcessing = obsLectures.some((l) => {
+      const ended = l.status === 'ENDED' || l.status === 'PROCESSED' || !!(l as any).recordingUrl;
+      if (!ended || l.status === 'PROCESSING_FAILED') return false;
+      if (!(l as any).recordingUrl) return true; // recording still uploading
+      const ns = (l as any).notesStatus, ts = (l as any).transcriptStatus;
+      return ns === 'processing' || ns === 'pending' || ts === 'processing' || ts === 'pending';
+    });
+    if (!anyProcessing) return;
+    const t = setInterval(fetchObsLectures, 15000);
+    return () => clearInterval(t);
+  }, [obsLectures]);
+
   const fetchAcademicData = async () => {
     try {
       const requests: Promise<any>[] = [
@@ -1239,9 +1254,19 @@ const ClassManagement: React.FC = () => {
               Live Now
             </span>
           ) : isEnded ? (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-500">
-              Ended
-            </span>
+            lec.status === 'PROCESSING_FAILED' ? (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-black text-rose-600">
+                Processing failed
+              </span>
+            ) : !lec.recordingUrl ? (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-black text-amber-600">
+                <Loader2 size={11} className="animate-spin" /> Processing recording…
+              </span>
+            ) : (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-500">
+                Ended
+              </span>
+            )
           ) : (
             <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-black text-violet-600">
               <AlarmClock size={11} /> Scheduled
@@ -1257,6 +1282,27 @@ const ClassManagement: React.FC = () => {
               When ready, click <b>Stream Info</b> to get your OBS key, then start streaming — class goes live automatically.
             </p>
           </div>
+        )}
+
+        {/* Processing status after a class ends — keeps the teacher informed. */}
+        {isEnded && lec.status !== 'PROCESSING_FAILED' && !lec.recordingUrl && (
+          <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-100 bg-amber-50/70 px-3 py-2">
+            <Loader2 className="mt-0.5 h-3.5 w-3.5 shrink-0 animate-spin text-amber-500" />
+            <p className="text-[11px] font-medium text-amber-700">
+              Processing the recording — this usually takes a minute or two. AI notes & quiz are generated automatically once it's ready.
+            </p>
+          </div>
+        )}
+        {isEnded && lec.recordingUrl && (
+          ((lec as any).notesStatus === 'processing' || (lec as any).notesStatus === 'pending' ||
+           (lec as any).transcriptStatus === 'processing' || (lec as any).transcriptStatus === 'pending') && (
+            <div className="mt-3 flex items-start gap-2 rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2">
+              <Loader2 className="mt-0.5 h-3.5 w-3.5 shrink-0 animate-spin text-blue-500" />
+              <p className="text-[11px] font-medium text-blue-700">
+                Recording ready — generating AI notes & quiz from the lecture…
+              </p>
+            </div>
+          )
         )}
 
         {/* Actions */}
