@@ -248,4 +248,22 @@ export function getLiveToken(): string {
   }
 }
 
+/**
+ * Best-effort "end lecture" that survives page unload (tab close / navigation),
+ * so a browser broadcast doesn't leave the class stuck in a LIVE status.
+ * Uses fetch `keepalive` (sendBeacon can't set the auth header).
+ */
+export function endLectureBeacon(id: string): void {
+  try {
+    const token = getLiveToken();
+    void fetch(`${getApiBaseUrl()}/school/live/lectures/${id}/end`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      keepalive: true,
+    }).catch(() => undefined);
+  } catch {
+    /* ignore — best effort */
+  }
+}
+
 export const LIVE_REACTIONS = ['👍', '❤️', '😮', '😂', '🔥', '👏'] as const;

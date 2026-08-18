@@ -6,7 +6,7 @@ import {
   AlertTriangle, PenLine, Presentation, PanelRightClose, PanelRightOpen,
   Circle, Users, PhoneOff, Columns2,
 } from 'lucide-react';
-import { schoolLive } from '@/lib/api/school-live';
+import { schoolLive, endLectureBeacon } from '@/lib/api/school-live';
 import { useStudioBroadcast, SPLIT_CONTENT_RATIO } from '@/components/school/live/studio/useStudioBroadcast';
 import Whiteboard from '@/components/school/live/studio/Whiteboard';
 import SlidePresenter from '@/components/school/live/studio/SlidePresenter';
@@ -81,6 +81,20 @@ export default function StudioBroadcaster() {
     studio.setWhiteboardOverlay(annotate);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [annotate]);
+
+  // Auto-end the class if the teacher closes the tab or leaves the Studio while
+  // broadcasting, so it never gets stuck in a LIVE status. A ref avoids stale
+  // closures; the listener is attached once.
+  const isLiveRef = useRef(false);
+  useEffect(() => { isLiveRef.current = studio.isLive; }, [studio.isLive]);
+  useEffect(() => {
+    const onHide = () => { if (isLiveRef.current) endLectureBeacon(id); };
+    window.addEventListener('pagehide', onHide);
+    return () => {
+      window.removeEventListener('pagehide', onHide);
+      if (isLiveRef.current) schoolLive.endLecture(id).catch(() => undefined);
+    };
+  }, [id]);
 
   const src = studio.activeSource;
   const isSplit = studio.layout === 'split';
