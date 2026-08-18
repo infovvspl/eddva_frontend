@@ -41,6 +41,7 @@ export default function StudioBroadcaster() {
   const [externalLive, setExternalLive] = useState(false);
   const [micDeviceId, setMicDeviceId] = useState<string | null>(null);
   const [camDeviceId, setCamDeviceId] = useState<string | null>(null);
+  const [quality, setQuality] = useState<'1080p' | '720p'>('1080p');
 
   useEffect(() => {
     let active = true;
@@ -61,7 +62,12 @@ export default function StudioBroadcaster() {
     return () => { active = false; };
   }, [id]);
 
-  const studio = useStudioBroadcast({ streamKey: streamKey || '', canvasRef });
+  const studio = useStudioBroadcast({
+    streamKey: streamKey || '',
+    canvasRef,
+    width: quality === '1080p' ? 1920 : 1280,
+    height: quality === '1080p' ? 1080 : 720,
+  });
 
   useEffect(() => {
     if (studio.error) {
@@ -174,6 +180,19 @@ export default function StudioBroadcaster() {
           <span className="hidden items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-slate-200 sm:inline-flex">
             <Users className="h-3.5 w-3.5" /> {stats.viewers}
           </span>
+          {/* Quality — locked once live (resolution can't change mid-stream). */}
+          <div className="hidden items-center gap-0.5 rounded-full bg-white/10 p-0.5 sm:flex" title={studio.isLive ? 'Quality is locked while live' : 'Broadcast quality'}>
+            {(['1080p', '720p'] as const).map((q) => (
+              <button
+                key={q}
+                onClick={() => setQuality(q)}
+                disabled={studio.isLive}
+                className={`rounded-full px-2.5 py-1 text-[11px] font-black transition disabled:opacity-40 ${quality === q ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-white/10'}`}
+              >
+                {q}
+              </button>
+            ))}
+          </div>
           <DeviceSettings
             micDeviceId={micDeviceId}
             camDeviceId={camDeviceId}

@@ -337,6 +337,8 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
       const socket = createBroadcastRelaySocket();
       socketRef.current = socket;
       const sessionId = `${streamKey}-${Date.now()}`;
+      // Tell the relay our resolution so ffmpeg encodes to match (no upscaling).
+      const startPayload = { token: getLiveToken(), sessionId, streamKey, width, height };
 
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => reject(new Error('Relay did not start (timeout)')), 15000);
@@ -349,10 +351,10 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
           reject(new Error(p?.message || 'Relay error'));
         });
         socket.on('connect', () => {
-          socket.emit('broadcast:start', { token: getLiveToken(), sessionId, streamKey });
+          socket.emit('broadcast:start', { ...startPayload, token: getLiveToken() });
         });
         if (socket.connected) {
-          socket.emit('broadcast:start', { token: getLiveToken(), sessionId, streamKey });
+          socket.emit('broadcast:start', startPayload);
         }
       });
 
@@ -364,7 +366,9 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
 
       // Start recording → chunks
       const mimeType = pickMimeType();
-      const recorder = new MediaRecorder(combined, { mimeType, videoBitsPerSecond: 6_000_000 });
+      // Scale bitrate to resolution: 1080p needs ~6Mbps for crisp text, 720p ~3Mbps.
+      const videoBitsPerSecond = height >= 1080 ? 6_000_000 : 3_000_000;
+      const recorder = new MediaRecorder(combined, { mimeType, videoBitsPerSecond });
       recorderRef.current = recorder;
       recorder.ondataavailable = (ev: BlobEvent) => {
         if (ev.data && ev.data.size > 0 && socket.connected) {
