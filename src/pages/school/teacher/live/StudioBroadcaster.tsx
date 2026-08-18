@@ -215,11 +215,20 @@ export default function StudioBroadcaster() {
         </div>
       </header>
 
-      {/* Collision warning — class already streaming via OBS / another window. */}
+      {/* Collision warning — class is marked LIVE (real OBS stream, or a stale
+          status from a session that didn't end cleanly). */}
       {externalLive && !studio.isLive && (
-        <div className="flex shrink-0 items-center justify-center gap-2 border-b border-amber-500/20 bg-amber-500/15 px-4 py-2 text-center text-xs font-bold text-amber-200">
-          <AlertTriangle className="h-4 w-4 shrink-0" />
-          This class is already streaming (OBS or another window). Stop that stream before going live here, or they'll collide.
+        <div className="flex shrink-0 flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-amber-500/20 bg-amber-500/15 px-4 py-2 text-center text-xs font-bold text-amber-200">
+          <span className="inline-flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            This class is marked LIVE. If you're streaming from OBS, don't also go live here. If nothing is actually streaming, it's safe to continue.
+          </span>
+          <button
+            onClick={() => setExternalLive(false)}
+            className="rounded-lg bg-amber-500/30 px-2.5 py-0.5 font-black text-amber-100 hover:bg-amber-500/50"
+          >
+            Nothing's streaming — dismiss
+          </button>
         </div>
       )}
 
