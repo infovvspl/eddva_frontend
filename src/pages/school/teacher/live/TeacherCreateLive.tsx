@@ -171,13 +171,24 @@ export default function TeacherCreateLive() {
               </button>
             </div>
 
-            {/* Secondary: OBS (advanced) */}
+            {/* Alternative: OBS — highest quality (single native encode, no whiteboard) */}
             <button
               onClick={() => setShowObs((s) => !s)}
-              className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-left text-sm font-bold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+              className="flex w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
             >
-              <span>Advanced: stream with OBS instead</span>
-              <ChevronDown className={`h-4 w-4 transition-transform ${showObs ? 'rotate-180' : ''}`} />
+              <span className="flex items-center gap-3">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-slate-900 text-white dark:bg-slate-700">
+                  <Monitor className="h-5 w-5" />
+                </span>
+                <span>
+                  <span className="flex items-center gap-2">
+                    <span className="text-sm font-black text-slate-900 dark:text-white">Stream with OBS</span>
+                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">Highest quality</span>
+                  </span>
+                  <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Razor-sharp for dense text/code. Needs OBS installed · no whiteboard.</span>
+                </span>
+              </span>
+              <ChevronDown className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${showObs ? 'rotate-180' : ''}`} />
             </button>
 
             {showObs && (

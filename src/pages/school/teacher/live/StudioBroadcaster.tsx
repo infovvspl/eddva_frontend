@@ -228,7 +228,17 @@ export default function StudioBroadcaster() {
 
               {/* Empty states */}
               {src === 'screen' && !studio.screenOn && (
-                <StageHint icon={MonitorUp} title="Share a window or a browser tab" sub="Pick a specific app window or tab — NOT your whole screen, or it mirrors the Studio and turns blurry." action={{ label: 'Share screen', onClick: onShareScreen }} />
+                <StageHint
+                  icon={MonitorUp}
+                  title="Share a window or a browser tab"
+                  sub="Pick a specific app window or tab — NOT your whole screen, or it mirrors the Studio and turns blurry."
+                  action={{ label: 'Share screen', onClick: onShareScreen }}
+                  footer={
+                    <button onClick={() => navigate('/school/teacher/live')} className="text-xs font-semibold text-slate-400 underline decoration-dotted underline-offset-2 hover:text-slate-200">
+                      Need razor-sharp text? Use OBS for highest quality →
+                    </button>
+                  }
+                />
               )}
               {src === 'slides' && !slideLoaded && (
                 <StageHint icon={Presentation} title="Load slides to present" sub="Upload a PDF in the strip below, then flip through slides live." />
@@ -318,7 +328,7 @@ export default function StudioBroadcaster() {
   );
 }
 
-function StageHint({ icon: Icon, title, sub, action }: { icon: React.ComponentType<{ className?: string }>; title: string; sub: string; action?: { label: string; onClick: () => void } }) {
+function StageHint({ icon: Icon, title, sub, action, footer }: { icon: React.ComponentType<{ className?: string }>; title: string; sub: string; action?: { label: string; onClick: () => void }; footer?: React.ReactNode }) {
   return (
     <div className="pointer-events-none absolute inset-0 grid place-items-center px-6 text-center">
       <div className="pointer-events-auto">
@@ -330,6 +340,7 @@ function StageHint({ icon: Icon, title, sub, action }: { icon: React.ComponentTy
             <MonitorUp className="h-4 w-4" /> {action.label}
           </button>
         )}
+        {footer && <div className="mt-3">{footer}</div>}
       </div>
     </div>
   );
