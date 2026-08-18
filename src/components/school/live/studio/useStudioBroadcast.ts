@@ -61,7 +61,9 @@ function drawContain(
 }
 
 export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
-  const { streamKey, canvasRef, width = 1280, height = 720, fps = 30, onStatusChange } = opts;
+  // 1080p output — screen shares are detail-heavy (small text/code), so 720p
+  // looked blurry. Higher res + bitrate keeps shared screens legible.
+  const { streamKey, canvasRef, width = 1920, height = 1080, fps = 30, onStatusChange } = opts;
 
   const [status, setStatus] = useState<StudioStatus>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -187,7 +189,7 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
   const startScreenShare = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { frameRate: fps },
+        video: { frameRate: { ideal: fps, max: 30 }, width: { ideal: 1920 }, height: { ideal: 1080 } },
         audio: false,
       });
       screenStreamRef.current = stream;
@@ -362,7 +364,7 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
 
       // Start recording → chunks
       const mimeType = pickMimeType();
-      const recorder = new MediaRecorder(combined, { mimeType, videoBitsPerSecond: 2_500_000 });
+      const recorder = new MediaRecorder(combined, { mimeType, videoBitsPerSecond: 6_000_000 });
       recorderRef.current = recorder;
       recorder.ondataavailable = (ev: BlobEvent) => {
         if (ev.data && ev.data.size > 0 && socket.connected) {

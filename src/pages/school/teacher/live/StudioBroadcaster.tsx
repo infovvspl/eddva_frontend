@@ -204,7 +204,7 @@ export default function StudioBroadcaster() {
 
               {/* Whiteboard overlay — aligned 1:1 with the canvas */}
               <div className="absolute inset-0" style={{ visibility: showWhiteboard ? 'visible' : 'hidden' }}>
-                <Whiteboard active={showWhiteboard} onReady={(c) => studio.setWhiteboardCanvas(c)} />
+                <Whiteboard width={1920} height={1080} active={showWhiteboard} onReady={(c) => studio.setWhiteboardCanvas(c)} />
               </div>
 
               {/* Empty states */}
