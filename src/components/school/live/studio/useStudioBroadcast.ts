@@ -188,10 +188,21 @@ export function useStudioBroadcast(opts: UseStudioBroadcastOptions) {
   // ── Screen share ───────────────────────────────────────────────────────────
   const startScreenShare = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { frameRate: { ideal: fps, max: 30 }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+      // Steer toward window/tab capture and exclude the Studio's own tab, so
+      // sharing doesn't capture itself in an infinite "hall of mirrors" (which
+      // happens when the whole screen is shared with the Studio visible on it).
+      const displayOpts: any = {
+        video: {
+          frameRate: { ideal: fps, max: 30 },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+          displaySurface: 'window',
+        },
         audio: false,
-      });
+        selfBrowserSurface: 'exclude',
+        surfaceSwitching: 'include',
+      };
+      const stream = await navigator.mediaDevices.getDisplayMedia(displayOpts);
       screenStreamRef.current = stream;
       let v = screenVideoRef.current;
       if (!v) {

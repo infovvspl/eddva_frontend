@@ -228,7 +228,7 @@ export default function StudioBroadcaster() {
 
               {/* Empty states */}
               {src === 'screen' && !studio.screenOn && (
-                <StageHint icon={MonitorUp} title="Share your screen to begin" sub="Present slides, a browser tab, or an app — students see it live." action={{ label: 'Share screen', onClick: onShareScreen }} />
+                <StageHint icon={MonitorUp} title="Share a window or a browser tab" sub="Pick a specific app window or tab — NOT your whole screen, or it mirrors the Studio and turns blurry." action={{ label: 'Share screen', onClick: onShareScreen }} />
               )}
               {src === 'slides' && !slideLoaded && (
                 <StageHint icon={Presentation} title="Load slides to present" sub="Upload a PDF in the strip below, then flip through slides live." />
