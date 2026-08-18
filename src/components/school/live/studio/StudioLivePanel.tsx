@@ -21,7 +21,7 @@ function handsFromStudents(rows: (Student & { handRaised?: boolean })[]): Hand[]
   return rows.filter((r) => r.handRaised).map((r) => ({ userId: r.userId, userName: r.userName }));
 }
 
-export default function StudioLivePanel({ lectureId, isLive }: { lectureId: string; isLive: boolean }) {
+export default function StudioLivePanel({ lectureId, isLive, onStats }: { lectureId: string; isLive: boolean; onStats?: (s: { viewers: number; students: number }) => void }) {
   const socketRef = useRef<Socket | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const [tab, setTab] = useState<'chat' | 'students' | 'hands'>('chat');
@@ -67,6 +67,11 @@ export default function StudioLivePanel({ lectureId, isLive }: { lectureId: stri
   useEffect(() => {
     if (tab === 'chat') chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, tab]);
+
+  useEffect(() => {
+    onStats?.({ viewers, students: students.length });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewers, students.length]);
 
   const send = () => {
     const text = draft.trim();
