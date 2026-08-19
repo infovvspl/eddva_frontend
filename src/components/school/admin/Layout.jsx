@@ -80,7 +80,9 @@ export default function Layout() {
     });
   }, [isAdminPath, isSuperAdmin, hasTeacherRole, hasInstituteAdminRole, user?.id]);
 
-  const isFullWidthPage = [
+  const isDashboard = location.pathname === '/school/admin' || location.pathname === '/school/admin/' || location.pathname === '/school/teacher' || location.pathname === '/school/super-admin';
+
+  const isFullWidthPage = isDashboard || [
     '/communication',
     '/communications',
     '/audit-logs',

@@ -131,6 +131,7 @@ const StudentNotificationsPage = lazy(() => import("./pages/student/StudentNotif
 const StudentMockTestPage = lazy(() => import("./pages/student/StudentMockTestPage"));
 const StudentTestsPage = lazy(() => import("./pages/student/StudentTestsPage"));
 const StudentProgressPage = lazy(() => import("./pages/student/StudentProgressPage"));
+const StudentSupportTicketsPage = lazy(() => import("./pages/student/StudentSupportTicketsPage"));
 const PYQManagementPage = lazy(() => import("./pages/admin/PYQManagementPage"));
 const ReportsPage = lazy(() => import("./pages/admin/ReportsPage"));
 const TeacherTestResultsPage = lazy(() => import("./pages/admin/TeacherTestResultsPage"));
@@ -434,6 +435,7 @@ const StudentRoutes = () => (
       <Route path="/student/doubts" element={<FeatureGuard moduleKey="doubt_queue"><StudentDoubtsPage /></FeatureGuard>} />
       <Route path="/student/leaderboard" element={<FeatureGuard moduleKey="leaderboard"><StudentLeaderboardPage /></FeatureGuard>} />
       <Route path="/student/study-plan" element={<AiFeatureGate feature="ai_study_plan" title="AI Study Plan"><StudentStudyPlanPage /></AiFeatureGate>} />
+      <Route path="/student/support-tickets" element={<StudentSupportTicketsPage />} />
       <Route path="/student/profile" element={<StudentProfilePage />} />
       <Route path="/student/progress" element={<StudentProgressPage />} />
       <Route path="/student/pyq/:topicId" element={<FeatureGuard moduleKey="pyq_bank"><StudentPYQPage /></FeatureGuard>} />

@@ -167,6 +167,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "Communication", path: "/student/communication", icon: MessageCircle },
     { label: "Battle Arena", path: "/student/battle", icon: Swords },
     { label: "My Progress", path: "/student/progress", icon: BarChart },
+    { label: "Support Tickets", path: "/student/support-tickets", icon: Ticket },
     { label: "Profile", path: "/student/profile", icon: User },
   ],
   parent: [],
@@ -235,6 +236,7 @@ const NAV_ICON_COLORS: Record<string, { active: string; activeBg: string; inacti
   // === SKY: GENERAL/USER OPERATIONS & DIRECT SUPPORT CONTACTS ===
   '/admin/support-tickets': { active: 'text-sky-600', activeBg: 'bg-sky-600 text-white shadow-md', inactive: 'text-sky-400', inactiveBg: 'bg-sky-400 text-white shadow-md', bg: 'bg-sky-50' },
   '/teacher/support-tickets': { active: 'text-sky-600', activeBg: 'bg-sky-600 text-white shadow-md', inactive: 'text-sky-400', inactiveBg: 'bg-sky-400 text-white shadow-md', bg: 'bg-sky-50' },
+  '/student/support-tickets': { active: 'text-sky-600', activeBg: 'bg-sky-600 text-white shadow-md', inactive: 'text-sky-400', inactiveBg: 'bg-sky-400 text-white shadow-md', bg: 'bg-sky-50' },
 
   // === ROSE: COMMUNICATIONS ===
   '/super-admin/communication': { active: 'text-rose-500', activeBg: 'bg-rose-500 text-white shadow-md', inactive: 'text-rose-400', inactiveBg: 'bg-rose-400 text-white shadow-md', bg: 'bg-rose-50' },
