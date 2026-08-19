@@ -1093,37 +1093,21 @@ window.SlidePreview = {
   /* --- Immersive Design Renderers ------------------------------- */
 
   _renderImmersiveTitleSlide(canvas, slide, theme) {
-    const imgSrc = slide.imageBase64 ||
-      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
-    const sizeKey = slide.imageSize || 'medium';
-    const showTitleImg = !!(imgSrc && sizeKey !== 'none');
-
-    // 1. Full-bleed background image OR gradient + large decorative oval
-    if (showTitleImg) {
-      const bgImg = this._el('div', {
-        styles: { position: 'absolute', inset: '0', overflow: 'hidden', zIndex: '0' }
-      });
-      const img = document.createElement('img');
-      const fit = slide.imageFit || 'contain';
-      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
-      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
-      bgImg.appendChild(img);
-      this._setupSlideImage(slide, bgImg, img, imgSrc);
-      canvas.appendChild(bgImg);
-    } else {
-      canvas.style.background = `linear-gradient(125deg, #${theme.bgGradient[0]}, #${theme.bgGradient[1]})`;
-      canvas.appendChild(this._el('div', {
-        styles: {
-          position: 'absolute', right: '-5%', top: '5%', width: '38em', height: '38em',
-          borderRadius: '50%', background: '#' + theme.accent, opacity: '0.14',
-          pointerEvents: 'none', zIndex: '0'
-        }
-      }));
-    }
-
-    // 2. Dark overlay for legibility
+    // 1. Gradient cover + decorative oval. The Immersive title previously put the
+    //    slide image full-bleed behind the text, which made a busy content image
+    //    unreadable — a cover slide reads far cleaner without a background image.
+    canvas.style.background = `linear-gradient(125deg, #${theme.bgGradient[0]}, #${theme.bgGradient[1]})`;
     canvas.appendChild(this._el('div', {
-      styles: { position: 'absolute', inset: '0', background: 'rgba(0,0,0,0.38)', zIndex: '1' }
+      styles: {
+        position: 'absolute', right: '-5%', top: '5%', width: '38em', height: '38em',
+        borderRadius: '50%', background: '#' + theme.accent, opacity: '0.14',
+        pointerEvents: 'none', zIndex: '0'
+      }
+    }));
+
+    // 2. Subtle overlay for depth (no image behind, so keep it light).
+    canvas.appendChild(this._el('div', {
+      styles: { position: 'absolute', inset: '0', background: 'rgba(0,0,0,0.15)', zIndex: '1' }
     }));
 
     // 3. Large corner triangle top-right
