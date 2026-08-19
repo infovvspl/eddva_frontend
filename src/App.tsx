@@ -89,6 +89,7 @@ const AdminSettingsPage = lazy(() => import("./pages/admin/AdminSettingsPage"));
 const SupportTicketsPage = lazy(() => import("./pages/admin/SupportTicketsPage"));
 const TeacherSupportTicketsPage = lazy(() => import("./pages/teacher/TeacherSupportTicketsPage"));
 const SuperAdminSupportTicketsPage = lazy(() => import("./pages/super-admin/SuperAdminSupportTicketsPage"));
+const SuperAdminLeadsPage = lazy(() => import("./pages/super-admin/LeadsPage"));
 const CoachingTicketDetailPage = lazy(() => import("./pages/shared/CoachingTicketDetailPage"));
 const AdminCalendarPage = lazy(() => import("./pages/admin/AdminCalendarPage"));
 const TeacherCalendarPage = lazy(() => import("./pages/teacher/TeacherCalendarPage"));
@@ -253,6 +254,7 @@ const SchoolTeacherSettings = lazy(() => import("./pages/school/teacher/Settings
 const SchoolTeacherTimetable = lazy(() => import("./pages/school/teacher/Timetable"));
 const SchoolTeacherCreateLive = lazy(() => import("./pages/school/teacher/live/TeacherCreateLive"));
 const SchoolTeacherLiveDashboard = lazy(() => import("./pages/school/teacher/live/TeacherLiveDashboard"));
+const SchoolTeacherStudio = lazy(() => import("./pages/school/teacher/live/StudioBroadcaster"));
 const SchoolStudentLivePlayer = lazy(() => import("./pages/school/student/live/StudentLivePlayer"));
 const SchoolMaterialViewPage = lazy(() => import("./pages/school/MaterialViewPage"));
 
@@ -563,6 +565,7 @@ const SchoolRoutes = () => (
       <Route path="course-content/materials/:materialId" element={<SchoolMaterialViewPage />} />
       <Route path="live" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'live_classes' }}><SchoolTeacherCreateLive /></SchoolGuard>} />
       <Route path="live/:id/dashboard" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'live_classes' }}><SchoolTeacherLiveDashboard /></SchoolGuard>} />
+      <Route path="live/:id/studio" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'live_classes' }}><SchoolTeacherStudio /></SchoolGuard>} />
       <Route path="topics" element={<Navigate to="/school/teacher/course-content" replace />} />
       <Route path="classes" element={<SchoolClassManagement />} />
       <Route path="recorded-classes/:recordingId" element={<SchoolStudentRecordedClassDetails />} />
@@ -681,6 +684,7 @@ const SuperAdminRoutes = () => (
       <Route path="/super-admin/tenants/:id" element={<InstituteDetailPage />} />
       <Route path="/super-admin/tenants/:id/courses/:courseId" element={<SuperAdminCourseDetailPage />} />
       <Route path="/super-admin/users" element={<UsersPage />} />
+      <Route path="/super-admin/leads" element={<SuperAdminLeadsPage />} />
       <Route path="/super-admin/enrollments" element={<EnrollmentsPage />} />
       <Route path="/super-admin/announcements" element={<Navigate to="/super-admin/communication" replace />} />
       <Route path="/super-admin/communication" element={<SuperAdminCommunication />} />

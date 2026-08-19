@@ -40,6 +40,16 @@ export default function ERPWorkspace() {
             const Icon = LucideIcons[mod.icon] || LucideIcons.Box;
             const colorClass = mod.color || 'slate';
             
+            const isLibraryModule =
+              mod.ssoKey === 'library' ||
+              mod.key === 'library' ||
+              (mod.name && mod.name.toLowerCase().includes('library'));
+
+            const isSportsModule =
+              mod.ssoKey === 'sports' ||
+              mod.key === 'sports' ||
+              (mod.name && mod.name.toLowerCase().includes('sports'));
+            
             const content = (
               <>
                 <div className="absolute inset-0 bg-slate-50 dark:bg-slate-800 opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -47,13 +57,57 @@ export default function ERPWorkspace() {
                   <Icon className="h-8 w-8" />
                 </div>
                 <h3 className="font-bold text-slate-900 dark:text-white text-lg relative z-10">{mod.name}</h3>
-                {!mod.path && (
+                {!mod.path && !isLibraryModule && !isSportsModule && (
                   <span className="mt-2 text-xs font-bold uppercase tracking-widest text-slate-400 bg-slate-100 dark:bg-slate-800 dark:text-slate-500 px-3 py-1 rounded-full relative z-10">
                     Coming Soon
                   </span>
                 )}
               </>
             );
+
+            // SSO redirect for Library Management Platform
+            if (isLibraryModule) {
+              const token =
+                localStorage.getItem('eddva_access_token') ||
+                localStorage.getItem('school_token') ||
+                localStorage.getItem('token') ||
+                '';
+              const libraryBackendUrl = import.meta.env.VITE_LIBRARY_BACKEND_URL || 'http://localhost:3001';
+              const targetSsoUrl = `${libraryBackendUrl}/api/v1/library/auth/sso?token=${encodeURIComponent(token)}`;
+              
+              return (
+                <button
+                  key={mod.key || 'library'}
+                  type="button"
+                  onClick={() => window.open(targetSsoUrl, '_blank')}
+                  className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden group hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-lg transition-all cursor-pointer w-full text-left"
+                >
+                  {content}
+                </button>
+              );
+            }
+
+            // SSO redirect for Sports Management Platform
+            if (isSportsModule) {
+              const token =
+                localStorage.getItem('eddva_access_token') ||
+                localStorage.getItem('school_token') ||
+                localStorage.getItem('token') ||
+                '';
+              const sportsBackendUrl = import.meta.env.VITE_SPORTS_BACKEND_URL || import.meta.env.VITE_LIBRARY_BACKEND_URL || 'http://localhost:3001';
+              const targetSsoUrl = `${sportsBackendUrl}/api/v1/sports/auth/sso?token=${encodeURIComponent(token)}`;
+              
+              return (
+                <button
+                  key={mod.key || 'sports'}
+                  type="button"
+                  onClick={() => window.open(targetSsoUrl, '_blank')}
+                  className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden group hover:border-emerald-500 dark:hover:border-emerald-500 hover:shadow-lg transition-all cursor-pointer w-full text-left"
+                >
+                  {content}
+                </button>
+              );
+            }
 
             if (mod.path) {
               return (

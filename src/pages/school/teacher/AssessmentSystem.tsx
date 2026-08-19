@@ -521,7 +521,10 @@ const AssessmentSystem: React.FC = () => {
     }
   }, [level, selectedSubject, activeTabId]);
 
+  const [submittingTest, setSubmittingTest] = useState(false);
+
   const handleCreateTest = async () => {
+    if (submittingTest) return;
     if (!formData.title.trim()) {
       alert("Please enter test title");
       return;
@@ -544,6 +547,7 @@ const AssessmentSystem: React.FC = () => {
     const needsChapter = formData.type === "chapter" || formData.type === "topic";
     const needsTopic = formData.type === "topic";
 
+    setSubmittingTest(true);
     try {
       const payload: Record<string, any> = {
         title: formData.title,
@@ -597,6 +601,8 @@ const AssessmentSystem: React.FC = () => {
       setAiLanguage("en");
     } catch (err) {
       console.error("Create assessment error:", err);
+    } finally {
+      setSubmittingTest(false);
     }
   };
 
@@ -1340,8 +1346,8 @@ const AssessmentSystem: React.FC = () => {
               <Button variant="outline" onClick={() => setShowCreateModal(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateTest}>
-                {editingTest ? "Update Test" : "Create Test"}
+              <Button onClick={handleCreateTest} disabled={submittingTest}>
+                {submittingTest ? "Saving..." : editingTest ? "Update Test" : "Create Test"}
               </Button>
             </div>
           </div >

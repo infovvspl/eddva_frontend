@@ -664,20 +664,18 @@ window.PPTExport = {
   // ════════════════════════════════════════════════════════════
 
   _imm_title(slide, pptx, data, theme) {
-    if (this._hasImg(data)) {
-      this._placeImg(slide, data, { x: 0, y: 0, w: 10, h: 5.625 });
-    } else {
-      slide.background = { color: theme.bgGradient[0] };
-      slide.addShape(pptx.shapes.RECTANGLE, {
-        x: 0, y: 0, w: 10, h: 5.625,
-        fill: { type: 'gradient', color: theme.bgGradient[0], color2: theme.bgGradient[1], angle: 125 },
-        line: { color: theme.bgGradient[0] },
-      });
-      this._oval(slide, pptx, 5.2, 0.3, 5.8, 5.8, theme.accent, 86);
-    }
+    // Gradient cover — no full-bleed background image on the title slide (a busy
+    // content image behind the title text is unreadable). Matches preview.js.
+    slide.background = { color: theme.bgGradient[0] };
+    slide.addShape(pptx.shapes.RECTANGLE, {
+      x: 0, y: 0, w: 10, h: 5.625,
+      fill: { type: 'gradient', color: theme.bgGradient[0], color2: theme.bgGradient[1], angle: 125 },
+      line: { color: theme.bgGradient[0] },
+    });
+    this._oval(slide, pptx, 5.2, 0.3, 5.8, 5.8, theme.accent, 86);
 
-    // Dark overlay for readability
-    this._rect(slide, pptx, 0, 0, 10, 5.625, '000000', 38);
+    // Subtle overlay for depth (no image behind, so keep it light).
+    this._rect(slide, pptx, 0, 0, 10, 5.625, '000000', 15);
 
     // ── Large corner triangle — dominant graphic divider ──────
     // Top-right: rotate 180 → right angle at TR, diagonal BL→TR
@@ -711,21 +709,19 @@ window.PPTExport = {
   },
 
   _imm_content(slide, pptx, data, theme) {
+    // "full" would put the image full-bleed behind the bullets — treat it as a
+    // large CONTAINED image instead so text is never over a busy picture.
     var sk     = data.imageSize || 'medium';
+    if (sk === 'full') sk = 'large';
     var hasImg = this._hasImg(data) && sk !== 'none';
     var preset = this._IMG_PRESETS[sk] || this._IMG_PRESETS.medium;
 
-    if (sk === 'full' && hasImg) {
-      this._placeImg(slide, data, { x: 0, y: 0, w: 10, h: 5.625 });
-      this._rect(slide, pptx, 0, 0, 10, 5.625, '000000', 40);
-    } else {
-      this._gradBg(slide, pptx, theme, 125);
-      // ── Large corner triangles — dominant graphic dividers ──
-      // Top-right large triangle
-      this._tri(slide, pptx, 6.2, 0, 3.8, 3.2, theme.accent, 50, 180);
-      // Bottom-left accent triangle
-      this._tri(slide, pptx, 0, 4.0, 2.8, 1.625, theme.accent, 58, 0);
-    }
+    // Gradient background + decorative corner triangles (never full-bleed).
+    this._gradBg(slide, pptx, theme, 125);
+    // Top-right large triangle
+    this._tri(slide, pptx, 6.2, 0, 3.8, 3.2, theme.accent, 50, 180);
+    // Bottom-left accent triangle
+    this._tri(slide, pptx, 0, 4.0, 2.8, 1.625, theme.accent, 58, 0);
 
     // ── Header gradient band ───────────────────────────────────
     slide.addShape(pptx.shapes.RECTANGLE, {

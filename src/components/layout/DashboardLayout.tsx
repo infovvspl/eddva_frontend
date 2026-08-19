@@ -82,6 +82,7 @@ const superAdminGroups = [
     heading: "Communication",
     items: [
       { path: "/super-admin/communication", label: "Communication", icon: Megaphone },
+      { path: "/super-admin/leads", label: "Leads", icon: TrendingUp },
       { path: "/super-admin/complaints", label: "Support Tickets", icon: Ticket },
     ],
   },
@@ -118,6 +119,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
   super_admin: [
     { label: "Dashboard", path: "/super-admin", icon: LayoutDashboard },
     { label: "Institutes", path: "/super-admin/tenants", icon: Building2 },
+    { label: "Leads", path: "/super-admin/leads", icon: TrendingUp },
     { label: "Support Tickets", path: "/super-admin/support-tickets", icon: Ticket },
     { label: "Communication", path: "/super-admin/communication", icon: Megaphone },
     { label: "Analytics", path: "/super-admin/analytics", icon: BarChart3 },
