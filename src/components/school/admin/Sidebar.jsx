@@ -152,7 +152,6 @@ function buildTeacherGroups(mods, aiFeats) {
         { path: '/school/teacher', label: 'Dashboard', icon: LayoutDashboard, end: true },
         { path: '/school/teacher/teaching-plan', label: 'My Teaching Plan', icon: ClipboardList },
         { path: '/school/teacher/course-content', label: 'Course Content', icon: BookOpen },
-        { path: '/school/teacher/textbook-coverage', label: 'Textbook Coverage', icon: Library },
         liveEnabled && { path: '/school/teacher/classes', label: 'My Schedule', icon: Video },
         { path: '/school/teacher/attendance', label: 'Attendance', icon: ClipboardCheck },
         timetableEnabled && { path: '/school/teacher/timetable', label: 'Timetable', icon: CalendarDays },
