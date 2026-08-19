@@ -709,21 +709,19 @@ window.PPTExport = {
   },
 
   _imm_content(slide, pptx, data, theme) {
+    // "full" would put the image full-bleed behind the bullets — treat it as a
+    // large CONTAINED image instead so text is never over a busy picture.
     var sk     = data.imageSize || 'medium';
+    if (sk === 'full') sk = 'large';
     var hasImg = this._hasImg(data) && sk !== 'none';
     var preset = this._IMG_PRESETS[sk] || this._IMG_PRESETS.medium;
 
-    if (sk === 'full' && hasImg) {
-      this._placeImg(slide, data, { x: 0, y: 0, w: 10, h: 5.625 });
-      this._rect(slide, pptx, 0, 0, 10, 5.625, '000000', 40);
-    } else {
-      this._gradBg(slide, pptx, theme, 125);
-      // ── Large corner triangles — dominant graphic dividers ──
-      // Top-right large triangle
-      this._tri(slide, pptx, 6.2, 0, 3.8, 3.2, theme.accent, 50, 180);
-      // Bottom-left accent triangle
-      this._tri(slide, pptx, 0, 4.0, 2.8, 1.625, theme.accent, 58, 0);
-    }
+    // Gradient background + decorative corner triangles (never full-bleed).
+    this._gradBg(slide, pptx, theme, 125);
+    // Top-right large triangle
+    this._tri(slide, pptx, 6.2, 0, 3.8, 3.2, theme.accent, 50, 180);
+    // Bottom-left accent triangle
+    this._tri(slide, pptx, 0, 4.0, 2.8, 1.625, theme.accent, 58, 0);
 
     // ── Header gradient band ───────────────────────────────────
     slide.addShape(pptx.shapes.RECTANGLE, {
