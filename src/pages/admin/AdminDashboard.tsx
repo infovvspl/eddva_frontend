@@ -221,15 +221,32 @@ const AdminDashboard = () => {
           <div className="h-[180px] sm:h-[240px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={enrollmentData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 700, fill: '#64748b' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 700, fill: '#64748b' }} />
+                <defs>
+                  <linearGradient id="vibrantGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.9}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.9}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" strokeOpacity={0.4} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 700, fill: '#64748b' }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 700, fill: '#64748b' }} dx={-10} />
                 <Tooltip 
-                  cursor={{ fill: '#f1f5f9' }}
-                  contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 40px rgba(0,0,0,0.1)', fontWeight: 800 }}
-                  itemStyle={{ fontSize: 12 }}
+                  cursor={{ fill: '#f8fafc', opacity: 0.5 }}
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="bg-white/80 backdrop-blur-xl border border-white/50 shadow-xl shadow-indigo-500/10 p-4 rounded-3xl">
+                          <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">{label}</p>
+                          <p className="text-lg font-black text-slate-900">
+                            {payload[0].value} <span className="text-sm text-slate-500 font-semibold">Students</span>
+                          </p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
                 />
-                <Bar dataKey="students" fill={BLUE} radius={[6, 6, 0, 0]} />
+                <Bar dataKey="students" fill="url(#vibrantGradient)" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

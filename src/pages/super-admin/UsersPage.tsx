@@ -7,8 +7,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { useUsers, useSuspendUser, useActivateUser, useDeleteUser } from "@/hooks/use-users";
 
-import { useConfirm } from "@/context/ConfirmContext";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { PageHeader } from "@/components/shared/PageHeader";
 
 const roleConfig: Record<string, { icon: any; color: string; label: string }> = {
   super_admin: { icon: Shield, color: "text-slate-900 bg-slate-100 border-slate-200 shadow-sm", label: "Core Admin" },
@@ -59,21 +59,21 @@ const UsersPage = () => {
   return (
     <div className="min-h-screen bg-white p-4 md:p-6 lg:p-10 font-sans text-slate-900">
       <div className="w-full">
-        <header className="mb-7 md:mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6 md:pb-8">
-          <div>
-            <h2 className="text-[10px] md:text-[11px] font-bold uppercase tracking-wider text-indigo-600 mb-2">Platform Control</h2>
-            <h1 className="text-[26px] md:text-[34px] lg:text-[40px] font-bold text-slate-900 tracking-tight leading-tight">Master Directory</h1>
-            <p className="text-slate-400 text-sm md:text-[15px] mt-1 font-semibold">Managing permissions for global educational members</p>
-          </div>
-          <div className="flex gap-3">
-            <Button variant="outline" className="h-10 md:h-12 px-5 md:px-8 rounded-2xl border border-slate-200 font-semibold text-slate-600 hover:bg-slate-50 transition-all text-sm">
-              <Download className="w-4 h-4 mr-2" /> Export Logs
-            </Button>
-            <Button className="h-10 md:h-12 px-5 md:px-8 bg-white text-gray-900 rounded-2xl font-semibold hover:bg-gray-100 shadow-lg transition-all text-sm">
-              <UserPlus className="w-4 h-4 mr-2" /> Provision Account
-            </Button>
-          </div>
-        </header>
+        <PageHeader
+          title="Master Directory"
+          subtitle="Managing permissions for global educational members"
+          icon={<Users className="w-6 h-6" />}
+          actions={
+            <>
+              <Button variant="outline" className="h-10 md:h-11 px-5 md:px-6 rounded-2xl border border-slate-200 font-bold text-slate-700 hover:bg-slate-50 transition-all text-sm shadow-sm bg-white/70 backdrop-blur-md">
+                <Download className="w-4 h-4 mr-2" /> Export Logs
+              </Button>
+              <Button className="h-10 md:h-11 px-5 md:px-6 bg-slate-900 text-white rounded-2xl font-bold shadow-lg transition-all text-sm hover:scale-105">
+                <UserPlus className="w-4 h-4 mr-2" /> Provision Account
+              </Button>
+            </>
+          }
+        />
 
         {/* Filter Bar */}
         <div className="bg-slate-50/50 p-4 md:p-5 rounded-2xl md:rounded-[32px] border border-slate-100 mb-6 flex flex-wrap items-center gap-4">

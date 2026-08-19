@@ -10,6 +10,7 @@ import { apiClient } from "@/lib/api/client";
 import { toast } from "sonner";
 import { useConfirm } from "@/context/ConfirmContext";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { PageHeader } from "@/components/shared/PageHeader";
 
 /* ─── small helpers ─────────────────────────────────────────── */
 const StatusDot = ({ status }: { status: string }) => {
@@ -243,22 +244,19 @@ const InstitutesPage = () => {
   return (
     <div className="w-full min-h-full p-4 sm:p-6 lg:p-8 flex flex-col space-y-4 sm:space-y-8">
       {/* Header Container */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 bg-blue-100 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
-        <div className="flex-1">
-          <h1 className="font-display text-xl sm:text-3xl font-bold text-slate-900">
-            Coaching Institutes
-          </h1>
-          <p className="mt-1 text-xs sm:text-sm font-medium text-slate-500">
-            Manage coaching institutes, control access and AI features.
-          </p>
-        </div>
-        <button
-          onClick={() => navigate("/super-admin/tenants/new")}
-          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-bold text-white shadow-lg hover:bg-indigo-700 transition-colors w-full sm:w-auto justify-center mt-2 sm:mt-0"
-        >
-          <Plus className="w-4 h-4" /> Add Institute
-        </button>
-      </div>
+      <PageHeader
+        title="Coaching Institutes"
+        subtitle="Manage coaching institutes, control access and AI features."
+        icon={<Building2 className="w-6 h-6" />}
+        actions={
+          <button
+            onClick={() => navigate("/super-admin/tenants/new")}
+            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-bold text-white shadow-lg hover:bg-indigo-700 transition-colors w-full sm:w-auto justify-center mt-2 sm:mt-0"
+          >
+            <Plus className="w-4 h-4" /> Add Institute
+          </button>
+        }
+      />
 
       {/* Stat Cards */}
       <div className="flex flex-row overflow-x-auto sm:grid sm:grid-cols-3 lg:grid-cols-5 gap-3 pb-2 scrollbar-none snap-x snap-mandatory">

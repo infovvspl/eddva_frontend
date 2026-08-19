@@ -13,14 +13,16 @@ import {
   TrendingUp,
   Ticket,
   Shield,
+  MessageCircle,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/components/school/admin/Skeleton';
 import { Skeleton } from '@/components/ui/skeleton';
-import instituteIllustration from '@/assets/images/intituite_illustation.png';
+import adminBanner from '@/assets/images/new_admin_banner.png';
 import eddvaLogo from '@/assets/eddva-logo.svg';
 import vvsplLogo from '@/assets/vvspl_logo.png';
+import { AttentionRequiredWidget, FeeOverviewWidget, RecentActivityWidget } from '@/components/school/admin/DashboardWidgets';
 import {
   AreaChart,
   Area,
@@ -249,89 +251,57 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
   }
 
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="space-y-6 pb-12 px-0 md:px-6">
-      {/* Row 1: Hero Section & Smart Calendar (Both scaling height proportionally) */}
-      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 items-stretch">
+    <motion.div variants={container} initial="hidden" animate="show" className="pb-12 bg-slate-50/50 dark:bg-slate-950 min-h-screen">
+      {/* Row 1: Hero Section (Floating Card) */}
+      <div className="w-full px-4 md:px-6 pt-4 sm:pt-6 mb-6">
         {/* Hero Section */}
-        <section className="lg:col-span-2 xl:col-span-3 relative overflow-hidden rounded-[2.5rem] p-6 sm:p-8 lg:p-9 text-white shadow-xl border border-blue-600/10 flex flex-col justify-between h-full min-h-[240px] sm:min-h-[270px]" style={{ background: 'linear-gradient(135deg, #172554 0%, #1E3A8A 50%, #2563EB 100%)' }}>
-          <div className="absolute inset-0 bg-[url('/noise.png')] opacity-5 mix-blend-overlay"></div>
-          {/* Mesh Gradients & Glow Effects */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-blue-950/20 via-transparent to-indigo-900/30" />
-          <div className="absolute -left-16 -top-16 w-72 h-72 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
-          <div className="absolute right-1/4 bottom-0 w-96 h-96 rounded-full bg-indigo-500/15 blur-3xl pointer-events-none" />
-
-          {/* Soft Left Gradient Scrim for crisp text contrast over graphic */}
-          <div className="absolute inset-y-0 left-0 w-[60%] sm:w-[55%] bg-gradient-to-r from-[#172554]/90 via-[#172554]/60 to-transparent z-0 pointer-events-none rounded-l-[2.5rem]" />
-
-          {/* Flowing wave shape (using a clean SVG path overlay at bottom) */}
-          <svg className="absolute bottom-0 left-0 right-0 w-full h-24 opacity-10 pointer-events-none select-none z-0" viewBox="0 0 1200 120" preserveAspectRatio="none">
-            <path d="M0,60 C300,100 600,20 900,80 C1050,110 1150,90 1200,60 L1200,120 L0,120 Z" fill="white" />
-          </svg>
-
-          {/* School Building Graphic: Smooth left gradient fade mask */}
-          <div
-            className="hidden md:block absolute right-0 bottom-[-2px] h-[calc(100%+2px)] w-[48%] lg:w-[50%] xl:w-[52%] z-0 select-none pointer-events-none"
-            style={{
-              maskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.2) 20%, black 45%)',
-              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.2) 20%, black 45%)'
-            }}
-          >
+        <section className="relative w-full overflow-hidden rounded-[2rem] p-6 sm:p-8 lg:p-9 flex flex-col justify-between h-full min-h-[320px] sm:min-h-[380px] lg:min-h-[420px] shadow-sm border border-white/60 dark:border-slate-800">
+          {/* Full Banner Image */}
+          <div className="absolute inset-0 z-0">
             <img
-              src={instituteIllustration}
-              alt="Institute Illustration"
-              className="w-full h-full object-cover object-right-bottom filter drop-shadow-[0_12px_28px_rgba(0,0,0,0.18)]"
+              src={adminBanner}
+              alt="Admin Banner"
+              className="w-full h-full object-cover object-[center_35%]"
             />
           </div>
+          
+          {/* Gradient removed as requested */}
 
           <div className="relative z-10 flex flex-col justify-between h-full w-full py-1">
             <div className="flex flex-col items-start gap-1.5 min-w-0 w-full md:max-w-[85%] lg:max-w-[90%]">
-              <h1 className="font-display text-xl sm:text-2xl md:text-3xl lg:text-[2rem] font-black tracking-tight text-white leading-snug break-words drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
+              <h1 className="font-display text-xl sm:text-2xl md:text-3xl lg:text-[2rem] font-black tracking-tight text-slate-900 leading-snug break-words">
                 Welcome, {institute?.name || 'Army Public School'}!
               </h1>
               <div className="flex flex-wrap items-center gap-2 mt-1">
-                <span className="text-xs sm:text-sm font-bold text-blue-100 drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]">{institute?.state || institute?.location || 'State'}</span>
-                <span className="text-blue-300/60 text-xs">•</span>
-                <span className="text-[10px] sm:text-xs font-bold text-blue-200 uppercase tracking-widest drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]">
+                <span className="text-xs sm:text-sm font-bold text-slate-700">{institute?.state || institute?.location || 'State'}</span>
+                <span className="text-slate-400 text-xs">•</span>
+                <span className="text-[10px] sm:text-xs font-bold text-blue-600 uppercase tracking-widest">
                   School administration dashboard
                 </span>
               </div>
             </div>
 
-            <p className="mt-3 sm:mt-4 text-xs sm:text-sm md:text-base text-blue-50/95 leading-relaxed font-medium max-w-[320px] sm:max-w-[380px] md:max-w-[420px] drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]">
+            <p className="mt-3 sm:mt-4 text-xs sm:text-sm md:text-base text-slate-700 leading-relaxed font-semibold max-w-[320px] sm:max-w-[380px] md:max-w-[420px]">
               Empowering education through AI intelligence and seamless administration.
             </p>
 
             <div className="mt-4 sm:mt-5">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 sm:px-5 sm:py-2 backdrop-blur-md shadow-sm">
-                <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-200 shrink-0" />
-                <span className="text-[11px] sm:text-xs font-bold tracking-wide text-white">Manage Smarter. Educate Better.</span>
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/80 px-4 py-1.5 sm:px-5 sm:py-2 backdrop-blur-md shadow-sm">
+                <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600 shrink-0" />
+                <span className="text-[11px] sm:text-xs font-bold tracking-wide text-slate-800">Manage Smarter. Educate Better.</span>
               </div>
             </div>
           </div>
         </section>
-
-        {/* Smart Calendar */}
-        <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="hidden lg:flex lg:col-span-1 border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 shadow-[0_8px_30px_rgb(0,0,0,0.015)] flex-col justify-between overflow-hidden"
-          style={{
-            minHeight: 'clamp(260px, 21vw, 360px)',
-            padding: 'clamp(0.85rem, 1.3vw, 1.25rem)',
-            borderRadius: 'clamp(1.5rem, 2.2vw, 2.5rem)'
-          }}
-        >
-          <SmartCalendar />
-        </motion.div>
       </div>
 
       {/* Row 2: Remaining Dashboard Content */}
-      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 items-stretch">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 items-stretch px-4 md:px-6">
         {/* Left Column: Quick Actions, KPIs, Charts */}
-        <div className="lg:col-span-2 xl:col-span-3 space-y-6 min-w-0">
+        <div className="lg:col-span-2 xl:col-span-3 flex flex-col space-y-6 min-w-0">
           {/* Quick Actions Card */}
           <div
-            className="bg-white dark:bg-slate-900 shadow-[0_8px_30px_rgb(0,0,0,0.015)] border border-slate-200/50 dark:border-slate-800/40"
+            className="bg-white dark:bg-slate-900 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-200/60 dark:border-slate-800/60"
             style={{
               padding: 'clamp(0.85rem, 1.4vw, 1.5rem)',
               borderRadius: 'clamp(1.25rem, 2vw, 2rem)'
@@ -339,47 +309,46 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
           >
             <div style={{ marginBottom: 'clamp(0.5rem, 1vw, 1rem)' }}>
               <h3
-                className="font-display font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500"
+                className="font-display font-bold uppercase tracking-widest text-indigo-900 dark:text-indigo-400"
                 style={{ fontSize: 'clamp(10px, 0.75vw, 12px)' }}
               >
                 Quick Actions
               </h3>
             </div>
-            <div className="grid grid-cols-5" style={{ gap: 'clamp(0.35rem, 1vw, 1rem)' }}>
+            <div className="grid grid-cols-3 sm:grid-cols-6" style={{ gap: 'clamp(0.35rem, 1vw, 1rem)' }}>
               {[
-                { label: 'Add Student', shortLabel: 'Student', icon: GraduationCap, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50/50 dark:bg-blue-900/20 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 border border-blue-100/30 dark:border-blue-900/10', to: '/school/admin/students' },
-                { label: 'Add Teacher', shortLabel: 'Teacher', icon: Users, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50/50 dark:bg-emerald-900/20 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-600 border border-emerald-100/30 dark:border-emerald-900/10', to: '/school/admin/teachers' },
-                { label: 'Live Class', shortLabel: 'Live Class', icon: Video, color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50/50 dark:bg-violet-900/20 hover:bg-violet-600 hover:text-white dark:hover:bg-violet-600 border border-violet-100/30 dark:border-violet-900/10', to: '/school/admin/timetable' },
-                { label: 'Attendance', shortLabel: 'Attendance', icon: ClipboardList, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50/50 dark:bg-amber-900/20 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-500 border border-amber-100/30 dark:border-amber-900/10', to: '/school/admin/attendance' },
-                { label: 'Send Notice', shortLabel: 'Notice', icon: MessageSquare, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50/50 dark:bg-rose-900/20 hover:bg-rose-500 hover:text-white dark:hover:bg-rose-500 border border-rose-100/30 dark:border-rose-900/10', to: '/school/admin/notices' },
+                { label: 'Classes', shortLabel: 'Classes', icon: BookOpen, color: 'text-white', bg: 'bg-gradient-to-br from-blue-500 to-blue-600 shadow-md shadow-blue-500/30 hover:shadow-lg hover:shadow-blue-500/40 border-none', to: '/school/admin/classes' },
+                { label: 'Timetable', shortLabel: 'Timetable', icon: CalendarDays, color: 'text-white', bg: 'bg-gradient-to-br from-violet-500 to-violet-600 shadow-md shadow-violet-500/30 hover:shadow-lg hover:shadow-violet-500/40 border-none', to: '/school/admin/timetable' },
+                { label: 'Notices', shortLabel: 'Notices', icon: MessageSquare, color: 'text-white', bg: 'bg-gradient-to-br from-rose-500 to-rose-600 shadow-md shadow-rose-500/30 hover:shadow-lg hover:shadow-rose-500/40 border-none', to: '/school/admin/notices' },
+                { label: 'Chats', shortLabel: 'Chats', icon: MessageCircle, color: 'text-white', bg: 'bg-gradient-to-br from-pink-500 to-pink-600 shadow-md shadow-pink-500/30 hover:shadow-lg hover:shadow-pink-500/40 border-none', to: '/school/admin/communications' },
+                { label: 'Students', shortLabel: 'Students', icon: GraduationCap, color: 'text-white', bg: 'bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-md shadow-emerald-500/30 hover:shadow-lg hover:shadow-emerald-500/40 border-none', to: '/school/admin/students' },
+                { label: 'Attendance', shortLabel: 'Attendance', icon: ClipboardList, color: 'text-white', bg: 'bg-gradient-to-br from-amber-500 to-amber-600 shadow-md shadow-amber-500/30 hover:shadow-lg hover:shadow-amber-500/40 border-none', to: '/school/admin/attendance' },
               ].map((action) => (
                 <button
                   key={action.label}
                   onClick={() => navigate(action.to)}
-                  className="group flex flex-col items-center justify-center transition-all duration-300 hover:-translate-y-1 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-850 border border-transparent hover:border-slate-100 dark:hover:border-slate-800 min-w-0"
+                  className="group flex flex-col items-center justify-center transition-all duration-300 hover:-translate-y-1 rounded-2xl hover:bg-white/60 dark:hover:bg-slate-800 min-w-0 border border-transparent hover:border-white/80 hover:shadow-sm"
                   style={{
                     padding: 'clamp(0.35rem, 0.8vw, 0.75rem)',
                     gap: 'clamp(0.35rem, 0.6vw, 0.65rem)'
                   }}
                 >
                   <div
-                    className={cn("flex shrink-0 items-center justify-center rounded-full transition-all duration-300 shadow-sm group-hover:shadow-lg group-hover:scale-105", action.bg, action.color)}
+                    className={cn(
+                      "rounded-full flex items-center justify-center transition-colors shadow-sm group-hover:shadow-lg group-hover:scale-105",
+                      action.bg,
+                      action.color
+                    )}
                     style={{
-                      width: 'clamp(2.25rem, 3.2vw, 3.5rem)',
-                      height: 'clamp(2.25rem, 3.2vw, 3.5rem)'
+                      width: 'clamp(2.5rem, 3.5vw, 3rem)',
+                      height: 'clamp(2.5rem, 3.5vw, 3rem)'
                     }}
                   >
-                    <action.icon
-                      className="transition-colors duration-300"
-                      style={{
-                        width: 'clamp(1.1rem, 1.4vw, 1.5rem)',
-                        height: 'clamp(1.1rem, 1.4vw, 1.5rem)'
-                      }}
-                    />
+                    <action.icon className="w-1/2 h-1/2" />
                   </div>
                   <span
-                    className="text-center font-bold text-slate-500 dark:text-slate-400 transition-colors group-hover:text-slate-900 dark:group-hover:text-white truncate w-full"
-                    style={{ fontSize: 'clamp(9px, 0.72vw, 12px)' }}
+                    className="text-center font-black tracking-wide text-slate-700 dark:text-slate-200 transition-colors group-hover:text-slate-900 dark:group-hover:text-white truncate w-full"
+                    style={{ fontSize: 'clamp(10px, 0.75vw, 12px)' }}
                   >
                     <span className="inline xl:hidden">{action.shortLabel}</span>
                     <span className="hidden xl:inline">{action.label}</span>
@@ -389,54 +358,68 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
             </div>
           </div>
 
-          {/* KPI grid */}
-          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 items-stretch">
+          {/* KPI grid (Expanded to 6 items) */}
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-6 items-stretch">
             <KpiCard
               title="Total Students"
               value={formatNumber(animStudents)}
-              sub="12.5% this month"
+              sub="↑ 12 this month"
               icon={GraduationCap}
-              color="bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
+              color="bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md shadow-blue-500/20"
               delay={0.02}
               sparklineData={sparkStudents}
             />
             <KpiCard
               title="Total Teachers"
               value={formatNumber(animTeachers)}
-              sub="8.2% this month"
+              sub="4 on leave"
               icon={Users}
-              color="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
-              delay={0.06}
+              color="bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-md shadow-purple-500/20"
+              delay={0.04}
               sparklineData={sparkTeachers}
             />
             <KpiCard
-              title="Live Classes"
-              value={liveCount}
-              sub={`${liveCount} live · ${scheduledCount} today`}
-              icon={Video}
-              color="bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400"
-              delay={0.1}
-              sparklineData={[{ v: 0 }, { v: scheduledCount }, { v: liveCount }]}
+              title="Attendance Today"
+              value={`${attendancePct}%`}
+              sub={`↑ ${Math.floor(students * (attendancePct/100))} / ${students} present`}
+              icon={ClipboardList}
+              color="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-md shadow-emerald-500/20"
+              delay={0.06}
+              sparklineData={attendanceSeries.map(s => ({ v: s.att }))}
             />
             <KpiCard
-              title="Attendance Today"
-              value={attendancePct}
-              suffix="%"
-              sub={`${stats?.presentStudentsToday || 0} of ${stats?.totalStudents || 0} students present`}
-              icon={ClipboardList}
-              color="bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400"
-              delay={0.14}
-              sparklineData={attendanceSeries.map(s => ({ v: s.att }))}
+              title="Fees Collected"
+              value="₹18.4L"
+              sub="↑ 82% of target"
+              icon={Ticket}
+              color="bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-md shadow-rose-500/20"
+              delay={0.08}
+            />
+            <KpiCard
+              title="Pending Admissions"
+              value="24"
+              sub="! 5 require action"
+              icon={Users}
+              color="bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-md shadow-amber-500/20"
+              delay={0.10}
+            />
+            <KpiCard
+              title="Active Classes"
+              value="32"
+              sub="↑ 5 live now"
+              icon={Video}
+              color="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-md shadow-indigo-500/20"
+              delay={0.12}
             />
           </div>
 
-          {/* Charts row */}
-          <div className="w-full">
+          {/* Charts & Attention row */}
+          <div className="w-full flex-1 grid gap-6 grid-cols-1 xl:grid-cols-3">
             <motion.div
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 shadow-[0_8px_30px_rgb(0,0,0,0.015)] w-full"
+              className="border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 shadow-[0_8px_30px_rgb(0,0,0,0.015)] w-full flex-1 flex flex-col xl:col-span-2"
               style={{
                 padding: 'clamp(1rem, 1.5vw, 1.5rem)',
                 borderRadius: 'clamp(1.25rem, 1.8vw, 1.75rem)'
@@ -468,7 +451,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
                   Live
                 </span>
               </div>
-              <div style={{ height: 'clamp(140px, 14vw, 220px)' }}>
+              <div className="flex-1 min-h-[160px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={attendanceSeries} margin={{ top: 8, right: 12, left: -24, bottom: 0 }}>
                     <defs>
@@ -486,16 +469,32 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
                 </ResponsiveContainer>
               </div>
             </motion.div>
+            
+            <AttentionRequiredWidget className="h-full xl:col-span-1" />
           </div>
         </div>
 
         {/* Right Column: Communications, Support & Security */}
-        <div className="space-y-6 w-full lg:col-span-1 flex flex-col justify-between">
+        <div className="space-y-6 w-full lg:col-span-1 flex flex-col justify-start">
+          {/* Smart Calendar (Moved down) */}
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 shadow-[0_8px_30px_rgb(0,0,0,0.015)] flex-col justify-between overflow-hidden"
+            style={{
+              minHeight: 'clamp(260px, 21vw, 360px)',
+              padding: 'clamp(0.85rem, 1.3vw, 1.25rem)',
+              borderRadius: 'clamp(1.25rem, 1.8vw, 2rem)'
+            }}
+          >
+            <SmartCalendar />
+          </motion.div>
+
           {/* Communications Widget */}
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
-            className="border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 shadow-[0_8px_30px_rgb(0,0,0,0.015)] flex flex-col justify-between flex-1"
+            className="border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 shadow-[0_8px_30px_rgb(0,0,0,0.015)] flex flex-col justify-between"
             style={{
               padding: 'clamp(1rem, 1.5vw, 1.5rem)',
               borderRadius: 'clamp(1.25rem, 1.8vw, 2rem)'
@@ -508,7 +507,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
                     className="font-display font-bold text-slate-800 dark:text-white uppercase tracking-wider"
                     style={{ fontSize: 'clamp(11px, 0.8vw, 14px)' }}
                   >
-                    Communications
+                    Notices
                   </h3>
                   <p
                     className="text-slate-400 dark:text-slate-500 font-semibold mt-0.5"
@@ -638,26 +637,26 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
         </div>
       </div>
 
-      {/* Dynamic Floating Footer with Dancing Animation */}
-      <footer className="w-full flex justify-center items-center py-6 mt-12 border-t border-slate-200/40 dark:border-slate-800/40 select-none">
-        <motion.div
-          animate={{
-            y: [0, -3, 1, -1, 0],
-            rotate: [0, -0.5, 0.5, -0.2, 0],
-          }}
-          transition={{
-            duration: 4,
-            ease: "easeInOut",
-            repeat: Infinity,
-            repeatType: "loop"
-          }}
-          className="flex items-center gap-4 text-sm font-black text-slate-500 dark:text-slate-400 tracking-widest uppercase"
-        >
+
+
+      {/* Row 3: New Widgets */}
+      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 items-stretch px-4 md:px-6 mt-6">
+        <FeeOverviewWidget className="h-full" />
+        <RecentActivityWidget className="h-full" />
+      </div>
+
+      {/* Footer */}
+      <footer className="w-full flex justify-end items-center py-4 mt-8 select-none">
+        <div className="flex items-center gap-3 text-[10px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase">
           <span>Powered by</span>
-          <img src={eddvaLogo} alt="EDDVA" className="h-[40px] w-auto object-contain filter drop-shadow-sm hover:scale-105 transition-transform" />
-          <span className="text-slate-350 dark:text-slate-700 font-normal text-base">+</span>
-          <img src={vvsplLogo} alt="VVSPL" className="h-[50px] w-auto object-contain bg-white dark:bg-slate-800 rounded-xl p-1.5 border border-slate-100 dark:border-slate-700 shadow-md hover:scale-105 transition-transform" />
-        </motion.div>
+          <a href="https://eddva.in" target="_blank" rel="noopener noreferrer" className="flex items-center hover:opacity-80 transition-opacity">
+            <img src={eddvaLogo} alt="EDDVA" className="h-[24px] sm:h-[30px] w-auto object-contain filter drop-shadow-sm" />
+          </a>
+          <span className="text-slate-300 dark:text-slate-700 font-normal text-sm">+</span>
+          <a href="https://vvspltech.com" target="_blank" rel="noopener noreferrer" className="flex items-center hover:opacity-80 transition-opacity">
+            <img src={vvsplLogo} alt="VVSPL" className="h-[30px] sm:h-[36px] w-auto object-contain bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-100 dark:border-slate-700 shadow-sm" />
+          </a>
+        </div>
       </footer>
     </motion.div>
   );

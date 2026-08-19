@@ -7,6 +7,7 @@ import { useBatches, useInstituteStudents } from "@/hooks/use-admin";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { PageHeader } from "@/components/shared/PageHeader";
 
 // ─── Exam gradient map ────────────────────────────────────────────────────────
 
@@ -101,18 +102,11 @@ const StudentsPage = () => {
     <div className="w-full space-y-6">
 
       {/* ── Header ── */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-blue-100 border border-blue-200/80 rounded-[2rem] p-4 sm:px-6 sm:py-5 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 mb-6"
-      >
-        <div className="min-w-0 flex-1 pl-1 sm:pl-0">
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight whitespace-nowrap truncate">Students</h1>
-          <p className="text-xs sm:text-sm font-bold text-slate-500/80 mt-0.5 whitespace-nowrap truncate">
-            {allStudents.length} student{allStudents.length !== 1 ? "s" : ""} across {batchList.length} course{batchList.length !== 1 ? "s" : ""}
-          </p>
-        </div>
-      </motion.div>
+      <PageHeader 
+        title="Students"
+        subtitle={`${allStudents.length} student${allStudents.length !== 1 ? "s" : ""} across ${batchList.length} course${batchList.length !== 1 ? "s" : ""}`}
+        icon={<Users className="w-6 h-6" />}
+      />
 
       {/* ── Filters ── */}
       <div className="flex flex-row gap-2 sm:gap-3 w-full">
