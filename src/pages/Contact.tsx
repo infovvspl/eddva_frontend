@@ -12,6 +12,8 @@ import {
 } from "react-icons/fi";
 import { LandingLayout } from "@/components/landing/LandingLayout";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
+import { submitLead } from "@/lib/api/leads";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -57,17 +59,28 @@ export default function Contact() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.name.trim()) { toast.warning("Please enter your name."); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) { toast.warning("Please enter a valid email."); return; }
     setIsSubmitting(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    setIsSubmitting(false);
-    setSubmitted(true);
-    setFormData({ name: "", email: "", department: "school", subject: "", message: "" });
-
-    // Clear success message after 5 seconds
-    setTimeout(() => setSubmitted(false), 5000);
+    try {
+      await submitLead({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        vertical: formData.department === "coaching" ? "COACHING" : "SCHOOL",
+        interestedFeature: formData.subject.trim() || undefined,
+        message: formData.message.trim() || undefined,
+        source: "contact-page",
+      });
+      setSubmitted(true);
+      setFormData({ name: "", email: "", department: "school", subject: "", message: "" });
+      // Clear success message after 5 seconds
+      setTimeout(() => setSubmitted(false), 5000);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
