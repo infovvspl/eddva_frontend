@@ -411,7 +411,9 @@ const Reports: React.FC = () => {
       return weakAreas.some((area: string) => normalizeKey(area) === normalizeKey(subjectName));
     }).length;
     const metricWeakStudents = metric.weakStudents || metric.weak_students || 0;
-    const atRiskStudents = weakByStudent || Math.min(Number(metricWeakStudents) || 0, assignedStudents || Number(metricWeakStudents) || 0);
+    const atRiskStudents = scopedStudents.length > 0
+      ? weakByStudent
+      : Math.min(Number(metricWeakStudents) || 0, assignedStudents || Number(metricWeakStudents) || 0);
     const scoredStudents = scopedStudents
       .map((student: any) => Number(student.avgScore || 0))
       .filter((score: number) => Number.isFinite(score) && score > 0);

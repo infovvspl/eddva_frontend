@@ -11,12 +11,13 @@ import { Button } from "@/components/ui/button";
 import { useTenant, useTenantStats, useSuspendTenant, useActivateTenant, useUpdateTenant } from "@/hooks/use-tenants";
 import { toast } from "sonner";
 import { useConfirm } from "@/context/ConfirmContext";
+import InstituteErpModulesTab from "./components/InstituteErpModulesTab";
 
 const AI_FEATURE_OPTIONS = [
   { key: "ai_study_assistant", label: "AI Study Assistant", desc: "AI tutor & interactive study sessions" },
   { key: "ai_study_plan", label: "AI Study Plan", desc: "Personalized AI study roadmaps" },
   { key: "ai_battle_arena", label: "Battle Arena", desc: "AI adaptive practice battles" },
-  { key: "ai_analytics", label: "AI Analytics", desc: "Weak topic detection & insights" },
+  // { key: "ai_analytics", label: "AI Analytics", desc: "Weak topic detection & insights" },
   { key: "ai_doubt_resolution", label: "AI Doubt Resolution", desc: "Instant AI answers to questions" },
   { key: "ai_content_generation", label: "AI Content Generation", desc: "Auto-generate questions & quizzes" },
   { key: "ai_speech_to_text", label: "Speech-to-Text Notes", desc: "Transcribe lectures into notes" },
@@ -73,6 +74,7 @@ const InstituteDetailPage = () => {
     { id: "overview", label: "Overview" },
     { id: "courses", label: "Course Analytics" },
     { id: "ai", label: "AI Features" },
+    { id: "erp", label: "ERP Modules" },
     { id: "stats", label: "Deep Stats" },
     { id: "billing", label: "Billing" },
     { id: "activity", label: "Logs" },
@@ -173,8 +175,8 @@ const InstituteDetailPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white p-4 md:p-6 lg:p-10 font-sans text-slate-900">
-      <header className="max-w-7xl mx-auto mb-7 md:mb-10 border-b border-slate-100 pb-6 md:pb-8">
+    <div className="w-full space-y-6 font-sans text-slate-900">
+      <header className="w-full mb-7 md:mb-10 border-b border-slate-100 pb-6 md:pb-8">
         <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-colors text-[11px] font-medium uppercase tracking-wider mb-5">
           <ChevronLeft className="w-4 h-4" /> Return to Directory
         </button>
@@ -221,7 +223,7 @@ const InstituteDetailPage = () => {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto space-y-5">
+      <main className="w-full space-y-5">
         {/* Quick Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {statsCards.map((s, i) => (
@@ -410,6 +412,7 @@ const InstituteDetailPage = () => {
 
             {activeTab === "ai" && (
               <div className="bg-white rounded-[28px] md:rounded-[44px] border border-slate-100 shadow-sm p-5 md:p-8">
+                {/* AI Features Content */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-slate-100">
                   <div className="flex items-center gap-4">
                     <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
@@ -485,6 +488,10 @@ const InstituteDetailPage = () => {
                   </div>
                 )}
               </div>
+            )}
+
+            {activeTab === "erp" && id && (
+              <InstituteErpModulesTab instituteId={id} />
             )}
 
             {activeTab === "stats" && (

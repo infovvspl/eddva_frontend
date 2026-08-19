@@ -203,7 +203,7 @@ export default function StudentDashboard() {
 
   return (
     <motion.div
-      className="space-y-6 pb-10"
+      className="space-y-6"
       initial={lightMotion ? undefined : "hidden"}
       animate={lightMotion ? undefined : "show"}
       variants={lightMotion ? undefined : { show: { transition: { staggerChildren: 0.06 } } }}

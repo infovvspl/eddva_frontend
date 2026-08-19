@@ -439,6 +439,7 @@ function VideoPlayer({
   externalPlaybackRef,
   onFlushLectureProgress,
   onYouTubeTick,
+  savedResponseIds,
 }: {
   src: string;
   checkpoints: QuizCheckpoint[];
@@ -451,6 +452,8 @@ function VideoPlayer({
   onFlushLectureProgress?: () => void | Promise<void>;
   /** Throttled (~3/s) so parent can update progress UI without reading refs during render */
   onYouTubeTick?: (percent: number, seconds: number) => void;
+  /** IDs of checkpoints the student already answered (from saved progress) — skipped on re-watch */
+  savedResponseIds?: string[];
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const ytContainerRef = useRef<HTMLDivElement>(null);
@@ -486,10 +489,18 @@ function VideoPlayer({
   const seekedRef = useRef(false);
 
   useEffect(() => {
-    shownIdsRef.current = new Set();
+    // Pre-fill already-answered IDs so checkpoints don't re-fire when the student revisits
+    shownIdsRef.current = new Set(savedResponseIds ?? []);
     lastUiReport.current = 0;
     seekedRef.current = false;
-  }, [src]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src]); // intentionally excludes savedResponseIds — this effect only runs on src change
+
+  // Merge additional IDs when savedResponseIds arrives asynchronously (first API fetch)
+  useEffect(() => {
+    if (!savedResponseIds?.length) return;
+    savedResponseIds.forEach(id => shownIdsRef.current.add(id));
+  }, [savedResponseIds]);
 
   useEffect(() => {
     if (resumeAt && resumeAt > 0 && !seekedRef.current) {
@@ -527,7 +538,8 @@ function VideoPlayer({
     if (!v || !duration) return;
     const pct = (v.currentTime / duration) * 100;
     setLocalTime(v.currentTime);
-    const cps = checkpointsRef.current;
+    // Sort by triggerAtPercent so the earliest checkpoint always fires first
+    const cps = [...checkpointsRef.current].sort((a, b) => a.triggerAtPercent - b.triggerAtPercent);
     for (const cp of cps) {
       if (shownIdsRef.current.has(cp.id)) continue;
       if (pct >= cp.triggerAtPercent) {
@@ -660,7 +672,8 @@ function VideoPlayer({
                 onYouTubeTick(pct, Math.floor(cur));
               }
               if (activeQuizRef.current) return;
-              const cps = checkpointsRef.current;
+              // Sort by triggerAtPercent so the earliest checkpoint always fires first
+              const cps = [...checkpointsRef.current].sort((a, b) => a.triggerAtPercent - b.triggerAtPercent);
               for (const cp of cps) {
                 if (shownIdsRef.current.has(cp.id)) continue;
                 if (pct >= cp.triggerAtPercent) {
@@ -1273,7 +1286,8 @@ function toTranscriptParagraphs(transcript?: string | null): string[] {
   if (!normalized) return [];
 
   const sentences = normalized
-    .split(/(?<=[.!?।])\s+/)
+    .replace(/([.!?।])\s+/g, "$1\0")
+    .split("\0")
     .map((s) => s.trim())
     .filter(Boolean);
 
@@ -1876,6 +1890,7 @@ export default function StudentLecturePage() {
                   setMobileAiOpen(true);
                 }}
                 resumeAt={savedProgress?.lastPositionSeconds}
+                savedResponseIds={savedProgress?.quizResponses?.map(r => r.questionId)}
                 onEnded={!isLiveNow && mockTestId ? () => navigate(`/student/quiz?mockTestId=${mockTestId}`) : undefined}
                 externalPlaybackRef={ytPlaybackRef}
                 onFlushLectureProgress={flushLectureProgress}

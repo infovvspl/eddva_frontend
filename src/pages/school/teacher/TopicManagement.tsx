@@ -382,7 +382,7 @@ const TopicManagement: React.FC = () => {
   // open topic's Course Content materials, then acknowledge the iframe.
   useEffect(() => {
     const onMessage = async (e: MessageEvent) => {
-      const data = e.data as { type?: string; title?: string; fileName?: string; base64?: string };
+      const data = e.data as { type?: string; title?: string; fileName?: string; base64?: string; markdownContent?: string };
       if (data?.type !== 'EDVA_PPT_SAVE') return;
       const reply = (type: string, message?: string) =>
         (e.source as Window | null)?.postMessage({ type, message }, '*');
@@ -403,6 +403,8 @@ const TopicManagement: React.FC = () => {
           fileUrl,
           fileName,
           fileSizeKb: Math.round(file.size / 1024),
+          // Save the slide markdown so KaTeX math renders when viewed
+          description: data.markdownContent || undefined,
           topicId: selectedTopic.kind === 'topic' ? selectedTopic.id : undefined,
           chapterId: selectedTopic.kind === 'subject' ? undefined : selectedTopic.chapterId,
           subjectId: selectedSubject?.id,
@@ -660,21 +662,15 @@ const TopicManagement: React.FC = () => {
 
       {/* ── AI PPT Studio (embedded ppt-generator) ──────────────────────── */}
       {pptStudioOpen && (
-        <div className="fixed inset-0 z-[300] flex flex-col bg-slate-900/95 backdrop-blur-sm">
-          <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-2.5">
-            <div className="flex items-center gap-2 text-white">
-              <Presentation size={18} />
-              <span className="text-sm font-bold">AI PPT Studio</span>
-              {selectedTopic && <span className="truncate text-xs text-white/60">· {selectedTopic.name}</span>}
-            </div>
-            <button
-              onClick={() => setPptStudioOpen(false)}
-              className="grid h-9 w-9 place-items-center rounded-lg bg-white/10 text-white transition hover:bg-white/20"
-              title="Close"
-            >
-              <X size={18} />
-            </button>
-          </div>
+        <div className="fixed inset-0 z-[300]">
+          {/* Floating close button */}
+          <button
+            onClick={() => setPptStudioOpen(false)}
+            className="absolute top-3 right-3 z-10 grid h-9 w-9 place-items-center rounded-lg bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/60"
+            title="Close PPT Studio"
+          >
+            <X size={18} />
+          </button>
           <iframe
             title="AI PPT Studio"
             src={(() => {
@@ -682,10 +678,41 @@ const TopicManagement: React.FC = () => {
               q.set('api', getApiBaseUrl());
               const inst = (user as any)?.instituteId || (user as any)?.tenantId;
               if (inst) q.set('institute', String(inst));
-              if (selectedTopic) q.set('topic', selectedTopic.name);
+
+              // Forward the curriculum scope so the AI writes slides for THIS
+              // class/subject/chapter/topic. IDs are authoritative — the backend
+              // resolves the real names from them; the names below are only so the
+              // studio can show the scope banner without a round-trip.
+              if (selectedTopic) {
+                // A "subject" node's name is "<Subject> Materials", which is a
+                // useless prompt subject — fall back to the real subject name.
+                const topicLabel =
+                  selectedTopic.kind === 'subject'
+                    ? (selectedSubject?.name ?? selectedTopic.name)
+                    : selectedTopic.name;
+                q.set('topic', topicLabel);
+
+                if (selectedTopic.kind === 'topic') {
+                  q.set('topicId', selectedTopic.id);
+                  q.set('topicName', selectedTopic.name);
+                  if (selectedTopic.chapterId) q.set('chapterId', selectedTopic.chapterId);
+                } else if (selectedTopic.kind === 'chapter') {
+                  q.set('chapterId', selectedTopic.id);
+                  q.set('chapterName', selectedTopic.name);
+                }
+              }
+              if (selectedClass?.name) q.set('className', selectedClass.name);
+              if (selectedSubject?.name) q.set('subjectName', selectedSubject.name);
+              // subjectId lets the server resolve the class even when the subject
+              // is only reachable via its section or the teacher's assignment.
+              if (selectedSubject?.id) q.set('subjectId', selectedSubject.id);
+              if (selectedClass?.id) q.set('classId', selectedClass.id);
+
+              // Force browser to load the latest app.js code by cache-busting
+              q.set('cb', String(Date.now()));
               return `${PPT_STUDIO_URL}?${q.toString()}`;
             })()}
-            className="w-full flex-1 border-0 bg-white"
+            className="w-full h-full border-0 bg-white block"
             allow="clipboard-write; downloads"
           />
         </div>
@@ -1053,10 +1080,16 @@ function MaterialWorkspace({
       if (t !== 'animation' && /\.(mp4|webm|og[gv])([?#].*)?$/i.test(String(m.fileUrl ?? m.file_url ?? ''))) {
         t = 'animation';
       }
-      (g[t] ?? g.notes).push(m);
+      if (topic.kind === 'subject') {
+        if (t === 'ebook') {
+          g.ebook.push(m);
+        }
+      } else {
+        (g[t] ?? g.notes).push(m);
+      }
     });
     return g;
-  }, [materials]);
+  }, [materials, topic.kind]);
 
   const handleDelete = async (m: SchoolMaterial) => {
     const isConfirmed = await confirm({
@@ -1113,7 +1146,7 @@ function MaterialWorkspace({
           )}
           {canEdit && (
             <>
-              {(hasAiMaterials || hasPptGen) && (
+              {topic.kind !== 'subject' && (hasAiMaterials || hasPptGen) && (
                 <button
                   onClick={() => setShowAi(true)}
                   className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300"
@@ -1121,7 +1154,7 @@ function MaterialWorkspace({
                   <Sparkles size={15} /> AI Generate
                 </button>
               )}
-              <Button size="sm" icon={<Plus size={16} />} onClick={() => { setAddType(undefined); setShowAdd(true); }}>Add Material</Button>
+              <Button size="sm" icon={<Plus size={16} />} onClick={() => { setAddType(topic.kind === 'subject' ? 'ebook' : undefined); setShowAdd(true); }}>Add Material</Button>
             </>
           )}
         </div>
@@ -1138,7 +1171,7 @@ function MaterialWorkspace({
             {canEdit && (
               <>
                 <div className="mt-5 grid w-full max-w-md grid-cols-2 gap-2">
-                  {MATERIAL_TYPES.map((mt) => {
+                  {MATERIAL_TYPES.filter(mt => topic.kind !== 'subject' || mt.value === 'ebook').map((mt) => {
                     const Icon = mt.icon;
                     return (
                       <button key={mt.value} onClick={() => { setAddType(mt.value); setShowAdd(true); }}
@@ -1150,14 +1183,18 @@ function MaterialWorkspace({
                     );
                   })}
                 </div>
-                <div className="mt-4 flex items-center gap-3 text-xs font-bold uppercase tracking-wider text-surface-300">
-                  <span className="h-px w-10 bg-surface-200 dark:bg-surface-700" /> or <span className="h-px w-10 bg-surface-200 dark:bg-surface-700" />
-                </div>
-                {(hasAiMaterials || hasPptGen) && (
-                  <button onClick={() => setShowAi(true)}
-                    className="mt-4 inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300">
-                    <Sparkles size={16} /> Generate with AI
-                  </button>
+                {topic.kind !== 'subject' && (
+                  <>
+                    <div className="mt-4 flex items-center gap-3 text-xs font-bold uppercase tracking-wider text-surface-300">
+                      <span className="h-px w-10 bg-surface-200 dark:bg-surface-700" /> or <span className="h-px w-10 bg-surface-200 dark:bg-surface-700" />
+                    </div>
+                    {(hasAiMaterials || hasPptGen) && (
+                      <button onClick={() => setShowAi(true)}
+                        className="mt-4 inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300">
+                        <Sparkles size={16} /> Generate with AI
+                      </button>
+                    )}
+                  </>
                 )}
               </>
             )}
@@ -1186,6 +1223,7 @@ function MaterialWorkspace({
                       const isAnimation =
                         String(m.fileType || '').toLowerCase() === 'animation' ||
                         /\.(mp4|webm|og[gv])([?#].*)?$/i.test(href);
+                      const isPpt = mt.value === 'ppt' || String(m.fileType || '').toLowerCase() === 'ppt';
                       return (
                         <div key={m.id} className="overflow-hidden rounded-xl border border-surface-100 bg-white transition-colors hover:border-brand-200 dark:border-surface-700 dark:bg-surface-800">
                           <div className="group flex items-center gap-3 p-3">
@@ -1220,16 +1258,30 @@ function MaterialWorkspace({
                                 <Eye size={13} /> View
                               </button>
                             ) : href && !isPdfOrEbook ? (
-                              <a href={href} target="_blank" rel="noreferrer"
-                                className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
-                                <ExternalLink size={13} /> Open
-                              </a>
+                              isPpt ? (
+                                <a href={href} download target="_blank" rel="noreferrer"
+                                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                                  <Download size={13} /> PPT
+                                </a>
+                              ) : (
+                                <a href={href} target="_blank" rel="noreferrer"
+                                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                                  <ExternalLink size={13} /> Open
+                                </a>
+                              )
                             ) : null}
                             {!isAnimation && canPreviewInPage && href && !isPdfOrEbook && (
-                              <a href={href} target="_blank" rel="noreferrer"
-                                className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
-                                <ExternalLink size={13} /> Open
-                              </a>
+                              isPpt ? (
+                                <a href={href} download target="_blank" rel="noreferrer"
+                                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                                  <Download size={13} /> PPT
+                                </a>
+                              ) : (
+                                <a href={href} target="_blank" rel="noreferrer"
+                                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                                  <ExternalLink size={13} /> Open
+                                </a>
+                              )
                             )}
                             {canEdit && (
                               <IconButton label="Delete material" danger onClick={() => handleDelete(m)}><Trash2 size={15} /></IconButton>
@@ -1922,13 +1974,58 @@ function splitGeneratedPracticeContent(content: string, typeId: string) {
   if (!content || (typeId !== 'pyq' && typeId !== 'dpp')) return null;
   const patterns = typeId === 'pyq'
     ? [/^detailed\s+solutions?\b/i, /^solutions?\b/i, /^answer\s+key\b/i]
-    : [/^answer\s+key\b/i, /^answers?\b/i, /^solutions?\b/i];
+    : [/^detailed\s+solutions?\b/i, /^answer\s+key\b/i, /^answers?\b/i, /^solutions?\b/i];
   const splitAt = findGeneratedSectionStart(content, patterns);
   if (splitAt <= 0) return null;
   const questions = content.slice(0, splitAt).trim();
   const solutions = content.slice(splitAt).trim();
   if (!questions || !solutions) return null;
   return { questions, solutions };
+}
+
+/**
+ * States plainly whether this material was written from the school's own
+ * chapter PDF.
+ *
+ * The server sets `grounded`, so it is authoritative. Inline [p.N] citations
+ * are the model's own doing and appear inconsistently — a study guide came back
+ * with 143 markers and a slide deck, equally grounded, with 2 — so a teacher
+ * cannot use their absence to conclude anything.
+ */
+function SourceBadge({ source }: { source: { grounded: boolean; pages?: number[]; reason?: string } | null }) {
+  if (!source) return null;
+
+  if (source.grounded) {
+    const pages = (source.pages || []).filter((p) => Number.isFinite(p));
+    const range = pages.length
+      ? (Math.min(...pages) === Math.max(...pages)
+          ? ` · page ${Math.min(...pages)}`
+          : ` · pages ${Math.min(...pages)}–${Math.max(...pages)}`)
+      : '';
+    return (
+      <span
+        title="Every section was written from the chapter PDF uploaded for this class."
+        className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+      >
+        <span className="h-1.5 w-1.5 rounded-full bg-current" />
+        From your textbook{range}
+      </span>
+    );
+  }
+
+  return (
+    <span
+      title={
+        source.reason === 'not_indexed'
+          ? 'This chapter has no indexed textbook, so it was written from general knowledge. Upload the chapter PDF under Textbook Coverage to change that.'
+          : 'The textbook could not be used this time, so it was written from general knowledge.'
+      }
+      className="inline-flex items-center gap-1.5 rounded-full border border-surface-300 bg-surface-100 px-2.5 py-0.5 text-[11px] font-bold text-surface-600 dark:border-surface-600 dark:bg-surface-800 dark:text-surface-300"
+    >
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      General knowledge
+    </span>
+  );
 }
 
 function PracticeContentPreview({ content, typeId }: { content: string; typeId: string }) {
@@ -1992,6 +2089,10 @@ function AiGeneratePanel({
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [content, setContent] = useState<string | null>(null);
+  // Whether the chapter's indexed textbook was actually used. Set by the server,
+  // so it is reliable — inline [p.N] markers only appear when the model happens
+  // to add them, and a teacher cannot tell "no citations" from "not grounded".
+  const [source, setSource] = useState<{ grounded: boolean; pages?: number[]; reason?: string } | null>(null);
 
   const cfg = AI_GEN_TYPES.find((t) => t.id === typeId)!;
   const isQuestionType = typeId === 'dpp' || typeId === 'pyq';
@@ -2012,6 +2113,7 @@ function AiGeneratePanel({
   const handleGenerate = async () => {
     setGenerating(true);
     setContent(null);
+    setSource(null);
     try {
       const typeInstruction =
         typeId === 'faq'
@@ -2044,6 +2146,7 @@ function AiGeneratePanel({
         toast.error('AI returned notes instead of FAQ. Try Generate again.');
       }
       setContent(generated);
+      setSource((res as any).source ?? null);
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'AI generation failed');
     } finally {
@@ -2092,7 +2195,10 @@ function AiGeneratePanel({
                 <p className="text-[11px] font-black uppercase tracking-wider text-violet-600">Review generated content</p>
               </div>
               <h2 className="truncate text-lg font-bold text-surface-900 dark:text-white">{cfg.label} — {topic.name}</h2>
-              <p className="text-xs font-medium text-surface-400">Draft only · students cannot see it until you confirm</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-xs font-medium text-surface-400">Draft only · students cannot see it until you confirm</p>
+                <SourceBadge source={source} />
+              </div>
             </div>
           </div>
           <button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-xl text-surface-500 transition hover:bg-surface-100 dark:hover:bg-surface-800" aria-label="Discard and close">
@@ -2248,13 +2354,10 @@ function AiGeneratePanel({
 
 function AddMaterialModal({
   topic, subjectId, classId, sectionId, initialType, onClose, onSaved,
-}: {
-  topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' | 'subject' }; subjectId: string;
-  classId?: string; sectionId?: string;
-  initialType?: SchoolMaterialType; onClose: () => void; onSaved: () => void;
 }) {
-  const [step, setStep] = useState<'type' | 'input'>(initialType ? 'input' : 'type');
-  const [type, setType] = useState<SchoolMaterialType>(initialType ?? 'notes');
+  const isSubject = topic.kind === 'subject';
+  const [step, setStep] = useState<'type' | 'input'>(initialType || isSubject ? 'input' : 'type');
+  const [type, setType] = useState<SchoolMaterialType>(initialType ?? (isSubject ? 'ebook' : 'notes'));
   const [source, setSource] = useState<'file' | 'link'>('file');
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
@@ -2314,7 +2417,7 @@ function AddMaterialModal({
       <div className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900">
         <div className="flex items-center justify-between border-b border-surface-100 px-5 py-4 dark:border-surface-700">
           <div className="flex items-center gap-2">
-            {step === 'input' && !initialType && (
+            {step === 'input' && !initialType && !isSubject && (
               <button onClick={() => setStep('type')} className="grid h-8 w-8 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><ChevronLeft size={16} /></button>
             )}
             <div>

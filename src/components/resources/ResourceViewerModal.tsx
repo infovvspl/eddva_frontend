@@ -26,7 +26,7 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 const _API_ORIGIN = getApiOrigin();
 
 function resolveUrl(url?: string | null): string | undefined {
@@ -240,6 +240,7 @@ const RESOURCE_META: Record<string, {
   notes: { label: "Handwritten Notes", icon: <FileText className="w-4 h-4" />, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200" },
   mindmap: { label: "Mindmap", icon: <Brain className="w-4 h-4" />, color: "text-teal-600", bg: "bg-teal-50", border: "border-teal-200" },
   quiz: { label: "Quiz", icon: <FlaskConical className="w-4 h-4" />, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200" },
+  faq: { label: "FAQ", icon: <Lightbulb className="w-4 h-4" />, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200" },
 };
 
 function Brain(props: any) {
@@ -765,10 +766,12 @@ export default function ResourceViewerModal({
             "p-5 sm:p-8 lg:p-10 bg-white mx-auto w-full shadow-inner",
             isFullPage ? "max-w-none" : "max-w-4xl flex-1 overflow-y-auto",
           )}>
-            {normalizedType === "mindmap" && mindmapTree?.children?.length ? (
+            {normalizedType === "mindmap" && mindmapTree && (mindmapTree.children?.length ?? 0) > 0 ? (
               <MindMapCanvas data={mindmapTree} height={isFullPage ? 720 : 560} />
             ) : (normalizedType === "dpp" || normalizedType === "pyq") ? (
               <PracticePagedViewer content={content} type={normalizedType} />
+            ) : normalizedType === "faq" ? (
+              <DppContentRenderer content={content} />
             ) : (title.toLowerCase().includes("flashcard") || title.toLowerCase().includes("flash card") || content.trim().startsWith("Q:")) ? (
               <FlashcardViewer content={content} />
             ) : (title.toLowerCase().includes("checklist") || content.includes("* [ ]")) ? (

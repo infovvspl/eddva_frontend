@@ -83,7 +83,7 @@ export default function Analytics() {
     : [{ name: 'No Tickets', count: 1 }];
 
   return (
-    <div className="w-full px-0 sm:px-5 lg:px-8 xl:px-10 pb-12 space-y-8 sm:space-y-10">
+    <div className="w-full min-h-full p-4 sm:p-6 lg:p-8 space-y-8 sm:space-y-10">
       <div>
         <h1 className="font-display text-xl sm:text-3xl font-bold text-surface-955">Super Admin Analytics</h1>
         <p className="mt-1 text-xs sm:text-sm font-medium text-surface-500">Platform-wide insights into institutes, users, and support.</p>

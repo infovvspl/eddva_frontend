@@ -4,6 +4,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { SchoolVideoPlayer } from '@/components/school/SchoolVideoPlayer';
 import { SchoolAskDoubtPanel } from '@/components/school/SchoolAskDoubtPanel';
 import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
+import "katex/dist/katex.min.css";
 import { useAuth } from '@/context/SchoolAuthContext';
 import { HighlightRenderer } from '@/lib/highlight-renderer';
 import { toast } from 'sonner';
@@ -98,6 +99,11 @@ export default function RecordedClassDetails() {
     if (hasNotesGen) return 'notes';
     return 'my_notes';
   });
+
+  useEffect(() => {
+    console.log("RecordedClassDetails MOUNTED");
+    return () => console.log("RecordedClassDetails UNMOUNTED");
+  }, []);
 
   useEffect(() => {
     if (availableTabs.length > 0 && !availableTabs.includes(detailTab)) {
@@ -210,8 +216,7 @@ export default function RecordedClassDetails() {
 
   // Fetch notes images as data URIs (R2 bucket has no CORS for direct browser <img> loads)
   useEffect(() => {
-    const imgs = Array.isArray(recording?.notes_images) ? recording.notes_images : [];
-    if (!recording?.id || imgs.length === 0) {
+    if (!recording?.id || !recording?.notes) {
       setNotesImageMap({});
       return;
     }
@@ -224,7 +229,7 @@ export default function RecordedClassDetails() {
       })
       .catch(() => { if (!cancelled) setNotesImageMap({}); });
     return () => { cancelled = true; };
-  }, [recording?.id, recording?.notes_images?.length]);
+  }, [recording?.id, recording?.notes]);
 
   useEffect(() => {
     const root = notesContentRef.current;
@@ -397,7 +402,25 @@ export default function RecordedClassDetails() {
     return () => {
       cancelled = true;
     };
-  }, [recording]);
+  }, [recording?.id, recording?.video_url, recording?.source]);
+
+  const [generatingQuiz, setGeneratingQuiz] = useState(false);
+
+  const handleGenerateQuiz = async () => {
+    if (!recording || generatingQuiz) return;
+    setGeneratingQuiz(true);
+    try {
+      await api.post(`/classes/recordings/${recording.id}/generate-quiz`);
+      toast.success('In-video AI Quiz generated successfully!');
+      const response = await api.get('/classes/recordings');
+      setRecordings(unwrapSchoolList(response));
+    } catch (err) {
+      console.error('Failed to generate in-video quiz:', err);
+      toast.error('Failed to generate in-video quiz');
+    } finally {
+      setGeneratingQuiz(false);
+    }
+  };
 
   const handleAddVisuals = async () => {
     if (!recording || addingVisuals) return;
@@ -524,6 +547,7 @@ export default function RecordedClassDetails() {
       );
     }
 
+    console.log('--- RECORDED CLASS DETAILS RENDER V3 ---', { savedResponses });
     return (
       <div className="relative">
         <SchoolVideoPlayer
@@ -533,6 +557,7 @@ export default function RecordedClassDetails() {
           onTimeUpdate={handleTimeUpdate}
           onAnswerSubmitted={handleAnswerSubmitted}
           resumeAt={resumeAt}
+          savedResponseIds={savedResponses.map(r => r.questionId)}
         />
         {playback.loading && (
           <div className="pointer-events-none absolute right-4 top-4 inline-flex items-center gap-2 rounded-full bg-slate-950/80 px-3 py-1.5 text-xs font-bold text-white z-10">
@@ -749,9 +774,15 @@ export default function RecordedClassDetails() {
 
     if (detailTab === 'transcript') {
       if (recording.transcript) {
+        // Remove speech-to-text artificial line numbers (0., 1., 2., etc.) and smooth line breaks
+        const cleanedTranscript = recording.transcript
+          .replace(/(?:\r?\n|^)\s*\d+[\.:)]\s*/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+
         return (
-          <div className="rounded-2xl bg-slate-50 p-5 text-sm leading-7 text-slate-700">
-            <p className="whitespace-pre-wrap">{recording.transcript}</p>
+          <div className="rounded-2xl bg-slate-50 dark:bg-slate-900 p-5 text-sm leading-7 text-slate-700 dark:text-slate-200">
+            <p className="whitespace-pre-wrap leading-relaxed">{cleanedTranscript}</p>
           </div>
         );
       }
@@ -785,6 +816,27 @@ export default function RecordedClassDetails() {
 
       return (
         <div className="space-y-4 text-slate-800">
+          {/* Header Action Bar for Quiz Tab */}
+          <div className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-indigo-600" />
+              <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200">
+                {checkpoints.length} Interactive Checkpoint{checkpoints.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            {isTeacher && checkpoints.length === 0 && (
+              <button
+                type="button"
+                onClick={handleGenerateQuiz}
+                disabled={generatingQuiz}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 text-white text-xs font-extrabold transition-all shadow-sm disabled:opacity-50"
+              >
+                {generatingQuiz ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+                Generate In-Video Quiz
+              </button>
+            )}
+          </div>
+
           {savedResponses.length > 0 && (
             <div className="flex items-center gap-4 p-4 bg-slate-900 rounded-2xl text-white">
               <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
@@ -802,9 +854,23 @@ export default function RecordedClassDetails() {
             </div>
           )}
           {checkpoints.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <Sparkles className="h-8 h-8 text-slate-200 mb-3 animate-pulse" />
-              <p className="text-sm font-semibold text-slate-400">No quiz checkpoints yet</p>
+            <div className="flex flex-col items-center justify-center py-12 text-center space-y-3">
+              <Sparkles className="h-10 w-10 text-slate-300 dark:text-slate-700 animate-pulse" />
+              <div>
+                <p className="text-sm font-extrabold text-slate-700 dark:text-slate-300">No quiz checkpoints yet</p>
+                <p className="text-xs text-slate-400 mt-1">Generate AI video checkpoints for student self-assessment.</p>
+              </div>
+              {isTeacher && (
+                <button
+                  type="button"
+                  onClick={handleGenerateQuiz}
+                  disabled={generatingQuiz}
+                  className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-xs font-extrabold text-white shadow-md hover:bg-blue-700 transition-all disabled:opacity-50"
+                >
+                  {generatingQuiz ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                  Generate In-Video Quiz
+                </button>
+              )}
             </div>
           ) : (
             checkpoints.map((cp, i) => {
@@ -969,7 +1035,7 @@ export default function RecordedClassDetails() {
     return (
       <div className="space-y-6">
         <Link
-          to="/school/student/recorded-classes"
+          to={isTeacher ? "/school/teacher/classes" : "/school/student/recorded-classes"}
           className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-blue-600"
         >
           <ArrowLeft size={16} />
@@ -992,7 +1058,7 @@ export default function RecordedClassDetails() {
       <div className="border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6 lg:shrink-0">
         <div className="flex w-full items-center gap-3">
           <Link
-            to="/school/student/recorded-classes"
+            to={isTeacher ? "/school/teacher/classes" : "/school/student/recorded-classes"}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-blue-600 hover:text-white"
             aria-label="Back to recorded classes"
           >
@@ -1073,7 +1139,7 @@ export default function RecordedClassDetails() {
                   availableTabs={availableTabs}
                   isDarkTheme={true}
                 />
-                <div className="p-4">{renderStudyPanel()}</div>
+                <div className="p-4 max-h-[500px] overflow-y-auto custom-scrollbar">{renderStudyPanel()}</div>
               </div>
             </div>
           </div>
@@ -1138,14 +1204,16 @@ export default function RecordedClassDetails() {
               </section>
             </main>
 
-          <aside className={`min-w-0 ${isSidebarExpanded ? 'block' : 'hidden lg:hidden'} lg:h-full lg:min-h-0 lg:overflow-y-auto lg:pb-5 scrollbar-hide`}>
-            <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-              <CourseTabs
-                activeTab={detailTab}
-                onChange={setDetailTab}
-                availableTabs={availableTabs}
-              />
-              <div className="p-5">{renderStudyPanel()}</div>
+          <aside className={`min-w-0 ${isSidebarExpanded ? 'block' : 'hidden lg:hidden'} lg:h-full lg:min-h-0`}>
+            <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col h-[600px] lg:h-[calc(100vh-140px)] overflow-hidden">
+              <div className="shrink-0 w-full min-w-0 overflow-hidden">
+                <CourseTabs
+                  activeTab={detailTab}
+                  onChange={setDetailTab}
+                  availableTabs={availableTabs}
+                />
+              </div>
+              <div className="p-5 overflow-y-auto flex-1 scrollbar-hide">{renderStudyPanel()}</div>
             </section>
           </aside>
         </div>

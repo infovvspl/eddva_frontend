@@ -804,7 +804,7 @@ const AssignmentManagement: React.FC = () => {
                 {selectedClass.name} | {selectedSection.name} | {selectedSubject.name}
               </p>
             </div>
-            <Button icon={<Plus size={18} />} onClick={openCreateModal} fullWidth className="sm:w-auto shadow-sm">
+            <Button icon={<Plus size={18} />} onClick={openCreateModal} className="shadow-sm">
               New Assignment
             </Button>
           </div>
@@ -824,7 +824,7 @@ const AssignmentManagement: React.FC = () => {
                 const subCount = a.submissionCount ?? a.submission_count ?? 0;
                 const pending = a.pendingGradeCount ?? a.pending_grade_count ?? 0;
                 return (
-                <GlassCard key={a.id} className="flex flex-col p-5">
+                <GlassCard key={a.id} className="flex flex-col justify-between h-full p-5">
                   <div className="flex justify-between items-start mb-3">
                     <h3 className="font-semibold text-lg text-gray-900 leading-tight pr-4 line-clamp-2">
                       {a.title}
@@ -942,103 +942,7 @@ const AssignmentManagement: React.FC = () => {
               onFilesSelected={(files) => setSelectedFile(files[0] || null)}
             />
 
-            <button
-              type="button"
-              onClick={() => setShowAdvancedCreate((v) => !v)}
-              className="text-xs font-bold text-brand-600 hover:text-brand-700"
-            >
-              {showAdvancedCreate ? '− Hide AI & image tools' : '+ Use AI or worksheet image'}
-            </button>
 
-            {showAdvancedCreate && (
-            <div className="flex gap-2 rounded-xl bg-gray-100 p-1">
-              {([
-                ["manual", "Manual", PenLine],
-                ["image", "From image", ImageIcon],
-                ["ai", "AI assist", Sparkles],
-              ] as const).map(([id, label, Icon]) => {
-                if (id === "image" && !hasOcr) return null;
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => setCreateMode(id)}
-                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition ${
-                      createMode === id
-                        ? "bg-white text-brand-700 shadow-sm"
-                        : "text-gray-500 hover:text-gray-800"
-                    }`}
-                  >
-                    <Icon size={14} />
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-            )}
-
-            {showAdvancedCreate && createMode === "image" && (
-              <div className="space-y-3 rounded-xl border border-violet-100 bg-violet-50/50 p-4">
-                <p className="text-sm text-violet-900">
-                  Upload a photo of a worksheet, textbook page, or question paper. AI will read it and draft the assignment.
-                </p>
-                <DoubtImageAttach
-                  label="Upload worksheet image"
-                  uploadFn={uploadAssignmentImage}
-                  imageUrl={worksheetImageUrl}
-                  previewUrl={worksheetPreview}
-                  onChange={(url, preview) => {
-                    setWorksheetImageUrl(url);
-                    setWorksheetPreview(preview);
-                  }}
-                />
-                <InputField
-                  label="Extra notes for AI (optional)"
-                  placeholder="e.g. Focus on word problems only"
-                  value={aiPrompt}
-                  onChange={(e) => setAiPrompt(e.target.value)}
-                />
-                <Button
-                  variant="outline"
-                  icon={extractingImage ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                  onClick={handleFromImage}
-                  disabled={extractingImage || !worksheetImageUrl}
-                >
-                  {extractingImage ? "Reading image…" : "Generate from image"}
-                </Button>
-              </div>
-            )}
-
-            {showAdvancedCreate && createMode === "ai" && (
-              <div className="space-y-3 rounded-xl border border-blue-100 bg-blue-50/50 p-4">
-                <p className="text-sm text-blue-900">
-                  Describe the topic or paste rough questions — AI will draft title and instructions.
-                </p>
-                <InputField
-                  label="Topic / chapter"
-                  placeholder="e.g. Fractions — addition and subtraction"
-                  value={aiTopic}
-                  onChange={(e) => setAiTopic(e.target.value)}
-                />
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-gray-700">AI instructions</label>
-                  <textarea
-                    className="w-full border border-gray-300 rounded-xl p-3 focus:ring-2 focus:ring-brand-500 outline-none text-sm min-h-[80px]"
-                    placeholder="e.g. 8 medium-level questions, include 2 word problems…"
-                    value={aiPrompt}
-                    onChange={(e) => setAiPrompt(e.target.value)}
-                  />
-                </div>
-                <Button
-                  variant="outline"
-                  icon={aiGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                  onClick={handleAiGenerate}
-                  disabled={aiGenerating}
-                >
-                  {aiGenerating ? "Generating…" : "Generate with AI"}
-                </Button>
-              </div>
-            )}
 
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
               <Button variant="outline" onClick={() => { setShowUploadModal(false); resetCreateForm(); }}>

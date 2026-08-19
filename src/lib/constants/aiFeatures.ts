@@ -37,6 +37,15 @@ export const AI_FEATURES: AiFeature[] = [
     icon: 'Compass',
   },
   {
+    key: 'ai_astro_profile',
+    label: 'AI Astro Profile',
+    description: 'AI-powered astrological personality and academic guidance profile report',
+    category: 'student',
+    uiType: 'full_page',
+    defaultEnabled: true,
+    icon: 'Sparkles',
+  },
+  {
     key: 'ai_notes_generator',
     label: 'AI Lecture Notes & Transcription',
     description: 'Auto-generate structured notes, transcripts, and image enrichments from lecture recordings',

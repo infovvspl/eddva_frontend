@@ -7,7 +7,7 @@ import {
   Download, ExternalLink, FileText, BookOpen, Trophy,
   ClipboardList, FlaskConical, Youtube, File, Link2,
   Loader2, AlertCircle, Video, Zap, Lock, Sparkles,
-  BarChart2, PlayCircle, X, Brain,
+  BarChart2, PlayCircle, X, Brain, HelpCircle,
 } from "lucide-react";
 import { useCourseTopicDetail } from "@/hooks/use-student";
 import { getResourceDownloadUrl } from "@/lib/api/student";
@@ -48,6 +48,7 @@ const RESOURCE_META: Record<string, {
   link:  { label: "Link",  icon: <Link2 className="w-3.5 h-3.5" />,         color: "text-teal-600",    bg: "bg-teal-50",    border: "border-teal-200" },
   quiz:  { label: "Quiz",  icon: <FlaskConical className="w-3.5 h-3.5" />,  color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200" },
   mindmap: { label: "Mindmap", icon: <Brain className="w-3.5 h-3.5" />, color: "text-teal-600", bg: "bg-teal-50", border: "border-teal-200" },
+  faq:     { label: "FAQ",     icon: <HelpCircle className="w-3.5 h-3.5" />, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200" },
 };
 
 function getYouTubeThumbnail(url?: string | null) {
@@ -300,7 +301,7 @@ export default function StudentCourseTopicPage() {
   const resType = (r: TopicResource) => String(r.type ?? "").toLowerCase();
   const dppList      = resources.filter(r => resType(r) === "dpp");
   const pyqList      = resources.filter(r => resType(r) === "pyq");
-  const materialList = resources.filter(r => ["pdf", "notes", "video", "link"].includes(resType(r)));
+  const materialList = resources.filter(r => ["pdf", "notes", "video", "link", "faq"].includes(resType(r)));
   const mindmapList = resources.filter(r => resType(r) === "mindmap");
 
   const tabConfig: { id: ResourceTab; label: string; count: number; icon: React.ReactNode }[] = [

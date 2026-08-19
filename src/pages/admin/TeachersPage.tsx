@@ -182,32 +182,40 @@ const TeachersPage = () => {
   }
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-      <PageHeader title={isStaffBased ? "Staff" : "Teachers"} subtitle={isStaffBased ? "Staff member management" : "Faculty management"} actions={
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:justify-end">
+    <motion.div className="w-full space-y-6" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-blue-100 border border-blue-200/80 rounded-[2rem] p-4 sm:px-6 sm:py-5 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 mb-6"
+      >
+        <div className="min-w-0 flex-1 pl-1 sm:pl-0">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight whitespace-nowrap truncate">{isStaffBased ? "Staff" : "Teachers"}</h1>
+          <p className="text-xs sm:text-sm font-bold text-slate-500/80 mt-0.5 whitespace-nowrap truncate">{isStaffBased ? "Staff member management" : "Faculty management"}</p>
+        </div>
+        <div className="flex items-center flex-wrap gap-2 w-full sm:w-auto sm:justify-end shrink-0">
           {view === "list" ? (
             <>
               {isStaffBased && (
-                <Button variant="outline" onClick={() => navigate("/admin/roles")} className="gap-2 border-slate-200 text-slate-700 rounded-2xl">
-                  <Shield className="w-4 h-4" /> Manage Roles
+                <Button variant="outline" onClick={() => navigate("/admin/roles")} className="gap-2 border-slate-200 text-slate-700 rounded-[1.25rem] h-[42px] font-black">
+                  <Shield className="w-4 h-4 shrink-0" /> Manage Roles
                 </Button>
               )}
               {!isStaffBased && (
-                <Button variant="outline" onClick={() => setView("add-bulk")} className="gap-2">
-                  <Upload className="w-4 h-4" /> Bulk Import
+                <Button variant="outline" onClick={() => setView("add-bulk")} className="gap-2 border-slate-200 text-slate-700 rounded-[1.25rem] h-[42px] font-black">
+                  <Upload className="w-4 h-4 shrink-0" /> Bulk Import
                 </Button>
               )}
-              <Button onClick={() => setView("add-single")} className="gap-2">
-                <Plus className="w-4 h-4" /> {isStaffBased ? "Add Staff Member" : "Add Teacher"}
+              <Button onClick={() => setView("add-single")} className="gap-2 rounded-[1.25rem] h-[42px] font-black shadow-sm" style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}>
+                <Plus className="w-4 h-4 shrink-0" /> {isStaffBased ? "Add Staff Member" : "Add Teacher"}
               </Button>
             </>
           ) : (
-            <Button variant="ghost" onClick={resetView} className="gap-2">
-              <X className="w-4 h-4" /> Cancel
+            <Button variant="ghost" onClick={resetView} className="gap-2 rounded-[1.25rem] h-[42px] font-black">
+              <X className="w-4 h-4 shrink-0" /> Cancel
             </Button>
           )}
         </div>
-      } />
+      </motion.div>
 
       <AnimatePresence mode="wait">
         {/* ── Single Teacher Form ── */}
@@ -452,10 +460,10 @@ const TeachersPage = () => {
 
       {/* ── Filters ── */}
       {view === "list" && teacherList.length > 0 && (
-        <div className="flex flex-wrap gap-3 mb-6">
-          <form onSubmit={(e) => e.preventDefault()} className="flex gap-3 flex-1 min-w-[260px]">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <div className="flex flex-row gap-2 sm:gap-3 mb-6 w-full">
+          <form onSubmit={(e) => e.preventDefault()} className="flex-1 min-w-0">
+            <div className="relative w-full max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 value={searchInput}
                 onChange={e => {
@@ -463,15 +471,15 @@ const TeachersPage = () => {
                   setSearchInput(val);
                   setSearch(val);
                 }}
-                placeholder="Search by name, email or phone…"
-                className="w-full h-11 pl-10 pr-4 bg-white border border-slate-200 rounded-2xl text-sm font-medium text-slate-800 outline-none focus:border-blue-400 transition-colors"
+                placeholder="Search..."
+                className="w-full h-11 pl-9 pr-3 bg-white border border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-slate-800 outline-none focus:border-blue-400 transition-colors"
               />
             </div>
           </form>
 
           {/* Batch filter */}
-          <div className="relative">
-            <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          <div className="relative w-[130px] sm:w-[180px] shrink-0">
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
             <CustomSelect
               onChange={setBatchFilter}
               value={batchFilter}
@@ -479,7 +487,7 @@ const TeachersPage = () => {
                 { value: "", label: "All Batches" },
                 ...batchList.map((b) => ({ value: b.id, label: b.name })),
               ]}
-              className="w-full"
+              className="w-full text-xs sm:text-sm h-11"
             />
           </div>
         </div>

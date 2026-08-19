@@ -1,28 +1,88 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Clock, Zap, Flame, LogOut, ShieldCheck, Check, X } from 'lucide-react';
+import { Clock, Zap, Flame, LogOut, ShieldCheck, Check, X, Heart } from 'lucide-react';
+import { soundEngine } from '@/lib/audioManager';
+import { toast } from 'sonner';
+import { apiClient as api } from '@/lib/api/client';
 
 export default function MathSprintPlay({ session, onFinish, onQuit }) {
-  const { sessionId, questions } = session;
+  const { sessionId } = session;
+  const [localQuestions, setLocalQuestions] = useState(session.questions || []);
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(60);
+  const [timeLeft, setTimeLeft] = useState(15);
   const [selectedOptionId, setSelectedOptionId] = useState(null);
   const [hasAnswered, setHasAnswered] = useState(false);
-  
+
   // Game states
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
   const [maxStreak, setMaxStreak] = useState(0);
   const [answers, setAnswers] = useState([]);
-  
+  const [tabSwitchesCount, setTabSwitchesCount] = useState(0);
+  const [lives, setLives] = useState(3);
+  const livesRef = useRef(3);
+  livesRef.current = lives;
+
   const timerRef = useRef(null);
   const timeoutRef = useRef(null);
+  const startTimeRef = useRef(Date.now());
+  const answersRef = useRef([]);
+  const tabSwitchesCountRef = useRef(0);
 
-  const currentQuestion = questions[currentIdx];
+  answersRef.current = answers;
+  tabSwitchesCountRef.current = tabSwitchesCount;
 
-  // Start 60s countdown timer
+  const currentQuestion = localQuestions[currentIdx];
+
+  // Anti-Cheat: Tab Switching detection & copy/select blocking
   useEffect(() => {
+    const preventDefault = (e) => e.preventDefault();
+    document.addEventListener('selectstart', preventDefault);
+    document.addEventListener('contextmenu', preventDefault);
+    document.addEventListener('copy', preventDefault);
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        const next = tabSwitchesCountRef.current + 1;
+        tabSwitchesCountRef.current = next;
+        setTabSwitchesCount(next);
+
+        if (next >= 3) {
+          toast.error('Game terminated due to multiple tab switches (cheat protection). 15 coins deducted.', {
+            duration: 5000,
+          });
+          clearInterval(timerRef.current);
+          if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+          const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
+          onFinish(answersRef.current, next, totalDuration);
+        } else {
+          toast.warning(`Tab switch detected! Warning ${next}/3. The game will automatically terminate and deduct coins on the 3rd switch.`, {
+            duration: 5000,
+          });
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('selectstart', preventDefault);
+      document.removeEventListener('contextmenu', preventDefault);
+      document.removeEventListener('copy', preventDefault);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  // Start timer for the current question
+  useEffect(() => {
+    setTimeLeft(15);
+    setHasAnswered(false);
+    setSelectedOptionId(null);
+
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
+        if (prev <= 5 && prev > 1 && !hasAnswered) {
+          soundEngine.playCountdownTick();
+        }
         if (prev <= 1) {
           clearInterval(timerRef.current);
           handleTimeUp();
@@ -36,16 +96,54 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
       clearInterval(timerRef.current);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
+  }, [currentIdx]);
+
+  // Start background music
+  useEffect(() => {
+    soundEngine.startBackgroundMusic();
+    return () => {
+      soundEngine.stopBackgroundMusic();
+    };
   }, []);
 
-  // Handle expiration of the 60s timer
+  // Handle expiration of the timer
   const handleTimeUp = () => {
-    // Submit whatever answers are completed so far
-    handleSubmit(answers);
+    soundEngine.playWrong();
+    setStreak(0);
+    const newAnswers = [
+      ...answersRef.current,
+      {
+        questionId: currentQuestion.id,
+        selectedOptionId: '', // Empty means timeout
+      },
+    ];
+    setAnswers(newAnswers);
+
+    const nextLives = livesRef.current - 1;
+    setLives(nextLives);
+
+    if (nextLives > 0) {
+      timeoutRef.current = setTimeout(async () => {
+        try {
+          const res = await api.get('/school/gamification/math-sprint/next-question', {
+            params: { sessionId, currentIdx }
+          });
+          const data = res.data?.data ?? res.data;
+          setLocalQuestions((prev) => [...prev, data.question]);
+          setCurrentIdx((prev) => prev + 1);
+        } catch (err) {
+          console.error('Failed to load next math question:', err);
+          toast.error('Failed to generate next equation.');
+        }
+      }, 600);
+    } else {
+      handleSubmit(newAnswers);
+    }
   };
 
   const handleSelectOption = (optionId) => {
     if (hasAnswered || timeLeft <= 0) return;
+    clearInterval(timerRef.current);
     setHasAnswered(true);
     setSelectedOptionId(optionId);
 
@@ -57,6 +155,7 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
     let nextStreak = 0;
 
     if (isCorrect) {
+      soundEngine.playCorrect();
       nextStreak = streak + 1;
       setStreak(nextStreak);
       setMaxStreak((prev) => Math.max(prev, nextStreak));
@@ -71,6 +170,7 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
       points = 10 * multiplier;
       setScore((prev) => prev + points);
     } else {
+      soundEngine.playWrong();
       setStreak(0);
     }
 
@@ -83,22 +183,46 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
     ];
     setAnswers(newAnswers);
 
-    // Auto-advance to the next question after 600ms for fast-paced action!
-    timeoutRef.current = setTimeout(() => {
-      if (currentIdx < questions.length - 1) {
-        setCurrentIdx((prev) => prev + 1);
-        setSelectedOptionId(null);
-        setHasAnswered(false);
+    // Auto-advance to the next question after 600ms if correct, or check lives
+    timeoutRef.current = setTimeout(async () => {
+      if (isCorrect) {
+        try {
+          const res = await api.get('/school/gamification/math-sprint/next-question', {
+            params: { sessionId, currentIdx }
+          });
+          const data = res.data?.data ?? res.data;
+          setLocalQuestions((prev) => [...prev, data.question]);
+          setCurrentIdx((prev) => prev + 1);
+        } catch (err) {
+          console.error('Failed to load next math question:', err);
+          toast.error('Failed to generate next equation.');
+        }
       } else {
-        // Exceeded 50 questions - auto submit
-        handleSubmit(newAnswers);
+        const nextLives = livesRef.current - 1;
+        setLives(nextLives);
+        if (nextLives > 0) {
+          try {
+            const res = await api.get('/school/gamification/math-sprint/next-question', {
+              params: { sessionId, currentIdx }
+            });
+            const data = res.data?.data ?? res.data;
+            setLocalQuestions((prev) => [...prev, data.question]);
+            setCurrentIdx((prev) => prev + 1);
+          } catch (err) {
+            console.error('Failed to load next math question:', err);
+            toast.error('Failed to generate next equation.');
+          }
+        } else {
+          handleSubmit(newAnswers);
+        }
       }
     }, 600);
   };
 
   const handleSubmit = (finalAnswers) => {
     clearInterval(timerRef.current);
-    onFinish(finalAnswers);
+    const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
+    onFinish(finalAnswers, tabSwitchesCountRef.current, totalDuration);
   };
 
   // Determine combo modes
@@ -144,6 +268,20 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
 
         {/* HUD Statistics */}
         <div className="flex items-center gap-4 text-xs font-black">
+          <div className="flex items-center gap-1.5 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 text-red-500">
+            <Heart className="h-4 w-4 fill-current" />
+            <span className="text-slate-400">Lives:</span>
+            <div className="flex items-center gap-0.5">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Heart
+                  key={i}
+                  className={`h-3.5 w-3.5 ${
+                    i < lives ? 'fill-red-500 text-red-500 animate-pulse' : 'text-slate-600 fill-transparent'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
           <div className="flex items-center gap-1 bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700">
             <Zap className={`h-4 w-4 fill-current ${isSupercharged ? 'text-yellow-400 animate-bounce' : isFever ? 'text-orange-500' : 'text-slate-400'}`} />
             <span>Streak: {streak}</span>
@@ -169,14 +307,14 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
             {badgeLabel}
           </span>
           <h2 className="text-4xl md:text-5xl font-black text-white leading-relaxed tracking-tight text-center py-6 font-mono select-none">
-            {currentQuestion.content} = ?
+            {currentQuestion?.content} = ?
           </h2>
         </div>
 
         {/* Explanation / Streak indicator */}
         {hasAnswered && (
           <div className="mt-4 flex items-center justify-center gap-2 text-sm font-black animate-fade-in">
-            {currentQuestion.options.find((o) => o.id === selectedOptionId)?.isCorrect ? (
+            {currentQuestion?.options.find((o) => o.id === selectedOptionId)?.isCorrect ? (
               <span className="text-emerald-400 flex items-center gap-1.5">
                 <Check className="h-5 w-5 stroke-[3]" /> Correct! {streak >= 5 ? '⚡ SUPERCHARGE 3X!' : streak >= 3 ? '🔥 FEVER 2X!' : '+10 XP'}
               </span>
@@ -191,10 +329,10 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
 
       {/* Options Selection Grid */}
       <div className="grid gap-3 sm:grid-cols-2">
-        {currentQuestion.options.map((option, idx) => {
+        {currentQuestion?.options.map((option, idx) => {
           const isSelected = selectedOptionId === option.id;
           const isCorrect = option.isCorrect;
-          
+
           let cardStyle = 'border-slate-800 bg-slate-900/40 hover:bg-slate-900 hover:border-slate-700 text-slate-300';
           let badgeLabel = String.fromCharCode(65 + idx);
           let badgeStyle = 'bg-slate-800 text-slate-400';

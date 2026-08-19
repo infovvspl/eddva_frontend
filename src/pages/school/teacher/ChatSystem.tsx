@@ -27,7 +27,8 @@ import {
   ChevronDown,
   ChevronRight,
   Plus,
-  Search
+  Search,
+  ArrowLeft
 } from 'lucide-react';
 import SearchBar from '@/components/school/SearchBar';
 import Tabs from '@/components/school/Tabs';
@@ -112,6 +113,28 @@ const ChatSystem: React.FC = () => {
       (window as any).activeChatPeerId = null;
     };
   }, [activeContact]);
+
+  const handleBackToContacts = useCallback(() => {
+    setActiveContact(null);
+    const params = new URLSearchParams(window.location.search);
+    params.delete('userId');
+    params.delete('chatId');
+    params.delete('peerId');
+    params.delete('ticketId');
+    const newSearch = params.toString() ? `?${params.toString()}` : window.location.pathname;
+    window.history.replaceState(null, '', newSearch);
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (activeContact) {
+        setActiveContact(null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [activeContact]);
+
 
   // Handle userId query parameter on load/change
   useEffect(() => {
@@ -1109,14 +1132,24 @@ const ChatSystem: React.FC = () => {
       </div>
 
       {/* Column 2: Chat Conversation Panel */}
-      <div className={`flex-1 flex flex-col min-w-0 min-h-0 bg-white dark:bg-slate-900 ${!activeContact ? 'hidden md:flex' : 'flex'}`}>
+      <div className={`flex-1 flex flex-col min-w-0 min-h-0 bg-white dark:bg-slate-900 ${
+        !activeContact
+          ? 'hidden md:flex'
+          : 'fixed inset-0 z-[100] bg-white dark:bg-slate-900 flex flex-col md:relative md:inset-auto md:z-auto'
+      }`}>
         {activeContact ? (
           <>
             {/* Conversation Header */}
-            <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white shrink-0 shadow-xs z-10 dark:border-slate-800 dark:bg-slate-900">
-              <div className="flex items-center gap-3 min-w-0">
-                <button className="md:hidden p-1.5 -ml-1 rounded-xl hover:bg-slate-100 text-slate-500 dark:hover:bg-slate-800" onClick={() => setActiveContact(null)}>
-                  <ChevronRight size={18} className="rotate-180" />
+            <div className="flex items-center justify-between p-3 sm:p-4 border-b border-slate-100 bg-white shrink-0 shadow-xs z-10 dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                <button
+                  type="button"
+                  onClick={() => setActiveContact(null)}
+                  className="flex md:hidden items-center justify-center h-9 w-9 shrink-0 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white hover:bg-slate-200 transition active:scale-95 -ml-1"
+                  aria-label="Back to conversations"
+                  title="Back to conversations"
+                >
+                  <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
                 </button>
                 <div className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white shadow-sm">
                   {activeContact.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}

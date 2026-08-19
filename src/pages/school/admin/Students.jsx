@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Download, Edit2, Plus, Search, Trash2, Users, Eye, Filter, Calendar, ArrowUpRight, GraduationCap, CheckCircle2, UserPlus, XCircle } from 'lucide-react';
+import { Download, Edit2, Plus, Search, Trash2, Users, Eye, Filter, Calendar, ArrowUpRight, GraduationCap, CheckCircle2, UserPlus, XCircle, X } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import { getResponseList, notifyDataChanged } from '@/lib/school/apiData';
@@ -657,7 +657,7 @@ export default function Students() {
           <table className="min-w-[980px] w-full text-left text-sm">
             <thead className="bg-slate-50/50 text-slate-500 dark:bg-slate-800/40 dark:text-slate-400">
               <tr>
-                <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Student Name</th>
+                <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider sticky left-0 z-20 bg-slate-50 dark:bg-slate-850 shadow-sm">Student Name</th>
                 <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">School</th>
                 <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Enrollment No.</th>
                 <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Class/Section</th>
@@ -675,7 +675,7 @@ export default function Students() {
               ) : (
                 filtered.map((student) => (
                   <tr key={student.id} className="transition hover:bg-blue-50/40 dark:hover:bg-slate-800/40">
-                    <td className="px-5 py-4">
+                    <td className="px-5 py-4 sticky left-0 z-20 bg-white dark:bg-slate-900">
                       <div className="flex items-center gap-4">
                         <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-2xl border-2 border-white bg-slate-100 shadow-sm dark:border-slate-800 dark:bg-slate-800">
                           {student.profileImage ? (

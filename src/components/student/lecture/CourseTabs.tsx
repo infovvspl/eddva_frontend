@@ -49,7 +49,7 @@ export function CourseTabs({
   }
 
   return (
-    <div className="flex gap-1 overflow-x-auto overscroll-x-contain whitespace-nowrap border-b border-slate-100 dark:border-slate-850 px-1 [-webkit-overflow-scrolling:touch] shrink-0 w-full scrollbar-hide">
+    <div className="flex w-full max-w-full gap-1 overflow-x-scroll whitespace-nowrap px-2 py-1.5 shrink-0 custom-scrollbar border-b border-slate-100 dark:border-slate-800">
       {availableTabs.map((tabId) => {
         const meta = TAB_METADATA[tabId];
         if (!meta) return null;
@@ -63,14 +63,10 @@ export function CourseTabs({
             type="button"
             onClick={() => onChange(tabId)}
             className={cn(
-              "flex flex-1 min-w-max flex-none items-center justify-center gap-1 border-b-2 px-3 py-3 text-[11px] font-poppins font-black transition",
+              "flex shrink-0 items-center justify-center gap-1.5 border-b-2 px-2.5 sm:px-3 py-2.5 text-[11px] font-poppins font-extrabold transition-all rounded-t-xl",
               isActive
-                ? isDarkTheme
-                  ? "border-blue-600 bg-blue-50/50 text-blue-700 dark:text-blue-400"
-                  : "border-blue-600 bg-blue-50/50 text-blue-700"
-                : isDarkTheme
-                  ? "border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400"
-                  : "border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700"
+                ? "border-blue-600 bg-blue-50/80 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300"
+                : "border-transparent text-slate-500 hover:bg-slate-100/60 dark:hover:bg-slate-800/40 hover:text-slate-800 dark:text-slate-400"
             )}
           >
             <Icon size={13} className="shrink-0" />

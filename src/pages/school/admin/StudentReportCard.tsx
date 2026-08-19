@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Printer, FileText, Loader2, GraduationCap, Settings, Eye, CheckCircle, Info, QrCode, Upload, Image as ImageIcon, Trash2, Plus, User } from 'lucide-react';
 import { toast } from 'sonner';
+import html2canvas from 'html2canvas';
 import api from '@/lib/api/school-client';
 
 type ReportType = 'pre_primary' | 'primary' | 'middle' | 'high_school' | 'board_class';
@@ -19,6 +20,8 @@ export default function StudentReportCard() {
 
   const [student, setStudent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [printing, setPrinting] = useState(false);
+  const reportCardRef = useRef<HTMLDivElement>(null);
 
   // Configuration Panel States
   const [templateType, setTemplateType] = useState<ReportType>('high_school');
@@ -90,8 +93,101 @@ export default function StudentReportCard() {
     }
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    if (!reportCardRef.current) {
+      window.print();
+      return;
+    }
+    try {
+      setPrinting(true);
+      toast.info('Preparing print preview...');
+      
+      const element = reportCardRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+
+      const printFrame = document.createElement('iframe');
+      printFrame.style.position = 'fixed';
+      printFrame.style.right = '0';
+      printFrame.style.bottom = '0';
+      printFrame.style.width = '0';
+      printFrame.style.height = '0';
+      printFrame.style.border = '0';
+      document.body.appendChild(printFrame);
+
+      const frameDoc = printFrame.contentWindow?.document;
+      if (!frameDoc) {
+        window.print();
+        return;
+      }
+
+      frameDoc.open();
+      frameDoc.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Report Card - ${student?.name || 'Student'}</title>
+            <style>
+              @page {
+                size: A4 portrait;
+                margin: 0;
+              }
+              html, body {
+                margin: 0;
+                padding: 0;
+                background: #ffffff;
+                width: 100%;
+                height: 100vh;
+                overflow: hidden;
+                box-sizing: border-box;
+              }
+              .page-container {
+                width: 100vw;
+                height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 4mm;
+                box-sizing: border-box;
+              }
+              img {
+                max-width: 100%;
+                max-height: 98vh;
+                object-fit: contain;
+                display: block;
+                margin: 0 auto;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="page-container">
+              <img src="${imgData}" onload="window.focus(); window.print();" />
+            </div>
+          </body>
+        </html>
+      `);
+      frameDoc.close();
+
+      setTimeout(() => {
+        try {
+          document.body.removeChild(printFrame);
+        } catch (e) {}
+      }, 6000);
+
+    } catch (err) {
+      console.error('html2canvas print error:', err);
+      toast.error('Print preview generation failed. Using standard browser print...');
+      window.print();
+    } finally {
+      setPrinting(false);
+    }
   };
 
   // Helper to read local uploaded files as Base64 data URL
@@ -386,38 +482,61 @@ export default function StudentReportCard() {
   const defaultSchoolLogo = student?.instituteLogo || '';
   const pageShellClass = isTeacherReportView
     ? 'w-full px-4 py-6 space-y-6'
-    : 'w-full max-w-7xl mx-auto px-4 py-6 space-y-6';
+    : 'w-full space-y-6';
 
   return (
     <div className={pageShellClass}>
       {/* Printable CSS overrides */}
       <style>{`
         @media print {
-          body {
-            background: white !important;
-            color: black !important;
+          @page {
+            size: ${isPortrait ? 'portrait' : 'landscape'};
+            margin: 8mm 6mm 8mm 6mm;
           }
-          body > #root > div, 
-          header, 
-          nav, 
-          aside, 
-          .no-print {
-            display: none !important;
+          html, body {
+            background: #ffffff !important;
+            color: #000000 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            height: auto !important;
+            overflow: visible !important;
+          }
+          body * {
+            visibility: hidden !important;
+          }
+          .printable-report-card,
+          .printable-report-card * {
+            visibility: visible !important;
           }
           .printable-report-card {
-            position: absolute;
-            left: 0;
-            top: 0;
+            position: static !important;
+            display: block !important;
             width: 100% !important;
             max-width: 100% !important;
+            min-height: auto !important;
+            height: auto !important;
+            aspect-ratio: auto !important;
             border: none !important;
             box-shadow: none !important;
             padding: 0 !important;
-            margin: 0 !important;
-            visibility: visible !important;
+            margin: 0 auto !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            overflow: visible !important;
           }
-          .printable-report-card * {
-            visibility: visible !important;
+          .printable-report-card .overflow-x-auto {
+            overflow: visible !important;
+          }
+          tr, .avoid-break {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          .no-print,
+          .no-print * {
+            display: none !important;
+            visibility: hidden !important;
           }
         }
       `}</style>
@@ -441,10 +560,11 @@ export default function StudentReportCard() {
         </div>
         <button 
           onClick={handlePrint}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md shadow-blue-500/10 active:scale-98 transition-all"
+          disabled={printing}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md shadow-blue-500/10 active:scale-98 transition-all disabled:opacity-50"
         >
-          <Printer className="w-4 h-4" />
-          Print Report Card
+          {printing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
+          {printing ? 'Preparing Print...' : 'Print Report Card'}
         </button>
       </div>
 
@@ -654,25 +774,25 @@ export default function StudentReportCard() {
 
         {/* Right Printable Card Preview */}
         <div className={isViewerOnly ? "lg:col-span-12" : "lg:col-span-8"}>
-          <div className={`printable-report-card bg-white text-slate-900 border border-slate-200 p-8 shadow-md relative min-h-[1100px] flex flex-col justify-between ${isPortrait ? 'w-full' : 'w-full aspect-[1.414]'}`}>
+          <div ref={reportCardRef} className={`printable-report-card bg-white text-slate-900 border border-slate-200 p-5 sm:p-6 shadow-md relative max-w-4xl mx-auto w-full flex flex-col justify-between`}>
             
-            <div className="space-y-6">
+            <div className="space-y-3.5">
               {/* Report Header */}
-              <div className="flex items-center justify-between border-b-2 border-slate-900 pb-4">
+              <div className="flex items-center justify-between border-b-2 border-slate-900 pb-2.5">
                 {showLogo && (
                   <div className="flex items-center gap-3">
                     {customLogo || defaultSchoolLogo ? (
-                      <img src={customLogo || defaultSchoolLogo} alt="School Logo" className="w-16 h-16 object-contain rounded-xl" />
+                      <img src={customLogo || defaultSchoolLogo} alt="School Logo" className="w-14 h-14 object-contain rounded-xl" />
                     ) : (
-                      <div className="w-14 h-14 bg-slate-900 rounded-2xl flex items-center justify-center text-white">
-                        <GraduationCap className="w-8 h-8" />
+                      <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white">
+                        <GraduationCap className="w-7 h-7" />
                       </div>
                     )}
                   </div>
                 )}
                 
-                <div className="text-center flex-1 space-y-1 pr-6">
-                  <h2 className="text-2xl font-black uppercase tracking-tight text-slate-950">
+                <div className="text-center flex-1 space-y-0.5 pr-4">
+                  <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-slate-950">
                     {student?.instituteName || 'EDDVA ACADEMY'}
                   </h2>
                   {showAffiliation && (
@@ -680,7 +800,7 @@ export default function StudentReportCard() {
                       {affiliationText}
                     </p>
                   )}
-                  <p className="text-xs font-semibold text-slate-500">
+                  <p className="text-[11px] font-semibold text-slate-500">
                     Academic Year: {currentAcademicYear}
                   </p>
                 </div>
@@ -688,9 +808,9 @@ export default function StudentReportCard() {
                 {showSeal && (
                   <div>
                     {customSeal ? (
-                      <img src={customSeal} alt="Seal Stamp" className="w-16 h-16 object-contain rounded-full" />
+                      <img src={customSeal} alt="Seal Stamp" className="w-14 h-14 object-contain rounded-full" />
                     ) : (
-                      <div className="w-16 h-16 rounded-full border-4 border-double border-slate-400 flex items-center justify-center text-[8px] font-black text-slate-400 text-center uppercase tracking-tighter">
+                      <div className="w-14 h-14 rounded-full border-4 border-double border-slate-400 flex items-center justify-center text-[7px] font-black text-slate-400 text-center uppercase tracking-tighter">
                         OFFICIAL<br />SEAL
                       </div>
                     )}
@@ -699,64 +819,64 @@ export default function StudentReportCard() {
               </div>
 
               {/* Student Metadata */}
-              <div className="flex flex-col sm:flex-row gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-200">
-                <div className="flex-1 grid grid-cols-2 gap-x-8 gap-y-3 text-xs font-bold text-slate-600">
-                  <div className="flex justify-between border-b pb-1.5">
-                    <span className="text-slate-400 uppercase tracking-widest text-[9px]">Student Name</span>
-                    <span className="text-slate-950 font-black">{student?.name}</span>
+              <div className="flex flex-col sm:flex-row gap-4 bg-slate-50/80 p-3.5 rounded-2xl border border-slate-200 items-start">
+                <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-x-5 gap-y-2 text-xs font-bold text-slate-700">
+                  <div className="border-b border-slate-200/80 pb-1.5 min-w-0">
+                    <span className="text-slate-400 uppercase tracking-wider text-[9px] block mb-0.5">Student Name</span>
+                    <span className="text-slate-950 font-extrabold block text-xs leading-normal py-0.5">{student?.name || '—'}</span>
                   </div>
-                  <div className="flex justify-between border-b pb-1.5">
-                    <span className="text-slate-400 uppercase tracking-widest text-[9px]">Class & Section</span>
-                    <span className="text-slate-950 font-black">{currentClassName} {profile.section?.name ? `- ${profile.section.name}` : ''}</span>
+                  <div className="border-b border-slate-200/80 pb-1.5 min-w-0">
+                    <span className="text-slate-400 uppercase tracking-wider text-[9px] block mb-0.5">Class & Section</span>
+                    <span className="text-slate-950 font-extrabold block text-xs leading-normal py-0.5">{currentClassName} {profile.section?.name ? `- ${profile.section.name}` : ''}</span>
                   </div>
-                  <div className="flex justify-between border-b pb-1.5">
-                    <span className="text-slate-400 uppercase tracking-widest text-[9px]">Roll Number</span>
-                    <span className="text-slate-950 font-black">{profile.rollNo || '—'}</span>
+                  <div className="border-b border-slate-200/80 pb-1.5 min-w-0">
+                    <span className="text-slate-400 uppercase tracking-wider text-[9px] block mb-0.5">Roll Number</span>
+                    <span className="text-slate-950 font-extrabold block text-xs leading-normal py-0.5">{profile.rollNo || '—'}</span>
                   </div>
-                  <div className="flex justify-between border-b pb-1.5">
-                    <span className="text-slate-400 uppercase tracking-widest text-[9px]">Enrollment Number</span>
-                    <span className="text-slate-950 font-black">{profile.enrollmentNo || '—'}</span>
+                  <div className="border-b border-slate-200/80 pb-1.5 min-w-0">
+                    <span className="text-slate-400 uppercase tracking-wider text-[9px] block mb-0.5">Enrollment No</span>
+                    <span className="text-slate-950 font-extrabold block text-xs leading-normal py-0.5">{profile.enrollmentNo || '—'}</span>
                   </div>
-                  <div className="flex justify-between border-b pb-1.5">
-                    <span className="text-slate-400 uppercase tracking-widest text-[9px]">Father's Name</span>
-                    <span className="text-slate-950 font-black">{profile.fatherName || '—'}</span>
+                  <div className="border-b border-slate-200/80 pb-1.5 min-w-0">
+                    <span className="text-slate-400 uppercase tracking-wider text-[9px] block mb-0.5">Father's Name</span>
+                    <span className="text-slate-950 font-extrabold block text-xs leading-normal py-0.5">{profile.fatherName || '—'}</span>
                   </div>
-                  <div className="flex justify-between border-b pb-1.5">
-                    <span className="text-slate-400 uppercase tracking-widest text-[9px]">Mother's Name</span>
-                    <span className="text-slate-950 font-black">{profile.motherName || '—'}</span>
+                  <div className="border-b border-slate-200/80 pb-1.5 min-w-0">
+                    <span className="text-slate-400 uppercase tracking-wider text-[9px] block mb-0.5">Mother's Name</span>
+                    <span className="text-slate-950 font-extrabold block text-xs leading-normal py-0.5">{profile.motherName || '—'}</span>
                   </div>
                   {templateType === 'board_class' && (
                     <>
-                      <div className="flex justify-between border-b pb-1.5">
-                        <span className="text-slate-400 uppercase tracking-widest text-[9px]">Board Roll No</span>
-                        <span className="text-slate-950 font-black">{profile.nationalId || '98234812'}</span>
+                      <div className="border-b border-slate-200/80 pb-1.5 min-w-0">
+                        <span className="text-slate-400 uppercase tracking-wider text-[9px] block mb-0.5">Board Roll No</span>
+                        <span className="text-slate-950 font-extrabold block text-xs leading-normal py-0.5">{profile.nationalId || '98234812'}</span>
                       </div>
-                      <div className="flex justify-between border-b pb-1.5">
-                        <span className="text-slate-400 uppercase tracking-widest text-[9px]">DOB</span>
-                        <span className="text-slate-950 font-black">
+                      <div className="border-b border-slate-200/80 pb-1.5 min-w-0">
+                        <span className="text-slate-400 uppercase tracking-wider text-[9px] block mb-0.5">DOB</span>
+                        <span className="text-slate-950 font-extrabold block text-xs leading-normal py-0.5">
                           {profile.dob ? new Date(profile.dob).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
                         </span>
                       </div>
                     </>
                   )}
-                  <div className="flex justify-between border-b pb-1.5 col-span-2">
-                    <span className="text-slate-400 uppercase tracking-widest text-[9px]">Attendance Percentage</span>
-                    <span className="text-emerald-600 font-extrabold">
+                  <div className="border-b border-slate-200/80 pb-1.5 min-w-0 col-span-2 sm:col-span-3">
+                    <span className="text-slate-400 uppercase tracking-wider text-[9px] block mb-0.5">Attendance Percentage</span>
+                    <span className="text-emerald-600 font-black block text-xs leading-normal py-0.5">
                       {student?.attendancePercentage !== undefined && student?.attendancePercentage !== null ? `${student.attendancePercentage}%` : '—'}
                     </span>
                   </div>
                 </div>
 
                 {/* Student Photo */}
-                <div className="w-24 h-28 border border-slate-300 rounded-2xl bg-white flex items-center justify-center shrink-0 overflow-hidden shadow-inner self-center sm:self-start">
+                <div className="w-16 h-20 border border-slate-300 rounded-xl bg-white flex items-center justify-center shrink-0 overflow-hidden shadow-sm self-center sm:self-start">
                   {(() => {
                     const studentPhoto = student?.profileImage || student?.avatar || student?.studentProfile?.profileImage || student?.studentProfile?.avatar || student?.user?.profileImage || student?.user?.avatar;
                     return studentPhoto ? (
                       <img src={studentPhoto} alt={student?.name} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="flex flex-col items-center justify-center text-slate-300 gap-1">
-                        <User size={32} />
-                        <span className="text-[8px] font-bold uppercase tracking-wider">No Photo</span>
+                      <div className="flex flex-col items-center justify-center text-slate-300 gap-0.5">
+                        <User size={24} />
+                        <span className="text-[7px] font-bold uppercase tracking-wider">No Photo</span>
                       </div>
                     );
                   })()}
@@ -784,47 +904,47 @@ export default function StudentReportCard() {
                   </div>
                 </div>
               ) : scholasticResults.length > 0 ? (
-                <div className="space-y-4 pt-2">
-                  <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest border-b pb-1.5">Scholastic Performance</h4>
+                <div className="space-y-2 pt-1">
+                  <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider border-b pb-1">Scholastic Performance</h4>
                   
                   {templateType === 'high_school' ? (() => {
                     const standardResults = scholasticResults.filter(res => !res.isInformationTechnology);
                     const itResults = scholasticResults.filter(res => res.isInformationTechnology);
 
                     return (
-                      <div className="space-y-4">
+                      <div className="space-y-2">
                         {standardResults.length > 0 && (
-                          <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+                          <div className="overflow-x-auto border border-slate-200 rounded-xl">
                             <table className="w-full text-left text-xs font-semibold text-slate-600">
-                              <thead className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase text-slate-400 tracking-wider">
+                              <thead className="bg-slate-50 border-b border-slate-200 text-[9px] uppercase text-slate-400 tracking-wider">
                                 <tr>
-                                  <th className="p-3">Subject</th>
-                                  <th className="p-3 text-center">T1 Internal</th>
-                                  <th className="p-3 text-center">Half-Yearly</th>
-                                  <th className="p-3 text-center">T1 Total</th>
-                                  <th className="p-3 text-center">T2 Internal</th>
-                                  <th className="p-3 text-center">Annual</th>
-                                  <th className="p-3 text-center">T2 Total</th>
-                                  <th className="p-3 text-center">Internals</th>
-                                  <th className="p-3 text-center">Final</th>
-                                  <th className="p-3 text-center">Grade</th>
+                                  <th className="py-1.5 px-2.5">Subject</th>
+                                  <th className="py-1.5 px-2.5 text-center">T1 Internal</th>
+                                  <th className="py-1.5 px-2.5 text-center">Half-Yearly</th>
+                                  <th className="py-1.5 px-2.5 text-center">T1 Total</th>
+                                  <th className="py-1.5 px-2.5 text-center">T2 Internal</th>
+                                  <th className="py-1.5 px-2.5 text-center">Annual</th>
+                                  <th className="py-1.5 px-2.5 text-center">T2 Total</th>
+                                  <th className="py-1.5 px-2.5 text-center">Internals</th>
+                                  <th className="py-1.5 px-2.5 text-center">Final</th>
+                                  <th className="py-1.5 px-2.5 text-center">Grade</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100 text-slate-700">
                                 {standardResults.map(res => (
                                   <tr key={res.subject} className="hover:bg-slate-50/50 transition-colors font-bold">
-                                    <td className="p-3 text-slate-900 font-extrabold">{res.subject}</td>
-                                    <td className="p-3 text-center text-slate-500">{res.t1Internal ?? ""}</td>
-                                    <td className="p-3 text-center text-slate-500">{res.halfYearly ?? ""}</td>
-                                    <td className="p-3 text-center text-slate-800">{res.t1Total ?? ""}</td>
-                                    <td className="p-3 text-center text-slate-500">{res.t2Internal ?? ""}</td>
-                                    <td className="p-3 text-center text-slate-500">{res.annual ?? ""}</td>
-                                    <td className="p-3 text-center text-slate-800">{res.t2Total ?? ""}</td>
-                                    <td className="p-3 text-center text-slate-500">{(res.t1Internal !== null || res.t2Internal !== null) ? (Number(res.t1Internal || 0) + Number(res.t2Internal || 0)) : ""}</td>
-                                    <td className="p-3 text-center font-black text-blue-600">{res.final}</td>
-                                    <td className="p-3 text-center">
+                                    <td className="py-1.5 px-2.5 text-slate-900 font-extrabold">{res.subject}</td>
+                                    <td className="py-1.5 px-2.5 text-center text-slate-500">{res.t1Internal ?? ""}</td>
+                                    <td className="py-1.5 px-2.5 text-center text-slate-500">{res.halfYearly ?? ""}</td>
+                                    <td className="py-1.5 px-2.5 text-center text-slate-800">{res.t1Total ?? ""}</td>
+                                    <td className="py-1.5 px-2.5 text-center text-slate-500">{res.t2Internal ?? ""}</td>
+                                    <td className="py-1.5 px-2.5 text-center text-slate-500">{res.annual ?? ""}</td>
+                                    <td className="py-1.5 px-2.5 text-center text-slate-800">{res.t2Total ?? ""}</td>
+                                    <td className="py-1.5 px-2.5 text-center text-slate-500">{(res.t1Internal !== null || res.t2Internal !== null) ? (Number(res.t1Internal || 0) + Number(res.t2Internal || 0)) : ""}</td>
+                                    <td className="py-1.5 px-2.5 text-center font-black text-blue-600">{res.final}</td>
+                                    <td className="py-1.5 px-2.5 text-center">
                                       {res.grade !== "—" && (
-                                        <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-600 font-extrabold uppercase text-[10px]">
+                                        <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 font-extrabold uppercase text-[10px] inline-flex items-center justify-center min-w-[20px] h-[20px] leading-none">
                                           {res.grade}
                                         </span>
                                       )}
@@ -837,34 +957,34 @@ export default function StudentReportCard() {
                         )}
 
                         {itResults.length > 0 && (
-                          <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+                          <div className="overflow-x-auto border border-slate-200 rounded-xl">
                             <table className="w-full text-left text-xs font-semibold text-slate-600">
-                              <thead className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase text-slate-400 tracking-wider">
+                              <thead className="bg-slate-50 border-b border-slate-200 text-[9px] uppercase text-slate-400 tracking-wider">
                                 <tr>
-                                  <th className="p-3">Subject</th>
-                                  <th className="p-3 text-center">Half-Yearly Theory</th>
-                                  <th className="p-3 text-center">Half-Yearly Practical</th>
-                                  <th className="p-3 text-center">Half-Yearly Total</th>
-                                  <th className="p-3 text-center">Annual Theory</th>
-                                  <th className="p-3 text-center">Annual Practical</th>
-                                  <th className="p-3 text-center">Annual Total</th>
-                                  <th className="p-3 text-center">Final</th>
-                                  <th className="p-3 text-center">Grade</th>
+                                  <th className="py-1.5 px-2.5">Subject</th>
+                                  <th className="py-1.5 px-2.5 text-center">Half-Yearly Theory</th>
+                                  <th className="py-1.5 px-2.5 text-center">Half-Yearly Practical</th>
+                                  <th className="py-1.5 px-2.5 text-center">Half-Yearly Total</th>
+                                  <th className="py-1.5 px-2.5 text-center">Annual Theory</th>
+                                  <th className="py-1.5 px-2.5 text-center">Annual Practical</th>
+                                  <th className="py-1.5 px-2.5 text-center">Annual Total</th>
+                                  <th className="py-1.5 px-2.5 text-center">Final</th>
+                                  <th className="py-1.5 px-2.5 text-center">Grade</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100 text-slate-700">
                                 {itResults.map(res => (
                                   <tr key={res.subject} className="hover:bg-slate-50/50 transition-colors font-bold">
-                                    <td className="p-3 text-slate-900 font-extrabold">{res.subject}</td>
-                                    <td className="p-3 text-center text-slate-500">{res.halfYearlyTheory}</td>
-                                    <td className="p-3 text-center text-slate-500">{res.halfYearlyPractical}</td>
-                                    <td className="p-3 text-center text-slate-800">{res.halfYearly}</td>
-                                    <td className="p-3 text-center text-slate-500">{res.annualTheory}</td>
-                                    <td className="p-3 text-center text-slate-500">{res.annualPractical}</td>
-                                    <td className="p-3 text-center text-slate-800">{res.annual}</td>
-                                    <td className="p-3 text-center font-black text-blue-600">{res.final}</td>
-                                    <td className="p-3 text-center">
-                                      <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-600 font-extrabold uppercase text-[10px]">
+                                    <td className="py-1.5 px-2.5 text-slate-900 font-extrabold">{res.subject}</td>
+                                    <td className="py-1.5 px-2.5 text-center text-slate-500">{res.halfYearlyTheory}</td>
+                                    <td className="py-1.5 px-2.5 text-center text-slate-500">{res.halfYearlyPractical}</td>
+                                    <td className="py-1.5 px-2.5 text-center text-slate-800">{res.halfYearly}</td>
+                                    <td className="py-1.5 px-2.5 text-center text-slate-500">{res.annualTheory}</td>
+                                    <td className="py-1.5 px-2.5 text-center text-slate-500">{res.annualPractical}</td>
+                                    <td className="py-1.5 px-2.5 text-center text-slate-800">{res.annual}</td>
+                                    <td className="py-1.5 px-2.5 text-center font-black text-blue-600">{res.final}</td>
+                                    <td className="py-1.5 px-2.5 text-center">
+                                      <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 font-extrabold uppercase text-[10px] inline-flex items-center justify-center min-w-[20px] h-[20px] leading-none">
                                         {res.grade}
                                       </span>
                                     </td>
@@ -877,28 +997,28 @@ export default function StudentReportCard() {
                       </div>
                     );
                   })() : (
-                    <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+                    <div className="overflow-x-auto border border-slate-200 rounded-xl">
                       <table className="w-full text-left text-xs font-semibold text-slate-600">
-                        <thead className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase text-slate-400 tracking-wider">
+                        <thead className="bg-slate-50 border-b border-slate-200 text-[9px] uppercase text-slate-400 tracking-wider">
                           <tr>
-                            <th className="p-3">Subject</th>
-                            <th className="p-3 text-center">Theory</th>
-                            <th className="p-3 text-center">Practical</th>
-                            <th className="p-3 text-center">Internal</th>
-                            <th className="p-3 text-center">Total</th>
-                            <th className="p-3 text-center">Grade</th>
+                            <th className="py-1.5 px-2.5">Subject</th>
+                            <th className="py-1.5 px-2.5 text-center">Theory</th>
+                            <th className="py-1.5 px-2.5 text-center">Practical</th>
+                            <th className="py-1.5 px-2.5 text-center">Internal</th>
+                            <th className="py-1.5 px-2.5 text-center">Total</th>
+                            <th className="py-1.5 px-2.5 text-center">Grade</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 text-slate-700">
                           {scholasticResults.map(res => (
                             <tr key={res.subject} className="hover:bg-slate-50/50 transition-colors font-bold">
-                              <td className="p-3 text-slate-900 font-extrabold">{res.subject}</td>
-                              <td className="p-3 text-center text-slate-500">{Math.round(res.final * 0.7)}</td>
-                              <td className="p-3 text-center text-slate-500">{Math.round(res.final * 0.2)}</td>
-                              <td className="p-3 text-center text-slate-500">{Math.round(res.final * 0.1)}</td>
-                              <td className="p-3 text-center font-black text-blue-600">{Math.round(res.final)}</td>
-                              <td className="p-3 text-center">
-                                <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-600 font-extrabold uppercase text-[10px]">
+                              <td className="py-1.5 px-2.5 text-slate-900 font-extrabold">{res.subject}</td>
+                              <td className="py-1.5 px-2.5 text-center text-slate-500">{Math.round(res.final * 0.7)}</td>
+                              <td className="py-1.5 px-2.5 text-center text-slate-500">{Math.round(res.final * 0.2)}</td>
+                              <td className="py-1.5 px-2.5 text-center text-slate-500">{Math.round(res.final * 0.1)}</td>
+                              <td className="py-1.5 px-2.5 text-center font-black text-blue-600">{Math.round(res.final)}</td>
+                              <td className="py-1.5 px-2.5 text-center">
+                                <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 font-extrabold uppercase text-[10px] inline-flex items-center justify-center min-w-[20px] h-[20px] leading-none">
                                   {res.grade}
                                 </span>
                               </td>
@@ -910,67 +1030,68 @@ export default function StudentReportCard() {
                   )}
                 </div>
               ) : (
-                <div className="text-center py-16 border border-dashed border-slate-200 rounded-3xl">
-                  <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                  <p className="text-sm font-bold text-slate-400">No scholastic records found in database.</p>
+                <div className="text-center py-8 border border-dashed border-slate-200 rounded-2xl">
+                  <FileText className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                  <p className="text-xs font-bold text-slate-400">No scholastic records found in database.</p>
                 </div>
               )}
 
               {/* Co-Scholastic Grades */}
               {showCoScholastic && templateType !== 'pre_primary' && (
-                <div className="space-y-3 pt-2">
-                  <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest border-b pb-1.5">Co-Scholastic Activities</h4>
-                  <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-1.5 pt-1 avoid-break">
+                  <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider border-b pb-1">Co-Scholastic Activities</h4>
+                  <div className="grid grid-cols-3 gap-2">
                     {coScholasticItems.map(act => (
-                      <div key={act.title} className="p-3 bg-slate-50 rounded-xl border flex justify-between items-center text-xs font-bold">
-                        <span className="text-slate-500">{act.title}</span>
-                        <span className="text-blue-600 font-extrabold">{act.grade}</span>
+                      <div key={act.title} className="p-2 px-3 bg-slate-50/90 rounded-xl border border-slate-200 flex justify-between items-center text-xs font-bold min-h-[36px]">
+                        <span className="text-slate-700 font-bold block leading-normal pr-1 text-[11px]">{act.title}</span>
+                        <span className="text-blue-600 font-extrabold shrink-0 text-xs">{act.grade}</span>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
               {/* Class Teacher's Remarks */}
-              <div className="space-y-2 pt-4 border-t border-slate-200">
-                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Class Teacher's Remarks</h4>
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs font-semibold text-slate-700 italic">
+              <div className="space-y-1 pt-1.5 border-t border-slate-200 avoid-break">
+                <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Class Teacher's Remarks</h4>
+                <div className="p-2.5 bg-slate-50/80 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 italic">
                   "{teacherRemarks || 'No remarks provided.'}"
                 </div>
               </div>
               {/* Sign-offs & Footer */}
-            <div className="space-y-6 pt-10">
-              <div className="flex justify-between items-end border-t pt-6">
-                <div className="space-y-1">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Academic summary</span>
-                  <div className="text-xs font-bold text-slate-700">
-                    <p>Calculated Percentage: <span className="font-extrabold text-slate-900">{overallAvg}%</span></p>
-                    <p>Status: <span className="font-extrabold text-emerald-600">Promoted to Next Class</span></p>
+              <div className="space-y-3 pt-2 avoid-break">
+                <div className="flex justify-between items-end border-t pt-2">
+                  <div className="space-y-0.5">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Academic summary</span>
+                    <div className="text-xs font-bold text-slate-700 flex gap-4">
+                      <p>Calculated Percentage: <span className="font-extrabold text-slate-900">{overallAvg}%</span></p>
+                      <p>Status: <span className="font-extrabold text-emerald-600">Promoted to Next Class</span></p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Signature slots (renders uploaded signature images if present) */}
-              {showSignatures && (
-                <div className="grid grid-cols-3 gap-6 text-center text-xs font-bold text-slate-400 pt-6">
-                  <div className="space-y-3">
-                    <div className="w-28 mx-auto border-b h-12 flex items-center justify-center">
-                      {customTeacherSig && <img src={customTeacherSig} alt="Teacher Sig" className="max-h-full max-w-full object-contain" />}
+                {/* Signature slots (renders uploaded signature images if present) */}
+                {showSignatures && (
+                  <div className="grid grid-cols-3 gap-6 text-center text-xs font-bold text-slate-400 pt-2">
+                    <div className="space-y-1.5">
+                      <div className="w-24 mx-auto border-b border-slate-300 h-9 flex items-center justify-center">
+                        {customTeacherSig && <img src={customTeacherSig} alt="Teacher Sig" className="max-h-full max-w-full object-contain" />}
+                      </div>
+                      <p className="uppercase tracking-wider text-[8px]">Class Teacher</p>
                     </div>
-                    <p className="uppercase tracking-widest text-[9px]">Class Teacher</p>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="w-28 mx-auto border-b h-12 flex items-center justify-center" />
-                    <p className="uppercase tracking-widest text-[9px]">Coordinator</p>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="w-28 mx-auto border-b h-12 flex items-center justify-center">
-                      {customPrincipalSig && <img src={customPrincipalSig} alt="Principal Sig" className="max-h-full max-w-full object-contain" />}
+                    <div className="space-y-1.5">
+                      <div className="w-24 mx-auto border-b border-slate-300 h-9 flex items-center justify-center" />
+                      <p className="uppercase tracking-wider text-[8px]">Coordinator</p>
                     </div>
-                    <p className="uppercase tracking-widest text-[9px] text-slate-900">Principal Signature</p>
+                    <div className="space-y-1.5">
+                      <div className="w-24 mx-auto border-b border-slate-300 h-9 flex items-center justify-center">
+                        {customPrincipalSig && <img src={customPrincipalSig} alt="Principal Sig" className="max-h-full max-w-full object-contain" />}
+                      </div>
+                      <p className="uppercase tracking-wider text-[8px] text-slate-900">Principal Signature</p>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>            </div>
+                )}
+              </div>
+            </div>
 
           </div>
         </div>

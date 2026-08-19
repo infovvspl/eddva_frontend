@@ -98,27 +98,27 @@ const StudentsPage = () => {
   }
 
   return (
-    <div className="w-full p-6 lg:p-8 space-y-6 pb-20">
+    <div className="w-full space-y-6">
 
       {/* ── Header ── */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+        className="bg-blue-100 border border-blue-200/80 rounded-[2rem] p-4 sm:px-6 sm:py-5 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 mb-6"
       >
-        <div>
-          <h1 className="text-2xl font-black text-slate-900">Students</h1>
-          <p className="text-sm text-slate-400 mt-0.5">
+        <div className="min-w-0 flex-1 pl-1 sm:pl-0">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight whitespace-nowrap truncate">Students</h1>
+          <p className="text-xs sm:text-sm font-bold text-slate-500/80 mt-0.5 whitespace-nowrap truncate">
             {allStudents.length} student{allStudents.length !== 1 ? "s" : ""} across {batchList.length} course{batchList.length !== 1 ? "s" : ""}
           </p>
         </div>
       </motion.div>
 
       {/* ── Filters ── */}
-      <div className="flex flex-wrap gap-3">
-        <form onSubmit={handleSearch} className="flex gap-3 flex-1 min-w-[260px]">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+      <div className="flex flex-row gap-2 sm:gap-3 w-full">
+        <form onSubmit={handleSearch} className="flex gap-2 sm:gap-3 flex-1 min-w-0">
+          <div className="relative w-full max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               value={searchInput}
               onChange={e => {
@@ -127,29 +127,29 @@ const StudentsPage = () => {
                 setSearch(val);
                 setPage(1);
               }}
-              placeholder="Search by name, email or phone…"
-              className="w-full h-11 pl-10 pr-4 bg-white border border-slate-200 rounded-2xl text-sm font-medium text-slate-800 outline-none focus:border-blue-400 transition-colors"
+              placeholder="Search..."
+              className="w-full h-11 pl-9 pr-3 bg-white border border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-slate-800 outline-none focus:border-blue-400 transition-colors"
             />
           </div>
           <button
             type="submit"
-            className="px-5 h-11 bg-slate-800 text-white text-xs font-black uppercase tracking-wider rounded-2xl hover:bg-slate-700 transition-colors"
+            className="hidden sm:block px-5 h-11 bg-slate-800 text-white text-xs font-black uppercase tracking-wider rounded-2xl hover:bg-slate-700 transition-colors shrink-0"
           >
             Search
           </button>
         </form>
 
         {/* Batch filter */}
-        <div className="relative">
-          <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+        <div className="relative w-[130px] sm:w-[180px] shrink-0">
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           <CustomSelect
-          onChange={setBatchFilter}
+            onChange={setBatchFilter}
             value={batchFilter}
             options={[
-            { value: "", label: "All Batches" },
-            ...batchList.map((b) => ({ value: b.name, label: b.name })),
-          ]}
-            className="w-full"
+              { value: "", label: "All Batches" },
+              ...batchList.map((b) => ({ value: b.name, label: b.name })),
+            ]}
+            className="w-full text-xs sm:text-sm h-11"
           />
         </div>
       </div>
@@ -185,7 +185,61 @@ const StudentsPage = () => {
         </div>
       ) : (
         <>
-          <div className="bg-white rounded-3xl border border-slate-100 overflow-x-auto shadow-sm pb-1.5 sm:pb-0">
+          {/* ── Mobile Stacked Cards ── */}
+          <div className="sm:hidden space-y-3">
+            {paged.map((s: any, i) => {
+              const name = s.name || s.fullName || s.studentName || "—";
+              const phone = s.phone || s.phoneNumber || "—";
+              const email = s.email || "";
+              const sid = s.studentId || s.id;
+              const bStyle = EXAM_STYLES.neet;
+              return (
+                <div
+                  key={sid ?? i}
+                  onClick={() => typeof sid === "string" && navigate(`/teacher/students/${sid}`)}
+                  className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-3 cursor-pointer hover:border-blue-200 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-black text-white shrink-0"
+                        style={{ background: `linear-gradient(135deg, ${bStyle.from}, ${bStyle.to})` }}
+                      >
+                        {name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900 leading-tight">{name}</h4>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <p className="text-xs text-slate-500">{phone}</p>
+                          {s.phoneVerified && <CheckCircle className="w-3 h-3 text-green-500" />}
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-slate-300" />
+                  </div>
+                  
+                  {(s._batchNames || []).filter((bName: string) => Boolean(bName && typeof bName === "string" && bName.trim().length > 0)).length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {(s._batchNames || [])
+                        .filter((bName: string) => Boolean(bName && typeof bName === "string" && bName.trim().length > 0))
+                        .map((bName: string, bIdx: number) => (
+                          <span
+                            key={bIdx}
+                            className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full"
+                            style={{ background: `${bStyle.from}15`, color: bStyle.from }}
+                          >
+                            {bName}
+                          </span>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* ── Desktop Table ── */}
+          <div className="hidden sm:block bg-white rounded-3xl border border-slate-100 overflow-x-auto shadow-sm pb-1.5 sm:pb-0">
             <table className="w-full min-w-[800px] lg:min-w-full">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50">
@@ -238,15 +292,17 @@ const StudentsPage = () => {
                       </td>
                       <td className="p-4 hidden md:table-cell">
                         <div className="flex flex-wrap gap-1.5 align-middle">
-                          {(s._batchNames || []).map((bName: string, bIdx: number) => (
-                            <span
-                              key={bIdx}
-                              className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-full"
-                              style={{ background: `${bStyle.from}15`, color: bStyle.from }}
-                            >
-                              {bName}
-                            </span>
-                          ))}
+                          {(s._batchNames || [])
+                            .filter((bName: string) => Boolean(bName && typeof bName === "string" && bName.trim().length > 0))
+                            .map((bName: string, bIdx: number) => (
+                              <span
+                                key={bIdx}
+                                className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-full"
+                                style={{ background: `${bStyle.from}15`, color: bStyle.from }}
+                              >
+                                {bName}
+                              </span>
+                            ))}
                         </div>
                       </td>
                       <td className="p-4 text-xs text-slate-400 hidden lg:table-cell">
@@ -259,17 +315,7 @@ const StudentsPage = () => {
                           ? new Date(s.lastLoginAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
                           : "Never"}
                       </td>
-                      <td className="p-4 flex justify-end gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/teacher/students/${sid}`);
-                          }}
-                          className="p-2 rounded-xl bg-primary/5 text-primary hover:bg-primary/10 transition-colors"
-                          title="View Advanced Progress"
-                        >
-                          <BarChart3 className="w-4 h-4" />
-                        </button>
+                      <td className="p-4 flex justify-end items-center">
                         <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" />
                       </td>
                     </tr>

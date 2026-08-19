@@ -144,10 +144,10 @@ function StatBadge({ label, value, trend, trendValue, color = 'blue', formatter 
 // ---------------------------------------------------------------------------
 
 function StatCard({
-  label, value, icon: Icon, delay = 0, trend, onClick,
+  label, value, icon: Icon, color, delay = 0, trend, onClick,
 }: {
-  label: string; value: string | number;
-  delay?: number; trend?: string; onClick?: () => void;
+  label: string; value: string | number; icon: any;
+  color?: string; delay?: number; trend?: string; onClick?: () => void;
 }) {
   const shouldReduceMotion = useReducedMotion();
   const isFirstRender = React.useRef(true);
@@ -166,6 +166,8 @@ function StatCard({
     ? { delay, duration: 0.45, ease: [0.16, 1, 0.3, 1] }
     : undefined;
 
+  const colorStyles = color || "bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-950/40 dark:border-indigo-900/50 dark:text-indigo-400";
+
   return (
     <motion.div
       initial={initialProps}
@@ -173,26 +175,32 @@ function StatCard({
       transition={transitionProps}
       onClick={onClick}
       className={cn(
-        "group relative flex flex-col p-3.5 sm:p-5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-lg transition-all duration-300",
+        "group relative flex flex-col justify-between p-4 sm:p-5 rounded-2xl md:rounded-3xl border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:shadow-xl hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-300",
         onClick && "cursor-pointer hover:-translate-y-1"
       )}
     >
-      <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-4">
-        <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400 shrink-0" />
-        <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 leading-tight">
-          {label.split(' ').map((word, idx) => (
-            <span key={idx} className="block">{word}</span>
-          ))}
+      <div className="flex items-center justify-between gap-2 mb-3">
+        {/* Rounded Square Icon Badge (Fixed 48x48px, 16px radius) */}
+        <div className={cn("w-12 h-12 min-w-12 min-h-12 shrink-0 flex items-center justify-center rounded-2xl border transition-transform group-hover:scale-105 duration-200", colorStyles)}>
+          <Icon className="w-6 h-6 min-w-6 min-h-6 shrink-0 stroke-[2.5]" />
         </div>
-      </div>
-      <div className="flex items-end justify-between mt-auto gap-1">
-        <span className="text-xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight leading-none">{value}</span>
+
+        {/* Trend Badge */}
         {trend && (
-          <span className="flex items-center gap-0.5 text-[10px] sm:text-xs font-bold text-emerald-600 dark:text-emerald-500 shrink-0 mb-0.5">
-            <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+          <span className="inline-flex items-center gap-0.5 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300 shrink-0">
+            <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[2.5]" />
             {trend.replace('+', '')}
           </span>
         )}
+      </div>
+
+      <div className="space-y-1">
+        <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">
+          {label}
+        </p>
+        <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+          {value}
+        </h3>
       </div>
     </motion.div>
   );
@@ -271,7 +279,7 @@ function ChartShell({ title, subtitle, badge, badgeClass, children, hasData, emp
       <div className="mb-3 sm:mb-5 flex items-start justify-between gap-4">
         <div>
           <h3 className="font-display text-base sm:text-lg font-bold text-slate-950 dark:text-white">{title}</h3>
-          <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400 hidden sm:block">{subtitle}</p>
+          <p className="short-hide-desc mt-1 text-sm font-medium text-slate-500 dark:text-slate-400 hidden sm:block">{subtitle}</p>
         </div>
         <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ring-1 ${badgeClass}`}>
           {badge}
@@ -316,14 +324,14 @@ const SuperAdminDashboard = () => {
   }
 
   // ── Raw values from backend (no fallbacks, no fake distribution) ───────────
-  const totalInstitutes      = platformStats?.totalTenants        ?? 0;
-  const totalStudents        = platformStats?.totalStudents        ?? 0;
-  const activeTenants        = platformStats?.activeTenants        ?? 0;
-  const trialTenants         = platformStats?.trialTenants         ?? 0;
-  const totalAiRequests      = platformStats?.totalAiRequests      ?? 0;
-  const newTenantsThisMonth  = platformStats?.newTenantsThisMonth  ?? 0;
+  const totalInstitutes = platformStats?.totalTenants ?? 0;
+  const totalStudents = platformStats?.totalStudents ?? 0;
+  const activeTenants = platformStats?.activeTenants ?? 0;
+  const trialTenants = platformStats?.trialTenants ?? 0;
+  const totalAiRequests = platformStats?.totalAiRequests ?? 0;
+  const newTenantsThisMonth = platformStats?.newTenantsThisMonth ?? 0;
   const newStudentsThisMonth = platformStats?.newStudentsThisMonth ?? 0;
-  const aiRequestsToday      = platformStats?.aiRequestsToday      ?? 0;
+  const aiRequestsToday = platformStats?.aiRequestsToday ?? 0;
 
   // Institute admins = total users in the User table minus students
   // The platform total users = institute admins + students
@@ -334,7 +342,7 @@ const SuperAdminDashboard = () => {
 
   // Trend percentages derived from real data; null when not computable
   const instituteTrend = safeTrendPct(totalInstitutes, newTenantsThisMonth);
-  const studentTrend   = safeTrendPct(totalStudents,   newStudentsThisMonth);
+  const studentTrend = safeTrendPct(totalStudents, newStudentsThisMonth);
 
   const formatCount = (n: number | undefined) => {
     if (n == null) return "0";
@@ -352,22 +360,22 @@ const SuperAdminDashboard = () => {
   };
 
   const metrics = [
-    { label: "Partner Institutes", value: statsLoading ? "—" : formatCount(platformStats?.totalTenants), icon: Building2, color: "bg-indigo-500", trend: "+12.5%", path: "/super-admin/tenants" },
-    { label: "Active Faculty", value: statsLoading ? "—" : formatCount(platformStats?.totalTeachers), icon: GraduationCap, color: "bg-purple-500", trend: "+5.2%", path: "/super-admin/users" },
-    { label: "Global Students", value: statsLoading ? "—" : formatCount(platformStats?.totalStudents), icon: Users, color: "bg-blue-500", trend: "+18.4%", path: "/super-admin/enrollments" },
-    { label: "Revenue", value: statsLoading ? "—" : formatCurrencyLocal(platformStats?.monthlyRevenue ?? platformStats?.platformMrr ?? 0), icon: TrendingUp, color: "bg-emerald-500", trend: "+22.4%", path: "/super-admin/revenue" },
+    { label: "Partner Institutes", value: statsLoading ? "—" : formatCount(platformStats?.totalTenants), icon: Building2, color: "bg-indigo-50 text-indigo-600 border-indigo-100/70 dark:bg-indigo-950/40 dark:border-indigo-900/50 dark:text-indigo-400", trend: "+12.5%", path: "/super-admin/tenants" },
+    { label: "Active Faculty", value: statsLoading ? "—" : formatCount(platformStats?.totalTeachers), icon: GraduationCap, color: "bg-violet-50 text-violet-600 border-violet-100/70 dark:bg-violet-950/40 dark:border-violet-900/50 dark:text-violet-400", trend: "+5.2%", path: "/super-admin/users" },
+    { label: "Global Students", value: statsLoading ? "—" : formatCount(platformStats?.totalStudents), icon: Users, color: "bg-emerald-50 text-emerald-600 border-emerald-100/70 dark:bg-emerald-950/40 dark:border-emerald-900/50 dark:text-emerald-400", trend: "+18.4%", path: "/super-admin/tenants" },
+    { label: "Revenue", value: statsLoading ? "—" : formatCurrencyLocal(platformStats?.monthlyRevenue ?? platformStats?.platformMrr ?? 0), icon: TrendingUp, color: "bg-amber-50 text-amber-600 border-amber-100/70 dark:bg-amber-950/40 dark:border-amber-900/50 dark:text-amber-400", trend: "+22.4%", path: "/super-admin/analytics" },
   ];
 
   // ── Chart data: mapped from database stats ──
-  const userGrowthData:    any[] = platformStats?.userGrowth      || [];
+  const userGrowthData: any[] = platformStats?.userGrowth || [];
   const instituteGrowthData: any[] = platformStats?.instituteGrowth || [];
-  const aiUsageData:       any[] = platformStats?.aiUsageTrend    || [];
-  const revenueTrendData:  any[] = platformStats?.revenueTrend    || [];
+  const aiUsageData: any[] = platformStats?.aiUsageTrend || [];
+  const revenueTrendData: any[] = platformStats?.revenueTrend || [];
 
-  const hasUserGrowth     = userGrowthData.some((r) => Number(r?.users || 0) > 0 || Number(r?.active || 0) > 0);
+  const hasUserGrowth = userGrowthData.some((r) => Number(r?.users || 0) > 0 || Number(r?.active || 0) > 0);
   const hasInstituteGrowth = instituteGrowthData.some((r) => Number(r?.institutes || 0) > 0 || Number(r?.approved || 0) > 0);
-  const hasAiUsage        = aiUsageData.some((r) => Number(r?.usage || 0) > 0);
-  const hasRevenueTrend   = revenueTrendData.some((r) => Number(r?.billed || 0) > 0 || Number(r?.revenue || 0) > 0);
+  const hasAiUsage = aiUsageData.some((r) => Number(r?.usage || 0) > 0);
+  const hasRevenueTrend = revenueTrendData.some((r) => Number(r?.billed || 0) > 0 || Number(r?.revenue || 0) > 0);
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -375,96 +383,105 @@ const SuperAdminDashboard = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35 }}
-      className="space-y-6 pb-12 px-1"
+      className="space-y-4 sm:space-y-6 pb-0 sm:pb-12 px-0"
     >
-      <style>{`
-        .quick-action-card {
-          transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1);
-          outline: none;
-        }
-
-        .quick-action-card:hover,
-        .quick-action-card:focus-visible {
-          transform: translateY(-4px);
-          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
-        }
-        
-        .quick-action-card:focus-visible {
-          outline: 2px solid #6366f1;
-          outline-offset: 2px;
-        }
-
-        .quick-action-icon-badge {
-          transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .quick-action-card:hover .quick-action-icon-badge,
-        .quick-action-card:focus-visible .quick-action-icon-badge {
-          animation: iconBounce 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        @keyframes iconBounce {
-          0% { transform: scale(1); }
-          50% { transform: scale(1.15); }
-          100% { transform: scale(1); }
-        }
-
-        .mascot-avatar {
-          animation: mascotFloat 2s ease-in-out infinite alternate;
-        }
-
-        @keyframes mascotFloat {
-          0% {
-            transform: translateY(2px);
-          }
-          100% {
-            transform: translateY(-6px);
-          }
-        }
-
-        .waving-emoji {
-          display: inline-block;
-          transform-origin: 70% 70%;
-          animation: waveHand 1.4s ease-in-out infinite alternate;
-        }
-
-        @keyframes waveHand {
-          0% {
-            transform: rotate(-15deg);
-          }
-          100% {
-            transform: rotate(10deg);
-          }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .quick-action-card:hover,
-          .quick-action-card:focus-visible {
-            transform: none !important;
-            box-shadow: none !important;
-          }
-          .quick-action-card:hover .quick-action-icon-badge,
-          .quick-action-card:focus-visible .quick-action-icon-badge {
-            animation: none !important;
-          }
-          .mascot-avatar {
-            animation: none !important;
-            transform: none !important;
-          }
-          .waving-emoji {
-            animation: none !important;
-            transform: rotate(0deg) !important;
-          }
-        }
-      `}</style>
-
       {/* Header & Overlapping Stat Cards Wrapper */}
       <div>
+        <style>{`
+          .quick-action-card {
+            transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1);
+            outline: none;
+          }
+
+          .quick-action-card:hover,
+          .quick-action-card:focus-visible {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+          }
+          
+          .quick-action-card:focus-visible {
+            outline: 2px solid #6366f1;
+            outline-offset: 2px;
+          }
+
+          .quick-action-icon-badge {
+            transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+          }
+
+          .quick-action-card:hover .quick-action-icon-badge,
+          .quick-action-card:focus-visible .quick-action-icon-badge {
+            animation: iconBounce 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          }
+
+          @keyframes iconBounce {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+          }
+
+          .mascot-avatar {
+            animation: mascotFloat 2s ease-in-out infinite alternate;
+          }
+
+          @keyframes mascotFloat {
+            0% {
+              transform: translateY(2px);
+            }
+            100% {
+              transform: translateY(-6px);
+            }
+          }
+
+          .waving-emoji {
+            display: inline-block;
+            transform-origin: 70% 70%;
+            animation: waveHand 1.4s ease-in-out infinite alternate;
+          }
+
+          @keyframes waveHand {
+            0% {
+              transform: rotate(-15deg);
+            }
+            100% {
+              transform: rotate(10deg);
+            }
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .quick-action-card:hover,
+            .quick-action-card:focus-visible {
+              transform: none !important;
+              box-shadow: none !important;
+            }
+            .quick-action-card:hover .quick-action-icon-badge,
+            .quick-action-card:focus-visible .quick-action-icon-badge {
+              animation: none !important;
+            }
+            .mascot-avatar {
+              animation: none !important;
+              transform: none !important;
+            }
+            .waving-emoji {
+              animation: none !important;
+              transform: rotate(0deg) !important;
+            }
+          }
+
+          @media (max-height: 750px) {
+            .hero-banner-compact {
+              padding-bottom: 1.5rem !important;
+            }
+            .hero-metrics-compact {
+              margin-top: 1rem !important;
+            }
+          }
+        `}</style>
+
         {/* Header Banner */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-3xl pt-3.5 px-4 pb-4 sm:pt-8 sm:px-8 sm:pb-24 md:pt-8 md:px-9 md:pb-28 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 shadow-lg border border-blue-950/20"
+          className="hero-banner-compact relative overflow-hidden rounded-3xl p-4 sm:p-8 pb-5 sm:pb-24 xl:pb-28 flex flex-col xl:flex-row xl:items-center justify-between gap-3.5 sm:gap-6 shadow-lg border border-blue-950/20"
           style={{
             background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 50%, #3B82F6 100%)',
           }}
@@ -477,7 +494,7 @@ const SuperAdminDashboard = () => {
             <MoreHorizontal className="w-4 h-4" />
           </button>
 
-          <div className="relative z-10">
+          <div className="relative z-10 max-w-2xl">
             <div className="flex items-center gap-2 mb-2">
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold border border-white/20 px-3 py-1 rounded-full bg-white/5 backdrop-blur-sm" style={{ color: '#93C5FD' }}>
                 <Shield className="w-3.5 h-3.5" /> SUPER ADMIN DASHBOARD
@@ -491,9 +508,9 @@ const SuperAdminDashboard = () => {
             </p>
           </div>
 
-          <div className="relative z-10 flex flex-row items-center gap-4 sm:gap-6 shrink-0 self-start sm:self-auto w-full sm:w-auto">
+          <div className="relative z-10 flex flex-row items-center gap-3 sm:gap-4 shrink-0 self-start xl:self-auto w-full xl:w-auto mt-1 xl:mt-0">
             {/* Mascot Image */}
-            <div className="hidden sm:flex h-16 w-16 rounded-full bg-white/10 p-2 items-center justify-center backdrop-blur-sm border border-white/10 shadow-inner shrink-0">
+            <div className="hidden sm:flex h-14 w-14 xl:h-16 xl:w-16 rounded-full bg-white/10 p-2 items-center justify-center backdrop-blur-sm border border-white/10 shadow-inner shrink-0">
               <img
                 src={coachingSuperAdminImg}
                 alt="Coaching Mascot"
@@ -502,9 +519,10 @@ const SuperAdminDashboard = () => {
             </div>
             <button
               onClick={() => navigate("/super-admin/tenants/new")}
-              className="flex items-center gap-2 h-11 px-6 rounded-xl bg-white text-blue-700 hover:bg-blue-50 font-bold text-sm shadow-lg shadow-blue-950/20 hover:-translate-y-0.5 transition-all duration-200 w-full sm:w-auto justify-center"
+              className="flex items-center gap-2 h-10 sm:h-11 px-4 sm:px-6 rounded-xl bg-white text-blue-700 hover:bg-blue-50 font-bold text-xs sm:text-sm shadow-lg shadow-blue-950/20 hover:-translate-y-0.5 transition-all duration-200 w-full sm:w-auto justify-center whitespace-nowrap shrink-0"
             >
-              <Plus className="w-4 h-4" /> Deploy new institute
+              <Plus className="w-4 h-4 shrink-0" />
+              <span>Deploy new institute</span>
             </button>
           </div>
         </motion.div>
@@ -518,13 +536,14 @@ const SuperAdminDashboard = () => {
         )}
 
         {/* Metric Cards */}
-        <div className="relative z-20 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-6 sm:-mt-16 md:-mt-20 mx-4 sm:mx-0">
+        <div className="hero-metrics-compact relative z-20 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-3.5 sm:-mt-16 md:-mt-20 mx-0">
           {metrics.map((m, i) => (
             <StatCard
               key={m.label}
               label={m.label}
               value={m.value}
               icon={m.icon}
+              color={m.color}
               trend={m.trend}
               delay={i * 0.08}
               onClick={() => navigate(m.path)}
@@ -537,7 +556,7 @@ const SuperAdminDashboard = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.15 }}
-        className="mt-6 sm:mt-8"
+        className="mt-8 sm:mt-8 pt-4 sm:pt-0"
       >
         <div className="flex items-center gap-2 mb-3 px-4 sm:px-0">
           <span className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
@@ -546,30 +565,30 @@ const SuperAdminDashboard = () => {
         </div>
         <div className="flex flex-row gap-2 sm:gap-3 w-full pb-1">
           {[
-            { 
-              label: 'Add Institute',   
-              icon: Building2,  
+            {
+              label: 'Add Institute',
+              icon: Building2,
               action: () => navigate('/super-admin/tenants/new'),
               bg: 'bg-indigo-50 dark:bg-indigo-950/40',
               color: 'text-indigo-600 dark:text-indigo-400'
             },
-            { 
-              label: 'Manage Users',    
-              icon: Users,       
+            {
+              label: 'Manage Users',
+              icon: Users,
               action: () => navigate('/super-admin/users'),
               bg: 'bg-violet-50 dark:bg-violet-950/40',
               color: 'text-violet-600 dark:text-violet-400'
             },
-            { 
-              label: 'View Analytics',  
-              icon: TrendingUp,  
+            {
+              label: 'View Analytics',
+              icon: TrendingUp,
               action: () => navigate('/super-admin/analytics'),
               bg: 'bg-emerald-50 dark:bg-emerald-950/40',
               color: 'text-emerald-600 dark:text-emerald-400'
             },
-            { 
-              label: 'Announcements',   
-              icon: Megaphone,   
+            {
+              label: 'Announcements',
+              icon: Megaphone,
               action: () => navigate('/super-admin/communication'),
               bg: 'bg-amber-50 dark:bg-amber-950/40',
               color: 'text-amber-600 dark:text-amber-400'
@@ -578,10 +597,10 @@ const SuperAdminDashboard = () => {
             <button
               key={item.label}
               onClick={item.action}
-              className="quick-action-card flex-1 min-w-[75px] sm:min-w-[140px] flex flex-col items-center justify-center p-3 sm:p-5 rounded-2xl border border-slate-100 bg-white hover:border-blue-300/30 hover:bg-blue-50/20 transition-all duration-200 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900"
+              className="quick-action-card flex-1 min-w-[75px] sm:min-w-[140px] flex flex-col items-center justify-center p-3 sm:p-5 rounded-2xl border-0 sm:border border-slate-100 bg-white hover:border-blue-300/30 hover:bg-blue-50/20 transition-all duration-200 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900"
             >
-              <div className={cn("h-10 w-10 sm:h-12 sm:w-12 rounded-full flex items-center justify-center mb-2.5 sm:mb-3 shadow-sm", item.bg)}>
-                <item.icon className={cn("h-5 w-5 sm:h-6 sm:w-6", item.color)} />
+              <div className={cn("h-12 w-12 sm:h-14 sm:w-14 rounded-full flex items-center justify-center mb-2.5 sm:mb-3 shadow-sm", item.bg)}>
+                <item.icon className={cn("h-6 w-6 sm:h-7 sm:w-7", item.color)} />
               </div>
               <p className="text-[10px] sm:text-xs font-bold text-slate-800 dark:text-white text-center leading-tight">{item.label}</p>
             </button>
@@ -732,7 +751,7 @@ const SuperAdminDashboard = () => {
               <YAxis allowDecimals={false} axisLine={false} tickLine={false} stroke={EDDVA[400]} style={CHART_AXIS_STYLE} />
               <RechartsTooltip content={<ChartTooltip />} />
               <Legend iconType="circle" />
-              <Line type="monotone" dataKey="users"  name="New users"    stroke={EDDVA[700]} strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: EDDVA[50] }} activeDot={{ r: 7 }} />
+              <Line type="monotone" dataKey="users" name="New users" stroke={EDDVA[700]} strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: EDDVA[50] }} activeDot={{ r: 7 }} />
               <Line type="monotone" dataKey="active" name="Active users" stroke={EDDVA[400]} strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: EDDVA[50] }} activeDot={{ r: 7 }} />
             </LineChart>
           </ResponsiveContainer>
@@ -755,7 +774,7 @@ const SuperAdminDashboard = () => {
               <RechartsTooltip content={<ChartTooltip />} />
               <Legend iconType="circle" />
               <Bar dataKey="institutes" name="Registered" fill={EDDVA[600]} radius={[8, 8, 0, 0]} maxBarSize={30} />
-              <Bar dataKey="approved"   name="Approved"   fill={EDDVA[300]} radius={[8, 8, 0, 0]} maxBarSize={30} />
+              <Bar dataKey="approved" name="Approved" fill={EDDVA[300]} radius={[8, 8, 0, 0]} maxBarSize={30} />
             </BarChart>
           </ResponsiveContainer>
         </ChartShell>
@@ -784,7 +803,7 @@ const SuperAdminDashboard = () => {
               <YAxis axisLine={false} tickLine={false} stroke={EDDVA[400]} style={CHART_AXIS_STYLE} tickFormatter={(v) => `₹${formatCount(v)}`} />
               <RechartsTooltip content={<ChartTooltip />} />
               <Legend iconType="circle" />
-              <Line type="monotone" dataKey="billed"  name="Billed"  stroke={EDDVA[400]} strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: EDDVA[50] }} activeDot={{ r: 7 }} />
+              <Line type="monotone" dataKey="billed" name="Billed" stroke={EDDVA[400]} strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: EDDVA[50] }} activeDot={{ r: 7 }} />
               <Line type="monotone" dataKey="revenue" name="Revenue" stroke={EDDVA[700]} strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: EDDVA[50] }} activeDot={{ r: 7 }} />
             </LineChart>
           </ResponsiveContainer>

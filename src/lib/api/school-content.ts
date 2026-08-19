@@ -95,7 +95,19 @@ export const schoolContent = {
     /** Output language: 'hindi' → Devanagari via Groq, 'odia' → Odia script via Gemini. Default: English. */
     language?: 'hindi' | 'odia';
   }) => schoolApi.post('/materials/ai-generate', body)
-    .then((res) => extractData<{ content: string; contentType: string; topicName: string }>(res)),
+    .then((res) => extractData<{
+      content: string;
+      contentType: string;
+      topicName: string;
+      /** Whether the chapter's indexed textbook was used, and which pages.
+       *  The teacher needs this stated: inline [p.N] markers appear only when
+       *  the model remembers to add them, but this flag is set by the server. */
+      source?: {
+        grounded: boolean;
+        pages?: number[];
+        reason?: 'not_indexed' | 'unavailable';
+      };
+    }>(res)),
 
   /** Persist AI-generated markdown as a study material for students. */
   saveAiMaterial: (body: {

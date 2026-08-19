@@ -33,10 +33,10 @@ const StatusDot = ({ status }: { status: string }) => {
 
 const StatCard = ({ label, value, color }: { label: string; value: number | string; color: string }) => {
   const colors: Record<string, string> = {
-    blue:   "border-blue-200 bg-blue-50 text-blue-800",
-    green:  "border-emerald-200 bg-emerald-50 text-emerald-800",
-    amber:  "border-amber-200 bg-amber-50 text-amber-800",
-    red:    "border-rose-200 bg-rose-50 text-rose-800",
+    blue: "border-blue-200 bg-blue-50 text-blue-800",
+    green: "border-emerald-200 bg-emerald-50 text-emerald-800",
+    amber: "border-amber-200 bg-amber-50 text-amber-800",
+    red: "border-rose-200 bg-rose-50 text-rose-800",
     purple: "border-purple-200 bg-purple-50 text-purple-800",
   };
   return (
@@ -241,9 +241,9 @@ const InstitutesPage = () => {
   };
 
   return (
-    <div className="space-y-6 pb-12 px-1">
+    <div className="w-full min-h-full p-4 sm:p-6 lg:p-8 flex flex-col space-y-4 sm:space-y-8">
       {/* Header Container */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 border border-slate-200 rounded-2xl p-4 sm:border-b sm:border-t-0 sm:border-l-0 sm:border-r-0 sm:border-slate-100 dark:border-slate-800 sm:rounded-none sm:p-0 sm:pb-4 mt-4 sm:mt-0 pt-3.5 sm:pt-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 bg-blue-100 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
         <div className="flex-1">
           <h1 className="font-display text-xl sm:text-3xl font-bold text-slate-900">
             Coaching Institutes
@@ -452,11 +452,10 @@ const InstitutesPage = () => {
                 <button
                   key={p}
                   onClick={() => setPage(p)}
-                  className={`w-9 h-9 rounded-lg text-xs font-bold transition-all ${
-                    p === page
-                      ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
-                      : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                  }`}
+                  className={`w-9 h-9 rounded-lg text-xs font-bold transition-all ${p === page
+                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
+                    : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                    }`}
                 >
                   {p}
                 </button>
@@ -479,7 +478,7 @@ const InstitutesPage = () => {
           <table className="w-full text-left">
             <thead>
               <tr className="bg-slate-50 text-xs font-bold uppercase text-slate-500 tracking-wider border-b border-slate-200">
-                <th className="px-5 py-4">Coaching Institute</th>
+                <th className="px-5 py-4 sticky left-0 z-20 bg-slate-50 border-b border-slate-200">Coaching Institute</th>
                 <th className="px-5 py-4">Contact</th>
                 <th className="px-5 py-4">Tenant</th>
                 <th className="px-5 py-4">Students</th>
@@ -493,7 +492,7 @@ const InstitutesPage = () => {
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i}>
                     {Array.from({ length: 7 }).map((__, j) => (
-                      <td key={j} className="px-5 py-4">
+                      <td key={j} className={`px-5 py-4 ${j === 0 ? 'sticky left-0 z-20 bg-white' : ''}`}>
                         <div className="h-8 bg-slate-100 rounded-lg animate-pulse" />
                       </td>
                     ))}
@@ -538,7 +537,7 @@ const InstitutesPage = () => {
                         onClick={() => navigate(`/super-admin/tenants/${inst.id}`)}
                       >
                         {/* Institute */}
-                        <td className="px-5 py-4">
+                        <td className="px-5 py-4 sticky left-0 z-20 bg-white dark:bg-slate-900 group-hover:bg-slate-50 transition-colors">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm group-hover:bg-indigo-600 group-hover:text-white transition-all shrink-0">
                               {(inst.name || "?")[0].toUpperCase()}
@@ -670,11 +669,10 @@ const InstitutesPage = () => {
                 <button
                   key={p}
                   onClick={() => setPage(p)}
-                  className={`w-9 h-9 rounded-lg text-xs font-bold transition-all ${
-                    p === page
-                      ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
-                      : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                  }`}
+                  className={`w-9 h-9 rounded-lg text-xs font-bold transition-all ${p === page
+                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
+                    : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                    }`}
                 >
                   {p}
                 </button>

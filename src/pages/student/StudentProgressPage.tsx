@@ -194,10 +194,10 @@ export default function StudentProgressPage() {
   );
 
   return (
-    <div className="p-6 w-full space-y-8 animate-in fade-in duration-500">
+    <div className="w-full sm:p-6 space-y-6 animate-in fade-in duration-500">
 
       {/* Header Card */}
-      <div className="bg-slate-50/80 border border-slate-200/80 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-blue-100 border border-blue-200/80 rounded-2xl p-4 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300">
         <div>
           <h1 className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2 sm:gap-3">
             <Activity className="w-6 h-6 sm:w-8 sm:h-8 text-indigo-600" />
@@ -588,7 +588,7 @@ export default function StudentProgressPage() {
       </Tabs>
 
       {/* Side-by-Side summaries */}
-      <div className="flex flex-row flex-nowrap overflow-x-auto scrollbar-none gap-4 pb-4 sm:grid sm:grid-cols-2 sm:gap-6 sm:pb-0">
+      <div className="flex flex-row flex-nowrap overflow-x-auto scrollbar-none gap-3.5 pb-4 sm:grid sm:grid-cols-2 sm:gap-6 sm:pb-0">
         {/* 1. Performance Summary */}
         {(() => {
           const score = insights?.readinessScore ?? 0;
@@ -609,7 +609,7 @@ export default function StudentProgressPage() {
                 "Your performance has been stable.";
           if (!score && !weakCount && !weakest) return null;
           return (
-            <div className="card-surface p-5 border-primary/20 bg-primary/5 rounded-2xl sm:rounded-3xl relative overflow-hidden flex flex-col justify-between min-h-[200px] sm:min-h-[220px] w-[88vw] sm:w-auto shrink-0">
+            <div className="card-surface p-5 border-primary/20 bg-primary/5 rounded-2xl sm:rounded-3xl relative overflow-hidden flex flex-col justify-between min-h-[200px] sm:min-h-[220px] w-[78vw] sm:w-auto shrink-0">
               <div className="absolute top-0 right-0 p-5 opacity-[0.07]">
                 <ShieldCheck className="w-20 h-20 sm:w-24 sm:h-24 text-primary" />
               </div>
@@ -666,7 +666,7 @@ export default function StudentProgressPage() {
               : "Keep practicing to build your performance profile.";
 
           return (
-            <div className="card-surface p-5 border-primary/20 bg-primary/5 rounded-2xl sm:rounded-3xl relative overflow-hidden flex flex-col justify-between min-h-[200px] sm:min-h-[220px] w-[88vw] sm:w-auto shrink-0">
+            <div className="card-surface p-5 border-primary/20 bg-primary/5 rounded-2xl sm:rounded-3xl relative overflow-hidden flex flex-col justify-between min-h-[200px] sm:min-h-[220px] w-[78vw] sm:w-auto shrink-0">
               <div className="absolute top-0 right-0 p-5 opacity-10">
                 <ShieldCheck className="w-20 h-20 sm:w-24 sm:h-24 text-primary" />
               </div>

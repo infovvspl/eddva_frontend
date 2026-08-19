@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { SchoolVideoPlayer } from '@/components/school/SchoolVideoPlayer';
-import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Upload, Youtube, Image as ImageIcon, FileText, Loader2, BarChart3, Download, ChevronRight, X, Sparkles, TrendingUp, XCircle, CheckCircle, ListChecks, Trophy, Copy, Eye, EyeOff, ArrowLeft, ArrowRight, ImagePlus, RefreshCw, CalendarClock, AlarmClock, PanelRightClose, PanelRightOpen, CalendarDays, Clock3, Tag, BookOpen, MessageCircle, Send, MessagesSquare, HelpCircle, User } from 'lucide-react';
+import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Upload, Youtube, Image as ImageIcon, FileText, Loader2, BarChart3, Download, ChevronRight, X, Sparkles, TrendingUp, XCircle, CheckCircle, ListChecks, Trophy, Copy, Eye, EyeOff, ArrowLeft, ArrowRight, ImagePlus, RefreshCw, CalendarClock, AlarmClock, PanelRightClose, PanelRightOpen, CalendarDays, Clock3, Tag, BookOpen, MessageCircle, Send, MessagesSquare, HelpCircle, User, Monitor } from 'lucide-react';
 import { schoolLive, type CreatedLecture, type LiveLecture } from '@/lib/api/school-live';
 import { Highlight } from '@/types/highlight';
 import { HighlightRenderer } from '@/lib/highlight-renderer';
@@ -159,6 +159,9 @@ const ClassManagement: React.FC = () => {
 
   // ── Live (self-hosted OBS/RTMP) ─────────────────────────────────────────────
   const [obsLectures, setObsLectures] = useState<LiveLecture[]>([]);
+  const [liveStatusFilter, setLiveStatusFilter] = useState<'all' | 'scheduled' | 'ongoing' | 'finished'>('all');
+  const [showAllObsLectures, setShowAllObsLectures] = useState(false);
+  const [showAllRecordedLectures, setShowAllRecordedLectures] = useState(false);
   const [showLiveModal, setShowLiveModal] = useState(false);    // OBS creds display
   const [createdLive, setCreatedLive] = useState<CreatedLecture | null>(null);
   const [credsLecture, setCredsLecture] = useState<LiveLecture | null>(null);
@@ -456,6 +459,21 @@ const ClassManagement: React.FC = () => {
     fetchRecordedClasses();
     fetchAcademicData();
   }, [user?.id]);
+
+  // Auto-refresh live lectures while any recording/notes are still processing,
+  // so cards flip from "Processing…" to "Watch Video" without a manual reload.
+  useEffect(() => {
+    const anyProcessing = obsLectures.some((l) => {
+      const ended = l.status === 'ENDED' || l.status === 'PROCESSED' || !!(l as any).recordingUrl;
+      if (!ended || l.status === 'PROCESSING_FAILED') return false;
+      if (!(l as any).recordingUrl) return true; // recording still uploading
+      const ns = (l as any).notesStatus, ts = (l as any).transcriptStatus;
+      return ns === 'processing' || ns === 'pending' || ts === 'processing' || ts === 'pending';
+    });
+    if (!anyProcessing) return;
+    const t = setInterval(fetchObsLectures, 15000);
+    return () => clearInterval(t);
+  }, [obsLectures]);
 
   const fetchAcademicData = async () => {
     try {
@@ -774,8 +792,7 @@ const ClassManagement: React.FC = () => {
 
   // Fetch notes images as data URIs (R2 bucket has no CORS for direct browser <img> loads)
   useEffect(() => {
-    const imgs = Array.isArray(detailRec?.notes_images) ? detailRec.notes_images : [];
-    if (!detailRec?.id || imgs.length === 0) {
+    if (!detailRec?.id || !detailRec?.notes) {
       setNotesImageMap({});
       return;
     }
@@ -786,7 +803,7 @@ const ClassManagement: React.FC = () => {
       })
       .catch(() => { if (!cancelled) setNotesImageMap({}); });
     return () => { cancelled = true; };
-  }, [detailRec?.id, detailRec?.notes_images?.length]);
+  }, [detailRec?.id, detailRec?.notes]);
 
   // Curriculum filters for the recorded list
   useEffect(() => {
@@ -1237,9 +1254,19 @@ const ClassManagement: React.FC = () => {
               Live Now
             </span>
           ) : isEnded ? (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-500">
-              Ended
-            </span>
+            lec.status === 'PROCESSING_FAILED' ? (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-black text-rose-600">
+                Processing failed
+              </span>
+            ) : !lec.recordingUrl ? (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-black text-amber-600">
+                <Loader2 size={11} className="animate-spin" /> Processing recording…
+              </span>
+            ) : (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-500">
+                Ended
+              </span>
+            )
           ) : (
             <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-black text-violet-600">
               <AlarmClock size={11} /> Scheduled
@@ -1257,6 +1284,27 @@ const ClassManagement: React.FC = () => {
           </div>
         )}
 
+        {/* Processing status after a class ends — keeps the teacher informed. */}
+        {isEnded && lec.status !== 'PROCESSING_FAILED' && !lec.recordingUrl && (
+          <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-100 bg-amber-50/70 px-3 py-2">
+            <Loader2 className="mt-0.5 h-3.5 w-3.5 shrink-0 animate-spin text-amber-500" />
+            <p className="text-[11px] font-medium text-amber-700">
+              Processing the recording — this usually takes a minute or two. AI notes & quiz are generated automatically once it's ready.
+            </p>
+          </div>
+        )}
+        {isEnded && lec.recordingUrl && (
+          ((lec as any).notesStatus === 'processing' || (lec as any).notesStatus === 'pending' ||
+           (lec as any).transcriptStatus === 'processing' || (lec as any).transcriptStatus === 'pending') && (
+            <div className="mt-3 flex items-start gap-2 rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2">
+              <Loader2 className="mt-0.5 h-3.5 w-3.5 shrink-0 animate-spin text-blue-500" />
+              <p className="text-[11px] font-medium text-blue-700">
+                Recording ready — generating AI notes & quiz from the lecture…
+              </p>
+            </div>
+          )
+        )}
+
         {/* Actions */}
         <div className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3">
           <button
@@ -1269,28 +1317,21 @@ const ClassManagement: React.FC = () => {
           {isEnded && lec.recordingUrl && (
             <button
               onClick={() => {
-                const savedRecording = recordedClassData.find((recording: any) => recording.id === lec.classRecordingId);
-                setDetailRec(savedRecording || {
-                  id: lec.classRecordingId || lec.id,
-                  title: lec.title,
-                  video_url: lec.recordingUrl,
-                  thumbnail_url: lec.thumbnailUrl,
-                  description: lec.description,
-                  duration: lec.recordingDurationSeconds ? String(Math.round(lec.recordingDurationSeconds / 60)) : '45',
-                  recorded_date: lec.endedAt || lec.createdAt,
-                  source: 'live_stream',
-                  notes: lec.notes || null,
-                  notes_status: lec.notesStatus || null,
-                  transcript_status: lec.transcriptStatus || null,
-                  quiz_status: lec.quizStatus || null,
-                  language: lec.language || 'en'
-                });
-                setDetailTab('overview');
-                setDetailPanelOpen(true);
+                const recId = lec.classRecordingId || lec.id;
+                navigate(`/school/teacher/recorded-classes/${recId}`);
               }}
               className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-gradient-to-r hover:from-blue-50 hover:to-sky-50 hover:text-blue-600 hover:border-blue-300"
             >
               <PlayCircle size={13} /> Watch Video
+            </button>
+          )}
+          {!isEnded && !isLive && (
+            <button
+              onClick={() => navigate(`/school/teacher/live/${lec.id}/studio`)}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-black text-white transition hover:bg-blue-700"
+              title="Go live from your browser — screen share, whiteboard, slides"
+            >
+              <Monitor size={13} /> Studio
             </button>
           )}
           <button
@@ -1320,9 +1361,19 @@ const ClassManagement: React.FC = () => {
   };
 
   const renderCurriculumFilters = () => {
-    const filteredSubjects = recFilter.classId
-      ? academicSubjects.filter((s: any) => String(s.classId ?? s.class_id) === String(recFilter.classId))
-      : academicSubjects;
+    // Build the subject options from teacher assignments (which carry classId / sectionId / subjectId)
+    // so the list is always scoped to what the teacher actually teaches.
+    const subjectMap = new Map<string, { id: string; name: string }>();
+    teacherAssignments
+      .filter((a: any) => !recFilter.classId || String(a.classId) === String(recFilter.classId))
+      .forEach((a: any) => {
+        if (!a.subjectId) return;
+        subjectMap.set(String(a.subjectId), {
+          id: String(a.subjectId),
+          name: a.subjectName || academicSubjects.find((s: any) => String(s.id) === String(a.subjectId))?.name || 'Subject',
+        });
+      });
+    const filteredSubjects = Array.from(subjectMap.values()).sort((a, b) => a.name.localeCompare(b.name));
 
     return (
       <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -1369,32 +1420,130 @@ const ClassManagement: React.FC = () => {
     );
   };
 
+  const liveStatusCounts = useMemo(() => {
+    let scheduled = 0;
+    let ongoing = 0;
+    let completed = 0;
+
+    obsLectures.forEach((lec) => {
+      if (recFilter.classId && String(lec.classId) !== String(recFilter.classId)) return;
+      if (recFilter.subjectId && String(lec.subjectId) !== String(recFilter.subjectId)) return;
+
+      const isLive = lec.status === 'LIVE';
+      const isEnded = lec.status === 'ENDED' || lec.status === 'PROCESSED' || !!lec.recordingUrl || isExpiredScheduled(lec);
+      const isScheduled = !isLive && !isEnded;
+
+      if (isLive) ongoing++;
+      else if (isEnded) completed++;
+      else if (isScheduled) scheduled++;
+    });
+
+    return { all: scheduled + ongoing + completed, scheduled, ongoing, completed };
+  }, [obsLectures, recFilter.classId, recFilter.subjectId]);
+
+  const filteredObsLectures = useMemo(() => {
+    return obsLectures.filter((lec) => {
+      if (recFilter.classId && String(lec.classId) !== String(recFilter.classId)) return false;
+      if (recFilter.subjectId && String(lec.subjectId) !== String(recFilter.subjectId)) return false;
+
+      const isLive = lec.status === 'LIVE';
+      const isEnded = lec.status === 'ENDED' || lec.status === 'PROCESSED' || !!lec.recordingUrl || isExpiredScheduled(lec);
+      const isScheduled = !isLive && !isEnded;
+
+      if (liveStatusFilter === 'ongoing') return isLive;
+      if (liveStatusFilter === 'scheduled') return isScheduled;
+      if (liveStatusFilter === 'completed' || liveStatusFilter === 'finished') return isEnded;
+      return true;
+    });
+  }, [obsLectures, recFilter.classId, recFilter.subjectId, liveStatusFilter]);
+
+  const liveStatusTabs: { id: 'all' | 'scheduled' | 'ongoing' | 'completed'; label: string; count: number; activeColor: string }[] = [
+    { id: 'all', label: 'All Classes', count: liveStatusCounts.all, activeColor: 'bg-blue-600 text-white shadow-xs' },
+    { id: 'scheduled', label: 'Scheduled', count: liveStatusCounts.scheduled, activeColor: 'bg-blue-600 text-white shadow-xs' },
+    { id: 'ongoing', label: 'Ongoing (Live)', count: liveStatusCounts.ongoing, activeColor: 'bg-blue-600 text-white shadow-xs' },
+    { id: 'completed', label: 'Completed', count: liveStatusCounts.completed, activeColor: 'bg-blue-600 text-white shadow-xs' },
+  ];
+
   const liveContent = (
     <div className="class__section">
       {renderCurriculumFilters()}
+
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <span className="text-[11px] font-black uppercase tracking-widest text-slate-400 hidden sm:inline-block mr-1">Status</span>
+        {liveStatusTabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setLiveStatusFilter(tab.id)}
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all',
+              liveStatusFilter === tab.id
+                ? tab.activeColor
+                : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+            )}
+          >
+            {tab.id === 'ongoing' && (
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-500" />
+              </span>
+            )}
+            <span>{tab.label}</span>
+            <span className={cn(
+              'rounded-md px-1.5 py-0.5 text-[10px] font-black',
+              liveStatusFilter === tab.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+            )}>
+              {tab.count}
+            </span>
+          </button>
+        ))}
+      </div>
+
       {!canGoLive ? (
         <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50 py-14 text-center">
           <Radio className="mx-auto mb-3 h-10 w-10 text-amber-300" />
           <h3 className="text-base font-black text-slate-900">Live Classes Disabled</h3>
           <p className="mt-1 text-sm text-slate-500">Live streaming is not enabled for your school. Contact the super admin to enable it.</p>
         </div>
-      ) : obsLectures.length === 0 ? (
+      ) : filteredObsLectures.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 py-14 text-center">
           <Radio className="mx-auto mb-3 h-10 w-10 text-slate-300" />
-          <h3 className="text-base font-black text-slate-900">No live classes yet</h3>
-          <p className="mt-1 text-sm text-slate-500">Click <b>Go Live (OBS)</b> to create one and get your OBS stream key.</p>
+          <h3 className="text-base font-black text-slate-900">
+            {liveStatusFilter === 'ongoing'
+              ? 'No ongoing live classes'
+              : liveStatusFilter === 'scheduled'
+                ? 'No scheduled live classes'
+                : liveStatusFilter === 'finished'
+                  ? 'No finished live classes'
+                  : 'No live classes found'}
+          </h3>
+          <p className="mt-1 text-sm text-slate-500">
+            {liveStatusFilter === 'all'
+              ? 'Click Go Live (OBS) to create one and get your OBS stream key.'
+              : 'Try selecting a different status filter or class filter above.'}
+          </p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {obsLectures
-            .filter((lec) => {
-              if (recFilter.classId && String(lec.classId) !== String(recFilter.classId)) return false;
-              if (recFilter.subjectId && String(lec.subjectId) !== String(recFilter.subjectId)) return false;
-              return true;
-            })
-            .map((lec) => (
+        <div className="space-y-3">
+          <div className="grid gap-4 sm:grid-cols-2">
+            {(showAllObsLectures ? filteredObsLectures : filteredObsLectures.slice(0, 10)).map((lec) => (
               <LiveClassCard key={lec.id} lec={lec} />
             ))}
+          </div>
+          {filteredObsLectures.length > 10 && (
+            <div className="flex items-center justify-between px-1 flex-wrap gap-2 pt-1">
+              <p className="text-xs text-slate-500">
+                Showing {Math.min(showAllObsLectures ? filteredObsLectures.length : 10, filteredObsLectures.length)} of {filteredObsLectures.length} live classes
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowAllObsLectures((v) => !v)}
+                className="px-4 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors inline-flex items-center gap-1.5"
+              >
+                <span>{showAllObsLectures ? "Show Less" : `Show ${filteredObsLectures.length - 10} more`}</span>
+                <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", showAllObsLectures ? "-rotate-90" : "rotate-90")} />
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -1414,12 +1563,12 @@ const ClassManagement: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-3">
-          {uploadedRecordings.map((rec: any) => {
+          {(showAllRecordedLectures ? uploadedRecordings : uploadedRecordings.slice(0, 10)).map((rec: any) => {
             const date = rec.recorded_date ? new Date(rec.recorded_date).toLocaleDateString('en-GB') : '';
             return (
               <div key={rec.id} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:shadow-md">
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-3.5 sm:gap-4">
-                  <button onClick={() => { setDetailRec(rec); setDetailTab(rec.notes ? 'notes' : 'transcript'); setDetailPanelOpen(true); }}
+                  <button onClick={() => navigate(`/school/teacher/recorded-classes/${rec.id}`)}
                     className="group/thumb relative h-36 w-full sm:h-16 sm:w-28 shrink-0 overflow-hidden rounded-xl bg-slate-900">
                     {rec.thumbnail_url ? (
                       <img src={rec.thumbnail_url} alt={rec.title} className="h-full w-full object-cover transition-transform duration-300 group-hover/thumb:scale-105" loading="lazy" />
@@ -1440,11 +1589,17 @@ const ClassManagement: React.FC = () => {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <h4 className="truncate font-bold text-slate-900 text-sm sm:text-base leading-snug" title={rec.title}>{rec.title}</h4>
+                        <h4
+                          onClick={() => navigate(`/school/teacher/recorded-classes/${rec.id}`)}
+                          className="truncate font-bold text-slate-900 text-sm sm:text-base leading-snug cursor-pointer hover:text-blue-600 transition-colors"
+                          title={rec.title}
+                        >
+                          {rec.title}
+                        </h4>
                         <p className="mt-0.5 truncate text-xs font-medium text-slate-500">
                           · {[rec.topic_name, rec.subject_name, rec.class_name].filter(Boolean)[0] || 'Lecture'} · {date}
                         </p>
-                        <button onClick={() => { setDetailRec(rec); setDetailTab(rec.notes ? 'notes' : 'transcript'); setDetailPanelOpen(true); }}
+                        <button onClick={() => navigate(`/school/teacher/recorded-classes/${rec.id}`)}
                           className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:underline">
                           <ChevronRight size={13} /> Click to view details
                         </button>
@@ -1453,7 +1608,7 @@ const ClassManagement: React.FC = () => {
                         <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-black uppercase text-emerald-600">Published</span>
                         <TranscriptStatusBadge
                           rec={rec}
-                          onView={() => { setDetailRec(rec); setDetailTab('transcript'); }}
+                          onView={() => navigate(`/school/teacher/recorded-classes/${rec.id}`)}
                           onRetry={() => handleRetranscribe(rec.id)}
                         />
                       </div>
@@ -1461,7 +1616,7 @@ const ClassManagement: React.FC = () => {
                     <div className="mt-3 flex items-start justify-between gap-3 border-t border-slate-100 pt-2">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <button onClick={() => { setDetailRec(rec); setDetailTab('overview'); setDetailPanelOpen(true); }}
+                          <button onClick={() => navigate(`/school/teacher/recorded-classes/${rec.id}`)}
                             className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50">
                             <BarChart3 size={14} /> Live Stats
                           </button>
@@ -1497,6 +1652,21 @@ const ClassManagement: React.FC = () => {
               </div>
             );
           })}
+          {uploadedRecordings.length > 10 && (
+            <div className="flex items-center justify-between px-1 flex-wrap gap-2 pt-1">
+              <p className="text-xs text-slate-500">
+                Showing {Math.min(showAllRecordedLectures ? uploadedRecordings.length : 10, uploadedRecordings.length)} of {uploadedRecordings.length} recorded lectures
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowAllRecordedLectures((v) => !v)}
+                className="px-4 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors inline-flex items-center gap-1.5"
+              >
+                <span>{showAllRecordedLectures ? "Show Less" : `Show ${uploadedRecordings.length - 10} more`}</span>
+                <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", showAllRecordedLectures ? "-rotate-90" : "rotate-90")} />
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

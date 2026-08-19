@@ -206,6 +206,14 @@ function groupMaterials(materials) {
     const subject = getMaterialSubjectName(m);
     const chapter = m.chapterName || m.fileName || 'General Chapters';
     const topic = m.topicName || 'General Topics';
+    
+    // For subject-level general materials, only allow ebooks
+    const isSubjectLevel = String(topic).endsWith('Materials') || String(chapter).endsWith('Materials');
+    if (isSubjectLevel) {
+      const meta = getResourceMeta(m.fileType, m.fileUrl, m.title);
+      if (meta !== RESOURCE_META.pdf) return;
+    }
+
     if (!tree[subject]) tree[subject] = {};
     if (!tree[subject][chapter]) tree[subject][chapter] = {};
     if (!tree[subject][chapter][topic]) tree[subject][chapter][topic] = [];
@@ -661,33 +669,42 @@ export default function StudyMaterials() {
         </div>
 
         {/* Material Types Filter Pills */}
-        <div className="flex items-center gap-2 border-b border-slate-100 pb-4 overflow-x-auto whitespace-nowrap scrollbar-none">
-          {materialTypes.map((type) => {
-            const isSelected = selectedType === type.value;
-            const count = type.value === 'ALL' 
-              ? unfilteredTopicMaterials.length 
-              : unfilteredTopicMaterials.filter((m) => materialMatchesType(m, type.value)).length;
+        <div className="relative group/filters">
+          <div 
+            onWheel={(e) => {
+              if (e.deltaY !== 0) {
+                e.currentTarget.scrollLeft += e.deltaY;
+              }
+            }}
+            className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3 overflow-x-auto overflow-y-hidden whitespace-nowrap scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 snap-x cursor-grab active:cursor-grabbing"
+          >
+            {materialTypes.map((type) => {
+              const isSelected = selectedType === type.value;
+              const count = type.value === 'ALL' 
+                ? unfilteredTopicMaterials.length 
+                : unfilteredTopicMaterials.filter((m) => materialMatchesType(m, type.value)).length;
 
-            return (
-              <button
-                key={type.value}
-                type="button"
-                onClick={() => setSelectedType(type.value)}
-                className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all duration-200 border flex items-center gap-1.5 shrink-0 ${
-                  isSelected
-                    ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-500/20'
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400'
-                }`}
-              >
-                {type.label}
-                <span className={`inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                  isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500 dark:bg-slate-850 dark:text-slate-400'
-                }`}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
+              return (
+                <button
+                  key={type.value}
+                  type="button"
+                  onClick={() => setSelectedType(type.value)}
+                  className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all duration-200 border flex items-center gap-1.5 shrink-0 snap-start ${
+                    isSelected
+                      ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-500/20'
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 hover:border-slate-300'
+                  }`}
+                >
+                  {type.label}
+                  <span className={`inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500 dark:bg-slate-850 dark:text-slate-400'
+                  }`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Empty state for current filter selection */}
@@ -834,14 +851,14 @@ export default function StudyMaterials() {
 
             {/* Breadcrumb when subject selected */}
             {selectedSubject && (
-              <div className="flex items-center gap-2 text-sm w-full sm:w-auto sm:ml-auto justify-between sm:justify-start">
+              <div className="flex items-center gap-2 text-sm w-full sm:w-auto sm:ml-auto justify-between sm:justify-start shrink-0">
                 <button
                   onClick={() => { setSelectedType('ALL'); setSearchParams(backParams); }}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-bold text-slate-600 transition hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-bold text-slate-600 transition hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 shrink-0"
                 >
-                  <ChevronRight size={14} className="rotate-180" /> {backLabel}
+                  <ChevronRight size={14} className="rotate-180 shrink-0" /> {backLabel}
                 </button>
-                <ChevronRight size={14} className="text-slate-300" />
+                <ChevronRight size={14} className="text-slate-300 shrink-0" />
                 <span className="font-black text-slate-900 truncate max-w-[150px] sm:max-w-[250px]" title={activeLabel}>
                   {activeLabel}
                 </span>

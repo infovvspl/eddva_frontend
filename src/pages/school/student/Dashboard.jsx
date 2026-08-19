@@ -21,6 +21,7 @@ import {
   CalendarDays,
   Flame,
   Star,
+  Coins,
   UserCheck,
   Sparkles,
 } from 'lucide-react';
@@ -306,15 +307,14 @@ export default function Dashboard() {
         </div>
       )}
       {/* Top Grid for Welcome Card and Smart Calendar */}
-      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 items-stretch">
+      <div className="grid gap-5 sm:gap-6 grid-cols-1 lg:grid-cols-[minmax(0,1.8fr)_minmax(280px,1fr)] xl:grid-cols-[minmax(0,2fr)_minmax(300px,0.9fr)] items-stretch">
         {/* Welcome Card Wrapper */}
-        <div className="lg:col-span-2 xl:col-span-3 relative flex flex-col">
+        <div className="relative flex flex-col min-w-0 h-full">
           <section
-            className="student-hero-banner relative overflow-hidden bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-700 text-white shadow-xl ring-1 ring-white/10 flex flex-col justify-between flex-1"
+            className="student-hero-banner relative overflow-hidden bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-700 text-white shadow-xl ring-1 ring-white/10 flex flex-col justify-between h-full w-full"
             style={{
-              height: 'clamp(240px, 20vw, 360px)',
-              padding: 'clamp(1rem, 2vw, 2.5rem)',
-              borderRadius: 'clamp(1.5rem, 2.2vw, 2.5rem)'
+              padding: 'clamp(1rem, 1.8vw, 2.25rem)',
+              borderRadius: 'clamp(1.25rem, 1.8vw, 2rem)'
             }}
           >
             <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
@@ -325,7 +325,7 @@ export default function Dashboard() {
             <div className="absolute bottom-[-55px] left-[50%] w-36 h-36 rounded-full bg-white/[0.08] pointer-events-none"></div>
             <div className="absolute bottom-[-30px] right-[40px] w-24 h-24 rounded-full bg-white/[0.08] pointer-events-none"></div>
 
-            <div className="relative z-10 flex h-full flex-col justify-between space-y-4 md:pr-72">
+            <div className="relative z-10 flex h-full flex-col justify-between space-y-3.5 pr-[28%] sm:pr-[26%] md:pr-[24%]">
               <div>
                 <div className="flex flex-wrap items-center gap-2 mb-2">
                   <span className="rounded-md bg-white/10 px-2.5 py-1 text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-white/90 backdrop-blur-sm">
@@ -335,15 +335,15 @@ export default function Dashboard() {
                     School Module
                   </span>
                 </div>
-                <h1 className="font-display font-black text-white" style={{ fontSize: 'clamp(1.15rem, 1.8vw, 2.25rem)' }}>
+                <h1 className="font-display font-black text-white max-w-xl" style={{ fontSize: 'clamp(1.15rem, 1.8vw, 2.15rem)' }}>
                   Welcome, {user?.name || 'Student'}! 👋 🌟
                 </h1>
-                <p className="mt-1.5 text-white/90 font-medium" style={{ fontSize: 'clamp(0.75rem, 0.9vw, 0.875rem)' }}>
+                <p className="mt-1 text-white/90 font-medium max-w-lg" style={{ fontSize: 'clamp(0.75rem, 0.85vw, 0.875rem)' }}>
                   {className && sectionName
                     ? `${className} · Section ${sectionName}`
                     : className || 'Your class schedule loads from your section assignment.'}
                 </p>
-                <p className="mt-0.5 text-white/90 font-medium" style={{ fontSize: 'clamp(0.75rem, 0.9vw, 0.875rem)' }}>
+                <p className="mt-0.5 text-white/90 font-medium max-w-lg" style={{ fontSize: 'clamp(0.75rem, 0.85vw, 0.875rem)' }}>
                   {todayClassesCount > 0
                     ? `You have ${todayClassesCount} class${todayClassesCount === 1 ? '' : 'es'} scheduled today.`
                     : 'No classes scheduled for today.'}
@@ -361,18 +361,18 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <p className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-blue-200/80">Current Streak</p>
-                    <p className="text-xs sm:text-sm font-black text-white">{user?.currentStreak || dashboardData?.currentStreak || 0} Days</p>
+                    <p className="text-xs sm:text-sm font-black text-white">{dashboardData?.currentStreak ?? user?.currentStreak ?? 0} Days</p>
                   </div>
                 </div>
 
-                {/* Total XP Badge */}
+                {/* EDDVA Coins Badge */}
                 <div className="flex items-center gap-2 sm:gap-3 rounded-2xl bg-white/10 px-3 py-1.5 sm:px-4 sm:py-2 backdrop-blur-md border border-white/20 shadow-inner">
                   <div className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-[#eab308] shadow-sm">
-                    <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white fill-white" />
+                    <Coins className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
                   </div>
                   <div>
-                    <p className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-blue-200/80">Total XP</p>
-                    <p className="text-xs sm:text-sm font-black text-white">{dashboardData?.xpTotal || user?.xpTotal || 0} XP</p>
+                    <p className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-blue-200/80">EDDVA Coins</p>
+                    <p className="text-xs sm:text-sm font-black text-white">{dashboardData?.eddvaCoins ?? dashboardData?.coins ?? dashboardData?.student?.eddvaCoins ?? user?.eddvaCoins ?? user?.coins ?? 0} Coins</p>
                   </div>
                 </div>
               </div>
@@ -381,7 +381,7 @@ export default function Dashboard() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4, duration: 0.6, ease: "easeOut" }}
-                className="mt-2 self-start inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1 backdrop-blur-md border border-white/20 shadow-sm"
+                className="mt-1 self-start inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1 backdrop-blur-md border border-white/20 shadow-sm"
               >
                 <Sparkles className="h-3.5 w-3.5 text-blue-200" />
                 <span className="text-xs font-semibold tracking-wide text-white">Manage Smarter. Educate Better.</span>
@@ -389,7 +389,7 @@ export default function Dashboard() {
             </div>
           </section>
 
-          {/* Floating Illustrations allowing overflow (outside the overflow-hidden section) */}
+          {/* Floating Illustrations allowing overflow */}
           <div className="student-avatar-container">
             <motion.div
               className="w-full h-full"
@@ -410,11 +410,10 @@ export default function Dashboard() {
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          className="hidden lg:flex lg:col-span-1 border border-slate-100 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 flex-col justify-between"
+          className="hidden lg:flex border border-slate-100 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 flex-col justify-between h-full w-full"
           style={{
-            height: 'clamp(240px, 20vw, 360px)',
             padding: 'clamp(0.85rem, 1.3vw, 1.5rem)',
-            borderRadius: 'clamp(1.5rem, 2.2vw, 2.5rem)'
+            borderRadius: 'clamp(1.25rem, 1.8vw, 2rem)'
           }}
         >
           <SmartCalendar />
@@ -422,14 +421,14 @@ export default function Dashboard() {
       </div>
 
       {/* Quick Actions */}
-      <section className="flex items-center gap-3 overflow-x-auto pt-3 pb-3 px-1 scrollbar-none flex-nowrap md:grid md:grid-cols-3 lg:grid-cols-5 md:pt-3 md:pb-3">
+      <section className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] sm:grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3.5 sm:gap-4 pt-1 pb-1">
         {quickActions.map((action) => (
           <QuickAction key={action.label} {...action} />
         ))}
       </section>
 
       {/* Simplified Widgets */}
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.6fr)]">
+      <div className="grid gap-5 sm:gap-6 grid-cols-1 lg:grid-cols-[minmax(0,1.8fr)_minmax(280px,1fr)] xl:grid-cols-[minmax(0,2fr)_minmax(300px,0.9fr)]">
         {/* Left main widgets */}
         <div className="space-y-6">
 

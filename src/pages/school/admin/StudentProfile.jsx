@@ -3,11 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
   User, GraduationCap, Calendar, BarChart2, DollarSign, 
   Mail, Smartphone, MapPin, ArrowLeft, Download, Users, Phone, Shield,
-  Edit2, Clock, CheckCircle, AlertCircle, TrendingUp, HeartPulse, Briefcase, FileText, Printer, Share2, Loader2, Send, Key, X, Plus, Trash2
+  Edit2, Clock, CheckCircle, AlertCircle, TrendingUp, HeartPulse, Briefcase, FileText, Printer, Share2, Loader2, Send, Key, X, Plus, Trash2,
+  UserX, FileCheck, CheckCircle2, XCircle, UserCheck
 } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/admin/Modal';
 import StudentForm from '@/components/school/admin/forms/StudentForm';
+import StudentExitWorkflowModal from '@/components/school/admin/students/StudentExitWorkflowModal';
 import { mapStudentFormToApiUpdate } from '@/lib/school/onboardPayload';
 import { notifyDataChanged } from '@/lib/school/apiData';
 import { exportToPDF } from "@/lib/school/pdfExport";
@@ -66,6 +68,7 @@ export default function StudentProfile() {
     new Date().toISOString().slice(0, 7) // YYYY-MM
   );
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [teachingMap, setTeachingMap] = useState(null);
 
   const [isAddPrevOpen, setIsAddPrevOpen] = useState(false);
@@ -688,6 +691,19 @@ export default function StudentProfile() {
   const motherPhone = parents.motherPhone || profile.motherPhone || (primaryContact === 'mother' ? profile.parentPhone : null);
   const guardianPhone = parents.guardianPhone || profile.guardianPhone || (primaryContact === 'guardian' ? profile.parentPhone : null);
 
+  const parentEmail = parents.email || profile.parentEmail || null;
+  const fatherEmail = parents.fatherEmail || profile.fatherEmail || parentEmail;
+  const motherEmail = parents.motherEmail || profile.motherEmail || parentEmail;
+  const guardianEmail = parents.guardianEmail || profile.guardianEmail || parentEmail;
+
+  const fatherWhatsapp = parents.fatherWhatsapp || profile.fatherWhatsapp || fatherPhone || (primaryContact === 'father' ? (parents.whatsappNumber || profile.parentPhone) : null);
+  const motherWhatsapp = parents.motherWhatsapp || profile.motherWhatsapp || motherPhone || (primaryContact === 'mother' ? (parents.whatsappNumber || profile.parentPhone) : null);
+  const guardianWhatsapp = parents.guardianWhatsapp || profile.guardianWhatsapp || guardianPhone || (primaryContact === 'guardian' ? (parents.whatsappNumber || profile.parentPhone) : null);
+
+  const fatherOccupation = parents.fatherOccupation || profile.fatherOccupation || (primaryContact === 'father' ? (parents.occupation || profile.parentOccupation) : null);
+  const motherOccupation = parents.motherOccupation || profile.motherOccupation || (primaryContact === 'mother' ? (parents.occupation || profile.parentOccupation) : null);
+  const guardianOccupation = parents.guardianOccupation || profile.guardianOccupation || (primaryContact === 'guardian' ? (parents.occupation || profile.parentOccupation) : null);
+
   return (
     <div className="w-full pb-24 sm:pb-36">
       {/* Header */}
@@ -723,6 +739,13 @@ export default function StudentProfile() {
           </button>
         </div>
       </div>
+
+      <StudentExitWorkflowModal
+        student={student}
+        isOpen={isExitModalOpen}
+        onClose={() => setIsExitModalOpen(false)}
+        onSuccess={() => fetchStudent()}
+      />
 
       {/* Send Credentials Modal */}
       {sendCredsOpen && (
@@ -1205,8 +1228,10 @@ export default function StudentProfile() {
             <TabButton active={activeTab === 'family'} onClick={() => setActiveTab('family')} icon={Users} label="Family Details" />
             <TabButton active={activeTab === 'academic'} onClick={() => setActiveTab('academic')} icon={GraduationCap} label="Academic" />
             <TabButton active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={Calendar} label="Attendance" />
-            <TabButton active={activeTab === 'performance'} onClick={() => setActiveTab('performance')} icon={BarChart2} label="Performance" />
+            {/* Performance tab hidden for now */}
+            {/* <TabButton active={activeTab === 'performance'} onClick={() => setActiveTab('performance')} icon={BarChart2} label="Performance" /> */}
             <TabButton active={activeTab === 'fees'} onClick={() => setActiveTab('fees')} icon={DollarSign} label="Fees & Payments" />
+            <TabButton active={activeTab === 'documents'} onClick={() => setActiveTab('documents')} icon={FileCheck} label="Documents & Verification" />
           </div>
 
           <AnimatePresence mode="wait">
@@ -1220,15 +1245,28 @@ export default function StudentProfile() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="md:col-span-2 space-y-8">
                     <div>
-                      <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Identity Details</h3>
+                      <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Identity & Category Details</h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <DetailItem label="Full Name" value={student.name} icon={User} />
                         <DetailItem label="Date of Birth" value={profile.dob ? new Date(profile.dob).toLocaleDateString() : '—'} icon={Calendar} />
                         <DetailItem label="Gender" value={profile.gender} icon={User} />
                         <DetailItem label="Blood Group" value={profile.bloodGroup} icon={HeartPulse} />
-                        <DetailItem label="National ID" value={profile.nationalId || 'Verified'} icon={CheckCircle} />
+                        <DetailItem label="Aadhaar / National ID" value={profile.nationalId || 'Verified'} icon={CheckCircle} />
+                        <DetailItem label="Caste / Category" value={profile.casteCategory || 'General'} icon={User} />
                       </div>
                     </div>
+
+                    <div>
+                      <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Previous School & Board Details</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                        <DetailItem label="Previous School Name" value={profile.previousSchoolName || '—'} icon={GraduationCap} />
+                        <DetailItem label="Previous Admission / Reg No" value={profile.previousAdmissionNo || '—'} icon={Shield} />
+                        <DetailItem label="Reason for Transfer" value={profile.reasonForTransfer || '—'} icon={FileText} className="sm:col-span-2" />
+                        <DetailItem label="Board Name" value={profile.boardName || 'CBSE / State Board'} icon={GraduationCap} />
+                        <DetailItem label="Board Registration No" value={profile.boardRegistrationNo || '—'} icon={Shield} />
+                      </div>
+                    </div>
+
                     <div>
                       <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Contact Information</h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -1269,48 +1307,59 @@ export default function StudentProfile() {
                         <span className="px-2 py-1 rounded-lg bg-white/20 text-[10px] font-bold tracking-tight uppercase">Allergy: {profile.allergies || 'None'}</span>
                       </div>
                     </div>
+
+                    {/* Status & Exit Card */}
+                    <div className="p-6 rounded-3xl bg-blue-50/60 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
+                      <h4 className="text-xs font-bold tracking-tight uppercase tracking-widest text-blue-800 dark:text-blue-200 mb-2 flex items-center gap-2">
+                        <UserCheck size={16} /> Student Enrollment Status
+                      </h4>
+                      <p className="text-sm font-extrabold text-blue-950 dark:text-blue-100 mb-4">
+                        Current Status: <span className="uppercase">{profile.status || (student.isActive ? 'ACTIVE' : 'INACTIVE')}</span>
+                      </p>
+                      <button
+                        onClick={() => navigate(`/school/admin/students/${id}/exit`)}
+                        className="w-full py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-blue-600/20 transition-all flex items-center justify-center gap-2"
+                      >
+                        <UserX size={14} /> Open Exit & TC Workflow
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
 
               {activeTab === 'family' && (
-                <div className="space-y-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-3">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
-                        <div className="flex items-center gap-3">
-                          <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest">Primary Contact Information</h3>
-                          <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold tracking-tight uppercase border border-blue-200 capitalize">
-                            {primaryContact}
-                          </span>
-                        </div>
-                        <button
-                          onClick={() => {
-                            setSendCredsForm({
-                              parentEmail: parents.email || profile.parentEmail || '',
-                              tempPassword: '',
-                            });
-                            setSendCredsOpen(true);
-                          }}
-                          className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 font-bold text-xs hover:bg-indigo-100 transition-all self-start sm:self-auto"
-                        >
-                          <Send size={14} />
-                          Send Credentials
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                        <DetailItem label="Parent Email" value={parents.email || profile.parentEmail} icon={Mail} />
-                        <DetailItem label="WhatsApp Number" value={parents.whatsappNumber || fatherPhone || motherPhone || guardianPhone || profile.parentPhone} icon={Phone} />
-                        <DetailItem label="Primary Occupation" value={parents.occupation || profile.parentOccupation} icon={Briefcase} />
-                      </div>
-                    </div>
+                <div className="space-y-6">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest">Family & Guardian Details</h3>
+                    <button
+                      onClick={() => {
+                        setSendCredsForm({
+                          parentEmail: parents.email || profile.parentEmail || '',
+                          tempPassword: '',
+                        });
+                        setSendCredsOpen(true);
+                      }}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 font-bold text-xs hover:bg-indigo-100 transition-all self-start sm:self-auto"
+                    >
+                      <Send size={14} />
+                      Send Credentials
+                    </button>
+                  </div>
 
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
-                          <User size={20} />
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
+                            <User size={20} />
+                          </div>
+                          <h4 className="font-bold text-slate-900 dark:text-white">Father's Details</h4>
                         </div>
-                        <h4 className="font-bold text-slate-900 dark:text-white">Father's Details</h4>
+                        {primaryContact === 'father' && (
+                          <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold uppercase tracking-wider border border-blue-200">
+                            Primary Contact
+                          </span>
+                        )}
                       </div>
                       <div className="space-y-4">
                         <div>
@@ -1321,15 +1370,34 @@ export default function StudentProfile() {
                           <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Phone Number</div>
                           <div className="text-sm font-bold text-slate-900 dark:text-white">{fatherPhone || '—'}</div>
                         </div>
+                        <div>
+                          <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">WhatsApp Number</div>
+                          <div className="text-sm font-bold text-slate-900 dark:text-white">{fatherWhatsapp || '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Parent Email</div>
+                          <div className="text-sm font-bold text-slate-900 dark:text-white">{fatherEmail || '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Primary Occupation</div>
+                          <div className="text-sm font-bold text-slate-900 dark:text-white">{fatherOccupation || '—'}</div>
+                        </div>
                       </div>
                     </div>
 
                     <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center">
-                          <User size={20} />
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center">
+                            <User size={20} />
+                          </div>
+                          <h4 className="font-bold text-slate-900 dark:text-white">Mother's Details</h4>
                         </div>
-                        <h4 className="font-bold text-slate-900 dark:text-white">Mother's Details</h4>
+                        {primaryContact === 'mother' && (
+                          <span className="px-2.5 py-0.5 rounded-full bg-pink-100 text-pink-700 text-[10px] font-bold uppercase tracking-wider border border-pink-200">
+                            Primary Contact
+                          </span>
+                        )}
                       </div>
                       <div className="space-y-4">
                         <div>
@@ -1340,16 +1408,31 @@ export default function StudentProfile() {
                           <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Phone Number</div>
                           <div className="text-sm font-bold text-slate-900 dark:text-white">{motherPhone || '—'}</div>
                         </div>
+                        <div>
+                          <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">WhatsApp Number</div>
+                          <div className="text-sm font-bold text-slate-900 dark:text-white">{motherWhatsapp || '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Parent Email</div>
+                          <div className="text-sm font-bold text-slate-900 dark:text-white">{motherEmail || '—'}</div>
+                        </div>
                       </div>
                     </div>
 
                     {(parents.guardianName || primaryContact === 'guardian' || profile.guardianName) && (
                       <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
-                            <Shield size={20} />
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                              <Shield size={20} />
+                            </div>
+                            <h4 className="font-bold text-slate-900 dark:text-white">Guardian's Details</h4>
                           </div>
-                          <h4 className="font-bold text-slate-900 dark:text-white">Guardian's Details</h4>
+                          {primaryContact === 'guardian' && (
+                            <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-wider border border-emerald-200">
+                              Primary Contact
+                            </span>
+                          )}
                         </div>
                         <div className="space-y-4">
                           <div>
@@ -1359,6 +1442,18 @@ export default function StudentProfile() {
                           <div>
                             <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Phone Number</div>
                             <div className="text-sm font-bold text-slate-900 dark:text-white">{guardianPhone || '—'}</div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">WhatsApp Number</div>
+                            <div className="text-sm font-bold text-slate-900 dark:text-white">{guardianWhatsapp || '—'}</div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Parent Email</div>
+                            <div className="text-sm font-bold text-slate-900 dark:text-white">{guardianEmail || '—'}</div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Primary Occupation</div>
+                            <div className="text-sm font-bold text-slate-900 dark:text-white">{guardianOccupation || '—'}</div>
                           </div>
                         </div>
                       </div>
@@ -1770,6 +1865,109 @@ export default function StudentProfile() {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'documents' && (
+                <div className="space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800">
+                    <div>
+                      <h3 className="text-sm font-extrabold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest">Document Verification Center</h3>
+                      <p className="text-xs font-semibold text-slate-400 mt-1">Review uploaded student certificates and verify status for compliance.</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1 rounded-xl bg-emerald-500/10 text-emerald-600 text-xs font-bold uppercase tracking-wider">
+                        {Object.values(profile.documentVerification || {}).filter(v => v?.status === 'VERIFIED').length} Verified
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[
+                      'Birth Certificate',
+                      'Aadhaar Card',
+                      'Medical / Health Record',
+                      'Transfer Certificate (TC)',
+                      'Previous Report Card',
+                      'Character Certificate',
+                      'Fee Clearance Certificate',
+                      'Migration Certificate',
+                      'Promotion / Pass Certificate',
+                      'Parent / Guardian ID',
+                      'Address Proof',
+                      'Caste / Category Certificate',
+                    ].map(docName => {
+                      const docUrl = profile.documents?.[docName] || profile.documents?.[docName.replace(/\s+/g, '_')];
+                      const verInfo = (profile.documentVerification || {})[docName] || { status: 'PENDING', remarks: '' };
+
+                      const updateDocStatus = async (newStatus) => {
+                        try {
+                          const updatedVer = {
+                            ...(profile.documentVerification || {}),
+                            [docName]: { status: newStatus, verifiedAt: new Date().toISOString() }
+                          };
+                          await api.put(`/students/${student.id}`, { documentVerification: updatedVer });
+                          toast.success(`${docName} status updated to ${newStatus}`);
+                          fetchStudent();
+                        } catch (err) {
+                          toast.error('Failed to update verification status');
+                        }
+                      };
+
+                      return (
+                        <div key={docName} className="p-5 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm flex flex-col justify-between space-y-4">
+                          <div>
+                            <div className="flex items-center justify-between gap-2 mb-2">
+                              <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider truncate">{docName}</h4>
+                              <span className={cn(
+                                "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0",
+                                verInfo.status === 'VERIFIED' ? "bg-emerald-100 text-emerald-700" :
+                                verInfo.status === 'REJECTED' ? "bg-rose-100 text-rose-700" :
+                                "bg-amber-100 text-amber-800"
+                              )}>
+                                {verInfo.status || 'PENDING'}
+                              </span>
+                            </div>
+
+                            {docUrl ? (
+                              <div className="flex items-center gap-2 mt-2">
+                                <a
+                                  href={docUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1"
+                                >
+                                  <FileText size={14} /> View File
+                                </a>
+                              </div>
+                            ) : (
+                              <p className="text-xs font-semibold text-slate-400 italic">Not Uploaded</p>
+                            )}
+                          </div>
+
+                          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Action:</span>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => updateDocStatus('VERIFIED')}
+                                className="px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-700 text-[10px] font-bold hover:bg-emerald-100 transition-colors"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => updateDocStatus('REJECTED')}
+                                className="px-2.5 py-1 rounded-xl bg-rose-50 text-rose-700 text-[10px] font-bold hover:bg-rose-100 transition-colors"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

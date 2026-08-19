@@ -64,6 +64,7 @@ export interface User {
   /** School module only — institutes.id from school DB */
   instituteId?: string;
   tenantName?: string;
+  tenantState?: string;
   isFirstLogin?: boolean;
   onboardingRequired?: boolean;
   permissionGroup?: string;
@@ -107,7 +108,9 @@ export interface Tenant {
   teacherCount: number;
   joinedAt: string;
   operationalModel?: "TEACHER_BASED" | "STAFF_BASED";
+  adminPortalEnabled?: boolean;
   teacherPortalEnabled?: boolean;
+  studentPortalEnabled?: boolean;
   parentPortalEnabled?: boolean;
   multiAdminEnabled?: boolean;
 }

@@ -20,7 +20,8 @@ import {
   TrendingUp,
   Plus,
   BarChart3,
-  ClipboardList
+  ClipboardList,
+  Megaphone
 } from "lucide-react";
 import { useAuth } from "@/context/SchoolAuthContext";
 import { useSchoolFeature } from "@/hooks/use-school-feature";
@@ -36,6 +37,7 @@ const parentPages = [
   { name: 'Dashboard', path: '/school/parent/dashboard', icon: Home, keywords: 'overview summary' },
   { name: 'Child Report', path: '/school/parent/child', icon: GraduationCap, keywords: 'child student attendance marks performance progress' },
   { name: 'Communication', path: '/school/parent/communication', icon: MessageCircle, keywords: 'chat message teacher contact' },
+  { name: 'Notices', path: '/school/parent/announcements', icon: Megaphone, keywords: 'announcements notice board notices circulars letters dynamic broadcast updates' },
   { name: 'Alerts & Notifications', path: '/school/parent/notifications', icon: Bell, keywords: 'alerts notice notifications updates' },
   { name: 'Profile', path: '/school/parent/profile', icon: UserCircle, keywords: 'account settings password' },
 ];
@@ -47,6 +49,7 @@ const parentNavGroups = [
       { label: "Dashboard", path: "/school/parent/dashboard", icon: Home, end: true },
       { label: "Child Report", path: "/school/parent/child", icon: GraduationCap, featType: 'module', featKey: 'reports' },
       { label: "Communication", path: "/school/parent/communication", icon: MessageCircle, featType: 'module', featKey: 'chat' },
+      { label: "Notices", path: "/school/parent/announcements", icon: Megaphone },
       { label: "Alerts", path: "/school/parent/notifications", icon: Bell },
     ],
   },
@@ -85,6 +88,7 @@ export default function ParentLayout() {
     { label: "Dashboard", path: "/school/parent/dashboard", icon: Home },
     ...(hasReports ? [{ label: "Report", path: "/school/parent/child", icon: GraduationCap }] : []),
     ...(hasChat ? [{ label: "Chat", path: "/school/parent/communication", icon: MessageCircle }] : []),
+    { label: "Notices", path: "/school/parent/announcements", icon: Megaphone },
     { label: "Alerts", path: "/school/parent/notifications", icon: Bell, badge: unreadCount },
     { label: "Profile", path: "/school/parent/profile", icon: UserCircle },
   ];
@@ -715,7 +719,7 @@ export default function ParentLayout() {
 
         <MaintenanceNotice />
 
-        <main className="flex-1 overflow-x-hidden overflow-y-auto p-3 sm:p-5 lg:p-6">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto px-3 sm:px-6 lg:px-8 py-4 lg:py-6">
           <div className="h-full w-full">
             <Suspense fallback={
               <div className="flex h-[50vh] w-full items-center justify-center">
@@ -764,6 +768,7 @@ function getPageTitle(pathname: string) {
   if (pathname.endsWith("/dashboard")) return "Dashboard";
   if (pathname.endsWith("/child")) return "Child Report";
   if (pathname.endsWith("/communication")) return "Communication";
+  if (pathname.endsWith("/announcements")) return "Notices";
   if (pathname.endsWith("/notifications")) return "Alerts";
   if (pathname.endsWith("/profile")) return "Profile";
   return "Parent Portal";

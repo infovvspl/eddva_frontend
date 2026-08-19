@@ -6,13 +6,14 @@ import { Play, Trophy, ArrowLeft, Loader2, Zap, Flame, ShieldAlert, Sparkles } f
 export default function MathSprintHome({ onStart, onViewLeaderboard }) {
   const hasGameQuizzes = useSchoolFeature('ai', 'ai_game_quizzes');
   const [difficulty, setDifficulty] = useState('medium');
+  const [mode, setMode] = useState('ranked');
   const [starting, setStarting] = useState(false);
 
   const handleStart = async () => {
     if (!hasGameQuizzes) return;
     setStarting(true);
     try {
-      await onStart(difficulty);
+      await onStart(difficulty, mode);
     } catch (err) {
       console.error(err);
     } finally {
@@ -37,53 +38,83 @@ export default function MathSprintHome({ onStart, onViewLeaderboard }) {
           <Zap className="h-6 w-6 animate-pulse" />
         </div>
         <h1 className="text-3xl font-black text-slate-900 dark:text-white">Math Sprint</h1>
-        <p className="text-sm font-medium text-slate-500">60-second rapid-fire arithmetic sums. Test your math speed!</p>
+        <p className="text-sm font-medium text-slate-500">Rapid-fire arithmetic sums. Keep answering correctly to survive and increase difficulty!</p>
       </div>
-
+ 
       {/* Rules Board */}
       <section className="rounded-2xl border border-slate-200 bg-gradient-to-r from-rose-50/50 to-white p-5 dark:border-slate-800 dark:from-slate-900/50 dark:to-slate-950 shadow-sm">
         <h2 className="text-sm font-black uppercase tracking-wider text-rose-700 dark:text-rose-400 flex items-center gap-2">
           <Flame className="h-4 w-4 animate-bounce" /> Sprint Mechanics & Rewards
         </h2>
         <ul className="mt-3 space-y-2.5 text-xs font-semibold text-slate-600 dark:text-slate-400">
-          <li className="flex items-center gap-2">⏱️ <strong>60-Second Blitz</strong>: Answer as many equations as you can before time runs out.</li>
+          <li className="flex items-center gap-2">⏱️ <strong>15-Second Limit</strong>: Answer each equation before time runs out.</li>
+          <li className="flex items-center gap-2">⚡ <strong>Survival Mode</strong>: The sprint keeps running with increasing difficulty as long as you are correct!</li>
+          <li className="flex items-center gap-2">❌ <strong>Sudden Death</strong>: A single wrong answer or running out of time ends the run immediately.</li>
           <li className="flex items-center gap-2">✨ <strong>Base Loot</strong>: +10 XP and +1 Coin per correct answer.</li>
           <li className="flex items-center gap-2">🔥 <strong>Fever Mode (3+ Streak)</strong>: Score is doubled (x2 multiplier / +20 XP per sum)!</li>
           <li className="flex items-center gap-2">⚡ <strong>Supercharge (5+ Streak)</strong>: Score is tripled (x3 multiplier / +30 XP per sum)!</li>
-          <li className="flex items-center gap-2">❌ <strong>Striking Out</strong>: A wrong answer immediately resets your multiplier back to 1x.</li>
           <li className="flex items-center gap-2 text-rose-600 dark:text-rose-400">🏆 <strong>Speedster Milestone</strong>: Reach a score of <strong>150+</strong> in a single run to claim the <strong className="font-black">Math Speedster Badge</strong>!</li>
         </ul>
       </section>
 
       {/* Configuration Cards */}
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-5">
-        {/* Difficulty Selection */}
+        {/* Mode Selector */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
-            <ShieldAlert className="h-4 w-4" /> Selected Grade Difficulty
+            🎮 Game Mode
           </label>
-          <div className="grid grid-cols-3 gap-2 mt-1">
+          <div className="grid grid-cols-2 gap-2 mt-1">
             {[
-              { id: 'easy', label: 'Number Sparks', desc: 'Quick addition, subtraction, and small times-table wins.' },
-              { id: 'medium', label: 'Equation Dash', desc: 'Double-digit puzzles, division, decimals, and speed traps.' },
-              { id: 'hard', label: 'Lightning Logic', desc: 'Percentages, bigger numbers, and sharp mental-maths twists.' }
-            ].map((diff) => (
+              { id: 'ranked', label: 'Ranked Play', desc: 'Auto skill difficulty' },
+              { id: 'free_play', label: 'Free Play', desc: 'Practice difficulty choice' },
+            ].map((m) => (
               <button
-                key={diff.id}
+                key={m.id}
                 type="button"
-                onClick={() => setDifficulty(diff.id)}
-                className={`flex flex-col items-center justify-between p-3.5 rounded-xl border-2 text-center transition ${
-                  difficulty === diff.id
-                    ? 'border-rose-500 bg-rose-50/50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-300'
-                    : 'border-slate-100 bg-slate-50/50 text-slate-500 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400 dark:hover:bg-slate-900'
+                onClick={() => setMode(m.id)}
+                className={`py-3 px-4 text-xs font-black rounded-lg border text-left transition flex flex-col gap-0.5 ${
+                  mode === m.id
+                    ? 'border-rose-500 bg-rose-50/50 text-rose-750 dark:bg-rose-950/20 dark:text-rose-300'
+                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400'
                 }`}
               >
-                <span className="text-xs font-black uppercase tracking-wider">{diff.label}</span>
-                <span className="text-[9px] font-bold text-slate-400 mt-2 leading-snug">{diff.desc}</span>
+                <span>{m.label}</span>
+                <span className="text-[9px] font-medium text-slate-455 dark:text-slate-500">{m.desc}</span>
               </button>
             ))}
           </div>
         </div>
+
+        {/* Difficulty Selection */}
+        {mode === 'free_play' && (
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+              <ShieldAlert className="h-4 w-4" /> Selected Grade Difficulty
+            </label>
+            <div className="grid grid-cols-3 gap-2 mt-1">
+              {[
+                { id: 'easy', label: 'Number Sparks', desc: 'Quick addition, subtraction, and small times-table wins.' },
+                { id: 'medium', label: 'Equation Dash', desc: 'Double-digit puzzles, division, decimals, and speed traps.' },
+                { id: 'hard', label: 'Lightning Logic', desc: 'Percentages, bigger numbers, and sharp mental-maths twists.' }
+              ].map((diff) => (
+                <button
+                  key={diff.id}
+                  type="button"
+                  onClick={() => setDifficulty(diff.id)}
+                  className={`flex flex-col items-center justify-between p-3.5 rounded-xl border-2 text-center transition ${
+                    difficulty === diff.id
+                      ? 'border-rose-500 bg-rose-50/50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-300'
+                      : 'border-slate-100 bg-slate-50/50 text-slate-500 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400 dark:hover:bg-slate-900'
+                  }`}
+                >
+                  <span className="text-xs font-black uppercase tracking-wider">{diff.label}</span>
+                  <span className="text-[9px] font-bold text-slate-400 mt-2 leading-snug">{diff.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Play Action Buttons */}
         <div className="pt-2 flex flex-col gap-2">

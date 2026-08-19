@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   Ticket,
   Plus,
@@ -31,6 +32,7 @@ import {
 } from '@/constants/ticket-categories';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 
 export default function SupportTicketsPage() {
   const navigate = useNavigate();
@@ -139,26 +141,32 @@ export default function SupportTicketsPage() {
   return (
     <div className="w-full space-y-6">
       {/* Page Header */}
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-              <Ticket className="h-5 w-5" />
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-blue-100 border border-blue-200/80 rounded-[2rem] p-4 sm:px-6 sm:py-5 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 mb-8"
+      >
+        <div className="min-w-0 flex-1 pl-1 sm:pl-0">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50/80 border border-indigo-100 text-indigo-600 shrink-0">
+              <Ticket className="h-5 w-5 shrink-0" />
             </div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Support Tickets</h1>
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight whitespace-nowrap truncate">
+              Support Tickets
+            </h1>
           </div>
-          <p className="mt-1 text-xs font-semibold text-slate-500">
+          <p className="text-xs sm:text-sm font-bold text-slate-500/80 mt-1.5 whitespace-nowrap truncate">
             Manage institute support requests and communicate directly with platform support.
           </p>
         </div>
 
         <button
           onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-indigo-600/20 hover:bg-indigo-700 transition-all"
+          className="inline-flex items-center gap-2 rounded-[1.25rem] h-[42px] px-5 text-sm font-black text-white shadow-sm hover:opacity-90 transition-all shrink-0 whitespace-nowrap bg-indigo-600 hover:bg-indigo-700"
         >
-          <Plus className="h-4 w-4" /> Create Ticket to Super Admin
+          <Plus className="h-4 w-4 shrink-0" /> Create Ticket to Super Admin
         </button>
-      </div>
+      </motion.div>
 
       {/* Summary Metrics */}
       <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -242,53 +250,59 @@ export default function SupportTicketsPage() {
           </div>
 
           <div>
-            <select
+            <CustomSelect
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 pl-3 pr-8 py-2 text-xs font-semibold text-slate-700 focus:border-indigo-500 focus:outline-none"
-            >
-              <option value="">All Categories</option>
-              {TICKET_CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => {
+                setSelectedCategory(v);
+                setPage(1);
+              }}
+              options={[
+                { value: '', label: 'All Categories' },
+                ...TICKET_CATEGORIES.map((c) => ({ value: c, label: c })),
+              ]}
+              triggerClassName="flex h-[38px] w-full items-center justify-between gap-2 px-4 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 outline-none hover:bg-slate-50 focus:border-indigo-500 transition"
+            />
           </div>
 
           <div>
-            <select
+            <CustomSelect
               value={selectedPriority}
-              onChange={(e) => setSelectedPriority(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 pl-3 pr-8 py-2 text-xs font-semibold text-slate-700 focus:border-indigo-500 focus:outline-none"
-            >
-              <option value="">All Priorities</option>
-              {TICKET_PRIORITIES.map((p) => (
-                <option key={p} value={p}>
-                  {PRIORITY_CONFIG[p]?.label} Priority
-                </option>
-              ))}
-            </select>
+              onChange={(v) => {
+                setSelectedPriority(v);
+                setPage(1);
+              }}
+              options={[
+                { value: '', label: 'All Priorities' },
+                ...TICKET_PRIORITIES.map((p) => ({
+                  value: p,
+                  label: `${PRIORITY_CONFIG[p]?.label} Priority`,
+                })),
+              ]}
+              triggerClassName="flex h-[38px] w-full items-center justify-between gap-2 px-4 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 outline-none hover:bg-slate-50 focus:border-indigo-500 transition"
+            />
           </div>
 
           <div>
-            <select
+            <CustomSelect
               value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 pl-3 pr-8 py-2 text-xs font-semibold text-slate-700 focus:border-indigo-500 focus:outline-none"
-            >
-              <option value="">All Statuses</option>
-              {TICKET_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {STATUS_CONFIG[s]?.label}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => {
+                setSelectedStatus(v);
+                setPage(1);
+              }}
+              options={[
+                { value: '', label: 'All Statuses' },
+                ...TICKET_STATUSES.map((s) => ({
+                  value: s,
+                  label: STATUS_CONFIG[s]?.label,
+                })),
+              ]}
+              triggerClassName="flex h-[38px] w-full items-center justify-between gap-2 px-4 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 outline-none hover:bg-slate-50 focus:border-indigo-500 transition"
+            />
           </div>
         </div>
 
-        {/* Tickets Table */}
-        <div className="overflow-x-auto">
+        {/* Tickets Container */}
+        <div>
           {loading ? (
             <div className="flex h-64 items-center justify-center">
               <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
@@ -300,80 +314,160 @@ export default function SupportTicketsPage() {
               <p className="mt-1 text-xs">Try adjusting your filters or create a new support ticket.</p>
             </div>
           ) : (
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                  <th className="px-5 py-3.5">Ticket ID</th>
-                  <th className="px-5 py-3.5">Subject</th>
-                  <th className="px-5 py-3.5">Raised By</th>
-                  <th className="px-5 py-3.5">Category</th>
-                  <th className="px-5 py-3.5">Priority</th>
-                  <th className="px-5 py-3.5">Status</th>
-                  <th className="px-5 py-3.5">Last Activity</th>
-                  <th className="px-5 py-3.5 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
+            <>
+              {/* Mobile Vertical Stack View */}
+              <div className="block sm:hidden space-y-3 p-3 bg-slate-50/60">
                 {tickets.map((t) => {
                   const prio = PRIORITY_CONFIG[t.priority] || PRIORITY_CONFIG.MEDIUM;
                   const stat = STATUS_CONFIG[t.status] || STATUS_CONFIG.OPEN;
 
                   return (
-                    <tr
+                    <div
                       key={t.id}
                       onClick={() => navigate(`/admin/support-tickets/${t.id}`)}
-                      className="hover:bg-slate-50/80 cursor-pointer transition-colors"
+                      className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm active:scale-[0.99] transition-all cursor-pointer space-y-3"
                     >
-                      <td className="px-5 py-4 font-bold text-indigo-600">{t.ticketNumber}</td>
-                      <td className="px-5 py-4 font-bold text-slate-900 max-w-xs truncate">
-                        {t.subject}
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className="block font-bold text-slate-800">
-                          {t.createdByName || 'User'}
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-black text-xs text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100">
+                          {t.ticketNumber}
                         </span>
-                        <span className="text-[10px] uppercase text-slate-400 font-semibold">
-                          {t.createdByRole}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 text-slate-600">{t.category}</td>
-                      <td className="px-5 py-4">
-                        <span
-                          className={cn(
-                            'rounded-md px-2 py-0.5 text-[11px] font-bold border',
-                            prio.bg,
-                            prio.text,
-                            prio.border,
+                        <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                          {t.escalationStatus === 'ESCALATED' && (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-purple-600 border border-purple-100 bg-purple-50 rounded-md px-2 py-0.5">
+                              <ShieldAlert className="h-3 w-3 shrink-0" /> Escalated
+                            </span>
                           )}
-                        >
-                          {prio.label}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span
-                          className={cn(
-                            'rounded-md px-2 py-0.5 text-[11px] font-bold border',
-                            stat.bg,
-                            stat.text,
-                            stat.border,
-                          )}
-                        >
-                          {stat.label}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 text-slate-500 font-normal">
-                        {new Date(t.updatedAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-5 py-4 text-right">
-                        <span className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 group-hover:translate-x-1 transition-transform">
+                          <span
+                            className={cn(
+                              'rounded-md px-2 py-0.5 text-[10px] font-bold border',
+                              prio.bg,
+                              prio.text,
+                              prio.border,
+                            )}
+                          >
+                            {prio.label}
+                          </span>
+                          <span
+                            className={cn(
+                              'rounded-md px-2 py-0.5 text-[10px] font-bold border',
+                              stat.bg,
+                              stat.text,
+                              stat.border,
+                            )}
+                          >
+                            {stat.label}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900 leading-snug">{t.subject}</h4>
+                        <div className="mt-1.5 flex items-center gap-2 flex-wrap text-[11px] text-slate-500">
+                          <span className="font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">
+                            {t.category}
+                          </span>
+                          <span>•</span>
+                          <span>{new Date(t.updatedAt).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                        <div>
+                          <span className="block font-bold text-slate-800 text-[11px]">
+                            {t.createdByName || 'User'}
+                          </span>
+                          <span className="text-[9px] uppercase text-slate-400 font-bold tracking-wider">
+                            {t.createdByRole}
+                          </span>
+                        </div>
+
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600">
                           View <ChevronRight className="h-3.5 w-3.5" />
                         </span>
-                      </td>
-                    </tr>
+                      </div>
+                    </div>
                   );
                 })}
-              </tbody>
-            </table>
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                      <th className="px-5 py-3.5">Ticket ID</th>
+                      <th className="px-5 py-3.5">Subject</th>
+                      <th className="px-5 py-3.5">Raised By</th>
+                      <th className="px-5 py-3.5">Category</th>
+                      <th className="px-5 py-3.5">Priority</th>
+                      <th className="px-5 py-3.5">Status</th>
+                      <th className="px-5 py-3.5">Last Activity</th>
+                      <th className="px-5 py-3.5 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
+                    {tickets.map((t) => {
+                      const prio = PRIORITY_CONFIG[t.priority] || PRIORITY_CONFIG.MEDIUM;
+                      const stat = STATUS_CONFIG[t.status] || STATUS_CONFIG.OPEN;
+
+                      return (
+                        <tr
+                          key={t.id}
+                          onClick={() => navigate(`/admin/support-tickets/${t.id}`)}
+                          className="hover:bg-slate-50/80 cursor-pointer transition-colors"
+                        >
+                          <td className="px-5 py-4 font-bold text-indigo-600">{t.ticketNumber}</td>
+                          <td className="px-5 py-4 font-bold text-slate-900 max-w-xs truncate">
+                            {t.subject}
+                          </td>
+                          <td className="px-5 py-4">
+                            <span className="block font-bold text-slate-800">
+                              {t.createdByName || 'User'}
+                            </span>
+                            <span className="text-[10px] uppercase text-slate-400 font-semibold">
+                              {t.createdByRole}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 text-slate-600">{t.category}</td>
+                          <td className="px-5 py-4">
+                            <span
+                              className={cn(
+                                'rounded-md px-2 py-0.5 text-[11px] font-bold border',
+                                prio.bg,
+                                prio.text,
+                                prio.border,
+                              )}
+                            >
+                              {prio.label}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4">
+                            <span
+                              className={cn(
+                                'rounded-md px-2 py-0.5 text-[11px] font-bold border',
+                                stat.bg,
+                                stat.text,
+                                stat.border,
+                              )}
+                            >
+                              {stat.label}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 text-slate-500 font-normal">
+                            {new Date(t.updatedAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-5 py-4 text-right">
+                            <span className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 group-hover:translate-x-1 transition-transform">
+                              View <ChevronRight className="h-3.5 w-3.5" />
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
 

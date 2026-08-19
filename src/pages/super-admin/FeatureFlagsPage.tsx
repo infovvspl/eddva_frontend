@@ -2,8 +2,9 @@ import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
   Sparkles, MessageCircleQuestion, FileText, ClipboardList, CalendarCheck,
   Compass, Video, MessageSquare, Loader2, ChevronDown, ChevronUp, Search, Filter,
-  Zap, Presentation, Languages, FileSearch, GraduationCap, Users, Settings, Shield, User
+  Zap, Presentation, Languages, FileSearch, GraduationCap, Users, Settings, Shield, User, BarChart3, PackageOpen, Check
 } from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import { AI_FEATURES } from "@/lib/constants/aiFeatures";
 import { MASTER_MODULE_FEATURES, ROLE_MODULE_FEATURES, isModuleEnabled, DEFAULT_MODULES } from "@/lib/constants/moduleFeatures";
 import api from "@/lib/api/school-client";
@@ -17,7 +18,7 @@ import { cn } from "@/components/school/admin/Skeleton";
 const IconMap: Record<string, React.FC<any>> = {
   MessageCircleQuestion, FileText, ClipboardList, CalendarCheck,
   Compass, Video, MessageSquare, Sparkles,
-  Zap, Presentation, Languages, FileSearch, GraduationCap, Users, Settings, Shield, User
+  Zap, Presentation, Languages, FileSearch, GraduationCap, Users, Settings, Shield, User, BarChart3
 };
 
 // ── Toggle ───────────────────────────────────────────────────────────────────
@@ -62,7 +63,7 @@ const FeatureGroupCard = ({
               <Icon className="h-6 w-6" />
             </div>
             <div className="flex items-baseline gap-2 min-w-0 flex-1">
-              <p className={`text-sm font-bold truncate shrink-0 max-w-[140px] ${isMasterEnabled ? "text-slate-900" : "text-slate-500"}`}>{master.label}</p>
+              <p className={`text-sm font-bold truncate shrink-0 ${isMasterEnabled ? "text-slate-900" : "text-slate-500"}`}>{master.label}</p>
               <p className="text-xs text-slate-500 truncate hidden sm:block">&mdash; {master.description}</p>
             </div>
           </div>
@@ -299,13 +300,52 @@ function normalizeModules(raw: any): Record<string, boolean> {
 
 // ── Expandable school row ────────────────────────────────────────────────────
 
-const SchoolRow = ({ school, onSaved }: { school: any; onSaved: (id: string, patch: any) => void }) => {
+const SchoolRow = ({ school, onSaved, globalErpModules }: { school: any; onSaved: (id: string, patch: any) => void; globalErpModules: any[] }) => {
   const [expanded, setExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Local state for AI toggles (UI-only for this session)
   const [localAiEnabled, setLocalAiEnabled] = useState<boolean>(() => school.ai_enabled ?? school.aiEnabled ?? false);
   const [localAiFeatures, setLocalAiFeatures] = useState<Record<string, boolean>>(() => normalizeAi(school.ai_features ?? school.aiFeatures));
+
+  // ERP Module state
+  const [erpModules, setErpModules] = useState<any[]>([]);
+  const [erpLoading, setErpLoading] = useState(false);
+  const [erpUpdating, setErpUpdating] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (expanded && erpModules.length === 0 && !erpLoading) {
+      loadErpModules();
+    }
+  }, [expanded]);
+
+  const loadErpModules = async () => {
+    try {
+      setErpLoading(true);
+      const res = await apiClient.get(`/super-admin/school/institutes/${school.id}/erp-modules`);
+      setErpModules(res.data?.data || []);
+    } catch (err) {
+      toast.error('Failed to load ERP module assignments');
+    } finally {
+      setErpLoading(false);
+    }
+  };
+
+  const toggleErpAssignment = async (moduleId: string, currentStatus: boolean) => {
+    try {
+      setErpUpdating(moduleId);
+      await apiClient.post(`/super-admin/school/institutes/${school.id}/erp-modules/${moduleId}/toggle`, {
+        is_active: !currentStatus
+      });
+      // Update local state instead of refetching to be fast
+      setErpModules(prev => prev.map(m => m.module_id === moduleId ? { ...m, is_assigned: !currentStatus } : m));
+      toast.success('ERP Module updated');
+    } catch (err) {
+      toast.error('Failed to update ERP module');
+    } finally {
+      setErpUpdating(null);
+    }
+  };
 
   // Sync state with school prop changes
   useEffect(() => {
@@ -418,6 +458,46 @@ const SchoolRow = ({ school, onSaved }: { school: any; onSaved: (id: string, pat
               </div>
             </div>
 
+              {/* ERP Features Column */}
+              {globalErpModules.length > 0 && (
+                <div className="mt-8">
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2">
+                    ERP Modules
+                  </h3>
+                  {erpLoading ? (
+                    <div className="flex items-center justify-center py-6">
+                      <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {erpModules.map(mod => {
+                        const Icon = (LucideIcons as any)[mod.icon] || LucideIcons.Box;
+                        const isAssigned = mod.is_assigned;
+                        const colorClass = mod.color || 'slate';
+                        return (
+                          <div key={mod.module_id} className={`w-full rounded-lg border transition-all ${isAssigned ? 'border-slate-200 bg-white shadow-sm' : 'border-slate-100 bg-slate-50 opacity-80'}`}>
+                            <div className="p-3 flex items-center justify-between">
+                              <div className="flex items-center gap-3 min-w-0 flex-1 mr-4">
+                                <div className={`rounded-md p-1.5 shrink-0 ${isAssigned ? `bg-${colorClass}-100 text-${colorClass}-600` : 'bg-slate-200 text-slate-400'}`}>
+                                  {erpUpdating === mod.module_id ? <Loader2 className="w-5 h-5 animate-spin" /> : <Icon className="h-5 w-5" />}
+                                </div>
+                                <div className="flex flex-col min-w-0 flex-1">
+                                  <p className={`text-sm font-bold truncate ${isAssigned ? "text-slate-900" : "text-slate-500"}`}>{mod.name}</p>
+                                  <p className="text-[10px] text-slate-500 truncate">{mod.description || 'No description'}</p>
+                                </div>
+                              </div>
+                              <div className="shrink-0">
+                                <Toggle enabled={isAssigned} onChange={() => toggleErpAssignment(mod.module_id, isAssigned)} disabled={saving || erpUpdating === mod.module_id} />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
             {/* AI Features Column */}
             <div className="w-full">
               <h3 className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2 flex items-center gap-2">
@@ -458,6 +538,7 @@ const FeatureFlagsPage = () => {
   const [globalAiDefault, setGlobalAiDefault] = useState<boolean>(true);
 
   const [schools, setSchools] = useState<any[]>([]);
+  const [globalErpModules, setGlobalErpModules] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Search & Filter States
@@ -468,7 +549,19 @@ const FeatureFlagsPage = () => {
 
   useEffect(() => { localStorage.setItem("module_feature_defaults", JSON.stringify(moduleDefaults)); }, [moduleDefaults]);
 
-  useEffect(() => { loadSchools(); }, []);
+  useEffect(() => { 
+    loadSchools(); 
+    loadGlobalErpModules();
+  }, []);
+
+  async function loadGlobalErpModules() {
+    try {
+      const res = await apiClient.get('/super-admin/school/erp-modules');
+      setGlobalErpModules(res.data?.data || []);
+    } catch {
+      // ignore
+    }
+  }
 
   async function loadSchools() {
     try {
@@ -505,14 +598,16 @@ const FeatureFlagsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 px-3 sm:px-8 py-6 sm:py-10 md:px-12 w-full text-slate-900 pb-24">
-      <div className="mx-auto max-w-[1600px] space-y-8 sm:space-y-10">
+    <div className="w-full space-y-4 sm:space-y-6 text-slate-900">
+      <div className="w-full space-y-4 sm:space-y-6">
         
-        <header className="pb-2">
-          <h1 className="text-2xl sm:text-[32px] font-bold text-slate-900 tracking-tight">Feature Flags</h1>
-          <p className="mt-1.5 font-medium text-slate-500 text-xs sm:text-[15px]">
-            Control platform modules and AI features globally or per school.
-          </p>
+        <header className="mb-4 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 bg-blue-100 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
+          <div>
+            <h1 className="text-2xl sm:text-[32px] font-bold text-slate-900 tracking-tight">Feature Flags</h1>
+            <p className="mt-1 font-medium text-slate-500 text-xs sm:text-sm">
+              Control AI features globally or per coaching institute.
+            </p>
+          </div>
         </header>
 
         {/* ── Global Defaults ─────────────────────────────────────────────── */}
@@ -694,7 +789,7 @@ const FeatureFlagsPage = () => {
           ) : (
             <div className="space-y-6">
               {filteredSchools.map(school => (
-                <SchoolRow key={school.id} school={school} onSaved={handleSaved} />
+                <SchoolRow key={school.id} school={school} onSaved={handleSaved} globalErpModules={globalErpModules} />
               ))}
             </div>
           )}

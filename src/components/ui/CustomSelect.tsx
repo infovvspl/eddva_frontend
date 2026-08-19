@@ -112,8 +112,8 @@ export const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
         disabled={disabled}
         className={
           triggerClassName ||
-          `flex h-full w-full items-center justify-between gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-medium outline-none hover:bg-slate-50 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition disabled:opacity-50 disabled:cursor-not-allowed ${
-            selectedOption ? "text-slate-700" : "text-slate-400"
+          `flex h-[50px] min-h-[50px] w-full items-center justify-between gap-2 px-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm text-sm font-semibold outline-none hover:bg-slate-50/80 focus:border-blue-500 focus:shadow-lg focus:shadow-blue-500/10 transition disabled:opacity-50 disabled:cursor-not-allowed ${
+            selectedOption ? "text-slate-900 dark:text-white" : "text-slate-400"
           }`
         }
       >

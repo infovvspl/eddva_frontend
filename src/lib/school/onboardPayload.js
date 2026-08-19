@@ -182,6 +182,22 @@ function buildStudentBody(form) {
     medicalConditions: form.medicalConditions || null,
     allergies: form.allergies || null,
 
+    // ── Joining & Previous School / Board / Category ───────────────
+    previousSchoolName: form.previousSchoolName || form.previous_school_name || null,
+    previous_school_name: form.previousSchoolName || form.previous_school_name || null,
+    previousAdmissionNo: form.previousAdmissionNo || form.previous_admission_no || null,
+    previous_admission_no: form.previousAdmissionNo || form.previous_admission_no || null,
+    reasonForTransfer: form.reasonForTransfer || form.reason_for_transfer || null,
+    reason_for_transfer: form.reasonForTransfer || form.reason_for_transfer || null,
+    casteCategory: form.casteCategory || form.caste_category || null,
+    caste_category: form.casteCategory || form.caste_category || null,
+    boardRegistrationNo: form.boardRegistrationNo || form.board_registration_no || null,
+    board_registration_no: form.boardRegistrationNo || form.board_registration_no || null,
+    boardName: form.boardName || form.board_name || null,
+    board_name: form.boardName || form.board_name || null,
+    documentVerification: form.documentVerification || form.document_verification || {},
+    document_verification: form.documentVerification || form.document_verification || {},
+
     // ── Documents ─────────────────────────────────────────────────
     documents: form.documents || {},
   };

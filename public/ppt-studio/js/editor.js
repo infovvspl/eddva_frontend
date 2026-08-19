@@ -70,6 +70,24 @@ window.SlideEditor = {
       });
     }
 
+    // ---- Upload your own image ------------------------------
+    const uploadBtn = document.getElementById('upload-image-btn');
+    const fileInput = document.getElementById('edit-image-file');
+    if (uploadBtn && fileInput) {
+      uploadBtn.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) this.uploadImage(file);
+        e.target.value = '';  // allow re-selecting the same file
+      });
+    }
+
+    // ---- Remove the image -----------------------------------
+    const removeBtn = document.getElementById('remove-image-btn');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', () => this.removeImage());
+    }
+
     // ---- Image size selector --------------------------------
     const imageSizeSelect = document.getElementById('edit-image-size');
     if (imageSizeSelect) {
@@ -152,7 +170,7 @@ window.SlideEditor = {
     });
 
     // Image fit
-    const fit = slideData.imageFit || 'cover';
+    const fit = slideData.imageFit || 'contain';
     document.querySelectorAll('#edit-image-fit .fit-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.fit === fit);
     });
@@ -394,7 +412,8 @@ window.SlideEditor = {
         window.SlidePreview.currentSlideIndex,
         window.presentationData.title,
         slide,
-        window.presentationData.slides.length
+        window.presentationData.slides.length,
+        window.App && window.App.scope
       );
 
       // Merge new data into the existing slide (preserve position info)
@@ -492,6 +511,75 @@ window.SlideEditor = {
         btn.disabled = false;
       }
     }
+  },
+
+  /**
+   * Upload the teacher's own image file and set it on the current slide
+   * (stored inline as a base64 data URI, so it exports and previews directly).
+   */
+  uploadImage(file) {
+    const MAX_BYTES = 8 * 1024 * 1024;  // 8 MB
+    if (!/^image\//.test(file.type)) {
+      if (window.App) window.App.showToast('Please choose an image file.', 'error');
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      if (window.App) window.App.showToast('Image is too large (max 8 MB).', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUri = reader.result;  // "data:image/…;base64,…"
+      const slide = this._getCurrentSlide();
+      if (slide) {
+        slide.imageBase64 = dataUri;
+        slide.imageUrl = '';  // uploaded image wins over any searched URL
+      }
+
+      const imgPreview = document.getElementById('edit-image-preview');
+      const imgPlaceholder = document.getElementById('image-placeholder');
+      if (imgPreview) {
+        imgPreview.src = dataUri;
+        imgPreview.style.display = 'block';
+        if (imgPlaceholder) imgPlaceholder.style.display = 'none';
+      }
+
+      this._refreshPreview();
+      window.SlidePreview.renderThumbnails(
+        window.presentationData.slides,
+        window.presentationData.theme
+      );
+      if (window.App) window.App.showToast('Image uploaded!', 'success');
+    };
+    reader.onerror = () => {
+      if (window.App) window.App.showToast('Could not read that image.', 'error');
+    };
+    reader.readAsDataURL(file);
+  },
+
+  /**
+   * Remove the current slide's image entirely.
+   */
+  removeImage() {
+    const slide = this._getCurrentSlide();
+    if (slide) {
+      slide.imageBase64 = '';
+      slide.imageUrl = '';
+    }
+    const imgPreview = document.getElementById('edit-image-preview');
+    const imgPlaceholder = document.getElementById('image-placeholder');
+    if (imgPreview) {
+      imgPreview.src = '';
+      imgPreview.style.display = 'none';
+      if (imgPlaceholder) imgPlaceholder.style.display = '';
+    }
+    this._refreshPreview();
+    window.SlidePreview.renderThumbnails(
+      window.presentationData.slides,
+      window.presentationData.theme
+    );
+    if (window.App) window.App.showToast('Image removed.', 'success');
   },
 
   /* ----------------------------------------------------------

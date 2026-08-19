@@ -331,9 +331,9 @@ export default function Academics() {
         {/* Desktop View */}
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full min-w-[900px] text-left">
-            <thead className="bg-surface-50 text-xs font-bold text-surface-600 dark:bg-surface-950/50 dark:text-surface-300">
+            <thead className="bg-surface-50 text-xs font-bold text-surface-600 dark:bg-surface-955/50 dark:text-surface-300">
               <tr>
-                <th className="px-3 py-4">Class</th>
+                <th className="px-3 py-4 sticky left-0 z-20 bg-surface-50 dark:bg-slate-850 shadow-sm">Class</th>
                 <th className="px-3 py-4 text-center">Sections</th>
                 <th className="px-3 py-4 text-center">Students</th>
                 <th className="px-3 py-4">Class Teacher</th>
@@ -353,7 +353,7 @@ export default function Academics() {
                 filteredClasses.map((cls) => {
                   return (
                     <tr key={cls.id} className="bg-white align-middle hover:bg-surface-50/80 dark:bg-surface-900 dark:hover:bg-surface-800/40">
-                      <td className="px-3 py-4 font-bold text-surface-950 dark:text-white">{cls.name}</td>
+                      <td className="px-3 py-4 font-bold text-surface-950 dark:text-white sticky left-0 z-20 bg-white dark:bg-slate-900">{cls.name}</td>
                       <td className="px-3 py-4 text-center font-semibold text-blue-700 dark:text-blue-300">{sectionCount(cls)}</td>
                       <td className="px-3 py-4 text-center text-surface-700 dark:text-surface-200">{classStudents(cls)}</td>
                       <td className="px-3 py-4 text-surface-700 dark:text-surface-200">{classTeacher(cls)}</td>

@@ -48,6 +48,13 @@ export interface LiveLecture {
   className?: string | null;
   sectionName?: string | null;
   subjectName?: string | null;
+  // Populated after a class ends (LEFT JOIN class_recordings on the server).
+  recordingUrl?: string | null;
+  classRecordingId?: string | null;
+  notesStatus?: string | null;
+  transcriptStatus?: string | null;
+  quizStatus?: string | null;
+  notes?: string | null;
 }
 
 export interface CreatedLecture {
@@ -202,6 +209,22 @@ export function createLiveSocket(): Socket {
 }
 
 /**
+ * Connect to the `/school-broadcast` relay namespace — used by the in-browser
+ * Studio to stream composited WebM chunks to the server, which pipes them
+ * through ffmpeg to the same RTMP ingest OBS uses. No OBS required.
+ */
+export function createBroadcastRelaySocket(): Socket {
+  const explicit = (import.meta.env.VITE_SOCKET_URL as string | undefined)?.trim();
+  const base = explicit || getApiOrigin() || window.location.origin;
+  return io(`${base}/school-broadcast`, {
+    transports: ['websocket', 'polling'],
+    withCredentials: true,
+    // Binary WebM chunks — keep the buffer generous so 1s chunks aren't dropped.
+    forceNew: true,
+  });
+}
+
+/**
  * Same-origin HLS URL via the backend proxy — avoids the CORS block on the
  * public R2 (`pub-*.r2.dev`) domain, which serves HLS without CORS headers.
  */
@@ -222,6 +245,24 @@ export function getLiveToken(): string {
     return localStorage.getItem('eddva_access_token') || '';
   } catch {
     return '';
+  }
+}
+
+/**
+ * Best-effort "end lecture" that survives page unload (tab close / navigation),
+ * so a browser broadcast doesn't leave the class stuck in a LIVE status.
+ * Uses fetch `keepalive` (sendBeacon can't set the auth header).
+ */
+export function endLectureBeacon(id: string): void {
+  try {
+    const token = getLiveToken();
+    void fetch(`${getApiBaseUrl()}/school/live/lectures/${id}/end`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      keepalive: true,
+    }).catch(() => undefined);
+  } catch {
+    /* ignore — best effort */
   }
 }
 

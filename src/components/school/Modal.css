@@ -33,6 +33,7 @@
   justify-content: space-between;
   padding: 16px 20px;
   border-bottom: 1px solid var(--gray-100);
+  flex-shrink: 0;
 }
 
 .modal__title {
@@ -61,4 +62,16 @@
 .modal__body {
   padding: 20px;
   overflow-y: auto;
+  flex-grow: 1;
+  min-height: 0;
+}
+
+.modal__footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--gray-100);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
 }

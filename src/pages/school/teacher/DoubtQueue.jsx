@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
 
+import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
+
 const statusMeta = {
   escalated: {
     label: 'Needs reply',
@@ -40,13 +42,16 @@ function parseAiAnswer(raw) {
   let str = raw.trim();
   const jsonMatch = str.match(/(\{[\s\S]*\})/);
   if (jsonMatch) str = jsonMatch[1].trim();
+
   try {
     const obj = JSON.parse(str);
-    if (obj && typeof obj === 'object') {
-      return obj.detailed?.solution || obj.brief?.answer || obj.explanation || raw;
+    if (obj && typeof obj === 'object' && (obj.brief || obj.detailed)) {
+      return obj;
     }
-  } catch (e) {}
-  return raw;
+  } catch (e) {
+    return null;
+  }
+  return null;
 }
 
 function DoubtCard({
@@ -67,7 +72,8 @@ function DoubtCard({
 }) {
   const meta = statusMeta[doubt.status] || statusMeta.open;
   const isPending = doubt.status === 'escalated' || doubt.status === 'open' || doubt.status === 'ai_answered';
-  const parsedExplanation = parseAiAnswer(doubt.aiExplanation);
+  const parsedAi = parseAiAnswer(doubt.aiExplanation);
+  const [viewMode, setViewMode] = useState('brief');
 
   return (
     <article className="rounded-xl sm:rounded-2xl border border-slate-100 bg-white p-3.5 sm:p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -106,12 +112,80 @@ function DoubtCard({
 
       {doubt.aiExplanation && (
         <div className="mt-2.5 sm:mt-3 rounded-lg sm:rounded-xl border border-indigo-100 bg-indigo-50/60 p-2.5 sm:p-3 dark:border-indigo-900/40 dark:bg-indigo-950/20">
-          <p className="flex items-center gap-1 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
-            <Sparkles size={11} className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> AI response (student may escalate)
-          </p>
-          <p className="mt-1 text-[11px] sm:text-xs font-medium text-slate-600 dark:text-slate-400 leading-normal">
-            {parsedExplanation}
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <p className="flex items-center gap-1 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
+              <Sparkles size={11} className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> AI response (student may escalate)
+            </p>
+            {parsedAi && (
+              <div className="flex items-center gap-1 rounded-lg bg-indigo-100/50 p-0.5 dark:bg-indigo-900/30">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('brief')}
+                  className={cn(
+                    'rounded-md px-2 py-1 text-[10px] sm:text-xs font-bold transition-all',
+                    viewMode === 'brief'
+                      ? 'bg-white text-indigo-700 shadow-sm dark:bg-indigo-800 dark:text-white'
+                      : 'text-indigo-600 hover:bg-white/50 dark:text-indigo-300 dark:hover:bg-indigo-800/50',
+                  )}
+                >
+                  ⚡ Brief
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('detailed')}
+                  className={cn(
+                    'rounded-md px-2 py-1 text-[10px] sm:text-xs font-bold transition-all',
+                    viewMode === 'detailed'
+                      ? 'bg-white text-indigo-700 shadow-sm dark:bg-indigo-800 dark:text-white'
+                      : 'text-indigo-600 hover:bg-white/50 dark:text-indigo-300 dark:hover:bg-indigo-800/50',
+                  )}
+                >
+                  📖 Detailed
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-1 text-xs text-slate-700 dark:text-slate-300">
+            {parsedAi ? (
+              <div className="space-y-3">
+                {viewMode === 'brief' && (
+                  <MarkdownRenderer
+                    content={parsedAi.brief?.answer || parsedAi.detailed?.solution || ''}
+                    className="prose-slate max-w-none prose-sm"
+                  />
+                )}
+                {viewMode === 'detailed' && (
+                  <>
+                    <MarkdownRenderer
+                      content={parsedAi.detailed?.solution || ''}
+                      className="prose-slate max-w-none prose-sm"
+                    />
+                    {parsedAi.detailed?.final_answer && (
+                      <div className="mt-3 rounded-xl border border-indigo-200 bg-indigo-50/80 p-3 dark:border-indigo-800 dark:bg-indigo-900/40">
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 mb-1">✅ Final Answer</h4>
+                        <MarkdownRenderer content={parsedAi.detailed.final_answer} className="prose-slate max-w-none prose-sm" />
+                      </div>
+                    )}
+                    {parsedAi.detailed?.verification && (
+                      <div className="mt-2 rounded-xl border border-slate-200 bg-white/60 p-3 dark:border-slate-700 dark:bg-slate-800/60">
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-1">✓ Verification</h4>
+                        <MarkdownRenderer content={parsedAi.detailed.verification} className="prose-slate max-w-none prose-sm" />
+                      </div>
+                    )}
+                    {parsedAi.detailed?.key_concept && (
+                      <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50/60 p-3 dark:border-amber-900/30 dark:bg-amber-950/20">
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-1">💡 Key Concept</h4>
+                        <MarkdownRenderer content={parsedAi.detailed.key_concept} className="prose-slate max-w-none prose-sm" />
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            ) : (
+              <MarkdownRenderer content={doubt.aiExplanation} className="prose-slate max-w-none prose-sm" />
+            )}
+          </div>
         </div>
       )}
 
@@ -121,7 +195,9 @@ function DoubtCard({
             Your answer
           </p>
           {doubt.teacherResponse && (
-            <p className="mt-1 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 leading-normal">{doubt.teacherResponse}</p>
+            <div className="mt-1 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 leading-normal">
+              <MarkdownRenderer content={doubt.teacherResponse} className="prose-slate max-w-none prose-sm" />
+            </div>
           )}
           {doubt.teacherResponseImageUrl && (
             <div className="mt-2.5 sm:mt-3">

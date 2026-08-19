@@ -55,6 +55,34 @@ function CooldownCountdown({ targetDate, onFinish }: { targetDate: string; onFin
   );
 }
 
+const normalizeSubjectName = (name: string): string => {
+  if (!name) return 'General';
+  const lower = name.trim().toLowerCase();
+  if (lower === 'maths' || lower === 'math' || lower === 'mathematics') return 'Mathematics';
+  if (
+    lower === 'social science' ||
+    lower === 'social studies' ||
+    lower === 'sst' ||
+    lower === 'ssc' ||
+    lower === 'social sciences' ||
+    lower === 'social-science' ||
+    lower === 'social-studies'
+  ) return 'Social Science';
+  if (
+    lower === 'info tech' ||
+    lower === 'information technology' ||
+    lower === 'it' ||
+    lower === 'computer science' ||
+    lower === 'computers' ||
+    lower === 'computer' ||
+    lower === 'cs'
+  ) return 'Information Technology';
+  if (lower === 'sci' || lower === 'science') return 'Science';
+  if (lower === 'eng' || lower === 'english') return 'English';
+  if (lower === 'hin' || lower === 'hindi') return 'Hindi';
+  return name.trim();
+};
+
 export default function CareerHome() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -71,7 +99,19 @@ export default function CareerHome() {
 
   useEffect(() => {
     api.get('/reports/my-analytics')
-      .then((res) => setMarks((res.data?.data?.subjectPerformance ?? []) as SubjectPerf[]))
+      .then((res) => {
+        const raw = (res.data?.data?.subjectPerformance ?? []) as SubjectPerf[];
+        const map = new Map<string, number[]>();
+        raw.forEach((s) => {
+          const norm = normalizeSubjectName(s.subjectName);
+          map.set(norm, [...(map.get(norm) || []), s.accuracy]);
+        });
+        const merged: SubjectPerf[] = [...map.entries()].map(([subjectName, accs]) => ({
+          subjectName,
+          accuracy: Math.round(accs.reduce((a, b) => a + b, 0) / accs.length),
+        }));
+        setMarks(merged);
+      })
       .catch(() => setMarks(null))
       .finally(() => setMarksLoading(false));
     getQuizStatus().then(setStatus).catch(() => setStatus(null)).finally(() => setStatusLoading(false));

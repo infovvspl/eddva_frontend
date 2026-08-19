@@ -26,6 +26,7 @@ import {
   Users,
   User,
   BookOpen,
+  Library,
   AlertCircle,
   MessageSquare,
   X,
@@ -84,6 +85,13 @@ export default function Layout() {
     '/communications',
     '/audit-logs',
     '/feature-flags',
+    '/users',
+    '/complaints',
+    '/analytics',
+    '/ai-usage',
+    '/storage-usage',
+    '/live-usage',
+    '/security',
   ].some(p => location.pathname.endsWith(p)) || [
     '/school/teacher/timetable',
     '/school/teacher/calendar',
@@ -122,6 +130,7 @@ export default function Layout() {
       { label: 'Dashboard', path: '/school/admin', icon: LayoutDashboard },
       { label: 'Students', path: '/school/admin/students', icon: GraduationCap },
       { label: 'Teachers', path: '/school/admin/teachers', icon: Users },
+      { label: 'Textbooks', path: '/school/admin/textbook-coverage', icon: Library },
     ];
 
     const moreItems = isSuperAdmin ? [
@@ -152,7 +161,7 @@ export default function Layout() {
       { label: 'Attendance', path: '/school/admin/attendance', icon: BarChart3, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20' },
       { label: 'Notices', path: '/school/admin/notices', icon: AlertCircle, color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/20' },
       { label: 'Messages', path: '/school/admin/communications', icon: MessageSquare, color: 'text-purple-500 bg-purple-50 dark:bg-purple-950/20' },
-      { label: 'AI Analytics', path: '/school/admin/ai-usage', icon: Sparkles, color: 'text-amber-500 bg-amber-50 dark:bg-amber-950/20' },
+      // { label: 'AI Analytics', path: '/school/admin/ai-usage', icon: Sparkles, color: 'text-amber-500 bg-amber-50 dark:bg-amber-950/20' },
       { label: 'Users', path: '/school/admin/users', icon: Users, color: 'text-sky-500 bg-sky-50 dark:bg-sky-950/20' },
       { label: 'Audit Logs', path: '/school/admin/audit-logs', icon: FileText, color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20' },
       { label: 'Support', path: '/school/admin/complaints', icon: Shield, color: 'text-teal-500 bg-teal-50 dark:bg-teal-950/20' },
@@ -286,7 +295,7 @@ export default function Layout() {
       >
         <Navbar onMenuClick={() => setSidebarOpen(true)} />
         <MaintenanceNotice />
-        <main className={`flex-1 relative overflow-x-hidden ${isFullWidthPage ? 'p-0 overflow-y-auto' : 'p-3 sm:p-5 lg:p-6 overflow-y-auto'}`}>
+        <main className={`flex-1 relative overflow-x-hidden ${isFullWidthPage ? 'p-0 overflow-y-auto' : 'px-3 sm:px-6 lg:px-8 py-4 lg:py-6 overflow-y-auto'}`}>
           <AnimatePresence mode="wait">
             <PageTransition key={location.pathname}>
               <div className="h-full w-full">

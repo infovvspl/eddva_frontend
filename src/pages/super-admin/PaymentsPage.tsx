@@ -172,8 +172,7 @@ const PaymentsPage = () => {
   const totalPages = data ? Math.ceil(data.pagination.total / LIMIT) : 1;
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6 lg:p-10 font-sans text-foreground">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="w-full space-y-8 font-sans text-foreground">
 
         {/* Header */}
         <header className="border-b border-border pb-6">
@@ -352,7 +351,6 @@ const PaymentsPage = () => {
             </>
           )}
         </div>
-      </div>
     </div>
   );
 };

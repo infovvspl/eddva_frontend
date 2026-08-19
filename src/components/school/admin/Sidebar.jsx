@@ -20,6 +20,7 @@ import {
   GraduationCap,
   HardDrive,
   LayoutDashboard,
+  Library,
   LogOut,
   Megaphone,
   MessageSquare,
@@ -41,6 +42,7 @@ const superAdminGroups = [
       { path: '/school/super-admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
       { path: '/school/super-admin/institutes', label: 'Schools', icon: Building2 },
       { path: '/school/super-admin/users', label: 'User Management', icon: Users },
+      { path: '/school/super-admin/erp-modules', label: 'ERP Modules', icon: BookOpen },
     ],
   },
   {
@@ -88,6 +90,9 @@ function buildInstituteGroups(mods) {
         { path: '/school/admin/admins', label: 'Administrators', icon: Shield },
         { path: '/school/admin/academics', label: 'Classes & Curriculum', icon: Building2 },
         { path: '/school/admin/subjects', label: 'Subjects', icon: BookOpen },
+        { path: '/school/admin/syllabus-planner', label: 'Syllabus Planner', icon: FileText },
+        { path: '/school/admin/syllabus-tracker', label: 'Syllabus Tracker', icon: BarChart3 },
+        { path: '/school/admin/textbook-coverage', label: 'Textbooks', icon: Library },
       ],
     },
     {
@@ -105,21 +110,28 @@ function buildInstituteGroups(mods) {
         chatEnabled && { path: '/school/admin/communications', label: 'Messages & Parent Connect', icon: MessageSquare },
       ].filter(Boolean),
     },
+    // {
+    //   heading: 'Insights',
+    //   items: [
+    //     { path: '/school/admin/ai-usage', label: 'AI Analytics', icon: Sparkles },
+    //   ],
+    // },
     {
-      heading: 'Insights',
+      heading: 'ERP',
       items: [
-        { path: '/school/admin/ai-usage', label: 'AI Analytics', icon: Sparkles },
-      ],
+        isModuleEnabled(mods, 'erp') && { path: '/school/admin/erp', label: 'ERP Dashboard', icon: BarChart3 },
+      ].filter(Boolean),
     },
     {
       heading: 'Administration',
       items: [
         { path: '/school/admin/users', label: 'User Management', icon: Users },
+        { path: '/school/admin/document-generator', label: 'Document Generator', icon: FileText },
         { path: '/school/admin/audit-logs', label: 'Audit Logs', icon: FileText },
         { path: '/school/admin/complaints', label: 'Support Tickets', icon: Shield },
       ],
     },
-  ];
+  ].filter(group => group.items && group.items.length > 0);
 }
 
 function buildTeacherGroups(mods, aiFeats) {
@@ -138,6 +150,7 @@ function buildTeacherGroups(mods, aiFeats) {
       heading: 'Teaching',
       items: [
         { path: '/school/teacher', label: 'Dashboard', icon: LayoutDashboard, end: true },
+        { path: '/school/teacher/teaching-plan', label: 'My Teaching Plan', icon: ClipboardList },
         { path: '/school/teacher/course-content', label: 'Course Content', icon: BookOpen },
         liveEnabled && { path: '/school/teacher/classes', label: 'My Schedule', icon: Video },
         { path: '/school/teacher/attendance', label: 'Attendance', icon: ClipboardCheck },

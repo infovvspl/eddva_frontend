@@ -90,7 +90,7 @@ const FloatingInput = React.memo(function FloatingInput({ label, icon: Icon, typ
   return (
     <div className="relative group">
       <div className={`
-        relative flex items-center transition-all duration-300 rounded-2xl border-2 
+        relative flex items-center h-[50px] min-h-[50px] transition-all duration-300 rounded-2xl border-2 
         ${isFocused ? 'border-blue-500 shadow-lg shadow-blue-500/10' : 'border-slate-100 dark:border-slate-800'}
         ${error ? 'border-red-500' : ''}
         bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl
@@ -123,17 +123,20 @@ const FloatingInput = React.memo(function FloatingInput({ label, icon: Icon, typ
   );
 });
 
-const FloatingSelect = React.memo(function FloatingSelect({ label, name, value, onChange, options, error }) {
+const FloatingSelect = React.memo(function FloatingSelect({ label, name, value, onChange, options, error, required }) {
   return (
-    <div className="relative">
+    <div className="flex flex-col gap-1.5">
+      <label className="block text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
       <CustomSelect
         value={value}
+        placeholder={`Select ${label}...`}
         onChange={(val) => onChange && onChange({ target: { name, value: val } })}
         options={options.map((option) => ({ value: option, label: option || `Select ${label}` }))}
         className="w-full"
       />
-      <label className="absolute left-4 top-1.5 text-[10px] font-bold tracking-tight uppercase text-blue-600 dark:text-blue-400">{label}</label>
-      {error && <p className="mt-1 ml-4 text-[10px] font-bold text-red-500 uppercase tracking-wider">{error}</p>}
+      {error && <p className="mt-1 text-[10px] font-bold text-red-500 uppercase tracking-wider">{error}</p>}
     </div>
   );
 });

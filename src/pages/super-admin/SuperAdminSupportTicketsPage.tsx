@@ -29,6 +29,7 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { CustomSelect } from '@/components/ui/CustomSelect';
+import { DataTablePagination } from '@/components/ui/data-table-pagination';
 
 export default function SuperAdminSupportTicketsPage() {
   const navigate = useNavigate();
@@ -38,7 +39,7 @@ export default function SuperAdminSupportTicketsPage() {
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const limit = 10;
+  const [limit, setLimit] = useState(10);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -57,7 +58,7 @@ export default function SuperAdminSupportTicketsPage() {
 
   useEffect(() => {
     loadTickets();
-  }, [activeTab, page, search, selectedCategory, selectedPriority, selectedStatus]);
+  }, [activeTab, page, limit, search, selectedCategory, selectedPriority, selectedStatus]);
 
   async function loadTickets() {
     setLoading(true);
@@ -98,12 +99,32 @@ export default function SuperAdminSupportTicketsPage() {
     }
   }
 
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+    setPage(1);
+  };
+
+  const handleCategoryChange = (val: string) => {
+    setSelectedCategory(val);
+    setPage(1);
+  };
+
+  const handlePriorityChange = (val: string) => {
+    setSelectedPriority(val);
+    setPage(1);
+  };
+
+  const handleStatusChange = (val: string) => {
+    setSelectedStatus(val);
+    setPage(1);
+  };
+
   const totalPages = Math.ceil(total / limit) || 1;
 
   return (
-    <div className="mx-auto max-w-7xl px-1 pt-0 pb-8 sm:py-8 sm:px-6 lg:px-8">
+    <div className="w-full min-h-full p-4 sm:p-6 lg:p-8 flex flex-col space-y-4 sm:space-y-8">
       {/* Page Header */}
-      <div className="mt-4 sm:mt-0 mb-4 sm:mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border border-slate-200 rounded-2xl p-4 sm:border-0 sm:rounded-none sm:p-0">
+      <div className="mb-4 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 bg-blue-100 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
         <div>
           <div className="flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
@@ -195,7 +216,7 @@ export default function SuperAdminSupportTicketsPage() {
               type="text"
               placeholder="Search ID, subject, institute..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="w-full rounded-xl border border-slate-200 pl-10 pr-4 py-2 text-xs font-medium text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:outline-none"
             />
           </div>
@@ -203,7 +224,7 @@ export default function SuperAdminSupportTicketsPage() {
           <div>
             <CustomSelect
               value={selectedCategory}
-              onChange={(val) => setSelectedCategory(val)}
+              onChange={(val) => handleCategoryChange(val)}
               options={[
                 { value: "", label: "All Categories" },
                 ...TICKET_CATEGORIES.map((c) => ({ value: c, label: c })),
@@ -215,7 +236,7 @@ export default function SuperAdminSupportTicketsPage() {
           <div>
             <CustomSelect
               value={selectedPriority}
-              onChange={(val) => setSelectedPriority(val)}
+              onChange={(val) => handlePriorityChange(val)}
               options={[
                 { value: "", label: "All Priorities" },
                 ...TICKET_PRIORITIES.map((p) => ({
@@ -230,7 +251,7 @@ export default function SuperAdminSupportTicketsPage() {
           <div>
             <CustomSelect
               value={selectedStatus}
-              onChange={(val) => setSelectedStatus(val)}
+              onChange={(val) => handleStatusChange(val)}
               options={[
                 { value: "", label: "All Statuses" },
                 ...TICKET_STATUSES.map((s) => ({
@@ -336,7 +357,7 @@ export default function SuperAdminSupportTicketsPage() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                      <th className="px-5 py-3.5">Ticket ID</th>
+                      <th className="px-5 py-3.5 sticky left-0 z-20 bg-slate-50 border-b border-slate-100">Ticket ID</th>
                       <th className="px-5 py-3.5">Subject</th>
                       <th className="px-5 py-3.5">Institute</th>
                       <th className="px-5 py-3.5">Raised By</th>
@@ -358,7 +379,7 @@ export default function SuperAdminSupportTicketsPage() {
                           onClick={() => navigate(`/super-admin/support-tickets/${t.id}`)}
                           className="hover:bg-slate-50/80 cursor-pointer transition-colors"
                         >
-                          <td className="px-5 py-4 font-bold text-indigo-600">{t.ticketNumber}</td>
+                          <td className="px-5 py-4 font-bold text-indigo-600 sticky left-0 z-20 bg-white dark:bg-slate-900 group-hover:bg-slate-50 transition-colors">{t.ticketNumber}</td>
                           <td className="px-5 py-4 font-bold text-slate-900 max-w-xs truncate">
                             {t.subject}
                           </td>
@@ -427,30 +448,21 @@ export default function SuperAdminSupportTicketsPage() {
         </div>
 
         {/* Pagination Footer */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-slate-100 px-6 py-4 bg-white">
-            <p className="text-xs text-slate-500">
-              Showing page <strong>{page}</strong> of <strong>{totalPages}</strong> ({total} total tickets)
-            </p>
-            <div className="flex gap-2">
-              <button
-                disabled={page <= 1}
-                onClick={() => setPage((p) => p - 1)}
-                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
-              >
-                Previous
-              </button>
-              <button
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => p + 1)}
-                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
+        <div className="border-t border-slate-100 bg-white p-2">
+          <DataTablePagination
+            page={page}
+            limit={limit}
+            total={total}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            onLimitChange={(newLimit) => {
+              setLimit(newLimit);
+              setPage(1);
+            }}
+          />
+        </div>
       </div>
     </div>
   );
 }
+

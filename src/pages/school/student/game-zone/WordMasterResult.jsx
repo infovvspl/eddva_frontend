@@ -2,12 +2,9 @@ import React from 'react';
 import { Trophy, Coins, Star, RefreshCw, Medal, Award, ArrowLeft, ArrowUp, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { clearStudentDashboardCache } from '@/lib/school/student-dashboard-cache';
+import { soundEngine } from '@/lib/audioManager';
 
 export default function WordMasterResult({ result, onPlayAgain, onViewLeaderboard }) {
-  React.useEffect(() => {
-    clearStudentDashboardCache();
-  }, []);
-
   const {
     wordsAttempted,
     correctAnswers,
@@ -23,6 +20,15 @@ export default function WordMasterResult({ result, onPlayAgain, onViewLeaderboar
 
   const total = wordsAttempted || 1;
   const accuracy = Math.round((correctAnswers / total) * 100);
+
+  React.useEffect(() => {
+    clearStudentDashboardCache();
+    if (accuracy >= 50) {
+      soundEngine.playGameWin();
+    } else {
+      soundEngine.playGameLose();
+    }
+  }, []);
 
   return (
     <div className="space-y-6 max-w-xl mx-auto py-8 animate-fade-in">

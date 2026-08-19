@@ -28,7 +28,28 @@ function NoteImage({ src, alt }: { src?: string; alt?: string }) {
     return () => document.removeEventListener("keydown", onKey);
   }, [lightbox, closeLightbox]);
 
-  if (hidden || !src) return null;
+  if (!src) return null;
+
+  if (hidden) {
+    return (
+      <figure className="not-prose group relative my-6 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/80 p-4 shadow-sm text-center">
+        <div className="flex flex-col items-center justify-center py-5 text-slate-400">
+          <svg className="w-8 h-8 mb-2 text-blue-500/60 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <span className="text-xs font-bold text-slate-600">Loading educational diagram…</span>
+        </div>
+        {displayAlt && (
+          <figcaption className="flex items-start justify-center gap-2 border-t border-slate-200/60 px-4 py-2.5 text-xs font-medium leading-relaxed text-slate-600">
+            <svg className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" />
+            </svg>
+            {displayAlt}
+          </figcaption>
+        )}
+      </figure>
+    );
+  }
 
   const heightClass = fit === "full" ? "" : fit === "contain" ? "max-h-72" : "max-h-60";
   const objectClass = fit === "cover" ? "object-cover" : fit === "contain" ? "object-contain" : "object-contain";
@@ -120,6 +141,7 @@ interface MarkdownRendererProps {
   className?: string;
   /** Map of public S3/R2 URLs → base64 data URIs. Used when the bucket lacks CORS headers. */
   imageMap?: Record<string, string>;
+  highlights?: Array<{ text: string; color: string }>;
 }
 
 /**
@@ -139,14 +161,23 @@ function replaceNewlinesOutsideMath(text: string): string {
         
         result += lines[k];
         if (k < lines.length - 1) {
-          const endsWithOperator = /[+\-/=,\\&|]$/.test(currentLine);
-          const startsWithOperator = /^[+\/=)\]},]/.test(nextLine) || /^-[^ ]/.test(nextLine) || /^\(\d+\)\s*[+\-/=]/.test(nextLine);
-          const isContinuation = endsWithOperator || startsWithOperator;
+          const endsWithOperator = /[+\-/=,\\&|]$/.test(currentLine) || /^[+=><\u2212\u2013-]{1,3}$/.test(currentLine);
+          const startsWithOperator = /^[+\/=)\]},=>\u2212\u2013-]/.test(nextLine) || /^-[^ ]/.test(nextLine) || /^\(\d+\)\s*[+\-/=]/.test(nextLine);
+          // Don't insert double-newlines after lone question numbers (e.g. "1." or "Q1.") or option tags
+          const isLoneNumberOrMarker = /^(?:Q\s*)?\d{1,3}[.)]\s*$/i.test(currentLine) || /^\([a-zA-Z0-9]{1,3}\)\s*$/.test(currentLine) || /^[-*+]\s*$/.test(currentLine) || /^[0-9]+$/.test(currentLine);
+          
+          // Check if current or next line is a bullet/numbered list item
+          const isListItem = /^[-*+]\s+/.test(currentLine) || /^\d+[.)]\s+/.test(currentLine);
+          const nextIsListItem = /^[-*+]\s+/.test(nextLine) || /^\d+[.)]\s+/.test(nextLine);
+
+          const isLoneParen = /^\s*[\(\)]\s*$/.test(currentLine) || /^\s*[\(\)]\s*$/.test(nextLine);
+          const isContinuation = endsWithOperator || startsWithOperator || isLoneNumberOrMarker || isLoneParen;
           
           if (isContinuation) {
             result += " ";
           } else {
-            result += "\n\n";
+            // Add trailing double-space so Markdown preserves hard line breaks (each step on new line)
+            result += "  \n";
           }
         }
       }
@@ -177,14 +208,21 @@ function normalizeBrokenMathText(text: string): string {
 
 function unwrapMathCodeSpans(text: string): string {
   return text.replace(/(`+)([\s\S]*?)\1/g, (match, _ticks, inner) => {
-    const isLikelyCode = /\b(?:const|let|var|function|return|import|export|class|interface|type)\b/.test(inner);
+    const trimmed = inner.trim();
+    const isLikelyCode = /\b(?:const|let|var|function|return|import|export|class|interface|type)\b/.test(trimmed);
     const isLikelyMath =
-      /(?:^|[\s(])[A-Za-z]{1,3}\s*=/.test(inner) ||
-      /[A-Za-z]{1,4}_[A-Za-z0-9]{1,4}/.test(inner) ||
-      /[A-Za-z0-9_{}^)\]][ \t]*\\[ \t\r\n]+[A-Za-z0-9_{}^(]/.test(inner) ||
-      /\\(?:frac|sqrt|cdot|times|theta|alpha|beta|gamma|delta|pi)\b/.test(inner);
+      /[=+\-*/^_\u2260\u2264\u2265\u2192]/.test(trimmed) ||
+      /\b[a-zA-Z]{1,3}\d{1,2}\b/.test(trimmed) ||
+      /\\(?:frac|sqrt|cdot|times|theta|alpha|beta|gamma|delta|pi)\b/.test(trimmed);
 
-    return isLikelyMath && !isLikelyCode ? inner : match;
+    if (isLikelyMath && !isLikelyCode) {
+      // Fix subscript variables e.g. a1 -> a_1, b1^2 -> b_1^2
+      // Collapse internal linebreaks inside equation blocks so "x\n=\n10" stays on one line "x = 10"
+      const cleanMath = trimmed.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ');
+      const formattedMath = cleanMath.replace(/\b([a-zA-Z]{1,2})(\d{1,2})\b/g, '$1_$2');
+      return `$${formattedMath}$`;
+    }
+    return match;
   });
 }
 
@@ -194,8 +232,8 @@ function wrapStandaloneSubscriptVariables(text: string): string {
     .map((segment, index) => {
       if (index % 2 === 1) return segment;
       return segment.replace(
-        /(?<![A-Za-z0-9$\\])([A-Za-z]{1,3}_[A-Za-z0-9]{1,3})(?![A-Za-z0-9$])/g,
-        "$$$1$",
+        /(^|[^A-Za-z0-9$\\])([A-Za-z]{1,3}_[A-Za-z0-9]{1,3})(?![A-Za-z0-9$])/g,
+        "$1$$$2$",
       );
     })
     .join("$");
@@ -207,22 +245,194 @@ function wrapFullEquationLines(text: string): string {
     .map((line) => {
       const trimmed = line.trim();
       if (!trimmed || trimmed.includes("$")) return line;
-      if (!/[=]/.test(trimmed)) return line;
-      if (!/^[A-Za-z0-9_{}^()[\].=+\-*/\\\s]+$/.test(trimmed)) return line;
+      // Must contain = or a Unicode math relation (≠ ≤ ≥ ≈)
+      const hasEquals = /[=]/.test(trimmed);
+      const hasUnicodeMathRel = /[\u2260\u2264\u2265\u2248]/.test(trimmed);
+      if (!hasEquals && !hasUnicodeMathRel) return line;
+      // Allow ASCII math chars + Unicode math relations/symbols
+      if (!/^[A-Za-z0-9_{}^()[\].=+\-*/\\\s\u2260\u2264\u2265\u2248\u2212\u00B2\u00B3\u2070-\u2079\u207F]+$/.test(trimmed)) return line;
 
-      const startsLikeEquation = /^[A-Za-z]{1,4}(?:_[A-Za-z0-9]{1,4})?\s*=/.test(trimmed);
+      const startsLikeEquation = /^[A-Za-z]{1,4}(?:_[A-Za-z0-9]{1,4})?(?:\s*[=\u2260\u2264\u2265]|\^)/.test(trimmed);
       const hasRepeatedEquals = (trimmed.match(/=/g) ?? []).length >= 2;
-      const hasMathOperator = /(?:\\cdot|[+\-*/^_])/.test(trimmed);
+      const hasMathOperator = /(?:\\cdot|[+\-*/^_\u2260\u2264\u2265\u2248])/.test(trimmed);
       if (!startsLikeEquation || (!hasRepeatedEquals && !hasMathOperator)) return line;
 
       const prefix = line.match(/^\s*/)?.[0] ?? "";
       const suffix = line.match(/\s*$/)?.[0] ?? "";
-      return `${prefix}$${trimmed}$${suffix}`;
+      // Convert Unicode math relations to LaTeX equivalents inside the math block
+      const latexTrimmed = trimmed
+        .replace(/\u2260/g, "\\neq ")
+        .replace(/\u2264/g, "\\leq ")
+        .replace(/\u2265/g, "\\geq ")
+        .replace(/\u2248/g, "\\approx ");
+      return `${prefix}$${latexTrimmed}$${suffix}`;
     })
     .join("\n");
 }
 
+
+/** Skip past a {…} group, tracking nested brace depth. Returns index after closing }. */
+function _skipBraceGroup(s: string, start: number): number {
+  let depth = 0;
+  for (let i = start; i < s.length; i++) {
+    if (s[i] === '{') depth++;
+    else if (s[i] === '}') { if (--depth === 0) return i + 1; }
+  }
+  return s.length;
+}
+
+/** Returns index of the matching ')' for '(' at open, or -1 if not found. */
+function _matchingParen(s: string, open: number): number {
+  let d = 0;
+  for (let i = open; i < s.length; i++) {
+    if (s[i] === '(') d++;
+    else if (s[i] === ')') { if (--d === 0) return i; }
+  }
+  return -1;
+}
+
+const _MATH_CMDS = new Set([
+  'text','frac','sqrt','rightarrow','leftarrow','to','pm','cdot','times',
+  'div','overrightarrow','vec','hat','bar','tilde','sum','int','prod',
+  'lim','sin','cos','tan','log','ln','alpha','beta','gamma','delta',
+  'theta','lambda','pi','sigma','mu','omega','nu','phi','psi','chi','rho',
+]);
+const _STRONG_MATH = new Set(['rightarrow','leftarrow','frac','sqrt','to','overrightarrow','sum','int']);
+
+/**
+ * Character-level scanner that collects compound, un-delimited LaTeX expressions
+ * and wraps them in $…$.
+ *
+ * Handles:
+ *  - Nested braces: \text{\frac{Energy}{ATP}}
+ *  - \command{} immediately followed (no operator) by (C_{6}H_{12}O_{6})
+ *  - Chains connected by +, -, =, or \rightarrow
+ */
+function _collectCompoundLatex(text: string): string {
+  let result = '';
+  let i = 0;
+
+  while (i < text.length) {
+    // Only start collecting at a recognized LaTeX command
+    if (text[i] !== '\\' || i + 1 >= text.length || !/[A-Za-z]/.test(text[i + 1])) {
+      result += text[i++];
+      continue;
+    }
+
+    // Parse command name
+    let ce = i + 1;
+    while (ce < text.length && /[A-Za-z]/.test(text[ce])) ce++;
+    const cmd = text.slice(i + 1, ce);
+
+    if (!_MATH_CMDS.has(cmd)) {
+      result += text[i++];
+      continue;
+    }
+
+    // Try to collect a compound expression starting at i
+    const exprStart = i;
+    let j = i;
+    let isMath = _STRONG_MATH.has(cmd);
+
+    /* eslint-disable no-constant-condition */
+    outer: for (;;) {
+      // 1. Consume \command and its brace-argument groups (with full depth tracking)
+      if (text[j] === '\\' && j + 1 < text.length && /[A-Za-z]/.test(text[j + 1])) {
+        let k = j + 1;
+        while (k < text.length && /[A-Za-z]/.test(text[k])) k++;
+        const c = text.slice(j + 1, k);
+        j = k;
+        if (_STRONG_MATH.has(c)) isMath = true;
+        // Consume any following {arg} groups, including nested ones
+        while (j < text.length && text[j] === '{') j = _skipBraceGroup(text, j);
+        continue;
+      }
+
+      // 2. Subscript / superscript (_ or ^)
+      if ((text[j] === '_' || text[j] === '^') && j + 1 < text.length) {
+        isMath = true;
+        j++;
+        if (j < text.length && text[j] === '{') j = _skipBraceGroup(text, j);
+        else j++;
+        continue;
+      }
+
+      // 3. Parenthesized molecular formula directly following a command: (C_{6}H_{12}O_{6})
+      //    Only include if the parens contain subscripts, confirming it's math.
+      if (text[j] === '(' && j > exprStart) {
+        const close = _matchingParen(text, j);
+        if (close > j && /[_^]\{/.test(text.slice(j, close + 1))) {
+          isMath = true;
+          j = close + 1;
+          continue;
+        }
+        break outer;
+      }
+
+      // 4. Plain letter immediately before a subscript (e.g. H in H_{12}, O in O_{6})
+      if (/[A-Za-z]/.test(text[j]) && j > exprStart) {
+        const n1 = text[j + 1] ?? '';
+        if (n1 === '_' || n1 === '^') { j++; continue; }
+        // Two-letter element symbol: look two chars ahead
+        if (/[A-Za-z]/.test(n1) && (text[j + 2] === '_' || text[j + 2] === '^')) { j++; continue; }
+        break outer;
+      }
+
+      // 5. Operator (+, -, =) connecting to another LaTeX term
+      if ((text[j] === '+' || text[j] === '-' || text[j] === '=') && j > exprStart) {
+        let k = j + 1;
+        while (k < text.length && /[ \t]/.test(text[k])) k++;
+        const peek = text[k] ?? '';
+        if (peek === '\\' || (peek === '(' && /[_^]\{/.test(text.slice(k)))) {
+          j = k; continue;
+        }
+        break outer;
+      }
+
+      // 6. Whitespace between LaTeX tokens
+      if (/[ \t]/.test(text[j]) && j > exprStart) {
+        let k = j;
+        while (k < text.length && /[ \t]/.test(text[k])) k++;
+        const peek = text[k] ?? '';
+        if (peek === '\\' || peek === '+' || peek === '-') { j = k; continue; }
+        break outer;
+      }
+
+      break outer;
+    }
+    /* eslint-enable no-constant-condition */
+
+    const expr = text.slice(exprStart, j).trim();
+    if (isMath && expr.length > 2) {
+      result += `$${expr}$`;
+      i = j;
+    } else {
+      result += text[i++];
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Wraps compound, un-delimited LaTeX expressions that span across operators
+ * (+, -, \rightarrow, =, etc.) and multiple \command{...} groups.
+ * Uses _collectCompoundLatex (character-level, brace-depth-aware) so nested
+ * braces like \text{\frac{Energy}{ATP}} are handled correctly.
+ */
+function wrapCompoundLatexExpressions(text: string): string {
+  return text
+    .split("$")
+    .map((segment, index) => {
+      if (index % 2 !== 0) return segment; // inside $…$, skip
+      return _collectCompoundLatex(segment);
+    })
+    .join("$");
+}
+
 /** Wrap structured, un-delimited LaTeX commands found inside prose. */
+
+
 function wrapStructuredLatex(text: string): string {
   let result = "";
   let position = 0;
@@ -301,8 +511,13 @@ export const formatMarkdown = (text?: string) => {
     .replace(/\x0B/g, "\\v")
     .replace(/\x07/g, "\\a")
     .replace(/\x08/g, "\\b")
-    // 3. Keep carriage returns as simple newlines
+    // 3. Convert LaTeX delimiters from \[ \] and \( \) to $$ and $ for remark-math / KaTeX parsing
+    .replace(/\\\[/g, "$$").replace(/\\\]/g, "$$")
+    .replace(/\\\(/g, "$").replace(/\\\)/g, "$")
+    // 4. Keep carriage returns as simple newlines
     .replace(/\\n(?![a-zA-Z])/g, "\n");
+
+  formatted = unwrapMathCodeSpans(formatted);
 
   // Remove redundant caption/figure lines that follow right after an image tag.
   // e.g. ![caption](url)\n*caption* or ![caption](url)\n*Figure: caption*
@@ -318,20 +533,74 @@ export const formatMarkdown = (text?: string) => {
     }
   );
 
+  // Clean up 4 or 3 dollar sequences: $$$$ -> $$, $$$ -> $$
+  formatted = formatted.replace(/\$\$\$\$/g, "$$").replace(/\$\$\$/g, "$$");
+
+  // ── Step 1: Strip stray $ signs that appear inside prose function call arguments
+  // e.g. LCM(306, $657) or $657) → removes the stray $ before digits followed by ) or ,
+  formatted = formatted.replace(/\$(\d+)([),])/g, "$1$2");
+  // Strip orphan $ = $ or $=$ patterns (dollar-wrapped equals signs): $=$ → =
+  formatted = formatted.replace(/\$\s*=\s*\$/g, " = ");
+
+  // Join equation labels that appear on a separate line: "...equation text\n(Equation 1)" -> "...equation text ... (Equation 1)"
+  // Also handles bare "(1)", "(2)" etc.
+  formatted = formatted.replace(
+    /([A-Za-z0-9_+=\-*\/^.\u2260\u2264\u2265]+)[ \t]*\r?\n[ \t]*(\(?(?:Equation|Eq\.?)?[ \t]*\d{1,2}\)?)/gi,
+    "$1 ... ($2)"
+  );
+  // Simpler: line ending with 0 or equation chars followed by newline then just "(1)" or "(Equation 1)"
+  formatted = formatted.replace(
+    /(\S)[ \t]*\r?\n[ \t]*(\((?:Equation\s*)?\d{1,2}\))/gi,
+    "$1 $2"
+  );
+
+  // Clean up broken equation numbering splits e.g. "a1x + b1y + c1 = 0 ... \n (\n 1." -> "a1x + b1y + c1 = 0 ... (1)"
+  formatted = formatted.replace(/\.\.\.\s*\n\s*\(\s*\n\s*(\d{1,2})[.)]/g, "... ($1)");
+
+  // Clean up vertical line breaks around operators e.g. "x \n = \n 10" -> "x = 10"
+  formatted = formatted.replace(/([A-Za-z0-9_]+)\s*\r?\n\s*(=|\+|-|\*|\/)\s*\r?\n\s*([A-Za-z0-9_]+)/g, "$1 $2 $3");
+  formatted = formatted.replace(/([A-Za-z0-9_]+)\s*\r?\n\s*(=|\+|-|\*|\/)/g, "$1 $2");
+  formatted = formatted.replace(/(=|\+|-|\*|\/)\s*\r?\n\s*([A-Za-z0-9_]+)/g, "$1 $2");
+  formatted = formatted
+    .replace(/(?:=\s*){2,}/g, "= ")
+    .replace(/=\s*>\s*=?/g, "=> ")
+    .replace(/=\s*[\u2212\u2013-]\s*/g, "= -");
+
+
+  // ── Step 2: Unnest single dollar signs inside double-dollar display math blocks $$ ... $$
+  formatted = formatted.replace(/\$\$([\s\S]*?)\$\$/g, (_m, inner) => {
+    const cleanedInner = inner.replace(/(?<!\$)\$(?!\$)/g, "");
+    return `$$\n${cleanedInner.trim()}\n$$`;
+  });
+
+  // ── Step 3: Fix partial inline math where left side of equation is outside $
+  // e.g. LCM(p, q, r) = $\frac{...}$ → $LCM(p, q, r) = \frac{...}$
+  formatted = formatted.replace(
+    /(^|\n)([ \t]*[A-Za-z0-9_(),\s]+\s*=\s*)\$([^$\n]+)\$/g,
+    (_m, newline, left, inner) => {
+      const words = (left.match(/\b[A-Za-z]{4,}\b/g) || []);
+      if (words.length > 2) return `${newline}${left}$${inner}$`;
+      const cleanInner = inner.replace(/\\quad\s*$/g, "").trim();
+      return `${newline}$${left.trim()} ${cleanInner}$`;
+    }
+  );
+
+
   formatted = normalizeBrokenMathText(formatted);
   formatted = unwrapMathCodeSpans(formatted);
   formatted = wrapFullEquationLines(formatted);
 
   // Split single $ blocks that span across newlines so they render correctly
-  formatted = formatted.replace(/(?<!\$)\$([^$]+)\$(?!\$)/g, (match, p1) => {
+  formatted = formatted.replace(/(^|[^$])\$([^$]+)\$(?!\$)/g, (match, prefix, p1) => {
     if (!p1.includes("\n")) return match;
-    return p1.split(/\r?\n/).map(line => {
+    const transformed = p1.split(/\r?\n/).map(line => {
       const trimmed = line.trim();
       if (!trimmed) return "";
       const hasWordSpaces = /[a-zA-Z]{3,}\s+[a-zA-Z]{3,}/.test(trimmed);
       if (hasWordSpaces) return line;
       return `$${trimmed}$`;
     }).join("\n");
+    return `${prefix}${transformed}`;
   });
 
   // Move exam/year into a dedicated badge marker. Accept common AI variants
@@ -354,25 +623,74 @@ export const formatMarkdown = (text?: string) => {
     },
   );
 
-  // If there's a newline after normalized EXAMTAG or question number, followed by the question text (not options/headers/bullet points), pull it to the same line
-  const pullRegex = new RegExp(String.raw`(\d+[.)](?:\s*\[\s*EXAMTAG:\s*[^\]]+\s*\])?)\s*(?:\r?\n)+\s*(?!(?:[A-D][.):]\s*|\([A-D]\)\s*|\d+[.)]\s*|Q\d+\b|#{1,6}\s|[-*+]\s))`, "gi");
-  formatted = formatted.replace(pullRegex, "$1 ");
-
-
   // Merge stacked option letters with their contents (e.g. A.\n0 -> A. 0)
   formatted = formatted.replace(
     /(?:\r?\n|^)\s*\b([A-D])\b[ \t.:\)]*\r?\n[ \t]*(?![A-D]\b|(?:Q\s*)?\d+[.)]\s|#{1,6}\s)([^\n]+)/gi,
     '\n$1. $2',
   );
 
+  // Give option A the blank line that B, C and D already get.
+  //
+  // The rules below separate the options from each other but leave only a
+  // single newline between the question and the first option. Markdown treats
+  // that as a soft wrap, so "1. The Latin word 'alga' means:" and "A. Small
+  // life" rendered as one paragraph while B, C and D became option cards —
+  // every question in the paper appeared to have its first option missing and
+  // its text running on. Requiring a following "B." line keeps prose that
+  // merely starts with "A." untouched.
+  formatted = formatted.replace(
+    /([^\n])\n([ \t]*A[.):][ \t]+[^\n]+)(?=\n\s*\n?[ \t]*B[.):][ \t])/g,
+    '$1\n\n$2',
+  );
+
+  // Pull a lone trailing option A off the end of a question line.
+  //
+  // The rule below only fires when all four options share a line. Models
+  // frequently emit just the first one inline and the rest on their own lines:
+  //
+  //   1. Corrosion happens when metals are exposed to: [p.6] A. Air only
+  //   B. Moisture only
+  //
+  // which left "A. Air only" rendered as part of the question while B, C and D
+  // became option cards. Requiring the next line to start with "B." is what
+  // distinguishes an option list from prose that merely contains an "A" —
+  // "Section A carries 10 marks" and "Vitamin A" are both left alone. The `$`
+  // and the lookahead match without consuming, so the newline survives.
+  // A blank line, not a single newline: Markdown treats one newline as a soft
+  // wrap, so the option would rejoin the question paragraph it was just split
+  // from — which is the bug this rule exists to fix.
+  formatted = formatted.replace(
+    /^([^\n]*?\S)[ \t]+\bA[.):]\s+([^\n]+)$(?=\n[ \t]*B[.):]\s)/gm,
+    '$1\n\nA. $2',
+  );
+
   // Split inline options onto newlines (e.g. A. Opt1 B. Opt2 -> A. Opt1 \n B. Opt2)
-  formatted = formatted.replace(/(?:\s+|\b)A[\s.:\)]+(.*?)\s+B[\s.:\)]+(.*?)\s+C[\s.:\)]+(.*?)\s+D[\s.:\)]+([^\n]*)/gi, '\n\nA. $1\n\nB. $2\n\nC. $3\n\nD. $4');
+  // Protect "Section A", "Part A", "Group A" and general instructions from being misidentified as options
+  formatted = formatted.replace(
+    /(?<!\b(?:Section|Part|Group|Class|Grade|Chapter|Unit)\s+)(?:\s+|^)\b([A-D])\s*[:.)]\s+([^A-D\n]+?)\s+\bB\s*[:.)]\s+([^A-D\n]+?)\s+\bC\s*[:.)]\s+([^A-D\n]+?)\s+\bD\s*[:.)]\s+([^\n]+)/gi,
+    (match, aLabel, optA, optB, optC, optD) => {
+      if (/\b(?:Section|Part|Group|Class|Grade|Chapter|Unit|consists|questions)\b/i.test(match)) {
+        return match;
+      }
+      return `\n\n${aLabel}. ${optA.trim()}\n\nB. ${optB.trim()}\n\nC. ${optC.trim()}\n\nD. ${optD.trim()}`;
+    }
+  );
 
   // Split inline Q&A onto newlines
   formatted = formatted.replace(/(\*\*Q\d+\..*?\*\*)\s*(\*\*A\..*?)/gi, '$1\n\n$2');
   formatted = formatted.replace(/(Q\d+\..*?)\r?\n(A\..*?)/gi, '$1\n\n$2');
 
   formatted = replaceNewlinesOutsideMath(formatted);
+
+  // Separate adjacent inline math blocks that are on the same line separated only by spaces.
+  // remark-math fails to parse two $...$ blocks on the same line — inserting \n\n between
+  // them makes each its own paragraph which remark-math handles correctly.
+  // e.g. $LCM(...)$ $HCF(...)$ → $LCM(...)$\n\n$HCF(...)$
+  formatted = formatted.replace(/(\$)[ \t]+(\$)/g, '$1\n\n$2');
+
+  // Pull standalone question numbers onto the same line as question text AFTER newlines normalization
+  const pullRegex = /((?:^|\n)\s*(?:Q\s*)?\d{1,3}[.)])\s*(?:\r?\n)+\s*(?!(?:[A-E][.):]\s*|\([A-E]\)\s*|Q?\d{1,3}[.)]\s*|#{1,6}\s|[-*+]\s))/gi;
+  formatted = formatted.replace(pullRegex, "$1 ");
 
   const mathCommandPattern = String.raw`(?:\\(?:frac|sqrt|int|sum|lim|sin|cos|tan|theta|alpha|beta|gamma|delta|pi|phi|psi|omega|lambda|sigma|mu|nu|zeta|eta|iota|kappa|tau|upsilon|xi|chi|rho)|\\frac|\\sqrt|√)`;
   const normalizeMathLine = (line: string) => {
@@ -396,9 +714,11 @@ export const formatMarkdown = (text?: string) => {
 
   // Step-based and final answer formatting
   formatted = formatted
-    .replace(/(Step\s*\d+[^a-zA-Z0-9\s]?|Final\s*Answer\s*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1")
-    // Theory-specific 5-part numerical/theory headers
-    .replace(/(\(\d\)\s*(?=[a-zA-Z])[a-zA-Z][a-zA-Z\s/-]*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1")
+    .replace(/(?:\r?\n|^)[ \t]*(\*\*Step\s*\d+[^:]*:\*\*|Step\s*\d+[^:\n]*:?|Final\s*Answer\s*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1\n")
+    // Format action steps (e.g. "Add y to both sides:", "Minus 10 from both sides:", "Divide both sides by 2:") onto newlines
+    .replace(/([^\n])\s+((?:Add|Subtract|Minus|Multiply|Divide|Substitute|Replacing|Using|Pick)\s+[^:\n]{3,40}:)/g, "$1\n\n$2\n")
+    // Theory-specific 5-part numerical/theory headers - only match standalone (1), (2) etc at START of line or after explicit heading context
+    .replace(/(?:^|\n)(\(\d\)\s*(?=[A-Z])[A-Z][a-zA-Z\s/-]*[:\u2014\u2013\u002D.]?)/gm, "\n\n$1")
     // Legacy sub-headers
     .replace(/(?:\r?\n|^)(\s*(?:[-*+]\s+)?(?:\*\*|__)?)(Reason\s*[:\u2014\u2013\u002D.]?|Explanation\s*[:\u2014\u2013\u002D.]?|Logic\s*[:\u2014\u2013\u002D.]?|Key\s*Concept\s*[:\u2014\u2013\u002D.]?|Verification\s*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1$2");
 
@@ -417,6 +737,23 @@ export const formatMarkdown = (text?: string) => {
     .replace(/x\s*->\s*(\d+|[a-z])/gi, "x \\to $1");
 
   // 6. Pre-process fractions, limits, and exponents before math wrapping
+  // Fix AI OCR / KaTeX mangling of chemical state indicators e.g. \text{\frac{Mg}{s}} -> Mg_{(s)}, \text{\frac{O}{l}} -> H_2O_{(l)}, \text{/(g)} -> (g)
+  formatted = formatted
+    .replace(/\\text\{\\frac\{([A-Za-z0-9_]+)\}\{([a-z]+)\}\}/g, "$1_{($2)}")
+    .replace(/\\text\{([A-Za-z0-9_]+)\}\s*\/([a-z]+)/g, "$1($2)")
+    .replace(/\\text\{([A-Za-z0-9_]+)\}\s*\/\s*\(([^)]+)\)/g, "$1($2)")
+    .replace(/\\text\{([^}]+)\}/g, "$1");
+
+  // Separate numbered observation headers and headings onto newlines - only when number is at start of a new line context
+  formatted = formatted
+    .replace(/([^\n])\s*(Observation\s*[:\u2014\u2013-]?|Balanced Chemical Equation\s*[:\u2014\u2013-]?)/gi, "$1\n\n$2");
+
+  // Automatically wrap un-delimited chemical reaction equations (containing -> or \rightarrow with + and chemical terms) into KaTeX math blocks
+  formatted = formatted.replace(
+    /(?<!\$)(?:\b\d+\s*)?[A-Z][a-z]?(?:_\{\d+\}|_\d+|\([a-z]+\)|_\{\([a-z]+\)\})*\s*(?:\+\s*(?:\d+\s*)?[A-Z][a-z]?(?:_\{\d+\}|_\d+|\([a-z]+\)|_\{\([a-z]+\)\})*\s*)*(?:\\rightarrow|->|\u2192)\s*(?:\d+\s*)?[A-Z][a-z]?(?:_\{\d+\}|_\d+|\([a-z]+\)|_\{\([a-z]+\)\})*(?:\s*\+\s*(?:\d+\s*)?[A-Z][a-z]?(?:_\{\d+\}|_\d+|\([a-z]+\)|_\{\([a-z]+\)\})*)*(?!\$)/g,
+    (match) => `$${match.trim()}$`
+  );
+
   // Convert caret/subscript with parentheses to curly braces e.g. ^(n-1) -> ^{n-1}
   formatted = formatted
     .replace(/\^\(([^)]+)\)/g, "^{$1}")
@@ -444,10 +781,33 @@ export const formatMarkdown = (text?: string) => {
     return `\\frac{${p1}}{${den}}`;
   });
   // 4. simple term / simple term (to catch dy/dx, 1/2, x^2/y^2, p^2/q^2 safely)
-  // base variable length is limited to 1-3 characters to prevent matching URLs/paths.
-  formatted = formatted.replace(/(?<![\w$])([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)\s*\/([ \t]*)([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)(?![\w$])/g, (match, num, space, den) => {
-    return `\\frac{${num}}{${den.trim()}}`;
+  // Protect chemical formulas / state indicators like Mg / (s) from fraction conversion
+  formatted = formatted.replace(/(^|[^a-zA-Z0-9_$])([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)\s*\/([ \t]*)([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)(?![\w$])/g, (match, prefix, num, space, den) => {
+    if (/^(?:[a-z]|aq|g|l|s)$/i.test(den.trim())) return match;
+    return `${prefix}\\frac{${num}}{${den.trim()}}`;
   });
+
+  // Wrap chemical formulas with dots (e.g. Fe_2O_3 \cdot H_2O or (Fe_2O_3 . H_2O))
+  //
+  // An MCQ option label matches this shape exactly: in "A. Small life", "A" is
+  // an element symbol, "." is the hydrate dot and "Sm" is samarium. Every option
+  // in a biology paper came out as "$A. Sm$all life", italicised by KaTeX. A
+  // real hydrate always has a subscript or more than one element symbol on the
+  // left of the dot, so a bare single letter there is rejected below.
+  formatted = formatted.replace(
+    /(^|[^$A-Za-z0-9\\])(\(?\s*([A-Z][a-z]?(?:_\{\d+\}|_\d+)?(?:[A-Z][a-z]?(?:_\{\d+\}|_\d+)?)*)\s*(?:\\[cC]dot|\u22C5|\u2219|\.)\s*(?:\d+)?\s*[A-Z][a-z]?(?:_\{\d+\}|_\d+)?(?:[A-Z][a-z]?(?:_\{\d+\}|_\d+)?)*\s*\)?)(?![^$]*\$)/g,
+    (match, lead: string, formula: string, leftSide: string) => {
+      const left = (leftSide || "").trim();
+      // "A", "B", "C"\u2026 on their own are option labels, not compounds.
+      const isSingleBareLetter = /^[A-Z]$/.test(left);
+      return isSingleBareLetter ? match : `${lead}$${formula}$`;
+    }
+  );
+
+  // Wrap compound un-delimited LaTeX expressions (e.g. chemical equations like
+  // \text{Glucose/}(C_{6}H_{12}O_{6})+\text{Oxygen/}(6O_{2})\rightarrow ...)
+  // as a single math block before wrapStructuredLatex fragments them.
+  formatted = wrapCompoundLatexExpressions(formatted);
 
   // Wrap any balanced, structured LaTeX command embedded in prose. The generic
   // math detector below cannot reliably consume spaces inside command arguments
@@ -460,40 +820,28 @@ export const formatMarkdown = (text?: string) => {
       : segment)
     .join("$");
 
-  formatted = wrapFullEquationLines(formatted);
+  // 7. Tokenize to protect already-formatted math blocks ($...$ and $$...$$) and markdown image tags (![...]())
+  const tokenize = (text: string) => {
+    const tokens: { type: "prose" | "math" | "image"; text: string }[] = [];
+    let lastIndex = 0;
+    const mathRegex = /(\$\$(?:[\s\S]*?)\$\$)|(\$(?:[^$]+?)\$)|(!\[[\s\S]*?\]\([^\)]+\))/g;
+    let match;
+    while ((match = mathRegex.exec(text)) !== null) {
+      const matchIndex = match.index;
+      if (matchIndex > lastIndex) {
+        tokens.push({ type: "prose", text: text.slice(lastIndex, matchIndex) });
+      }
+      tokens.push({ type: match[3] ? "image" : "math", text: match[0] });
+      lastIndex = mathRegex.lastIndex;
+    }
+    if (lastIndex < text.length) {
+      tokens.push({ type: "prose", text: text.slice(lastIndex) });
+    }
+    return tokens;
+  };
 
-  // 7. Split by $ to protect already-formatted math blocks
-  const parts = formatted.split("$");
-  for (let i = 0; i < parts.length; i += 2) {
-    let segment = parts[i];
-
-    const englishWords = '(?:is|as|if|of|to|by|we|do|in|on|an|the|and|or|for|but|yet|so|at|then|with|from|into|over|under|above|below|between|among|through|during|before|after|against|about|like|throughout|upon|within|without|since|until|here|there|when|where|why|how|all|any|both|each|few|more|most|some|such|no|nor|not|only|own|same|than|too|very|can|will|should|would|could|may|might|must|shall|derivative|limit|function|chapter|topic|question|answer|solution|rule|power|quotient|product|sum|difference|value|rate|change|input|output|average|state|find|show|prove|calculate|determine|evaluate|solve|check|verify|logic|explanation|reason|key|concept|step|example)';
-    
-    // A math word is a standard function, a variable of 1-2 letters not in the englishWords list, or digits.
-    const mathWord = `(?:\\b(?:sin|cos|tan|log|ln|lim|pi|theta|alpha|beta|gamma|delta|phi|psi|omega|lambda|sigma|mu|nu|zeta|eta|iota|kappa|tau|upsilon|xi|chi|rho)\\b|(?<![a-zA-Z])(?!${englishWords}(?![a-zA-Z]))[a-zA-Z]{1,2}(?![a-zA-Z])|\\d+)`;
-    const opPattern = `[ \\t]*[()+\\-*\\/^=<>\'_\\-{}#][ \\t]*`;
-    const commandPattern = `[ \\t]*\\\\[a-zA-Z]+[ \\t]*`;
-
-    const mathToken = `(?:${mathWord}|${opPattern}|${commandPattern})`;
-
-    const mathPattern = `(?<![\\w$])(?:${mathToken}){0,10}\\^(?:${mathToken}){0,10}(?![\\w$])`;
-    const subscriptPattern = `(?<![\\w$])(?:${mathToken}){0,10}_(?:${mathToken}){0,10}(?![\\w$])`;
-    const equationPattern = `(?<![\\w$])(?:${mathToken}){0,10}=(?:${mathToken}){0,10}(?![\\w$])`;
-    const latexPattern = `(?<![\\w$])(?:${mathToken}){0,10}(?:${commandPattern})(?:${mathToken}){0,10}(?![\\w$])`;
-    const functionPattern = `(?<![\\w$])[a-zA-Z]'?\\(x\\)(?![\\w$])`;
-
-    const combinedRegex = new RegExp(`${mathPattern}|${subscriptPattern}|${equationPattern}|${latexPattern}|${functionPattern}`, "gi");
-
-    segment = segment.replace(combinedRegex, (match) => {
-      return ` $${match.trim()}$ `;
-    });
-
-    parts[i] = segment;
-  }
-
-  // Re-assemble
-  formatted = parts.join("$");
-  formatted = wrapStandaloneSubscriptVariables(formatted);
+  const tokens = tokenize(formatted);
+  formatted = tokens.map((t) => t.text).join("");
 
   return formatted
     .replace(/\n{3,}/g, "\n\n")
@@ -598,152 +946,163 @@ function formatExamTag(tagStr: string): string {
   return t.toUpperCase();
 }
 
-export function MarkdownRenderer({ content, className, imageMap }: MarkdownRendererProps) {
+const highlightChildren = (children: any, highlights: Array<{ text: string; color: string }>): any => {
+  if (!highlights || highlights.length === 0) return children;
+
+  const processText = (text: string): React.ReactNode[] => {
+    let parts: Array<{ type: 'text' | 'highlight'; content: string; color?: string }> = [{ type: 'text', content: text }];
+
+    for (const h of highlights) {
+      if (!h.text) continue;
+      const nextParts: typeof parts = [];
+      for (const p of parts) {
+        if (p.type === 'highlight') {
+          nextParts.push(p);
+          continue;
+        }
+        const index = p.content.toLowerCase().indexOf(h.text.toLowerCase());
+        if (index >= 0) {
+          let currentContent = p.content;
+          while (true) {
+            const idx = currentContent.toLowerCase().indexOf(h.text.toLowerCase());
+            if (idx < 0) {
+              if (currentContent) {
+                nextParts.push({ type: 'text', content: currentContent });
+              }
+              break;
+            }
+            if (idx > 0) {
+              nextParts.push({ type: 'text', content: currentContent.slice(0, idx) });
+            }
+            const matchLen = h.text.length;
+            nextParts.push({ type: 'highlight', content: currentContent.slice(idx, idx + matchLen), color: h.color });
+            currentContent = currentContent.slice(idx + matchLen);
+          }
+        } else {
+          nextParts.push(p);
+        }
+      }
+      parts = nextParts;
+    }
+
+    return parts.map((p, idx) => {
+      if (p.type === 'highlight') {
+        return (
+          <mark
+            key={idx}
+            data-user-highlight="1"
+            style={{ backgroundColor: p.color, padding: '0 1px', borderRadius: '4px' }}
+          >
+            {p.content}
+          </mark>
+        );
+      }
+      return p.content;
+    });
+  };
+
+  const recurse = (node: any): any => {
+    if (typeof node === 'string') {
+      return processText(node);
+    }
+    if (Array.isArray(node)) {
+      return node.map((child, idx) => <React.Fragment key={idx}>{recurse(child)}</React.Fragment>);
+    }
+    if (node && typeof node === 'object' && React.isValidElement(node)) {
+      const element = node as React.ReactElement;
+      if (element.props.children) {
+        return React.cloneElement(element, {
+          children: recurse(element.props.children)
+        } as any);
+      }
+    }
+    return node;
+  };
+
+  return recurse(children);
+};
+
+export function MarkdownRenderer({ content, className, imageMap, highlights = [] }: MarkdownRendererProps) {
+  const customComponents = {
+    a: ({ node, ...props }: any) => <a target="_blank" rel="noopener noreferrer" {...props} />,
+    img: ({ node, alt, src }: any) => {
+      const cleanSrc = (src ?? '').split('?')[0];
+      const resolvedSrc = imageMap?.[src ?? ''] 
+        ?? imageMap?.[cleanSrc] 
+        ?? (cleanSrc ? Object.entries(imageMap || {}).find(([k]) => k.split('?')[0] === cleanSrc)?.[1] : undefined) 
+        ?? src;
+      return <NoteImage src={resolvedSrc} alt={alt} />;
+    },
+    li: ({ node, children, ...props }: any) => {
+      const textContent = getTextContent(children);
+      
+      let tag = "";
+      let tagLengthToRemove = 0;
+      let shouldRemovePattern = false;
+      let patternTextToReplace = "";
+
+      const startTagMatch = textContent.match(/^\s*\[EXAMTAG:\s*([^\]]+)\]\s*/i);
+      if (startTagMatch) {
+        tag = startTagMatch[1];
+        tagLengthToRemove = startTagMatch[0].length;
+      } else {
+        const patternTagMatch = textContent.match(/(?:\r?\n|^|\s+)\(?(?:Pattern|Exam):\s*(CBSE(?:\s+Class\s+\d+)?\s+\d{4}|CLASS\s+\d+\s+\d{4}|NEET\s+\d{4}|JEE(?:\s+(?:Main|Advanced))?\s+\d{4}(?:\s+[a-zA-Z0-9]+)?|[^\n\)]+)\)?\s*$/i);
+        if (patternTagMatch) {
+          tag = patternTagMatch[1];
+          shouldRemovePattern = true;
+          patternTextToReplace = patternTagMatch[0];
+        }
+      }
+
+      let finalChildren = children;
+      if (tagLengthToRemove > 0) {
+        finalChildren = removeExamTagFromChildren(children);
+      } else if (shouldRemovePattern && patternTextToReplace) {
+        finalChildren = removePatternFromChildren(children, patternTextToReplace);
+      }
+
+      finalChildren = highlightChildren(finalChildren, highlights);
+
+      if (tag) {
+        const formattedTag = formatExamTag(tag);
+        return (
+          <li {...props} className="relative group py-3 pr-28 pl-2 border-b border-dashed border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50/40 dark:hover:bg-slate-800/10 rounded-xl transition-colors">
+            <div className="flex-1 text-slate-800 dark:text-slate-200 leading-relaxed font-semibold">
+              {finalChildren}
+            </div>
+            <span className="absolute right-2 top-3 select-none text-[10px] font-black uppercase tracking-wider bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-400 border border-violet-200/50 dark:border-violet-800/30 px-2 py-0.5 rounded-lg font-mono">
+              {formattedTag}
+            </span>
+          </li>
+        );
+      }
+
+      return <li {...props} className="py-1 [&_p]:inline [&_p]:m-0">{finalChildren}</li>;
+    },
+    p: ({ node, children, ...props }: any) => {
+      const hasImageNode = Array.isArray((node as any)?.children)
+        && (node as any).children.some((child: any) => child?.tagName === "img");
+      const hasImage = hasImageNode || React.Children.toArray(children).some(
+        (child) => React.isValidElement(child) && (child.type === NoteImage || child.type === "img")
+      );
+      if (hasImage) {
+        return <div {...props} className="my-2">{highlightChildren(children, highlights)}</div>;
+      }
+
+      return <p {...props} className="my-2">{highlightChildren(children, highlights)}</p>;
+    }
+  };
+
   return (
     <div className={cn("prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-slate-900 prose-pre:text-slate-100", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex]}
-        components={{
-          a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />,
-          img: ({ node, alt, src }) => <NoteImage src={imageMap?.[src ?? ''] ?? src} alt={alt} />,
-          li: ({ node, children, ...props }) => {
-            const textContent = getTextContent(children);
-            
-            let tag = "";
-            let tagLengthToRemove = 0;
-            let shouldRemovePattern = false;
-            let patternTextToReplace = "";
-
-            const startTagMatch = textContent.match(/^\s*\[EXAMTAG:\s*([^\]]+)\]\s*/i);
-            if (startTagMatch) {
-              tag = startTagMatch[1];
-              tagLengthToRemove = startTagMatch[0].length;
-            } else {
-              const patternTagMatch = textContent.match(/(?:\r?\n|^|\s+)\(?(?:Pattern|Exam):\s*(CBSE(?:\s+Class\s+\d+)?\s+\d{4}|CLASS\s+\d+\s+\d{4}|NEET\s+\d{4}|JEE(?:\s+(?:Main|Advanced))?\s+\d{4}(?:\s+[a-zA-Z0-9]+)?|[^\n\)]+)\)?\s*$/i);
-              if (patternTagMatch) {
-                tag = patternTagMatch[1];
-                shouldRemovePattern = true;
-                patternTextToReplace = patternTagMatch[0];
-              }
-            }
-
-            let finalChildren = children;
-            if (tagLengthToRemove > 0) {
-              finalChildren = removeExamTagFromChildren(children);
-            } else if (shouldRemovePattern && patternTextToReplace) {
-              finalChildren = removePatternFromChildren(children, patternTextToReplace);
-            }
-
-            if (tag) {
-              const formattedTag = formatExamTag(tag);
-              return (
-                <li {...props} className="relative group py-3 pr-28 pl-2 border-b border-dashed border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50/40 dark:hover:bg-slate-800/10 rounded-xl transition-colors">
-                  <div className="flex-1 text-slate-800 dark:text-slate-200 leading-relaxed font-semibold">
-                    {finalChildren}
-                  </div>
-                  <span className="absolute right-2 top-3 select-none text-[10px] font-black uppercase tracking-wider bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-400 border border-violet-200/50 dark:border-violet-800/30 px-2 py-0.5 rounded-lg font-mono">
-                    {formattedTag}
-                  </span>
-                </li>
-              );
-            }
-
-            return <li {...props} className="py-1">{children}</li>;
-          },
-          p: ({ node, children, ...props }) => {
-            const hasImageNode = Array.isArray((node as any)?.children)
-              && (node as any).children.some((child: any) => child?.tagName === "img");
-            const hasImage = hasImageNode || React.Children.toArray(children).some(
-              (child) => React.isValidElement(child) && (child.type === NoteImage || child.type === "img")
-            );
-            if (hasImage) {
-              return <div {...props} className="my-2">{children}</div>;
-            }
-
-            const text = getTextContent(children);
-            
-            const optionMatch = text.match(/^\s*\(?\b([A-D])\b\)?[\s.:]+(.*)/i);
-            if (optionMatch) {
-              const label = optionMatch[1].toUpperCase();
-              const restChildren = modifyChildrenToRemoveTag(children, optionMatch[0].length - optionMatch[2].length);
-              return (
-                <div className="my-2.5 flex items-center gap-3.5 rounded-2xl border border-slate-100 dark:border-slate-800/40 bg-slate-50/30 dark:bg-slate-900/10 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 hover:border-slate-200 dark:hover:bg-slate-900/30 dark:hover:border-slate-700/60 transition-all select-none shadow-sm/5">
-                  <span className="w-7 h-7 rounded-xl bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400 flex items-center justify-center font-black text-xs shrink-0 shadow-sm border border-violet-200/30">
-                    {label}
-                  </span>
-                  <span className="flex-1 leading-relaxed">{restChildren}</span>
-                </div>
-              );
-            }
-
-            const faqAnswerMatch = text.match(/^\s*\bA\b[\s.:]+(.*)/i);
-            if (faqAnswerMatch) {
-              const restChildren = modifyChildrenToRemoveTag(children, faqAnswerMatch[0].length - faqAnswerMatch[1].length);
-              return (
-                <div className="my-2.5 flex items-start gap-3.5 rounded-2xl border border-emerald-100/60 dark:border-emerald-950/20 bg-emerald-50/20 dark:bg-emerald-950/5 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-emerald-50/40 hover:border-emerald-200/60 transition-all select-none">
-                  <span className="w-7 h-7 rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 flex items-center justify-center font-black text-xs shrink-0 shadow-sm border border-emerald-200/30">
-                    ANS
-                  </span>
-                  <span className="flex-1 leading-relaxed text-slate-600 dark:text-slate-400">{restChildren}</span>
-                </div>
-              );
-            }
-
-            const faqQuestionMatch = text.match(/^\s*\bQ\d+\b[\s.:]+(.*)/i);
-            if (faqQuestionMatch) {
-              const label = text.match(/^\s*\b(Q\d+)\b/i)?.[1].toUpperCase() || "Q";
-              const rawChildren = modifyChildrenToRemoveTag(children, text.match(/^\s*\bQ\d+\b[\s.:]+/i)?.[0].length || 0);
-
-              let tag = "";
-              let tagLengthToRemove = 0;
-              let shouldRemovePattern = false;
-              let patternTextToReplace = "";
-
-              const plainTextContent = getTextContent(rawChildren);
-              const startTagMatch = plainTextContent.match(/^\s*\[EXAMTAG:\s*([^\]]+)\]\s*/i);
-              if (startTagMatch) {
-                tag = startTagMatch[1];
-                tagLengthToRemove = startTagMatch[0].length;
-              } else {
-                const patternTagMatch = plainTextContent.match(/(?:\r?\n|^|\s+)\(?(?:Pattern|Exam):\s*(CBSE(?:\s+Class\s+\d+)?\s+\d{4}|CLASS\s+\d+\s+\d{4}|NEET\s+\d{4}|JEE(?:\s+(?:Main|Advanced))?\s+\d{4}(?:\s+[a-zA-Z0-9]+)?|[^\n\)]+)\)?\s*$/i);
-                if (patternTagMatch) {
-                  tag = patternTagMatch[1];
-                  shouldRemovePattern = true;
-                  patternTextToReplace = patternTagMatch[0];
-                }
-              }
-
-              let finalChildren = rawChildren;
-              if (tagLengthToRemove > 0) {
-                finalChildren = removeExamTagFromChildren(rawChildren);
-              } else if (shouldRemovePattern && patternTextToReplace) {
-                finalChildren = removePatternFromChildren(rawChildren, patternTextToReplace);
-              }
-
-              const formattedTag = tag ? formatExamTag(tag) : "";
-
-              return (
-                <div className="relative group my-3 flex items-start gap-3.5 rounded-2xl border border-sky-100/60 dark:border-sky-950/20 bg-sky-50/20 dark:bg-sky-950/5 px-4 py-3 pr-28 text-sm font-black text-slate-800 dark:text-slate-200 hover:bg-sky-50/40 hover:border-sky-200/60 transition-all select-none">
-                  <span className="w-7 h-7 rounded-xl bg-sky-100 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400 flex items-center justify-center font-black text-xs shrink-0 shadow-sm border border-sky-200/30">
-                    {label}
-                  </span>
-                  <span className="flex-1 leading-relaxed">{finalChildren}</span>
-                  {formattedTag && (
-                    <span className="absolute right-2.5 top-3 select-none text-[10px] font-black uppercase tracking-wider bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-400 border border-violet-200/50 dark:border-violet-800/30 px-2 py-0.5 rounded-lg font-mono">
-                      {formattedTag}
-                    </span>
-                  )}
-                </div>
-              );
-            }
-
-            return <p {...props} className="my-2">{children}</p>;
-          }
-        }}
+        rehypePlugins={[[rehypeKatex, { strict: false, throwOnError: false }]] as any}
+        components={customComponents}
       >
         {formatMarkdown(content)}
       </ReactMarkdown>
     </div>
   );
 }
+

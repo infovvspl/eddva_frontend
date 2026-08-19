@@ -30,7 +30,8 @@ import {
   Smile,
   Calendar,
   User,
-  ChevronDown
+  ChevronDown,
+  ArrowLeft
 } from 'lucide-react';
 import schoolApi from '@/lib/api/school-client';
 import { apiClient } from '@/lib/api/client';
@@ -58,7 +59,7 @@ const EMOJIS = [
   '🔥', '✨', '🎉', '⭐', '🌈', '☀️', '🌸', '💡', '💬', '🔔'
 ];
 
-export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]', institutes = [] }) {
+export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]', institutes = [], onSelectedUserChange }) {
   const confirm = useConfirm();
   const { user, institute } = useAuth();
   const navigate = useNavigate();
@@ -93,10 +94,13 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]',
   // Track active chat peer ID
   useEffect(() => {
     window.activeChatPeerId = selectedUser?.id || null;
+    if (onSelectedUserChange) {
+      onSelectedUserChange(Boolean(selectedUser));
+    }
     return () => {
       window.activeChatPeerId = null;
     };
-  }, [selectedUser]);
+  }, [selectedUser, onSelectedUserChange]);
 
   // Handle userId query parameter on load/change
   useEffect(() => {
@@ -164,7 +168,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]',
   const [instituteFilter, setInstituteFilter] = useState('');
 
   // Layout Columns & Details Toggle
-  const [showDetails, setShowDetails] = useState(true);
+  const [showDetails, setShowDetails] = useState(false);
 
   // Message Action States
   const [contextMenu, setContextMenu] = useState(null);
@@ -495,6 +499,15 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]',
     }
   }
 
+  const handleBack = () => {
+    setSelectedUser(null);
+    const params = new URLSearchParams(window.location.search);
+    params.delete('userId');
+    params.delete('ticketId');
+    const newSearch = params.toString();
+    window.history.replaceState(null, '', window.location.pathname + (newSearch ? '?' + newSearch : ''));
+  };
+
   async function openConversation(peer) {
     setSelectedUser(peer);
     
@@ -778,9 +791,9 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]',
 
 
   return (
-    <div className={`flex ${heightClass} min-h-0 w-full flex-col overflow-hidden px-2 sm:px-4 lg:px-6`}>
+    <div className={cn("flex min-h-0 w-full flex-col overflow-hidden", heightClass)}>
       {!isSuperAdmin && (
-        <div className={cn("shrink-0 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3", selectedUser && "hidden md:grid")}>
+        <div className={cn("shrink-0 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3", selectedUser && "hidden")}>
           {[
             { label: 'Active Chats', val: stats.active, sub: 'This month' },
             { label: 'Unread Badges', val: stats.unread, sub: 'Needs reply', alert: stats.unread > 0 },
@@ -799,54 +812,60 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]',
       )}
 
       {/* Tabs */}
-      <div className={cn(
-        isSuperAdmin ? '' : 'mt-3',
-        "flex w-fit max-w-full shrink-0 gap-1.5 rounded-2xl border border-slate-100/60 bg-slate-50/50 p-1",
-        selectedUser && "hidden md:flex"
-      )}>
-        {PANELS.map((panel) => (
-          <button
-            key={panel.key}
-            onClick={() => setActivePanel(panel.key)}
-            className={`flex-1 rounded-xl px-4 py-2 text-xs font-bold transition-all ${activePanel === panel.key
-              ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-              }`}
-          >
-            {panel.label}
-          </button>
-        ))}
-      </div>
+      {PANELS.length > 1 && (
+        <div className={cn(
+          isSuperAdmin ? '' : 'mt-3',
+          "flex w-fit max-w-full shrink-0 gap-1.5 rounded-2xl border border-slate-100/60 bg-slate-50/50 p-1 mb-2",
+          selectedUser && "hidden md:flex"
+        )}>
+          {PANELS.map((panel) => (
+            <button
+              key={panel.key}
+              onClick={() => setActivePanel(panel.key)}
+              className={`flex-1 rounded-xl px-4 py-2 text-xs font-bold transition-all ${activePanel === panel.key
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+            >
+              {panel.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* 3-Column Redesigned Layout */}
-      <div className="mt-3 flex-1 min-h-0 overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-xl flex flex-col md:flex-row relative">
+      <div className="mt-2 mb-2 flex-1 min-h-0 overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-xl flex flex-col md:flex-row relative">
 
-        {/* Column 1: Contacts Sidebar */}
-        <div className={`w-full md:w-[320px] lg:w-[350px] border-r border-slate-100 flex flex-col shrink-0 min-h-0 bg-slate-50/10 transition-all ${selectedUser ? 'hidden md:flex' : 'flex'}`}>
-          <div className="p-4 bg-white border-b border-slate-100/60 shrink-0 space-y-3">
-            {isSuperAdmin && institutes.length > 0 && (
-              <CustomSelect
-                value={instituteFilter}
-                onChange={(val) => setInstituteFilter(val)}
-                options={[
-                  { value: "", label: "All Schools" },
-                  ...institutes.map(inst => ({ value: inst.id, label: inst.name }))
-                ]}
-                className="w-full"
-              />
-            )}
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={`Search ${activePanel === 'TEACHER' ? 'teachers' :
-                    activePanel === 'PARENT' ? 'parents' :
-                      activePanel === 'INSTITUTE_ADMIN' ? 'institute admins' :
-                        'super admin'
-                  }...`}
-                className="w-full rounded-2xl border border-slate-100 bg-slate-50/50 py-2 pl-9 pr-3 text-xs font-semibold outline-none focus:border-blue-400 focus:bg-white transition"
-              />
+        {/* Column 1: Full Width Contacts List (Shown when no chat selected) */}
+        <div className={`w-full border-r border-slate-100 flex flex-col shrink-0 min-h-0 bg-slate-50/10 transition-all ${selectedUser ? 'hidden' : 'flex-1 flex'}`}>
+          <div className="p-4 bg-white border-b border-slate-100/60 shrink-0">
+            <div className="flex flex-col sm:flex-row items-center gap-2.5">
+              {isSuperAdmin && institutes.length > 0 && (
+                <div className="w-full sm:w-48 sm:shrink-0">
+                  <CustomSelect
+                    value={instituteFilter}
+                    onChange={(val) => setInstituteFilter(val)}
+                    options={[
+                      { value: "", label: "All Schools" },
+                      ...institutes.map(inst => ({ value: inst.id, label: inst.name }))
+                    ]}
+                    className="w-full"
+                  />
+                </div>
+              )}
+              <div className="relative flex-1 w-full">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={`Search ${activePanel === 'TEACHER' ? 'teachers' :
+                      activePanel === 'PARENT' ? 'parents' :
+                        activePanel === 'INSTITUTE_ADMIN' ? 'institute admins' :
+                          'super admin'
+                    }...`}
+                  className="w-full rounded-2xl border border-slate-100 bg-slate-50/50 py-2 pl-9 pr-3 text-xs font-semibold outline-none focus:border-blue-400 focus:bg-white transition"
+                />
+              </div>
             </div>
           </div>
 
@@ -921,8 +940,8 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]',
           </div>
         </div>
 
-        {/* Column 2: Chat Conversation Panel */}
-        <div className={`flex-1 flex flex-col min-w-0 min-h-0 bg-white ${!selectedUser ? 'hidden md:flex' : 'flex'}`}>
+        {/* Column 2: Full Screen Dedicated Active Chat Page (Covers full screen including headerbar) */}
+        <div className={`flex-1 flex flex-col min-w-0 min-h-0 bg-white ${!selectedUser ? 'hidden' : 'fixed inset-0 z-[100] w-full h-full bg-white flex flex-col'}`}>
           {!selectedUser ? (
             <div className="flex h-full flex-col items-center justify-center text-center p-6 opacity-60 bg-slate-50/10">
               <MessageSquare className="h-10 w-10 text-slate-350 mb-2" />
@@ -934,8 +953,14 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]',
               {/* Conversation Header */}
               <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white shrink-0 shadow-xs z-10">
                 <div className="flex items-center gap-3 min-w-0">
-                  <button className="md:hidden p-1.5 -ml-1 rounded-xl hover:bg-slate-100 text-slate-500" onClick={() => setSelectedUser(null)}>
-                    <ChevronRight size={18} className="rotate-180" />
+                  <button
+                    type="button"
+                    className="p-2 -ml-1 rounded-xl bg-slate-100/80 hover:bg-slate-200 text-slate-700 transition shrink-0 cursor-pointer"
+                    onClick={handleBack}
+                    aria-label="Back to conversations"
+                    title="Back to conversations list"
+                  >
+                    <ArrowLeft size={18} />
                   </button>
                   <div className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white">
                     {(selectedUser.name || 'U').slice(0, 1).toUpperCase()}
@@ -1250,124 +1275,158 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]',
           )}
         </div>
 
-        {/* Column 3: Contact Details Sidebar */}
+        {/* Column 3: Contact Details Sidebar & Full-screen Mobile Takeover */}
         {showDetails && selectedUser && (
-          <aside className="hidden xl:flex w-[280px] flex-col border-l border-slate-100 bg-slate-50/10 shrink-0">
-            <div className="p-6 text-center border-b border-slate-100 bg-white shrink-0">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-base font-black text-white shadow-md">
-                {(selectedUser.name || 'U').slice(0, 1).toUpperCase()}
-              </div>
-              <h4 className="mt-3 text-xs font-bold text-slate-900">{selectedUser.name}</h4>
-              <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider mt-0.5">{selectedUser.role}</p>
-              <p className="text-[11px] font-medium text-slate-500 truncate mt-1">{selectedUser.email}</p>
-            </div>
+          <>
+            {/* Mobile Backdrop Overlay */}
+            <div
+              className="fixed inset-0 z-[140] bg-slate-900/40 backdrop-blur-xs xl:hidden"
+              onClick={() => setShowDetails(false)}
+            />
 
-            <div className="grid grid-cols-2 gap-2 px-4 py-4 border-b border-slate-100 bg-white shrink-0 lg:grid-cols-4">
-              {[
-                { label: 'Profile', icon: <User size={14} />, act: () => setShowProfileDrawer(true) },
-                { label: 'Shared Files', icon: <FileText size={14} />, act: () => setShowSharedFilesModal(true) },
-                { label: 'Info', icon: <Info size={14} />, act: () => setShowDetails(true) },
-                { label: 'More', icon: <MoreVertical size={14} />, act: () => setShowMoreOptions(true) },
-              ].map((btn, idx) => (
-                <button key={idx} onClick={btn.act} className="flex flex-col items-center gap-1 hover:opacity-80 transition">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-50 border border-slate-100 text-slate-500 shadow-xs">
-                    {btn.icon}
+            <aside className="fixed inset-0 z-[150] w-full max-w-full bg-white flex flex-col xl:relative xl:inset-auto xl:z-auto xl:shadow-none xl:w-[280px] xl:max-w-none xl:border-l xl:border-slate-100 xl:bg-slate-50/10 shrink-0">
+              {/* Header with Back & Close Buttons for Mobile (Full Screen Takeover) */}
+              <div className="flex xl:hidden items-center justify-between p-4 border-b border-slate-100 bg-white shrink-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowDetails(false)}
+                    className="p-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition shrink-0"
+                    aria-label="Back to chat"
+                  >
+                    <ArrowLeft size={18} />
+                  </button>
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-extrabold text-slate-900 leading-tight">Contact Details</h3>
+                    <p className="text-[10px] font-semibold text-slate-400 truncate mt-0.5">{selectedUser.name}</p>
                   </div>
-                  <span className="text-[9px] font-bold text-slate-400">{btn.label}</span>
-                </button>
-              ))}
-            </div>
-
-            <div className="p-4 border-b border-slate-100 bg-white shrink-0">
-              <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Search in Chat</label>
-              <div className="relative mt-1.5">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-                <input
-                  value={inChatSearch}
-                  onChange={(e) => setInChatSearch(e.target.value)}
-                  placeholder="Search messages..."
-                  className="w-full rounded-xl border border-slate-100 bg-slate-50/50 py-1.5 pl-8 pr-3 text-xs font-semibold outline-none focus:border-blue-400 focus:bg-white"
-                />
-              </div>
-            </div>
-            {inChatSearch.trim() && (
-              <div className="px-4 pb-2 max-h-[140px] overflow-y-auto space-y-1 bg-slate-50 p-2 rounded-xl border border-slate-100/60 no-scrollbar mx-4 mb-2">
-                {messages
-                  .filter((m) => (m.content || m.text || '').toLowerCase().includes(inChatSearch.toLowerCase()))
-                  .map((m) => (
-                    <button
-                      key={m.id}
-                      onClick={() => {
-                        const el = document.getElementById(`msg-${m.id}`);
-                        if (el) {
-                          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                          setHighlightedMessageId(m.id);
-                          setTimeout(() => setHighlightedMessageId(null), 2000);
-                          showToast('Message located', 'info');
-                        }
-                      }}
-                      className="w-full text-left text-[10px] font-semibold text-slate-700 hover:text-blue-600 truncate block py-1 border-b border-slate-100 last:border-0"
-                    >
-                      <span className="font-bold text-slate-400">{(isMe(m.sender_id)) ? 'Me: ' : 'Them: '}</span>
-                      {m.content || m.text}
-                    </button>
-                  ))}
-                {messages.filter((m) => (m.content || m.text || '').toLowerCase().includes(inChatSearch.toLowerCase())).length === 0 && (
-                  <p className="text-[9px] text-slate-400 text-center py-1">No matches found</p>
-                )}
-              </div>
-            )}
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Shared Files ({sharedFiles.length})</h5>
-                  <button className="text-[9px] font-bold text-blue-600 hover:underline" onClick={() => setShowSharedFilesModal(true)}>View all</button>
                 </div>
-                <div className="space-y-2">
-                  {sharedFiles.slice(0, 3).map((file) => (
-                    <div key={file.id} className="flex items-center gap-2 rounded-xl bg-white p-2 border border-slate-100 shadow-xs">
-                      <FileText className="h-5 w-5 shrink-0 text-blue-500" />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[10px] font-bold text-slate-800">{file.attachment_name}</p>
-                        <span className="text-[9px] text-slate-400">Shared recently</span>
-                      </div>
-                      <a
-                        href={file.attachment_url}
-                        download
-                        className="rounded p-1 text-slate-400 hover:bg-slate-50 transition"
-                      >
-                        <Download className="h-3.5 w-3.5" />
-                      </a>
+                <button
+                  type="button"
+                  onClick={() => setShowDetails(false)}
+                  className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition shrink-0"
+                  aria-label="Close details"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="p-6 text-center border-b border-slate-100 bg-white shrink-0">
+                <div className="mx-auto flex h-20 w-20 xl:h-16 xl:w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-xl xl:text-base font-black text-white shadow-md">
+                  {(selectedUser.name || 'U').slice(0, 1).toUpperCase()}
+                </div>
+                <h4 className="mt-3 text-sm xl:text-xs font-extrabold text-slate-900">{selectedUser.name}</h4>
+                <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider mt-0.5">{selectedUser.role}</p>
+                <p className="text-[11px] font-medium text-slate-500 truncate mt-1">{selectedUser.email}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 px-4 py-4 border-b border-slate-100 bg-white shrink-0 lg:grid-cols-4">
+                {[
+                  { label: 'Profile', icon: <User size={14} />, act: () => setShowProfileDrawer(true) },
+                  { label: 'Shared Files', icon: <FileText size={14} />, act: () => setShowSharedFilesModal(true) },
+                  { label: 'Info', icon: <Info size={14} />, act: () => setShowDetails(true) },
+                  { label: 'More', icon: <MoreVertical size={14} />, act: () => setShowMoreOptions(true) },
+                ].map((btn, idx) => (
+                  <button key={idx} onClick={btn.act} className="flex flex-col items-center gap-1 hover:opacity-80 transition">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-50 border border-slate-100 text-slate-500 shadow-xs">
+                      {btn.icon}
                     </div>
-                  ))}
-                  {sharedFiles.length === 0 && (
-                    <p className="text-[10px] font-semibold text-slate-400 text-center py-2">No files shared yet</p>
+                    <span className="text-[9px] font-bold text-slate-400">{btn.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="p-4 border-b border-slate-100 bg-white shrink-0">
+                <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Search in Chat</label>
+                <div className="relative mt-1.5">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                  <input
+                    value={inChatSearch}
+                    onChange={(e) => setInChatSearch(e.target.value)}
+                    placeholder="Search messages..."
+                    className="w-full rounded-xl border border-slate-100 bg-slate-50/50 py-1.5 pl-8 pr-3 text-xs font-semibold outline-none focus:border-blue-400 focus:bg-white"
+                  />
+                </div>
+              </div>
+              {inChatSearch.trim() && (
+                <div className="px-4 pb-2 max-h-[140px] overflow-y-auto space-y-1 bg-slate-50 p-2 rounded-xl border border-slate-100/60 no-scrollbar mx-4 mb-2">
+                  {messages
+                    .filter((m) => (m.content || m.text || '').toLowerCase().includes(inChatSearch.toLowerCase()))
+                    .map((m) => (
+                      <button
+                        key={m.id}
+                        onClick={() => {
+                          const el = document.getElementById(`msg-${m.id}`);
+                          if (el) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            setHighlightedMessageId(m.id);
+                            setTimeout(() => setHighlightedMessageId(null), 2000);
+                            showToast('Message located', 'info');
+                          }
+                        }}
+                        className="w-full text-left text-[10px] font-semibold text-slate-700 hover:text-blue-600 truncate block py-1 border-b border-slate-100 last:border-0"
+                      >
+                        <span className="font-bold text-slate-400">{(isMe(m.sender_id)) ? 'Me: ' : 'Them: '}</span>
+                        {m.content || m.text}
+                      </button>
+                    ))}
+                  {messages.filter((m) => (m.content || m.text || '').toLowerCase().includes(inChatSearch.toLowerCase())).length === 0 && (
+                    <p className="text-[9px] text-slate-400 text-center py-1">No matches found</p>
+                  )}
+                </div>
+              )}
+
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Shared Files ({sharedFiles.length})</h5>
+                    <button className="text-[9px] font-bold text-blue-600 hover:underline" onClick={() => setShowSharedFilesModal(true)}>View all</button>
+                  </div>
+                  <div className="space-y-2">
+                    {sharedFiles.slice(0, 3).map((file) => (
+                      <div key={file.id} className="flex items-center gap-2 rounded-xl bg-white p-2 border border-slate-100 shadow-xs">
+                        <FileText className="h-5 w-5 shrink-0 text-blue-500" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[10px] font-bold text-slate-800">{file.attachment_name}</p>
+                          <span className="text-[9px] text-slate-400">Shared recently</span>
+                        </div>
+                        <a
+                          href={file.attachment_url}
+                          download
+                          className="rounded p-1 text-slate-400 hover:bg-slate-50 transition"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                        </a>
+                      </div>
+                    ))}
+                    {sharedFiles.length === 0 && (
+                      <p className="text-[10px] font-semibold text-slate-400 text-center py-2">No files shared yet</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Media</h5>
+                    <button className="text-[9px] font-bold text-blue-600 hover:underline" onClick={() => setShowMediaGalleryModal(true)}>View all</button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {sharedFiles
+                      .filter(f => f.attachment_name?.toLowerCase().match(/\.(jpg|jpeg|png)$/))
+                      .slice(0, 3)
+                      .map((file) => (
+                        <div key={file.id} className="relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-100 group cursor-pointer" onClick={() => setMediaLightboxUrl(file.attachment_url)}>
+                          <img src={file.attachment_url} alt="media" className="h-full w-full object-cover group-hover:scale-105 transition duration-200" />
+                        </div>
+                      ))}
+                  </div>
+                  {sharedFiles.filter(f => f.attachment_name?.toLowerCase().match(/\.(jpg|jpeg|png)$/)).length === 0 && (
+                    <p className="text-[10px] font-semibold text-slate-400 text-center py-2">No media shared yet</p>
                   )}
                 </div>
               </div>
-
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Media</h5>
-                  <button className="text-[9px] font-bold text-blue-600 hover:underline" onClick={() => setShowMediaGalleryModal(true)}>View all</button>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {sharedFiles
-                    .filter(f => f.attachment_name?.toLowerCase().match(/\.(jpg|jpeg|png)$/))
-                    .slice(0, 3)
-                    .map((file) => (
-                      <div key={file.id} className="relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-100 group cursor-pointer" onClick={() => setMediaLightboxUrl(file.attachment_url)}>
-                        <img src={file.attachment_url} alt="media" className="h-full w-full object-cover group-hover:scale-105 transition duration-200" />
-                      </div>
-                    ))}
-                </div>
-                {sharedFiles.filter(f => f.attachment_name?.toLowerCase().match(/\.(jpg|jpeg|png)$/)).length === 0 && (
-                  <p className="text-[10px] font-semibold text-slate-400 text-center py-2">No media shared yet</p>
-                )}
-              </div>
-            </div>
-          </aside>
+            </aside>
+          </>
         )}
       </div>
 
