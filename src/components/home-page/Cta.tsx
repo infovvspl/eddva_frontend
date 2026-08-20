@@ -2,6 +2,7 @@ import React from "react";
 import { motion, Variants } from "framer-motion";
 import { FiArrowUpRight, FiBookOpen, FiCornerDownRight } from "react-icons/fi";
 import { Link } from "react-router-dom";
+import { useRequestDemo } from "@/components/landing/RequestDemoProvider";
 
 // Define a strict union type based on item layout behaviors
 type CTAGalleryItem =
@@ -57,6 +58,7 @@ const ctaGalleryItems: CTAGalleryItem[] = [
 ];
 
 export default function CTASection() {
+  const { openRequestDemo } = useRequestDemo();
   // Converted easing array into a strict read-only tuple
   const fluidEase = [0.16, 1, 0.3, 1] as const;
 
@@ -131,14 +133,15 @@ export default function CTASection() {
             <FiArrowUpRight className="relative z-10 w-5 h-5 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </Link>
 
-          <Link
-            to="/courses"
+          <button
+            type="button"
+            onClick={() => openRequestDemo()}
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 border border-slate-200 bg-white/80 backdrop-blur-sm text-slate-700 px-8 py-4 rounded-xl font-bold transition-all duration-300 hover:bg-slate-50 hover:border-[#0066cc]/40 hover:shadow-lg"
           >
             <FiCornerDownRight className="w-4 h-4 text-slate-400" />
 
-            <span>Explore Courses</span>
-          </Link>
+            <span>Request a Demo</span>
+          </button>
         </motion.div>
       </div>
     </section>

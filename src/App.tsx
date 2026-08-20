@@ -89,6 +89,7 @@ const AdminSettingsPage = lazy(() => import("./pages/admin/AdminSettingsPage"));
 const SupportTicketsPage = lazy(() => import("./pages/admin/SupportTicketsPage"));
 const TeacherSupportTicketsPage = lazy(() => import("./pages/teacher/TeacherSupportTicketsPage"));
 const SuperAdminSupportTicketsPage = lazy(() => import("./pages/super-admin/SuperAdminSupportTicketsPage"));
+const SuperAdminLeadsPage = lazy(() => import("./pages/super-admin/LeadsPage"));
 const CoachingTicketDetailPage = lazy(() => import("./pages/shared/CoachingTicketDetailPage"));
 const AdminCalendarPage = lazy(() => import("./pages/admin/AdminCalendarPage"));
 const TeacherCalendarPage = lazy(() => import("./pages/teacher/TeacherCalendarPage"));
@@ -131,6 +132,7 @@ const StudentNotificationsPage = lazy(() => import("./pages/student/StudentNotif
 const StudentMockTestPage = lazy(() => import("./pages/student/StudentMockTestPage"));
 const StudentTestsPage = lazy(() => import("./pages/student/StudentTestsPage"));
 const StudentProgressPage = lazy(() => import("./pages/student/StudentProgressPage"));
+const StudentSupportTicketsPage = lazy(() => import("./pages/student/StudentSupportTicketsPage"));
 const PYQManagementPage = lazy(() => import("./pages/admin/PYQManagementPage"));
 const ReportsPage = lazy(() => import("./pages/admin/ReportsPage"));
 const TeacherTestResultsPage = lazy(() => import("./pages/admin/TeacherTestResultsPage"));
@@ -435,6 +437,7 @@ const StudentRoutes = () => (
       <Route path="/student/doubts" element={<FeatureGuard moduleKey="doubt_queue"><StudentDoubtsPage /></FeatureGuard>} />
       <Route path="/student/leaderboard" element={<FeatureGuard moduleKey="leaderboard"><StudentLeaderboardPage /></FeatureGuard>} />
       <Route path="/student/study-plan" element={<AiFeatureGate feature="ai_study_plan" title="AI Study Plan"><StudentStudyPlanPage /></AiFeatureGate>} />
+      <Route path="/student/support-tickets" element={<StudentSupportTicketsPage />} />
       <Route path="/student/profile" element={<StudentProfilePage />} />
       <Route path="/student/progress" element={<StudentProgressPage />} />
       <Route path="/student/pyq/:topicId" element={<FeatureGuard moduleKey="pyq_bank"><StudentPYQPage /></FeatureGuard>} />
@@ -676,6 +679,7 @@ const SuperAdminRoutes = () => (
       <Route path="/super-admin/tenants/:id" element={<InstituteDetailPage />} />
       <Route path="/super-admin/tenants/:id/courses/:courseId" element={<SuperAdminCourseDetailPage />} />
       <Route path="/super-admin/users" element={<UsersPage />} />
+      <Route path="/super-admin/leads" element={<SuperAdminLeadsPage />} />
       <Route path="/super-admin/enrollments" element={<EnrollmentsPage />} />
       <Route path="/super-admin/announcements" element={<Navigate to="/super-admin/communication" replace />} />
       <Route path="/super-admin/communication" element={<SuperAdminCommunication />} />

@@ -81,6 +81,7 @@ const PUBLIC_FRAGMENTS = [
   "school/auth/login",
   "school/auth/register",
   "tenants/public/platform-config",
+  "tenants/public/leads",
 ];
 const isPublicEndpoint = (url = "") =>
   PUBLIC_FRAGMENTS.some((p) => (url || "").replace(/^\//, "").includes(p));

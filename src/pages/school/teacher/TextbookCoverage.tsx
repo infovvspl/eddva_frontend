@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BookOpen, ChevronDown, ChevronRight, Search, RefreshCw, Link2Off,
-  CheckCircle2, CircleDashed, AlertTriangle, Loader2, PlayCircle, FileText,
+  CheckCircle2, CircleDashed, AlertTriangle, Loader2, PlayCircle, FileText, X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/lib/api/school-client';
@@ -102,7 +102,11 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
         clearInterval(pollRef.current);
         pollRef.current = null;
         load();
-        toast.success(`Indexing finished — ${s.succeeded} chapters ready, ${s.failed} failed.`);
+        if (s.status === 'cancelled') {
+          toast.info(`Indexing cancelled — ${s.succeeded} chapters indexed before stopping.`);
+        } else {
+          toast.success(`Indexing finished — ${s.succeeded} chapters ready, ${s.failed} failed.`);
+        }
       }
     } catch { /* transient */ }
   }, [load]);
@@ -237,6 +241,23 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
     }
   };
 
+  const cancelIndexing = async () => {
+    setBusy('cancel');
+    // Stop polling first so a late poll can't report the run as "finished".
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    try {
+      await api.post('/textbooks/ingest-cancel', { instituteId });
+      toast.success('Indexing cancelled. Chapters already indexed are kept.');
+      setRun(null);
+      load();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || 'Could not cancel indexing.');
+      startPolling(); // resume watching if the cancel didn't take
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const toggle = (k: string) => setOpen((o) => ({ ...o, [k]: !o[k] }));
 
   if (loading) {
@@ -293,9 +314,22 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
               <Loader2 className="h-4 w-4 animate-spin" />
               Indexing {run.done} of {run.total}
             </span>
-            <span className="text-xs text-brand-600 dark:text-brand-400">
-              {run.lastChapter ? `Last: ${run.lastChapter}` : 'Starting…'}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="hidden text-xs text-brand-600 dark:text-brand-400 sm:inline">
+                {run.lastChapter ? `Last: ${run.lastChapter}` : 'Starting…'}
+              </span>
+              {run.total > 1 && (
+                <button
+                  type="button"
+                  onClick={cancelIndexing}
+                  disabled={busy === 'cancel'}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-2.5 py-1 text-xs font-bold text-rose-600 transition hover:bg-rose-50 disabled:opacity-60 dark:border-rose-900 dark:bg-transparent dark:text-rose-300 dark:hover:bg-rose-950/40"
+                >
+                  {busy === 'cancel' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
+                  Cancel
+                </button>
+              )}
+            </div>
           </div>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-brand-100 dark:bg-brand-900">
             <div
