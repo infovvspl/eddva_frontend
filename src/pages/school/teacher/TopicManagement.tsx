@@ -276,9 +276,11 @@ const TopicManagement: React.FC = () => {
     setShowChapterModal(true);
   };
 
-  const openEditChapter = (chapter: any) => {
+  const openEditChapter = (chapter: any, fallbackIndex?: number) => {
     setEditingChapterId(chapter.id);
-    setNewChapter({ name: chapter.name || '', order: Number(chapter.sort_order ?? chapter.orderIndex ?? 1) });
+    const existingOrder = Number(chapter.sort_order ?? chapter.orderIndex ?? chapter.order ?? 0);
+    const orderVal = existingOrder > 0 ? existingOrder : (fallbackIndex || 1);
+    setNewChapter({ name: chapter.name || '', order: orderVal });
     setShowChapterModal(true);
   };
 
@@ -286,10 +288,16 @@ const TopicManagement: React.FC = () => {
     if (!newChapter.name.trim()) { toast.warning('Chapter name is required'); return; }
     if (!selectedSubject) { toast.warning('Subject is required'); return; }
     try {
+      const payload = {
+        name: newChapter.name,
+        orderIndex: Number(newChapter.order),
+        order: Number(newChapter.order),
+        subjectId: selectedSubject.id,
+      };
       if (editingChapterId) {
-        await api.put(`/topics/chapters/${editingChapterId}`, { name: newChapter.name, orderIndex: Number(newChapter.order) });
+        await api.put(`/topics/chapters/${editingChapterId}`, payload);
       } else {
-        await api.post('/topics/chapters', { name: newChapter.name, orderIndex: Number(newChapter.order), subjectId: selectedSubject.id });
+        await api.post('/topics/chapters', payload);
       }
       await fetchChapters(selectedSubject.id);
       setNewChapter({ name: '', order: 1 });
@@ -327,21 +335,29 @@ const TopicManagement: React.FC = () => {
     setShowTopicModal(true);
   };
 
-  const openEditTopic = (topic: any) => {
+  const openEditTopic = (topic: any, fallbackIndex?: number) => {
     setEditingTopicId(topic.id);
     setTopicTargetChapterId(topic.chapter_id ?? topic.chapterId ?? null);
-    setNewTopic({ name: topic.name || '', orderIndex: Number(topic.sort_order ?? topic.orderIndex ?? 1) });
+    const existingOrder = Number(topic.sort_order ?? topic.orderIndex ?? topic.order ?? 0);
+    const orderVal = existingOrder > 0 ? existingOrder : (fallbackIndex || 1);
+    setNewTopic({ name: topic.name || '', orderIndex: orderVal });
     setShowTopicModal(true);
   };
 
   const handleSaveTopic = async () => {
     if (!newTopic.name.trim()) { toast.warning('Topic name is required'); return; }
     try {
+      const payload = {
+        name: newTopic.name,
+        orderIndex: Number(newTopic.orderIndex),
+        order: Number(newTopic.orderIndex),
+        chapterId: topicTargetChapterId,
+      };
       if (editingTopicId) {
-        await api.put(`/topics/${editingTopicId}`, { name: newTopic.name, orderIndex: Number(newTopic.orderIndex) });
+        await api.put(`/topics/${editingTopicId}`, payload);
       } else {
         if (!topicTargetChapterId) { toast.warning('No chapter selected'); return; }
-        await api.post('/topics', { name: newTopic.name, orderIndex: Number(newTopic.orderIndex), chapterId: topicTargetChapterId });
+        await api.post('/topics', payload);
       }
       setNewTopic({ name: '', orderIndex: 1 });
       setShowTopicModal(false);
@@ -471,9 +487,9 @@ const TopicManagement: React.FC = () => {
           <EmptyState icon={<GraduationCap size={40} />} title="No classes assigned" message="You haven't been assigned to any classes yet. Contact your administrator." />
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredClasses.map((c) => (
+            {filteredClasses.map((c, i) => (
               <NavCard
-                key={c.id}
+                key={`${c.id}-${i}`}
                 icon={<GraduationCap size={22} />}
                 tone="brand"
                 title={c.name}
@@ -493,9 +509,9 @@ const TopicManagement: React.FC = () => {
           <EmptyState icon={<Layers size={40} />} title="No sections" message="No sections found for this class." />
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredSections.map((s) => (
+            {filteredSections.map((s, i) => (
               <NavCard
-                key={s.id}
+                key={`${s.id}-${i}`}
                 icon={<Layers size={22} />}
                 tone="violet"
                 title={`Section ${s.name}`}
@@ -514,9 +530,9 @@ const TopicManagement: React.FC = () => {
           <EmptyState icon={<BookOpen size={40} />} title="No subjects" message="No subjects found for this section." />
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredSubjects.map((s) => (
+            {filteredSubjects.map((s, i) => (
               <NavCard
-                key={s.id}
+                key={`${s.id}-${i}`}
                 icon={<BookOpen size={22} />}
                 tone="emerald"
                 title={s.name}
@@ -581,7 +597,7 @@ const TopicManagement: React.FC = () => {
 
                   {chaptersList.map((chapter, ci) => (
                     <ChapterNode
-                      key={chapter.id}
+                      key={`${chapter.id}-${ci}`}
                       chapter={chapter}
                       chapterIndex={ci}
                       version={curriculumVersion}
@@ -592,7 +608,7 @@ const TopicManagement: React.FC = () => {
                       onAddTopic={(count) => openCreateTopic(chapter.id, count)}
                       onEditTopic={openEditTopic}
                       onDeleteTopic={handleDeleteTopic}
-                      onEditChapter={() => openEditChapter(chapter)}
+                      onEditChapter={() => openEditChapter(chapter, ci + 1)}
                       onDeleteChapter={() => handleDeleteChapter(chapter)}
                     />
                   ))}
@@ -858,7 +874,7 @@ function ChapterNode({
 }: {
   chapter: any; chapterIndex: number; version: number; canEdit: boolean; selectedScopeId: string | null;
   onSelectTopic: (t: any) => void; onSelectChapter: () => void; onAddTopic: (count: number) => void;
-  onEditTopic: (t: any) => void; onDeleteTopic: (t: any) => void; onEditChapter: () => void; onDeleteChapter: () => void;
+  onEditTopic: (t: any, fallbackIndex?: number) => void; onDeleteTopic: (t: any) => void; onEditChapter: () => void; onDeleteChapter: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [topics, setTopics] = useState<any[]>([]);
@@ -934,7 +950,7 @@ function ChapterNode({
                 const active = selectedScopeId === t.id;
                 const isLast = ti === topics.length - 1;
                 return (
-                  <div key={t.id} className="group/topic relative">
+                  <div key={`${t.id}-${ti}`} className="group/topic relative">
                     <TreeItem
                       icon={<BookOpen size={13} />}
                       label={t.name}
@@ -943,7 +959,7 @@ function ChapterNode({
                       onClick={() => onSelectTopic(t)}
                       actions={canEdit ? (
                         <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover/topic:opacity-100">
-                          <IconButton label="Edit topic" onClick={(e) => { e.stopPropagation(); onEditTopic({ ...t, chapter_id: chapter.id }); }}><Pencil size={12} /></IconButton>
+                          <IconButton label="Edit topic" onClick={(e) => { e.stopPropagation(); onEditTopic({ ...t, chapter_id: chapter.id }, ti + 1); }}><Pencil size={12} /></IconButton>
                           <IconButton label="Delete topic" danger onClick={(e) => { e.stopPropagation(); onDeleteTopic(t); }}><Trash2 size={12} /></IconButton>
                         </div>
                       ) : null}
@@ -1213,7 +1229,7 @@ function MaterialWorkspace({
                     <span className="rounded-full bg-surface-100 px-2 py-0.5 text-xs font-bold text-surface-500 dark:bg-surface-800">{items.length}</span>
                   </div>
                   <div className="space-y-2">
-                    {items.map((m) => {
+                    {items.map((m, mi) => {
                       const href = resolveFileUrl(m.fileUrl ?? m.file_url);
                       const isText = !!m.description && !href;
                       const displayTitle = materialDisplayTitle(m);
@@ -1225,7 +1241,7 @@ function MaterialWorkspace({
                         /\.(mp4|webm|og[gv])([?#].*)?$/i.test(href);
                       const isPpt = mt.value === 'ppt' || String(m.fileType || '').toLowerCase() === 'ppt';
                       return (
-                        <div key={m.id} className="overflow-hidden rounded-xl border border-surface-100 bg-white transition-colors hover:border-brand-200 dark:border-surface-700 dark:bg-surface-800">
+                        <div key={`${m.id}-${mi}`} className="overflow-hidden rounded-xl border border-surface-100 bg-white transition-colors hover:border-brand-200 dark:border-surface-700 dark:bg-surface-800">
                           <div className="group flex items-center gap-3 p-3">
                             <div className={`rounded-lg p-2 ${mt.soft}`}><Icon size={16} className={mt.text} /></div>
                             <div className="min-w-0 flex-1">

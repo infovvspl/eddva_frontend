@@ -1401,7 +1401,7 @@ const ClassManagement: React.FC = () => {
           onChange={(val) => setRecFilter((p) => ({ ...p, chapterId: val, topicId: '' }))}
           options={[
             { value: "", label: "All chapters" },
-            ...filterChapters.map((c: any) => ({ value: c.id, label: c.name })),
+            ...filterChapters.map((c: any, i: number) => ({ value: c.id, label: `${i + 1}. ${c.name}` })),
           ]}
           disabled={!recFilter.subjectId}
           className="w-[140px] flex-1 sm:flex-none"
@@ -1411,7 +1411,7 @@ const ClassManagement: React.FC = () => {
           onChange={(val) => setRecFilter((p) => ({ ...p, topicId: val }))}
           options={[
             { value: "", label: "All topics" },
-            ...filterTopics.map((t: any) => ({ value: t.id, label: t.name })),
+            ...filterTopics.map((t: any, i: number) => ({ value: t.id, label: `${i + 1}. ${t.name}` })),
           ]}
           disabled={!recFilter.chapterId}
           className="w-[140px] flex-1 sm:flex-none"
@@ -2848,7 +2848,7 @@ const ClassManagement: React.FC = () => {
               label="Chapter (optional)"
               value={recordingForm.chapterId}
               onChange={(e) => setRecordingForm((prev) => ({ ...prev, chapterId: e.target.value }))}
-              options={[{ value: '', label: recordingForm.subjectId ? (recChapters.length ? 'All / general' : 'No chapters') : 'Select subject first' }, ...recChapters.map((c: any) => ({ value: c.id, label: c.name }))]}
+              options={[{ value: '', label: recordingForm.subjectId ? (recChapters.length ? 'All / general' : 'No chapters') : 'Select subject first' }, ...recChapters.map((c: any, i: number) => ({ value: c.id, label: `${i + 1}. ${c.name}` }))]}
             />
           </div>
           <div className="class__modal-row">
@@ -2856,7 +2856,7 @@ const ClassManagement: React.FC = () => {
               label="Topic (optional)"
               value={recordingForm.topicId}
               onChange={(e) => setRecordingForm((prev) => ({ ...prev, topicId: e.target.value }))}
-              options={[{ value: '', label: recordingForm.chapterId ? 'Whole chapter' : 'Select chapter first' }, ...recTopics.map((t: any) => ({ value: t.id, label: t.name }))]}
+              options={[{ value: '', label: recordingForm.chapterId ? 'Whole chapter' : 'Select chapter first' }, ...recTopics.map((t: any, i: number) => ({ value: t.id, label: `${i + 1}. ${t.name}` }))]}
             />
           </div>
           <div>
