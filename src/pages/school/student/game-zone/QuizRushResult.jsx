@@ -74,12 +74,12 @@ export default function QuizRushResult({ result, onPlayAgain, onViewLeaderboard 
     <div className="qr-arena relative">
       <ArenaBackdrop />
 
-      <div className="relative z-10 mx-auto max-w-xl space-y-4 pb-8">
+      <div className="relative z-10 w-full max-w-5xl lg:max-w-6xl mx-auto space-y-6 pb-8">
         <Link
           to="/school/student/gamification"
-          className="qr-display inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 transition hover:text-cyan-300"
+          className="qr-display inline-flex items-center gap-2 text-sm sm:text-base font-black uppercase tracking-[0.15em] text-slate-300 transition hover:text-cyan-300"
         >
-          <ArrowLeft className="h-3 w-3" /> Gamification Center
+          <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" /> Gamification Center
         </Link>
 
         {/* ── Verdict ─────────────────────────────────────────────────── */}
@@ -96,53 +96,53 @@ export default function QuizRushResult({ result, onPlayAgain, onViewLeaderboard 
           >
             <Trophy className="h-9 w-9" />
           </div>
-          <h1 className={`qr-display mt-4 text-4xl font-bold uppercase tracking-[0.06em] ${verdictTone} ${verdictGlow}`}>
+          <h1 className={`qr-display mt-4 text-4xl sm:text-5xl font-bold uppercase tracking-[0.06em] ${verdictTone} ${verdictGlow}`}>
             {verdict}
           </h1>
           {isPerfectScore && (
-            <p className="qr-display mt-1 text-[11px] font-bold uppercase tracking-[0.3em] text-amber-300">
+            <p className="qr-display mt-1 text-xs font-bold uppercase tracking-[0.3em] text-amber-300">
               ★ Perfect Score ★
             </p>
           )}
 
           {/* Accuracy bar — the headline number, given room to be the headline. */}
-          <div className="mx-auto mt-5 max-w-xs">
-            <div className="flex items-end justify-between">
+          <div className="mx-auto mt-6 w-full max-w-4xl lg:max-w-5xl">
+            <div className="flex items-end justify-between mb-1.5">
               <ArenaLabel tone="muted">Accuracy</ArenaLabel>
-              <span className="qr-display text-2xl font-bold tabular-nums text-white">{scorePct}%</span>
+              <span className="qr-display text-3xl font-bold tabular-nums text-white">{scorePct}%</span>
             </div>
-            <div className="mt-1.5 h-2 overflow-hidden bg-white/[0.06]">
+            <div className="h-3.5 overflow-hidden bg-white/[0.08] rounded-full border border-white/10 p-0.5">
               <div
-                className={`h-full transition-[width] duration-1000 ease-out ${
+                className={`h-full rounded-full transition-[width] duration-1000 ease-out ${
                   strong ? 'bg-amber-400' : decent ? 'bg-cyan-400' : 'bg-rose-400'
                 }`}
-                style={{ width: `${scorePct}%`, boxShadow: '0 0 12px currentColor' }}
+                style={{ width: `${scorePct}%`, boxShadow: '0 0 16px currentColor' }}
               />
             </div>
-            <p className="qr-read mt-1.5 text-[11px] font-medium text-slate-500">
+            <p className="qr-read mt-2 text-xs sm:text-sm font-semibold text-slate-400">
               {correctAnswers} of {totalQuestions} correct
             </p>
           </div>
         </div>
 
         {/* ── Rewards ─────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 gap-3">
-          <ArenaPanel className="p-5">
-            <div className="flex items-center gap-1.5">
-              <Star className="h-3.5 w-3.5 fill-current text-amber-300" />
+        <div className="grid grid-cols-2 gap-4 sm:gap-6">
+          <ArenaPanel className="p-6">
+            <div className="flex items-center gap-2">
+              <Star className="h-4 w-4 fill-current text-amber-300" />
               <ArenaLabel tone="amber">XP Earned</ArenaLabel>
             </div>
-            <p className="qr-display mt-2 text-3xl font-bold tabular-nums text-amber-300 qr-neon--amber">
+            <p className="qr-display mt-2 text-4xl font-bold tabular-nums text-amber-300 qr-neon--amber">
               +{xpCount}
             </p>
           </ArenaPanel>
 
-          <ArenaPanel tone="magenta" className="p-5">
-            <div className="flex items-center gap-1.5">
-              <Coins className="h-3.5 w-3.5 fill-current text-fuchsia-300" />
+          <ArenaPanel tone="magenta" className="p-6">
+            <div className="flex items-center gap-2">
+              <Coins className="h-4 w-4 fill-current text-fuchsia-300" />
               <ArenaLabel tone="magenta">Coins</ArenaLabel>
             </div>
-            <p className="qr-display mt-2 text-3xl font-bold tabular-nums text-fuchsia-300 qr-neon--magenta">
+            <p className="qr-display mt-2 text-4xl font-bold tabular-nums text-fuchsia-300 qr-neon--magenta">
               +{coinCount}
             </p>
           </ArenaPanel>
@@ -155,24 +155,24 @@ export default function QuizRushResult({ result, onPlayAgain, onViewLeaderboard 
             { icon: Target, tone: 'text-lime-300', label: 'Speed Bonuses', value: `${speedBonusCount} under 5s` },
             { icon: Clock, tone: 'text-cyan-300', label: 'Total Time', value: `${timeTakenSeconds}s` },
           ].map((s) => (
-            <div key={s.label} className="flex items-center justify-between px-5 py-3.5">
-              <span className="flex items-center gap-2.5">
-                <s.icon className={`h-4 w-4 ${s.tone}`} />
+            <div key={s.label} className="flex items-center justify-between px-6 py-4">
+              <span className="flex items-center gap-3">
+                <s.icon className={`h-4.5 w-4.5 ${s.tone}`} />
                 <ArenaLabel tone="muted">{s.label}</ArenaLabel>
               </span>
-              <span className="qr-display text-sm font-bold tabular-nums text-white">{s.value}</span>
+              <span className="qr-display text-base font-bold tabular-nums text-white">{s.value}</span>
             </div>
           ))}
         </ArenaPanel>
 
         {/* ── Level up ────────────────────────────────────────────────── */}
         {hasLeveledUp && (
-          <ArenaPanel className="qr-pop border-amber-400/40 p-5 text-center qr-glow-lime">
+          <ArenaPanel className="qr-pop border-amber-400/40 p-6 text-center qr-glow-lime">
             <ArenaLabel tone="amber">Rank Promotion</ArenaLabel>
             <h2 className="qr-display mt-2 text-2xl font-bold uppercase tracking-wider text-amber-300 qr-neon--amber">
               Level {newLevel}
             </h2>
-            <p className="qr-read mt-1 text-xs font-medium text-slate-400">
+            <p className="qr-read mt-1 text-sm font-medium text-slate-400">
               You are now a <strong className="text-white">{newTitle}</strong>.
             </p>
           </ArenaPanel>
@@ -180,43 +180,43 @@ export default function QuizRushResult({ result, onPlayAgain, onViewLeaderboard 
 
         {/* ── Badge ───────────────────────────────────────────────────── */}
         {badgeUnlocked && (
-          <ArenaPanel className="qr-pop border-lime-400/40 p-5 text-center">
-            <div className="qr-float mx-auto flex h-14 w-14 items-center justify-center border border-lime-400/40 bg-lime-400/10 text-lime-300">
-              <Award className="h-7 w-7" />
+          <ArenaPanel className="qr-pop border-lime-400/40 p-6 text-center">
+            <div className="qr-float mx-auto flex h-16 w-16 items-center justify-center border border-lime-400/40 bg-lime-400/10 text-lime-300">
+              <Award className="h-8 w-8" />
             </div>
             <ArenaLabel tone="muted" className="mt-3 block">Badge Unlocked</ArenaLabel>
-            <h2 className="qr-display mt-1 text-lg font-bold uppercase tracking-wider text-lime-300">
+            <h2 className="qr-display mt-1 text-xl font-bold uppercase tracking-wider text-lime-300">
               {badgeUnlocked}
             </h2>
           </ArenaPanel>
         )}
 
         {/* ── Progress to next rank ───────────────────────────────────── */}
-        <ArenaPanel className="p-5">
+        <ArenaPanel className="p-6">
           <div className="flex items-center justify-between">
             <ArenaLabel tone="cyan">Level {newLevel} · {newTitle}</ArenaLabel>
-            <span className="qr-display text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+            <span className="qr-display text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
               Next · {newLevel + 1}
             </span>
           </div>
-          <div className="mt-3 h-2.5 overflow-hidden bg-white/[0.06]">
+          <div className="mt-3 h-3 overflow-hidden bg-white/[0.06] rounded-full">
             <div
               className="h-full bg-gradient-to-r from-cyan-400 to-fuchsia-500 transition-[width] duration-1000 ease-out"
               style={{ width: `${levelProgress}%`, boxShadow: '0 0 14px rgba(34,211,238,0.6)' }}
             />
           </div>
-          <p className="qr-read mt-2 text-center text-[10px] font-medium text-slate-500">
+          <p className="qr-read mt-2 text-center text-xs font-medium text-slate-400">
             {levelProgress}% toward the next rank
           </p>
         </ArenaPanel>
 
         {/* ── Actions ─────────────────────────────────────────────────── */}
-        <div className="space-y-2.5 pt-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
           <ArenaButton type="button" onClick={onPlayAgain} tone="cyan" className="w-full py-4 text-base">
             <RefreshCw className="h-5 w-5" /> Run It Back
           </ArenaButton>
-          <ArenaButton type="button" onClick={onViewLeaderboard} tone="ghost" className="w-full">
-            <Trophy className="h-4 w-4 text-amber-300" /> Hall of Fame
+          <ArenaButton type="button" onClick={onViewLeaderboard} tone="ghost" className="w-full py-4 text-base">
+            <Trophy className="h-5 w-5 text-amber-300" /> Hall of Fame
           </ArenaButton>
         </div>
       </div>

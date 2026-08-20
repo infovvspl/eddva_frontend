@@ -456,7 +456,6 @@ const SchoolRow = ({ school, onSaved, globalErpModules }: { school: any; onSaved
                   />
                 ))}
               </div>
-            </div>
 
               {/* ERP Features Column */}
               {globalErpModules.length > 0 && (
@@ -497,6 +496,7 @@ const SchoolRow = ({ school, onSaved, globalErpModules }: { school: any; onSaved
                   )}
                 </div>
               )}
+            </div>
 
             {/* AI Features Column */}
             <div className="w-full">
@@ -547,7 +547,15 @@ const FeatureFlagsPage = () => {
   const [aiFilter, setAiFilter] = useState("ALL");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
+  const [erpDefaults, setErpDefaults] = useState<Record<string, boolean>>(() => {
+    try {
+      const s = localStorage.getItem("erp_module_defaults");
+      return s ? JSON.parse(s) : {};
+    } catch { return {}; }
+  });
+
   useEffect(() => { localStorage.setItem("module_feature_defaults", JSON.stringify(moduleDefaults)); }, [moduleDefaults]);
+  useEffect(() => { localStorage.setItem("erp_module_defaults", JSON.stringify(erpDefaults)); }, [erpDefaults]);
 
   useEffect(() => { 
     loadSchools(); 
@@ -598,7 +606,7 @@ const FeatureFlagsPage = () => {
   };
 
   return (
-    <div className="w-full space-y-4 sm:space-y-6 text-slate-900">
+    <div className="p-4 sm:p-6 lg:p-8 w-full space-y-4 sm:space-y-6 text-slate-900">
       <div className="w-full space-y-4 sm:space-y-6">
         
         <header className="mb-4 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 bg-blue-100 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
@@ -636,6 +644,40 @@ const FeatureFlagsPage = () => {
                   />
                 ))}
               </div>
+
+              {/* ERP Features Column */}
+              {globalErpModules.length > 0 && (
+                <div className="mt-8">
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2">
+                    ERP Modules
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {globalErpModules.map(mod => {
+                      const Icon = (LucideIcons as any)[mod.icon] || LucideIcons.Box;
+                      const isEnabled = erpDefaults[mod.key || mod.id] ?? mod.is_active ?? true;
+                      const colorClass = mod.color || 'slate';
+                      return (
+                        <div key={mod.id || mod.key} className={`w-full rounded-lg border transition-all ${isEnabled ? 'border-slate-200 bg-white shadow-sm' : 'border-slate-100 bg-slate-50 opacity-80'}`}>
+                          <div className="p-3 flex items-center justify-between">
+                            <div className="flex items-center gap-3 min-w-0 flex-1 mr-4">
+                              <div className={`rounded-md p-1.5 shrink-0 ${isEnabled ? `bg-${colorClass}-100 text-${colorClass}-600` : 'bg-slate-200 text-slate-400'}`}>
+                                <Icon className="h-5 w-5" />
+                              </div>
+                              <div className="flex flex-col min-w-0 flex-1">
+                                <p className={`text-sm font-bold truncate ${isEnabled ? "text-slate-900" : "text-slate-500"}`}>{mod.name}</p>
+                                <p className="text-[10px] text-slate-500 truncate">{mod.description || 'No description'}</p>
+                              </div>
+                            </div>
+                            <div className="shrink-0">
+                              <Toggle enabled={isEnabled} onChange={(val) => setErpDefaults(p => ({ ...p, [mod.key || mod.id]: val }))} />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* AI Features Column */}

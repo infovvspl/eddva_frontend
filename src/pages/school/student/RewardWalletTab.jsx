@@ -177,27 +177,33 @@ export default function RewardWalletTab({ profile, onRefresh }) {
         </div>
 
         {/* Economy Rules & Info */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-center">
           <div>
-            <h3 className="text-lg font-black text-slate-900 dark:text-white mb-2">How Coins & Rewards Work</h3>
-            <div className="space-y-3">
-              <div className="flex items-start gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
-                <span className="rounded-lg bg-yellow-100 p-2 text-yellow-800 font-bold text-xs shrink-0">10 Coins</span>
-                <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-                  Automatically converts into <strong>₹1.00</strong> in your Reward Wallet for every 10 EDDVA Coins earned.
+            <h3 className="text-xl font-black text-slate-900 dark:text-white mb-4">How Coins & Rewards Work</h3>
+            <div className="space-y-4">
+              <div className="flex items-center gap-4 rounded-xl bg-slate-50 p-4 dark:bg-slate-800">
+                <span className="rounded-xl bg-yellow-100 dark:bg-yellow-950/60 p-2.5 text-yellow-800 dark:text-yellow-300 font-black text-sm sm:text-base shrink-0 text-center min-w-[95px]">
+                  10 Coins
+                </span>
+                <p className="text-sm sm:text-base text-slate-700 dark:text-slate-200 font-semibold leading-relaxed">
+                  Automatically converts into <strong className="text-emerald-600 dark:text-emerald-400 font-black">₹1.00</strong> in your Reward Wallet for every 10 EDDVA Coins earned.
                 </p>
               </div>
 
-              <div className="flex items-start gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
-                <span className="rounded-lg bg-amber-100 p-2 text-amber-800 font-bold text-xs shrink-0">XP Points</span>
-                <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
+              <div className="flex items-center gap-4 rounded-xl bg-slate-50 p-4 dark:bg-slate-800">
+                <span className="rounded-xl bg-amber-100 dark:bg-amber-950/60 p-2.5 text-amber-800 dark:text-amber-300 font-black text-sm sm:text-base shrink-0 text-center min-w-[95px]">
+                  XP Points
+                </span>
+                <p className="text-sm sm:text-base text-slate-700 dark:text-slate-200 font-semibold leading-relaxed">
                   XP points track your academic progress, level ups, global leaderboard standings, and badge achievements.
                 </p>
               </div>
 
-              <div className="flex items-start gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
-                <span className="rounded-lg bg-emerald-100 p-2 text-emerald-700 font-bold text-xs shrink-0">Payouts</span>
-                <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
+              <div className="flex items-center gap-4 rounded-xl bg-slate-50 p-4 dark:bg-slate-800">
+                <span className="rounded-xl bg-emerald-100 dark:bg-emerald-950/60 p-2.5 text-emerald-800 dark:text-emerald-300 font-black text-sm sm:text-base shrink-0 text-center min-w-[95px]">
+                  Payouts
+                </span>
+                <p className="text-sm sm:text-base text-slate-700 dark:text-slate-200 font-semibold leading-relaxed">
                   Instant demo payout simulation mode is enabled for instant testing and redemption verification.
                 </p>
               </div>

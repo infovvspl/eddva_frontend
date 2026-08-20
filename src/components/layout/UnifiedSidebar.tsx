@@ -161,10 +161,10 @@ function SidebarItem({
               "flex items-center justify-center rounded-xl shrink-0 transition-all duration-300",
               collapsed ? "w-5 h-5" : "w-7.5 h-7.5",
               isActive
-                ? cn("bg-indigo-600 text-white", !collapsed && "shadow-md shadow-indigo-500/20")
+                ? "bg-indigo-100/80 text-indigo-600 dark:bg-indigo-950/80 dark:text-indigo-400"
                 : "bg-transparent text-slate-500 group-hover:text-slate-800 dark:text-slate-400"
             )}>
-              <item.icon className={cn("w-4.5 h-4.5", isActive ? "text-white" : "text-current")} />
+              <item.icon className={cn("w-4.5 h-4.5", isActive ? "text-indigo-600 dark:text-indigo-400" : "text-current")} />
             </div>
 
             {!collapsed && (

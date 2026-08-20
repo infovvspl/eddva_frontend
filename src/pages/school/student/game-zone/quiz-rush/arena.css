@@ -379,11 +379,10 @@ body.qr-immersive [data-arena-header] button:hover {
    surface. Those tabs render their own existing components; the inset makes
    them read as a screen set into the cabinet rather than a styling mistake. */
 .qr-inset {
-  background: #f8fafc;
+  background: #0b1020;
   border: 1px solid rgba(34, 211, 238, 0.22);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5), 0 0 26px rgba(34, 211, 238, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05), 0 0 26px rgba(34, 211, 238, 0.12);
 }
-:is(.dark) .qr-inset { background: #0b1020; }
 
 /* Game cabinet. The lift on hover is what makes a grid of cards read as a row
    of machines you could walk up to. */

@@ -79,6 +79,8 @@ function buildInstituteGroups(mods) {
   const timetableEnabled = isModuleEnabled(mods, 'timetable');
   const reportsEnabled = isModuleEnabled(mods, 'reports');
   const meetingsEnabled = isModuleEnabled(mods, 'meetings');
+  const syllabusPlannerEnabled = isModuleEnabled(mods, 'syllabus') && isModuleEnabled(mods, 'admin_syllabus_planner');
+  const syllabusTrackerEnabled = isModuleEnabled(mods, 'syllabus') && isModuleEnabled(mods, 'admin_syllabus_tracker');
 
   return [
     {
@@ -90,10 +92,9 @@ function buildInstituteGroups(mods) {
         { path: '/school/admin/admins', label: 'Administrators', icon: Shield },
         { path: '/school/admin/academics', label: 'Classes & Curriculum', icon: Building2 },
         { path: '/school/admin/subjects', label: 'Subjects', icon: BookOpen },
-        { path: '/school/admin/syllabus-planner', label: 'Syllabus Planner', icon: FileText },
-        { path: '/school/admin/syllabus-tracker', label: 'Syllabus Tracker', icon: BarChart3 },
-        { path: '/school/admin/textbook-coverage', label: 'Textbooks', icon: Library },
-      ],
+        syllabusPlannerEnabled && { path: '/school/admin/syllabus-planner', label: 'Syllabus Planner', icon: FileText },
+        syllabusTrackerEnabled && { path: '/school/admin/syllabus-tracker', label: 'Syllabus Tracker', icon: BarChart3 },
+      ].filter(Boolean),
     },
     {
       heading: 'Operations',
@@ -144,15 +145,15 @@ function buildTeacherGroups(mods, aiFeats) {
   const reportsEnabled = isModuleEnabled(mods, 'reports');
   const meetingsEnabled = isModuleEnabled(mods, 'meetings');
   const doubtsEnabled = aiFeats?.ai_doubt_solver !== false;
+  const teachingPlanEnabled = isModuleEnabled(mods, 'syllabus') && isModuleEnabled(mods, 'teacher_teaching_plan');
 
   return [
     {
       heading: 'Teaching',
       items: [
         { path: '/school/teacher', label: 'Dashboard', icon: LayoutDashboard, end: true },
-        { path: '/school/teacher/teaching-plan', label: 'My Teaching Plan', icon: ClipboardList },
+        teachingPlanEnabled && { path: '/school/teacher/teaching-plan', label: 'My Teaching Plan', icon: ClipboardList },
         { path: '/school/teacher/course-content', label: 'Course Content', icon: BookOpen },
-        { path: '/school/teacher/textbook-coverage', label: 'Textbook Coverage', icon: Library },
         liveEnabled && { path: '/school/teacher/classes', label: 'My Schedule', icon: Video },
         { path: '/school/teacher/attendance', label: 'Attendance', icon: ClipboardCheck },
         timetableEnabled && { path: '/school/teacher/timetable', label: 'Timetable', icon: CalendarDays },

@@ -3,8 +3,10 @@ import { Timer, ArrowRight, XCircle, Award, CheckCircle, HelpCircle, Zap, Refres
 import { soundEngine } from '@/lib/audioManager';
 import { toast } from 'sonner';
 import { apiClient as api } from '@/lib/api/client';
+import { useConfirm } from '@/context/ConfirmContext';
 
 export default function WordMasterPlay({ session, onFinish, onQuit }) {
+  const confirm = useConfirm();
   const { sessionId, deckName, difficulty } = session;
   const [localWords, setLocalWords] = useState(session.words || []);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -240,7 +242,7 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
   return (
     <div className="space-y-6 max-w-2xl mx-auto py-4">
       {/* HUD Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-black uppercase tracking-widest text-violet-600 dark:text-violet-400">
@@ -280,8 +282,15 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
 
           <button
             type="button"
-            onClick={() => {
-              if (window.confirm('Are you sure you want to quit this run? Your progress will be lost.')) {
+            onClick={async () => {
+              const isConfirmed = await confirm({
+                title: 'Quit Word Master?',
+                message: 'Are you sure you want to quit this run? Your progress for this session will be lost.',
+                confirmLabel: 'Quit Game',
+                cancelLabel: 'Keep Playing',
+                variant: 'destructive',
+              });
+              if (isConfirmed) {
                 onQuit();
               }
             }}
@@ -307,9 +316,9 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
       </div>
 
       {/* Gameplay Board */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-6">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4 sm:space-y-5">
         {/* Hint / Definition Area */}
-        <div className="rounded-xl bg-slate-50 dark:bg-slate-950 p-5 border border-slate-100 dark:border-slate-850 text-center space-y-2">
+        <div className="rounded-xl bg-slate-50 dark:bg-slate-950 p-4 sm:p-5 border border-slate-100 dark:border-slate-850 text-center space-y-1.5">
           <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-slate-400">
             <HelpCircle className="h-3.5 w-3.5 text-violet-500" /> Clue / Definition
           </span>
