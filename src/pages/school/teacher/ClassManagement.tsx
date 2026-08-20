@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { SchoolVideoPlayer } from '@/components/school/SchoolVideoPlayer';
-import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Upload, Youtube, Image as ImageIcon, FileText, Loader2, BarChart3, Download, ChevronRight, X, Sparkles, TrendingUp, XCircle, CheckCircle, ListChecks, Trophy, Copy, Eye, EyeOff, ArrowLeft, ArrowRight, ImagePlus, RefreshCw, CalendarClock, AlarmClock, PanelRightClose, PanelRightOpen, CalendarDays, Clock3, Tag, BookOpen, MessageCircle, Send, MessagesSquare, HelpCircle, User, Monitor } from 'lucide-react';
+import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Edit, Upload, Youtube, Image as ImageIcon, FileText, Loader2, BarChart3, Download, ChevronRight, X, Sparkles, TrendingUp, XCircle, CheckCircle, ListChecks, Trophy, Copy, Eye, EyeOff, ArrowLeft, ArrowRight, ImagePlus, RefreshCw, CalendarClock, AlarmClock, PanelRightClose, PanelRightOpen, CalendarDays, Clock3, Tag, BookOpen, MessageCircle, Send, MessagesSquare, HelpCircle, User, Monitor } from 'lucide-react';
 import { schoolLive, type CreatedLecture, type LiveLecture } from '@/lib/api/school-live';
 import { Highlight } from '@/types/highlight';
 import { HighlightRenderer } from '@/lib/highlight-renderer';
@@ -257,6 +257,21 @@ const ClassManagement: React.FC = () => {
   const [filterChapters, setFilterChapters] = useState<any[]>([]);
   const [filterTopics, setFilterTopics] = useState<any[]>([]);
   const [detailRec, setDetailRec] = useState<any | null>(null);
+
+  const [showEditRecordingModal, setShowEditRecordingModal] = useState(false);
+  const [editingRecording, setEditingRecording] = useState<any | null>(null);
+  const [updatingRecording, setUpdatingRecording] = useState(false);
+  const [editForm, setEditForm] = useState({
+    title: '',
+    description: '',
+    classId: '',
+    sectionId: '',
+    subjectId: '',
+    chapterId: '',
+    topicId: '',
+  });
+  const [editChapters, setEditChapters] = useState<any[]>([]);
+  const [editTopics, setEditTopics] = useState<any[]>([]);
   
   const availableTabs = useMemo(() => {
     const list: CourseTabId[] = [];
@@ -606,6 +621,121 @@ const ClassManagement: React.FC = () => {
       .catch(() => { if (!cancelled) setRecTopics([]); });
     return () => { cancelled = true; };
   }, [recordingForm.chapterId]);
+
+  // Edit Recording Modal options & effects
+  const editClassOptions = useMemo(() => {
+    const classMap = new Map<string, { id: string; name: string }>();
+    teacherAssignments.forEach((assignment: any) => {
+      if (!assignment.classId) return;
+      classMap.set(String(assignment.classId), {
+        id: String(assignment.classId),
+        name: assignment.className || academicClasses.find((item) => String(item.id) === String(assignment.classId))?.name || 'Class',
+      });
+    });
+    return Array.from(classMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [academicClasses, teacherAssignments]);
+
+  const editSectionOptions = useMemo(() => {
+    if (!editForm.classId) return [];
+    const sectionMap = new Map<string, { id: string; name: string }>();
+    teacherAssignments
+      .filter((assignment: any) => String(assignment.classId) === String(editForm.classId))
+      .forEach((assignment: any) => {
+        if (!assignment.sectionId) return;
+        sectionMap.set(String(assignment.sectionId), {
+          id: String(assignment.sectionId),
+          name: assignment.sectionName || 'Section',
+        });
+      });
+    return Array.from(sectionMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [editForm.classId, teacherAssignments]);
+
+  const editSubjectOptions = useMemo(() => {
+    if (!editForm.classId || !editForm.sectionId) return [];
+    const subjectMap = new Map<string, { id: string; name: string }>();
+    const matchingAssignments = teacherAssignments.filter((assignment: any) =>
+      String(assignment.classId) === String(editForm.classId)
+      && String(assignment.sectionId) === String(editForm.sectionId)
+    );
+
+    matchingAssignments.forEach((assignment: any) => {
+      if (!assignment.subjectId) return;
+      subjectMap.set(String(assignment.subjectId), {
+        id: String(assignment.subjectId),
+        name: assignment.subjectName || academicSubjects.find((item) => String(item.id) === String(assignment.subjectId))?.name || 'Subject',
+      });
+    });
+
+    const canUseSectionSubjects = matchingAssignments.some((assignment: any) => assignment.isClassTeacher && !assignment.subjectId);
+    if (canUseSectionSubjects) {
+      academicSubjects
+        .filter((subject: any) => {
+          const subjectClassId = subject.classId ?? subject.class_id;
+          const subjectSectionId = subject.sectionId ?? subject.section_id;
+          return String(subjectClassId) === String(editForm.classId)
+            && (!subjectSectionId || String(subjectSectionId) === String(editForm.sectionId));
+        })
+        .forEach((subject: any) => subjectMap.set(String(subject.id), { id: String(subject.id), name: subject.name }));
+    }
+
+    return Array.from(subjectMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [academicSubjects, editForm.classId, editForm.sectionId, teacherAssignments]);
+
+  const openEditRecordingModal = (rec: any) => {
+    setEditingRecording(rec);
+    setEditForm({
+      title: rec.title || '',
+      description: rec.description || '',
+      classId: String(rec.class_id ?? rec.classId ?? ''),
+      sectionId: String(rec.section_id ?? rec.sectionId ?? ''),
+      subjectId: String(rec.subject_id ?? rec.subjectId ?? ''),
+      chapterId: String(rec.chapter_id ?? rec.chapterId ?? ''),
+      topicId: String(rec.topic_id ?? rec.topicId ?? ''),
+    });
+    setShowEditRecordingModal(true);
+  };
+
+  useEffect(() => {
+    if (!editForm.subjectId) { setEditChapters([]); setEditTopics([]); return; }
+    let cancelled = false;
+    api.get(`/topics/chapters?subjectId=${editForm.subjectId}`)
+      .then((res) => { if (!cancelled) setEditChapters(res.data?.data || res.data || []); })
+      .catch(() => { if (!cancelled) setEditChapters([]); });
+    return () => { cancelled = true; };
+  }, [editForm.subjectId]);
+
+  useEffect(() => {
+    if (!editForm.chapterId) { setEditTopics([]); return; }
+    let cancelled = false;
+    api.get(`/topics?chapterId=${editForm.chapterId}`)
+      .then((res) => { if (!cancelled) setEditTopics(res.data?.data || res.data || []); })
+      .catch(() => { if (!cancelled) setEditTopics([]); });
+    return () => { cancelled = true; };
+  }, [editForm.chapterId]);
+
+  const handleUpdateRecording = async () => {
+    if (!editingRecording?.id) return;
+    if (!editForm.title.trim()) { toast.error('Lecture title is required'); return; }
+    setUpdatingRecording(true);
+    try {
+      await api.patch(`/classes/recordings/${editingRecording.id}`, {
+        title: editForm.title.trim(),
+        description: editForm.description || undefined,
+        classId: editForm.classId || undefined,
+        sectionId: editForm.sectionId || undefined,
+        subjectId: editForm.subjectId || undefined,
+        chapterId: editForm.chapterId || undefined,
+        topicId: editForm.topicId || undefined,
+      });
+      toast.success('Lecture updated successfully!');
+      setShowEditRecordingModal(false);
+      fetchRecordedClasses();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || 'Failed to update lecture');
+    } finally {
+      setUpdatingRecording(false);
+    }
+  };
 
   const resetRecordingModal = () => {
     setShowRecordingModal(false);
@@ -1643,9 +1773,14 @@ const ClassManagement: React.FC = () => {
                         </div>
                         {renderThumbnailProgress(rec)}
                       </div>
-                      <button onClick={() => deleteRecording(rec.id)} className="text-slate-300 hover:text-rose-500" title="Delete">
-                        <Trash2 size={16} />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => openEditRecordingModal(rec)} className="text-slate-400 hover:text-blue-600 transition-colors" title="Edit Lecture Details">
+                          <Edit size={16} />
+                        </button>
+                        <button onClick={() => deleteRecording(rec.id)} className="text-slate-400 hover:text-rose-500 transition-colors" title="Delete Lecture">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2968,6 +3103,91 @@ const ClassManagement: React.FC = () => {
             <Button variant="outline" disabled={uploadingRecording} onClick={resetRecordingModal}>Cancel</Button>
             <Button disabled={uploadingRecording} onClick={handleUploadRecording}>
               {uploadingRecording ? 'Saving…' : 'Save Recording'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── Edit Recorded Lecture Modal ────────────────────────────────────── */}
+      <Modal isOpen={showEditRecordingModal} onClose={() => !updatingRecording && setShowEditRecordingModal(false)} title="Edit Recorded Lecture" size="lg">
+        <div className="class__modal-form">
+          <InputField
+            label="Lecture Title *"
+            placeholder="e.g., Nazism and the Rise of Hitler — Lecture 1"
+            value={editForm.title}
+            onChange={(e) => setEditForm((prev) => ({ ...prev, title: e.target.value }))}
+          />
+          <div className="class__modal-row">
+            <SelectField
+              label="Class"
+              value={editForm.classId}
+              onChange={(e) => setEditForm((prev) => ({
+                ...prev,
+                classId: e.target.value,
+                sectionId: '',
+                subjectId: '',
+                chapterId: '',
+                topicId: '',
+              }))}
+              options={[{ value: '', label: 'Select class...' }, ...editClassOptions.map((c: any) => ({ value: c.id, label: c.name }))]}
+            />
+            <SelectField
+              label="Section"
+              value={editForm.sectionId}
+              onChange={(e) => setEditForm((prev) => ({
+                ...prev,
+                sectionId: e.target.value,
+                subjectId: '',
+                chapterId: '',
+                topicId: '',
+              }))}
+              options={[
+                { value: '', label: editForm.classId ? (editSectionOptions.length ? 'Select section...' : 'No assigned sections') : 'Select class first' },
+                ...editSectionOptions.map((section: any) => ({ value: section.id, label: section.name })),
+              ]}
+            />
+          </div>
+          <div className="class__modal-row">
+            <SelectField
+              label="Subject"
+              value={editForm.subjectId}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, subjectId: e.target.value, chapterId: '', topicId: '' }))}
+              options={[
+                { value: '', label: editForm.sectionId ? (editSubjectOptions.length ? 'Select subject...' : 'No assigned subjects') : 'Select section first' },
+                ...editSubjectOptions.map((s: any) => ({ value: s.id, label: s.name })),
+              ]}
+            />
+            <SelectField
+              label="Chapter (optional)"
+              value={editForm.chapterId}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, chapterId: e.target.value, topicId: '' }))}
+              options={[{ value: '', label: editForm.subjectId ? (editChapters.length ? 'All / general' : 'No chapters') : 'Select subject first' }, ...editChapters.map((c: any, i: number) => ({ value: c.id, label: `${i + 1}. ${c.name}` }))]}
+            />
+          </div>
+          <div className="class__modal-row">
+            <SelectField
+              label="Topic (optional)"
+              value={editForm.topicId}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, topicId: e.target.value }))}
+              options={[{ value: '', label: editForm.chapterId ? 'Whole chapter' : 'Select chapter first' }, ...editTopics.map((t: any, i: number) => ({ value: t.id, label: `${i + 1}. ${t.name}` }))]}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-slate-600">Description</label>
+            <textarea
+              rows={2}
+              value={editForm.description}
+              placeholder="Brief description for students…"
+              onChange={(e) => setEditForm((prev) => ({ ...prev, description: e.target.value }))}
+              className="w-full resize-none rounded-xl border border-slate-200 p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="class__modal-actions">
+            <Button variant="outline" disabled={updatingRecording} onClick={() => setShowEditRecordingModal(false)}>
+              Cancel
+            </Button>
+            <Button disabled={updatingRecording || !editForm.title.trim()} onClick={handleUpdateRecording}>
+              {updatingRecording ? 'Saving…' : 'Save Changes'}
             </Button>
           </div>
         </div>
