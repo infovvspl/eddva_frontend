@@ -161,6 +161,18 @@ function replaceNewlinesOutsideMath(text: string): string {
         
         result += lines[k];
         if (k < lines.length - 1) {
+          // Preserve Markdown tables. A table row ends with "|", which the
+          // operator test below treats as a line-continuation \u2014 that joined every
+          // row onto one line, so remark-gfm could not parse it and the raw pipes
+          // showed as text. Keep a plain newline between consecutive rows, and a
+          // blank line when entering/leaving the table so the block is recognized.
+          const isTableRow = (s: string) => /^\|.*\|$/.test(s.trim());
+          const curIsRow = isTableRow(currentLine);
+          const nextIsRow = isTableRow(nextLine);
+          if (curIsRow || nextIsRow) {
+            result += curIsRow !== nextIsRow ? "\n\n" : "\n";
+            continue;
+          }
           const endsWithOperator = /[+\-/=,\\&|]$/.test(currentLine) || /^[+=><\u2212\u2013-]{1,3}$/.test(currentLine);
           const startsWithOperator = /^[+\/=)\]},=>\u2212\u2013-]/.test(nextLine) || /^-[^ ]/.test(nextLine) || /^\(\d+\)\s*[+\-/=]/.test(nextLine);
           // Don't insert double-newlines after lone question numbers (e.g. "1." or "Q1.") or option tags
@@ -841,7 +853,28 @@ export const formatMarkdown = (text?: string) => {
   };
 
   const tokens = tokenize(formatted);
-  formatted = tokens.map((t) => t.text).join("");
+  // Un-delimited LaTeX symbol commands sometimes leak into prose (e.g. the model
+  // writes "physically \cdot mixed" instead of a bullet). KaTeX never sees them
+  // because they are not wrapped in $…$, so they render as the literal text
+  // "\cdot". Only in prose tokens — never inside math/image tokens — swap the
+  // common symbol commands for their actual character.
+  const proseLatexSymbols: Array<[RegExp, string]> = [
+    [/\\cdot(?![a-zA-Z])/g, "·"],
+    [/\\times(?![a-zA-Z])/g, "×"],
+    [/\\div(?![a-zA-Z])/g, "÷"],
+    [/\\pm(?![a-zA-Z])/g, "±"],
+    [/\\rightarrow(?![a-zA-Z])/g, "→"],
+    [/\\leftarrow(?![a-zA-Z])/g, "←"],
+    [/\\to(?![a-zA-Z])/g, "→"],
+  ];
+  formatted = tokens
+    .map((t) => {
+      if (t.type !== "prose") return t.text;
+      let s = t.text;
+      for (const [re, sym] of proseLatexSymbols) s = s.replace(re, sym);
+      return s;
+    })
+    .join("");
 
   return formatted
     .replace(/\n{3,}/g, "\n\n")
