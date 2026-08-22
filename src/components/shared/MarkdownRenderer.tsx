@@ -173,6 +173,28 @@ function replaceNewlinesOutsideMath(text: string): string {
             result += curIsRow !== nextIsRow ? "\n\n" : "\n";
             continue;
           }
+
+          // Preserve headings and bullet lists. A bullet line starts with "-",
+          // which the operator test below caught as a continuation \u2014 so every
+          // "- Definition / - Notation / - Example" bullet was folded up into the
+          // heading above it and the whole block rendered as one bold heading.
+          // Headings are their own block; give a bullet list a blank line before
+          // its first item and a single newline between consecutive items.
+          const isBullet = (s: string) => /^[-*+]\s+/.test(s);
+          const isHeading = (s: string) => /^#{1,6}\s+/.test(s);
+          if (isHeading(currentLine) || isHeading(nextLine)) {
+            result += "\n\n";
+            continue;
+          }
+          if (isBullet(nextLine)) {
+            result += isBullet(currentLine) ? "\n" : "\n\n";
+            continue;
+          }
+          if (isBullet(currentLine)) {
+            result += "\n\n";
+            continue;
+          }
+
           const endsWithOperator = /[+\-/=,\\&|]$/.test(currentLine) || /^[+=><\u2212\u2013-]{1,3}$/.test(currentLine);
           const startsWithOperator = /^[+\/=)\]},=>\u2212\u2013-]/.test(nextLine) || /^-[^ ]/.test(nextLine) || /^\(\d+\)\s*[+\-/=]/.test(nextLine);
           // Don't insert double-newlines after lone question numbers (e.g. "1." or "Q1.") or option tags
