@@ -1961,15 +1961,15 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
 // ── AI Content Generator panel ───────────────────────────────────────────────
 
 const AI_GEN_TYPES: { id: string; label: string; desc: string; saveAs: string; icon: React.ComponentType<{ size?: number; className?: string }>; soft: string; text: string }[] = [
-  { id: 'dpp', label: 'Daily Assessment', desc: 'Daily Practice Problems with MCQs, numericals & answer key', saveAs: 'dpp', icon: ListChecks, soft: 'bg-orange-50 dark:bg-orange-900/30', text: 'text-orange-600 dark:text-orange-400' },
-  { id: 'mindmap', label: 'Mindmap', desc: 'Hierarchical breakdown of topic concepts & sub-topics', saveAs: 'mindmap', icon: Brain, soft: 'bg-teal-50 dark:bg-teal-900/30', text: 'text-teal-600 dark:text-teal-400' },
   { id: 'presentation', label: 'Presentation', desc: 'Opens AI PPT Studio — build, edit & save a slide deck to this topic', saveAs: 'ppt', icon: Presentation, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
-  { id: 'pyq', label: 'PYQ Practice', desc: 'Previous Year Question style paper with solutions', saveAs: 'pyq', icon: FileQuestion, soft: 'bg-violet-50 dark:bg-violet-900/30', text: 'text-violet-600 dark:text-violet-400' },
   { id: 'study_guide', label: 'Study Guide', desc: 'Exam-ready summary with must-know points for revision', saveAs: 'study_guide', icon: BookOpen, soft: 'bg-indigo-50 dark:bg-indigo-900/30', text: 'text-indigo-600 dark:text-indigo-400' },
   { id: 'key_concepts', label: 'Key Concepts', desc: 'Bulleted must-know concepts, formulas & definitions', saveAs: 'key_concepts', icon: Lightbulb, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
+  { id: 'mindmap', label: 'Mindmap', desc: 'Hierarchical breakdown of topic concepts & sub-topics', saveAs: 'mindmap', icon: Brain, soft: 'bg-teal-50 dark:bg-teal-900/30', text: 'text-teal-600 dark:text-teal-400' },
   { id: 'flashcard', label: 'Flashcards', desc: 'Bite-sized Q&A cards for quick recall', saveAs: 'flashcard', icon: FileText, soft: 'bg-blue-50 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400' },
   { id: 'revision_checklist', label: 'Revision Checklist', desc: 'Subtopic checklist students can tick off', saveAs: 'revision_checklist', icon: ListChecks, soft: 'bg-emerald-50 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400' },
   { id: 'faq', label: 'FAQ', desc: 'Frequently asked questions with clear answers', saveAs: 'faq', icon: FileQuestion, soft: 'bg-amber-50 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400' },
+  { id: 'pyq', label: 'PYQ Practice', desc: 'Previous Year Question style paper with solutions', saveAs: 'pyq', icon: FileQuestion, soft: 'bg-violet-50 dark:bg-violet-900/30', text: 'text-violet-600 dark:text-violet-400' },
+  { id: 'dpp', label: 'Daily Assessment', desc: 'Daily Practice Problems with MCQs, numericals & answer key', saveAs: 'dpp', icon: ListChecks, soft: 'bg-orange-50 dark:bg-orange-900/30', text: 'text-orange-600 dark:text-orange-400' },
 ];
 
 function findGeneratedSectionStart(content: string, patterns: RegExp[]) {
@@ -2095,8 +2095,10 @@ function AiGeneratePanel({
   const hasPptGen = useSchoolFeature('ai', 'ai_ppt_generator');
 
   const [typeId, setTypeId] = useState(() => {
-    if (hasAiMaterials) return 'dpp';
+    // Default to the first card shown (Presentation), so the highlighted card is
+    // at the top; fall back to a standard material type, then nothing.
     if (hasPptGen) return 'presentation';
+    if (hasAiMaterials) return 'study_guide';
     return '';
   });
   const [questionCount, setQuestionCount] = useState(10);
