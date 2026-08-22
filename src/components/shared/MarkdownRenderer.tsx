@@ -283,22 +283,25 @@ function wrapFullEquationLines(text: string): string {
       const hasEquals = /[=]/.test(trimmed);
       const hasUnicodeMathRel = /[\u2260\u2264\u2265\u2248]/.test(trimmed);
       if (!hasEquals && !hasUnicodeMathRel) return line;
-      // Allow ASCII math chars + Unicode math relations/symbols
-      if (!/^[A-Za-z0-9_{}^()[\].=+\-*/\\\s\u2260\u2264\u2265\u2248\u2212\u00B2\u00B3\u2070-\u2079\u207F]+$/.test(trimmed)) return line;
+      // Allow ASCII math chars + Unicode math relations/symbols (incl. \u00D7 \u00F7 \u00B7)
+      if (!/^[A-Za-z0-9_{}^()[\].,=+\-*/\\\s\u2260\u2264\u2265\u2248\u2212\u00D7\u00F7\u00B7\u00B2\u00B3\u2070-\u2079\u207F]+$/.test(trimmed)) return line;
 
       const startsLikeEquation = /^[A-Za-z]{1,4}(?:_[A-Za-z0-9]{1,4})?(?:\s*[=\u2260\u2264\u2265]|\^)/.test(trimmed);
       const hasRepeatedEquals = (trimmed.match(/=/g) ?? []).length >= 2;
-      const hasMathOperator = /(?:\\cdot|[+\-*/^_\u2260\u2264\u2265\u2248])/.test(trimmed);
+      const hasMathOperator = /(?:\\cdot|[+\-*/^_\u2260\u2264\u2265\u2248\u00D7\u00F7\u00B7])/.test(trimmed);
       if (!startsLikeEquation || (!hasRepeatedEquals && !hasMathOperator)) return line;
 
       const prefix = line.match(/^\s*/)?.[0] ?? "";
       const suffix = line.match(/\s*$/)?.[0] ?? "";
-      // Convert Unicode math relations to LaTeX equivalents inside the math block
+      // Convert Unicode math relations/operators to LaTeX equivalents in the block
       const latexTrimmed = trimmed
         .replace(/\u2260/g, "\\neq ")
         .replace(/\u2264/g, "\\leq ")
         .replace(/\u2265/g, "\\geq ")
-        .replace(/\u2248/g, "\\approx ");
+        .replace(/\u2248/g, "\\approx ")
+        .replace(/\u00D7/g, " \\times ")
+        .replace(/\u00F7/g, " \\div ")
+        .replace(/\u00B7/g, " \\cdot ");
       return `${prefix}$${latexTrimmed}$${suffix}`;
     })
     .join("\n");
@@ -550,6 +553,24 @@ export const formatMarkdown = (text?: string) => {
     .replace(/\\\(/g, "$").replace(/\\\)/g, "$")
     // 4. Keep carriage returns as simple newlines
     .replace(/\\n(?![a-zA-Z])/g, "\n");
+
+  // Protect GFM table blocks from every math/line heuristic below. A table row
+  // ends in "|", which the line-continuation logic reads as a math continuation
+  // and folds all rows onto one line — remark-gfm then shows raw pipes. Pull each
+  // table out to a placeholder, run all normalisation, then reinsert verbatim.
+  const tableBlocks: string[] = [];
+  formatted = formatted.replace(
+    /(?:^|\n)[ \t]*(\|[^\n]+\|[ \t]*\n[ \t]*\|[ \t]*:?-+[-:|\t ]*\|[ \t]*(?:\n[ \t]*\|[^\n]+\|[ \t]*)*)/g,
+    (_m, block: string) => {
+      const normalized = block
+        .trim()
+        .split(/\r?\n/)
+        .map((r) => r.trim())
+        .join("\n");
+      tableBlocks.push(normalized);
+      return `\n\nTABLEBLOCKTOKEN${tableBlocks.length - 1}ENDTABLEBLOCK\n\n`;
+    },
+  );
 
   formatted = unwrapMathCodeSpans(formatted);
 
@@ -903,10 +924,24 @@ export const formatMarkdown = (text?: string) => {
     })
     .join("");
 
-  return formatted
+  formatted = formatted
     .replace(/\n{3,}/g, "\n\n")
     .replace(/[ \t]+/g, " ")
     .trim();
+
+  // Reinsert the protected tables verbatim, with blank lines around each so
+  // remark-gfm recognises them as table blocks.
+  if (tableBlocks.length) {
+    formatted = formatted.replace(
+      /TABLEBLOCKTOKEN(\d+)ENDTABLEBLOCK/g,
+      (_m, idx: string) => {
+        const block = tableBlocks[Number(idx)];
+        return block ? `\n\n${block}\n\n` : "";
+      },
+    );
+  }
+
+  return formatted;
 };
 
 const getTextContent = (children: any): string => {
