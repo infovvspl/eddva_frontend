@@ -12,6 +12,7 @@ import Badge from "@/components/school/Badge";
 import Modal from "@/components/school/Modal";
 import InputField from "@/components/school/InputField";
 import SelectField from "@/components/school/SelectField";
+import SearchableMultiSelect from "@/components/school/admin/forms/SearchableMultiSelect";
 import SearchBar from "@/components/school/SearchBar";
 import DataTable from "@/components/school/DataTable";
 import Tabs from "@/components/school/Tabs";
@@ -339,6 +340,8 @@ const AssessmentSystem: React.FC = () => {
   const [chapters, setChapters] = useState<any[]>([]);
   const [topics, setTopics] = useState<any[]>([]);
   const [selectedChapterId, setSelectedChapterId] = useState("");
+  // Multi-chapter selection for a "Chapter Test" (e.g. chapters 1–10 of a subject).
+  const [selectedChapterIds, setSelectedChapterIds] = useState<string[]>([]);
   const [selectedTopicId, setSelectedTopicId] = useState("");
 
   const [formData, setFormData] = useState({
@@ -391,6 +394,14 @@ const AssessmentSystem: React.FC = () => {
     if (!showCreateModal || !selectedSubject) return;
     let cancelled = false;
     setSelectedChapterId(editingTest?.raw?.chapter_id || "");
+    // Restore a saved multi-chapter selection (chapter_ids), else fall back to
+    // the single chapter_id so an older chapter test still shows its chapter.
+    const savedIds: string[] = Array.isArray(editingTest?.raw?.chapter_ids)
+      ? editingTest.raw.chapter_ids.map((x: any) => String(x))
+      : editingTest?.raw?.chapter_id
+        ? [String(editingTest.raw.chapter_id)]
+        : [];
+    setSelectedChapterIds(savedIds);
     setTopics([]);
     api.get(`/topics/chapters?subjectId=${selectedSubject.id}`)
       .then((res) => { if (!cancelled) setChapters(res.data?.data || res.data || []); })
@@ -533,7 +544,11 @@ const AssessmentSystem: React.FC = () => {
       alert("Please select test date");
       return;
     }
-    if ((formData.type === "chapter" || formData.type === "topic") && !selectedChapterId) {
+    if (formData.type === "chapter" && selectedChapterIds.length === 0) {
+      alert("Please select at least one chapter");
+      return;
+    }
+    if (formData.type === "topic" && !selectedChapterId) {
       alert("Please select a chapter");
       return;
     }
@@ -544,6 +559,7 @@ const AssessmentSystem: React.FC = () => {
 
     // Only carry chapter/topic scope for the test types that need it, even if a
     // prior selection lingers in state from switching the Test Type dropdown.
+    const isChapterTest = formData.type === "chapter";
     const needsChapter = formData.type === "chapter" || formData.type === "topic";
     const needsTopic = formData.type === "topic";
 
@@ -565,7 +581,11 @@ const AssessmentSystem: React.FC = () => {
         contentText,
         answerKey,
         contentSource: contentMode,
-        chapterId: needsChapter ? selectedChapterId : undefined,
+        // Chapter test carries the full selected set; topic test keeps its single chapter.
+        chapterIds: isChapterTest ? selectedChapterIds : undefined,
+        chapterId: isChapterTest
+          ? (selectedChapterIds[0] || undefined)
+          : (needsChapter ? selectedChapterId : undefined),
         topicId: needsTopic ? selectedTopicId : undefined,
         language: aiLanguage,
       };
@@ -599,6 +619,9 @@ const AssessmentSystem: React.FC = () => {
       setUploadFile(null);
       setAiPrompt("");
       setAiLanguage("en");
+      setSelectedChapterIds([]);
+      setSelectedChapterId("");
+      setSelectedTopicId("");
     } catch (err) {
       console.error("Create assessment error:", err);
     } finally {
@@ -648,7 +671,11 @@ const AssessmentSystem: React.FC = () => {
     // Guard against generating ungrounded content: for Chapter/Topic tests,
     // the AI prompt is scoped by these names, so a missing selection here
     // used to silently fall back to the class name / a generic string.
-    if ((formData.type === "chapter" || formData.type === "topic") && !selectedChapterId) {
+    if (formData.type === "chapter" && selectedChapterIds.length === 0) {
+      alert("Please select at least one chapter above before generating questions.");
+      return;
+    }
+    if (formData.type === "topic" && !selectedChapterId) {
       alert("Please select a chapter above before generating questions.");
       return;
     }
@@ -659,9 +686,18 @@ const AssessmentSystem: React.FC = () => {
 
     setGeneratingAi(true);
     try {
+      const isChapterTest = formData.type === "chapter";
       const needsChapter = formData.type === "chapter" || formData.type === "topic";
       const needsTopic = formData.type === "topic";
-      const chapterName = needsChapter ? chapters.find((c: any) => c.id === selectedChapterId)?.name : undefined;
+      // Names ground the prompt. Chapter test sends the full list; topic test one.
+      const chapterNames = isChapterTest
+        ? selectedChapterIds
+            .map((id) => chapters.find((c: any) => String(c.id) === String(id))?.name)
+            .filter(Boolean)
+        : undefined;
+      const chapterName = isChapterTest
+        ? chapterNames?.[0]
+        : (needsChapter ? chapters.find((c: any) => c.id === selectedChapterId)?.name : undefined);
       const topicName = needsTopic ? topics.find((t: any) => t.id === selectedTopicId)?.name : undefined;
       const res = await api.post("/assessments/ai-generate", {
         title: formData.title,
@@ -672,7 +708,11 @@ const AssessmentSystem: React.FC = () => {
         className: selectedClass?.name,
         subjectId: selectedSubject?.id,
         subjectName: selectedSubject?.name,
-        chapterId: needsChapter ? selectedChapterId : undefined,
+        chapterIds: isChapterTest ? selectedChapterIds : undefined,
+        chapterNames,
+        chapterId: isChapterTest
+          ? (selectedChapterIds[0] || undefined)
+          : (needsChapter ? selectedChapterId : undefined),
         chapterName,
         topicId: needsTopic ? selectedTopicId : undefined,
         topicName,
@@ -787,6 +827,7 @@ const AssessmentSystem: React.FC = () => {
               setAiPrompt("");
               setAiLanguage(row.raw?.language || "en");
               setShowCreateModal(true);
+
             }}
           >
             Edit
@@ -1141,7 +1182,42 @@ const AssessmentSystem: React.FC = () => {
               ]}
             />
 
-            {(formData.type === "chapter" || formData.type === "topic") && (
+            {formData.type === "chapter" && (
+              <div>
+                <SearchableMultiSelect
+                  label="Chapters (select one or more — e.g. Chapter 1 to 10)"
+                  placeholder={chapters.length ? "Select chapters" : "No chapters found for this subject"}
+                  options={chapters.map((c: any) => ({ value: String(c.id), label: c.name }))}
+                  selectedValues={selectedChapterIds}
+                  onChange={(next: string[]) => setSelectedChapterIds(next)}
+                />
+                {chapters.length > 0 && (
+                  <div className="mt-1.5 flex items-center gap-3 text-[11px] font-semibold">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedChapterIds(chapters.map((c: any) => String(c.id)))}
+                      className="text-blue-600 hover:underline dark:text-sky-400"
+                    >
+                      Select all
+                    </button>
+                    {selectedChapterIds.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedChapterIds([])}
+                        className="text-gray-500 hover:underline"
+                      >
+                        Clear
+                      </button>
+                    )}
+                    <span className="ml-auto text-gray-400">
+                      {selectedChapterIds.length} of {chapters.length} selected
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {formData.type === "topic" && (
               <SelectField
                 label="Chapter"
                 placeholder={chapters.length ? "Select chapter" : "No chapters found for this subject"}
@@ -1254,16 +1330,28 @@ const AssessmentSystem: React.FC = () => {
                 <div className="space-y-3">
                   <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs font-semibold text-amber-800">
                     AI scope: {selectedClass?.name} &rsaquo; {selectedSubject?.name}
-                    {(formData.type === "chapter" || formData.type === "topic") && (
+                    {formData.type === "chapter" && (
                       <>
                         {" "}&rsaquo;{" "}
-                        {chapters.find((c: any) => c.id === selectedChapterId)?.name || (
-                          <span className="text-red-600">no chapter selected</span>
+                        {selectedChapterIds.length === 0 ? (
+                          <span className="text-red-600">no chapters selected</span>
+                        ) : (
+                          <span>
+                            {selectedChapterIds.length} chapter{selectedChapterIds.length > 1 ? "s" : ""}:{" "}
+                            {selectedChapterIds
+                              .map((id) => chapters.find((c: any) => String(c.id) === String(id))?.name)
+                              .filter(Boolean)
+                              .join(", ")}
+                          </span>
                         )}
                       </>
                     )}
                     {formData.type === "topic" && (
                       <>
+                        {" "}&rsaquo;{" "}
+                        {chapters.find((c: any) => c.id === selectedChapterId)?.name || (
+                          <span className="text-red-600">no chapter selected</span>
+                        )}
                         {" "}&rsaquo;{" "}
                         {topics.find((t: any) => t.id === selectedTopicId)?.name || (
                           <span className="text-red-600">no topic selected</span>
@@ -1298,10 +1386,10 @@ const AssessmentSystem: React.FC = () => {
                         value={aiConfig.difficulty}
                         onChange={(val) => setAiConfig(prev => ({ ...prev, difficulty: val }))}
                         options={[
-                        { value: "easy", label: "Easy" },
-                        { value: "intermediate", label: "Intermediate" },
-                        { value: "hard", label: "Hard" },
-                      ]}
+                          { value: "easy", label: "Easy" },
+                          { value: "intermediate", label: "Intermediate" },
+                          { value: "hard", label: "Hard" },
+                        ]}
                         className="w-full"
                       />
                     </label>
