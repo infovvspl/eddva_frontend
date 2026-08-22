@@ -894,6 +894,11 @@ export const formatMarkdown = (text?: string) => {
       if (t.type !== "prose") return t.text;
       let s = t.text;
       for (const [re, sym] of proseLatexSymbols) s = s.replace(re, sym);
+      // Drop orphan brace-only lines left by broken LaTeX (e.g. a "{" on its own
+      // line from a \frac{…}/\text{…} group that lost its command). A real brace
+      // inside math was already consumed by KaTeX in a math token, so a lone "{"
+      // or "}" reaching prose is always an artifact.
+      s = s.replace(/(^|\n)[ \t]*[{}][ \t]*(?=\n|$)/g, "$1");
       return s;
     })
     .join("");
