@@ -42,19 +42,29 @@ window.PPTExport = {
   async _urlToBase64(url) {
     if (!url) return null;
     if (url.startsWith('data:image')) return url;
-    try {
-      const res = await fetch(url);
-      const blob = await res.blob();
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.onerror = () => resolve(null);
-        reader.readAsDataURL(blob);
-      });
-    } catch (e) {
-      console.warn('Failed to convert image to base64:', e);
-      return null;
+    // Route through the backend image proxy first — the server no longer
+    // pre-downloads slide images, so hotlink/CORS-restricted URLs would fail a
+    // direct browser fetch. Fall back to a direct fetch if the proxy is absent.
+    const candidates = [];
+    try { if (window.PPT_CFG && window.PPT_CFG.proxyUrl) candidates.push(window.PPT_CFG.proxyUrl(url)); } catch (e) { /* no cfg */ }
+    candidates.push(url);
+    for (const src of candidates) {
+      try {
+        const res = await fetch(src);
+        if (!res.ok) continue;
+        const blob = await res.blob();
+        const b64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = () => resolve(null);
+          reader.readAsDataURL(blob);
+        });
+        if (b64) return b64;
+      } catch (e) {
+        console.warn('Image convert failed for', src, e);
+      }
     }
+    return null;
   },
 
   _buildPptx(presentationData) {
