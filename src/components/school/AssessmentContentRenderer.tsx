@@ -26,14 +26,14 @@ function prepareAssessmentText(raw: string): string {
   let text = raw.trim();
   if (!text) return text;
 
-  // 0. Normalise question weight. Models inconsistently wrap some questions in
-  // **…** (and not their siblings), so a few render bold while the rest are
-  // normal. Drop bold that wraps a whole question (number → end) so every
-  // question renders in the same weight.
-  text = text.replace(
-    /\*\*\s*((?:Q\s*)?\d{1,3}[.)][\s\S]*?[.?!])\s*\*\*/g,
-    "$1",
-  );
+  // 0. Deterministic weight. Generated papers use ** inconsistently: some
+  // questions are wrapped and others aren't, and a section header's opening/
+  // closing ** drifts across the questions between them — so the LAST question
+  // of each section came out bold while the section itself did not. Trying to
+  // pair ** up is hopeless. Strip ALL bold markers here (underscores are left
+  // alone — they're fill-in-the-blank lines), then bold ONLY the section
+  // headers ourselves (below). Result: sections bold, every question normal.
+  text = text.replace(/\*\*/g, "");
 
   // 1. Join any standalone question number ("1.", "2.", "Q1.") followed by single or double
   // newlines with its question text so they are NEVER separated into distinct blocks.
@@ -58,6 +58,11 @@ function prepareAssessmentText(raw: string): string {
     /((?:^|\n)\s*(?:Q\s*)?\d{1,3}[.)])\s*(?:\r?\n)+\s*(?!(?:[A-E][.):]\s*|\([A-E]\)\s*|Q?\d{1,3}[.)]\s*|#{1,6}\s|[-*+]\s))/gi,
     "$1 "
   );
+
+  // Bold the Section headers ourselves (see step 0) so section weight is
+  // consistent regardless of the source's ** chaos. Each section is on its own
+  // line by now.
+  text = text.replace(/^(\s*)(Section\s+[A-Za-z0-9]+\b[^\n]*)$/gim, "$1**$2**");
 
   // Escape the dot after line-starting numbers (1. -> 1\.) so Markdown renders
   // them as a single inline paragraph instead of an HTML <ol><li> list element.
