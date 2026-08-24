@@ -343,6 +343,11 @@ const AssessmentSystem: React.FC = () => {
   // Multi-chapter selection for a "Chapter Test" (e.g. chapters 1–10 of a subject).
   const [selectedChapterIds, setSelectedChapterIds] = useState<string[]>([]);
   const [selectedTopicId, setSelectedTopicId] = useState("");
+  // Whether the last AI draft was grounded in the indexed textbook, and which
+  // selected chapters were not indexed (questions there used general knowledge).
+  const [aiGrounding, setAiGrounding] = useState<
+    { grounded?: boolean; groundedChapters?: string[]; ungroundedChapters?: string[] } | null
+  >(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -731,6 +736,11 @@ const AssessmentSystem: React.FC = () => {
       }
       setContentText(draft.contentText || draft.content_text || "");
       setAnswerKey(draft.answerKey || draft.answer_key || "");
+      setAiGrounding({
+        grounded: draft.source?.grounded,
+        groundedChapters: draft.groundedChapters,
+        ungroundedChapters: draft.ungroundedChapters,
+      });
       setContentMode("ai");
     } catch (err) {
       console.error("AI assessment generation error:", err);
@@ -1417,6 +1427,26 @@ const AssessmentSystem: React.FC = () => {
                   <Button onClick={handleAiGenerate} disabled={generatingAi} icon={<Sparkles size={16} />}>
                     {generatingAi ? "Generating..." : "Generate Question Paper"}
                   </Button>
+                  {/* Grounding transparency: did the paper come strictly from the
+                      indexed textbook, or did some chapters fall back to general knowledge? */}
+                  {aiGrounding && contentText && (
+                    (aiGrounding.ungroundedChapters && aiGrounding.ungroundedChapters.length > 0) ? (
+                      <div className="rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-xs font-semibold text-amber-800">
+                        ⚠ Not from the textbook (used general knowledge) for: {aiGrounding.ungroundedChapters.join(", ")}.
+                        {aiGrounding.groundedChapters && aiGrounding.groundedChapters.length > 0 && (
+                          <> Grounded from the textbook for: {aiGrounding.groundedChapters.join(", ")}.</>
+                        )} Upload these chapters' PDFs under Textbook Coverage for book-only questions.
+                      </div>
+                    ) : aiGrounding.grounded ? (
+                      <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-2.5 text-xs font-semibold text-emerald-800">
+                        ✓ Generated strictly from your indexed textbook.
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-xs font-semibold text-amber-800">
+                        ⚠ This chapter has no indexed textbook, so questions were written from general knowledge. Upload the chapter PDF under Textbook Coverage for book-only questions.
+                      </div>
+                    )
+                  )}
                   {/* Show two-pane editor once AI has generated content */}
                   {contentText && (
                     <ContentEditor
