@@ -4,7 +4,6 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
-import { formatMarkdown } from "@/components/shared/MarkdownRenderer";
 
 type AssessmentContentRendererProps = {
   children: string;
@@ -34,6 +33,14 @@ function prepareAssessmentText(raw: string): string {
   // alone — they're fill-in-the-blank lines), then bold ONLY the section
   // headers ourselves (below). Result: sections bold, every question normal.
   text = text.replace(/\*\*/g, "");
+
+  // 0b. Unescape dollar delimiters (\$ -> $) so escaped math still renders.
+  text = text.replace(/\\\$/g, "$");
+
+  // 0c. Remove textbook page citations that leaked from grounding into the
+  // question text, e.g. "[p.1, p.9]" / "[P.7, P.28]" — students should not see
+  // the source pages on their paper.
+  text = text.replace(/\s*\[\s*[pP]\.?\s*\d+(?:\s*,\s*[pP]?\.?\s*\d+)*\s*\]/g, "");
 
   // 1. Join any standalone question number ("1.", "2.", "Q1.") followed by single or double
   // newlines with its question text so they are NEVER separated into distinct blocks.
@@ -138,8 +145,11 @@ export default function AssessmentContentRenderer({
     );
   }
 
+  // Note: the notes-oriented formatMarkdown() is deliberately NOT used here — its
+  // math-repair heuristics mangled all-caps question papers (stray $, hydrate
+  // wrapping, joining Section headers onto the first question). prepareAssessmentText
+  // + remark-math is all an exam paper needs.
   const prepared = prepareAssessmentText(children);
-  const formatted = formatMarkdown(prepared);
 
   return (
     <div className={`assessment-content ${className}`}>
@@ -148,7 +158,7 @@ export default function AssessmentContentRenderer({
         rehypePlugins={[rehypeKatex]}
         components={assessmentComponents as any}
       >
-        {formatted}
+        {prepared}
       </ReactMarkdown>
     </div>
   );
