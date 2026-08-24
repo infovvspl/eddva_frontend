@@ -33,19 +33,16 @@ function prepareAssessmentText(raw: string): string {
     "$1 "
   );
 
-  const lines = text.split(/\r?\n/);
-
-  // Dense single-blob (3 lines or fewer but long) — insert paragraph breaks.
-  if (lines.length <= 3 && text.length > 220) {
-    text = text
-      .replace(/\s+(?=(?:Section|Part|Answer Key|Answers|Ans Key|General Instructions)\b)/gi, "\n\n")
-      .replace(/\s+(?=#+\s+)/g, "\n\n")
-      .replace(/([^\n])\s+(?=Q?\s*\d{1,3}[.)]\s+)/g, "$1\n\n")
-      .replace(/\n{3,}/g, "\n\n");
-  } else {
-    // Already multi-line — collapse excess blank lines.
-    text = text.replace(/\n{3,}/g, "\n\n");
-  }
+  // Break before Section/heading markers and before every question number that
+  // follows other text on the same line. Applied unconditionally: a run-on block
+  // ("Q1. … Q2. … Q3. …" all on one line) must become one question per paragraph
+  // regardless of how many lines the source already has. The old rule only did
+  // this for ≤3-line blobs, so a multi-section paper stayed jammed together.
+  text = text
+    .replace(/([^\n])\s+(?=(?:Section|Part|Answer Key|Answers|Ans Key|General Instructions)\b)/gi, "$1\n\n")
+    .replace(/([^\n])\s+(?=#{1,6}\s+)/g, "$1\n\n")
+    .replace(/([^\n])\s+(?=(?:Q\s*)?\d{1,3}[.)]\s+)/g, "$1\n\n")
+    .replace(/\n{3,}/g, "\n\n");
 
   // Re-run number joining after paragraph breaking as a final pass
   text = text.replace(
