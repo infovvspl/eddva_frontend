@@ -348,6 +348,17 @@ const AssessmentSystem: React.FC = () => {
   const [aiGrounding, setAiGrounding] = useState<
     { grounded?: boolean; groundedChapters?: string[]; ungroundedChapters?: string[] } | null
   >(null);
+  // Generation timing shown in the UI: a live counter while generating, and the
+  // final duration once the question paper is ready.
+  const [genStartAt, setGenStartAt] = useState<number | null>(null);
+  const [genElapsedMs, setGenElapsedMs] = useState(0);
+  const [genDurationMs, setGenDurationMs] = useState<number | null>(null);
+  useEffect(() => {
+    if (!genStartAt) return;
+    const id = setInterval(() => setGenElapsedMs(Date.now() - genStartAt), 100);
+    return () => clearInterval(id);
+  }, [genStartAt]);
+  const fmtDuration = (ms: number) => (ms >= 10000 ? `${Math.round(ms / 1000)}s` : `${(ms / 1000).toFixed(1)}s`);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -689,7 +700,11 @@ const AssessmentSystem: React.FC = () => {
       return;
     }
 
+    const start = Date.now();
     setGeneratingAi(true);
+    setGenDurationMs(null);
+    setGenElapsedMs(0);
+    setGenStartAt(start);
     try {
       const isChapterTest = formData.type === "chapter";
       const needsChapter = formData.type === "chapter" || formData.type === "topic";
@@ -742,11 +757,13 @@ const AssessmentSystem: React.FC = () => {
         ungroundedChapters: draft.ungroundedChapters,
       });
       setContentMode("ai");
+      setGenDurationMs(Date.now() - start);
     } catch (err) {
       console.error("AI assessment generation error:", err);
       alert("AI could not generate the assessment right now. Please use manual entry or upload.");
     } finally {
       setGeneratingAi(false);
+      setGenStartAt(null);
     }
   };
 
@@ -1425,8 +1442,13 @@ const AssessmentSystem: React.FC = () => {
                     className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none focus:ring-2 focus:ring-brand-500"
                   />
                   <Button onClick={handleAiGenerate} disabled={generatingAi} icon={<Sparkles size={16} />}>
-                    {generatingAi ? "Generating..." : "Generate Question Paper"}
+                    {generatingAi ? `Generating… ${fmtDuration(genElapsedMs)}` : "Generate Question Paper"}
                   </Button>
+                  {!generatingAi && contentText && genDurationMs != null && (
+                    <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-2 text-xs font-bold text-emerald-800">
+                      Generated in {fmtDuration(genDurationMs)}
+                    </div>
+                  )}
                   {/* Grounding transparency: did the paper come strictly from the
                       indexed textbook, or did some chapters fall back to general knowledge? */}
                   {aiGrounding && contentText && (
