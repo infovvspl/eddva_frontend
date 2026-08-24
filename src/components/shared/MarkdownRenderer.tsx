@@ -572,6 +572,27 @@ export const formatMarkdown = (text?: string) => {
     },
   );
 
+  // Split inline MCQ options onto their own lines. Models emit "A. x B. y C. z
+  // D. w" inconsistently — sometimes all on one line — which reads as a jumble
+  // (the old splitter used a case-insensitive class that broke whenever an option
+  // contained a lowercase a–d, e.g. "cm" or "a²b³"). Done before math wrapping,
+  // and only when A + B + C labels share a line, so a single "A." option or prose
+  // like "Vitamin A … B …" / "Section A … B …" is left untouched.
+  formatted = formatted
+    .split("\n")
+    .map((line) => {
+      if (
+        /(^|\s)A[.):]\s/.test(line) &&
+        /\sB[.):]\s/.test(line) &&
+        /\sC[.):]\s/.test(line) &&
+        !/\b(?:Section|Part|Group|Chapter|Unit|consists|questions)\b/.test(line)
+      ) {
+        return line.replace(/\s+([B-E])([.):])\s+/g, "\n$1$2 ");
+      }
+      return line;
+    })
+    .join("\n");
+
   formatted = unwrapMathCodeSpans(formatted);
 
   // Remove redundant caption/figure lines that follow right after an image tag.
