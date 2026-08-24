@@ -880,7 +880,13 @@ export const formatMarkdown = (text?: string) => {
       const left = (leftSide || "").trim();
       // "A", "B", "C"\u2026 on their own are option labels, not compounds.
       const isSingleBareLetter = /^[A-Z]$/.test(left);
-      return isSingleBareLetter ? match : `${lead}$${formula}$`;
+      // A real hydrate/compound carries a subscript (H_2O) or an explicit \u22c5/\cdot
+      // dot. A plain period between all-caps words is a sentence boundary
+      // ("NATURE. Q2") \u2014 assessment papers are all-caps, so this used to fire on
+      // every one, wrapping prose in $\u2026$ and producing stray unmatched dollars.
+      const isRealCompound = /_/.test(formula) || /\\[cC]dot|\u22c5|\u2219/.test(formula);
+      if (isSingleBareLetter || !isRealCompound) return match;
+      return `${lead}$${formula}$`;
     }
   );
 
