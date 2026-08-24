@@ -2105,6 +2105,17 @@ function AiGeneratePanel({
   const [extraContext, setExtraContext] = useState('');
   const [language, setLanguage] = useState<'english' | 'hindi' | 'odia'>('english');
   const [generating, setGenerating] = useState(false);
+  // Generation timing shown in the UI: a live counter while generating, and the
+  // final duration once done (teachers asked to see how long a paper/material takes).
+  const [genStartAt, setGenStartAt] = useState<number | null>(null);
+  const [genElapsedMs, setGenElapsedMs] = useState(0);
+  const [genDurationMs, setGenDurationMs] = useState<number | null>(null);
+  useEffect(() => {
+    if (!generating || genStartAt == null) return;
+    const id = setInterval(() => setGenElapsedMs(Date.now() - genStartAt), 100);
+    return () => clearInterval(id);
+  }, [generating, genStartAt]);
+  const fmtDuration = (ms: number) => (ms >= 10000 ? `${Math.round(ms / 1000)}s` : `${(ms / 1000).toFixed(1)}s`);
   const [saving, setSaving] = useState(false);
   const [content, setContent] = useState<string | null>(null);
   // Whether the chapter's indexed textbook was actually used. Set by the server,
@@ -2129,9 +2140,13 @@ function AiGeneratePanel({
   const showPreviewFlashcards = typeId === 'flashcard' && !!content;
 
   const handleGenerate = async () => {
+    const start = Date.now();
     setGenerating(true);
     setContent(null);
     setSource(null);
+    setGenDurationMs(null);
+    setGenElapsedMs(0);
+    setGenStartAt(start);
     try {
       const typeInstruction =
         typeId === 'faq'
@@ -2165,10 +2180,12 @@ function AiGeneratePanel({
       }
       setContent(generated);
       setSource((res as any).source ?? null);
+      setGenDurationMs(Date.now() - start);
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'AI generation failed');
     } finally {
       setGenerating(false);
+      setGenStartAt(null);
     }
   };
 
@@ -2329,10 +2346,17 @@ function AiGeneratePanel({
 
           {(generating || content) && (
             <div className="mt-6">
-              <p className="mb-2 text-[11px] font-black uppercase tracking-wider text-surface-400">Preview</p>
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-[11px] font-black uppercase tracking-wider text-surface-400">Preview</p>
+                {!generating && content && genDurationMs != null && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                    Generated in {fmtDuration(genDurationMs)}
+                  </span>
+                )}
+              </div>
               {generating ? (
                 <div className="flex items-center justify-center gap-2 rounded-2xl border border-surface-100 bg-surface-50 py-10 text-sm font-semibold text-surface-500 dark:border-surface-700 dark:bg-surface-800">
-                  <Loader2 size={18} className="animate-spin text-violet-500" /> Generating with AI…
+                  <Loader2 size={18} className="animate-spin text-violet-500" /> Generating with AI… {fmtDuration(genElapsedMs)}
                 </div>
               ) : showPreviewTree ? (
                 <div className="overflow-hidden rounded-2xl border border-surface-100 dark:border-surface-700">
@@ -2355,7 +2379,7 @@ function AiGeneratePanel({
 
         <div className="flex gap-2 border-t border-surface-100 p-4 dark:border-surface-700">
           <Button variant="outline" className="flex-1 justify-center" onClick={handleGenerate} disabled={generating}>
-            {generating ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Generating…</span> : (content ? 'Regenerate' : 'Generate')}
+            {generating ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Generating… {fmtDuration(genElapsedMs)}</span> : (content ? 'Regenerate' : 'Generate')}
           </Button>
           {content && (
             <Button className="flex-1 justify-center" onClick={handleSave} disabled={saving}>
