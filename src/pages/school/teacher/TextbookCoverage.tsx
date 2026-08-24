@@ -199,16 +199,18 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
         timeout: 300000,
       });
       const d = res?.data?.data ?? res?.data;
-      if (d?.indexed) {
-        toast.success(`"${r.chapterName}" is ready — ${d.chunks} passages from ${d.pages} pages.`);
+      // Upload done; indexing now runs in the background (see indexOne). Start
+      // progress polling instead of waiting for the read to finish.
+      if (d?.runId) {
+        toast.success(`"${r.chapterName}" uploaded — indexing started (large/scanned PDFs can take a minute).`);
+        await pollRun();
+        startPolling();
       } else {
-        // See indexOne: "too long to transcribe" and "unreadable scan" call for
-        // different fixes, so the server's wording is used.
-        toast.warning(
-          `"${r.chapterName}": uploaded, but ${d?.message ?? 'no readable text was found. It may be a poor scan.'}`,
-        );
+        // Upload succeeded but indexing couldn't start now (e.g. another run is
+        // already in progress); it can be indexed once that finishes.
+        toast.success(`"${r.chapterName}" uploaded. Index it once the current run finishes.`);
+        load();
       }
-      load();
     } catch (e: any) {
       toast.error(e?.response?.data?.message || 'Upload failed.');
     } finally {
