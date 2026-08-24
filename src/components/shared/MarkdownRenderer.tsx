@@ -543,6 +543,10 @@ export const formatMarkdown = (text?: string) => {
   let formatted = text
     // 1. Unescape double-escaped backslashes from JSON payloads
     .replace(/\\\\/g, "\\")
+    // 1b. Unescape dollar delimiters (\$ -> $). Models and JSON transport
+    // sometimes emit "\$formula\$"; remark-math ignores an escaped dollar, so the
+    // formula rendered as literal "$…$" text with raw \times / \quad commands.
+    .replace(/\\\$/g, "$")
     // 2. Restore form feeds and other control characters that might be mangled backslash sequences
     .replace(/\x0C/g, "\\f")
     .replace(/\x0B/g, "\\v")
