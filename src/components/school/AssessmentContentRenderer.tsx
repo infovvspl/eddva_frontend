@@ -26,6 +26,15 @@ function prepareAssessmentText(raw: string): string {
   let text = raw.trim();
   if (!text) return text;
 
+  // 0. Normalise question weight. Models inconsistently wrap some questions in
+  // **…** (and not their siblings), so a few render bold while the rest are
+  // normal. Drop bold that wraps a whole question (number → end) so every
+  // question renders in the same weight.
+  text = text.replace(
+    /\*\*\s*((?:Q\s*)?\d{1,3}[.)][\s\S]*?[.?!])\s*\*\*/g,
+    "$1",
+  );
+
   // 1. Join any standalone question number ("1.", "2.", "Q1.") followed by single or double
   // newlines with its question text so they are NEVER separated into distinct blocks.
   text = text.replace(
