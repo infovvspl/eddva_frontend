@@ -484,8 +484,12 @@ window.App = {
       // Brief pause so the user sees 100 %
       await this._sleep(500);
 
+      const took = this._loadStartAt ? (Date.now() - this._loadStartAt) : null;
       this.hideLoading();
       this.showPreview();
+      if (took != null) {
+        this.showToast('Presentation generated in ' + this._fmtDuration(took), 'success');
+      }
 
     } catch (error) {
       this.hideLoading();
@@ -674,17 +678,40 @@ window.App = {
    * @param {string} status — Main status message
    * @param {string} step   — Sub-step text
    */
+  /** Format an elapsed duration: 1 decimal under 10s, whole seconds beyond. */
+  _fmtDuration(ms) {
+    return ms >= 10000 ? Math.round(ms / 1000) + 's' : (ms / 1000).toFixed(1) + 's';
+  },
+
   showLoading(status, step) {
     const overlay = document.getElementById('loading-overlay');
     if (overlay) overlay.classList.add('visible');
     this.updateLoadingStatus(status, step);
     this.updateProgress(0);
+
+    // Live elapsed timer so teachers can see how long generation takes.
+    this._loadStartAt = Date.now();
+    const stepEl = document.getElementById('loading-step');
+    let timerEl = document.getElementById('loading-timer');
+    if (!timerEl && stepEl && stepEl.parentNode) {
+      timerEl = document.createElement('div');
+      timerEl.id = 'loading-timer';
+      timerEl.style.cssText = 'margin-top:8px;font-size:12px;font-weight:700;color:#7c3aed;';
+      stepEl.parentNode.insertBefore(timerEl, stepEl.nextSibling);
+    }
+    if (timerEl) timerEl.textContent = 'Elapsed: 0.0s';
+    if (this._loadTimer) clearInterval(this._loadTimer);
+    this._loadTimer = setInterval(() => {
+      const el = document.getElementById('loading-timer');
+      if (el) el.textContent = 'Elapsed: ' + this._fmtDuration(Date.now() - this._loadStartAt);
+    }, 100);
   },
 
   /** Hide the loading overlay. */
   hideLoading() {
     const overlay = document.getElementById('loading-overlay');
     if (overlay) overlay.classList.remove('visible');
+    if (this._loadTimer) { clearInterval(this._loadTimer); this._loadTimer = null; }
   },
 
   /**
