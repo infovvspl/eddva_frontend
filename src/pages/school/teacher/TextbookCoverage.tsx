@@ -157,12 +157,16 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
     try {
       const res = await api.post('/textbooks/ingest', { materialId: r.materialId, instituteId });
       const d = res?.data?.data ?? res?.data;
-      if (d?.indexed) toast.success(`"${r.chapterName}" is ready — ${d.chunks} passages from ${d.pages} pages.`);
-      // The server distinguishes an unreadable scan from a chapter too long to
-      // transcribe in one pass, and the two need different action from the user,
-      // so its message is shown rather than a fixed one.
-      else toast.warning(`"${r.chapterName}": ${d?.message ?? 'no readable text found. It may be a poor scan.'}`);
-      load();
+      // Indexing now runs in the background (large/scanned PDFs can take minutes
+      // and cannot sit on one HTTP request), so start progress polling instead of
+      // waiting for a result here. The poll shows the run and toasts on finish.
+      if (d?.runId) {
+        toast.info(`Indexing "${r.chapterName}" started — large or scanned PDFs can take a minute.`);
+        await pollRun();
+        startPolling();
+      } else {
+        load();
+      }
     } catch (e: any) {
       toast.error(e?.response?.data?.message || 'Indexing failed.');
     } finally {
