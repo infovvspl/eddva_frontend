@@ -2029,17 +2029,25 @@ function SourceBadge({ source }: { source: { grounded: boolean; pages?: number[]
     );
   }
 
+  // Not grounded: a temporary outage (textbook AI / Gemini unreachable, book IS
+  // indexed) is a different situation from a permanent gap (chapter not indexed),
+  // and needs different action from the teacher — so show them distinctly.
+  const isUnavailable = source.reason === 'unavailable';
   return (
     <span
       title={
-        source.reason === 'not_indexed'
-          ? 'This chapter has no indexed textbook, so it was written from general knowledge. Upload the chapter PDF under Textbook Coverage to change that.'
-          : 'The textbook could not be used this time, so it was written from general knowledge.'
+        isUnavailable
+          ? 'The textbook AI was temporarily unavailable, so this used general knowledge. Your book is indexed — just generate again in a little while.'
+          : 'This chapter has no indexed textbook, so it was written from general knowledge. Upload the chapter PDF under Textbook Coverage to change that.'
       }
-      className="inline-flex items-center gap-1.5 rounded-full border border-surface-300 bg-surface-100 px-2.5 py-0.5 text-[11px] font-bold text-surface-600 dark:border-surface-600 dark:bg-surface-800 dark:text-surface-300"
+      className={
+        isUnavailable
+          ? 'inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+          : 'inline-flex items-center gap-1.5 rounded-full border border-surface-300 bg-surface-100 px-2.5 py-0.5 text-[11px] font-bold text-surface-600 dark:border-surface-600 dark:bg-surface-800 dark:text-surface-300'
+      }
     >
       <span className="h-1.5 w-1.5 rounded-full bg-current" />
-      General knowledge
+      {isUnavailable ? 'Textbook AI unavailable — retry' : 'General knowledge'}
     </span>
   );
 }

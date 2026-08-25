@@ -528,12 +528,19 @@ window.App = {
       return;
     }
 
-    // Not grounded — say so plainly rather than leaving it ambiguous.
-    el.className = 'source-badge source-badge--general';
-    el.innerHTML = '<span class="badge-dot"></span>General knowledge';
-    el.title = (source && source.reason === 'not_indexed')
-      ? 'This chapter has no indexed textbook, so the deck was written from general knowledge. Upload the chapter PDF under Textbook Coverage to change that.'
-      : 'The textbook could not be used for this deck, so it was written from general knowledge.';
+    // Not grounded. Distinguish a temporary outage (textbook AI / Gemini
+    // unreachable, book IS indexed → just retry) from a permanent gap (chapter
+    // not indexed → upload the PDF), because the fix is different.
+    const isUnavailable = source && source.reason === 'unavailable';
+    el.className = isUnavailable
+      ? 'source-badge source-badge--unavailable'
+      : 'source-badge source-badge--general';
+    el.innerHTML = isUnavailable
+      ? '<span class="badge-dot"></span>Textbook AI unavailable — retry'
+      : '<span class="badge-dot"></span>General knowledge';
+    el.title = isUnavailable
+      ? 'The textbook AI was temporarily unavailable, so this deck used general knowledge. Your book is indexed — generate again in a little while.'
+      : 'This chapter has no indexed textbook, so the deck was written from general knowledge. Upload the chapter PDF under Textbook Coverage to change that.';
     el.hidden = false;
   },
 
