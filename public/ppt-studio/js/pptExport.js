@@ -30,11 +30,18 @@ window.PPTExport = {
   async _prefillBase64Images(presentationData) {
     if (!presentationData?.slides) return;
     for (const slide of presentationData.slides) {
-      if (slide.imageUrl && !slide.imageBase64) {
-        const b64 = await this._urlToBase64(slide.imageUrl);
-        if (b64) {
-          slide.imageBase64 = b64;
-        }
+      if (slide.imageBase64) continue;      // already have embeddable data
+      if (!slide.imageUrl) continue;
+      const b64 = await this._urlToBase64(slide.imageUrl);
+      if (b64) {
+        slide.imageBase64 = b64;
+      } else {
+        // Could not load/convert (dead link, CORS, hotlink block). Drop the URL
+        // so the export omits just this one image instead of handing PptxGenJS an
+        // unreachable path — which throws "Unable to load image" at write time and
+        // aborts the whole deck.
+        console.warn('Slide image dropped — could not load:', slide.imageUrl);
+        slide.imageUrl = '';
       }
     }
   },
@@ -53,6 +60,9 @@ window.PPTExport = {
         const res = await fetch(src);
         if (!res.ok) continue;
         const blob = await res.blob();
+        // Guard against a proxy/host returning a 200 error page instead of an
+        // image — only real image bytes become a usable data URI.
+        if (!blob.type || blob.type.indexOf('image/') !== 0) continue;
         const b64 = await new Promise((resolve) => {
           const reader = new FileReader();
           reader.onloadend = () => resolve(reader.result);
@@ -204,9 +214,10 @@ window.PPTExport = {
     if ((data.imageFit || 'contain') === 'contain') {
       try {
         var c = Object.assign({}, opts, { sizing: { type: 'contain', w: opts.w, h: opts.h } });
-        if (data.imageBase64) c.data = data.imageBase64;
-        else if (data.imageUrl) c.path = data.imageUrl;
-        else return;
+        // Only embed already-loaded base64. A raw URL here means it failed to load
+        // (see _prefillBase64Images) and would abort the whole export at write time.
+        if (!data.imageBase64) return;
+        c.data = data.imageBase64;
         slide.addImage(c);
       } catch (e) { console.warn('Image error (contain):', e); }
       return;
@@ -225,16 +236,15 @@ window.PPTExport = {
                   w: opts.w * (1 - (lCrop+rCrop)/100),
                   h: opts.h * (1 - (tCrop+bCrop)/100) }
       });
-      if (data.imageBase64) o.data = data.imageBase64;
-      else if (data.imageUrl) o.path = data.imageUrl;
-      else return;
+      if (!data.imageBase64) return;
+      o.data = data.imageBase64;
       slide.addImage(o);
     } catch (e) {
       // Fallback: no crop
       try {
         var fb = Object.assign({}, opts, { sizing: { type: 'contain', w: opts.w, h: opts.h } });
-        if (data.imageBase64) fb.data = data.imageBase64;
-        else if (data.imageUrl) fb.path = data.imageUrl;
+        if (!data.imageBase64) return;
+        fb.data = data.imageBase64;
         slide.addImage(fb);
       } catch(e2) { console.warn('Image error:', e2); }
     }
