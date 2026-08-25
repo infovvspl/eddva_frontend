@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useConfirm } from "@/context/ConfirmContext";
 import {
-  FileText, Key, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target, Trophy
+  FileText, Key, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target, Trophy, Clock
 } from "lucide-react";
 import AssessmentContentRenderer from "@/components/school/AssessmentContentRenderer";
 import GlassCard from "@/components/school/GlassCard";
@@ -360,12 +360,24 @@ const AssessmentSystem: React.FC = () => {
   }, [genStartAt]);
   const fmtDuration = (ms: number) => (ms >= 10000 ? `${Math.round(ms / 1000)}s` : `${(ms / 1000).toFixed(1)}s`);
 
+  const getCalculatedEndTime = (dateStr: string, timeStr: string, durationMins: number) => {
+    if (!dateStr || !timeStr) return "";
+    const start = new Date(`${dateStr}T${timeStr}`);
+    if (isNaN(start.getTime())) return "";
+    const end = new Date(start.getTime() + (Number(durationMins) || 0) * 60 * 1000);
+    return end.toLocaleString([], {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  };
+
   const [formData, setFormData] = useState({
     title: "",
     type: "topic",
     total_marks: 100,
     duration_minutes: 120,
     scheduled_date: "",
+    start_time: "10:00",
   });
 
   // Keep AI question-type counts in sync with Total Marks so the generated
@@ -581,6 +593,10 @@ const AssessmentSystem: React.FC = () => {
 
     setSubmittingTest(true);
     try {
+      const scheduledDateTime = (formData.scheduled_date && formData.start_time)
+        ? `${formData.scheduled_date}T${formData.start_time}:00`
+        : formData.scheduled_date || null;
+
       const payload: Record<string, any> = {
         title: formData.title,
         type: formData.type,
@@ -592,8 +608,8 @@ const AssessmentSystem: React.FC = () => {
         totalMarks: formData.total_marks,
         duration_minutes: formData.duration_minutes,
         durationMinutes: formData.duration_minutes,
-        scheduled_date: formData.scheduled_date,
-        scheduledAt: formData.scheduled_date,
+        scheduled_date: scheduledDateTime,
+        scheduledAt: scheduledDateTime,
         contentText,
         answerKey,
         contentSource: contentMode,
@@ -628,6 +644,7 @@ const AssessmentSystem: React.FC = () => {
         total_marks: 100,
         duration_minutes: 120,
         scheduled_date: "",
+        start_time: "10:00",
       });
       setContentMode("manual");
       setContentText("");
@@ -816,7 +833,27 @@ const AssessmentSystem: React.FC = () => {
     },
     { key: "totalMarks", title: "Total Marks" },
     { key: "duration", title: "Duration (mins)" },
-    { key: "date", title: "Date" },
+    {
+      key: "date",
+      title: "Schedule (Start → End)",
+      render: (_: any, row: any) => {
+        if (!row.rawDate) return "-";
+        const start = new Date(row.rawDate);
+        if (isNaN(start.getTime())) return row.date || "-";
+        const durationMins = Number(row.duration) || 60;
+        const end = new Date(start.getTime() + durationMins * 60 * 1000);
+        return (
+          <div className="text-xs">
+            <p className="font-bold text-gray-800">
+              {start.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+            </p>
+            <p className="text-gray-500 font-semibold mt-0.5">
+              {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} → {end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </p>
+          </div>
+        );
+      },
+    },
     {
       key: "status",
       title: "Status",
@@ -839,13 +876,22 @@ const AssessmentSystem: React.FC = () => {
             size="sm"
             variant="outline"
             onClick={() => {
+              const dateObj = row.rawDate ? new Date(row.rawDate) : null;
+              const dateStr = dateObj && !isNaN(dateObj.getTime())
+                ? `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`
+                : (row.rawDate ? String(row.rawDate).slice(0, 10) : "");
+              const timeStr = dateObj && !isNaN(dateObj.getTime())
+                ? `${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`
+                : "10:00";
+
               setEditingTest(row);
               setFormData({
                 title: row.title || "",
                 type: row.type || "topic",
                 total_marks: Number(row.totalMarks) || 100,
                 duration_minutes: Number(row.duration) || 120,
-                scheduled_date: row.rawDate ? String(row.rawDate).slice(0, 10) : "",
+                scheduled_date: dateStr,
+                start_time: timeStr,
               });
               setContentText(row.raw?.content_text || row.raw?.contentText || "");
               setAnswerKey(row.raw?.answer_key || row.raw?.answerKey || "");
@@ -854,7 +900,6 @@ const AssessmentSystem: React.FC = () => {
               setAiPrompt("");
               setAiLanguage(row.raw?.language || "en");
               setShowCreateModal(true);
-
             }}
           >
             Edit
@@ -1097,7 +1142,7 @@ const AssessmentSystem: React.FC = () => {
               <Button
                 icon={<Plus size={18} />}
                 onClick={() => {
-                  setFormData({ title: "", type: "topic", total_marks: 100, duration_minutes: 120, scheduled_date: "" });
+                  setFormData({ title: "", type: "topic", total_marks: 100, duration_minutes: 120, scheduled_date: "", start_time: "10:00" });
                   setEditingTest(null);
                   setContentMode("manual");
                   setContentText("");
@@ -1272,13 +1317,26 @@ const AssessmentSystem: React.FC = () => {
               />
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <InputField
+              label="Total Marks"
+              type="number"
+              placeholder="100"
+              value={formData.total_marks}
+              onChange={(e) => setFormData({ ...formData, total_marks: Number(e.target.value) })}
+            />
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <InputField
-                label="Total Marks"
-                type="number"
-                placeholder="100"
-                value={formData.total_marks}
-                onChange={(e) => setFormData({ ...formData, total_marks: Number(e.target.value) })}
+                label="Date"
+                type="date"
+                value={formData.scheduled_date}
+                onChange={(e) => setFormData({ ...formData, scheduled_date: e.target.value })}
+              />
+              <InputField
+                label="Start Time"
+                type="time"
+                value={formData.start_time}
+                onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
               />
               <InputField
                 label="Duration (mins)"
@@ -1289,12 +1347,26 @@ const AssessmentSystem: React.FC = () => {
               />
             </div>
 
-            <InputField
-              label="Date"
-              type="date"
-              value={formData.scheduled_date}
-              onChange={(e) => setFormData({ ...formData, scheduled_date: e.target.value })}
-            />
+            {formData.scheduled_date && formData.start_time && (
+              <div className="rounded-xl border border-blue-200 bg-blue-50/80 p-3 text-xs font-semibold text-blue-900 flex flex-wrap items-center justify-between gap-2 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-blue-600 shrink-0" />
+                  <span>Scheduled Test Window:</span>
+                </div>
+                <div className="font-bold text-blue-950 flex items-center gap-2 flex-wrap">
+                  <span>
+                    {new Date(`${formData.scheduled_date}T${formData.start_time}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  <span className="text-blue-400">→</span>
+                  <span>
+                    {getCalculatedEndTime(formData.scheduled_date, formData.start_time, formData.duration_minutes)}
+                  </span>
+                  <span className="ml-1 rounded-md bg-blue-200/80 px-2 py-0.5 text-[10px] font-black uppercase text-blue-800">
+                    Auto Ends ({formData.duration_minutes} mins)
+                  </span>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-3 rounded-xl border border-gray-100 bg-gray-50 p-3">
               <label className="text-sm font-semibold text-gray-800">Assessment Content</label>
@@ -1304,7 +1376,6 @@ const AssessmentSystem: React.FC = () => {
                   { id: "upload", label: "Upload", icon: <Upload size={14} /> },
                   { id: "ai", label: "AI", icon: <Sparkles size={14} /> },
                 ].map((mode) => {
-                  if (mode.id === "ai" && !hasAiAssessments) return null;
                   return (
                     <button
                       key={mode.id}

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
   Sparkles, MessageCircleQuestion, FileText, ClipboardList, CalendarCheck,
   Compass, Video, MessageSquare, Loader2, ChevronDown, ChevronUp, Search, Filter,
-  Zap, Presentation, Languages, FileSearch, GraduationCap, Users, Settings, Shield, User, BarChart3, PackageOpen, Check
+  Zap, Presentation, Languages, FileSearch, GraduationCap, Users, Settings, Shield, User, BarChart3, PackageOpen, Check, Building2
 } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { AI_FEATURES } from "@/lib/constants/aiFeatures";
@@ -709,8 +709,8 @@ const FeatureFlagsPage = () => {
           <div className="flex flex-col md:hidden gap-3 mb-6 bg-slate-100/60 p-3 rounded-2xl border border-slate-200">
             <div className="flex items-center justify-between gap-2">
               <div className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-sm">
-                <Search className="h-3.5 w-3.5 text-blue-600" />
-                <span>{filteredSchools.length} schools</span>
+                <Building2 className="h-3.5 w-3.5 text-blue-600" />
+                <span>{filteredSchools.length} {filteredSchools.length === 1 ? 'school' : 'schools'}</span>
               </div>
               <button
                 type="button"
@@ -817,8 +817,8 @@ const FeatureFlagsPage = () => {
             </button>
 
             <div className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm border border-slate-200">
-              <Sparkles className="h-3.5 w-3.5 text-blue-600" />
-              <span>{filteredSchools.length} matches</span>
+              <Building2 className="h-3.5 w-3.5 text-blue-600" />
+              <span>{filteredSchools.length} {filteredSchools.length === 1 ? 'school' : 'schools'}</span>
             </div>
           </div>
 

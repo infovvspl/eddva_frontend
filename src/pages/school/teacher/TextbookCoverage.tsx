@@ -390,7 +390,14 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
         </p>
       ) : (
         <div className="space-y-2">
-          {Object.entries(grouped).map(([cls, subjects]) => {
+          {Object.keys(grouped)
+            .sort((a, b) => {
+              const normA = (a || '').replace(/[-_]/g, ' ').replace(/\s+/g, ' ');
+              const normB = (b || '').replace(/[-_]/g, ' ').replace(/\s+/g, ' ');
+              return normA.localeCompare(normB, undefined, { numeric: true, sensitivity: 'base' });
+            })
+            .map((cls) => {
+              const subjects = grouped[cls];
             const total = Object.values(subjects).reduce((n, l) => n + l.length, 0);
             const ready = Object.values(subjects).flat().filter((r) => r.indexed).length;
             const isOpen = open[cls] ?? false;

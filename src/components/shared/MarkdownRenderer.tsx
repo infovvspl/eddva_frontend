@@ -617,8 +617,21 @@ export const formatMarkdown = (text?: string) => {
   formatted = formatted.replace(/\$\$\$\$/g, "$$").replace(/\$\$\$/g, "$$");
 
   // ── Step 1: Strip stray $ signs that appear inside prose function call arguments
-  // e.g. LCM(306, $657) or $657) → removes the stray $ before digits followed by ) or ,
-  formatted = formatted.replace(/\$(\d+)([),])/g, "$1$2");
+  // e.g. LCM(306, $657) or $657) → but ONLY when not already inside a $...$ span
+  // We protect existing math by tokenising on $ boundaries (even-indexed segments are prose).
+  formatted = formatted
+    .split("$$")
+    .map((segment, i) => {
+      if (i % 2 !== 0) return segment; // inside $$...$$
+      return segment
+        .split("$")
+        .map((s, j) => {
+          if (j % 2 !== 0) return s; // inside $...$
+          return s.replace(/\$(\d+)([),])/g, "$1$2");
+        })
+        .join("$");
+    })
+    .join("$$");
   // Strip orphan $ = $ or $=$ patterns (dollar-wrapped equals signs): $=$ → =
   formatted = formatted.replace(/\$\s*=\s*\$/g, " = ");
 
@@ -762,11 +775,11 @@ export const formatMarkdown = (text?: string) => {
 
   formatted = replaceNewlinesOutsideMath(formatted);
 
-  // Separate adjacent inline math blocks that are on the same line separated only by spaces.
-  // remark-math fails to parse two $...$ blocks on the same line — inserting \n\n between
-  // them makes each its own paragraph which remark-math handles correctly.
-  // e.g. $LCM(...)$ $HCF(...)$ → $LCM(...)$\n\n$HCF(...)$
-  formatted = formatted.replace(/(\$)[ \t]+(\$)/g, '$1\n\n$2');
+  // Separate adjacent inline math blocks that are on the same line separated only by spaces,
+  // but only with a soft break (two spaces + newline) to keep them inline inside the same paragraph.
+  // Paragraph breaks (\n\n) between them caused each $...$ to become its own block element.
+  // e.g. $LCM(...)$ $HCF(...)$ → $LCM(...)$  \n$HCF(...)$
+  formatted = formatted.replace(/(\$)[ \t]+(\$)/g, '$1  \n$2');
 
   // Pull standalone question numbers onto the same line as question text AFTER newlines normalization
   const pullRegex = /((?:^|\n)\s*(?:Q\s*)?\d{1,3}[.)])\s*(?:\r?\n)+\s*(?!(?:[A-E][.):]\s*|\([A-E]\)\s*|Q?\d{1,3}[.)]\s*|#{1,6}\s|[-*+]\s))/gi;
@@ -822,6 +835,7 @@ export const formatMarkdown = (text?: string) => {
     .replace(/\\text\{\\frac\{([A-Za-z0-9_]+)\}\{([a-z]+)\}\}/g, "$1_{($2)}")
     .replace(/\\text\{([A-Za-z0-9_]+)\}\s*\/([a-z]+)/g, "$1($2)")
     .replace(/\\text\{([A-Za-z0-9_]+)\}\s*\/\s*\(([^)]+)\)/g, "$1($2)")
+    .replace(/\\text\{\s*[_.\-]{2,}\s*\}/g, "\\underline{\\quad\\quad}")
     .replace(/\\text\{([^}]+)\}/g, "$1");
 
   // Separate numbered observation headers and headings onto newlines - only when number is at start of a new line context
@@ -843,29 +857,38 @@ export const formatMarkdown = (text?: string) => {
   formatted = formatted
     .replace(/\blim\s*([a-zA-Z0-9]+)\s*(?:->|\\to)\s*([a-zA-Z0-9]+)\b/gi, "\\lim_{$1 \\to $2}");
 
-  // Convert division slashes to \frac{}{} where safe
-  // 1. (num) / (den) or [num] / [den]
-  formatted = formatted.replace(/(?:\(([^)]+)\)|\[([^\]]+)\])\s*\/\s*(?:\(([^)]+)\)|\[([^\]]+)\])/g, (match, p1, p2, p3, p4) => {
-    const num = p1 || p2;
-    const den = p3 || p4;
-    return `\\frac{${num}}{${den}}`;
-  });
-  // 2. (num) / den_word or [num] / den_word
-  formatted = formatted.replace(/(?:\(([^)]+)\)|\[([^\]]+)\])\s*\/\s*\b([a-zA-Z0-9]+)\b/g, (match, p1, p2, p3) => {
-    const num = p1 || p2;
-    return `\\frac{${num}}{${p3}}`;
-  });
-  // 3. num_word / (den) or num_word / [den]
-  formatted = formatted.replace(/\b([a-zA-Z0-9]+)\b\s*\/\s*(?:\(([^)]+)\)|\[([^\]]+)\])/g, (match, p1, p2, p3) => {
-    const den = p2 || p3;
-    return `\\frac{${p1}}{${den}}`;
-  });
-  // 4. simple term / simple term (to catch dy/dx, 1/2, x^2/y^2, p^2/q^2 safely)
-  // Protect chemical formulas / state indicators like Mg / (s) from fraction conversion
-  formatted = formatted.replace(/(^|[^a-zA-Z0-9_$])([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)\s*\/([ \t]*)([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)(?![\w$])/g, (match, prefix, num, space, den) => {
-    if (/^(?:[a-z]|aq|g|l|s)$/i.test(den.trim())) return match;
-    return `${prefix}\\frac{${num}}{${den.trim()}}`;
-  });
+  // Convert division slashes to \frac{}{} where safe.
+  // IMPORTANT: Only apply to prose segments outside existing $...$ math spans.
+  const applyFractionConversions = (prose: string): string => {
+    // 1. (num) / (den) or [num] / [den]
+    let s = prose.replace(/(?:\(([^)]+)\)|\[([^\]]+)\])\s*\/\s*(?:\(([^)]+)\)|\[([^\]]+)\])/g, (_m, p1, p2, p3, p4) => {
+      const num = p1 || p2;
+      const den = p3 || p4;
+      return `\\frac{${num}}{${den}}`;
+    });
+    // 2. (num) / den_word or [num] / den_word
+    s = s.replace(/(?:\(([^)]+)\)|\[([^\]]+)\])\s*\/\s*\b([a-zA-Z0-9]+)\b/g, (_m, p1, p2, p3) => {
+      const num = p1 || p2;
+      return `\\frac{${num}}{${p3}}`;
+    });
+    // 3. num_word / (den) or num_word / [den]
+    s = s.replace(/\b([a-zA-Z0-9]+)\b\s*\/\s*(?:\(([^)]+)\)|\[([^\]]+)\])/g, (_m, p1, p2, p3) => {
+      const den = p2 || p3;
+      return `\\frac{${p1}}{${den}}`;
+    });
+    // 4. simple term / simple term (dy/dx, 1/2, x^2/y^2, p^2/q^2)
+    // Protect state indicators like Mg / (s)
+    s = s.replace(/(^|[^a-zA-Z0-9_$])([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)\s*\/([ \t]*)([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)(?![\w$])/g, (match, prefix, num, _space, den) => {
+      if (/^(?:[a-z]|aq|g|l|s)$/i.test(den.trim())) return match;
+      return `${prefix}\\frac{${num}}{${den.trim()}}`;
+    });
+    return s;
+  };
+  // Apply fraction conversions only to prose (outside $...$ spans)
+  formatted = formatted
+    .split("$$")
+    .map((seg, i) => i % 2 !== 0 ? seg : seg.split("$").map((s, j) => j % 2 !== 0 ? s : applyFractionConversions(s)).join("$"))
+    .join("$$");
 
   // Wrap chemical formulas with dots (e.g. Fe_2O_3 \cdot H_2O or (Fe_2O_3 . H_2O))
   //

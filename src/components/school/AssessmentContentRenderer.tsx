@@ -22,25 +22,72 @@ type AssessmentContentRendererProps = {
  *  3. Preserve LaTeX delimiters so KaTeX renders equations ($V = s^3$).
  */
 function prepareAssessmentText(raw: string): string {
-  let text = raw.trim();
+  let text = (raw || "").trim();
   if (!text) return text;
 
-  // 0. Deterministic weight. Generated papers use ** inconsistently: some
-  // questions are wrapped and others aren't, and a section header's opening/
-  // closing ** drifts across the questions between them — so the LAST question
-  // of each section came out bold while the section itself did not. Trying to
-  // pair ** up is hopeless. Strip ALL bold markers here (underscores are left
-  // alone — they're fill-in-the-blank lines), then bold ONLY the section
-  // headers ourselves (below). Result: sections bold, every question normal.
-  text = text.replace(/\*\*/g, "");
+  // Unescape double backslashes
+  text = text.replace(/\\\\/g, "\\");
 
-  // 0b. Unescape dollar delimiters (\$ -> $) so escaped math still renders.
+  // Convert LaTeX delimiters \[ \] and \( \) to $$ and $ for remark-math / KaTeX parsing
+  text = text
+    .replace(/\\\[/g, "$$").replace(/\\\]/g, "$$")
+    .replace(/\\\(/g, "$").replace(/\\\)/g, "$");
+
+  // Unescape dollar delimiters (\$ -> $) so escaped math still renders.
   text = text.replace(/\\\$/g, "$");
 
-  // 0c. Remove textbook page citations that leaked from grounding into the
-  // question text, e.g. "[p.1, p.9]" / "[P.7, P.28]" — students should not see
-  // the source pages on their paper.
+  // Remove textbook page citations that leaked from grounding into the question text
   text = text.replace(/\s*\[\s*[pP]\.?\s*\d+(?:\s*,\s*[pP]?\.?\s*\d+)*\s*\]/g, "");
+
+  // Convert raw fill-in-blank placeholders \text{____} or bare ____ (which throw KaTeX subscript errors)
+  // to \underline{\quad\quad} which renders a clean underline in math mode.
+  text = text.replace(/\\text\{\s*[_.\-]{2,}\s*\}/g, "\\underline{\\quad\\quad}");
+  text = text.replace(/(?<!\\)_(?![_{}a-zA-Z0-9])/g, "\\_");
+
+  // Auto-wrap un-delimited LaTeX commands like \sqrt{...}, \frac{...}, \underline{...} outside $...$
+  text = text
+    .split("$")
+    .map((segment, index) => {
+      if (index % 2 === 1) return segment; // Inside $...$, skip
+      // 1. Wrap commands with brace-argument groups (e.g. \frac{a}{b}, \sqrt{x}, \underline{...})
+      let s = segment.replace(/(\\frac\{[^{}]*\}\{[^{}]*\}|\\sqrt\{[^{}]*\}|\\underline\{[^{}]*\}|\\[a-zA-Z]+(?:\{[^{}]*\})+)/g, "$$$1$");
+      // 2. Wrap standalone math symbol commands (no brace args).
+      //    Allow trailing period/comma/semicolon so "\times." or "\dots." is caught too.
+      s = s.replace(/((?:^|[\s\w=×÷±$(),]))(\\(?:times|cdot|div|pm|mp|leq|geq|neq|approx|infty|rightarrow|leftarrow|to|in|notin|subset|supset|cup|cap|forall|exists|alpha|beta|gamma|delta|epsilon|varepsilon|theta|vartheta|lambda|mu|nu|pi|sigma|tau|phi|varphi|psi|omega|rho|eta|chi|xi|zeta|iota|kappa|upsilon|dots|ldots|cdots|vdots|ddots|therefore|because|implies|iff))([\s\w=(),;.:]|$)/g, (_m, pre, cmd, post) => `${pre}$${cmd}$${post}`);
+      return s;
+    })
+    .join("$");
+
+  // Heuristic: wrap entire "math-like" trailing portions of lines that mix
+  // bare caret-exponents / LaTeX symbols without any $ delimiters.
+  // e.g. "The prime factorisation of 120 is 2^3 \times 3 \times \text{____}."
+  // → keep prose prefix, wrap the math suffix in $...$
+  text = text
+    .split("\n")
+    .map((line) => {
+      // Skip lines that already have $ or are blank
+      if (!line.trim() || line.includes("$")) return line;
+      // Must contain a LaTeX command OR caret exponent to be worth examining
+      const hasLatex = /\\[a-zA-Z]/.test(line);
+      const hasCaret = /\d\^/.test(line);
+      if (!hasLatex && !hasCaret) return line;
+      // Don't touch section headers or question number lines
+      if (/^(?:Q\s*)?\d{1,3}[.)]\s+/.test(line.trim()) && !/\\/.test(line.replace(/^(?:Q\s*)?\d{1,3}[.)]\s+/, ''))) return line;
+      // Find where the "math suffix" begins: last position of a word boundary
+      // before any \command or digit^ that's not already in prose context.
+      // Simple approach: if the entire trimmed content looks like an expression, wrap it all.
+      const mathExprPattern = /^([^\\]*?)((?:\d+\^(?:\{[^{}]*\}|\d+)\s*(?:\\[a-zA-Z]+(?:\{[^{}]*\})?\s*)*)+.*)$/;
+      const m = line.match(mathExprPattern);
+      if (m) {
+        const [, prose, mathPart] = m;
+        // Avoid wrapping if mathPart is just a single digit or short fragment
+        if (mathPart.trim().length > 4) {
+          return `${prose}$${mathPart.trim().replace(/[.,;]$/, "")}$${mathPart.match(/[.,;]$/)?.[0] ?? ""}`;
+        }
+      }
+      return line;
+    })
+    .join("\n");
 
   // 1. Join any standalone question number ("1.", "2.", "Q1.") followed by single or double
   // newlines with its question text so they are NEVER separated into distinct blocks.
@@ -50,10 +97,7 @@ function prepareAssessmentText(raw: string): string {
   );
 
   // Break before Section/heading markers and before every question number that
-  // follows other text on the same line. Applied unconditionally: a run-on block
-  // ("Q1. … Q2. … Q3. …" all on one line) must become one question per paragraph
-  // regardless of how many lines the source already has. The old rule only did
-  // this for ≤3-line blobs, so a multi-section paper stayed jammed together.
+  // follows other text on the same line.
   text = text
     .replace(/([^\n])\s+(?=(?:Section|Part|Answer Key|Answers|Ans Key|General Instructions)\b)/gi, "$1\n\n")
     .replace(/([^\n])\s+(?=#{1,6}\s+)/g, "$1\n\n")
@@ -66,14 +110,8 @@ function prepareAssessmentText(raw: string): string {
     "$1 "
   );
 
-  // Bold the Section headers ourselves (see step 0) so section weight is
-  // consistent regardless of the source's ** chaos. Each section is on its own
-  // line by now.
-  text = text.replace(/^(\s*)(Section\s+[A-Za-z0-9]+\b[^\n]*)$/gim, "$1**$2**");
-
   // Escape the dot after line-starting numbers (1. -> 1\.) so Markdown renders
   // them as a single inline paragraph instead of an HTML <ol><li> list element.
-  // Avoid escaping dots if followed by LaTeX delimiters or math expressions.
   text = text.replace(/^(\s*(?:Q\s*)?\d{1,3})\.(?!\s*[\$\\])/gm, "$1\\.");
 
   return text;

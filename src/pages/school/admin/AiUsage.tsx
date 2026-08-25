@@ -1162,7 +1162,7 @@ function OverviewTab({
               <p className="py-10 text-center text-sm text-slate-400">No data for this period.</p>
             ) : (
               <ResponsiveContainer width="100%" height={180}>
-                <BarChart data={trendData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+                <BarChart data={trendData} margin={{ top: 4, right: 4, left: -24, bottom: 6 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} allowDecimals={false} />
@@ -1234,7 +1234,7 @@ function OverviewTab({
           </div>
           <div className={`px-5 pb-5 sm:block ${expandedGraphs.has('daily-cost') ? 'block' : 'hidden'}`}>
             <ResponsiveContainer width="100%" height={140}>
-              <LineChart data={trendData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+              <LineChart data={trendData} margin={{ top: 4, right: 4, left: -24, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} tickFormatter={v => `$${v.toFixed(2)}`} />
@@ -1248,9 +1248,9 @@ function OverviewTab({
 
       {/* Feature Analytics Cards */}
       {features.length > 0 && (
-        <div className="rounded-2xl border border-slate-100 sm:border-0 sm:bg-transparent bg-white shadow-sm sm:shadow-none overflow-hidden">
+        <div className="rounded-2xl sm:rounded-none border border-slate-100 sm:border-0 bg-white sm:bg-transparent shadow-sm sm:shadow-none">
           <div
-            className="flex items-center justify-between p-5 sm:p-0 sm:mb-4 cursor-pointer sm:pointer-events-none hover:bg-slate-50 sm:hover:bg-transparent transition-colors"
+            className="flex items-center justify-between p-5 sm:px-0 sm:py-1 sm:mb-3 cursor-pointer sm:pointer-events-none hover:bg-slate-50 sm:hover:bg-transparent transition-colors"
             onClick={() => toggleGraph('feature-analytics')}
           >
             <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">Feature Analytics</h3>

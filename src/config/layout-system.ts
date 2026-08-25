@@ -131,9 +131,10 @@ export function getPageLayoutConfig(pathname: string, routeHandle?: RouteLayoutM
     }
 
     case 'immersive': {
-      const container = 'w-full h-full overflow-hidden';
+      const isAssessmentTake = pathname.includes('/assessments/') && pathname.includes('/take');
+      const scroll = routeHandle?.scrollable ?? (isAssessmentTake ? true : false);
+      const container = scroll ? 'w-full h-full overflow-y-auto' : 'w-full h-full overflow-hidden';
       const padding = 'p-0';
-      const scroll = routeHandle?.scrollable ?? false;
       return {
         type: 'immersive',
         container,
