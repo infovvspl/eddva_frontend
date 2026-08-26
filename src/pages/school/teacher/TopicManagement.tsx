@@ -1574,6 +1574,11 @@ function SlideDeck({ slides, height = 460, topic = '' }: { slides: Slide[]; heig
   if (!slides.length) return null;
   const safeIdx = Math.min(idx, slides.length - 1);
   const slide = slides[safeIdx];
+  // Drop bullets that are only JSON punctuation ("{", "}", "[", quotes, commas):
+  // a malformed generation occasionally leaks a stray brace onto a slide.
+  const bullets = (slide.bullets || []).filter(
+    (b) => b && b.trim() && !/^[{}[\]"'`,;:]+$/.test(b.trim()),
+  );
   const go = (d: number) => setIdx((i) => Math.max(0, Math.min(slides.length - 1, i + d)));
   const imgPrompt = slideImagePrompt(slide, topic);
   const imgQuery = slideImageQuery(slide, topic);
@@ -1636,7 +1641,7 @@ function SlideDeck({ slides, height = 460, topic = '' }: { slides: Slide[]; heig
             </h3>
             <div className="mt-4 flex flex-1 gap-5 overflow-hidden">
               <ul className="flex-1 space-y-2.5 overflow-y-auto pr-1">
-                {slide.bullets.length ? slide.bullets.map((b, i) => (
+                {bullets.length ? bullets.map((b, i) => (
                   <li key={i} className="flex gap-2.5 text-sm font-medium leading-snug text-surface-700 dark:text-surface-200">
                     <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400" />
                     <span>{b}</span>
