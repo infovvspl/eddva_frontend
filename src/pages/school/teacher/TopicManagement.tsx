@@ -2117,10 +2117,12 @@ function AiGeneratePanel({
   const hasPptGen = useSchoolFeature('ai', 'ai_ppt_generator');
 
   const [typeId, setTypeId] = useState(() => {
-    // Default to the first card shown (Presentation), so the highlighted card is
-    // at the top; fall back to a standard material type, then nothing.
+    // Match production: default to a material type, never 'presentation'.
+    // Presentation is not generated inline here — its card opens the PPT Studio
+    // (see the card onClick). Defaulting to 'presentation' made the generator
+    // produce an inline slide-review instead of opening the Studio.
+    if (hasAiMaterials) return 'dpp';
     if (hasPptGen) return 'presentation';
-    if (hasAiMaterials) return 'study_guide';
     return '';
   });
   const [questionCount, setQuestionCount] = useState(10);
