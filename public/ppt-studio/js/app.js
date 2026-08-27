@@ -540,6 +540,8 @@ window.App = {
         'The chapter is indexed but its scanned text was unusable, so the deck was written from general knowledge. Re-upload a clearer PDF under Textbook Coverage.',
       gemini_exhausted:
         'The chapter IS indexed, but the textbook AI is out of quota right now, so this deck fell back to general knowledge. Try again shortly, or ask an admin to top up the Gemini quota.',
+      gemini_overloaded:
+        'The chapter IS indexed, but the textbook AI was momentarily overloaded, so this deck fell back to general knowledge. Just generate again — it is usually available within a minute.',
       gemini_key_rejected:
         'The chapter IS indexed, but the textbook AI key was rejected, so this deck fell back to general knowledge. Ask an admin to check the Gemini API key.',
       gemini_model_unavailable:

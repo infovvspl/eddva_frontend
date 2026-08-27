@@ -2055,6 +2055,8 @@ function SourceBadge({ source }: { source: { grounded: boolean; pages?: number[]
       'The textbook AI was temporarily unavailable, so this used general knowledge. Your book is indexed — just generate again in a little while.',
     gemini_exhausted:
       'Your book IS indexed, but the textbook AI is out of quota right now, so this used general knowledge. Try again shortly, or ask an admin to top up the Gemini quota.',
+    gemini_overloaded:
+      'Your book IS indexed, but the textbook AI was momentarily overloaded, so this used general knowledge. Just generate again — it is usually available within a minute.',
     gemini_key_rejected:
       'Your book IS indexed, but the textbook AI key was rejected, so this used general knowledge. Ask an admin to check the Gemini API key.',
     gemini_model_unavailable:
