@@ -5,6 +5,7 @@ import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Clock, FileText
 import { cn } from '@/components/school/admin/Skeleton';
 import { useConfirm } from '@/context/ConfirmContext';
 import { toast } from 'sonner';
+import AssessmentContentRenderer from '@/components/school/AssessmentContentRenderer';
 
 function getStructuredQuestions(test) {
   const questions = test?.questions || test?.questions_json || test?.questionsJson || [];
@@ -12,11 +13,13 @@ function getStructuredQuestions(test) {
 }
 
 function cleanStructuredQuestions(questions) {
-  const instructionPattern = /(general instructions|question paper consists|follow the instructions|space provided|read each question carefully)/i;
+  const instructionPattern = /(general\s+instructions?|instructions?|question\s+paper|paper\s+contains|paper\s+consists|follow\s+the\s+instructions?|space\s+provided|read\s+each\s+question|all\s+questions?|compulsory\b|divided\s+into|comprises?|comprising|calculator|calculators|not\s+permitted|not\s+allowed|figures\s+to\s+the\s+right|marks\s+each)/i;
   const seen = new Set();
   return questions.filter((question) => {
     const text = String(question?.text || '').trim();
-    const key = `${question?.sectionTitle || ''}-${text.toLowerCase().replace(/\s+/g, ' ')}`;
+    const sectionTitle = String(question?.sectionTitle || '').trim();
+    if (/instruction|guideline|note|direction/i.test(sectionTitle)) return false;
+    const key = `${sectionTitle}-${text.toLowerCase().replace(/\s+/g, ' ')}`;
     if (!text || instructionPattern.test(text) || seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -297,7 +300,9 @@ export default function TestEngine() {
                 )}>
                   {option.id || option.value || ''}
                 </span>
-                <span className="text-sm font-semibold leading-6">{option.text || option.label || option.value}</span>
+                <div className="text-sm font-semibold leading-6 flex-1 min-w-0">
+                  <AssessmentContentRenderer>{option.text || option.label || option.value || ''}</AssessmentContentRenderer>
+                </div>
               </button>
             );
           })}
@@ -487,7 +492,7 @@ export default function TestEngine() {
   }, []);
 
   return (
-    <div className="min-h-[calc(100vh-5rem)] bg-white">
+    <div className="min-h-full w-full bg-white pb-16">
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-4 py-4 backdrop-blur xl:px-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
@@ -545,9 +550,9 @@ export default function TestEngine() {
                 {effectiveCurrentQuestion?.marks || 1} marks
               </span>
             </div>
-            <p className="mb-8 whitespace-pre-wrap text-base font-semibold leading-8 text-slate-800">
-              {effectiveCurrentQuestion?.text}
-            </p>
+            <div className="mb-8 text-base font-semibold leading-8 text-slate-800">
+              <AssessmentContentRenderer>{effectiveCurrentQuestion?.text || ''}</AssessmentContentRenderer>
+            </div>
             {renderAnswerInput(effectiveCurrentQuestion)}
             <div className="mt-10 flex items-center justify-between border-t border-slate-100 pt-5">
               <button
@@ -623,9 +628,9 @@ export default function TestEngine() {
               </div>
             </div>
             {assessment.content_text && (
-              <pre className="mb-6 max-h-[45vh] overflow-auto whitespace-pre-wrap rounded-2xl bg-white border border-slate-200 p-5 text-sm leading-7 text-slate-800">
-                {assessment.content_text}
-              </pre>
+              <div className="mb-6 max-h-[45vh] overflow-auto rounded-2xl bg-white border border-slate-200 p-5 text-sm leading-7 text-slate-800">
+                <AssessmentContentRenderer>{assessment.content_text}</AssessmentContentRenderer>
+              </div>
             )}
             <textarea
               value={answerText}

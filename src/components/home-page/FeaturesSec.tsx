@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRequestDemo } from "@/components/landing/RequestDemoProvider";
 import F1 from "../../assets/f1.png";
 import F2 from "../../assets/f2.png";
 import F3 from "../../assets/f3.png";
@@ -103,6 +104,7 @@ const FEATURES: Feature[] = [
 ];
 
 export const FeatureSection: React.FC = () => {
+  const { openRequestDemo } = useRequestDemo();
   const [activeIdx, setActiveIdx] = useState<number>(0);
   const rightSectionRef = useRef<HTMLDivElement>(null);
 
@@ -191,6 +193,13 @@ export const FeatureSection: React.FC = () => {
             <p className="text-slate-500 text-sm md:text-base font-medium mt-1 tracking-wide">
               Discover what makes our platform unique
             </p>
+            <button
+              type="button"
+              onClick={() => openRequestDemo()}
+              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#004499] to-[#00a6ff] px-6 py-2.5 text-sm font-bold text-white shadow-lg transition hover:scale-[1.03] hover:shadow-blue-500/30"
+            >
+              Request a Demo
+            </button>
           </motion.div>
         </div>
 

@@ -194,23 +194,23 @@ export default function SmartCalendar() {
 
   return (
     <div className="flex flex-col h-full w-full py-0.5 overflow-hidden">
-      <div className="flex items-center justify-between mb-2 shrink-0">
-        <h4 className="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider">
+      <div className="flex items-center justify-between mb-3 shrink-0 bg-blue-50/80 dark:bg-blue-900/20 p-1.5 rounded-xl border border-blue-100/50 dark:border-blue-900/30">
+        <h4 className="text-[11px] sm:text-xs font-black text-blue-900 dark:text-blue-100 uppercase tracking-widest pl-2">
           {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
         </h4>
         <div className="flex items-center gap-1">
-          <button onClick={prevMonth} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" aria-label="Previous month">
-            <ChevronLeft className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+          <button onClick={prevMonth} className="p-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-blue-900 text-blue-600 dark:text-blue-400 shadow-[0_2px_10px_rgb(0,0,0,0.05)] transition-all hover:scale-105" aria-label="Previous month">
+            <ChevronLeft className="h-3.5 w-3.5" />
           </button>
-          <button onClick={nextMonth} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" aria-label="Next month">
-            <ChevronRight className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+          <button onClick={nextMonth} className="p-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-blue-900 text-blue-600 dark:text-blue-400 shadow-[0_2px_10px_rgb(0,0,0,0.05)] transition-all hover:scale-105" aria-label="Next month">
+            <ChevronRight className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 text-center text-[10px] font-black uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1 shrink-0">
+      <div className="grid grid-cols-7 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2 shrink-0 gap-1">
         {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
-          <div key={d} className="py-0.5">{d}</div>
+          <div key={d} className="py-1 bg-slate-50 dark:bg-slate-800/50 rounded-md border border-slate-100/50 dark:border-slate-800/50">{d}</div>
         ))}
       </div>
 
@@ -228,11 +228,11 @@ export default function SmartCalendar() {
             <div 
               key={idx}
               onClick={() => handleDateClick(dayEvents, cell.date)}
-              className={`relative flex flex-col items-center justify-center py-0.5 rounded-lg cursor-pointer transition-all duration-200 group select-none
+              className={`relative flex flex-col items-center justify-center py-1 rounded-xl cursor-pointer transition-all duration-200 group select-none
                 ${isToday 
-                  ? 'font-bold text-blue-600 dark:text-blue-400 bg-blue-50/70 dark:bg-blue-900/20 shadow-xs border border-blue-200/50 dark:border-blue-900/30' 
+                  ? 'font-black text-white bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30 scale-105 z-10 border border-blue-400/50' 
                   : (cell.isCurrentMonth 
-                      ? 'text-slate-700 dark:text-slate-300 font-semibold hover:bg-slate-50 dark:hover:bg-slate-800/60' 
+                      ? 'text-slate-700 dark:text-slate-300 font-bold hover:bg-blue-50/50 dark:hover:bg-slate-800/60 hover:text-blue-600 dark:hover:text-blue-400' 
                       : 'text-slate-300 dark:text-slate-650 font-medium hover:bg-slate-50 dark:hover:bg-slate-800/40')
                 }
               `}
@@ -248,7 +248,7 @@ export default function SmartCalendar() {
               ) : (
                 <div className="flex flex-col items-center gap-0.5 mt-0.5 min-h-[6px]">
                   {isToday && (
-                    <div className="w-1 h-1 rounded-full bg-blue-600 animate-pulse" title="Today" />
+                    <div className="w-1 h-1 rounded-full bg-white animate-pulse shadow-[0_0_8px_rgba(255,255,255,0.8)]" title="Today" />
                   )}
                   {uniqueCategories.length > 0 && (
                     <div className="flex flex-wrap items-center justify-center gap-0.5 px-0.5">

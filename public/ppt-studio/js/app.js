@@ -484,8 +484,12 @@ window.App = {
       // Brief pause so the user sees 100 %
       await this._sleep(500);
 
+      const took = this._loadStartAt ? (Date.now() - this._loadStartAt) : null;
       this.hideLoading();
       this.showPreview();
+      if (took != null) {
+        this.showToast('Presentation generated in ' + this._fmtDuration(took), 'success');
+      }
 
     } catch (error) {
       this.hideLoading();
@@ -524,12 +528,31 @@ window.App = {
       return;
     }
 
-    // Not grounded — say so plainly rather than leaving it ambiguous.
+    // Not grounded — say WHY, precisely. An indexed chapter that still lands here
+    // has a specific, fixable cause (usually exhausted Gemini quota), and a vague
+    // "could not be used" sends the teacher to re-upload a book that is already
+    // fine. The reason comes from the API (see _generate_grounded in ppt.py).
+    var reason = source && source.reason;
+    var REASONS = {
+      not_indexed:
+        'This chapter has no indexed textbook, so the deck was written from general knowledge. Upload the chapter PDF under Textbook Coverage to change that.',
+      no_relevant_passages:
+        'The chapter is indexed but its scanned text was unusable, so the deck was written from general knowledge. Re-upload a clearer PDF under Textbook Coverage.',
+      gemini_exhausted:
+        'The chapter IS indexed, but the textbook AI is out of quota right now, so this deck fell back to general knowledge. Try again shortly, or ask an admin to top up the Gemini quota.',
+      gemini_overloaded:
+        'The chapter IS indexed, but the textbook AI was momentarily overloaded, so this deck fell back to general knowledge. Just generate again — it is usually available within a minute.',
+      gemini_key_rejected:
+        'The chapter IS indexed, but the textbook AI key was rejected, so this deck fell back to general knowledge. Ask an admin to check the Gemini API key.',
+      gemini_model_unavailable:
+        'The chapter IS indexed, but the textbook AI model is unavailable for the configured key, so this deck fell back to general knowledge. Ask an admin to check the Gemini setup.',
+      gemini_unavailable:
+        'The chapter IS indexed, but the textbook AI is not configured on the server, so this deck fell back to general knowledge. Ask an admin to configure Gemini.',
+    };
     el.className = 'source-badge source-badge--general';
     el.innerHTML = '<span class="badge-dot"></span>General knowledge';
-    el.title = (source && source.reason === 'not_indexed')
-      ? 'This chapter has no indexed textbook, so the deck was written from general knowledge. Upload the chapter PDF under Textbook Coverage to change that.'
-      : 'The textbook could not be used for this deck, so it was written from general knowledge.';
+    el.title = REASONS[reason]
+      || 'The textbook could not be used for this deck, so it was written from general knowledge.';
     el.hidden = false;
   },
 
@@ -674,17 +697,40 @@ window.App = {
    * @param {string} status — Main status message
    * @param {string} step   — Sub-step text
    */
+  /** Format an elapsed duration: 1 decimal under 10s, whole seconds beyond. */
+  _fmtDuration(ms) {
+    return ms >= 10000 ? Math.round(ms / 1000) + 's' : (ms / 1000).toFixed(1) + 's';
+  },
+
   showLoading(status, step) {
     const overlay = document.getElementById('loading-overlay');
     if (overlay) overlay.classList.add('visible');
     this.updateLoadingStatus(status, step);
     this.updateProgress(0);
+
+    // Live elapsed timer so teachers can see how long generation takes.
+    this._loadStartAt = Date.now();
+    const stepEl = document.getElementById('loading-step');
+    let timerEl = document.getElementById('loading-timer');
+    if (!timerEl && stepEl && stepEl.parentNode) {
+      timerEl = document.createElement('div');
+      timerEl.id = 'loading-timer';
+      timerEl.style.cssText = 'margin-top:8px;font-size:12px;font-weight:700;color:#7c3aed;';
+      stepEl.parentNode.insertBefore(timerEl, stepEl.nextSibling);
+    }
+    if (timerEl) timerEl.textContent = 'Elapsed: 0.0s';
+    if (this._loadTimer) clearInterval(this._loadTimer);
+    this._loadTimer = setInterval(() => {
+      const el = document.getElementById('loading-timer');
+      if (el) el.textContent = 'Elapsed: ' + this._fmtDuration(Date.now() - this._loadStartAt);
+    }, 100);
   },
 
   /** Hide the loading overlay. */
   hideLoading() {
     const overlay = document.getElementById('loading-overlay');
     if (overlay) overlay.classList.remove('visible');
+    if (this._loadTimer) { clearInterval(this._loadTimer); this._loadTimer = null; }
   },
 
   /**

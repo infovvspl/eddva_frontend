@@ -97,7 +97,9 @@ export function StructuredAnswersView({
                     </span>
                   )}
                 </div>
-                <p className="whitespace-pre-wrap text-xs font-semibold leading-5 text-gray-500">{row.questionText}</p>
+                <div className="text-xs font-semibold leading-5 text-gray-700">
+                  <AssessmentContentRenderer>{row.questionText || ''}</AssessmentContentRenderer>
+                </div>
                 {showOptions && (
                   <div className="mt-3 grid gap-2 sm:grid-cols-2">
                     {row.options!.map((option) => {
@@ -119,7 +121,7 @@ export function StructuredAnswersView({
                           }`}
                         >
                           {showLabel && <span className="mr-2 font-black uppercase">{label}</span>}
-                          {optionText}
+                          <AssessmentContentRenderer>{optionText || ''}</AssessmentContentRenderer>
                         </div>
                       );
                     })}

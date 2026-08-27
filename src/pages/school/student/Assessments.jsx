@@ -636,6 +636,17 @@ export default function Assessments() {
               const submittedFileUrl = resolveUploadUrl(mySubmission?.file_path || mySubmission?.filePath);
               const isInProgress = mySubmission?.status === 'in_progress';
               const isSubmitted = mySubmission && !isInProgress;
+
+              const rawScheduled = test.scheduled_at || test.scheduled_date || test.scheduledDate;
+              const startTime = rawScheduled ? new Date(rawScheduled) : null;
+              const durationMins = Math.max(1, Number(test.duration_minutes || test.durationMinutes || 60));
+              const endTime = (startTime && !isNaN(startTime.getTime())) ? new Date(startTime.getTime() + durationMins * 60 * 1000) : null;
+              const now = new Date();
+
+              const isNotStartedYet = startTime && !isNaN(startTime.getTime()) && now < startTime;
+              const isWindowClosed = endTime && !isNaN(endTime.getTime()) && now > endTime;
+              const isStartDisabled = attemptStarting || isSubmitted || isNotStartedYet || isWindowClosed;
+
               return (
               <div key={test.id} className="flex flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900">
                 <div className="flex flex-1 flex-col p-3.5 sm:p-4">
@@ -644,7 +655,7 @@ export default function Assessments() {
                       {test.type || test.assessment_type || 'Assessment'}
                     </span>
                     <span className="text-[10px] font-bold text-slate-400 sm:text-xs">
-                      {test.status || 'scheduled'}
+                      {isNotStartedYet ? 'scheduled' : isWindowClosed ? 'completed' : (test.status || 'active')}
                     </span>
                   </div>
                   
@@ -674,10 +685,27 @@ export default function Assessments() {
                   <div className="mb-3 flex items-center gap-3.5 text-[11px] font-semibold text-slate-500 sm:mb-4 sm:gap-4 sm:text-xs">
                     <div className="flex items-center gap-1">
                       <Clock size={12} className="text-slate-400 sm:h-3.5 sm:w-3.5" />
-                      <span>{test.duration_minutes || test.durationMinutes || 60} mins</span>
+                      <span>{durationMins} mins</span>
                     </div>
                     <div>{test.total_marks || test.totalMarks || 100} marks</div>
                   </div>
+
+                  {startTime && !isNaN(startTime.getTime()) && (
+                    <div className="mb-3 rounded-xl border border-slate-100 bg-slate-50 p-2.5 text-[10px] font-semibold text-slate-500 flex flex-col gap-1 dark:border-slate-800 dark:bg-slate-950/50">
+                      <div className="flex items-center justify-between">
+                        <span>Start:</span>
+                        <strong className="text-slate-700 dark:text-slate-300">
+                          {startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({startTime.toLocaleDateString([], { month: 'short', day: 'numeric' })})
+                        </strong>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Auto Ends:</span>
+                        <strong className="text-slate-700 dark:text-slate-300">
+                          {endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({endTime.toLocaleDateString([], { month: 'short', day: 'numeric' })})
+                        </strong>
+                      </div>
+                    </div>
+                  )}
                   
                   <div className="mt-auto flex flex-col gap-1.5 border-t border-slate-100 pt-3 dark:border-slate-800 sm:gap-2">
                     {mySubmission && (
@@ -701,18 +729,28 @@ export default function Assessments() {
                       <button
                         type="button"
                         onClick={() => openSubmit(test)}
-                        disabled={attemptStarting || isSubmitted}
+                        disabled={isStartDisabled}
                         className={cn(
                           'flex w-full items-center justify-center gap-2 rounded-xl py-2 text-xs font-bold transition-colors sm:py-2.5 sm:text-sm',
-                          isSubmitted
-                            ? 'cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-slate-800'
+                          isStartDisabled
+                            ? 'cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500'
                             : isInProgress
                             ? 'bg-slate-50 text-slate-700 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-200'
                             : 'bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-600/20'
                         )}
                       >
                         <UploadCloud size={14} className="sm:h-4 sm:w-4" />
-                        {attemptStarting ? 'Starting...' : isSubmitted ? 'Submitted' : isInProgress ? 'Continue Test' : 'Start Test'}
+                        {attemptStarting
+                          ? 'Starting...'
+                          : isSubmitted
+                          ? 'Submitted'
+                          : isNotStartedYet
+                          ? `Starts at ${startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                          : isWindowClosed
+                          ? 'Window Closed'
+                          : isInProgress
+                          ? 'Continue Test'
+                          : 'Start Test'}
                       </button>
                     )}
                     {submittedFileUrl && (

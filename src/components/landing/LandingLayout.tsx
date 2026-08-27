@@ -5,6 +5,7 @@ import { Bot } from "lucide-react";
 import { motion } from "framer-motion";
 import { B, P } from "./DesignTokens";
 import { CookieConsentBar } from "./CookieConsentBar";
+import { RequestDemoProvider } from "./RequestDemoProvider";
 
 interface LandingLayoutProps {
   children: React.ReactNode;
@@ -12,6 +13,7 @@ interface LandingLayoutProps {
 
 export const LandingLayout = ({ children }: LandingLayoutProps) => {
   return (
+    <RequestDemoProvider>
     <div className="min-h-dvh overflow-x-hidden bg-[#F8FAFC] font-sans text-gray-900 antialiased">
       <Navbar />
       <main className="pt-[56px]">{children}</main>
@@ -33,6 +35,7 @@ export const LandingLayout = ({ children }: LandingLayoutProps) => {
         <Bot className="h-5 w-5 sm:h-6 sm:w-6" />
       </motion.button> */}
     </div>
+    </RequestDemoProvider>
   );
 };
 

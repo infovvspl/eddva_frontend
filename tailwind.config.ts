@@ -110,6 +110,16 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        vibrant: {
+          purple: "#9333ea",
+          cyan: "#06b6d4",
+          magenta: "#db2777",
+          orange: "#ea580c",
+          blue: "#2563eb",
+          green: "#16a34a",
+          crimson: "#e11d48",
+          emerald: "#059669",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

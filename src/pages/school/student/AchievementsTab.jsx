@@ -126,6 +126,48 @@ export default function AchievementsTab() {
     }
   };
 
+  const getCardColorStyle = (cat, tier) => {
+    switch (cat) {
+      case 'QUIZ_RUSH':
+        return {
+          cardBg: 'border-cyan-400/60 bg-gradient-to-br from-cyan-950/80 via-slate-900 to-slate-950 text-cyan-100 shadow-cyan-500/15 hover:border-cyan-300 hover:shadow-cyan-400/30',
+          badgeBg: 'bg-cyan-500/20 text-cyan-300 border-cyan-400/40',
+          progressBg: 'bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]',
+        };
+      case 'MATH_SPRINT':
+        return {
+          cardBg: 'border-rose-400/60 bg-gradient-to-br from-rose-950/80 via-slate-900 to-slate-950 text-rose-100 shadow-rose-500/15 hover:border-rose-300 hover:shadow-rose-400/30',
+          badgeBg: 'bg-rose-500/20 text-rose-300 border-rose-400/40',
+          progressBg: 'bg-rose-400 shadow-[0_0_10px_rgba(251,113,133,0.8)]',
+        };
+      case 'MEMORY_MATCH':
+        return {
+          cardBg: 'border-lime-400/60 bg-gradient-to-br from-lime-950/80 via-slate-900 to-slate-950 text-lime-100 shadow-lime-500/15 hover:border-lime-300 hover:shadow-lime-400/30',
+          badgeBg: 'bg-lime-500/20 text-lime-300 border-lime-400/40',
+          progressBg: 'bg-lime-400 shadow-[0_0_10px_rgba(163,230,53,0.8)]',
+        };
+      case 'WORD_MASTER':
+        return {
+          cardBg: 'border-fuchsia-400/60 bg-gradient-to-br from-fuchsia-950/80 via-slate-900 to-slate-950 text-fuchsia-100 shadow-fuchsia-500/15 hover:border-fuchsia-300 hover:shadow-fuchsia-400/30',
+          badgeBg: 'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-400/40',
+          progressBg: 'bg-fuchsia-400 shadow-[0_0_10px_rgba(232,121,249,0.8)]',
+        };
+      case 'TREASURE_HUNT':
+        return {
+          cardBg: 'border-amber-400/60 bg-gradient-to-br from-amber-950/80 via-slate-900 to-slate-950 text-amber-100 shadow-amber-500/15 hover:border-amber-300 hover:shadow-amber-400/30',
+          badgeBg: 'bg-amber-500/20 text-amber-300 border-amber-400/40',
+          progressBg: 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]',
+        };
+      case 'ARCADE_OVERALL':
+      default:
+        return {
+          cardBg: 'border-indigo-400/60 bg-gradient-to-br from-indigo-950/80 via-slate-900 to-slate-950 text-indigo-100 shadow-indigo-500/15 hover:border-indigo-300 hover:shadow-indigo-400/30',
+          badgeBg: 'bg-indigo-500/20 text-indigo-300 border-indigo-400/40',
+          progressBg: 'bg-indigo-400 shadow-[0_0_10px_rgba(129,140,248,0.8)]',
+        };
+    }
+  };
+
   // Determine if a Tier filter tab is unlocked
   const isTierTabUnlocked = (tKey) => {
     if (tKey === 'ALL' || tKey === 'BRONZE') return true;
@@ -290,6 +332,7 @@ export default function AchievementsTab() {
 
             const tierInfo = getTierBadgeInfo(a.tier);
             const gameCategoryIcon = getGameCategoryIcon(a.category);
+            const colorStyle = getCardColorStyle(a.category, a.tier);
             const prevTierName = prevTierNameMap[a.tier] || 'previous tier';
 
             return (
@@ -298,31 +341,31 @@ export default function AchievementsTab() {
                 onClick={() => openDetailModal(a)}
                 className={`group relative rounded-2xl border p-4 text-center transition-all duration-300 ${
                   !isTierUnlocked
-                    ? 'border-slate-200 bg-slate-100/70 dark:border-slate-800 dark:bg-slate-900/40 opacity-70 cursor-not-allowed'
+                    ? 'border-slate-800 bg-slate-950/60 opacity-60 cursor-not-allowed text-slate-400'
                     : isUnlocked
-                    ? 'border-amber-300/80 bg-gradient-to-b from-amber-50/70 to-white dark:border-amber-900/50 dark:from-amber-950/30 dark:to-slate-900 shadow-xs cursor-pointer hover:-translate-y-1 hover:shadow-lg'
-                    : 'border-slate-200 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/50 opacity-90 cursor-pointer hover:-translate-y-1 hover:shadow-md'
+                    ? `${colorStyle.cardBg} cursor-pointer hover:-translate-y-1`
+                    : 'border-slate-750 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-950 opacity-90 cursor-pointer hover:-translate-y-1 hover:border-slate-600'
                 }`}
               >
                 {/* Top game icon tag */}
-                <div className="absolute top-2 left-2.5 text-xs opacity-75" title={gameNameMap[a.category] || a.category}>
+                <div className="absolute top-2 left-2.5 text-xs opacity-85" title={gameNameMap[a.category] || a.category}>
                   {gameCategoryIcon}
                 </div>
 
                 {/* Lock Overlay Badge if Tier is Locked */}
                 {!isTierUnlocked && (
-                  <div className="absolute top-2 right-2.5 flex items-center justify-center rounded-full bg-slate-200/80 p-1 dark:bg-slate-800/80" title={`Complete 100% of all ${prevTierName} achievements in ${gameNameMap[a.category]} to unlock`}>
-                    <Lock className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+                  <div className="absolute top-2 right-2.5 flex items-center justify-center rounded-full bg-slate-800/90 p-1 border border-slate-700" title={`Complete 100% of all ${prevTierName} achievements in ${gameNameMap[a.category]} to unlock`}>
+                    <Lock className="h-3.5 w-3.5 text-slate-400" />
                   </div>
                 )}
 
                 {/* Achievement main icon */}
-                <div className={`text-3xl my-1.5 transition-transform duration-300 group-hover:scale-110 ${!isTierUnlocked ? 'grayscale opacity-40' : !isUnlocked ? 'grayscale opacity-75' : ''}`}>
+                <div className={`text-3.5xl my-1.5 transition-transform duration-300 group-hover:scale-110 ${!isTierUnlocked ? 'grayscale opacity-40' : !isUnlocked ? 'grayscale opacity-75' : ''}`}>
                   {a.icon || '🎮'}
                 </div>
 
-                <h3 className="text-xs font-black text-slate-900 dark:text-white line-clamp-1">{a.title}</h3>
-                <p className="text-[10px] text-slate-500 font-medium line-clamp-1 mt-0.5">{a.description}</p>
+                <h3 className="text-xs font-black text-white line-clamp-1">{a.title}</h3>
+                <p className="text-[10px] text-slate-300/80 font-medium line-clamp-1 mt-0.5">{a.description}</p>
 
                 {/* Tier & Status */}
                 <div className="mt-2.5 flex items-center justify-center gap-1">
@@ -330,23 +373,23 @@ export default function AchievementsTab() {
                     {tierInfo.label}
                   </span>
                   {!isTierUnlocked ? (
-                    <Lock className="h-3.5 w-3.5 text-slate-400" />
+                    <Lock className="h-3.5 w-3.5 text-slate-500" />
                   ) : isUnlocked ? (
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
                   ) : (
-                    <Lock className="h-3.5 w-3.5 text-slate-400" />
+                    <Lock className="h-3.5 w-3.5 text-slate-500" />
                   )}
                 </div>
 
                 {/* Locked Tier Message or Progress */}
                 {!isTierUnlocked ? (
-                  <div className="mt-2 text-[9px] font-bold text-slate-400 line-clamp-2 px-1">
+                  <div className="mt-2 text-[9px] font-bold text-slate-500 line-clamp-2 px-1">
                     Complete 100% of all {prevTierName} achievements in {gameNameMap[a.category]} to unlock.
                   </div>
                 ) : (
                   <>
                     {/* Rewards pill */}
-                    <div className="mt-1.5 flex items-center justify-center gap-1.5 text-[9px] font-bold text-amber-600 dark:text-amber-400">
+                    <div className="mt-1.5 flex items-center justify-center gap-1.5 text-[9.5px] font-bold text-amber-300">
                       <span>+{a.reward_xp || 50} XP</span>
                       <span>•</span>
                       <span>+{a.reward_coins || 10} Coins</span>
@@ -354,13 +397,13 @@ export default function AchievementsTab() {
 
                     {/* Progress bar */}
                     <div className="mt-2 space-y-0.5">
-                      <div className="flex items-center justify-between text-[9px] font-bold text-slate-400">
+                      <div className="flex items-center justify-between text-[9px] font-bold text-slate-300">
                         <span>{displayVal} / {targetVal}</span>
                         <span>{progress}%</span>
                       </div>
-                      <div className="h-1.5 w-full rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                      <div className="h-1.5 w-full rounded-full bg-slate-950/80 border border-slate-800 overflow-hidden">
                         <div
-                          className={`h-full rounded-full transition-all duration-500 ${isUnlocked ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                          className={`h-full rounded-full transition-all duration-500 ${isUnlocked ? colorStyle.progressBg : 'bg-amber-400'}`}
                           style={{ width: `${progress}%` }}
                         />
                       </div>

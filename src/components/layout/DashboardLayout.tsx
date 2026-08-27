@@ -82,6 +82,7 @@ const superAdminGroups = [
     heading: "Communication",
     items: [
       { path: "/super-admin/communication", label: "Communication", icon: Megaphone },
+      { path: "/super-admin/leads", label: "Leads", icon: TrendingUp },
       { path: "/super-admin/complaints", label: "Support Tickets", icon: Ticket },
     ],
   },
@@ -118,6 +119,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
   super_admin: [
     { label: "Dashboard", path: "/super-admin", icon: LayoutDashboard },
     { label: "Institutes", path: "/super-admin/tenants", icon: Building2 },
+    { label: "Leads", path: "/super-admin/leads", icon: TrendingUp },
     { label: "Support Tickets", path: "/super-admin/support-tickets", icon: Ticket },
     { label: "Communication", path: "/super-admin/communication", icon: Megaphone },
     { label: "Analytics", path: "/super-admin/analytics", icon: BarChart3 },
@@ -167,6 +169,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "Communication", path: "/student/communication", icon: MessageCircle },
     { label: "Battle Arena", path: "/student/battle", icon: Swords },
     { label: "My Progress", path: "/student/progress", icon: BarChart },
+    { label: "Support Tickets", path: "/student/support-tickets", icon: Ticket },
     { label: "Profile", path: "/student/profile", icon: User },
   ],
   parent: [],
@@ -235,6 +238,7 @@ const NAV_ICON_COLORS: Record<string, { active: string; activeBg: string; inacti
   // === SKY: GENERAL/USER OPERATIONS & DIRECT SUPPORT CONTACTS ===
   '/admin/support-tickets': { active: 'text-sky-600', activeBg: 'bg-sky-600 text-white shadow-md', inactive: 'text-sky-400', inactiveBg: 'bg-sky-400 text-white shadow-md', bg: 'bg-sky-50' },
   '/teacher/support-tickets': { active: 'text-sky-600', activeBg: 'bg-sky-600 text-white shadow-md', inactive: 'text-sky-400', inactiveBg: 'bg-sky-400 text-white shadow-md', bg: 'bg-sky-50' },
+  '/student/support-tickets': { active: 'text-sky-600', activeBg: 'bg-sky-600 text-white shadow-md', inactive: 'text-sky-400', inactiveBg: 'bg-sky-400 text-white shadow-md', bg: 'bg-sky-50' },
 
   // === ROSE: COMMUNICATIONS ===
   '/super-admin/communication': { active: 'text-rose-500', activeBg: 'bg-rose-500 text-white shadow-md', inactive: 'text-rose-400', inactiveBg: 'bg-rose-400 text-white shadow-md', bg: 'bg-rose-50' },
@@ -955,10 +959,10 @@ const DashboardLayout = () => {
                       "flex items-center justify-center rounded-xl shrink-0 transition-[width,height,background-color,color] duration-500",
                       isExpanded ? "w-7 h-7" : "w-10 h-10",
                       isActive
-                        ? cn("bg-indigo-600 text-white", isExpanded && "shadow-lg")
+                        ? "bg-indigo-100/80 text-indigo-600 dark:bg-indigo-950/80 dark:text-indigo-400"
                         : "bg-transparent text-slate-600 group-hover:text-slate-800"
                     )}>
-                      <item.icon className={cn("w-4 h-4", isActive ? "text-white" : "text-current")} />
+                      <item.icon className={cn("w-4 h-4", isActive ? "text-indigo-600 dark:text-indigo-400" : "text-current")} />
                     </div>
                     {isExpanded && (
                       <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="">

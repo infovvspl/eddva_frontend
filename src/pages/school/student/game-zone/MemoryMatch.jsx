@@ -55,7 +55,7 @@ export default function MemoryMatch() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6">
+    <div className={stage === 'play' ? "w-full h-full flex flex-col justify-center px-2 sm:px-4 py-2 sm:py-4" : "mx-auto max-w-5xl px-4 py-6"}>
       {stage === 'home' && (
         <MemoryMatchHome
           onStart={handleStartGame}

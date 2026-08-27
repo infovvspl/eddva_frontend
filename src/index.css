@@ -636,6 +636,110 @@
   100% { background-position: 200% 0; }
 }
 
+@keyframes aurora-1 {
+  0%, 100% { top: 0; right: 0; }
+  50% { top: 100%; right: 25%; }
+  75% { top: 100%; right: 50%; }
+}
+
+@keyframes aurora-2 {
+  0%, 100% { top: 0; left: 0; }
+  60% { top: 100%; left: 25%; }
+  80% { top: 100%; left: 50%; }
+}
+
+@keyframes aurora-3 {
+  0%, 100% { bottom: 0; left: 0; }
+  40% { bottom: 100%; left: 75%; }
+  65% { bottom: 50%; left: 50%; }
+}
+
+@keyframes aurora-4 {
+  0%, 100% { bottom: 0; right: 0; }
+  50% { bottom: 100%; right: 40%; }
+  90% { bottom: 50%; right: 25%; }
+}
+
+.bg-aurora {
+  position: relative;
+  overflow: hidden;
+  background-color: #f8fafc; /* Very light slate background */
+}
+
+.bg-aurora::before,
+.bg-aurora::after,
+.bg-aurora-inner::before,
+.bg-aurora-inner::after {
+  content: "";
+  position: absolute;
+  width: 60vw;
+  height: 60vw;
+  max-width: 600px;
+  max-height: 600px;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.5;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.bg-aurora::before {
+  background: rgba(147, 51, 234, 0.4); /* vibrant-purple */
+  animation: aurora-1 15s ease-in-out infinite;
+}
+
+.bg-aurora::after {
+  background: rgba(6, 182, 212, 0.4); /* vibrant-cyan */
+  animation: aurora-2 18s ease-in-out infinite;
+}
+
+.bg-aurora-inner {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.bg-aurora-inner::before {
+  background: rgba(219, 39, 119, 0.4); /* vibrant-magenta */
+  animation: aurora-3 20s ease-in-out infinite;
+}
+
+.bg-aurora-inner::after {
+  background: rgba(37, 99, 235, 0.4); /* vibrant-blue */
+  animation: aurora-4 22s ease-in-out infinite;
+}
+
+.glow-vibrant-purple { box-shadow: 0 0 40px -10px rgba(147, 51, 234, 0.5); }
+.glow-vibrant-cyan { box-shadow: 0 0 40px -10px rgba(6, 182, 212, 0.5); }
+.glow-vibrant-magenta { box-shadow: 0 0 40px -10px rgba(219, 39, 119, 0.5); }
+.glow-vibrant-orange { box-shadow: 0 0 40px -10px rgba(234, 88, 12, 0.5); }
+
+.bg-mesh-gradient {
+  background-color: #ffffff;
+  background-image: 
+    radial-gradient(at 40% 20%, hsla(280,100%,74%,1) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, hsla(189,100%,56%,1) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, hsla(355,100%,93%,1) 0px, transparent 50%),
+    radial-gradient(at 80% 50%, hsla(340,100%,76%,1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, hsla(22,100%,77%,1) 0px, transparent 50%),
+    radial-gradient(at 80% 100%, hsla(242,100%,70%,1) 0px, transparent 50%),
+    radial-gradient(at 0% 0%, hsla(343,100%,76%,1) 0px, transparent 50%);
+}
+
+.bg-mesh-gradient-subtle {
+  background-color: #ffffff;
+  background-image: 
+    radial-gradient(at 40% 20%, hsla(280,100%,74%,0.15) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, hsla(189,100%,56%,0.15) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, hsla(355,100%,93%,0.15) 0px, transparent 50%),
+    radial-gradient(at 80% 50%, hsla(340,100%,76%,0.15) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, hsla(22,100%,77%,0.15) 0px, transparent 50%),
+    radial-gradient(at 80% 100%, hsla(242,100%,70%,0.15) 0px, transparent 50%),
+    radial-gradient(at 0% 0%, hsla(343,100%,76%,0.15) 0px, transparent 50%);
+}
+
 .animate-wiggle {
   animation: wiggle 0.6s ease-in-out;
 }

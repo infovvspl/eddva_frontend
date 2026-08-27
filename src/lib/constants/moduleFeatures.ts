@@ -15,6 +15,7 @@ export const MASTER_MODULE_FEATURES: ModuleFeature[] = [
   { key: 'timetable', label: 'Timetable', description: 'Class timetable and period scheduling', icon: 'CalendarCheck', defaultEnabled: true },
   { key: 'reports', label: 'Reports & Analytics', description: 'Performance reports and progress tracking', icon: 'BarChart3', defaultEnabled: true },
   { key: 'meetings', label: 'Meetings', description: 'Parent-teacher and staff meetings', icon: 'Users', defaultEnabled: true },
+  { key: 'syllabus', label: 'Syllabus & Teaching Plan', description: 'Syllabus planning, tracking, and teacher plan', icon: 'FileText', defaultEnabled: true },
 ];
 
 export interface RoleFeatureGroup {
@@ -38,6 +39,8 @@ export const ROLE_MODULE_FEATURES: RoleFeatureGroup[] = [
       { key: 'admin_timetable', parentKey: 'timetable', label: 'Manage Timetable', description: 'Create and edit class timetables', defaultEnabled: true },
       { key: 'admin_reports', parentKey: 'reports', label: 'View School Reports & Analytics', description: 'View school-wide analytics and reports', defaultEnabled: true },
       { key: 'admin_meetings', parentKey: 'meetings', label: 'Manage Meetings', description: 'Schedule and manage all meetings', defaultEnabled: true },
+      { key: 'admin_syllabus_planner', parentKey: 'syllabus', label: 'Syllabus Planner', description: 'Annual subject syllabus planner and milestone manager', defaultEnabled: true },
+      { key: 'admin_syllabus_tracker', parentKey: 'syllabus', label: 'Syllabus Tracker', description: 'Syllabus completion & coverage tracking', defaultEnabled: true },
     ]
   },
   {
@@ -51,6 +54,7 @@ export const ROLE_MODULE_FEATURES: RoleFeatureGroup[] = [
       { key: 'teacher_timetable', parentKey: 'timetable', label: 'View Timetable', description: 'View personal teaching schedule', defaultEnabled: true },
       { key: 'teacher_reports', parentKey: 'reports', label: 'View Class Reports', description: 'View class and student performance', defaultEnabled: true },
       { key: 'teacher_meetings', parentKey: 'meetings', label: 'Host & Join Meetings', description: 'Join and manage parent-teacher meetings', defaultEnabled: true },
+      { key: 'teacher_teaching_plan', parentKey: 'syllabus', label: 'My Teaching Plan', description: 'Teacher syllabus plan and progress', defaultEnabled: true },
     ]
   },
   {

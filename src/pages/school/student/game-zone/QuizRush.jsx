@@ -39,7 +39,7 @@ export default function QuizRush() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className={stage === 'play' || stage === 'result' ? "w-full h-full flex flex-col justify-start px-2 sm:px-4 py-2 sm:py-4" : "mx-auto max-w-5xl"}>
       {stage === 'home' && (
         <QuizRushHome
           onStart={handleStartGame}

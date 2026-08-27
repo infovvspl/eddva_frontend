@@ -8,6 +8,7 @@ import {
 } from "framer-motion";
 import { Link } from "react-router-dom";
 import { FiArrowUpRight, FiPlay } from "react-icons/fi";
+import { useRequestDemo } from "@/components/landing/RequestDemoProvider";
 import H1 from "../../assets/h1.png";
 import H2 from "../../assets/h7.png";
 import H3 from "../../assets/h8.png";
@@ -239,6 +240,7 @@ function FloatingImage({
 
 // ─── Main Hero ────────────────────────────────────────────────────────────────
 export default function HeroSection() {
+  const { openRequestDemo } = useRequestDemo();
   const [isDesktop, setIsDesktop] = useState(false);
 
   useEffect(() => {
@@ -606,8 +608,9 @@ export default function HeroSection() {
             <FiArrowUpRight style={{ width: "18px", height: "18px" }} />
           </Link>
 
-          <Link
-            to="/courses"
+          <button
+            type="button"
+            onClick={() => openRequestDemo()}
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -619,7 +622,7 @@ export default function HeroSection() {
               color: "#ffffff",
               fontSize: "15px",
               fontWeight: 600,
-              textDecoration: "none",
+              cursor: "pointer",
               transition: "transform 0.2s, background 0.2s",
             }}
             onMouseEnter={(e) => {
@@ -651,8 +654,8 @@ export default function HeroSection() {
                 }}
               />
             </span>
-            Explore courses
-          </Link>
+            Request a Demo
+          </button>
         </motion.div>
 
         {/* Social proof strip */}

@@ -70,6 +70,16 @@ export default function AssessmentView() {
   const isSubmitted = mySubmission && mySubmission.status !== 'in_progress';
   const isInProgress = mySubmission?.status === 'in_progress';
 
+  const rawScheduled = assessment.scheduled_at || assessment.scheduled_date || assessment.scheduledDate;
+  const startTime = rawScheduled ? new Date(rawScheduled) : null;
+  const durationMins = Math.max(1, Number(assessment.duration_minutes || assessment.durationMinutes || 60));
+  const endTime = (startTime && !isNaN(startTime.getTime())) ? new Date(startTime.getTime() + durationMins * 60 * 1000) : null;
+  const now = new Date();
+
+  const isNotStartedYet = startTime && !isNaN(startTime.getTime()) && now < startTime;
+  const isWindowClosed = endTime && !isNaN(endTime.getTime()) && now > endTime;
+  const isStartDisabled = isSubmitted || isNotStartedYet || isWindowClosed;
+
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <Link
@@ -92,10 +102,19 @@ export default function AssessmentView() {
             <div className="mt-2 flex flex-wrap items-center gap-4 text-sm font-semibold text-slate-500">
               <span className="inline-flex items-center gap-1">
                 <Clock size={15} />
-                {assessment.duration_minutes || assessment.durationMinutes || 60} mins
+                {durationMins} mins
               </span>
               <span>{assessment.total_marks || assessment.totalMarks || 100} marks</span>
-              {assessment.scheduled_date && <span>{new Date(assessment.scheduled_date).toLocaleDateString()}</span>}
+              {startTime && !isNaN(startTime.getTime()) && (
+                <span>
+                  Start: {startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({startTime.toLocaleDateString([], { month: 'short', day: 'numeric' })})
+                </span>
+              )}
+              {endTime && !isNaN(endTime.getTime()) && (
+                <span>
+                  Auto Ends: {endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              )}
             </div>
           </div>
 
@@ -123,11 +142,23 @@ export default function AssessmentView() {
             ) : (
               <button
                 type="button"
+                disabled={isStartDisabled}
                 onClick={() => navigate(`/school/student/assessments/${assessment.id}/take`)}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-700"
+                className={cn(
+                  "inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition",
+                  isStartDisabled
+                    ? "cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500"
+                    : "bg-emerald-600 text-white hover:bg-emerald-700"
+                )}
               >
                 <Play size={16} />
-                {isInProgress ? 'Continue Test' : 'Start Test'}
+                {isNotStartedYet
+                  ? `Starts at ${startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                  : isWindowClosed
+                  ? 'Window Closed'
+                  : isInProgress
+                  ? 'Continue Test'
+                  : 'Start Test'}
               </button>
             )}
           </div>

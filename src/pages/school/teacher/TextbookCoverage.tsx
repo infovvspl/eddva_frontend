@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BookOpen, ChevronDown, ChevronRight, Search, RefreshCw, Link2Off,
-  CheckCircle2, CircleDashed, AlertTriangle, Loader2, PlayCircle, FileText,
+  CheckCircle2, CircleDashed, AlertTriangle, Loader2, PlayCircle, FileText, X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/lib/api/school-client';
@@ -102,7 +102,11 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
         clearInterval(pollRef.current);
         pollRef.current = null;
         load();
-        toast.success(`Indexing finished — ${s.succeeded} chapters ready, ${s.failed} failed.`);
+        if (s.status === 'cancelled') {
+          toast.info(`Indexing cancelled — ${s.succeeded} chapters indexed before stopping.`);
+        } else {
+          toast.success(`Indexing finished — ${s.succeeded} chapters ready, ${s.failed} failed.`);
+        }
       }
     } catch { /* transient */ }
   }, [load]);
@@ -153,12 +157,16 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
     try {
       const res = await api.post('/textbooks/ingest', { materialId: r.materialId, instituteId });
       const d = res?.data?.data ?? res?.data;
-      if (d?.indexed) toast.success(`"${r.chapterName}" is ready — ${d.chunks} passages from ${d.pages} pages.`);
-      // The server distinguishes an unreadable scan from a chapter too long to
-      // transcribe in one pass, and the two need different action from the user,
-      // so its message is shown rather than a fixed one.
-      else toast.warning(`"${r.chapterName}": ${d?.message ?? 'no readable text found. It may be a poor scan.'}`);
-      load();
+      // Indexing now runs in the background (large/scanned PDFs can take minutes
+      // and cannot sit on one HTTP request), so start progress polling instead of
+      // waiting for a result here. The poll shows the run and toasts on finish.
+      if (d?.runId) {
+        toast.info(`Indexing "${r.chapterName}" started — large or scanned PDFs can take a minute.`);
+        await pollRun();
+        startPolling();
+      } else {
+        load();
+      }
     } catch (e: any) {
       toast.error(e?.response?.data?.message || 'Indexing failed.');
     } finally {
@@ -191,16 +199,18 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
         timeout: 300000,
       });
       const d = res?.data?.data ?? res?.data;
-      if (d?.indexed) {
-        toast.success(`"${r.chapterName}" is ready — ${d.chunks} passages from ${d.pages} pages.`);
+      // Upload done; indexing now runs in the background (see indexOne). Start
+      // progress polling instead of waiting for the read to finish.
+      if (d?.runId) {
+        toast.success(`"${r.chapterName}" uploaded — indexing started (large/scanned PDFs can take a minute).`);
+        await pollRun();
+        startPolling();
       } else {
-        // See indexOne: "too long to transcribe" and "unreadable scan" call for
-        // different fixes, so the server's wording is used.
-        toast.warning(
-          `"${r.chapterName}": uploaded, but ${d?.message ?? 'no readable text was found. It may be a poor scan.'}`,
-        );
+        // Upload succeeded but indexing couldn't start now (e.g. another run is
+        // already in progress); it can be indexed once that finishes.
+        toast.success(`"${r.chapterName}" uploaded. Index it once the current run finishes.`);
+        load();
       }
-      load();
     } catch (e: any) {
       toast.error(e?.response?.data?.message || 'Upload failed.');
     } finally {
@@ -232,6 +242,23 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
       pollRun();
     } catch (e: any) {
       toast.error(e?.response?.data?.message || 'Could not start indexing.');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const cancelIndexing = async () => {
+    setBusy('cancel');
+    // Stop polling first so a late poll can't report the run as "finished".
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    try {
+      await api.post('/textbooks/ingest-cancel', { instituteId });
+      toast.success('Indexing cancelled. Chapters already indexed are kept.');
+      setRun(null);
+      load();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || 'Could not cancel indexing.');
+      startPolling(); // resume watching if the cancel didn't take
     } finally {
       setBusy(null);
     }
@@ -293,9 +320,22 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
               <Loader2 className="h-4 w-4 animate-spin" />
               Indexing {run.done} of {run.total}
             </span>
-            <span className="text-xs text-brand-600 dark:text-brand-400">
-              {run.lastChapter ? `Last: ${run.lastChapter}` : 'Starting…'}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="hidden text-xs text-brand-600 dark:text-brand-400 sm:inline">
+                {run.lastChapter ? `Last: ${run.lastChapter}` : 'Starting…'}
+              </span>
+              {run.total > 1 && (
+                <button
+                  type="button"
+                  onClick={cancelIndexing}
+                  disabled={busy === 'cancel'}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-2.5 py-1 text-xs font-bold text-rose-600 transition hover:bg-rose-50 disabled:opacity-60 dark:border-rose-900 dark:bg-transparent dark:text-rose-300 dark:hover:bg-rose-950/40"
+                >
+                  {busy === 'cancel' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
+                  Cancel
+                </button>
+              )}
+            </div>
           </div>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-brand-100 dark:bg-brand-900">
             <div
@@ -350,7 +390,14 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
         </p>
       ) : (
         <div className="space-y-2">
-          {Object.entries(grouped).map(([cls, subjects]) => {
+          {Object.keys(grouped)
+            .sort((a, b) => {
+              const normA = (a || '').replace(/[-_]/g, ' ').replace(/\s+/g, ' ');
+              const normB = (b || '').replace(/[-_]/g, ' ').replace(/\s+/g, ' ');
+              return normA.localeCompare(normB, undefined, { numeric: true, sensitivity: 'base' });
+            })
+            .map((cls) => {
+              const subjects = grouped[cls];
             const total = Object.values(subjects).reduce((n, l) => n + l.length, 0);
             const ready = Object.values(subjects).flat().filter((r) => r.indexed).length;
             const isOpen = open[cls] ?? false;
