@@ -2043,25 +2043,43 @@ function SourceBadge({ source }: { source: { grounded: boolean; pages?: number[]
     );
   }
 
-  // Not grounded: a temporary outage (textbook AI / Gemini unreachable, book IS
-  // indexed) is a different situation from a permanent gap (chapter not indexed),
-  // and needs different action from the teacher — so show them distinctly.
-  const isUnavailable = source.reason === 'unavailable';
+  // Not grounded. A book that IS indexed but the textbook AI (Gemini) could not
+  // be used is a temporary, fixable state — distinct from a chapter that was
+  // never indexed. The server's `reason` names the exact cause (see
+  // _generate_grounded in ppt.py); anything Gemini-side means "book is fine, AI
+  // was not", which the teacher fixes by retrying or topping up quota — not by
+  // re-uploading a book that is already indexed.
+  const reason = source.reason;
+  const AI_SIDE: Record<string, string> = {
+    unavailable:
+      'The textbook AI was temporarily unavailable, so this used general knowledge. Your book is indexed — just generate again in a little while.',
+    gemini_exhausted:
+      'Your book IS indexed, but the textbook AI is out of quota right now, so this used general knowledge. Try again shortly, or ask an admin to top up the Gemini quota.',
+    gemini_key_rejected:
+      'Your book IS indexed, but the textbook AI key was rejected, so this used general knowledge. Ask an admin to check the Gemini API key.',
+    gemini_model_unavailable:
+      'Your book IS indexed, but the textbook AI model is unavailable for the configured key, so this used general knowledge. Ask an admin to check the Gemini setup.',
+    gemini_unavailable:
+      'Your book IS indexed, but the textbook AI is not configured on the server, so this used general knowledge. Ask an admin to configure Gemini.',
+    no_relevant_passages:
+      'Your book is indexed but its scanned text was unusable here, so this used general knowledge. Re-upload a clearer PDF under Textbook Coverage.',
+  };
+  const aiSideTitle = reason ? AI_SIDE[reason] : undefined;
+  const isAiSide = Boolean(aiSideTitle);
   return (
     <span
       title={
-        isUnavailable
-          ? 'The textbook AI was temporarily unavailable, so this used general knowledge. Your book is indexed — just generate again in a little while.'
-          : 'This chapter has no indexed textbook, so it was written from general knowledge. Upload the chapter PDF under Textbook Coverage to change that.'
+        aiSideTitle
+          ?? 'This chapter has no indexed textbook, so it was written from general knowledge. Upload the chapter PDF under Textbook Coverage to change that.'
       }
       className={
-        isUnavailable
+        isAiSide
           ? 'inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
           : 'inline-flex items-center gap-1.5 rounded-full border border-surface-300 bg-surface-100 px-2.5 py-0.5 text-[11px] font-bold text-surface-600 dark:border-surface-600 dark:bg-surface-800 dark:text-surface-300'
       }
     >
       <span className="h-1.5 w-1.5 rounded-full bg-current" />
-      {isUnavailable ? 'Textbook AI unavailable — retry' : 'General knowledge'}
+      {isAiSide ? 'Textbook AI unavailable — retry' : 'General knowledge'}
     </span>
   );
 }
