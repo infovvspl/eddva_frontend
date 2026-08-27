@@ -914,6 +914,15 @@ function ChapterNode({
           <span className={`truncate text-sm font-bold leading-tight ${open ? 'text-brand-700 dark:text-brand-300' : 'text-surface-800 dark:text-surface-100'}`}>
             {chapter.name}
           </span>
+          {chapter.indexed && (
+            <span
+              title="This chapter's textbook is indexed — AI content (notes, PPT, papers) can be grounded in the book."
+              className="ml-1.5 inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+            >
+              <span className="h-1 w-1 rounded-full bg-current" />
+              Indexed
+            </span>
+          )}
         </button>
         {canEdit && (
           <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
@@ -1574,6 +1583,11 @@ function SlideDeck({ slides, height = 460, topic = '' }: { slides: Slide[]; heig
   if (!slides.length) return null;
   const safeIdx = Math.min(idx, slides.length - 1);
   const slide = slides[safeIdx];
+  // Drop bullets that are only JSON punctuation ("{", "}", "[", quotes, commas):
+  // a malformed generation occasionally leaks a stray brace onto a slide.
+  const bullets = (slide.bullets || []).filter(
+    (b) => b && b.trim() && !/^[{}[\]"'`,;:]+$/.test(b.trim()),
+  );
   const go = (d: number) => setIdx((i) => Math.max(0, Math.min(slides.length - 1, i + d)));
   const imgPrompt = slideImagePrompt(slide, topic);
   const imgQuery = slideImageQuery(slide, topic);
@@ -1636,7 +1650,7 @@ function SlideDeck({ slides, height = 460, topic = '' }: { slides: Slide[]; heig
             </h3>
             <div className="mt-4 flex flex-1 gap-5 overflow-hidden">
               <ul className="flex-1 space-y-2.5 overflow-y-auto pr-1">
-                {slide.bullets.length ? slide.bullets.map((b, i) => (
+                {bullets.length ? bullets.map((b, i) => (
                   <li key={i} className="flex gap-2.5 text-sm font-medium leading-snug text-surface-700 dark:text-surface-200">
                     <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400" />
                     <span>{b}</span>
@@ -2029,25 +2043,43 @@ function SourceBadge({ source }: { source: { grounded: boolean; pages?: number[]
     );
   }
 
-  // Not grounded: a temporary outage (textbook AI / Gemini unreachable, book IS
-  // indexed) is a different situation from a permanent gap (chapter not indexed),
-  // and needs different action from the teacher — so show them distinctly.
-  const isUnavailable = source.reason === 'unavailable';
+  // Not grounded. A book that IS indexed but the textbook AI (Gemini) could not
+  // be used is a temporary, fixable state — distinct from a chapter that was
+  // never indexed. The server's `reason` names the exact cause (see
+  // _generate_grounded in ppt.py); anything Gemini-side means "book is fine, AI
+  // was not", which the teacher fixes by retrying or topping up quota — not by
+  // re-uploading a book that is already indexed.
+  const reason = source.reason;
+  const AI_SIDE: Record<string, string> = {
+    unavailable:
+      'The textbook AI was temporarily unavailable, so this used general knowledge. Your book is indexed — just generate again in a little while.',
+    gemini_exhausted:
+      'Your book IS indexed, but the textbook AI is out of quota right now, so this used general knowledge. Try again shortly, or ask an admin to top up the Gemini quota.',
+    gemini_key_rejected:
+      'Your book IS indexed, but the textbook AI key was rejected, so this used general knowledge. Ask an admin to check the Gemini API key.',
+    gemini_model_unavailable:
+      'Your book IS indexed, but the textbook AI model is unavailable for the configured key, so this used general knowledge. Ask an admin to check the Gemini setup.',
+    gemini_unavailable:
+      'Your book IS indexed, but the textbook AI is not configured on the server, so this used general knowledge. Ask an admin to configure Gemini.',
+    no_relevant_passages:
+      'Your book is indexed but its scanned text was unusable here, so this used general knowledge. Re-upload a clearer PDF under Textbook Coverage.',
+  };
+  const aiSideTitle = reason ? AI_SIDE[reason] : undefined;
+  const isAiSide = Boolean(aiSideTitle);
   return (
     <span
       title={
-        isUnavailable
-          ? 'The textbook AI was temporarily unavailable, so this used general knowledge. Your book is indexed — just generate again in a little while.'
-          : 'This chapter has no indexed textbook, so it was written from general knowledge. Upload the chapter PDF under Textbook Coverage to change that.'
+        aiSideTitle
+          ?? 'This chapter has no indexed textbook, so it was written from general knowledge. Upload the chapter PDF under Textbook Coverage to change that.'
       }
       className={
-        isUnavailable
+        isAiSide
           ? 'inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
           : 'inline-flex items-center gap-1.5 rounded-full border border-surface-300 bg-surface-100 px-2.5 py-0.5 text-[11px] font-bold text-surface-600 dark:border-surface-600 dark:bg-surface-800 dark:text-surface-300'
       }
     >
       <span className="h-1.5 w-1.5 rounded-full bg-current" />
-      {isUnavailable ? 'Textbook AI unavailable — retry' : 'General knowledge'}
+      {isAiSide ? 'Textbook AI unavailable — retry' : 'General knowledge'}
     </span>
   );
 }
@@ -2103,10 +2135,12 @@ function AiGeneratePanel({
   const hasPptGen = useSchoolFeature('ai', 'ai_ppt_generator');
 
   const [typeId, setTypeId] = useState(() => {
-    // Default to the first card shown (Presentation), so the highlighted card is
-    // at the top; fall back to a standard material type, then nothing.
+    // Match production: default to a material type, never 'presentation'.
+    // Presentation is not generated inline here — its card opens the PPT Studio
+    // (see the card onClick). Defaulting to 'presentation' made the generator
+    // produce an inline slide-review instead of opening the Studio.
+    if (hasAiMaterials) return 'dpp';
     if (hasPptGen) return 'presentation';
-    if (hasAiMaterials) return 'study_guide';
     return '';
   });
   const [questionCount, setQuestionCount] = useState(10);

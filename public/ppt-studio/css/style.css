@@ -2096,11 +2096,6 @@ img.edit-image-preview {
   color: #475569;
   border: 1px solid #cbd5e1;
 }
-.source-badge--unavailable {
-  background: #fffbeb;
-  color: #92400e;
-  border: 1px solid #fcd34d;
-}
 .source-badge .badge-dot {
   width: 7px; height: 7px; border-radius: 50%;
   background: currentColor; flex-shrink: 0;

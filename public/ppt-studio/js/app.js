@@ -528,19 +528,29 @@ window.App = {
       return;
     }
 
-    // Not grounded. Distinguish a temporary outage (textbook AI / Gemini
-    // unreachable, book IS indexed → just retry) from a permanent gap (chapter
-    // not indexed → upload the PDF), because the fix is different.
-    const isUnavailable = source && source.reason === 'unavailable';
-    el.className = isUnavailable
-      ? 'source-badge source-badge--unavailable'
-      : 'source-badge source-badge--general';
-    el.innerHTML = isUnavailable
-      ? '<span class="badge-dot"></span>Textbook AI unavailable — retry'
-      : '<span class="badge-dot"></span>General knowledge';
-    el.title = isUnavailable
-      ? 'The textbook AI was temporarily unavailable, so this deck used general knowledge. Your book is indexed — generate again in a little while.'
-      : 'This chapter has no indexed textbook, so the deck was written from general knowledge. Upload the chapter PDF under Textbook Coverage to change that.';
+    // Not grounded — say WHY, precisely. An indexed chapter that still lands here
+    // has a specific, fixable cause (usually exhausted Gemini quota), and a vague
+    // "could not be used" sends the teacher to re-upload a book that is already
+    // fine. The reason comes from the API (see _generate_grounded in ppt.py).
+    var reason = source && source.reason;
+    var REASONS = {
+      not_indexed:
+        'This chapter has no indexed textbook, so the deck was written from general knowledge. Upload the chapter PDF under Textbook Coverage to change that.',
+      no_relevant_passages:
+        'The chapter is indexed but its scanned text was unusable, so the deck was written from general knowledge. Re-upload a clearer PDF under Textbook Coverage.',
+      gemini_exhausted:
+        'The chapter IS indexed, but the textbook AI is out of quota right now, so this deck fell back to general knowledge. Try again shortly, or ask an admin to top up the Gemini quota.',
+      gemini_key_rejected:
+        'The chapter IS indexed, but the textbook AI key was rejected, so this deck fell back to general knowledge. Ask an admin to check the Gemini API key.',
+      gemini_model_unavailable:
+        'The chapter IS indexed, but the textbook AI model is unavailable for the configured key, so this deck fell back to general knowledge. Ask an admin to check the Gemini setup.',
+      gemini_unavailable:
+        'The chapter IS indexed, but the textbook AI is not configured on the server, so this deck fell back to general knowledge. Ask an admin to configure Gemini.',
+    };
+    el.className = 'source-badge source-badge--general';
+    el.innerHTML = '<span class="badge-dot"></span>General knowledge';
+    el.title = REASONS[reason]
+      || 'The textbook could not be used for this deck, so it was written from general knowledge.';
     el.hidden = false;
   },
 
