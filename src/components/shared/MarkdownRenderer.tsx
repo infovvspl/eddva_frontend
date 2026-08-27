@@ -222,6 +222,46 @@ function replaceNewlinesOutsideMath(text: string): string {
   return displayParts.join("$$");
 }
 
+const _SUB_SUP_TAG_RE = /<su[bp]>[^<]*<\/su[bp]>/gi;
+const _IDENT_OR_TAG_RE = /(?:[A-Za-zΑ-ωÀ-ÿ0-9()]|<su[bp]>[^<]*<\/su[bp]>)*<su[bp]>[^<]*<\/su[bp]>(?:[A-Za-zΑ-ωÀ-ÿ0-9()]|<su[bp]>[^<]*<\/su[bp]>)*/g;
+
+/**
+ * Some LLM output uses literal HTML <sub>/<sup> tags for subscripts and
+ * superscripts (e.g. "K<sub>f</sub>") instead of LaTeX. This renderer has no
+ * rehype-raw plugin, so raw HTML is never interpreted — it shows up as
+ * literal visible text ("K<sub>f</sub>") instead of an actual subscript.
+ * Convert each contiguous run of identifier characters + <sub>/<sup> tags
+ * (e.g. "K<sub>f</sub>" or "C<sub>6</sub>H<sub>12</sub>O<sub>6</sub>") into a
+ * single LaTeX span ("$K_{f}$"), keeping multi-tag runs like chemical
+ * formulas in ONE $...$ span rather than fragmenting into adjacent spans
+ * (which can otherwise collide into an accidental "$$" display-math boundary).
+ */
+function convertHtmlSubSupToLatex(text: string): string {
+  if (!_SUB_SUP_TAG_RE.test(text)) return text;
+  _SUB_SUP_TAG_RE.lastIndex = 0;
+  return text.replace(_IDENT_OR_TAG_RE, (run) => {
+    const latex = run
+      .replace(/<sub>([^<]*)<\/sub>/gi, "_{$1}")
+      .replace(/<sup>([^<]*)<\/sup>/gi, "^{$1}");
+    return `$${latex}$`;
+  });
+}
+
+const _MATH_TOKEN = String.raw`[A-Za-zΑ-ωÀ-ÿ]+(?:[_^](?:\{[^{}]*\}|[A-Za-z0-9]+))+`;
+const _COMMA_BETWEEN_MATH_TOKENS_RE = new RegExp(`(${_MATH_TOKEN}),(${_MATH_TOKEN})`, "g");
+
+/**
+ * A comma with NO surrounding whitespace directly between two
+ * subscripted/superscripted math tokens (e.g. "x_i,P_i^{\circ}") is not a
+ * real list separator — written prose always has "x, y" with a space after
+ * the comma. This shape is what a spoken pause transcribed as a literal
+ * comma looks like once carried through into a formula that should have used
+ * multiplication (x_i · P_i°). Convert it to \cdot.
+ */
+function fixCommaBetweenMathTokens(text: string): string {
+  return text.replace(_COMMA_BETWEEN_MATH_TOKENS_RE, "$1 \\cdot $2");
+}
+
 function normalizeBrokenMathText(text: string): string {
   return text
     // Adjacent inline-code math spans can arrive as `formula``next formula`.
@@ -258,6 +298,30 @@ function unwrapMathCodeSpans(text: string): string {
     }
     return match;
   });
+}
+
+/**
+ * LaTeX/KaTeX only subscripts (or superscripts) a SINGLE character after
+ * "_"/"^" unless it's wrapped in {}. "C_total" therefore renders as "C" with
+ * subscript "t", followed by normal-size "otal" immediately after — the
+ * model writes multi-letter subscript labels (total, max, avg, atm, eq...)
+ * without braces. Restricted to letters-only tokens (2+ letters, no digits)
+ * so this never touches coefficient notation like "a_1x" (subscript is just
+ * the digit "1"; "x" is a separate term multiplied by it, not part of the
+ * subscript) or chemical formulas like "H_2O" (subscript "2", then "O").
+ * Applied only inside $...$/$$...$$ math spans — a bare "_" in plain prose
+ * is Markdown italic syntax, not a subscript.
+ */
+function wrapMultiLetterSubSup(text: string): string {
+  const fixSegment = (segment: string) =>
+    segment.replace(/([_^])([A-Za-z]{2,})/g, "$1{$2}");
+  return text
+    .split("$$")
+    .map((seg, i) => {
+      if (i % 2 !== 0) return fixSegment(seg);
+      return seg.split("$").map((s, j) => (j % 2 !== 0 ? fixSegment(s) : s)).join("$");
+    })
+    .join("$$");
 }
 
 function wrapStandaloneSubscriptVariables(text: string): string {
@@ -557,6 +621,15 @@ export const formatMarkdown = (text?: string) => {
     .replace(/\\\(/g, "$").replace(/\\\)/g, "$")
     // 4. Keep carriage returns as simple newlines
     .replace(/\\n(?![a-zA-Z])/g, "\n");
+
+  // 4b. Convert literal HTML <sub>/<sup> tags to LaTeX before any other math
+  // detection runs, so downstream heuristics see a normal $...$ span instead
+  // of raw HTML.
+  formatted = convertHtmlSubSupToLatex(formatted);
+
+  // 4c. Fix a comma standing in for multiplication between two math tokens
+  // (e.g. "x_i,P_i^{\circ}" -> "x_i \cdot P_i^{\circ}").
+  formatted = fixCommaBetweenMathTokens(formatted);
 
   // Protect GFM table blocks from every math/line heuristic below. A table row
   // ends in "|", which the line-continuation logic reads as a math continuation
@@ -876,10 +949,18 @@ export const formatMarkdown = (text?: string) => {
       const den = p2 || p3;
       return `\\frac{${p1}}{${den}}`;
     });
-    // 4. simple term / simple term (dy/dx, 1/2, x^2/y^2, p^2/q^2)
-    // Protect state indicators like Mg / (s)
-    s = s.replace(/(^|[^a-zA-Z0-9_$])([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)\s*\/([ \t]*)([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)(?![\w$])/g, (match, prefix, num, _space, den) => {
-      if (/^(?:[a-z]|aq|g|l|s)$/i.test(den.trim())) return match;
+    // 4. simple term / simple term (dy/dx, 1/2, x^2/y^2, p^2/q^2, 1/1.033)
+    // Protect state indicators like Mg / (s), and common unit ratios like
+    // kg/mol, mol/L, J/mol — these are plain-text units, not math fractions,
+    // and rendering them as a stacked \frac{} produces mangled-looking output
+    // (e.g. "1.86 °C·kg/mol" turning into a broken fraction glyph).
+    // The decimal-number alternative must come FIRST in the token so a value
+    // like "1.033" matches whole — otherwise the [a-zA-Z0-9]{1,3} branch
+    // grabs just "1" (stopping at the decimal point) and the rest (".033")
+    // is left dangling as plain text right after the fraction.
+    const _FRACTION_TOKEN = String.raw`(?:\d+\.\d+|[a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)`;
+    s = s.replace(new RegExp(String.raw`(^|[^a-zA-Z0-9_$])(${_FRACTION_TOKEN})\s*/([ \t]*)(${_FRACTION_TOKEN})(?![\w$])`, "g"), (match, prefix, num, _space, den) => {
+      if (/^(?:[a-z]|aq|g|l|s|mol|atm|min|hr|cal|hz|kg|km|cm|mm|ml|kj)$/i.test(den.trim())) return match;
       return `${prefix}\\frac{${num}}{${den.trim()}}`;
     });
     return s;
@@ -929,6 +1010,10 @@ export const formatMarkdown = (text?: string) => {
       : segment)
     .join("$");
 
+  // Brace multi-letter subscripts/superscripts inside math spans now that all
+  // equation-wrapping above is done (e.g. "C_total" -> "C_{total}").
+  formatted = wrapMultiLetterSubSup(formatted);
+
   // 7. Tokenize to protect already-formatted math blocks ($...$ and $$...$$) and markdown image tags (![...]())
   const tokenize = (text: string) => {
     const tokens: { type: "prose" | "math" | "image"; text: string }[] = [];
@@ -977,6 +1062,24 @@ export const formatMarkdown = (text?: string) => {
       return s;
     })
     .join("");
+
+  // Strip an orphaned code-span backtick left over from generation (e.g. a
+  // final-answer span like "`C_total = ...`" whose closing backtick got lost
+  // across a paragraph/chunk boundary during generation). unwrapMathCodeSpans
+  // above already consumed every genuinely PAIRED run of backticks, so any
+  // backtick run still present in a block by this point is either a
+  // legitimate, intentional inline-code span (which always comes in a pair —
+  // even count, left untouched) or a lone unpaired marker (odd count) that
+  // renders as a stray literal "`" character. Only the latter gets removed.
+  formatted = formatted
+    .split("\n\n")
+    .map((block) => {
+      const runs = block.match(/`+/g);
+      if (!runs || runs.length % 2 === 0) return block;
+      const last = block.lastIndexOf(runs[runs.length - 1]);
+      return block.slice(0, last) + block.slice(last + runs[runs.length - 1].length);
+    })
+    .join("\n\n");
 
   formatted = formatted
     .replace(/\n{3,}/g, "\n\n")

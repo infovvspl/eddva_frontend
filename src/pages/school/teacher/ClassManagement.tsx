@@ -845,15 +845,27 @@ const ClassManagement: React.FC = () => {
     catch (e) { console.error('Failed to start transcription', e); alert('Could not start transcription. Is the AI service running?'); }
   };
 
+  const [regeneratingNotesIds, setRegeneratingNotesIds] = useState<Set<string>>(new Set());
   const handleRegenerateNotes = async (id: string) => {
+    // Guards against a double-click/impatient-retry firing two overlapping
+    // generation runs for the same recording — the slower one used to silently
+    // overwrite the faster one's result.
+    if (regeneratingNotesIds.has(id)) return;
+    setRegeneratingNotesIds((prev) => new Set(prev).add(id));
+    // Optimistically reflect "processing" immediately (don't wait on the network round-trip).
+    setDetailRec((prev: any) => (prev && prev.id === id ? { ...prev, notes_status: 'processing' } : prev));
     try {
       await api.post(`/classes/recordings/${id}/regenerate-notes`);
-      // Optimistically reflect "processing" so the panel updates immediately.
-      setDetailRec((prev: any) => (prev && prev.id === id ? { ...prev, notes_status: 'processing' } : prev));
       fetchRecordedClasses();
     } catch (e: any) {
       console.error('Failed to generate notes', e);
       alert(e?.response?.data?.message || 'Could not generate notes. Make sure the transcript is ready and the AI service is running.');
+    } finally {
+      setRegeneratingNotesIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     }
   };
 
@@ -1762,12 +1774,16 @@ const ClassManagement: React.FC = () => {
                               {rec.thumbnail_url ? 'Regenerate Thumbnail' : 'Generate Thumbnail'}
                             </button>
                           )}
-                          {rec.transcript_status === 'done' && rec.notes_status !== 'done' && (
+                          {rec.transcript_status === 'done' && rec.notes_status !== 'processing' && (
                             <button
                               onClick={() => handleRegenerateNotes(rec.id)}
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-amber-100 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 transition hover:bg-amber-100"
+                              disabled={regeneratingNotesIds.has(rec.id)}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-amber-100 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                              <Sparkles size={14} /> Retry Notes
+                              {regeneratingNotesIds.has(rec.id) ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                              {regeneratingNotesIds.has(rec.id)
+                                ? 'Regenerating…'
+                                : rec.notes_status === 'done' ? 'Regenerate Notes' : 'Retry Notes'}
                             </button>
                           )}
                         </div>
@@ -2156,8 +2172,12 @@ const ClassManagement: React.FC = () => {
                                       ? 'Refresh visuals'
                                       : 'Add visuals'}
                                   </button>
-                                  <button onClick={() => handleRegenerateNotes(detailRec.id)} className="text-xs font-bold text-slate-400 hover:text-blue-600 hover:underline">
-                                    Regenerate notes
+                                  <button
+                                    onClick={() => handleRegenerateNotes(detailRec.id)}
+                                    disabled={regeneratingNotesIds.has(detailRec.id)}
+                                    className="text-xs font-bold text-slate-400 hover:text-blue-600 hover:underline disabled:cursor-not-allowed disabled:opacity-60 disabled:no-underline"
+                                  >
+                                    {regeneratingNotesIds.has(detailRec.id) ? 'Regenerating…' : 'Regenerate notes'}
                                   </button>
                                 </div>
                               </div>
@@ -2193,8 +2213,14 @@ const ClassManagement: React.FC = () => {
                               )}
                               {hasNotesGen ? (
                                 <>
-                                  <Button icon={<Sparkles size={16} />} onClick={() => handleRegenerateNotes(detailRec.id)}>
-                                    {detailRec.notes_status === 'failed' ? 'Retry notes generation' : 'Generate AI notes'}
+                                  <Button
+                                    icon={regeneratingNotesIds.has(detailRec.id) ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                                    disabled={regeneratingNotesIds.has(detailRec.id)}
+                                    onClick={() => handleRegenerateNotes(detailRec.id)}
+                                  >
+                                    {regeneratingNotesIds.has(detailRec.id)
+                                      ? 'Generating…'
+                                      : detailRec.notes_status === 'failed' ? 'Retry notes generation' : 'Generate AI notes'}
                                   </Button>
                                   <p className="mt-2 text-xs text-slate-400">Builds structured notes from the transcript (Odia notes via Gemini).</p>
                                 </>
