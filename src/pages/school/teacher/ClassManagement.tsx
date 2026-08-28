@@ -1774,16 +1774,14 @@ const ClassManagement: React.FC = () => {
                               {rec.thumbnail_url ? 'Regenerate Thumbnail' : 'Generate Thumbnail'}
                             </button>
                           )}
-                          {rec.transcript_status === 'done' && rec.notes_status !== 'processing' && (
+                          {rec.transcript_status === 'done' && rec.notes_status !== 'done' && (
                             <button
                               onClick={() => handleRegenerateNotes(rec.id)}
                               disabled={regeneratingNotesIds.has(rec.id)}
                               className="inline-flex items-center gap-1.5 rounded-lg border border-amber-100 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               {regeneratingNotesIds.has(rec.id) ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                              {regeneratingNotesIds.has(rec.id)
-                                ? 'Regenerating…'
-                                : rec.notes_status === 'done' ? 'Regenerate Notes' : 'Retry Notes'}
+                              {regeneratingNotesIds.has(rec.id) ? 'Regenerating…' : 'Retry Notes'}
                             </button>
                           )}
                         </div>
