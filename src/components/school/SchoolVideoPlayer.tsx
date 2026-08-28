@@ -480,6 +480,8 @@ export function SchoolVideoPlayer({
         <div ref={ytContainerRef} className="w-full h-full min-h-[200px]" />
       ) : (
         <video ref={videoRef} className="w-full h-full object-contain"
+          preload="auto"
+          playsInline
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={() => {
             const v = videoRef.current;
