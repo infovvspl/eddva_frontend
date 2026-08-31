@@ -1,6 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import logoUrl from "@/assets/eddva-logo.svg";
+import logoUrl from "@/assets/eddva web logo.png";
 
 /** Canonical EDDVA wordmark — use in nav, footer, dashboard, and auth pages */
 export function EddvaLogo({

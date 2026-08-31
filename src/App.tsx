@@ -45,6 +45,13 @@ function FeatureGuard({ moduleKey, children }: { moduleKey: string, children: Re
 // â”€â”€ Route-level code splitting: each page loads its own JS chunk (faster first paint) â”€â”€
 
 const Index = lazy(() => import("./pages/Index"));
+// ── NEW WEBSITE MOCKUP (isolated design — do not merge with existing pages) ──
+const NewWebsitePage = lazy(() => import("./new-website/NewWebsitePage"));
+const NewWebsitePricingPage = lazy(() => import("./new-website/pages/PricingPage"));
+const NewWebsiteContactPage = lazy(() => import("./new-website/pages/ContactPage"));
+const NewWebsiteAboutPage = lazy(() => import("./new-website/pages/AboutPage"));
+const NewWebsiteProductsPage = lazy(() => import("./new-website/pages/ProductsPage"));
+const NewWebsiteSolutionPage = lazy(() => import("./new-website/pages/SolutionPage"));
 const Courses = lazy(() => import("./pages/Courses"));
 const Contact = lazy(() => import("./pages/Contact"));
 const AboutUs = lazy(() => import("./pages/AboutUs"));
@@ -751,6 +758,13 @@ const TenantRoutes = () => (
     {TeacherRoutes()}
     {StudentRoutes()}
     {SchoolRoutes()}
+    {/* ── New Website Mockup — isolated, do not merge ── */}
+    <Route path="/new-website" element={<NewWebsitePage />} />
+    <Route path="/new-website/pricing" element={<NewWebsitePricingPage />} />
+    <Route path="/new-website/contact" element={<NewWebsiteContactPage />} />
+    <Route path="/new-website/about" element={<NewWebsiteAboutPage />} />
+    <Route path="/new-website/products" element={<NewWebsiteProductsPage />} />
+    <Route path="/new-website/solution" element={<NewWebsiteSolutionPage />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
@@ -783,6 +797,13 @@ const PlatformRoutes = () => (
     {TeacherRoutes()}
     {StudentRoutes()}
     {SchoolRoutes()}
+    {/* ── New Website Mockup — isolated, do not merge ── */}
+    <Route path="/new-website" element={<NewWebsitePage />} />
+    <Route path="/new-website/pricing" element={<NewWebsitePricingPage />} />
+    <Route path="/new-website/contact" element={<NewWebsiteContactPage />} />
+    <Route path="/new-website/about" element={<NewWebsiteAboutPage />} />
+    <Route path="/new-website/products" element={<NewWebsiteProductsPage />} />
+    <Route path="/new-website/solution" element={<NewWebsiteSolutionPage />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
