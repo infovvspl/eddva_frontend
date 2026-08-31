@@ -101,10 +101,19 @@ export default function SyllabusPlanDetailsPage() {
   }
 
   const allocs = Array.isArray(plan.chapter_allocations) ? plan.chapter_allocations : [];
-  const unit1Chs = allocs.filter(a => a.term === 'Unit 1');
-  const term1Chs = allocs.filter(a => a.term === 'Term 1');
-  const unit2Chs = allocs.filter(a => a.term === 'Unit 2');
-  const term2Chs = allocs.filter(a => a.term === 'Term 2');
+  // Case/whitespace-insensitive: an exact-string match here silently dropped
+  // any chapter whose stored term didn't precisely equal one of these four
+  // literals (different casing, a stray space, or a term that was simply
+  // never set) from every section instead of showing it anywhere — the plan
+  // and its total chapter count still showed, but nothing appeared under
+  // any of the four unit/term headings. normTerm below also catches those
+  // into an "Other" section so a mismatch is visible, not silently dropped.
+  const normTerm = (t) => String(t || '').trim().toLowerCase();
+  const unit1Chs = allocs.filter(a => normTerm(a.term) === 'unit 1');
+  const term1Chs = allocs.filter(a => normTerm(a.term) === 'term 1');
+  const unit2Chs = allocs.filter(a => normTerm(a.term) === 'unit 2');
+  const term2Chs = allocs.filter(a => normTerm(a.term) === 'term 2');
+  const otherChs = allocs.filter(a => !['unit 1', 'term 1', 'unit 2', 'term 2'].includes(normTerm(a.term)));
 
   const totalTopicsCount = allocs.reduce((acc, c) => acc + (Array.isArray(c.topics) ? c.topics.length : 0), 0);
 
@@ -534,6 +543,29 @@ export default function SyllabusPlanDetailsPage() {
             </div>
           )}
         </div>
+
+        {/* Other — chapters whose stored term doesn't match any of the four
+            standard buckets above. Shown rather than silently dropped, since
+            that silent-drop is exactly what made a plan with chapters look
+            like it had none. */}
+        {otherChs.length > 0 && (
+          <div className="rounded-3xl border border-amber-200 bg-white p-6 dark:border-amber-950 dark:bg-slate-900 shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-amber-100 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-3.5 h-3.5 rounded-full bg-amber-600" />
+                <h2 className="text-base font-black uppercase text-amber-900 dark:text-amber-100">
+                  Other / Unassigned Term
+                </h2>
+              </div>
+              <span className="text-xs font-extrabold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950 px-3 py-1 rounded-full">
+                {otherChs.length} Chapters Mapped
+              </span>
+            </div>
+            <div className="grid gap-4">
+              {otherChs.map((c, i) => renderChapterCard(c, i, 'bg-amber-600'))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* UPDATE TOPIC PROGRESS & DETAILS MODAL FOR TEACHER */}
