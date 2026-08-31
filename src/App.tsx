@@ -231,6 +231,7 @@ const SchoolAdminGamification = lazy(() => import("./pages/school/admin/AdminGam
 const SchoolTeacherLayout = SchoolAdminLayout;
 const SchoolTeacherDashboard = lazy(() => import("./pages/school/teacher/Dashboard"));
 const SchoolTeacherStudents = lazy(() => import("./pages/school/teacher/Students"));
+const SchoolTeacherStudentProfile = lazy(() => import("./pages/school/teacher/StudentProfile"));
 const SchoolTopicManagement = lazy(() => import("./pages/school/teacher/TopicManagement"));
 const SchoolTextbookCoverage = lazy(() => import("./pages/school/teacher/TextbookCoverage"));
 const SchoolClassManagement = lazy(() => import("./pages/school/teacher/ClassManagement"));
@@ -555,6 +556,7 @@ const SchoolRoutes = () => (
     >
       <Route index element={<SchoolTeacherDashboard />} />
       <Route path="students" element={<SchoolTeacherStudents />} />
+      <Route path="students/:id" element={<SchoolTeacherStudentProfile />} />
       <Route path="profile" element={<SchoolTeacherProfile />} />
       <Route path="settings" element={<SchoolTeacherSettings />} />
       <Route path="notifications" element={<SchoolTeacherNotifications />} />
