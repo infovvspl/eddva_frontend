@@ -786,7 +786,7 @@ const LoginPage = () => {
                         subtitle: "Real-time analytics and insights",
                         bgColor: "#EFF6FF",
                         src: login3,
-                        icons: [-
+                        icons: [
                           { icon: BarChart2, label: "Analytics" },
                           { icon: FileText, label: "Reports" },
                           { icon: CheckCircle2, label: "Completed" },
