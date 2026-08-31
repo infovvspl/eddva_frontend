@@ -126,14 +126,14 @@ function DoubtCard({ doubt, onHelpful, escalating }) {
               <div className="space-y-4">
                 {viewMode === 'brief' && (
                   <MarkdownRenderer
-                    content={parsedAi.brief?.answer || parsedAi.detailed?.solution || ''}
+                    content={parsedAi.brief?.final_answer || parsedAi.detailed?.explanation || ''}
                     className="prose-slate max-w-none prose-sm"
                   />
                 )}
                 {viewMode === 'detailed' && (
                   <>
                     <MarkdownRenderer
-                      content={parsedAi.detailed?.solution || ''}
+                      content={parsedAi.detailed?.explanation || ''}
                       className="prose-slate max-w-none prose-sm"
                     />
                     {parsedAi.detailed?.final_answer && (

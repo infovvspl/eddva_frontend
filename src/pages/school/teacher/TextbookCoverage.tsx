@@ -38,6 +38,14 @@ type Row = {
 type RunStatus = {
   status: string; total: number; done: number;
   succeeded: number; failed: number; lastChapter: string | null;
+  // Which chapter is being read right now (distinct from lastChapter, the most
+  // recently *finished* one), and how far its own page-by-page OCR pass has
+  // gotten — only populated while that chapter needs the slow vision-transcribe
+  // path, which is the only part of indexing a single book takes long enough
+  // to need a progress bar of its own.
+  currentChapter?: string | null;
+  currentPagesDone?: number | null;
+  currentPagesTotal?: number | null;
 } | null;
 
 /** The four states a chapter can be in, in the order a school works through them. */
@@ -322,7 +330,13 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
             </span>
             <div className="flex items-center gap-3">
               <span className="hidden text-xs text-brand-600 dark:text-brand-400 sm:inline">
-                {run.lastChapter ? `Last: ${run.lastChapter}` : 'Starting…'}
+                {run.currentChapter
+                  ? `Reading "${run.currentChapter}"${
+                      run.currentPagesTotal ? ` — page ${run.currentPagesDone ?? 0} of ${run.currentPagesTotal}` : ''
+                    }`
+                  : run.lastChapter
+                    ? `Last: ${run.lastChapter}`
+                    : 'Starting…'}
               </span>
               {run.total > 1 && (
                 <button
@@ -343,6 +357,23 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
               style={{ width: `${run.total ? (run.done / run.total) * 100 : 0}%` }}
             />
           </div>
+
+          {/* This book's own progress — only shown once the current chapter's slow
+              (scanned-page) OCR pass has published a page count. A chapter with a
+              normal text layer never reaches this: it's read in one fast pass. */}
+          {!!run.currentPagesTotal && (
+            <div className="mt-2 flex items-center gap-2">
+              <div className="h-1 flex-1 overflow-hidden rounded-full bg-brand-100/70 dark:bg-brand-900/60">
+                <div
+                  className="h-full rounded-full bg-brand-400 transition-all"
+                  style={{ width: `${Math.min(100, ((run.currentPagesDone ?? 0) / run.currentPagesTotal) * 100)}%` }}
+                />
+              </div>
+              <span className="shrink-0 text-[11px] tabular-nums text-brand-600 dark:text-brand-400">
+                {run.currentPagesDone ?? 0}/{run.currentPagesTotal} pages
+              </span>
+            </div>
+          )}
         </div>
       )}
 

@@ -80,9 +80,12 @@ export default function Layout() {
     });
   }, [isAdminPath, isSuperAdmin, hasTeacherRole, hasInstituteAdminRole, user?.id]);
 
-  const isDashboard = location.pathname === '/school/admin' || location.pathname === '/school/admin/' || location.pathname === '/school/teacher' || location.pathname === '/school/super-admin';
-
-  const isFullWidthPage = isDashboard || [
+  // Dashboard pages (institute-admin, teacher, super-admin) don't add their own
+  // horizontal padding -- they rely on <main> for it, same as every other
+  // non-full-width page. They used to be swept into isFullWidthPage below,
+  // which zeroes <main>'s padding and left their content flush against the
+  // sidebar with no gap.
+  const isFullWidthPage = [
     '/communication',
     '/communications',
     '/audit-logs',

@@ -916,11 +916,11 @@ function ChapterNode({
           </span>
           {chapter.indexed && (
             <span
-              title="This chapter's textbook is indexed — AI content (notes, PPT, papers) can be grounded in the book."
+              title="This chapter's textbook is trained — AI content (notes, PPT, papers) can be grounded in the book."
               className="ml-1.5 inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
             >
               <span className="h-1 w-1 rounded-full bg-current" />
-              Indexed
+              Trained
             </span>
           )}
         </button>
