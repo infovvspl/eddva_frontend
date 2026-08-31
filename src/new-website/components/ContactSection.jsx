@@ -1,0 +1,349 @@
+// ContactSection.jsx — /new-website/contact
+//
+// The form posts to the platform's real lead endpoint: POST
+// /tenants/public/leads (LeadsController, unauthenticated and rate-limited,
+// written for exactly this — "public Request a Demo capture"). It goes through
+// the existing src/lib/api/leads.ts helper, so submissions land in the
+// super-admin Leads screen at /super-admin/leads.
+//
+// Field names and limits mirror CreateLeadDto: name 120, email 200, phone 40,
+// organization 160, interestedFeature 120, message 2000. `vertical` is the
+// backend's SCHOOL | COACHING enum, inferred from the interest picker.
+//
+// If the request fails the form says so and offers the mailto: fallback rather
+// than pretending the message went through.
+//
+// Phone, email and address are the same values the footer publishes.
+
+import { useState } from "react";
+import { Phone, Mail, MapPin, Clock, Send, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { submitLead } from "../../lib/api/leads";
+
+const CONTACT_EMAIL = "info@eddva.com";
+
+const details = [
+  {
+    id: "nw-contact-phone",
+    Icon: Phone,
+    label: "Call us",
+    value: "+91 79780 73201",
+    href: "tel:+917978073201",
+    accent: "#1a56db",
+    bg: "#eff6ff",
+  },
+  {
+    id: "nw-contact-mail",
+    Icon: Mail,
+    label: "Email us",
+    value: CONTACT_EMAIL,
+    href: `mailto:${CONTACT_EMAIL}`,
+    accent: "#7c3aed",
+    bg: "#f5f3ff",
+  },
+  {
+    id: "nw-contact-address",
+    Icon: MapPin,
+    label: "Visit us",
+    value: "Bhubaneswar, Odisha, India",
+    href: null,
+    accent: "#16a34a",
+    bg: "#f0fdf4",
+  },
+  {
+    id: "nw-contact-hours",
+    Icon: Clock,
+    label: "Office hours",
+    value: "Monday to Saturday, 10am – 7pm",
+    href: null,
+    accent: "#0891b2",
+    bg: "#ecfeff",
+  },
+];
+
+// `vertical` maps onto the backend's LeadVertical enum where the choice implies
+// one; the rest submit without a vertical.
+const interests = [
+  { label: "A demo for my school",    vertical: "SCHOOL" },
+  { label: "A demo for my institute", vertical: "COACHING" },
+  { label: "Pricing and plans",       vertical: null },
+  { label: "Partnership",             vertical: null },
+  { label: "Something else",          vertical: null },
+];
+
+const LIMITS = { name: 120, email: 200, phone: 40, institution: 160, message: 2000 };
+
+const EMPTY = {
+  name: "",
+  institution: "",
+  email: "",
+  phone: "",
+  interest: interests[0].label,
+  message: "",
+};
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const PHONE_RE = /^[+\d][\d\s\-()]{6,}$/;
+
+/** Returns a message for each invalid field; an empty object means valid. */
+const validate = form => {
+  const errors = {};
+  if (!form.name.trim()) errors.name = "Please tell us your name.";
+  else if (form.name.length > LIMITS.name) errors.name = `Keep this under ${LIMITS.name} characters.`;
+
+  if (!form.email.trim()) errors.email = "We need an email to reply to.";
+  else if (!EMAIL_RE.test(form.email.trim())) errors.email = "That does not look like a valid email address.";
+
+  if (form.phone.trim() && !PHONE_RE.test(form.phone.trim()))
+    errors.phone = "Use digits, spaces and + only.";
+
+  if (form.institution.length > LIMITS.institution)
+    errors.institution = `Keep this under ${LIMITS.institution} characters.`;
+
+  if (!form.message.trim()) errors.message = "Tell us a little about what you need.";
+  else if (form.message.length > LIMITS.message)
+    errors.message = `Keep this under ${LIMITS.message} characters.`;
+
+  return errors;
+};
+
+const ContactSection = () => {
+  const [form, setForm] = useState(EMPTY);
+  const [touched, setTouched] = useState({});
+  const [status, setStatus] = useState("idle"); // idle | sending | sent | error
+
+  const errors = validate(form);
+  const isValid = Object.keys(errors).length === 0;
+  // An error only shows once the field has been left, or after a failed submit
+  const showError = field => (touched[field] || status === "error") && errors[field];
+
+  const update = field => event =>
+    setForm(prev => ({ ...prev, [field]: event.target.value }));
+  const blur = field => () =>
+    setTouched(prev => ({ ...prev, [field]: true }));
+
+  const handleSubmit = async event => {
+    event.preventDefault();
+    if (!isValid) {
+      setTouched(Object.fromEntries(Object.keys(EMPTY).map(k => [k, true])));
+      return;
+    }
+    setStatus("sending");
+    try {
+      await submitLead({
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim() || undefined,
+        organization: form.institution.trim() || undefined,
+        vertical: interests.find(i => i.label === form.interest)?.vertical || undefined,
+        interestedFeature: form.interest,
+        message: form.message.trim(),
+        source: "new-website/contact",
+      });
+      setStatus("sent");
+      setForm(EMPTY);
+      setTouched({});
+    } catch {
+      setStatus("error");
+    }
+  };
+
+  const field = (name, label, input) => (
+    <label className={`nw-contactp__field${showError(name) ? " nw-contactp__field--bad" : ""}`}>
+      {input}
+      <span className="nw-contactp__label">{label}</span>
+      {showError(name) && (
+        <span className="nw-contactp__error" role="alert">
+          <AlertCircle size={13} strokeWidth={2.2} />
+          {errors[name]}
+        </span>
+      )}
+    </label>
+  );
+
+  return (
+    <section className="nw-contactp" id="nw-contact-page">
+      <div className="nw-contactp__container">
+
+        <header className="nw-contactp__header">
+          <h2 className="nw-contactp__heading">Talk to the EDDVA Team</h2>
+          <p className="nw-contactp__lead">
+            Tell us about your institution and we will show you exactly how
+            EDDVA fits — academics, administration and analytics in one place.
+          </p>
+        </header>
+
+        <div className="nw-contactp__grid">
+
+          {/* LEFT — how to reach us */}
+          <div className="nw-contactp__details">
+            {details.map(({ id, Icon, label, value, href, accent, bg }) => (
+              <div
+                className="nw-contactp__detail"
+                key={id}
+                id={id}
+                style={{ "--nw-contact-accent": accent }}
+              >
+                <span
+                  className="nw-contactp__detail-icon"
+                  style={{ background: bg, color: accent }}
+                  aria-hidden="true"
+                >
+                  <Icon size={20} strokeWidth={1.8} />
+                </span>
+                <div className="nw-contactp__detail-copy">
+                  <span className="nw-contactp__detail-label">{label}</span>
+                  {href ? (
+                    <a href={href} className="nw-contactp__detail-value">{value}</a>
+                  ) : (
+                    <span className="nw-contactp__detail-value">{value}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* RIGHT — enquiry form */}
+          <form className="nw-contactp__form" id="nw-contact-form" onSubmit={handleSubmit} noValidate>
+            <div className="nw-contactp__row">
+              {field("name", "Your name",
+                <input
+                  className="nw-contactp__input"
+                  id="nw-contact-name"
+                  type="text"
+                  placeholder=" "
+                  maxLength={LIMITS.name}
+                  value={form.name}
+                  onChange={update("name")}
+                  onBlur={blur("name")}
+                  aria-invalid={Boolean(showError("name"))}
+                />
+              )}
+              {field("institution", "Institution",
+                <input
+                  className="nw-contactp__input"
+                  id="nw-contact-institution"
+                  type="text"
+                  placeholder=" "
+                  maxLength={LIMITS.institution}
+                  value={form.institution}
+                  onChange={update("institution")}
+                  onBlur={blur("institution")}
+                  aria-invalid={Boolean(showError("institution"))}
+                />
+              )}
+            </div>
+
+            <div className="nw-contactp__row">
+              {field("email", "Email",
+                <input
+                  className="nw-contactp__input"
+                  id="nw-contact-email"
+                  type="email"
+                  placeholder=" "
+                  maxLength={LIMITS.email}
+                  value={form.email}
+                  onChange={update("email")}
+                  onBlur={blur("email")}
+                  aria-invalid={Boolean(showError("email"))}
+                />
+              )}
+              {field("phone", "Phone",
+                <input
+                  className="nw-contactp__input"
+                  id="nw-contact-phone-field"
+                  type="tel"
+                  placeholder=" "
+                  maxLength={LIMITS.phone}
+                  value={form.phone}
+                  onChange={update("phone")}
+                  onBlur={blur("phone")}
+                  aria-invalid={Boolean(showError("phone"))}
+                />
+              )}
+            </div>
+
+            {/* A select always has a value, so its label sits raised permanently */}
+            <label className="nw-contactp__field nw-contactp__field--filled">
+              <select
+                className="nw-contactp__input nw-contactp__select"
+                id="nw-contact-interest"
+                value={form.interest}
+                onChange={update("interest")}
+              >
+                {interests.map(({ label }) => (
+                  <option key={label} value={label}>{label}</option>
+                ))}
+              </select>
+              <span className="nw-contactp__label">I am interested in</span>
+            </label>
+
+            {field("message", "Message",
+              <textarea
+                className="nw-contactp__input nw-contactp__textarea"
+                id="nw-contact-message"
+                rows={5}
+                placeholder=" "
+                maxLength={LIMITS.message}
+                value={form.message}
+                onChange={update("message")}
+                onBlur={blur("message")}
+                aria-invalid={Boolean(showError("message"))}
+              />
+            )}
+            <span className="nw-contactp__counter">
+              {form.message.length} / {LIMITS.message}
+            </span>
+
+            <div className="nw-contactp__actions">
+              <button
+                className="nw-contactp__submit"
+                id="nw-contact-submit"
+                type="submit"
+                disabled={!isValid || status === "sending"}
+              >
+                {status === "sending" ? (
+                  <>
+                    <Loader2 size={16} strokeWidth={2.2} className="nw-contactp__spin" />
+                    Sending…
+                  </>
+                ) : (
+                  <>
+                    <Send size={16} strokeWidth={2.2} />
+                    Send enquiry
+                  </>
+                )}
+              </button>
+              {!isValid && Object.keys(touched).length > 0 && (
+                <span className="nw-contactp__hint">Fill the highlighted fields to send.</span>
+              )}
+            </div>
+
+            {status === "sent" && (
+              <p className="nw-contactp__note nw-contactp__note--ok" role="status">
+                <CheckCircle2 size={17} strokeWidth={2.2} />
+                Thanks — your enquiry is with the team. We usually reply within
+                one working day.
+              </p>
+            )}
+
+            {status === "error" && (
+              <p className="nw-contactp__note nw-contactp__note--bad" role="alert">
+                <AlertCircle size={17} strokeWidth={2.2} />
+                <span>
+                  That did not go through. Please try again, or write to{" "}
+                  <a href={`mailto:${CONTACT_EMAIL}`} className="nw-contactp__note-link">
+                    {CONTACT_EMAIL}
+                  </a>{" "}
+                  directly.
+                </span>
+              </p>
+            )}
+          </form>
+
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default ContactSection;
