@@ -38,7 +38,8 @@ function parseAiAnswer(raw: string | null | undefined): string {
   try {
     const obj = JSON.parse(str);
     if (obj && typeof obj === 'object') {
-      return obj.detailed?.solution || obj.brief?.answer || obj.explanation || raw;
+      // Backend keys: brief.final_answer / detailed.explanation (NOT answer/solution).
+      return obj.brief?.final_answer || obj.detailed?.explanation || obj.explanation || raw;
     }
   } catch (e) {}
   return raw;
@@ -117,14 +118,14 @@ function DoubtHistoryCard({ hd }: { hd: any }) {
               <div className="space-y-3">
                 {viewMode === "brief" && (
                   <MarkdownRenderer
-                    content={parsedAi.brief?.answer || parsedAi.detailed?.solution || ""}
+                    content={parsedAi.brief?.final_answer || parsedAi.detailed?.explanation || ""}
                     className="prose-slate max-w-none prose-sm"
                   />
                 )}
                 {viewMode === "detailed" && (
                   <>
                     <MarkdownRenderer
-                      content={parsedAi.detailed?.solution || ""}
+                      content={parsedAi.detailed?.explanation || ""}
                       className="prose-slate max-w-none prose-sm"
                     />
                     {parsedAi.detailed?.final_answer && (
@@ -544,7 +545,7 @@ export function SchoolAskDoubtPanel({
                               return (
                                 <>
                                   <MarkdownRenderer
-                                    content={obj.detailed?.solution || ''}
+                                    content={obj.detailed?.explanation || ''}
                                     className="prose-slate max-w-none prose-sm"
                                   />
                                   {obj.detailed?.final_answer && (
