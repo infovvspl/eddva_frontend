@@ -161,6 +161,40 @@ function replaceNewlinesOutsideMath(text: string): string {
         
         result += lines[k];
         if (k < lines.length - 1) {
+          // Preserve Markdown tables. A table row ends with "|", which the
+          // operator test below treats as a line-continuation \u2014 that joined every
+          // row onto one line, so remark-gfm could not parse it and the raw pipes
+          // showed as text. Keep a plain newline between consecutive rows, and a
+          // blank line when entering/leaving the table so the block is recognized.
+          const isTableRow = (s: string) => /^\|.*\|$/.test(s.trim());
+          const curIsRow = isTableRow(currentLine);
+          const nextIsRow = isTableRow(nextLine);
+          if (curIsRow || nextIsRow) {
+            result += curIsRow !== nextIsRow ? "\n\n" : "\n";
+            continue;
+          }
+
+          // Preserve headings and bullet lists. A bullet line starts with "-",
+          // which the operator test below caught as a continuation \u2014 so every
+          // "- Definition / - Notation / - Example" bullet was folded up into the
+          // heading above it and the whole block rendered as one bold heading.
+          // Headings are their own block; give a bullet list a blank line before
+          // its first item and a single newline between consecutive items.
+          const isBullet = (s: string) => /^[-*+]\s+/.test(s);
+          const isHeading = (s: string) => /^#{1,6}\s+/.test(s);
+          if (isHeading(currentLine) || isHeading(nextLine)) {
+            result += "\n\n";
+            continue;
+          }
+          if (isBullet(nextLine)) {
+            result += isBullet(currentLine) ? "\n" : "\n\n";
+            continue;
+          }
+          if (isBullet(currentLine)) {
+            result += "\n\n";
+            continue;
+          }
+
           const endsWithOperator = /[+\-/=,\\&|]$/.test(currentLine) || /^[+=><\u2212\u2013-]{1,3}$/.test(currentLine);
           const startsWithOperator = /^[+\/=)\]},=>\u2212\u2013-]/.test(nextLine) || /^-[^ ]/.test(nextLine) || /^\(\d+\)\s*[+\-/=]/.test(nextLine);
           // Don't insert double-newlines after lone question numbers (e.g. "1." or "Q1.") or option tags
@@ -186,6 +220,46 @@ function replaceNewlinesOutsideMath(text: string): string {
     displayParts[i] = inlineParts.join("$");
   }
   return displayParts.join("$$");
+}
+
+const _SUB_SUP_TAG_RE = /<su[bp]>[^<]*<\/su[bp]>/gi;
+const _IDENT_OR_TAG_RE = /(?:[A-Za-zΑ-ωÀ-ÿ0-9()]|<su[bp]>[^<]*<\/su[bp]>)*<su[bp]>[^<]*<\/su[bp]>(?:[A-Za-zΑ-ωÀ-ÿ0-9()]|<su[bp]>[^<]*<\/su[bp]>)*/g;
+
+/**
+ * Some LLM output uses literal HTML <sub>/<sup> tags for subscripts and
+ * superscripts (e.g. "K<sub>f</sub>") instead of LaTeX. This renderer has no
+ * rehype-raw plugin, so raw HTML is never interpreted — it shows up as
+ * literal visible text ("K<sub>f</sub>") instead of an actual subscript.
+ * Convert each contiguous run of identifier characters + <sub>/<sup> tags
+ * (e.g. "K<sub>f</sub>" or "C<sub>6</sub>H<sub>12</sub>O<sub>6</sub>") into a
+ * single LaTeX span ("$K_{f}$"), keeping multi-tag runs like chemical
+ * formulas in ONE $...$ span rather than fragmenting into adjacent spans
+ * (which can otherwise collide into an accidental "$$" display-math boundary).
+ */
+function convertHtmlSubSupToLatex(text: string): string {
+  if (!_SUB_SUP_TAG_RE.test(text)) return text;
+  _SUB_SUP_TAG_RE.lastIndex = 0;
+  return text.replace(_IDENT_OR_TAG_RE, (run) => {
+    const latex = run
+      .replace(/<sub>([^<]*)<\/sub>/gi, "_{$1}")
+      .replace(/<sup>([^<]*)<\/sup>/gi, "^{$1}");
+    return `$${latex}$`;
+  });
+}
+
+const _MATH_TOKEN = String.raw`[A-Za-zΑ-ωÀ-ÿ]+(?:[_^](?:\{[^{}]*\}|[A-Za-z0-9]+))+`;
+const _COMMA_BETWEEN_MATH_TOKENS_RE = new RegExp(`(${_MATH_TOKEN}),(${_MATH_TOKEN})`, "g");
+
+/**
+ * A comma with NO surrounding whitespace directly between two
+ * subscripted/superscripted math tokens (e.g. "x_i,P_i^{\circ}") is not a
+ * real list separator — written prose always has "x, y" with a space after
+ * the comma. This shape is what a spoken pause transcribed as a literal
+ * comma looks like once carried through into a formula that should have used
+ * multiplication (x_i · P_i°). Convert it to \cdot.
+ */
+function fixCommaBetweenMathTokens(text: string): string {
+  return text.replace(_COMMA_BETWEEN_MATH_TOKENS_RE, "$1 \\cdot $2");
 }
 
 function normalizeBrokenMathText(text: string): string {
@@ -226,6 +300,30 @@ function unwrapMathCodeSpans(text: string): string {
   });
 }
 
+/**
+ * LaTeX/KaTeX only subscripts (or superscripts) a SINGLE character after
+ * "_"/"^" unless it's wrapped in {}. "C_total" therefore renders as "C" with
+ * subscript "t", followed by normal-size "otal" immediately after — the
+ * model writes multi-letter subscript labels (total, max, avg, atm, eq...)
+ * without braces. Restricted to letters-only tokens (2+ letters, no digits)
+ * so this never touches coefficient notation like "a_1x" (subscript is just
+ * the digit "1"; "x" is a separate term multiplied by it, not part of the
+ * subscript) or chemical formulas like "H_2O" (subscript "2", then "O").
+ * Applied only inside $...$/$$...$$ math spans — a bare "_" in plain prose
+ * is Markdown italic syntax, not a subscript.
+ */
+function wrapMultiLetterSubSup(text: string): string {
+  const fixSegment = (segment: string) =>
+    segment.replace(/([_^])([A-Za-z]{2,})/g, "$1{$2}");
+  return text
+    .split("$$")
+    .map((seg, i) => {
+      if (i % 2 !== 0) return fixSegment(seg);
+      return seg.split("$").map((s, j) => (j % 2 !== 0 ? fixSegment(s) : s)).join("$");
+    })
+    .join("$$");
+}
+
 function wrapStandaloneSubscriptVariables(text: string): string {
   return text
     .split("$")
@@ -249,22 +347,25 @@ function wrapFullEquationLines(text: string): string {
       const hasEquals = /[=]/.test(trimmed);
       const hasUnicodeMathRel = /[\u2260\u2264\u2265\u2248]/.test(trimmed);
       if (!hasEquals && !hasUnicodeMathRel) return line;
-      // Allow ASCII math chars + Unicode math relations/symbols
-      if (!/^[A-Za-z0-9_{}^()[\].=+\-*/\\\s\u2260\u2264\u2265\u2248\u2212\u00B2\u00B3\u2070-\u2079\u207F]+$/.test(trimmed)) return line;
+      // Allow ASCII math chars + Unicode math relations/symbols (incl. \u00D7 \u00F7 \u00B7)
+      if (!/^[A-Za-z0-9_{}^()[\].,=+\-*/\\\s\u2260\u2264\u2265\u2248\u2212\u00D7\u00F7\u00B7\u00B2\u00B3\u2070-\u2079\u207F]+$/.test(trimmed)) return line;
 
       const startsLikeEquation = /^[A-Za-z]{1,4}(?:_[A-Za-z0-9]{1,4})?(?:\s*[=\u2260\u2264\u2265]|\^)/.test(trimmed);
       const hasRepeatedEquals = (trimmed.match(/=/g) ?? []).length >= 2;
-      const hasMathOperator = /(?:\\cdot|[+\-*/^_\u2260\u2264\u2265\u2248])/.test(trimmed);
+      const hasMathOperator = /(?:\\cdot|[+\-*/^_\u2260\u2264\u2265\u2248\u00D7\u00F7\u00B7])/.test(trimmed);
       if (!startsLikeEquation || (!hasRepeatedEquals && !hasMathOperator)) return line;
 
       const prefix = line.match(/^\s*/)?.[0] ?? "";
       const suffix = line.match(/\s*$/)?.[0] ?? "";
-      // Convert Unicode math relations to LaTeX equivalents inside the math block
+      // Convert Unicode math relations/operators to LaTeX equivalents in the block
       const latexTrimmed = trimmed
         .replace(/\u2260/g, "\\neq ")
         .replace(/\u2264/g, "\\leq ")
         .replace(/\u2265/g, "\\geq ")
-        .replace(/\u2248/g, "\\approx ");
+        .replace(/\u2248/g, "\\approx ")
+        .replace(/\u00D7/g, " \\times ")
+        .replace(/\u00F7/g, " \\div ")
+        .replace(/\u00B7/g, " \\cdot ");
       return `${prefix}$${latexTrimmed}$${suffix}`;
     })
     .join("\n");
@@ -506,6 +607,10 @@ export const formatMarkdown = (text?: string) => {
   let formatted = text
     // 1. Unescape double-escaped backslashes from JSON payloads
     .replace(/\\\\/g, "\\")
+    // 1b. Unescape dollar delimiters (\$ -> $). Models and JSON transport
+    // sometimes emit "\$formula\$"; remark-math ignores an escaped dollar, so the
+    // formula rendered as literal "$…$" text with raw \times / \quad commands.
+    .replace(/\\\$/g, "$")
     // 2. Restore form feeds and other control characters that might be mangled backslash sequences
     .replace(/\x0C/g, "\\f")
     .replace(/\x0B/g, "\\v")
@@ -516,6 +621,54 @@ export const formatMarkdown = (text?: string) => {
     .replace(/\\\(/g, "$").replace(/\\\)/g, "$")
     // 4. Keep carriage returns as simple newlines
     .replace(/\\n(?![a-zA-Z])/g, "\n");
+
+  // 4b. Convert literal HTML <sub>/<sup> tags to LaTeX before any other math
+  // detection runs, so downstream heuristics see a normal $...$ span instead
+  // of raw HTML.
+  formatted = convertHtmlSubSupToLatex(formatted);
+
+  // 4c. Fix a comma standing in for multiplication between two math tokens
+  // (e.g. "x_i,P_i^{\circ}" -> "x_i \cdot P_i^{\circ}").
+  formatted = fixCommaBetweenMathTokens(formatted);
+
+  // Protect GFM table blocks from every math/line heuristic below. A table row
+  // ends in "|", which the line-continuation logic reads as a math continuation
+  // and folds all rows onto one line — remark-gfm then shows raw pipes. Pull each
+  // table out to a placeholder, run all normalisation, then reinsert verbatim.
+  const tableBlocks: string[] = [];
+  formatted = formatted.replace(
+    /(?:^|\n)[ \t]*(\|[^\n]+\|[ \t]*\n[ \t]*\|[ \t]*:?-+[-:|\t ]*\|[ \t]*(?:\n[ \t]*\|[^\n]+\|[ \t]*)*)/g,
+    (_m, block: string) => {
+      const normalized = block
+        .trim()
+        .split(/\r?\n/)
+        .map((r) => r.trim())
+        .join("\n");
+      tableBlocks.push(normalized);
+      return `\n\nTABLEBLOCKTOKEN${tableBlocks.length - 1}ENDTABLEBLOCK\n\n`;
+    },
+  );
+
+  // Split inline MCQ options onto their own lines. Models emit "A. x B. y C. z
+  // D. w" inconsistently — sometimes all on one line — which reads as a jumble
+  // (the old splitter used a case-insensitive class that broke whenever an option
+  // contained a lowercase a–d, e.g. "cm" or "a²b³"). Done before math wrapping,
+  // and only when A + B + C labels share a line, so a single "A." option or prose
+  // like "Vitamin A … B …" / "Section A … B …" is left untouched.
+  formatted = formatted
+    .split("\n")
+    .map((line) => {
+      if (
+        /(^|\s)A[.):]\s/.test(line) &&
+        /\sB[.):]\s/.test(line) &&
+        /\sC[.):]\s/.test(line) &&
+        !/\b(?:Section|Part|Group|Chapter|Unit|consists|questions)\b/.test(line)
+      ) {
+        return line.replace(/\s+([B-E])([.):])\s+/g, "\n$1$2 ");
+      }
+      return line;
+    })
+    .join("\n");
 
   formatted = unwrapMathCodeSpans(formatted);
 
@@ -537,8 +690,21 @@ export const formatMarkdown = (text?: string) => {
   formatted = formatted.replace(/\$\$\$\$/g, "$$").replace(/\$\$\$/g, "$$");
 
   // ── Step 1: Strip stray $ signs that appear inside prose function call arguments
-  // e.g. LCM(306, $657) or $657) → removes the stray $ before digits followed by ) or ,
-  formatted = formatted.replace(/\$(\d+)([),])/g, "$1$2");
+  // e.g. LCM(306, $657) or $657) → but ONLY when not already inside a $...$ span
+  // We protect existing math by tokenising on $ boundaries (even-indexed segments are prose).
+  formatted = formatted
+    .split("$$")
+    .map((segment, i) => {
+      if (i % 2 !== 0) return segment; // inside $$...$$
+      return segment
+        .split("$")
+        .map((s, j) => {
+          if (j % 2 !== 0) return s; // inside $...$
+          return s.replace(/\$(\d+)([),])/g, "$1$2");
+        })
+        .join("$");
+    })
+    .join("$$");
   // Strip orphan $ = $ or $=$ patterns (dollar-wrapped equals signs): $=$ → =
   formatted = formatted.replace(/\$\s*=\s*\$/g, " = ");
 
@@ -682,11 +848,11 @@ export const formatMarkdown = (text?: string) => {
 
   formatted = replaceNewlinesOutsideMath(formatted);
 
-  // Separate adjacent inline math blocks that are on the same line separated only by spaces.
-  // remark-math fails to parse two $...$ blocks on the same line — inserting \n\n between
-  // them makes each its own paragraph which remark-math handles correctly.
-  // e.g. $LCM(...)$ $HCF(...)$ → $LCM(...)$\n\n$HCF(...)$
-  formatted = formatted.replace(/(\$)[ \t]+(\$)/g, '$1\n\n$2');
+  // Separate adjacent inline math blocks that are on the same line separated only by spaces,
+  // but only with a soft break (two spaces + newline) to keep them inline inside the same paragraph.
+  // Paragraph breaks (\n\n) between them caused each $...$ to become its own block element.
+  // e.g. $LCM(...)$ $HCF(...)$ → $LCM(...)$  \n$HCF(...)$
+  formatted = formatted.replace(/(\$)[ \t]+(\$)/g, '$1  \n$2');
 
   // Pull standalone question numbers onto the same line as question text AFTER newlines normalization
   const pullRegex = /((?:^|\n)\s*(?:Q\s*)?\d{1,3}[.)])\s*(?:\r?\n)+\s*(?!(?:[A-E][.):]\s*|\([A-E]\)\s*|Q?\d{1,3}[.)]\s*|#{1,6}\s|[-*+]\s))/gi;
@@ -742,6 +908,7 @@ export const formatMarkdown = (text?: string) => {
     .replace(/\\text\{\\frac\{([A-Za-z0-9_]+)\}\{([a-z]+)\}\}/g, "$1_{($2)}")
     .replace(/\\text\{([A-Za-z0-9_]+)\}\s*\/([a-z]+)/g, "$1($2)")
     .replace(/\\text\{([A-Za-z0-9_]+)\}\s*\/\s*\(([^)]+)\)/g, "$1($2)")
+    .replace(/\\text\{\s*[_.\-]{2,}\s*\}/g, "\\underline{\\quad\\quad}")
     .replace(/\\text\{([^}]+)\}/g, "$1");
 
   // Separate numbered observation headers and headings onto newlines - only when number is at start of a new line context
@@ -763,29 +930,46 @@ export const formatMarkdown = (text?: string) => {
   formatted = formatted
     .replace(/\blim\s*([a-zA-Z0-9]+)\s*(?:->|\\to)\s*([a-zA-Z0-9]+)\b/gi, "\\lim_{$1 \\to $2}");
 
-  // Convert division slashes to \frac{}{} where safe
-  // 1. (num) / (den) or [num] / [den]
-  formatted = formatted.replace(/(?:\(([^)]+)\)|\[([^\]]+)\])\s*\/\s*(?:\(([^)]+)\)|\[([^\]]+)\])/g, (match, p1, p2, p3, p4) => {
-    const num = p1 || p2;
-    const den = p3 || p4;
-    return `\\frac{${num}}{${den}}`;
-  });
-  // 2. (num) / den_word or [num] / den_word
-  formatted = formatted.replace(/(?:\(([^)]+)\)|\[([^\]]+)\])\s*\/\s*\b([a-zA-Z0-9]+)\b/g, (match, p1, p2, p3) => {
-    const num = p1 || p2;
-    return `\\frac{${num}}{${p3}}`;
-  });
-  // 3. num_word / (den) or num_word / [den]
-  formatted = formatted.replace(/\b([a-zA-Z0-9]+)\b\s*\/\s*(?:\(([^)]+)\)|\[([^\]]+)\])/g, (match, p1, p2, p3) => {
-    const den = p2 || p3;
-    return `\\frac{${p1}}{${den}}`;
-  });
-  // 4. simple term / simple term (to catch dy/dx, 1/2, x^2/y^2, p^2/q^2 safely)
-  // Protect chemical formulas / state indicators like Mg / (s) from fraction conversion
-  formatted = formatted.replace(/(^|[^a-zA-Z0-9_$])([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)\s*\/([ \t]*)([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)(?![\w$])/g, (match, prefix, num, space, den) => {
-    if (/^(?:[a-z]|aq|g|l|s)$/i.test(den.trim())) return match;
-    return `${prefix}\\frac{${num}}{${den.trim()}}`;
-  });
+  // Convert division slashes to \frac{}{} where safe.
+  // IMPORTANT: Only apply to prose segments outside existing $...$ math spans.
+  const applyFractionConversions = (prose: string): string => {
+    // 1. (num) / (den) or [num] / [den]
+    let s = prose.replace(/(?:\(([^)]+)\)|\[([^\]]+)\])\s*\/\s*(?:\(([^)]+)\)|\[([^\]]+)\])/g, (_m, p1, p2, p3, p4) => {
+      const num = p1 || p2;
+      const den = p3 || p4;
+      return `\\frac{${num}}{${den}}`;
+    });
+    // 2. (num) / den_word or [num] / den_word
+    s = s.replace(/(?:\(([^)]+)\)|\[([^\]]+)\])\s*\/\s*\b([a-zA-Z0-9]+)\b/g, (_m, p1, p2, p3) => {
+      const num = p1 || p2;
+      return `\\frac{${num}}{${p3}}`;
+    });
+    // 3. num_word / (den) or num_word / [den]
+    s = s.replace(/\b([a-zA-Z0-9]+)\b\s*\/\s*(?:\(([^)]+)\)|\[([^\]]+)\])/g, (_m, p1, p2, p3) => {
+      const den = p2 || p3;
+      return `\\frac{${p1}}{${den}}`;
+    });
+    // 4. simple term / simple term (dy/dx, 1/2, x^2/y^2, p^2/q^2, 1/1.033)
+    // Protect state indicators like Mg / (s), and common unit ratios like
+    // kg/mol, mol/L, J/mol — these are plain-text units, not math fractions,
+    // and rendering them as a stacked \frac{} produces mangled-looking output
+    // (e.g. "1.86 °C·kg/mol" turning into a broken fraction glyph).
+    // The decimal-number alternative must come FIRST in the token so a value
+    // like "1.033" matches whole — otherwise the [a-zA-Z0-9]{1,3} branch
+    // grabs just "1" (stopping at the decimal point) and the rest (".033")
+    // is left dangling as plain text right after the fraction.
+    const _FRACTION_TOKEN = String.raw`(?:\d+\.\d+|[a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)`;
+    s = s.replace(new RegExp(String.raw`(^|[^a-zA-Z0-9_$])(${_FRACTION_TOKEN})\s*/([ \t]*)(${_FRACTION_TOKEN})(?![\w$])`, "g"), (match, prefix, num, _space, den) => {
+      if (/^(?:[a-z]|aq|g|l|s|mol|atm|min|hr|cal|hz|kg|km|cm|mm|ml|kj)$/i.test(den.trim())) return match;
+      return `${prefix}\\frac{${num}}{${den.trim()}}`;
+    });
+    return s;
+  };
+  // Apply fraction conversions only to prose (outside $...$ spans)
+  formatted = formatted
+    .split("$$")
+    .map((seg, i) => i % 2 !== 0 ? seg : seg.split("$").map((s, j) => j % 2 !== 0 ? s : applyFractionConversions(s)).join("$"))
+    .join("$$");
 
   // Wrap chemical formulas with dots (e.g. Fe_2O_3 \cdot H_2O or (Fe_2O_3 . H_2O))
   //
@@ -800,7 +984,13 @@ export const formatMarkdown = (text?: string) => {
       const left = (leftSide || "").trim();
       // "A", "B", "C"\u2026 on their own are option labels, not compounds.
       const isSingleBareLetter = /^[A-Z]$/.test(left);
-      return isSingleBareLetter ? match : `${lead}$${formula}$`;
+      // A real hydrate/compound carries a subscript (H_2O) or an explicit \u22c5/\cdot
+      // dot. A plain period between all-caps words is a sentence boundary
+      // ("NATURE. Q2") \u2014 assessment papers are all-caps, so this used to fire on
+      // every one, wrapping prose in $\u2026$ and producing stray unmatched dollars.
+      const isRealCompound = /_/.test(formula) || /\\[cC]dot|\u22c5|\u2219/.test(formula);
+      if (isSingleBareLetter || !isRealCompound) return match;
+      return `${lead}$${formula}$`;
     }
   );
 
@@ -819,6 +1009,10 @@ export const formatMarkdown = (text?: string) => {
       ? wrapStructuredLatex(segment)
       : segment)
     .join("$");
+
+  // Brace multi-letter subscripts/superscripts inside math spans now that all
+  // equation-wrapping above is done (e.g. "C_total" -> "C_{total}").
+  formatted = wrapMultiLetterSubSup(formatted);
 
   // 7. Tokenize to protect already-formatted math blocks ($...$ and $$...$$) and markdown image tags (![...]())
   const tokenize = (text: string) => {
@@ -841,12 +1035,70 @@ export const formatMarkdown = (text?: string) => {
   };
 
   const tokens = tokenize(formatted);
-  formatted = tokens.map((t) => t.text).join("");
+  // Un-delimited LaTeX symbol commands sometimes leak into prose (e.g. the model
+  // writes "physically \cdot mixed" instead of a bullet). KaTeX never sees them
+  // because they are not wrapped in $…$, so they render as the literal text
+  // "\cdot". Only in prose tokens — never inside math/image tokens — swap the
+  // common symbol commands for their actual character.
+  const proseLatexSymbols: Array<[RegExp, string]> = [
+    [/\\cdot(?![a-zA-Z])/g, "·"],
+    [/\\times(?![a-zA-Z])/g, "×"],
+    [/\\div(?![a-zA-Z])/g, "÷"],
+    [/\\pm(?![a-zA-Z])/g, "±"],
+    [/\\rightarrow(?![a-zA-Z])/g, "→"],
+    [/\\leftarrow(?![a-zA-Z])/g, "←"],
+    [/\\to(?![a-zA-Z])/g, "→"],
+  ];
+  formatted = tokens
+    .map((t) => {
+      if (t.type !== "prose") return t.text;
+      let s = t.text;
+      for (const [re, sym] of proseLatexSymbols) s = s.replace(re, sym);
+      // Drop orphan brace-only lines left by broken LaTeX (e.g. a "{" on its own
+      // line from a \frac{…}/\text{…} group that lost its command). A real brace
+      // inside math was already consumed by KaTeX in a math token, so a lone "{"
+      // or "}" reaching prose is always an artifact.
+      s = s.replace(/(^|\n)[ \t]*[{}][ \t]*(?=\n|$)/g, "$1");
+      return s;
+    })
+    .join("");
 
-  return formatted
+  // Strip an orphaned code-span backtick left over from generation (e.g. a
+  // final-answer span like "`C_total = ...`" whose closing backtick got lost
+  // across a paragraph/chunk boundary during generation). unwrapMathCodeSpans
+  // above already consumed every genuinely PAIRED run of backticks, so any
+  // backtick run still present in a block by this point is either a
+  // legitimate, intentional inline-code span (which always comes in a pair —
+  // even count, left untouched) or a lone unpaired marker (odd count) that
+  // renders as a stray literal "`" character. Only the latter gets removed.
+  formatted = formatted
+    .split("\n\n")
+    .map((block) => {
+      const runs = block.match(/`+/g);
+      if (!runs || runs.length % 2 === 0) return block;
+      const last = block.lastIndexOf(runs[runs.length - 1]);
+      return block.slice(0, last) + block.slice(last + runs[runs.length - 1].length);
+    })
+    .join("\n\n");
+
+  formatted = formatted
     .replace(/\n{3,}/g, "\n\n")
     .replace(/[ \t]+/g, " ")
     .trim();
+
+  // Reinsert the protected tables verbatim, with blank lines around each so
+  // remark-gfm recognises them as table blocks.
+  if (tableBlocks.length) {
+    formatted = formatted.replace(
+      /TABLEBLOCKTOKEN(\d+)ENDTABLEBLOCK/g,
+      (_m, idx: string) => {
+        const block = tableBlocks[Number(idx)];
+        return block ? `\n\n${block}\n\n` : "";
+      },
+    );
+  }
+
+  return formatted;
 };
 
 const getTextContent = (children: any): string => {

@@ -327,39 +327,39 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
       <ArenaBackdrop />
       <ArenaFlash tone={flash} />
 
-      <div className={`relative z-10 mx-auto max-w-3xl space-y-5 py-2 ${shake ? 'qr-shake' : ''}`}>
+      <div className={`relative z-10 mx-auto max-w-6xl lg:max-w-7xl w-full pt-1 sm:pt-2 pb-6 ${shake ? 'qr-shake' : ''}`}>
         {/* ── Top HUD ─────────────────────────────────────────────────── */}
-        <ArenaPanel className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <div className="flex items-center gap-3">
+        <ArenaPanel className="flex flex-wrap items-center justify-between gap-4 px-6 py-3.5 shadow-xl">
+          <div className="flex items-center gap-4">
             <button
               type="button"
               onClick={onQuit}
               title="Quit game"
-              className="qr-chip border border-rose-400/30 bg-rose-500/10 p-2 text-rose-300 transition hover:bg-rose-500/25 hover:text-rose-100"
+              className="qr-chip border border-rose-400/30 bg-rose-500/10 p-2.5 text-rose-300 transition hover:bg-rose-500/25 hover:text-rose-100"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-4.5 w-4.5" />
             </button>
             <div className="leading-none">
-              <ArenaLabel tone="cyan" className="block">Quiz Rush</ArenaLabel>
-              <p className="qr-display mt-1 text-sm font-bold text-white">
-                Question <span className="text-cyan-300">{currentIdx + 1}</span>
-                <span className="text-slate-500"> / {localQuestions.length}</span>
+              <ArenaLabel tone="cyan" className="block text-xs">Quiz Rush</ArenaLabel>
+              <p className="qr-display mt-1 text-sm sm:text-base font-extrabold text-white">
+                Question <span className="text-cyan-300 text-base sm:text-lg font-black">{currentIdx + 1}</span>
+                <span className="text-slate-400 font-medium"> / {localQuestions.length}</span>
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             {/* Lives */}
-            <div className="qr-chip flex items-center gap-2 border border-white/10 bg-white/[0.03] px-3 py-2">
+            <div className="qr-chip flex items-center gap-2 border border-white/10 bg-white/[0.04] px-3.5 py-2">
               <div className="leading-none">
-                <ArenaLabel tone="muted" className="block">Lives</ArenaLabel>
-                <div className="mt-1.5 flex items-center gap-1">
+                <ArenaLabel tone="muted" className="block text-xs">Lives</ArenaLabel>
+                <div className="mt-1 flex items-center gap-1.5">
                   {Array.from({ length: 3 }).map((_, i) => (
                     <Heart
                       key={i}
-                      className={`h-3.5 w-3.5 transition-all duration-300 ${
+                      className={`h-4 w-4 transition-all duration-300 ${
                         i < lives
-                          ? 'fill-rose-500 text-rose-500 drop-shadow-[0_0_6px_rgba(244,63,94,0.9)]'
+                          ? 'fill-rose-500 text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.95)]'
                           : 'fill-transparent text-slate-700'
                       }`}
                     />
@@ -373,79 +373,78 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
           </div>
         </ArenaPanel>
 
-        {/* Tab-switch warning — the anti-cheat rule is only fair if the
-            student can see how close they are to tripping it. */}
+        {/* Tab-switch warning */}
         {tabSwitchesCount > 0 && (
-          <div className="qr-chip qr-rise flex items-center gap-2 border border-amber-400/30 bg-amber-500/10 px-4 py-2">
-            <ShieldAlert className="h-4 w-4 shrink-0 text-amber-300" />
-            <span className="qr-display text-[11px] font-bold uppercase tracking-wider text-amber-200">
+          <div className="qr-chip qr-rise mt-3 flex items-center gap-3 border border-amber-400/40 bg-amber-500/15 px-5 py-2.5 shadow-lg">
+            <ShieldAlert className="h-4.5 w-4.5 shrink-0 text-amber-300" />
+            <span className="qr-display text-xs sm:text-sm font-extrabold uppercase tracking-wider text-amber-200">
               Tab switch {tabSwitchesCount} / 3 — game ends on the third
             </span>
           </div>
         )}
 
         {/* ── Question board ──────────────────────────────────────────── */}
-        <ArenaPanel className="relative overflow-hidden p-6 sm:p-8">
+        <ArenaPanel className="relative overflow-hidden mt-3.5 sm:mt-4 p-6 sm:p-8 lg:p-10 min-h-[170px] sm:min-h-[190px] flex flex-col justify-center shadow-2xl">
           {/* Combo callout */}
           {combo !== null && (
-            <div className="pointer-events-none absolute inset-x-0 top-6 z-20 flex justify-center">
-              <div className="qr-combo qr-display text-3xl font-bold uppercase tracking-[0.12em] text-fuchsia-300 qr-neon--magenta">
+            <div className="pointer-events-none absolute inset-x-0 top-5 z-20 flex justify-center">
+              <div className="qr-combo qr-display text-3xl sm:text-4xl font-black uppercase tracking-[0.14em] text-fuchsia-300 qr-neon--magenta">
                 Combo ×{combo}
               </div>
             </div>
           )}
 
-          <div className="flex items-start justify-between gap-5">
-            <div className="min-w-0 flex-1 space-y-3">
-              <span className="qr-chip qr-display inline-block border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-300">
+          <div className="flex items-center justify-between gap-6">
+            <div className="min-w-0 flex-1 space-y-3.5">
+              <span className="qr-chip qr-display inline-block border border-cyan-400/40 bg-cyan-400/15 px-3.5 py-1 text-[11px] font-black uppercase tracking-[0.25em] text-cyan-300 shadow-md">
                 NCERT Challenge
               </span>
-              <h2 className="qr-read text-lg font-semibold leading-relaxed text-white sm:text-xl">
+              <h2 className="qr-read text-lg sm:text-2xl lg:text-3xl font-extrabold leading-snug text-white tracking-wide">
                 {currentQuestion.content}
               </h2>
               {currentQuestion.contentImageUrl && (
-                <div className="mt-4 max-h-[200px] overflow-hidden rounded-xl border border-white/10">
+                <div className="mt-4 max-h-[220px] overflow-hidden rounded-2xl border border-white/15 shadow-xl">
                   <img
                     src={currentQuestion.contentImageUrl}
                     alt="Question visual"
-                    className="max-h-[200px] object-contain"
+                    className="max-h-[220px] object-contain mx-auto"
                   />
                 </div>
               )}
             </div>
-            <ArenaTimer seconds={timeLeft} total={30} />
+            <ArenaTimer seconds={timeLeft} total={30} size={80} />
           </div>
 
           {/* Verdict */}
           {hasAnswered && (
             <div
-              className={`qr-chip qr-pop mt-6 flex items-center gap-3 border px-4 py-3 ${
+              className={`qr-chip qr-pop mt-6 flex items-center gap-3.5 border px-5 py-3.5 rounded-2xl shadow-xl ${
                 isCorrectChoice
-                  ? 'border-lime-400/40 bg-lime-400/10 qr-glow-lime'
-                  : 'border-rose-400/40 bg-rose-500/10 qr-glow-rose'
+                  ? 'border-lime-400/50 bg-lime-400/15 qr-glow-lime'
+                  : 'border-rose-400/50 bg-rose-500/15 qr-glow-rose'
               }`}
             >
               {isCorrectChoice ? (
                 <>
-                  <Check className="h-6 w-6 shrink-0 text-lime-300" />
+                  <Check className="h-7 w-7 shrink-0 text-lime-300" />
                   <div>
-                    <p className="qr-display text-sm font-bold uppercase tracking-wider text-lime-300">
+                    <p className="qr-display text-sm font-extrabold uppercase tracking-wider text-lime-300">
                       Correct · +10 XP
                     </p>
-                    <p className="qr-read text-xs font-medium text-lime-100/70">
+                    <p className="qr-read text-xs font-semibold text-lime-100/90 mt-0.5">
                       {30 - timeLeft <= 5 ? '⚡ Speed bonus — extra +5 XP!' : 'Nice one. Keep the run alive.'}
                     </p>
                   </div>
                 </>
               ) : (
                 <>
-                  <X className="h-6 w-6 shrink-0 text-rose-300" />
+                  <X className="h-7 w-7 shrink-0 text-rose-300" />
                   <div>
-                    <p className="qr-display text-sm font-bold uppercase tracking-wider text-rose-300">
+                    <p className="qr-display text-sm font-extrabold uppercase tracking-wider text-rose-300">
                       {selectedOptionId === '' ? "Time's up" : 'Incorrect'}
                     </p>
-                    <p className="qr-read text-xs font-medium text-rose-100/70">
-                      Answer: <strong className="text-white">{correctOption?.content}</strong>
+                    <p className="qr-read text-xs font-semibold text-rose-100/90 mt-0.5">
+                      Answer: <strong className="text-white font-bold">{correctOption?.content}</strong>
                     </p>
                   </div>
                 </>
@@ -455,22 +454,22 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
         </ArenaPanel>
 
         {/* ── Answer keys ─────────────────────────────────────────────── */}
-        <div className="qr-stagger grid gap-3 sm:grid-cols-2">
+        <div className="qr-stagger grid gap-6 sm:gap-8 lg:gap-10 xl:gap-12 sm:grid-cols-2 mt-8 sm:mt-12 lg:mt-16 xl:mt-20">
           {currentQuestion.options.map((option, index) => {
             const style = OPTION_STYLES[index % OPTION_STYLES.length];
             const isSelected = selectedOptionId === option.id;
             const isCorrect = option.isCorrect;
 
             let face = `bg-gradient-to-b ${style.face} text-white`;
-            let shadow = `0 5px 0 ${style.edge}, 0 0 22px ${style.glow}`;
+            let shadow = `0 5px 0 ${style.edge}, 0 0 24px ${style.glow}`;
 
             if (hasAnswered) {
               if (isCorrect) {
                 face = 'bg-gradient-to-b from-lime-400 to-lime-600 text-slate-950';
-                shadow = '0 5px 0 #3f6212, 0 0 34px rgba(163,230,53,0.75)';
+                shadow = '0 5px 0 #3f6212, 0 0 34px rgba(163,230,53,0.85)';
               } else if (isSelected) {
                 face = 'bg-gradient-to-b from-rose-500 to-rose-700 text-white';
-                shadow = '0 5px 0 #9f1239, 0 0 34px rgba(251,113,133,0.7)';
+                shadow = '0 5px 0 #9f1239, 0 0 34px rgba(251,113,133,0.8)';
               } else {
                 face = 'bg-white/[0.03] text-slate-600';
                 shadow = 'none';
@@ -484,21 +483,21 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
                 disabled={hasAnswered}
                 onClick={() => handleSelectOption(option.id)}
                 style={{ boxShadow: shadow }}
-                className={`qr-key flex items-center gap-3.5 p-4 text-left ${face} ${
-                  hasAnswered && !isCorrect && !isSelected ? 'opacity-40' : ''
+                className={`qr-key flex items-center gap-4 p-5 sm:p-6 text-left transition-all min-h-[85px] sm:min-h-[95px] ${face} ${
+                  hasAnswered && !isCorrect && !isSelected ? 'opacity-35' : ''
                 }`}
               >
                 <span
-                  className="qr-display flex h-9 w-9 shrink-0 items-center justify-center bg-black/25 text-lg leading-none"
+                  className="qr-display flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center bg-black/25 text-lg sm:text-xl font-black leading-none"
                   style={{ clipPath: 'polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px)' }}
                 >
                   {style.shape}
                 </span>
-                <span className="qr-read min-w-0 flex-1 text-sm font-semibold leading-snug">
+                <span className="qr-read min-w-0 flex-1 text-sm sm:text-base lg:text-lg font-bold leading-snug">
                   {option.content}
                 </span>
-                {/* Keyboard hint — hidden on touch, where it would be a lie. */}
-                <kbd className="qr-display hidden h-6 w-6 shrink-0 items-center justify-center rounded border border-white/25 bg-black/25 text-[11px] font-bold sm:inline-flex">
+                {/* Keyboard hint — hidden on touch */}
+                <kbd className="qr-display hidden h-7.5 w-7.5 shrink-0 items-center justify-center rounded-lg border border-white/30 bg-black/30 text-xs font-black shadow-inner sm:inline-flex">
                   {style.key}
                 </kbd>
               </button>

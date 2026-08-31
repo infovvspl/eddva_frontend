@@ -110,7 +110,7 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
   const isCorrectChoice = selectedOption?.isCorrect;
 
   return (
-    <div className="relative min-h-[80vh] rounded-3xl border border-sky-200/90 bg-gradient-to-b from-sky-50 via-sky-100/50 to-blue-50/60 text-slate-900 p-6 md:p-8 shadow-xl shadow-sky-500/10 overflow-hidden flex flex-col justify-between max-w-3xl mx-auto">
+    <div className="relative min-h-[80vh] rounded-3xl border border-sky-200/90 bg-gradient-to-b from-sky-50 via-sky-100/50 to-blue-50/60 text-slate-900 p-6 md:p-8 shadow-xl shadow-sky-500/10 overflow-hidden flex flex-col justify-between max-w-4xl mx-auto">
       {/* Background decoration */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#0284c712_1px,transparent_1px),linear-gradient(to_bottom,#0284c712_1px,transparent_1px)] bg-[size:16px_28px] pointer-events-none" />
       <div className="absolute -top-32 -right-32 w-80 h-80 rounded-full blur-[100px] pointer-events-none opacity-25 bg-sky-400" />
@@ -119,22 +119,22 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
       {/* Header HUD */}
       <div className="relative z-10 flex items-center justify-between border-b border-sky-200/80 pb-4">
         <div>
-          <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-sky-700 bg-sky-500/15 border border-sky-300/80 px-2.5 py-0.5 rounded-full">
-            <Compass className="h-3.5 w-3.5 animate-spin-slow text-sky-600" />
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest text-sky-700 bg-sky-500/15 border border-sky-300/80 px-3 py-1 rounded-full">
+            <Compass className="h-4 w-4 animate-spin-slow text-sky-600" />
             Checkpoint {stageOrder}
           </span>
-          <h2 className="text-lg font-black text-slate-900 mt-1">{stageName}</h2>
+          <h2 className="text-xl font-black text-slate-900 mt-1">{stageName}</h2>
         </div>
         <div className="text-right">
           <p className="text-xs font-semibold text-slate-500">Riddle Challenge</p>
-          <p className="text-sm font-black text-sky-800">
+          <p className="text-base font-black text-sky-800">
             {currentIdx + 1} of {totalQuestions}
           </p>
         </div>
       </div>
 
       {/* Progress Bar */}
-      <div className="relative z-10 mt-4 h-2 w-full bg-sky-100 rounded-full overflow-hidden border border-sky-200">
+      <div className="relative z-10 mt-4 h-2.5 w-full bg-sky-100 rounded-full overflow-hidden border border-sky-200">
         <div
           className="h-full bg-gradient-to-r from-sky-500 to-cyan-500 transition-all duration-300"
           style={{ width: `${((currentIdx + (hasAnswered ? 1 : 0)) / totalQuestions) * 100}%` }}
@@ -142,14 +142,14 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
       </div>
 
       {/* Question Card */}
-      <div className="relative z-10 my-8 flex-1 flex flex-col justify-center">
-        <div className="bg-white/95 border border-sky-200 rounded-2xl p-6 md:p-8 backdrop-blur-md shadow-md shadow-sky-500/5">
+      <div className="relative z-10 my-6 flex-1 flex flex-col justify-center">
+        <div className="bg-white/95 border border-sky-200 rounded-2xl p-6 sm:p-8 lg:p-10 backdrop-blur-md shadow-md shadow-sky-500/5">
           <div className="flex items-center gap-2 mb-4">
             <HelpCircle className="h-5 w-5 text-sky-600" />
             <span className="text-xs font-black uppercase tracking-wider text-sky-700">NCERT Riddle</span>
           </div>
 
-          <h3 className="text-lg md:text-xl font-black text-slate-900 leading-relaxed">
+          <h3 className="text-lg sm:text-xl lg:text-2xl font-black text-slate-900 leading-relaxed">
             {currentQuestion?.content}
           </h3>
 
@@ -165,21 +165,21 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
 
           {/* Feedback Banner */}
           {hasAnswered && (
-            <div className={`mt-6 flex items-start gap-3 p-4 rounded-xl border animate-fade-in ${
+            <div className={`mt-6 flex items-start gap-3.5 p-4 sm:p-5 rounded-xl border animate-fade-in ${
               isCorrectChoice
                 ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
                 : 'bg-rose-50 border-rose-300 text-rose-900'
             }`}>
               {isCorrectChoice ? (
-                <Check className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+                <Check className="h-6 w-6 text-emerald-600 shrink-0 mt-0.5" />
               ) : (
-                <X className="h-5 w-5 text-rose-600 shrink-0 mt-0.5" />
+                <X className="h-6 w-6 text-rose-600 shrink-0 mt-0.5" />
               )}
-              <div className="text-xs">
-                <p className="font-black text-sm">
+              <div>
+                <p className="font-black text-base">
                   {isCorrectChoice ? 'Correct! Checkpoint unlocked.' : 'Incorrect riddle choice.'}
                 </p>
-                <p className="mt-1 font-semibold text-slate-600">
+                <p className="mt-1 font-semibold text-sm text-slate-600">
                   {isCorrectChoice ? 'You found the correct mechanism!' : `Correct answer: ${correctOption?.content}`}
                 </p>
               </div>
@@ -189,7 +189,7 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
       </div>
 
       {/* Answer Options Grid */}
-      <div className="relative z-10 grid gap-3 sm:grid-cols-2">
+      <div className="relative z-10 grid gap-4 sm:gap-5 sm:grid-cols-2">
         {currentQuestion?.options.map((option, idx) => {
           const isSelected = selectedOptionId === option.id;
           const isCorrect = option.isCorrect;
@@ -217,12 +217,12 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
               type="button"
               disabled={hasAnswered}
               onClick={() => handleSelectOption(option.id)}
-              className={`flex items-center gap-4 rounded-xl border p-4 text-left text-sm font-black transition-all duration-200 active:scale-[0.98] ${cardStyle}`}
+              className={`flex items-center gap-4 rounded-xl border p-5 sm:p-6 text-left text-lg sm:text-xl lg:text-2xl font-black transition-all duration-200 active:scale-[0.98] ${cardStyle}`}
             >
-              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-black transition-all ${badgeStyle}`}>
-                {hasAnswered && isCorrect ? <Check className="h-4 w-4" /> : hasAnswered && isSelected ? <X className="h-4 w-4" /> : badgeLabel}
+              <span className={`flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl text-base sm:text-lg font-black transition-all ${badgeStyle}`}>
+                {hasAnswered && isCorrect ? <Check className="h-5 w-5" /> : hasAnswered && isSelected ? <X className="h-5 w-5" /> : badgeLabel}
               </span>
-              <span className="leading-snug">{option.content}</span>
+              <span className="leading-snug flex-1">{option.content}</span>
             </button>
           );
         })}

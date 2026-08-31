@@ -54,6 +54,31 @@ export function resolveUploadUrl(filePath: string | null | undefined) {
   return `${getApiOrigin()}/uploads/${clean}`;
 }
 
+/**
+ * Turn a "YYYY-MM-DD" date + "HH:MM" time picked in the browser into an
+ * unambiguous UTC instant to send to the backend.
+ *
+ * String-concatenating them into "YYYY-MM-DDTHH:MM:00" (no offset) and
+ * sending that as-is used to be the bug here: a date-time string with no
+ * timezone offset is parsed as *local time of whichever machine reads it* —
+ * the browser when the teacher previews it, but the server's own timezone
+ * (not the school's) when `new Date(...)` runs there to store it. Any
+ * difference between the two shifted the stored time by that offset, and
+ * the same shift reapplied on every save, so editing back to the intended
+ * time never stuck. Passing the picked values through the Date constructor's
+ * (year, month, day, hour, minute) form — which is always local-time,
+ * unambiguously — then serializing with toISOString() fixes the instant
+ * before it ever leaves the browser, so the server's own timezone no longer
+ * matters.
+ */
+export function toUtcIsoDateTime(dateStr: string, timeStr: string): string | null {
+  if (!dateStr || !timeStr) return null;
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const [hour, minute] = timeStr.split(":").map(Number);
+  if (!year || !month || !day || Number.isNaN(hour) || Number.isNaN(minute)) return null;
+  return new Date(year, month - 1, day, hour, minute, 0).toISOString();
+}
+
 // ─── Internal Helpers ─────────────────────────────────────────────────────────
 
 function prepareNumberedText(text: string) {

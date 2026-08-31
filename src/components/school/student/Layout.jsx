@@ -96,7 +96,7 @@ export default function Layout() {
         <MaintenanceNotice />
 
         {/* Scrollable Container */}
-        <main className={`flex-1 min-h-0 ${layoutConfig.type === 'immersive' ? 'p-0 overflow-y-hidden' : 'px-4 pt-4 pb-4 overflow-y-auto'} scrollbar-none`}>
+        <main className={`flex-1 min-h-0 ${layoutConfig.type === 'immersive' && !layoutConfig.isScrollable ? 'p-0 overflow-y-hidden' : 'p-0 overflow-y-auto'} scrollbar-none`}>
           <AnimatePresence initial={false} mode="wait">
             <PageTransition key={location.pathname} duration={0.2}>
               <div className="h-full w-full">

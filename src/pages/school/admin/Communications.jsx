@@ -59,7 +59,7 @@ const EMOJIS = [
   '🔥', '✨', '🎉', '⭐', '🌈', '☀️', '🌸', '💡', '💬', '🔔'
 ];
 
-export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]', institutes = [], onSelectedUserChange }) {
+export default function Communications({ heightClass = 'h-full', institutes = [], onSelectedUserChange }) {
   const confirm = useConfirm();
   const { user, institute } = useAuth();
   const navigate = useNavigate();
@@ -791,7 +791,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]',
 
 
   return (
-    <div className={cn("flex min-h-0 w-full flex-col overflow-hidden", heightClass)}>
+    <div className={cn("flex min-h-0 w-full flex-1 h-full flex-col overflow-hidden p-3 sm:p-4 lg:p-5 gap-3", heightClass)}>
       {!isSuperAdmin && (
         <div className={cn("shrink-0 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3", selectedUser && "hidden")}>
           {[

@@ -352,7 +352,7 @@ export default function Gamification() {
             as an inset screen keeps them looking deliberate against the dark
             cabinet rather than like an unstyled panel. */}
         {activeTab !== 'games' && (
-          <div className="qr-inset qr-rise rounded-2xl p-4 sm:p-5">
+          <div className="qr-inset qr-rise rounded-2xl p-4 sm:p-5 dark">
             {activeTab === 'wallet' && <RewardWalletTab profile={profile} onRefresh={fetchProfile} />}
             {activeTab === 'achievements' && <AchievementsTab />}
             {activeTab === 'leaderboards' && <MultiLeaderboardTab currentProfile={profile} />}

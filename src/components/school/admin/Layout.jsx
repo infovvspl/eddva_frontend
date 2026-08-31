@@ -80,9 +80,12 @@ export default function Layout() {
     });
   }, [isAdminPath, isSuperAdmin, hasTeacherRole, hasInstituteAdminRole, user?.id]);
 
-  const isDashboard = location.pathname === '/school/admin' || location.pathname === '/school/admin/' || location.pathname === '/school/teacher' || location.pathname === '/school/super-admin';
-
-  const isFullWidthPage = isDashboard || [
+  // Dashboard pages (institute-admin, teacher, super-admin) don't add their own
+  // horizontal padding -- they rely on <main> for it, same as every other
+  // non-full-width page. They used to be swept into isFullWidthPage below,
+  // which zeroes <main>'s padding and left their content flush against the
+  // sidebar with no gap.
+  const isFullWidthPage = [
     '/communication',
     '/communications',
     '/audit-logs',
@@ -92,7 +95,9 @@ export default function Layout() {
     '/analytics',
     '/ai-usage',
     '/storage-usage',
+    '/storage',
     '/live-usage',
+    '/erp-modules',
     '/security',
   ].some(p => location.pathname.endsWith(p)) || [
     '/school/teacher/timetable',
@@ -104,6 +109,7 @@ export default function Layout() {
   const isFixedPage = [
     '/communication',
     '/communications',
+    '/chat',
   ].some(p => location.pathname.endsWith(p)) || location.pathname.includes('/live/');
 
   if (isMobile) {
@@ -130,9 +136,7 @@ export default function Layout() {
       timetableEnabled ? { label: 'Timetable', path: '/school/teacher/timetable', icon: CalendarDays } : { label: 'Content', path: '/school/teacher/course-content', icon: BookOpen },
     ] : [
       { label: 'Dashboard', path: '/school/admin', icon: LayoutDashboard },
-      { label: 'Students', path: '/school/admin/students', icon: GraduationCap },
-      { label: 'Teachers', path: '/school/admin/teachers', icon: Users },
-      { label: 'Textbooks', path: '/school/admin/textbook-coverage', icon: Library },
+      { label: 'Subjects', path: '/school/admin/subjects', icon: BookOpen },
     ];
 
     const moreItems = isSuperAdmin ? [

@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Timer, RefreshCw, XCircle, Grid, Zap, Shield, HelpCircle, Brain } from 'lucide-react';
 import { toast } from 'sonner';
 import { soundEngine } from '@/lib/audioManager';
+import { useConfirm } from '@/context/ConfirmContext';
 
 export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
+  const confirm = useConfirm();
   const { deckName, difficulty, cards = [] } = session;
   const [flippedCards, setFlippedCards] = useState([]); // Array of indices of open cards
   const [matchedIds, setMatchedIds] = useState(new Set()); // Set of matchIds
@@ -135,10 +137,10 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
 
   // Determine grid column counts based on deck size
   const gridClass = cards.length <= 12
-    ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4"
+    ? "grid-cols-2 sm:grid-cols-4"
     : cards.length <= 16
       ? "grid-cols-2 sm:grid-cols-4"
-      : "grid-cols-2 sm:grid-cols-4 md:grid-cols-5";
+      : "grid-cols-2 sm:grid-cols-4 lg:grid-cols-6";
 
   // Perspective flip card CSS rules
   const styles = `
@@ -182,57 +184,64 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
   `;
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto py-4">
+    <div className="space-y-4 sm:space-y-5 max-w-6xl lg:max-w-7xl w-full mx-auto py-2 flex-1 flex flex-col justify-center">
       <style>{styles}</style>
 
       {/* Header HUD panel */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 sm:p-6 rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <span className="text-xs font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
               Memory Deck: {difficulty}
             </span>
             <span className="h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
-            <span className="text-xs font-semibold text-slate-500">{cards.length} Cards ({totalPairs} Pairs)</span>
+            <span className="text-xs font-bold text-slate-500">{cards.length} Cards ({totalPairs} Pairs)</span>
           </div>
-          <h2 className="text-xl font-black text-slate-950 dark:text-white mt-1">{deckName}</h2>
+          <h2 className="text-xl sm:text-2xl font-black text-slate-950 dark:text-white mt-1">{deckName}</h2>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-850">
-            <Timer className="h-4 w-4 text-emerald-500" />
+        <div className="flex flex-wrap items-center gap-3.5">
+          <div className="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-950 px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-850">
+            <Timer className="h-4.5 w-4.5 text-emerald-500" />
             <div className="text-right">
-              <p className="text-[9px] font-black uppercase text-slate-400">Time</p>
+              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Time</p>
               <p className="text-sm font-black font-mono text-slate-800 dark:text-slate-200">{formatTime(timeElapsed)}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-850">
-            <RefreshCw className="h-4 w-4 text-emerald-500" />
+          <div className="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-950 px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-850">
+            <RefreshCw className="h-4.5 w-4.5 text-emerald-500" />
             <div className="text-right">
-              <p className="text-[9px] font-black uppercase text-slate-400">Turns</p>
+              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Turns</p>
               <p className="text-sm font-black font-mono text-slate-800 dark:text-slate-200">{turns}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-850">
-            <Grid className="h-4 w-4 text-emerald-500" />
+          <div className="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-950 px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-850">
+            <Grid className="h-4.5 w-4.5 text-emerald-500" />
             <div className="text-right">
-              <p className="text-[9px] font-black uppercase text-slate-400">Matched</p>
+              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Matched</p>
               <p className="text-sm font-black font-mono text-slate-800 dark:text-slate-200">{matchedCount}/{totalPairs}</p>
             </div>
           </div>
 
           <button
             type="button"
-            onClick={() => {
-              if (window.confirm('Are you sure you want to quit this run? Your progress will be lost.')) {
+            onClick={async () => {
+              const isConfirmed = await confirm({
+                title: 'Quit Memory Match?',
+                message: 'Are you sure you want to quit this run? Your progress for this session will be lost.',
+                confirmLabel: 'Quit Game',
+                cancelLabel: 'Keep Playing',
+                variant: 'destructive',
+              });
+              if (isConfirmed) {
                 onQuit();
               }
             }}
             className="flex items-center justify-center p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-xl transition"
           >
-            <XCircle className="h-6 w-6" />
+            <XCircle className="h-6.5 w-6.5" />
           </button>
         </div>
       </div>
@@ -245,51 +254,51 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
           <div
-            className="h-full rounded-full bg-emerald-500 transition-all duration-500 ease-out"
+            className="h-full rounded-full bg-emerald-500 transition-all duration-500 ease-out shadow-sm"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
       </div>
 
       {/* Playing Cards Grid */}
-      <div className={`grid gap-4 ${gridClass}`}>
+      <div className={`grid gap-3 sm:gap-4 lg:gap-5 ${gridClass}`}>
         {cards.map((card, idx) => {
           const isFlipped = flippedCards.includes(idx);
           const isMatched = matchedIds.has(card.matchId);
           const isWrong = wrongPair.includes(idx);
 
           // Card styles based on state
-          let cardBackBorderClass = "border-slate-200 dark:border-slate-850";
+          let cardBackBorderClass = "border-slate-200 dark:border-slate-800";
           let cardBackBgClass = "bg-white dark:bg-slate-900";
           let cardBackTextClass = "text-slate-800 dark:text-slate-100";
 
           if (isMatched) {
-            cardBackBorderClass = "border-emerald-500 dark:border-emerald-600 ring-2 ring-emerald-500/20";
-            cardBackBgClass = "bg-emerald-50/50 dark:bg-emerald-950/30";
-            cardBackTextClass = "text-emerald-800 dark:text-emerald-400 font-bold";
+            cardBackBorderClass = "border-emerald-500 dark:border-emerald-600 ring-2 ring-emerald-500/30";
+            cardBackBgClass = "bg-emerald-50/70 dark:bg-emerald-950/40";
+            cardBackTextClass = "text-emerald-900 dark:text-emerald-300 font-extrabold";
           } else if (isWrong) {
-            cardBackBorderClass = "border-rose-500 dark:border-rose-600 ring-2 ring-rose-500/20";
-            cardBackBgClass = "bg-rose-50/50 dark:bg-rose-950/30";
-            cardBackTextClass = "text-rose-800 dark:text-rose-400 font-bold";
+            cardBackBorderClass = "border-rose-500 dark:border-rose-600 ring-2 ring-rose-500/30";
+            cardBackBgClass = "bg-rose-50/70 dark:bg-rose-950/40";
+            cardBackTextClass = "text-rose-900 dark:text-rose-300 font-extrabold";
           }
 
           return (
             <div
               key={card.id}
               onClick={() => handleCardClick(idx)}
-              className={`mm-card-container aspect-[4/3] sm:aspect-square w-full cursor-pointer select-none rounded-xl ${(isFlipped || isMatched) ? 'flipped' : ''
+              className={`mm-card-container aspect-square w-full cursor-pointer select-none rounded-2xl ${(isFlipped || isMatched) ? 'flipped' : ''
                 }`}
             >
               <div className="mm-card-inner">
                 {/* Front (Facing down, logo showing) */}
-                <div className="mm-card-front shadow-sm border border-slate-700/50 flex flex-col justify-center gap-2 hover:border-emerald-500/40 hover:bg-slate-800 transition">
-                  <Brain className="h-6 w-6 text-emerald-400/80" />
-                  <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">EDDVA</span>
+                <div className="mm-card-front shadow-md border border-slate-700/60 flex flex-col justify-center items-center gap-2 hover:border-emerald-500/50 hover:bg-slate-800 transition rounded-2xl">
+                  <Brain className="h-7 w-7 sm:h-8 sm:w-8 text-emerald-400" />
+                  <span className="text-[10px] sm:text-xs font-black tracking-widest text-slate-400 uppercase">EDDVA</span>
                 </div>
 
                 {/* Back (Facing up, content showing) */}
-                <div className={`mm-card-back shadow-md border-2 ${cardBackBorderClass} ${cardBackBgClass} ${cardBackTextClass}`}>
-                  <p className="text-xs sm:text-sm font-bold text-center leading-snug line-clamp-4">
+                <div className={`mm-card-back shadow-lg border-2 rounded-2xl p-3 sm:p-4 ${cardBackBorderClass} ${cardBackBgClass} ${cardBackTextClass}`}>
+                  <p className="text-xs sm:text-sm lg:text-base font-bold text-center leading-snug line-clamp-4">
                     {card.content}
                   </p>
                 </div>

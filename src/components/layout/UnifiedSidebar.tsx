@@ -157,15 +157,15 @@ function SidebarItem({
         {({ isActive }) => (
           <>
             {/* Active rounded icon badge container */}
-              <div className={cn(
-                "flex items-center justify-center shrink-0 transition-all duration-300",
-                collapsed ? "w-5 h-5" : "w-6 h-6",
-                isActive
-                  ? "text-indigo-600 dark:text-indigo-400"
-                  : "text-slate-500 group-hover:text-slate-800 dark:text-slate-400"
-              )}>
-                <item.icon className="w-5 h-5" />
-              </div>
+            <div className={cn(
+              "flex items-center justify-center rounded-xl shrink-0 transition-all duration-300",
+              collapsed ? "w-5 h-5" : "w-7.5 h-7.5",
+              isActive
+                ? "bg-indigo-100/80 text-indigo-600 dark:bg-indigo-950/80 dark:text-indigo-400"
+                : "bg-transparent text-slate-500 group-hover:text-slate-800 dark:text-slate-400"
+            )}>
+              <item.icon className={cn("w-4.5 h-4.5", isActive ? "text-indigo-600 dark:text-indigo-400" : "text-current")} />
+            </div>
 
             {!collapsed && (
               <span className="truncate transition-[opacity] duration-200">{item.label}</span>

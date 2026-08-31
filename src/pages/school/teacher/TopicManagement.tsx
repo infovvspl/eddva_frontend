@@ -276,9 +276,11 @@ const TopicManagement: React.FC = () => {
     setShowChapterModal(true);
   };
 
-  const openEditChapter = (chapter: any) => {
+  const openEditChapter = (chapter: any, fallbackIndex?: number) => {
     setEditingChapterId(chapter.id);
-    setNewChapter({ name: chapter.name || '', order: Number(chapter.sort_order ?? chapter.orderIndex ?? 1) });
+    const existingOrder = Number(chapter.sort_order ?? chapter.orderIndex ?? chapter.order ?? 0);
+    const orderVal = existingOrder > 0 ? existingOrder : (fallbackIndex || 1);
+    setNewChapter({ name: chapter.name || '', order: orderVal });
     setShowChapterModal(true);
   };
 
@@ -286,10 +288,16 @@ const TopicManagement: React.FC = () => {
     if (!newChapter.name.trim()) { toast.warning('Chapter name is required'); return; }
     if (!selectedSubject) { toast.warning('Subject is required'); return; }
     try {
+      const payload = {
+        name: newChapter.name,
+        orderIndex: Number(newChapter.order),
+        order: Number(newChapter.order),
+        subjectId: selectedSubject.id,
+      };
       if (editingChapterId) {
-        await api.put(`/topics/chapters/${editingChapterId}`, { name: newChapter.name, orderIndex: Number(newChapter.order) });
+        await api.put(`/topics/chapters/${editingChapterId}`, payload);
       } else {
-        await api.post('/topics/chapters', { name: newChapter.name, orderIndex: Number(newChapter.order), subjectId: selectedSubject.id });
+        await api.post('/topics/chapters', payload);
       }
       await fetchChapters(selectedSubject.id);
       setNewChapter({ name: '', order: 1 });
@@ -327,21 +335,29 @@ const TopicManagement: React.FC = () => {
     setShowTopicModal(true);
   };
 
-  const openEditTopic = (topic: any) => {
+  const openEditTopic = (topic: any, fallbackIndex?: number) => {
     setEditingTopicId(topic.id);
     setTopicTargetChapterId(topic.chapter_id ?? topic.chapterId ?? null);
-    setNewTopic({ name: topic.name || '', orderIndex: Number(topic.sort_order ?? topic.orderIndex ?? 1) });
+    const existingOrder = Number(topic.sort_order ?? topic.orderIndex ?? topic.order ?? 0);
+    const orderVal = existingOrder > 0 ? existingOrder : (fallbackIndex || 1);
+    setNewTopic({ name: topic.name || '', orderIndex: orderVal });
     setShowTopicModal(true);
   };
 
   const handleSaveTopic = async () => {
     if (!newTopic.name.trim()) { toast.warning('Topic name is required'); return; }
     try {
+      const payload = {
+        name: newTopic.name,
+        orderIndex: Number(newTopic.orderIndex),
+        order: Number(newTopic.orderIndex),
+        chapterId: topicTargetChapterId,
+      };
       if (editingTopicId) {
-        await api.put(`/topics/${editingTopicId}`, { name: newTopic.name, orderIndex: Number(newTopic.orderIndex) });
+        await api.put(`/topics/${editingTopicId}`, payload);
       } else {
         if (!topicTargetChapterId) { toast.warning('No chapter selected'); return; }
-        await api.post('/topics', { name: newTopic.name, orderIndex: Number(newTopic.orderIndex), chapterId: topicTargetChapterId });
+        await api.post('/topics', payload);
       }
       setNewTopic({ name: '', orderIndex: 1 });
       setShowTopicModal(false);
@@ -471,9 +487,9 @@ const TopicManagement: React.FC = () => {
           <EmptyState icon={<GraduationCap size={40} />} title="No classes assigned" message="You haven't been assigned to any classes yet. Contact your administrator." />
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredClasses.map((c) => (
+            {filteredClasses.map((c, i) => (
               <NavCard
-                key={c.id}
+                key={`${c.id}-${i}`}
                 icon={<GraduationCap size={22} />}
                 tone="brand"
                 title={c.name}
@@ -493,9 +509,9 @@ const TopicManagement: React.FC = () => {
           <EmptyState icon={<Layers size={40} />} title="No sections" message="No sections found for this class." />
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredSections.map((s) => (
+            {filteredSections.map((s, i) => (
               <NavCard
-                key={s.id}
+                key={`${s.id}-${i}`}
                 icon={<Layers size={22} />}
                 tone="violet"
                 title={`Section ${s.name}`}
@@ -514,9 +530,9 @@ const TopicManagement: React.FC = () => {
           <EmptyState icon={<BookOpen size={40} />} title="No subjects" message="No subjects found for this section." />
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredSubjects.map((s) => (
+            {filteredSubjects.map((s, i) => (
               <NavCard
-                key={s.id}
+                key={`${s.id}-${i}`}
                 icon={<BookOpen size={22} />}
                 tone="emerald"
                 title={s.name}
@@ -581,7 +597,7 @@ const TopicManagement: React.FC = () => {
 
                   {chaptersList.map((chapter, ci) => (
                     <ChapterNode
-                      key={chapter.id}
+                      key={`${chapter.id}-${ci}`}
                       chapter={chapter}
                       chapterIndex={ci}
                       version={curriculumVersion}
@@ -592,7 +608,7 @@ const TopicManagement: React.FC = () => {
                       onAddTopic={(count) => openCreateTopic(chapter.id, count)}
                       onEditTopic={openEditTopic}
                       onDeleteTopic={handleDeleteTopic}
-                      onEditChapter={() => openEditChapter(chapter)}
+                      onEditChapter={() => openEditChapter(chapter, ci + 1)}
                       onDeleteChapter={() => handleDeleteChapter(chapter)}
                     />
                   ))}
@@ -858,7 +874,7 @@ function ChapterNode({
 }: {
   chapter: any; chapterIndex: number; version: number; canEdit: boolean; selectedScopeId: string | null;
   onSelectTopic: (t: any) => void; onSelectChapter: () => void; onAddTopic: (count: number) => void;
-  onEditTopic: (t: any) => void; onDeleteTopic: (t: any) => void; onEditChapter: () => void; onDeleteChapter: () => void;
+  onEditTopic: (t: any, fallbackIndex?: number) => void; onDeleteTopic: (t: any) => void; onEditChapter: () => void; onDeleteChapter: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [topics, setTopics] = useState<any[]>([]);
@@ -898,6 +914,15 @@ function ChapterNode({
           <span className={`truncate text-sm font-bold leading-tight ${open ? 'text-brand-700 dark:text-brand-300' : 'text-surface-800 dark:text-surface-100'}`}>
             {chapter.name}
           </span>
+          {chapter.indexed && (
+            <span
+              title="This chapter's textbook is trained — AI content (notes, PPT, papers) can be grounded in the book."
+              className="ml-1.5 inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+            >
+              <span className="h-1 w-1 rounded-full bg-current" />
+              Trained
+            </span>
+          )}
         </button>
         {canEdit && (
           <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
@@ -934,7 +959,7 @@ function ChapterNode({
                 const active = selectedScopeId === t.id;
                 const isLast = ti === topics.length - 1;
                 return (
-                  <div key={t.id} className="group/topic relative">
+                  <div key={`${t.id}-${ti}`} className="group/topic relative">
                     <TreeItem
                       icon={<BookOpen size={13} />}
                       label={t.name}
@@ -943,7 +968,7 @@ function ChapterNode({
                       onClick={() => onSelectTopic(t)}
                       actions={canEdit ? (
                         <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover/topic:opacity-100">
-                          <IconButton label="Edit topic" onClick={(e) => { e.stopPropagation(); onEditTopic({ ...t, chapter_id: chapter.id }); }}><Pencil size={12} /></IconButton>
+                          <IconButton label="Edit topic" onClick={(e) => { e.stopPropagation(); onEditTopic({ ...t, chapter_id: chapter.id }, ti + 1); }}><Pencil size={12} /></IconButton>
                           <IconButton label="Delete topic" danger onClick={(e) => { e.stopPropagation(); onDeleteTopic(t); }}><Trash2 size={12} /></IconButton>
                         </div>
                       ) : null}
@@ -1213,7 +1238,7 @@ function MaterialWorkspace({
                     <span className="rounded-full bg-surface-100 px-2 py-0.5 text-xs font-bold text-surface-500 dark:bg-surface-800">{items.length}</span>
                   </div>
                   <div className="space-y-2">
-                    {items.map((m) => {
+                    {items.map((m, mi) => {
                       const href = resolveFileUrl(m.fileUrl ?? m.file_url);
                       const isText = !!m.description && !href;
                       const displayTitle = materialDisplayTitle(m);
@@ -1225,7 +1250,7 @@ function MaterialWorkspace({
                         /\.(mp4|webm|og[gv])([?#].*)?$/i.test(href);
                       const isPpt = mt.value === 'ppt' || String(m.fileType || '').toLowerCase() === 'ppt';
                       return (
-                        <div key={m.id} className="overflow-hidden rounded-xl border border-surface-100 bg-white transition-colors hover:border-brand-200 dark:border-surface-700 dark:bg-surface-800">
+                        <div key={`${m.id}-${mi}`} className="overflow-hidden rounded-xl border border-surface-100 bg-white transition-colors hover:border-brand-200 dark:border-surface-700 dark:bg-surface-800">
                           <div className="group flex items-center gap-3 p-3">
                             <div className={`rounded-lg p-2 ${mt.soft}`}><Icon size={16} className={mt.text} /></div>
                             <div className="min-w-0 flex-1">
@@ -1558,6 +1583,11 @@ function SlideDeck({ slides, height = 460, topic = '' }: { slides: Slide[]; heig
   if (!slides.length) return null;
   const safeIdx = Math.min(idx, slides.length - 1);
   const slide = slides[safeIdx];
+  // Drop bullets that are only JSON punctuation ("{", "}", "[", quotes, commas):
+  // a malformed generation occasionally leaks a stray brace onto a slide.
+  const bullets = (slide.bullets || []).filter(
+    (b) => b && b.trim() && !/^[{}[\]"'`,;:]+$/.test(b.trim()),
+  );
   const go = (d: number) => setIdx((i) => Math.max(0, Math.min(slides.length - 1, i + d)));
   const imgPrompt = slideImagePrompt(slide, topic);
   const imgQuery = slideImageQuery(slide, topic);
@@ -1620,7 +1650,7 @@ function SlideDeck({ slides, height = 460, topic = '' }: { slides: Slide[]; heig
             </h3>
             <div className="mt-4 flex flex-1 gap-5 overflow-hidden">
               <ul className="flex-1 space-y-2.5 overflow-y-auto pr-1">
-                {slide.bullets.length ? slide.bullets.map((b, i) => (
+                {bullets.length ? bullets.map((b, i) => (
                   <li key={i} className="flex gap-2.5 text-sm font-medium leading-snug text-surface-700 dark:text-surface-200">
                     <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400" />
                     <span>{b}</span>
@@ -1945,15 +1975,15 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
 // ── AI Content Generator panel ───────────────────────────────────────────────
 
 const AI_GEN_TYPES: { id: string; label: string; desc: string; saveAs: string; icon: React.ComponentType<{ size?: number; className?: string }>; soft: string; text: string }[] = [
-  { id: 'dpp', label: 'Daily Assessment', desc: 'Daily Practice Problems with MCQs, numericals & answer key', saveAs: 'dpp', icon: ListChecks, soft: 'bg-orange-50 dark:bg-orange-900/30', text: 'text-orange-600 dark:text-orange-400' },
-  { id: 'mindmap', label: 'Mindmap', desc: 'Hierarchical breakdown of topic concepts & sub-topics', saveAs: 'mindmap', icon: Brain, soft: 'bg-teal-50 dark:bg-teal-900/30', text: 'text-teal-600 dark:text-teal-400' },
   { id: 'presentation', label: 'Presentation', desc: 'Opens AI PPT Studio — build, edit & save a slide deck to this topic', saveAs: 'ppt', icon: Presentation, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
-  { id: 'pyq', label: 'PYQ Practice', desc: 'Previous Year Question style paper with solutions', saveAs: 'pyq', icon: FileQuestion, soft: 'bg-violet-50 dark:bg-violet-900/30', text: 'text-violet-600 dark:text-violet-400' },
   { id: 'study_guide', label: 'Study Guide', desc: 'Exam-ready summary with must-know points for revision', saveAs: 'study_guide', icon: BookOpen, soft: 'bg-indigo-50 dark:bg-indigo-900/30', text: 'text-indigo-600 dark:text-indigo-400' },
   { id: 'key_concepts', label: 'Key Concepts', desc: 'Bulleted must-know concepts, formulas & definitions', saveAs: 'key_concepts', icon: Lightbulb, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
+  { id: 'mindmap', label: 'Mindmap', desc: 'Hierarchical breakdown of topic concepts & sub-topics', saveAs: 'mindmap', icon: Brain, soft: 'bg-teal-50 dark:bg-teal-900/30', text: 'text-teal-600 dark:text-teal-400' },
   { id: 'flashcard', label: 'Flashcards', desc: 'Bite-sized Q&A cards for quick recall', saveAs: 'flashcard', icon: FileText, soft: 'bg-blue-50 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400' },
   { id: 'revision_checklist', label: 'Revision Checklist', desc: 'Subtopic checklist students can tick off', saveAs: 'revision_checklist', icon: ListChecks, soft: 'bg-emerald-50 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400' },
   { id: 'faq', label: 'FAQ', desc: 'Frequently asked questions with clear answers', saveAs: 'faq', icon: FileQuestion, soft: 'bg-amber-50 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400' },
+  { id: 'pyq', label: 'PYQ Practice', desc: 'Previous Year Question style paper with solutions', saveAs: 'pyq', icon: FileQuestion, soft: 'bg-violet-50 dark:bg-violet-900/30', text: 'text-violet-600 dark:text-violet-400' },
+  { id: 'dpp', label: 'Daily Assessment', desc: 'Daily Practice Problems with MCQs, numericals & answer key', saveAs: 'dpp', icon: ListChecks, soft: 'bg-orange-50 dark:bg-orange-900/30', text: 'text-orange-600 dark:text-orange-400' },
 ];
 
 function findGeneratedSectionStart(content: string, patterns: RegExp[]) {
@@ -2013,17 +2043,45 @@ function SourceBadge({ source }: { source: { grounded: boolean; pages?: number[]
     );
   }
 
+  // Not grounded. A book that IS indexed but the textbook AI (Gemini) could not
+  // be used is a temporary, fixable state — distinct from a chapter that was
+  // never indexed. The server's `reason` names the exact cause (see
+  // _generate_grounded in ppt.py); anything Gemini-side means "book is fine, AI
+  // was not", which the teacher fixes by retrying or topping up quota — not by
+  // re-uploading a book that is already indexed.
+  const reason = source.reason;
+  const AI_SIDE: Record<string, string> = {
+    unavailable:
+      'The textbook AI was temporarily unavailable, so this used general knowledge. Your book is indexed — just generate again in a little while.',
+    gemini_exhausted:
+      'Your book IS indexed, but the textbook AI is out of quota right now, so this used general knowledge. Try again shortly, or ask an admin to top up the Gemini quota.',
+    gemini_overloaded:
+      'Your book IS indexed, but the textbook AI was momentarily overloaded, so this used general knowledge. Just generate again — it is usually available within a minute.',
+    gemini_key_rejected:
+      'Your book IS indexed, but the textbook AI key was rejected, so this used general knowledge. Ask an admin to check the Gemini API key.',
+    gemini_model_unavailable:
+      'Your book IS indexed, but the textbook AI model is unavailable for the configured key, so this used general knowledge. Ask an admin to check the Gemini setup.',
+    gemini_unavailable:
+      'Your book IS indexed, but the textbook AI is not configured on the server, so this used general knowledge. Ask an admin to configure Gemini.',
+    no_relevant_passages:
+      'Your book is indexed but its scanned text was unusable here, so this used general knowledge. Re-upload a clearer PDF under Textbook Coverage.',
+  };
+  const aiSideTitle = reason ? AI_SIDE[reason] : undefined;
+  const isAiSide = Boolean(aiSideTitle);
   return (
     <span
       title={
-        source.reason === 'not_indexed'
-          ? 'This chapter has no indexed textbook, so it was written from general knowledge. Upload the chapter PDF under Textbook Coverage to change that.'
-          : 'The textbook could not be used this time, so it was written from general knowledge.'
+        aiSideTitle
+          ?? 'This chapter has no indexed textbook, so it was written from general knowledge. Upload the chapter PDF under Textbook Coverage to change that.'
       }
-      className="inline-flex items-center gap-1.5 rounded-full border border-surface-300 bg-surface-100 px-2.5 py-0.5 text-[11px] font-bold text-surface-600 dark:border-surface-600 dark:bg-surface-800 dark:text-surface-300"
+      className={
+        isAiSide
+          ? 'inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+          : 'inline-flex items-center gap-1.5 rounded-full border border-surface-300 bg-surface-100 px-2.5 py-0.5 text-[11px] font-bold text-surface-600 dark:border-surface-600 dark:bg-surface-800 dark:text-surface-300'
+      }
     >
       <span className="h-1.5 w-1.5 rounded-full bg-current" />
-      General knowledge
+      {isAiSide ? 'Textbook AI unavailable — retry' : 'General knowledge'}
     </span>
   );
 }
@@ -2079,6 +2137,10 @@ function AiGeneratePanel({
   const hasPptGen = useSchoolFeature('ai', 'ai_ppt_generator');
 
   const [typeId, setTypeId] = useState(() => {
+    // Match production: default to a material type, never 'presentation'.
+    // Presentation is not generated inline here — its card opens the PPT Studio
+    // (see the card onClick). Defaulting to 'presentation' made the generator
+    // produce an inline slide-review instead of opening the Studio.
     if (hasAiMaterials) return 'dpp';
     if (hasPptGen) return 'presentation';
     return '';
@@ -2087,6 +2149,17 @@ function AiGeneratePanel({
   const [extraContext, setExtraContext] = useState('');
   const [language, setLanguage] = useState<'english' | 'hindi' | 'odia'>('english');
   const [generating, setGenerating] = useState(false);
+  // Generation timing shown in the UI: a live counter while generating, and the
+  // final duration once done (teachers asked to see how long a paper/material takes).
+  const [genStartAt, setGenStartAt] = useState<number | null>(null);
+  const [genElapsedMs, setGenElapsedMs] = useState(0);
+  const [genDurationMs, setGenDurationMs] = useState<number | null>(null);
+  useEffect(() => {
+    if (!generating || genStartAt == null) return;
+    const id = setInterval(() => setGenElapsedMs(Date.now() - genStartAt), 100);
+    return () => clearInterval(id);
+  }, [generating, genStartAt]);
+  const fmtDuration = (ms: number) => (ms >= 10000 ? `${Math.round(ms / 1000)}s` : `${(ms / 1000).toFixed(1)}s`);
   const [saving, setSaving] = useState(false);
   const [content, setContent] = useState<string | null>(null);
   // Whether the chapter's indexed textbook was actually used. Set by the server,
@@ -2111,9 +2184,13 @@ function AiGeneratePanel({
   const showPreviewFlashcards = typeId === 'flashcard' && !!content;
 
   const handleGenerate = async () => {
+    const start = Date.now();
     setGenerating(true);
     setContent(null);
     setSource(null);
+    setGenDurationMs(null);
+    setGenElapsedMs(0);
+    setGenStartAt(start);
     try {
       const typeInstruction =
         typeId === 'faq'
@@ -2147,10 +2224,12 @@ function AiGeneratePanel({
       }
       setContent(generated);
       setSource((res as any).source ?? null);
+      setGenDurationMs(Date.now() - start);
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'AI generation failed');
     } finally {
       setGenerating(false);
+      setGenStartAt(null);
     }
   };
 
@@ -2311,10 +2390,17 @@ function AiGeneratePanel({
 
           {(generating || content) && (
             <div className="mt-6">
-              <p className="mb-2 text-[11px] font-black uppercase tracking-wider text-surface-400">Preview</p>
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-[11px] font-black uppercase tracking-wider text-surface-400">Preview</p>
+                {!generating && content && genDurationMs != null && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                    Generated in {fmtDuration(genDurationMs)}
+                  </span>
+                )}
+              </div>
               {generating ? (
                 <div className="flex items-center justify-center gap-2 rounded-2xl border border-surface-100 bg-surface-50 py-10 text-sm font-semibold text-surface-500 dark:border-surface-700 dark:bg-surface-800">
-                  <Loader2 size={18} className="animate-spin text-violet-500" /> Generating with AI…
+                  <Loader2 size={18} className="animate-spin text-violet-500" /> Generating with AI… {fmtDuration(genElapsedMs)}
                 </div>
               ) : showPreviewTree ? (
                 <div className="overflow-hidden rounded-2xl border border-surface-100 dark:border-surface-700">
@@ -2337,7 +2423,7 @@ function AiGeneratePanel({
 
         <div className="flex gap-2 border-t border-surface-100 p-4 dark:border-surface-700">
           <Button variant="outline" className="flex-1 justify-center" onClick={handleGenerate} disabled={generating}>
-            {generating ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Generating…</span> : (content ? 'Regenerate' : 'Generate')}
+            {generating ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Generating… {fmtDuration(genElapsedMs)}</span> : (content ? 'Regenerate' : 'Generate')}
           </Button>
           {content && (
             <Button className="flex-1 justify-center" onClick={handleSave} disabled={saving}>

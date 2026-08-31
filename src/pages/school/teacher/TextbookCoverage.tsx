@@ -38,6 +38,14 @@ type Row = {
 type RunStatus = {
   status: string; total: number; done: number;
   succeeded: number; failed: number; lastChapter: string | null;
+  // Which chapter is being read right now (distinct from lastChapter, the most
+  // recently *finished* one), and how far its own page-by-page OCR pass has
+  // gotten — only populated while that chapter needs the slow vision-transcribe
+  // path, which is the only part of indexing a single book takes long enough
+  // to need a progress bar of its own.
+  currentChapter?: string | null;
+  currentPagesDone?: number | null;
+  currentPagesTotal?: number | null;
 } | null;
 
 /** The four states a chapter can be in, in the order a school works through them. */
@@ -157,12 +165,16 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
     try {
       const res = await api.post('/textbooks/ingest', { materialId: r.materialId, instituteId });
       const d = res?.data?.data ?? res?.data;
-      if (d?.indexed) toast.success(`"${r.chapterName}" is ready — ${d.chunks} passages from ${d.pages} pages.`);
-      // The server distinguishes an unreadable scan from a chapter too long to
-      // transcribe in one pass, and the two need different action from the user,
-      // so its message is shown rather than a fixed one.
-      else toast.warning(`"${r.chapterName}": ${d?.message ?? 'no readable text found. It may be a poor scan.'}`);
-      load();
+      // Indexing now runs in the background (large/scanned PDFs can take minutes
+      // and cannot sit on one HTTP request), so start progress polling instead of
+      // waiting for a result here. The poll shows the run and toasts on finish.
+      if (d?.runId) {
+        toast.info(`Indexing "${r.chapterName}" started — large or scanned PDFs can take a minute.`);
+        await pollRun();
+        startPolling();
+      } else {
+        load();
+      }
     } catch (e: any) {
       toast.error(e?.response?.data?.message || 'Indexing failed.');
     } finally {
@@ -195,16 +207,18 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
         timeout: 300000,
       });
       const d = res?.data?.data ?? res?.data;
-      if (d?.indexed) {
-        toast.success(`"${r.chapterName}" is ready — ${d.chunks} passages from ${d.pages} pages.`);
+      // Upload done; indexing now runs in the background (see indexOne). Start
+      // progress polling instead of waiting for the read to finish.
+      if (d?.runId) {
+        toast.success(`"${r.chapterName}" uploaded — indexing started (large/scanned PDFs can take a minute).`);
+        await pollRun();
+        startPolling();
       } else {
-        // See indexOne: "too long to transcribe" and "unreadable scan" call for
-        // different fixes, so the server's wording is used.
-        toast.warning(
-          `"${r.chapterName}": uploaded, but ${d?.message ?? 'no readable text was found. It may be a poor scan.'}`,
-        );
+        // Upload succeeded but indexing couldn't start now (e.g. another run is
+        // already in progress); it can be indexed once that finishes.
+        toast.success(`"${r.chapterName}" uploaded. Index it once the current run finishes.`);
+        load();
       }
-      load();
     } catch (e: any) {
       toast.error(e?.response?.data?.message || 'Upload failed.');
     } finally {
@@ -316,7 +330,13 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
             </span>
             <div className="flex items-center gap-3">
               <span className="hidden text-xs text-brand-600 dark:text-brand-400 sm:inline">
-                {run.lastChapter ? `Last: ${run.lastChapter}` : 'Starting…'}
+                {run.currentChapter
+                  ? `Reading "${run.currentChapter}"${
+                      run.currentPagesTotal ? ` — page ${run.currentPagesDone ?? 0} of ${run.currentPagesTotal}` : ''
+                    }`
+                  : run.lastChapter
+                    ? `Last: ${run.lastChapter}`
+                    : 'Starting…'}
               </span>
               {run.total > 1 && (
                 <button
@@ -337,6 +357,23 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
               style={{ width: `${run.total ? (run.done / run.total) * 100 : 0}%` }}
             />
           </div>
+
+          {/* This book's own progress — only shown once the current chapter's slow
+              (scanned-page) OCR pass has published a page count. A chapter with a
+              normal text layer never reaches this: it's read in one fast pass. */}
+          {!!run.currentPagesTotal && (
+            <div className="mt-2 flex items-center gap-2">
+              <div className="h-1 flex-1 overflow-hidden rounded-full bg-brand-100/70 dark:bg-brand-900/60">
+                <div
+                  className="h-full rounded-full bg-brand-400 transition-all"
+                  style={{ width: `${Math.min(100, ((run.currentPagesDone ?? 0) / run.currentPagesTotal) * 100)}%` }}
+                />
+              </div>
+              <span className="shrink-0 text-[11px] tabular-nums text-brand-600 dark:text-brand-400">
+                {run.currentPagesDone ?? 0}/{run.currentPagesTotal} pages
+              </span>
+            </div>
+          )}
         </div>
       )}
 
@@ -384,7 +421,14 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
         </p>
       ) : (
         <div className="space-y-2">
-          {Object.entries(grouped).map(([cls, subjects]) => {
+          {Object.keys(grouped)
+            .sort((a, b) => {
+              const normA = (a || '').replace(/[-_]/g, ' ').replace(/\s+/g, ' ');
+              const normB = (b || '').replace(/[-_]/g, ' ').replace(/\s+/g, ' ');
+              return normA.localeCompare(normB, undefined, { numeric: true, sensitivity: 'base' });
+            })
+            .map((cls) => {
+              const subjects = grouped[cls];
             const total = Object.values(subjects).reduce((n, l) => n + l.length, 0);
             const ready = Object.values(subjects).flat().filter((r) => r.indexed).length;
             const isOpen = open[cls] ?? false;

@@ -230,7 +230,13 @@ export function SchoolVideoPlayer({
       console.log("SchoolVideoPlayer mounted/src changed. src:", src, "Checkpoints:", checkpoints);
       
       const newBaseUrl = src.split('?')[0];
-      if (videoRef.current && loadedBaseUrl.current !== newBaseUrl) {
+      // HLS (.m3u8, e.g. Cloudflare Stream) is attached by hls.js in the effect
+      // below; setting video.src here too would double-load and fight it. Let the
+      // hls.js path own those; this native src-set is for progressive MP4 (and
+      // Safari, which plays HLS natively and hls.js leaves alone).
+      const isHls = newBaseUrl.includes('.m3u8');
+      const hlsHandled = isHls && Hls.isSupported();
+      if (videoRef.current && loadedBaseUrl.current !== newBaseUrl && !hlsHandled) {
         const timeToResume = resumeAt && isInitialLoad.current ? resumeAt : videoRef.current.currentTime;
         console.log("Setting src on video element because base URL changed to:", newBaseUrl);
         videoRef.current.src = src;
@@ -480,6 +486,8 @@ export function SchoolVideoPlayer({
         <div ref={ytContainerRef} className="w-full h-full min-h-[200px]" />
       ) : (
         <video ref={videoRef} className="w-full h-full object-contain"
+          preload="auto"
+          playsInline
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={() => {
             const v = videoRef.current;

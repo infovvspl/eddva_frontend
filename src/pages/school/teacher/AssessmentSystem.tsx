@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useConfirm } from "@/context/ConfirmContext";
 import {
-  FileText, Key, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target, Trophy
+  FileText, Key, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target, Trophy, Clock
 } from "lucide-react";
 import AssessmentContentRenderer from "@/components/school/AssessmentContentRenderer";
 import GlassCard from "@/components/school/GlassCard";
@@ -12,6 +12,7 @@ import Badge from "@/components/school/Badge";
 import Modal from "@/components/school/Modal";
 import InputField from "@/components/school/InputField";
 import SelectField from "@/components/school/SelectField";
+import SearchableMultiSelect from "@/components/school/admin/forms/SearchableMultiSelect";
 import SearchBar from "@/components/school/SearchBar";
 import DataTable from "@/components/school/DataTable";
 import Tabs from "@/components/school/Tabs";
@@ -19,6 +20,7 @@ import api, { unwrapSchoolList } from "@/lib/api/school-client";
 import { useAcademicStore } from "@/lib/academic-store";
 import "./AssessmentSystem.css";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { toUtcIsoDateTime } from "./assessment-utils";
 
 function normaliseType(value: any) {
   const type = String(value || "topic").trim().toLowerCase();
@@ -339,7 +341,36 @@ const AssessmentSystem: React.FC = () => {
   const [chapters, setChapters] = useState<any[]>([]);
   const [topics, setTopics] = useState<any[]>([]);
   const [selectedChapterId, setSelectedChapterId] = useState("");
+  // Multi-chapter selection for a "Chapter Test" (e.g. chapters 1–10 of a subject).
+  const [selectedChapterIds, setSelectedChapterIds] = useState<string[]>([]);
   const [selectedTopicId, setSelectedTopicId] = useState("");
+  // Whether the last AI draft was grounded in the indexed textbook, and which
+  // selected chapters were not indexed (questions there used general knowledge).
+  const [aiGrounding, setAiGrounding] = useState<
+    { grounded?: boolean; groundedChapters?: string[]; ungroundedChapters?: string[] } | null
+  >(null);
+  // Generation timing shown in the UI: a live counter while generating, and the
+  // final duration once the question paper is ready.
+  const [genStartAt, setGenStartAt] = useState<number | null>(null);
+  const [genElapsedMs, setGenElapsedMs] = useState(0);
+  const [genDurationMs, setGenDurationMs] = useState<number | null>(null);
+  useEffect(() => {
+    if (!genStartAt) return;
+    const id = setInterval(() => setGenElapsedMs(Date.now() - genStartAt), 100);
+    return () => clearInterval(id);
+  }, [genStartAt]);
+  const fmtDuration = (ms: number) => (ms >= 10000 ? `${Math.round(ms / 1000)}s` : `${(ms / 1000).toFixed(1)}s`);
+
+  const getCalculatedEndTime = (dateStr: string, timeStr: string, durationMins: number) => {
+    if (!dateStr || !timeStr) return "";
+    const start = new Date(`${dateStr}T${timeStr}`);
+    if (isNaN(start.getTime())) return "";
+    const end = new Date(start.getTime() + (Number(durationMins) || 0) * 60 * 1000);
+    return end.toLocaleString([], {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  };
 
   const [formData, setFormData] = useState({
     title: "",
@@ -347,6 +378,7 @@ const AssessmentSystem: React.FC = () => {
     total_marks: 100,
     duration_minutes: 120,
     scheduled_date: "",
+    start_time: "10:00",
   });
 
   // Keep AI question-type counts in sync with Total Marks so the generated
@@ -391,6 +423,14 @@ const AssessmentSystem: React.FC = () => {
     if (!showCreateModal || !selectedSubject) return;
     let cancelled = false;
     setSelectedChapterId(editingTest?.raw?.chapter_id || "");
+    // Restore a saved multi-chapter selection (chapter_ids), else fall back to
+    // the single chapter_id so an older chapter test still shows its chapter.
+    const savedIds: string[] = Array.isArray(editingTest?.raw?.chapter_ids)
+      ? editingTest.raw.chapter_ids.map((x: any) => String(x))
+      : editingTest?.raw?.chapter_id
+        ? [String(editingTest.raw.chapter_id)]
+        : [];
+    setSelectedChapterIds(savedIds);
     setTopics([]);
     api.get(`/topics/chapters?subjectId=${selectedSubject.id}`)
       .then((res) => { if (!cancelled) setChapters(res.data?.data || res.data || []); })
@@ -533,7 +573,11 @@ const AssessmentSystem: React.FC = () => {
       alert("Please select test date");
       return;
     }
-    if ((formData.type === "chapter" || formData.type === "topic") && !selectedChapterId) {
+    if (formData.type === "chapter" && selectedChapterIds.length === 0) {
+      alert("Please select at least one chapter");
+      return;
+    }
+    if (formData.type === "topic" && !selectedChapterId) {
       alert("Please select a chapter");
       return;
     }
@@ -544,11 +588,14 @@ const AssessmentSystem: React.FC = () => {
 
     // Only carry chapter/topic scope for the test types that need it, even if a
     // prior selection lingers in state from switching the Test Type dropdown.
+    const isChapterTest = formData.type === "chapter";
     const needsChapter = formData.type === "chapter" || formData.type === "topic";
     const needsTopic = formData.type === "topic";
 
     setSubmittingTest(true);
     try {
+      const scheduledDateTime = toUtcIsoDateTime(formData.scheduled_date, formData.start_time) || formData.scheduled_date || null;
+
       const payload: Record<string, any> = {
         title: formData.title,
         type: formData.type,
@@ -560,12 +607,16 @@ const AssessmentSystem: React.FC = () => {
         totalMarks: formData.total_marks,
         duration_minutes: formData.duration_minutes,
         durationMinutes: formData.duration_minutes,
-        scheduled_date: formData.scheduled_date,
-        scheduledAt: formData.scheduled_date,
+        scheduled_date: scheduledDateTime,
+        scheduledAt: scheduledDateTime,
         contentText,
         answerKey,
         contentSource: contentMode,
-        chapterId: needsChapter ? selectedChapterId : undefined,
+        // Chapter test carries the full selected set; topic test keeps its single chapter.
+        chapterIds: isChapterTest ? selectedChapterIds : undefined,
+        chapterId: isChapterTest
+          ? (selectedChapterIds[0] || undefined)
+          : (needsChapter ? selectedChapterId : undefined),
         topicId: needsTopic ? selectedTopicId : undefined,
         language: aiLanguage,
       };
@@ -592,6 +643,7 @@ const AssessmentSystem: React.FC = () => {
         total_marks: 100,
         duration_minutes: 120,
         scheduled_date: "",
+        start_time: "10:00",
       });
       setContentMode("manual");
       setContentText("");
@@ -599,6 +651,9 @@ const AssessmentSystem: React.FC = () => {
       setUploadFile(null);
       setAiPrompt("");
       setAiLanguage("en");
+      setSelectedChapterIds([]);
+      setSelectedChapterId("");
+      setSelectedTopicId("");
     } catch (err) {
       console.error("Create assessment error:", err);
     } finally {
@@ -648,7 +703,11 @@ const AssessmentSystem: React.FC = () => {
     // Guard against generating ungrounded content: for Chapter/Topic tests,
     // the AI prompt is scoped by these names, so a missing selection here
     // used to silently fall back to the class name / a generic string.
-    if ((formData.type === "chapter" || formData.type === "topic") && !selectedChapterId) {
+    if (formData.type === "chapter" && selectedChapterIds.length === 0) {
+      alert("Please select at least one chapter above before generating questions.");
+      return;
+    }
+    if (formData.type === "topic" && !selectedChapterId) {
       alert("Please select a chapter above before generating questions.");
       return;
     }
@@ -657,11 +716,24 @@ const AssessmentSystem: React.FC = () => {
       return;
     }
 
+    const start = Date.now();
     setGeneratingAi(true);
+    setGenDurationMs(null);
+    setGenElapsedMs(0);
+    setGenStartAt(start);
     try {
+      const isChapterTest = formData.type === "chapter";
       const needsChapter = formData.type === "chapter" || formData.type === "topic";
       const needsTopic = formData.type === "topic";
-      const chapterName = needsChapter ? chapters.find((c: any) => c.id === selectedChapterId)?.name : undefined;
+      // Names ground the prompt. Chapter test sends the full list; topic test one.
+      const chapterNames = isChapterTest
+        ? selectedChapterIds
+            .map((id) => chapters.find((c: any) => String(c.id) === String(id))?.name)
+            .filter(Boolean)
+        : undefined;
+      const chapterName = isChapterTest
+        ? chapterNames?.[0]
+        : (needsChapter ? chapters.find((c: any) => c.id === selectedChapterId)?.name : undefined);
       const topicName = needsTopic ? topics.find((t: any) => t.id === selectedTopicId)?.name : undefined;
       const res = await api.post("/assessments/ai-generate", {
         title: formData.title,
@@ -672,7 +744,11 @@ const AssessmentSystem: React.FC = () => {
         className: selectedClass?.name,
         subjectId: selectedSubject?.id,
         subjectName: selectedSubject?.name,
-        chapterId: needsChapter ? selectedChapterId : undefined,
+        chapterIds: isChapterTest ? selectedChapterIds : undefined,
+        chapterNames,
+        chapterId: isChapterTest
+          ? (selectedChapterIds[0] || undefined)
+          : (needsChapter ? selectedChapterId : undefined),
         chapterName,
         topicId: needsTopic ? selectedTopicId : undefined,
         topicName,
@@ -691,12 +767,19 @@ const AssessmentSystem: React.FC = () => {
       }
       setContentText(draft.contentText || draft.content_text || "");
       setAnswerKey(draft.answerKey || draft.answer_key || "");
+      setAiGrounding({
+        grounded: draft.source?.grounded,
+        groundedChapters: draft.groundedChapters,
+        ungroundedChapters: draft.ungroundedChapters,
+      });
       setContentMode("ai");
+      setGenDurationMs(Date.now() - start);
     } catch (err) {
       console.error("AI assessment generation error:", err);
       alert("AI could not generate the assessment right now. Please use manual entry or upload.");
     } finally {
       setGeneratingAi(false);
+      setGenStartAt(null);
     }
   };
 
@@ -749,7 +832,27 @@ const AssessmentSystem: React.FC = () => {
     },
     { key: "totalMarks", title: "Total Marks" },
     { key: "duration", title: "Duration (mins)" },
-    { key: "date", title: "Date" },
+    {
+      key: "date",
+      title: "Schedule (Start → End)",
+      render: (_: any, row: any) => {
+        if (!row.rawDate) return "-";
+        const start = new Date(row.rawDate);
+        if (isNaN(start.getTime())) return row.date || "-";
+        const durationMins = Number(row.duration) || 60;
+        const end = new Date(start.getTime() + durationMins * 60 * 1000);
+        return (
+          <div className="text-xs">
+            <p className="font-bold text-gray-800">
+              {start.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+            </p>
+            <p className="text-gray-500 font-semibold mt-0.5">
+              {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} → {end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </p>
+          </div>
+        );
+      },
+    },
     {
       key: "status",
       title: "Status",
@@ -772,13 +875,22 @@ const AssessmentSystem: React.FC = () => {
             size="sm"
             variant="outline"
             onClick={() => {
+              const dateObj = row.rawDate ? new Date(row.rawDate) : null;
+              const dateStr = dateObj && !isNaN(dateObj.getTime())
+                ? `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`
+                : (row.rawDate ? String(row.rawDate).slice(0, 10) : "");
+              const timeStr = dateObj && !isNaN(dateObj.getTime())
+                ? `${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`
+                : "10:00";
+
               setEditingTest(row);
               setFormData({
                 title: row.title || "",
                 type: row.type || "topic",
                 total_marks: Number(row.totalMarks) || 100,
                 duration_minutes: Number(row.duration) || 120,
-                scheduled_date: row.rawDate ? String(row.rawDate).slice(0, 10) : "",
+                scheduled_date: dateStr,
+                start_time: timeStr,
               });
               setContentText(row.raw?.content_text || row.raw?.contentText || "");
               setAnswerKey(row.raw?.answer_key || row.raw?.answerKey || "");
@@ -1029,7 +1141,7 @@ const AssessmentSystem: React.FC = () => {
               <Button
                 icon={<Plus size={18} />}
                 onClick={() => {
-                  setFormData({ title: "", type: "topic", total_marks: 100, duration_minutes: 120, scheduled_date: "" });
+                  setFormData({ title: "", type: "topic", total_marks: 100, duration_minutes: 120, scheduled_date: "", start_time: "10:00" });
                   setEditingTest(null);
                   setContentMode("manual");
                   setContentText("");
@@ -1141,7 +1253,42 @@ const AssessmentSystem: React.FC = () => {
               ]}
             />
 
-            {(formData.type === "chapter" || formData.type === "topic") && (
+            {formData.type === "chapter" && (
+              <div>
+                <SearchableMultiSelect
+                  label="Chapters (select one or more — e.g. Chapter 1 to 10)"
+                  placeholder={chapters.length ? "Select chapters" : "No chapters found for this subject"}
+                  options={chapters.map((c: any) => ({ value: String(c.id), label: c.name }))}
+                  selectedValues={selectedChapterIds}
+                  onChange={(next: string[]) => setSelectedChapterIds(next)}
+                />
+                {chapters.length > 0 && (
+                  <div className="mt-1.5 flex items-center gap-3 text-[11px] font-semibold">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedChapterIds(chapters.map((c: any) => String(c.id)))}
+                      className="text-blue-600 hover:underline dark:text-sky-400"
+                    >
+                      Select all
+                    </button>
+                    {selectedChapterIds.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedChapterIds([])}
+                        className="text-gray-500 hover:underline"
+                      >
+                        Clear
+                      </button>
+                    )}
+                    <span className="ml-auto text-gray-400">
+                      {selectedChapterIds.length} of {chapters.length} selected
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {formData.type === "topic" && (
               <SelectField
                 label="Chapter"
                 placeholder={chapters.length ? "Select chapter" : "No chapters found for this subject"}
@@ -1169,13 +1316,26 @@ const AssessmentSystem: React.FC = () => {
               />
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <InputField
+              label="Total Marks"
+              type="number"
+              placeholder="100"
+              value={formData.total_marks}
+              onChange={(e) => setFormData({ ...formData, total_marks: Number(e.target.value) })}
+            />
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <InputField
-                label="Total Marks"
-                type="number"
-                placeholder="100"
-                value={formData.total_marks}
-                onChange={(e) => setFormData({ ...formData, total_marks: Number(e.target.value) })}
+                label="Date"
+                type="date"
+                value={formData.scheduled_date}
+                onChange={(e) => setFormData({ ...formData, scheduled_date: e.target.value })}
+              />
+              <InputField
+                label="Start Time"
+                type="time"
+                value={formData.start_time}
+                onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
               />
               <InputField
                 label="Duration (mins)"
@@ -1186,12 +1346,26 @@ const AssessmentSystem: React.FC = () => {
               />
             </div>
 
-            <InputField
-              label="Date"
-              type="date"
-              value={formData.scheduled_date}
-              onChange={(e) => setFormData({ ...formData, scheduled_date: e.target.value })}
-            />
+            {formData.scheduled_date && formData.start_time && (
+              <div className="rounded-xl border border-blue-200 bg-blue-50/80 p-3 text-xs font-semibold text-blue-900 flex flex-wrap items-center justify-between gap-2 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-blue-600 shrink-0" />
+                  <span>Scheduled Test Window:</span>
+                </div>
+                <div className="font-bold text-blue-950 flex items-center gap-2 flex-wrap">
+                  <span>
+                    {new Date(`${formData.scheduled_date}T${formData.start_time}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  <span className="text-blue-400">→</span>
+                  <span>
+                    {getCalculatedEndTime(formData.scheduled_date, formData.start_time, formData.duration_minutes)}
+                  </span>
+                  <span className="ml-1 rounded-md bg-blue-200/80 px-2 py-0.5 text-[10px] font-black uppercase text-blue-800">
+                    Auto Ends ({formData.duration_minutes} mins)
+                  </span>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-3 rounded-xl border border-gray-100 bg-gray-50 p-3">
               <label className="text-sm font-semibold text-gray-800">Assessment Content</label>
@@ -1201,7 +1375,6 @@ const AssessmentSystem: React.FC = () => {
                   { id: "upload", label: "Upload", icon: <Upload size={14} /> },
                   { id: "ai", label: "AI", icon: <Sparkles size={14} /> },
                 ].map((mode) => {
-                  if (mode.id === "ai" && !hasAiAssessments) return null;
                   return (
                     <button
                       key={mode.id}
@@ -1254,16 +1427,28 @@ const AssessmentSystem: React.FC = () => {
                 <div className="space-y-3">
                   <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs font-semibold text-amber-800">
                     AI scope: {selectedClass?.name} &rsaquo; {selectedSubject?.name}
-                    {(formData.type === "chapter" || formData.type === "topic") && (
+                    {formData.type === "chapter" && (
                       <>
                         {" "}&rsaquo;{" "}
-                        {chapters.find((c: any) => c.id === selectedChapterId)?.name || (
-                          <span className="text-red-600">no chapter selected</span>
+                        {selectedChapterIds.length === 0 ? (
+                          <span className="text-red-600">no chapters selected</span>
+                        ) : (
+                          <span>
+                            {selectedChapterIds.length} chapter{selectedChapterIds.length > 1 ? "s" : ""}:{" "}
+                            {selectedChapterIds
+                              .map((id) => chapters.find((c: any) => String(c.id) === String(id))?.name)
+                              .filter(Boolean)
+                              .join(", ")}
+                          </span>
                         )}
                       </>
                     )}
                     {formData.type === "topic" && (
                       <>
+                        {" "}&rsaquo;{" "}
+                        {chapters.find((c: any) => c.id === selectedChapterId)?.name || (
+                          <span className="text-red-600">no chapter selected</span>
+                        )}
                         {" "}&rsaquo;{" "}
                         {topics.find((t: any) => t.id === selectedTopicId)?.name || (
                           <span className="text-red-600">no topic selected</span>
@@ -1298,10 +1483,10 @@ const AssessmentSystem: React.FC = () => {
                         value={aiConfig.difficulty}
                         onChange={(val) => setAiConfig(prev => ({ ...prev, difficulty: val }))}
                         options={[
-                        { value: "easy", label: "Easy" },
-                        { value: "intermediate", label: "Intermediate" },
-                        { value: "hard", label: "Hard" },
-                      ]}
+                          { value: "easy", label: "Easy" },
+                          { value: "intermediate", label: "Intermediate" },
+                          { value: "hard", label: "Hard" },
+                        ]}
                         className="w-full"
                       />
                     </label>
@@ -1327,8 +1512,33 @@ const AssessmentSystem: React.FC = () => {
                     className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none focus:ring-2 focus:ring-brand-500"
                   />
                   <Button onClick={handleAiGenerate} disabled={generatingAi} icon={<Sparkles size={16} />}>
-                    {generatingAi ? "Generating..." : "Generate Question Paper"}
+                    {generatingAi ? `Generating… ${fmtDuration(genElapsedMs)}` : "Generate Question Paper"}
                   </Button>
+                  {!generatingAi && contentText && genDurationMs != null && (
+                    <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-2 text-xs font-bold text-emerald-800">
+                      Generated in {fmtDuration(genDurationMs)}
+                    </div>
+                  )}
+                  {/* Grounding transparency: did the paper come strictly from the
+                      indexed textbook, or did some chapters fall back to general knowledge? */}
+                  {aiGrounding && contentText && (
+                    (aiGrounding.ungroundedChapters && aiGrounding.ungroundedChapters.length > 0) ? (
+                      <div className="rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-xs font-semibold text-amber-800">
+                        ⚠ Not from the textbook (used general knowledge) for: {aiGrounding.ungroundedChapters.join(", ")}.
+                        {aiGrounding.groundedChapters && aiGrounding.groundedChapters.length > 0 && (
+                          <> Grounded from the textbook for: {aiGrounding.groundedChapters.join(", ")}.</>
+                        )} Upload these chapters' PDFs under Textbook Coverage for book-only questions.
+                      </div>
+                    ) : aiGrounding.grounded ? (
+                      <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-2.5 text-xs font-semibold text-emerald-800">
+                        ✓ Generated strictly from your indexed textbook.
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-xs font-semibold text-amber-800">
+                        ⚠ This chapter has no indexed textbook, so questions were written from general knowledge. Upload the chapter PDF under Textbook Coverage for book-only questions.
+                      </div>
+                    )
+                  )}
                   {/* Show two-pane editor once AI has generated content */}
                   {contentText && (
                     <ContentEditor

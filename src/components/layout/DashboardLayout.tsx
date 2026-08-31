@@ -959,10 +959,10 @@ const DashboardLayout = () => {
                       "flex items-center justify-center rounded-xl shrink-0 transition-[width,height,background-color,color] duration-500",
                       isExpanded ? "w-7 h-7" : "w-10 h-10",
                       isActive
-                        ? cn("bg-indigo-600 text-white", isExpanded && "shadow-lg")
+                        ? "bg-indigo-100/80 text-indigo-600 dark:bg-indigo-950/80 dark:text-indigo-400"
                         : "bg-transparent text-slate-600 group-hover:text-slate-800"
                     )}>
-                      <item.icon className={cn("w-4 h-4", isActive ? "text-white" : "text-current")} />
+                      <item.icon className={cn("w-4 h-4", isActive ? "text-indigo-600 dark:text-indigo-400" : "text-current")} />
                     </div>
                     {isExpanded && (
                       <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="">
