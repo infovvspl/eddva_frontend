@@ -10,7 +10,7 @@ const PageHead = ({ title, accent, lead, id }) => (
   <section className="nw-pagehead" id={id}>
     <div className="nw-pagehead__container">
       <nav className="nw-pagehead__crumbs" aria-label="Breadcrumb">
-        <Link to="/new-website" className="nw-pagehead__crumb">Home</Link>
+        <Link to="/" className="nw-pagehead__crumb">Home</Link>
         <ChevronRight size={14} strokeWidth={2.2} aria-hidden="true" />
         <span className="nw-pagehead__crumb nw-pagehead__crumb--current" aria-current="page">
           {title} {accent}

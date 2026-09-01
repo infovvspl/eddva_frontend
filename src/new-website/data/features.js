@@ -1,6 +1,9 @@
 // Shared AI feature copy.
-// Used by AiFeaturesSection (the home page marquee) and AiFeatureChecklist
-// (the static three-column list on /new-website/products).
+// Used by AiFeaturesSection — the marquee on the home page. That is currently
+// the only surface showing these; the products page follows the mockup, which
+// has no AI-features section.
+//
+// `cat` is a leftover grouping tag; nothing renders it at the moment.
 
 import fLive        from "../assets/features/01.png";
 import fMaterial    from "../assets/features/02.png";
@@ -13,13 +16,13 @@ import fComms       from "../assets/features/10.png";
 import fGamified    from "../assets/features/11.png";
 
 export const features = [
-  { id: "nw-aifeat-live",       title: "Live Interactive Classes",        img: fLive },
-  { id: "nw-aifeat-recorded",   title: "Auto-Recorded Lectures",          img: fRecorded },
-  { id: "nw-aifeat-material",   title: "AI-Generated Study Material",     img: fMaterial },
-  { id: "nw-aifeat-assistant",  title: "AI Teaching Assistant",           img: fAssistant },
-  { id: "nw-aifeat-assignment", title: "Assignment Generator & Tracker",  img: fAssignment },
-  { id: "nw-aifeat-studyplans", title: "Personalized Study Plans",        img: fStudyPlans },
-  { id: "nw-aifeat-visual",     title: "AI Visual Learning",              img: fVisual },
-  { id: "nw-aifeat-comms",      title: "Unified Communication Platform",  img: fComms },
-  { id: "nw-aifeat-gamified",   title: "Gamified Learning",               img: fGamified },
+  { id: "nw-aifeat-live",       title: "Live Interactive Classes",        img: fLive, cat: "classroom" },
+  { id: "nw-aifeat-recorded",   title: "Auto-Recorded Lectures",          img: fRecorded, cat: "classroom" },
+  { id: "nw-aifeat-material",   title: "AI-Generated Study Material",     img: fMaterial, cat: "content" },
+  { id: "nw-aifeat-assistant",  title: "AI Teaching Assistant",           img: fAssistant, cat: "content" },
+  { id: "nw-aifeat-assignment", title: "Assignment Generator & Tracker",  img: fAssignment, cat: "practice" },
+  { id: "nw-aifeat-studyplans", title: "Personalized Study Plans",        img: fStudyPlans, cat: "practice" },
+  { id: "nw-aifeat-visual",     title: "AI Visual Learning",              img: fVisual, cat: "content" },
+  { id: "nw-aifeat-comms",      title: "Unified Communication Platform",  img: fComms, cat: "classroom" },
+  { id: "nw-aifeat-gamified",   title: "Gamified Learning",               img: fGamified, cat: "practice" },
 ];

@@ -1,4 +1,4 @@
-// ContactPage.jsx — route: /new-website/contact
+// ContactPage.jsx — route: /contact
 // Sub-page of the new website mockup, sharing the one-pager's chrome.
 // The footer keeps id="nw-contact"; this page owns id="nw-contact-page" so the
 // two never collide when both are on screen.

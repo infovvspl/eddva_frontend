@@ -692,11 +692,11 @@ const LoginPage = () => {
       <div className="hidden md:flex w-1/2 bg-blue-50 relative flex-col items-center justify-center overflow-hidden">
         {/* Background Decorative Rings */}
         <div className="absolute inset-0 pointer-events-none">
-          <motion.div 
+          <motion.div
             animate={{ scale: [1, 1.05, 1], opacity: [0.5, 0.3, 0.5] }}
             transition={{ repeat: Infinity, duration: 8, ease: "easeInOut" }}
             className="absolute rounded-full border-white" style={{ top: '-10%', left: '-10%', width: '800px', height: '800px', borderWidth: '60px' }} />
-          <motion.div 
+          <motion.div
             animate={{ scale: [1, 1.08, 1], opacity: [0.4, 0.2, 0.4] }}
             transition={{ repeat: Infinity, duration: 10, ease: "easeInOut", delay: 1 }}
             className="absolute rounded-full border-white" style={{ top: '20%', right: '-30%', width: '600px', height: '600px', borderWidth: '40px' }} />
@@ -706,7 +706,7 @@ const LoginPage = () => {
         </div>
 
         <div className="relative z-10 w-full flex flex-col items-center justify-center px-4">
-          
+
           {/* Text Content (Top) */}
           <div className="text-center mb-10 w-full">
             <h2 className="text-[28px] xl:text-[32px] font-black text-slate-900 mb-3 tracking-tight">One Platform. Endless Possibilities.</h2>
@@ -732,196 +732,196 @@ const LoginPage = () => {
 
           {/* Dashboard Mockup Composition */}
           <div className="scale-[0.6] lg:scale-[0.8] xl:scale-[0.95] 2xl:scale-100 origin-center transition-transform w-full max-w-[420px]">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8 }}
-              className="relative mx-auto w-full" 
+              className="relative mx-auto w-full"
               style={{ height: '520px' }}
             >
-            <motion.div
-              animate={{ y: [0, -8, 0] }}
-              transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
-              className="w-full h-full relative"
-            >
-              {/* Main Window */}
-              <div className="absolute inset-0 bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden flex flex-col">
-                {/* Browser Header */}
-                <div className="h-10 border-b border-slate-100 flex items-center px-4 gap-2 bg-slate-50/50 shrink-0 z-10">
-                  <div className="flex gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-red-400"></div><div className="w-2.5 h-2.5 rounded-full bg-amber-400"></div><div className="w-2.5 h-2.5 rounded-full bg-green-400"></div></div>
-                  <div className="mx-auto h-5 bg-white rounded-md border border-slate-200 shadow-sm" style={{ width: '60%' }}></div>
-                </div>
-                <div className="flex-1 relative">
-                  <AnimatePresence mode="wait">
-                    {[
-                      {
-                        id: 0,
-                        title: "Good Morning, Ananya! 👋",
-                        subtitle: "Let's continue your learning journey",
-                        bgColor: "#F1F5F9",
-                        src: login1,
-                        icons: [
-                          { icon: MonitorPlay, label: "Live Classes" },
-                          { icon: ClipboardList, label: "Assignments" },
-                          { icon: FileText, label: "Tests" },
-                          { icon: BarChart2, label: "Performance" },
-                        ]
-                      },
-                      {
-                        id: 1,
-                        title: "Master Your Subjects 📚",
-                        subtitle: "Interactive lessons and smart quizzes",
-                        bgColor: "#F0FDF4",
-                        src: login2,
-                        icons: [
-                          { icon: BookOpen, label: "Library" },
-                          { icon: Users, label: "Discussions" },
-                          { icon: Trophy, label: "Leaderboard" },
-                          { icon: Sparkles, label: "AI Help" },
-                        ]
-                      },
-                      {
-                        id: 2,
-                        title: "Track Your Progress 📈",
-                        subtitle: "Real-time analytics and insights",
-                        bgColor: "#EFF6FF",
-                        src: login3,
-                        icons: [
-                          { icon: BarChart2, label: "Analytics" },
-                          { icon: FileText, label: "Reports" },
-                          { icon: CheckCircle2, label: "Completed" },
-                          { icon: GraduationCap, label: "Goals" },
-                        ]
-                      }
-                    ].map((card, idx) => (
-                      activeCard === idx && (
-                        <motion.div
-                          key={card.id}
-                          initial={{ opacity: 0, x: 20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: -20 }}
-                          transition={{ duration: 0.4, ease: "easeInOut" }}
-                          className="absolute inset-0 flex flex-col pt-6"
-                        >
-                          <div className="px-6 flex-none">
-                            <h3 className="font-bold text-slate-800 mb-1 mt-2 text-[16px]">{card.title}</h3>
-                            <p className="text-slate-500 mb-5 text-[13px] font-medium">{card.subtitle}</p>
-                            
-                            <div className="flex justify-between px-1 mb-6">
-                              {card.icons.map((item, i) => (
-                                <div key={i} className="flex flex-col items-center gap-2">
-                                  <div className="w-12 h-12 rounded-xl bg-white text-blue-600 flex items-center justify-center border border-slate-200 shadow-sm hover:border-blue-200 hover:shadow-md transition-all cursor-pointer">
-                                    <item.icon className="w-5 h-5" />
-                                  </div>
-                                  <span className="text-slate-600 font-semibold text-[11px] whitespace-nowrap">{item.label}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="w-full flex-1 relative overflow-hidden rounded-b-2xl mt-2">
-                               <img src={card.src} alt="Student" className="w-full h-full object-cover object-bottom" />
-                          </div>
-                        </motion.div>
-                      )
-                    ))}
-                  </AnimatePresence>
-                </div>
-              </div>
-
-              <AnimatePresence>
-                {activeCard === 0 && (
-                  <motion.div 
-                    initial={{ opacity: 0, x: -20, y: 10 }}
-                    animate={{ opacity: 1, x: 0, y: 0 }}
-                    exit={{ opacity: 0, x: -20, y: 10 }}
-                    transition={{ duration: 0.5 }}
-                    className="absolute bg-white/95 backdrop-blur-sm rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.12)] border border-slate-100 p-5 z-20"
-                    style={{ width: '250px', left: '-100px', bottom: '-20px' }}
-                  >
-                    <div className="flex items-center gap-2 mb-4">
-                      <Sparkles className="w-4 h-4 text-blue-600" />
-                      <span className="text-[13px] font-bold text-slate-800">AI Assistant</span>
-                    </div>
-                    <div className="relative bg-[#F8FAFC] rounded-xl p-4 pb-5 border border-slate-100">
-                      <div className="text-[13px] text-slate-600 leading-relaxed relative z-10">
-                        <p className="font-bold text-slate-800 mb-1.5">Hello Ananya!</p>
-                        <p>How can I help you<br/>with your studies today?</p>
-                      </div>
-                      <div className="absolute -bottom-4 -right-3 w-11 h-11 rounded-full bg-[#0047AB] flex items-center justify-center text-white shadow-[0_4px_10px_rgba(0,71,171,0.3)] cursor-pointer hover:bg-blue-800 transition-colors z-20">
-                        <MessageSquare className="w-4 h-4" />
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <AnimatePresence>
-                {activeCard === 0 && (
-                  <motion.div 
-                    initial={{ opacity: 0, x: 20, y: 10 }} 
-                    animate={{ opacity: 1, x: 0, y: 0 }} 
-                    exit={{ opacity: 0, x: 20, y: 10 }} 
-                    transition={{ duration: 0.5, delay: 0.2 }}
-                    className="absolute bg-white/95 backdrop-blur-sm rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.12)] border border-slate-100 p-5 z-20"
-                    style={{ width: '200px', right: '-80px', top: '80px' }}
-                  >
-                    <h4 className="text-[13px] font-bold text-slate-800 mb-4">Today's Schedule</h4>
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center"><MonitorPlay className="w-4 h-4"/></div>
-                        <div>
-                          <p className="text-[12px] font-bold text-slate-800">Math Class</p>
-                          <p className="text-[10px] text-slate-500 font-medium mt-0.5">09:00 AM</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center"><BookOpen className="w-4 h-4"/></div>
-                        <div>
-                          <p className="text-[12px] font-bold text-slate-800">Science</p>
-                          <p className="text-[10px] text-slate-500 font-medium mt-0.5">11:00 AM</p>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <AnimatePresence>
-                {activeCard === 1 && (
-                  <div className="absolute z-20 flex flex-col gap-3" style={{ right: '-90px', top: '60px' }}>
-                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.4 }} className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.12)] border border-slate-100 p-3.5 w-[220px] flex items-center gap-4">
-                      <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center"><MonitorPlay className="w-5 h-5"/></div>
-                      <div>
-                        <p className="text-[12px] font-bold text-slate-800 mb-1.5">Live Classes</p>
-                        <div className="flex -space-x-2">
-                          <div className="w-6 h-6 rounded-full bg-orange-200 border-2 border-white shadow-sm flex items-center justify-center"><Users className="w-3 h-3 text-orange-600"/></div>
-                          <div className="w-6 h-6 rounded-full bg-emerald-200 border-2 border-white shadow-sm flex items-center justify-center"><Users className="w-3 h-3 text-emerald-600"/></div>
-                          <div className="w-6 h-6 rounded-full bg-slate-100 border-2 border-white shadow-sm flex items-center justify-center text-[8px] font-black text-slate-600">+25</div>
-                        </div>
-                      </div>
-                    </motion.div>
-
-                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.4, delay: 0.1 }} className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.12)] border border-slate-100 p-3.5 w-[220px] flex items-center gap-4">
-                      <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center"><ClipboardList className="w-5 h-5"/></div>
-                      <div>
-                        <p className="text-[12px] font-bold text-slate-800 mb-0.5">Assignments</p>
-                        <p className="text-[18px] font-black text-slate-900 leading-none">12 <span className="text-[10px] text-slate-500 font-bold ml-1">Pending</span></p>
-                      </div>
-                    </motion.div>
-
-                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.4, delay: 0.2 }} className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.12)] border border-slate-100 p-3.5 w-[220px] flex items-center gap-4">
-                      <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center"><BarChart2 className="w-5 h-5"/></div>
-                      <div>
-                        <p className="text-[12px] font-bold text-slate-800 mb-0.5">Performance</p>
-                        <p className="text-[18px] font-black text-emerald-600 leading-none">92% <span className="text-[10px] text-slate-500 font-bold ml-1">Excellent</span></p>
-                      </div>
-                    </motion.div>
+              <motion.div
+                animate={{ y: [0, -8, 0] }}
+                transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
+                className="w-full h-full relative"
+              >
+                {/* Main Window */}
+                <div className="absolute inset-0 bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden flex flex-col">
+                  {/* Browser Header */}
+                  <div className="h-10 border-b border-slate-100 flex items-center px-4 gap-2 bg-slate-50/50 shrink-0 z-10">
+                    <div className="flex gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-red-400"></div><div className="w-2.5 h-2.5 rounded-full bg-amber-400"></div><div className="w-2.5 h-2.5 rounded-full bg-green-400"></div></div>
+                    <div className="mx-auto h-5 bg-white rounded-md border border-slate-200 shadow-sm" style={{ width: '60%' }}></div>
                   </div>
-                )}
-              </AnimatePresence>
+                  <div className="flex-1 relative">
+                    <AnimatePresence mode="wait">
+                      {[
+                        {
+                          id: 0,
+                          title: "Good Morning, Abhijit! 👋",
+                          subtitle: "Let's continue your learning journey",
+                          bgColor: "#F1F5F9",
+                          src: login1,
+                          icons: [
+                            { icon: MonitorPlay, label: "Live Classes" },
+                            { icon: ClipboardList, label: "Assignments" },
+                            { icon: FileText, label: "Tests" },
+                            { icon: BarChart2, label: "Performance" },
+                          ]
+                        },
+                        {
+                          id: 1,
+                          title: "Master Your Subjects 📚",
+                          subtitle: "Interactive lessons and smart quizzes",
+                          bgColor: "#F0FDF4",
+                          src: login2,
+                          icons: [
+                            { icon: BookOpen, label: "Library" },
+                            { icon: Users, label: "Discussions" },
+                            { icon: Trophy, label: "Leaderboard" },
+                            { icon: Sparkles, label: "AI Help" },
+                          ]
+                        },
+                        {
+                          id: 2,
+                          title: "Track Your Progress 📈",
+                          subtitle: "Real-time analytics and insights",
+                          bgColor: "#EFF6FF",
+                          src: login3,
+                          icons: [
+                            { icon: BarChart2, label: "Analytics" },
+                            { icon: FileText, label: "Reports" },
+                            { icon: CheckCircle2, label: "Completed" },
+                            { icon: GraduationCap, label: "Goals" },
+                          ]
+                        }
+                      ].map((card, idx) => (
+                        activeCard === idx && (
+                          <motion.div
+                            key={card.id}
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            transition={{ duration: 0.4, ease: "easeInOut" }}
+                            className="absolute inset-0 flex flex-col pt-6"
+                          >
+                            <div className="px-6 flex-none">
+                              <h3 className="font-bold text-slate-800 mb-1 mt-2 text-[16px]">{card.title}</h3>
+                              <p className="text-slate-500 mb-5 text-[13px] font-medium">{card.subtitle}</p>
 
-            </motion.div>
+                              <div className="flex justify-between px-1 mb-6">
+                                {card.icons.map((item, i) => (
+                                  <div key={i} className="flex flex-col items-center gap-2">
+                                    <div className="w-12 h-12 rounded-xl bg-white text-blue-600 flex items-center justify-center border border-slate-200 shadow-sm hover:border-blue-200 hover:shadow-md transition-all cursor-pointer">
+                                      <item.icon className="w-5 h-5" />
+                                    </div>
+                                    <span className="text-slate-600 font-semibold text-[11px] whitespace-nowrap">{item.label}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="w-full flex-1 relative overflow-hidden rounded-b-2xl mt-2">
+                              <img src={card.src} alt="Student" className="w-full h-full object-cover object-bottom" />
+                            </div>
+                          </motion.div>
+                        )
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                </div>
+
+                <AnimatePresence>
+                  {activeCard === 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -20, y: 10 }}
+                      animate={{ opacity: 1, x: 0, y: 0 }}
+                      exit={{ opacity: 0, x: -20, y: 10 }}
+                      transition={{ duration: 0.5 }}
+                      className="absolute bg-white/95 backdrop-blur-sm rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.12)] border border-slate-100 p-5 z-20"
+                      style={{ width: '250px', left: '-100px', bottom: '-20px' }}
+                    >
+                      <div className="flex items-center gap-2 mb-4">
+                        <Sparkles className="w-4 h-4 text-blue-600" />
+                        <span className="text-[13px] font-bold text-slate-800">AI Assistant</span>
+                      </div>
+                      <div className="relative bg-[#F8FAFC] rounded-xl p-4 pb-5 border border-slate-100">
+                        <div className="text-[13px] text-slate-600 leading-relaxed relative z-10">
+                          <p className="font-bold text-slate-800 mb-1.5">Hello Ananya!</p>
+                          <p>How can I help you<br />with your studies today?</p>
+                        </div>
+                        <div className="absolute -bottom-4 -right-3 w-11 h-11 rounded-full bg-[#0047AB] flex items-center justify-center text-white shadow-[0_4px_10px_rgba(0,71,171,0.3)] cursor-pointer hover:bg-blue-800 transition-colors z-20">
+                          <MessageSquare className="w-4 h-4" />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <AnimatePresence>
+                  {activeCard === 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, x: 20, y: 10 }}
+                      animate={{ opacity: 1, x: 0, y: 0 }}
+                      exit={{ opacity: 0, x: 20, y: 10 }}
+                      transition={{ duration: 0.5, delay: 0.2 }}
+                      className="absolute bg-white/95 backdrop-blur-sm rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.12)] border border-slate-100 p-5 z-20"
+                      style={{ width: '200px', right: '-80px', top: '80px' }}
+                    >
+                      <h4 className="text-[13px] font-bold text-slate-800 mb-4">Today's Schedule</h4>
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center"><MonitorPlay className="w-4 h-4" /></div>
+                          <div>
+                            <p className="text-[12px] font-bold text-slate-800">Math Class</p>
+                            <p className="text-[10px] text-slate-500 font-medium mt-0.5">09:00 AM</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center"><BookOpen className="w-4 h-4" /></div>
+                          <div>
+                            <p className="text-[12px] font-bold text-slate-800">Science</p>
+                            <p className="text-[10px] text-slate-500 font-medium mt-0.5">11:00 AM</p>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <AnimatePresence>
+                  {activeCard === 1 && (
+                    <div className="absolute z-20 flex flex-col gap-3" style={{ right: '-90px', top: '60px' }}>
+                      <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.4 }} className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.12)] border border-slate-100 p-3.5 w-[220px] flex items-center gap-4">
+                        <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center"><MonitorPlay className="w-5 h-5" /></div>
+                        <div>
+                          <p className="text-[12px] font-bold text-slate-800 mb-1.5">Live Classes</p>
+                          <div className="flex -space-x-2">
+                            <div className="w-6 h-6 rounded-full bg-orange-200 border-2 border-white shadow-sm flex items-center justify-center"><Users className="w-3 h-3 text-orange-600" /></div>
+                            <div className="w-6 h-6 rounded-full bg-emerald-200 border-2 border-white shadow-sm flex items-center justify-center"><Users className="w-3 h-3 text-emerald-600" /></div>
+                            <div className="w-6 h-6 rounded-full bg-slate-100 border-2 border-white shadow-sm flex items-center justify-center text-[8px] font-black text-slate-600">+25</div>
+                          </div>
+                        </div>
+                      </motion.div>
+
+                      <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.4, delay: 0.1 }} className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.12)] border border-slate-100 p-3.5 w-[220px] flex items-center gap-4">
+                        <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center"><ClipboardList className="w-5 h-5" /></div>
+                        <div>
+                          <p className="text-[12px] font-bold text-slate-800 mb-0.5">Assignments</p>
+                          <p className="text-[18px] font-black text-slate-900 leading-none">12 <span className="text-[10px] text-slate-500 font-bold ml-1">Pending</span></p>
+                        </div>
+                      </motion.div>
+
+                      <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.4, delay: 0.2 }} className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.12)] border border-slate-100 p-3.5 w-[220px] flex items-center gap-4">
+                        <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center"><BarChart2 className="w-5 h-5" /></div>
+                        <div>
+                          <p className="text-[12px] font-bold text-slate-800 mb-0.5">Performance</p>
+                          <p className="text-[18px] font-black text-emerald-600 leading-none">92% <span className="text-[10px] text-slate-500 font-bold ml-1">Excellent</span></p>
+                        </div>
+                      </motion.div>
+                    </div>
+                  )}
+                </AnimatePresence>
+
+              </motion.div>
             </motion.div>
           </div>
         </div>

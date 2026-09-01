@@ -1,4 +1,4 @@
-// AwardsTimeline.jsx — /new-website/about
+// AwardsTimeline.jsx — /about
 // The same credentials as the home page's badge grid, drawn instead as a
 // connected horizontal timeline (it stacks to a vertical rail on narrow
 // screens). Copy comes from data/achievements.js.

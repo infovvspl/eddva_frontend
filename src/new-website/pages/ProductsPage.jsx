@@ -1,14 +1,22 @@
-// ProductsPage.jsx — route: /new-website/products
-// Sub-page of the new website mockup. Shares only the chrome with the other
-// surfaces; the product rows and the AI feature list are built for this page.
-// Same copy as the home page (src/new-website/data), different presentation.
+// ProductsPage.jsx — route: /products
+// Built to the supplied mockup: hero, "Explore Our Product Suite", the
+// "Why Choose EDDVA" grid, then the closing CTA band.
+//
+// The suite is a capability comparison matrix rather than the mockup's
+// alternating panels — five products side by side, so the differences
+// between them are readable at a glance.
+//
+// CtaBanner is the home page's band, reused here because the mockup ends on
+// exactly it. Everything above it is built for this page.
+
 import { useEffect } from "react";
 import "../new-website.css";
 import TopBar from "../components/TopBar";
 import Navbar from "../components/Navbar";
-import PageHead from "../components/PageHead";
-import ProductsMatrix from "../components/ProductsMatrix";
-import AiFeatureChecklist from "../components/AiFeatureChecklist";
+import ProductsHero from "../components/ProductsHero";
+import ProductCompare from "../components/ProductCompare";
+import WhyChooseGrid from "../components/WhyChooseGrid";
+import CtaBanner from "../components/CtaBanner";
 import Footer from "../components/Footer";
 
 const ProductsPage = () => {
@@ -19,14 +27,10 @@ const ProductsPage = () => {
       <TopBar />
       <Navbar />
       <main>
-        <PageHead
-          id="nw-products-head"
-          title="Our"
-          accent="Products"
-          lead="A learning management system, a full ERP and analytics — working as one."
-        />
-        <ProductsMatrix />
-        <AiFeatureChecklist />
+        <ProductsHero />
+        <ProductCompare />
+        <WhyChooseGrid />
+        <CtaBanner />
       </main>
       <Footer />
     </div>

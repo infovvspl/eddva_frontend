@@ -1,6 +1,6 @@
 // Shared About copy.
 // Used by AboutSection (home page card grid) and AboutPillars (the numbered
-// editorial list on /new-website/about) so the two surfaces never drift.
+// editorial list on /about) so the two surfaces never drift.
 
 import { BrainCircuit, Cog, ScanEye, ShieldCheck } from "lucide-react";
 

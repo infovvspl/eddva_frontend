@@ -725,11 +725,14 @@ const SuperAdminRoutes = () => (
 /** Routes for tenant subdomains (e.g. iit.edva.in) */
 const TenantRoutes = () => (
   <Routes>
-    <Route path="/" element={<Index />} />
+    {/* ── New website is the landing page; the previous Index is kept at
+        /legacy-home so nothing is lost. Swap these two back to revert. ── */}
+    <Route path="/" element={<NewWebsitePage />} />
+    <Route path="/legacy-home" element={<Index />} />
     <Route path="/courses" element={<Courses />} />
-    <Route path="/contact" element={<Contact />} />
+    <Route path="/legacy-contact" element={<Contact />} />
     <Route path="/about-us" element={<AboutUs />} />
-    <Route path="/about" element={<AboutUs />} />
+    <Route path="/legacy-about" element={<AboutUs />} />
     <Route path="/exams-registration" element={<ExamsRegistrationPage />} />
     <Route path="/career" element={<CareerPage />} />
     <Route path="/exam/:track" element={<ExamTrackDemoPage />} />
@@ -754,12 +757,14 @@ const TenantRoutes = () => (
     {StudentRoutes()}
     {SchoolRoutes()}
     {/* ── New Website Mockup — isolated, do not merge ── */}
-    <Route path="/new-website" element={<NewWebsitePage />} />
-    <Route path="/new-website/pricing" element={<NewWebsitePricingPage />} />
-    <Route path="/new-website/contact" element={<NewWebsiteContactPage />} />
-    <Route path="/new-website/about" element={<NewWebsiteAboutPage />} />
-    <Route path="/new-website/products" element={<NewWebsiteProductsPage />} />
-    <Route path="/new-website/solution" element={<NewWebsiteSolutionPage />} />
+    <Route path="/pricing" element={<NewWebsitePricingPage />} />
+    <Route path="/contact" element={<NewWebsiteContactPage />} />
+    <Route path="/about" element={<NewWebsiteAboutPage />} />
+    <Route path="/products" element={<NewWebsiteProductsPage />} />
+    <Route path="/solution" element={<NewWebsiteSolutionPage />} />
+    {/* Old dev URLs kept alive so nothing already pointing there 404s */}
+    <Route path="/new-website/*" element={<Navigate to="/" replace />} />
+    <Route path="/new-website" element={<Navigate to="/" replace />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
@@ -767,11 +772,14 @@ const TenantRoutes = () => (
 /** Routes for the main platform domain */
 const PlatformRoutes = () => (
   <Routes>
-    <Route path="/" element={<Index />} />
+    {/* ── New website is the landing page; the previous Index is kept at
+        /legacy-home so nothing is lost. Swap these two back to revert. ── */}
+    <Route path="/" element={<NewWebsitePage />} />
+    <Route path="/legacy-home" element={<Index />} />
     <Route path="/courses" element={<Courses />} />
-    <Route path="/contact" element={<Contact />} />
+    <Route path="/legacy-contact" element={<Contact />} />
     <Route path="/about-us" element={<AboutUs />} />
-    <Route path="/about" element={<AboutUs />} />
+    <Route path="/legacy-about" element={<AboutUs />} />
     <Route path="/exams-registration" element={<ExamsRegistrationPage />} />
     <Route path="/career" element={<CareerPage />} />
     <Route path="/exam/:track" element={<ExamTrackDemoPage />} />
@@ -793,12 +801,14 @@ const PlatformRoutes = () => (
     {StudentRoutes()}
     {SchoolRoutes()}
     {/* ── New Website Mockup — isolated, do not merge ── */}
-    <Route path="/new-website" element={<NewWebsitePage />} />
-    <Route path="/new-website/pricing" element={<NewWebsitePricingPage />} />
-    <Route path="/new-website/contact" element={<NewWebsiteContactPage />} />
-    <Route path="/new-website/about" element={<NewWebsiteAboutPage />} />
-    <Route path="/new-website/products" element={<NewWebsiteProductsPage />} />
-    <Route path="/new-website/solution" element={<NewWebsiteSolutionPage />} />
+    <Route path="/pricing" element={<NewWebsitePricingPage />} />
+    <Route path="/contact" element={<NewWebsiteContactPage />} />
+    <Route path="/about" element={<NewWebsiteAboutPage />} />
+    <Route path="/products" element={<NewWebsiteProductsPage />} />
+    <Route path="/solution" element={<NewWebsiteSolutionPage />} />
+    {/* Old dev URLs kept alive so nothing already pointing there 404s */}
+    <Route path="/new-website/*" element={<Navigate to="/" replace />} />
+    <Route path="/new-website" element={<Navigate to="/" replace />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

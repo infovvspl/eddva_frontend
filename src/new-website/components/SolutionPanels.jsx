@@ -1,4 +1,4 @@
-// SolutionPanels.jsx — /new-website/solution
+// SolutionPanels.jsx — /solution
 // For Schools / For Institutes as two large tinted panels. Deliberately NOT
 // the home page's small side-by-side cards. Copy comes from data/services.js.
 //
@@ -28,7 +28,7 @@ const SolutionPanels = () => {
               </span>
               <h2 className="nw-panels__title">{title}</h2>
               <p className="nw-panels__desc">{desc}</p>
-              <Link to="/new-website/contact" className="nw-panels__cta" id={`${id}-panel-cta`}>
+              <Link to="/contact" className="nw-panels__cta" id={`${id}-panel-cta`}>
                 Talk to us
                 <ArrowRight size={15} strokeWidth={2.4} />
               </Link>

@@ -1,4 +1,4 @@
-// ContactSection.jsx — /new-website/contact
+// ContactSection.jsx — /contact
 //
 // The form posts to the platform's real lead endpoint: POST
 // /tenants/public/leads (LeadsController, unauthenticated and rate-limited,
