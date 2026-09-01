@@ -1,7 +1,7 @@
-// AboutPage.jsx — route: /new-website/about
+// AboutPage.jsx — route: /about
 // Sub-page of the new website mockup. Shares only the chrome (TopBar, Navbar,
 // PageHead, Footer) with the other surfaces — every body section here is
-// built for this page. The copy is the same, pulled from src/new-website/data;
+// built for this page. The copy is the same, pulled from src/data;
 // the layouts are not the home page's.
 //
 // WhoWeAreSection was written but never mounted on the one-pager, so it is

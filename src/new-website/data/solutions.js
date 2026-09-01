@@ -1,4 +1,4 @@
-// Detailed per-stakeholder capabilities for /new-website/solution.
+// Detailed per-stakeholder capabilities for /solution.
 //
 // SOURCE OF TRUTH: these are the modules that actually ship in this repo —
 // each one maps to a real route in src/App.tsx (/student/*, /school/student/*,

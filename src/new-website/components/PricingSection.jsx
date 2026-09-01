@@ -1,5 +1,5 @@
 // PricingSection.jsx — New Website Mockup
-// Body of the /new-website/pricing page.
+// Body of the /pricing page.
 //
 // ⚠ PLACEHOLDER COMMERCIALS. `price` is null on every plan, which renders
 // "Custom" and a "Request a quote" CTA — no figure is invented here. To show
@@ -124,7 +124,7 @@ const PricingSection = () => {
               </ul>
 
               <Link
-                to="/new-website/contact"
+                to="/contact"
                 className={`nw-pricing__cta${featured ? " nw-pricing__cta--filled" : ""}`}
                 id={`${id}-cta`}
               >

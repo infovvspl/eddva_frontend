@@ -1,4 +1,4 @@
-// SolutionPage.jsx — route: /new-website/solution
+// SolutionPage.jsx — route: /solution
 // Sub-page of the new website mockup. Shares only the chrome with the other
 // surfaces; the panels and stakeholder rows are built for this page.
 //

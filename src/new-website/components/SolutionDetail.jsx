@@ -1,4 +1,4 @@
-// SolutionDetail.jsx — /new-website/solution
+// SolutionDetail.jsx — /solution
 // "What we do for each stakeholder", in depth: a role rail on the left, the
 // selected role's full capability set on the right, grouped by job.
 //

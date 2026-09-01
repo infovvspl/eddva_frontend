@@ -1,4 +1,4 @@
-// AboutPillars.jsx — /new-website/about
+// AboutPillars.jsx — /about
 // The four About capabilities as a numbered editorial list beside a sticky
 // intro column. Deliberately NOT the home page's four-up card grid — same
 // copy from data/about.js, different layout.

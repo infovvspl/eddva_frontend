@@ -11,15 +11,15 @@ import { Link, useLocation } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
 import { LOGO, LOGO_ALT } from "../brand";
 
-const HOME_PATH = "/new-website";
+const HOME_PATH = "/";
 
 const links = [
   { id: "home",     label: "Home",       href: "#nw-home" },
-  { id: "about",    label: "About",      to: `${HOME_PATH}/about` },
-  { id: "product",  label: "Product",    to: `${HOME_PATH}/products` },
-  { id: "solution", label: "Solution",   to: `${HOME_PATH}/solution` },
-  { id: "pricing",  label: "Pricing",    to: `${HOME_PATH}/pricing` },
-  { id: "contact",  label: "Contact us", to: `${HOME_PATH}/contact` },
+  { id: "about",    label: "About",      to: "/about" },
+  { id: "product",  label: "Product",    to: "/products" },
+  { id: "solution", label: "Solution",   to: "/solution" },
+  { id: "pricing",  label: "Pricing",    to: "/pricing" },
+  { id: "contact",  label: "Contact us", to: "/contact" },
 ];
 
 const NavItemLink = ({ link, onHome, className, id, onClick, children }) => {
@@ -44,7 +44,9 @@ const NavItemLink = ({ link, onHome, className, id, onClick, children }) => {
 
 const Navbar = () => {
   const { pathname } = useLocation();
-  const onHome = pathname === HOME_PATH || pathname === `${HOME_PATH}/`;
+  // In-page anchors only resolve on the one-pager itself; from a sub-page
+  // they have to route back to "/" first, carrying the hash.
+  const onHome = pathname === HOME_PATH;
   const routeActive = links.find(l => l.to && pathname.startsWith(l.to))?.id;
 
   const [menuOpen, setMenuOpen] = useState(false);

@@ -1,4 +1,4 @@
-// PricingPage.jsx — route: /new-website/pricing
+// PricingPage.jsx — route: /pricing
 // Sub-page of the new website mockup. Reuses the one-pager's chrome (TopBar,
 // Navbar, Footer) so the two surfaces stay identical, and reinstates
 // FaqSection here — it holds signed-off EDDVA copy and is not mounted on the

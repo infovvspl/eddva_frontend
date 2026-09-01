@@ -1,4 +1,4 @@
-// ContactSteps.jsx — /new-website/contact
+// ContactSteps.jsx — /contact
 // "What happens next" — the four steps between sending the form and going
 // live, so nobody has to wonder what they just signed up for.
 //

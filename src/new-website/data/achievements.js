@@ -1,6 +1,6 @@
 // Shared credential copy.
 // Used by AchievementsSection (home page badge grid) and AwardsTimeline
-// (the vertical timeline on /new-website/about).
+// (the vertical timeline on /about).
 
 import { Award, ShieldCheck, Rocket, BadgeCheck } from "lucide-react";
 

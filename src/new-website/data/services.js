@@ -1,6 +1,6 @@
 // Shared services and stakeholder copy.
 // Used by ServicesSection (the home page band) and SolutionPanels (the split
-// panels and stakeholder rows on /new-website/solution).
+// panels and stakeholder rows on /solution).
 
 import { Users, BookUser, UserRound, ShieldCheck } from "lucide-react";
 import { SchoolGlyph, CapGlyph } from "../components/ServiceGlyphs";
