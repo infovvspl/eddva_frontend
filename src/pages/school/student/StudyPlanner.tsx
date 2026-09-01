@@ -2095,8 +2095,8 @@ export default function SchoolStudentStudyPlanner() {
       onSuccess: () => {
         toast.success("Your roadmap and study plan are ready!");
       },
-      onError: () => {
-        toast.error("Could not generate plan. Please try again.");
+      onError: (err: any) => {
+        toast.error(err?.response?.data?.message || "Could not generate plan. Please try again.");
       },
     });
   };
@@ -2104,7 +2104,9 @@ export default function SchoolStudentStudyPlanner() {
   const handleRegenerate = () =>
     regenerate.mutate(selectedCourseId ?? undefined, {
       onSuccess: () => toast.success("Plan regenerated!"),
-      onError: () => toast.error("Could not regenerate. Please try again."),
+      onError: (err: any) => {
+        toast.error(err?.response?.data?.message || "Could not regenerate. Please try again.");
+      },
     });
 
   const handleOpenPlanItem = (item: StudyPlanItem) => {
