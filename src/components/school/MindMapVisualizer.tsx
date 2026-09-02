@@ -33,7 +33,7 @@ const MAX_K = 3;
 // Floor used by the initial auto-fit — keeps node text legible by refusing to
 // shrink past this scale even if that means the tree overflows the container
 // (it's pannable). See `fit()`.
-const READABLE_MIN_K = 0.55;
+const READABLE_MIN_K = 0.85;
 
 const DEPTH_FILL = ['#2563eb', '#0f766e', '#8b5cf6', '#db2777', '#ea580c'];
 
@@ -54,11 +54,11 @@ function depthColor(depth: number): string {
 // matches what's drawn.
 function cardStyleForDepth(depth: number, hasChildren: boolean) {
   const isRoot = depth === 0;
-  const fontSize = isRoot ? 24 : depth === 1 ? 18 : depth === 2 ? 16 : 14;
-  const padX = isRoot ? 34 : depth === 1 ? 26 : depth === 2 ? 22 : 18;
-  const padY = isRoot ? 24 : depth === 1 ? 18 : depth === 2 ? 16 : 14;
-  const minWidth = isRoot ? 220 : depth === 1 ? 180 : 160;
-  const maxWidth = isRoot ? 420 : depth === 1 ? 340 : depth === 2 ? 300 : 280;
+  const fontSize = isRoot ? 34 : depth === 1 ? 25 : depth === 2 ? 22 : 19;
+  const padX = isRoot ? 46 : depth === 1 ? 34 : depth === 2 ? 30 : 26;
+  const padY = isRoot ? 32 : depth === 1 ? 24 : depth === 2 ? 21 : 19;
+  const minWidth = isRoot ? 280 : depth === 1 ? 220 : depth === 2 ? 200 : 180;
+  const maxWidth = isRoot ? 500 : depth === 1 ? 400 : depth === 2 ? 360 : 320;
   const fontWeight = isRoot ? 800 : hasChildren ? 600 : 500;
   return { fontSize, padX, padY, minWidth, maxWidth, fontWeight };
 }
@@ -254,20 +254,22 @@ export function MindMapCanvas({ data, height = 480 }: MindMapCanvasProps) {
   builtRef.current = built;
   const contentW = built ? Math.max(built.totalWidth, 1) : 1;
   const contentH = built ? Math.max(built.totalHeight, 1) : 1;
+  const maxDepth = built ? built.maxDepth : 0;
 
   const fit = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
     const w = el.clientWidth || 1;
     const h = el.clientHeight || height;
-    // Trees are typically much wider than they are tall, so fitting to both axes
-    // shrank everything down to satisfy the width. Never auto-shrink text below
-    // READABLE_MIN_K for readability's sake — let a wide tree overflow
-    // horizontally (it's pannable/zoomable) instead, and center it on load.
     const idealK = Math.min(w / contentW, h / contentH);
-    const k = clamp(idealK, READABLE_MIN_K, 1.2);
+    // A shallow tree (root plus one level of children, before anything's been
+    // expanded further) has few enough nodes to fit fully on screen and stay
+    // readable. Past that, fitting to width shrinks text too far, so floor the
+    // zoom at READABLE_MIN_K and let the tree overflow horizontally instead
+    // (it's pannable/zoomable).
+    const k = maxDepth <= 1 ? clamp(idealK, MIN_K, 1.2) : clamp(idealK, READABLE_MIN_K, 1.2);
     setView({ x: (w - contentW * k) / 2, y: (h - contentH * k) / 2, k });
-  }, [contentW, contentH, height]);
+  }, [contentW, contentH, height, maxDepth]);
 
   useLayoutEffect(() => {
     if (autoFitEnabled.current) fit();
@@ -480,8 +482,8 @@ export function MindMapCanvas({ data, height = 480 }: MindMapCanvasProps) {
                 onClick={hasChildren ? (e) => { e.stopPropagation(); toggleCollapse(entry.node); } : undefined}
               >
                 <title>{entry.node.label}</title>
-                <rect rx={isRoot ? 18 : 10} ry={isRoot ? 18 : 10} width={entry.w} height={entry.h} fill="#f8fafc" stroke={color} strokeWidth={isRoot ? 2.5 : 1.5} />
-                <rect x="0" y="0" width={entry.w} height={isRoot ? 8 : 4} rx="2" fill={color} />
+                <rect rx={isRoot ? 22 : 12} ry={isRoot ? 22 : 12} width={entry.w} height={entry.h} fill="#f8fafc" stroke={color} strokeWidth={isRoot ? 3 : 2} />
+                <rect x="0" y="0" width={entry.w} height={isRoot ? 10 : 5} rx="2" fill={color} />
                 <foreignObject width={entry.w} height={entry.h} style={{ pointerEvents: 'none' }}>
                   <div
                     xmlns="http://www.w3.org/1999/xhtml"
@@ -507,7 +509,7 @@ export function MindMapCanvas({ data, height = 480 }: MindMapCanvasProps) {
                 </foreignObject>
                 {hasChildren && (
                   <g transform={`translate(${entry.w / 2}, ${entry.h})`}>
-                    <circle r={isRoot ? 13 : 9} fill="white" stroke={color} strokeWidth="1.5" />
+                    <circle r={isRoot ? 15 : 10} fill="white" stroke={color} strokeWidth="1.5" />
                     <text
                       textAnchor="middle"
                       dominantBaseline="central"
