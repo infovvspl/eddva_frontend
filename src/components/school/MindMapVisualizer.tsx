@@ -16,7 +16,6 @@ interface LayoutNode {
   depth: number;
   w: number;
   h: number;
-  side: 1 | -1 | 0;
   parent: LayoutNode | null;
   children: LayoutNode[];
   subtreeHeight: number;
@@ -24,86 +23,82 @@ interface LayoutNode {
   y: number;
 }
 
-// ── Layout constants ─────────────────────────────────────────────
-const NODE_W = 210;
-const NODE_H = 46;
-const X_GAP = 260;
-const Y_GAP = 64;
+// ── Layout constants (left-to-right tree, root pinned at the left) ────────
 const MARGIN_X = 28;
 const MARGIN_Y = 28;
-const MIN_K = 0.2;
+// Hard floor for manual zoom-out (pinch/scroll), so a user can always zoom out
+// to see a huge tree in full if they choose to.
+const MIN_K = 0.05;
 const MAX_K = 3;
+// Floor used by the initial auto-fit — keeps node text legible by refusing to
+// shrink past this scale even if that means the tree overflows the container
+// (it's pannable). See `fit()`.
+const READABLE_MIN_K = 0.55;
 
 const DEPTH_FILL = ['#2563eb', '#0f766e', '#8b5cf6', '#db2777', '#ea580c'];
 
-const GAP_X = 60;
-const GAP_Y = 16;
+// Tree depth is now dynamic (no fixed number of levels), so a 5-color palette
+// alone would repeat past depth 4. Once the curated colors run out, generate
+// further hues via the golden angle -- keeps every extra level visually
+// distinct instead of collapsing onto the last curated color.
+function depthColor(depth: number): string {
+  if (depth < DEPTH_FILL.length) return DEPTH_FILL[depth];
+  const hue = (depth * 137.508) % 360;
+  return `hsl(${hue.toFixed(0)}, 62%, 42%)`;
+}
 
-function layoutTree(root: MindMapNode, sizes: Map<MindMapNode, {w: number, h: number}>): { nodes: LayoutNode[]; totalWidth: number; totalHeight: number; maxDepth: number } {
+const COL_GAP = 96; // horizontal gap between depth columns
+const SIB_GAP = 20; // vertical gap between sibling subtrees
+
+function layoutTree(
+  root: MindMapNode,
+  sizes: Map<MindMapNode, {w: number, h: number}>,
+  collapsed: Set<MindMapNode>,
+): { nodes: LayoutNode[]; totalWidth: number; totalHeight: number; maxDepth: number } {
   let maxDepth = 0;
+  const depthWidths = new Map<number, number>();
 
-  const buildTree = (
-    n: MindMapNode, 
-    depth: number, 
-    side: 1 | -1 | 0, 
-    parent: LayoutNode | null
-  ): LayoutNode => {
+  const buildTree = (n: MindMapNode, depth: number, parent: LayoutNode | null): LayoutNode => {
     maxDepth = Math.max(maxDepth, depth);
     const size = sizes.get(n) || { w: 140, h: 46 };
+    depthWidths.set(depth, Math.max(depthWidths.get(depth) || 0, size.w));
     const lnode: LayoutNode = {
-      node: n, depth, w: size.w, h: size.h, side, parent, children: [], subtreeHeight: 0, x: 0, y: 0
+      node: n, depth, w: size.w, h: size.h, parent, children: [], subtreeHeight: 0, x: 0, y: 0
     };
-    const kids = n.children || [];
-    lnode.children = kids.map(c => buildTree(c, depth + 1, side, lnode));
-    
-    const childrenH = lnode.children.reduce((sum, c) => sum + c.subtreeHeight, 0) + Math.max(0, lnode.children.length - 1) * GAP_Y;
+    // A collapsed node's children are excluded from layout entirely (not just
+    // visually hidden) -- that's what keeps a bushy tree from sprawling until
+    // the branch is actually expanded.
+    const kids = collapsed.has(n) ? [] : (n.children || []);
+    lnode.children = kids.map(c => buildTree(c, depth + 1, lnode));
+
+    const childrenH = lnode.children.reduce((sum, c) => sum + c.subtreeHeight, 0) + Math.max(0, lnode.children.length - 1) * SIB_GAP;
     lnode.subtreeHeight = Math.max(lnode.h, childrenH);
     return lnode;
   };
 
-  const assignPositions = (lnode: LayoutNode) => {
-    if (!lnode.parent) {
-      lnode.x = 0;
-    } else {
-      lnode.x = lnode.parent.x + lnode.side * (lnode.parent.w / 2 + GAP_X + lnode.w / 2);
-    }
+  const rootLNode = buildTree(root, 0, null);
 
-    const childrenH = lnode.children.reduce((sum, c) => sum + c.subtreeHeight, 0) + Math.max(0, lnode.children.length - 1) * GAP_Y;
-    let currentY = lnode.y - childrenH / 2;
-    
+  // Column 0 (root) is vertically centered on its own children block, so its
+  // x is assigned below along with everyone else, keyed purely by depth.
+  const colX: number[] = [];
+  let cumX = 0;
+  for (let d = 0; d <= maxDepth; d++) {
+    const w = depthWidths.get(d) || 140;
+    colX[d] = cumX + w / 2;
+    cumX += w + COL_GAP;
+  }
+
+  const assignY = (lnode: LayoutNode, topEdge: number) => {
+    const childrenH = lnode.children.reduce((sum, c) => sum + c.subtreeHeight, 0) + Math.max(0, lnode.children.length - 1) * SIB_GAP;
+    let cursor = topEdge + (lnode.subtreeHeight - childrenH) / 2;
     for (const c of lnode.children) {
-      c.y = currentY + c.subtreeHeight / 2;
-      currentY += c.subtreeHeight + GAP_Y;
-      assignPositions(c);
+      assignY(c, cursor);
+      cursor += c.subtreeHeight + SIB_GAP;
     }
+    lnode.y = topEdge + lnode.subtreeHeight / 2;
+    lnode.x = colX[lnode.depth];
   };
-
-  const rootSize = sizes.get(root) || { w: 140, h: 46 };
-  const rootLNode: LayoutNode = {
-    node: root, depth: 0, w: rootSize.w, h: rootSize.h, side: 0, parent: null, children: [], subtreeHeight: 0, x: 0, y: 0
-  };
-
-  const children = root.children || [];
-  const split = Math.ceil(children.length / 2);
-  const rightKids = children.slice(0, split);
-  const leftKids = children.slice(split);
-
-  const rightNodes = rightKids.map(c => buildTree(c, 1, 1, rootLNode));
-  const leftNodes = leftKids.map(c => buildTree(c, 1, -1, rootLNode));
-  rootLNode.children = [...rightNodes, ...leftNodes];
-
-  const layoutSide = (sideNodes: LayoutNode[]) => {
-    const childrenH = sideNodes.reduce((sum, c) => sum + c.subtreeHeight, 0) + Math.max(0, sideNodes.length - 1) * GAP_Y;
-    let currentY = -childrenH / 2;
-    for (const c of sideNodes) {
-      c.y = currentY + c.subtreeHeight / 2;
-      currentY += c.subtreeHeight + GAP_Y;
-      assignPositions(c);
-    }
-  };
-
-  layoutSide(rightNodes);
-  layoutSide(leftNodes);
+  assignY(rootLNode, 0);
 
   const allNodes: LayoutNode[] = [];
   const collect = (n: LayoutNode) => {
@@ -133,7 +128,6 @@ function layoutTree(root: MindMapNode, sizes: Map<MindMapNode, {w: number, h: nu
   return { nodes: allNodes, totalWidth, totalHeight, maxDepth };
 }
 
-const nodeX = (depth: number, side: number, maxDepth: number) => MARGIN_X + maxDepth * X_GAP + side * depth * X_GAP;
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
 export function MindMapCanvas({ data, height = 480 }: MindMapCanvasProps) {
@@ -144,6 +138,7 @@ export function MindMapCanvas({ data, height = 480 }: MindMapCanvasProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const drag = useRef<{ ox: number; oy: number } | null>(null);
   const [grabbing, setGrabbing] = useState(false);
+  const [collapsedNodes, setCollapsedNodes] = useState<Set<MindMapNode>>(new Set());
 
   const flatNodes = React.useMemo(() => {
     if (!data) return [];
@@ -152,6 +147,28 @@ export function MindMapCanvas({ data, height = 480 }: MindMapCanvasProps) {
     traverse(data);
     return list;
   }, [data]);
+
+  // A fresh mindmap starts with only the root's direct branches visible --
+  // everything past that collapses by default so a bushy/deep tree doesn't
+  // dump its entire sprawl on screen at once. Click a node to expand it.
+  useEffect(() => {
+    if (!data) { setCollapsedNodes(new Set()); return; }
+    const initial = new Set<MindMapNode>();
+    const walk = (n: MindMapNode, depth: number) => {
+      if (depth >= 1) initial.add(n);
+      n.children?.forEach(c => walk(c, depth + 1));
+    };
+    walk(data, 0);
+    setCollapsedNodes(initial);
+  }, [data]);
+
+  const toggleCollapse = useCallback((node: MindMapNode) => {
+    setCollapsedNodes(prev => {
+      const next = new Set(prev);
+      if (next.has(node)) next.delete(node); else next.add(node);
+      return next;
+    });
+  }, []);
 
   useLayoutEffect(() => {
     if (!data || !measureContainerRef.current) return;
@@ -165,7 +182,7 @@ export function MindMapCanvas({ data, height = 480 }: MindMapCanvasProps) {
     setDimensions(map);
   }, [data, flatNodes]);
 
-  const built = data && dimensions ? layoutTree(data, dimensions) : null;
+  const built = data && dimensions ? layoutTree(data, dimensions, collapsedNodes) : null;
   const contentW = built ? Math.max(built.totalWidth, 1) : 1;
   const contentH = built ? Math.max(built.totalHeight, 1) : 1;
 
@@ -174,8 +191,15 @@ export function MindMapCanvas({ data, height = 480 }: MindMapCanvasProps) {
     if (!el) return;
     const w = el.clientWidth || 1;
     const h = el.clientHeight || height;
-    const k = clamp(Math.min(w / contentW, h / contentH), MIN_K, 1.2);
-    setView({ x: Math.max(8, (w - contentW * k) / 2), y: Math.max(8, (h - contentH * k) / 2), k });
+    // Left-to-right tree: depth grows rightward and can get far wider than the
+    // container, so pin the root column to the left edge instead of centering
+    // it (a wide tree would otherwise shrink to fit or leave root off-center).
+    // Never auto-shrink text below READABLE_MIN_K for readability's sake --
+    // let it overflow and pan instead. Siblings stack vertically, so center
+    // that axis the way the previous top-down layout centered width.
+    const idealK = Math.min(w / contentW, h / contentH);
+    const k = clamp(idealK, READABLE_MIN_K, 1.2);
+    setView({ x: MARGIN_X, y: (h - contentH * k) / 2, k });
   }, [contentW, contentH, height]);
 
   useLayoutEffect(() => { fit(); }, [fit]);
@@ -310,37 +334,46 @@ export function MindMapCanvas({ data, height = 480 }: MindMapCanvasProps) {
         <g transform={`translate(${view.x}, ${view.y}) scale(${view.k})`}>
           {built.nodes.map((entry, i) => {
             if (!entry.parent) return null;
-            
-            const isLeft = entry.side === -1;
-            const x1 = entry.parent.x + (isLeft ? -entry.parent.w / 2 : entry.parent.w / 2);
+
+            const x1 = entry.parent.x + entry.parent.w / 2;
             const y1 = entry.parent.y;
-            const x2 = entry.x + (isLeft ? entry.w / 2 : -entry.w / 2);
+            const x2 = entry.x - entry.w / 2;
             const y2 = entry.y;
             const mx = (x1 + x2) / 2;
-            
+
             return (
-              <path key={`edge-${i}`} d={`M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`} fill="none" stroke="#cbd5e1" strokeWidth="2" />
+              <path key={`edge-${i}`} d={`M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`} fill="none" stroke="#000000" strokeWidth="1.5" />
             );
           })}
           {built.nodes.map((entry, i) => {
             const x = entry.x - entry.w / 2;
             const y = entry.y - entry.h / 2;
-            const fill = DEPTH_FILL[Math.min(entry.depth, DEPTH_FILL.length - 1)];
+            const color = depthColor(entry.depth);
+            const isRoot = entry.depth === 0;
+            const hasChildren = !!entry.node.children && entry.node.children.length > 0;
+            const isCollapsed = hasChildren && collapsedNodes.has(entry.node);
             return (
-              <g key={`node-${i}`} transform={`translate(${x}, ${y})`}>
+              <g
+                key={`node-${i}`}
+                transform={`translate(${x}, ${y})`}
+                style={{ cursor: hasChildren ? 'pointer' : 'default' }}
+                onPointerDown={hasChildren ? (e) => e.stopPropagation() : undefined}
+                onClick={hasChildren ? (e) => { e.stopPropagation(); toggleCollapse(entry.node); } : undefined}
+              >
                 <title>{entry.node.label}</title>
-                <rect rx="12" ry="12" width={entry.w} height={entry.h} fill={fill} opacity={entry.depth === 0 ? 1 : 0.94} />
+                <rect rx="10" ry="10" width={entry.w} height={entry.h} fill="#f8fafc" stroke={color} strokeWidth={isRoot ? 2 : 1.5} />
+                <rect x="0" y="0" width={isRoot ? 6 : 4} height={entry.h} rx="2" fill={color} />
                 <foreignObject width={entry.w} height={entry.h} style={{ pointerEvents: 'none' }}>
                   <div
                     xmlns="http://www.w3.org/1999/xhtml"
-                    className="flex items-center justify-center text-center text-white w-full h-full select-none"
+                    className="flex items-center justify-center text-center text-slate-800 w-full h-full select-none"
                     style={{
                       padding: '12px 16px',
                       whiteSpace: 'pre-wrap',
                       overflowWrap: 'anywhere',
                       wordBreak: 'break-word',
                       fontSize: '13.5px',
-                      fontWeight: entry.depth === 0 ? 800 : 600,
+                      fontWeight: isRoot ? 800 : (hasChildren ? 600 : 500),
                       lineHeight: '1.4',
                       fontFamily: 'inherit',
                       WebkitUserSelect: 'none',
@@ -353,6 +386,21 @@ export function MindMapCanvas({ data, height = 480 }: MindMapCanvasProps) {
                     {entry.node.label}
                   </div>
                 </foreignObject>
+                {hasChildren && (
+                  <g transform={`translate(${entry.w}, ${entry.h / 2})`}>
+                    <circle r="9" fill="white" stroke={color} strokeWidth="1.5" />
+                    <text
+                      textAnchor="middle"
+                      dominantBaseline="central"
+                      fontSize="12"
+                      fontWeight={700}
+                      fill={color}
+                      style={{ pointerEvents: 'none', userSelect: 'none' }}
+                    >
+                      {isCollapsed ? '+' : '−'}
+                    </text>
+                  </g>
+                )}
               </g>
             );
           })}
