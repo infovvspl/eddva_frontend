@@ -1,5 +1,5 @@
 // Navbar.jsx — New Website Mockup
-// Home · About · Product · Solution · Pricing · Contact us + Login / Register
+// Home · About · Product · Features · Solution · Contact us + Login / Register
 // A link may declare `children` to render a hover dropdown; none do by default.
 //
 // A link is either an in-page anchor on the one-pager (`href`) or its own
@@ -17,8 +17,8 @@ const links = [
   { id: "home",     label: "Home",       href: "#nw-home" },
   { id: "about",    label: "About",      to: "/about" },
   { id: "product",  label: "Product",    to: "/products" },
+  { id: "features", label: "Features",   to: "/features" },
   { id: "solution", label: "Solution",   to: "/solution" },
-  { id: "pricing",  label: "Pricing",    to: "/pricing" },
   { id: "contact",  label: "Contact us", to: "/contact" },
 ];
 
@@ -132,8 +132,8 @@ const Navbar = () => {
 
         {/* ── CTA Buttons ── */}
         <div className="nw-navbar__actions">
-          <a href="#nw-login"    className="nw-btn nw-btn--pill-outline" id="nw-btn-login">Login</a>
-          <a href="#nw-register" className="nw-btn nw-btn--pill"         id="nw-btn-register">Register</a>
+          <Link to="/login"    className="nw-btn nw-btn--pill-outline" id="nw-btn-login">Login</Link>
+          <Link to="/register" className="nw-btn nw-btn--pill"         id="nw-btn-register">Register</Link>
         </div>
 
         {/* ── Mobile hamburger ── */}
@@ -179,8 +179,10 @@ const Navbar = () => {
           </div>
         ))}
         <div className="nw-navbar__mobile-actions">
-          <a href="#nw-login"    className="nw-btn nw-btn--pill-outline" id="nw-mob-login">Login</a>
-          <a href="#nw-register" className="nw-btn nw-btn--pill"         id="nw-mob-register">Register</a>
+          <Link to="/login"    className="nw-btn nw-btn--pill-outline" id="nw-mob-login"
+                onClick={() => setMenuOpen(false)}>Login</Link>
+          <Link to="/register" className="nw-btn nw-btn--pill"         id="nw-mob-register"
+                onClick={() => setMenuOpen(false)}>Register</Link>
         </div>
       </div>
     </header>

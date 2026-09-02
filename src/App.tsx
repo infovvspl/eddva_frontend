@@ -47,11 +47,12 @@ function FeatureGuard({ moduleKey, children }: { moduleKey: string, children: Re
 const Index = lazy(() => import("./pages/Index"));
 // ── NEW WEBSITE MOCKUP (isolated design — do not merge with existing pages) ──
 const NewWebsitePage = lazy(() => import("./new-website/NewWebsitePage"));
-const NewWebsitePricingPage = lazy(() => import("./new-website/pages/PricingPage"));
 const NewWebsiteContactPage = lazy(() => import("./new-website/pages/ContactPage"));
 const NewWebsiteAboutPage = lazy(() => import("./new-website/pages/AboutPage"));
 const NewWebsiteProductsPage = lazy(() => import("./new-website/pages/ProductsPage"));
 const NewWebsiteSolutionPage = lazy(() => import("./new-website/pages/SolutionPage"));
+const NewWebsiteFeaturesPage = lazy(() => import("./new-website/pages/FeaturesPage"));
+const NewWebsiteFeatureDetailPage = lazy(() => import("./new-website/pages/FeatureDetailPage"));
 const Courses = lazy(() => import("./pages/Courses"));
 const Contact = lazy(() => import("./pages/Contact"));
 const AboutUs = lazy(() => import("./pages/AboutUs"));
@@ -759,11 +760,12 @@ const TenantRoutes = () => (
     {StudentRoutes()}
     {SchoolRoutes()}
     {/* ── New Website Mockup — isolated, do not merge ── */}
-    <Route path="/pricing" element={<NewWebsitePricingPage />} />
     <Route path="/contact" element={<NewWebsiteContactPage />} />
     <Route path="/about" element={<NewWebsiteAboutPage />} />
     <Route path="/products" element={<NewWebsiteProductsPage />} />
     <Route path="/solution" element={<NewWebsiteSolutionPage />} />
+    <Route path="/features" element={<NewWebsiteFeaturesPage />} />
+    <Route path="/features/:slug" element={<NewWebsiteFeatureDetailPage />} />
     {/* Old dev URLs kept alive so nothing already pointing there 404s */}
     <Route path="/new-website/*" element={<Navigate to="/" replace />} />
     <Route path="/new-website" element={<Navigate to="/" replace />} />
@@ -803,11 +805,12 @@ const PlatformRoutes = () => (
     {StudentRoutes()}
     {SchoolRoutes()}
     {/* ── New Website Mockup — isolated, do not merge ── */}
-    <Route path="/pricing" element={<NewWebsitePricingPage />} />
     <Route path="/contact" element={<NewWebsiteContactPage />} />
     <Route path="/about" element={<NewWebsiteAboutPage />} />
     <Route path="/products" element={<NewWebsiteProductsPage />} />
     <Route path="/solution" element={<NewWebsiteSolutionPage />} />
+    <Route path="/features" element={<NewWebsiteFeaturesPage />} />
+    <Route path="/features/:slug" element={<NewWebsiteFeatureDetailPage />} />
     {/* Old dev URLs kept alive so nothing already pointing there 404s */}
     <Route path="/new-website/*" element={<Navigate to="/" replace />} />
     <Route path="/new-website" element={<Navigate to="/" replace />} />

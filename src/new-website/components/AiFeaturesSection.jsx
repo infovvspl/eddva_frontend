@@ -3,16 +3,25 @@
 //
 // The current artwork carries no baked-in caption, so each title is printed
 // under its illustration and the image itself is decorative (alt="").
+// Each card links to that feature's own page under /features/.
 // The strip is rendered twice so the loop is seamless; the second copy is
 // aria-hidden so screen readers only announce each feature once.
 
+import { Link } from "react-router-dom";
 import { features } from "../data/features";
 
 
 const Strip = ({ clone }) => (
   <div className="nw-marquee__group" aria-hidden={clone || undefined}>
-    {features.map(({ id, title, img }) => (
-      <article className="nw-aifeat__item" key={id} id={clone ? undefined : id}>
+    {features.map(({ id, slug, title, img }) => (
+      <Link
+        to={`/features/${slug}`}
+        className="nw-aifeat__item"
+        key={id}
+        id={clone ? undefined : id}
+        // The clone is aria-hidden, so keep it out of the tab order too
+        tabIndex={clone ? -1 : undefined}
+      >
         <span className="nw-aifeat__thumb">
           <img
             src={img}
@@ -23,7 +32,7 @@ const Strip = ({ clone }) => (
           />
         </span>
         <h3 className="nw-aifeat__title">{title}</h3>
-      </article>
+      </Link>
     ))}
   </div>
 );

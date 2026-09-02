@@ -1,18 +1,21 @@
 // SolutionPage.jsx — route: /solution
-// Sub-page of the new website mockup. Shares only the chrome with the other
-// surfaces; the panels and stakeholder rows are built for this page.
+// Shares the chrome with the other sub-pages; the audience panels and the
+// stakeholder accordion are built for this page.
 //
-// WhyChooseSection was written but never mounted on the one-pager, so it is
-// unique here. SchoolsSection stays out on purpose: partner school logos
-// appear once, in PartnersStrip.
+// WhyChooseSection — the dark counting-stats band — was written but never
+// mounted on the one-pager, so it stays unique to this page and gives the
+// scroll a change of tone before the closing CTA. SchoolsSection stays out on
+// purpose: partner school logos appear once, in PartnersStrip.
+
 import { useEffect } from "react";
 import "../new-website.css";
 import TopBar from "../components/TopBar";
 import Navbar from "../components/Navbar";
 import PageHead from "../components/PageHead";
-import SolutionPanels from "../components/SolutionPanels";
-import SolutionDetail from "../components/SolutionDetail";
+import SolutionAudience from "../components/SolutionAudience";
+import SolutionRoles from "../components/SolutionRoles";
 import WhyChooseSection from "../components/WhyChooseSection";
+import CtaBanner from "../components/CtaBanner";
 import Footer from "../components/Footer";
 
 const SolutionPage = () => {
@@ -29,9 +32,10 @@ const SolutionPage = () => {
           accent="Institution"
           lead="Schools, institutes and the people inside them — each with tools built for the job."
         />
-        <SolutionPanels />
-        <SolutionDetail />
+        <SolutionAudience />
+        <SolutionRoles />
         <WhyChooseSection />
+        <CtaBanner />
       </main>
       <Footer />
     </div>

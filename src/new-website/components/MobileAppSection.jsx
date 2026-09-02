@@ -1,7 +1,13 @@
 // MobileAppSection.jsx — New Website Mockup
 // "Take EDDVA Anywhere" — centred app mockup ringed by slowly orbiting
-// faces and study motifs. Uses the existing EDDVA phone render from src/assets;
-// the ring portraits are head crops of the project's own character art.
+// faces and study motifs. Uses the existing EDDVA phone render and the store
+// badges from src/assets.
+//
+// The ring portraits are the supplied photographs in
+// assets/mobile icons/ — student, teacher, family and principal, in that
+// order. They replaced the earlier illustrated crops in src/assets/nw-app/,
+// which nothing references any more. Purely decorative: they carry no alt text
+// and no labels, so swapping them changed no wording.
 
 import {
   Smartphone, Bell, WifiOff, LineChart,
@@ -10,10 +16,10 @@ import {
 import appLogin from "../../assets/app1.png";
 import playStore from "../../assets/playstore.png";
 import appStore from "../../assets/appstore.png";
-import avStudent from "../../assets/nw-app/avatar-student.png";
-import avTeacher from "../../assets/nw-app/avatar-teacher.png";
-import avLearner from "../../assets/nw-app/avatar-learner.png";
-import avPrincipal from "../../assets/nw-app/avatar-principal.png";
+import avStudent from "../assets/mobile icons/Img 1.png";
+import avTeacher from "../assets/mobile icons/Img 2 (1).png";
+import avLearner from "../assets/mobile icons/Img 3 (1).png";
+import avPrincipal from "../assets/mobile icons/Img 4 (1).png";
 
 const perks = [
   { id: "nw-app-learn",   title: "Learn on the move",   desc: "Classes, notes and tests in your pocket.", Icon: Smartphone },

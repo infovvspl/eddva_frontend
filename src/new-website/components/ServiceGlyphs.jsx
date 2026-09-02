@@ -5,7 +5,7 @@
 // colour from the tile via currentColor.
 //
 // Lives in its own file because both ServicesSection (home page) and
-// SolutionPanels (/solution) render them.
+// SolutionAudience (/solution) render them.
 
 export const SchoolGlyph = ({ size = 36 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
