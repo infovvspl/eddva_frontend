@@ -34,6 +34,25 @@ function GradeChip({ grade }) {
   );
 }
 
+// The marks-upload flow stores a per-component breakdown (theory/practical/
+// internal/etc.) as a JSON blob inside the plain-text `remarks` column
+// (see school-student.service.ts). Parse it back out so it renders as a
+// score breakdown instead of a raw JSON string; anything that isn't that
+// exact shape (older/plain teacher remarks) passes through as normal text.
+function parseResultRemarks(raw) {
+  if (!raw) return { breakdown: null, text: null };
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && parsed.type === 'breakdown' && parsed.components) {
+      const text = parsed.userRemarks && parsed.userRemarks !== 'Overall calculated total' ? parsed.userRemarks : null;
+      return { breakdown: parsed.components, text };
+    }
+  } catch {
+    // Not JSON -- a normal free-text remark, fall through.
+  }
+  return { breakdown: null, text: raw };
+}
+
 function formatRemaining(seconds) {
   const safe = Math.max(0, Number(seconds) || 0);
   const mins = Math.floor(safe / 60);
@@ -791,7 +810,7 @@ export default function Assessments() {
               const pct        = marks != null && totalMarks ? Math.round((marks / totalMarks) * 100) : null;
               const isAbsent   = Boolean(result?.is_absent);
               const grade      = result?.grade ?? null;
-              const remarks    = result?.remarks ?? null;
+              const { breakdown, text: remarks } = parseResultRemarks(result?.remarks ?? null);
               const hasResult  = !!result;
 
               const ringColor =
@@ -844,6 +863,22 @@ export default function Assessments() {
                           <span>{totalMarks}</span>
                         </div>
                       </div>
+
+                      {/* Component breakdown (theory/practical/internal/etc.) */}
+                      {breakdown && (
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {Object.entries(breakdown)
+                            .filter(([, c]) => c?.enabled && Number(c?.max) > 0)
+                            .map(([key, c]) => (
+                              <span
+                                key={key}
+                                className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                              >
+                                {key.charAt(0).toUpperCase() + key.slice(1)}: {c.obtained}/{c.max}
+                              </span>
+                            ))}
+                        </div>
+                      )}
 
                       {/* Remarks */}
                       {remarks && (
