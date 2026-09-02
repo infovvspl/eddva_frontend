@@ -1,7 +1,7 @@
 // PageHead.jsx — New Website Mockup
 // Compact banner at the top of a sub-page: breadcrumb back to the one-pager,
-// then the page title and a one-line standfirst. Shared by Pricing and Contact
-// so both sub-pages open the same way.
+// then the page title and a one-line standfirst. Shared by the sub-pages so
+// they all open the same way.
 
 import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";

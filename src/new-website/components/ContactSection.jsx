@@ -1,5 +1,10 @@
 // ContactSection.jsx — /contact
 //
+// One elevated card split in two: a deep blue panel carrying the ways to reach
+// us, against the enquiry form on white. Replaces the four loose detail cards
+// beside a separate form — this reads as a single object and keeps the form,
+// which is the point of the page, at full width.
+//
 // The form posts to the platform's real lead endpoint: POST
 // /tenants/public/leads (LeadsController, unauthenticated and rate-limited,
 // written for exactly this — "public Request a Demo capture"). It goes through
@@ -18,46 +23,15 @@
 import { useState } from "react";
 import { Phone, Mail, MapPin, Clock, Send, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { submitLead } from "../../lib/api/leads";
+import { socials } from "../data/socials";
 
 const CONTACT_EMAIL = "info@eddva.com";
 
 const details = [
-  {
-    id: "nw-contact-phone",
-    Icon: Phone,
-    label: "Call us",
-    value: "+91 79780 73201",
-    href: "tel:+917978073201",
-    accent: "#1a56db",
-    bg: "#eff6ff",
-  },
-  {
-    id: "nw-contact-mail",
-    Icon: Mail,
-    label: "Email us",
-    value: CONTACT_EMAIL,
-    href: `mailto:${CONTACT_EMAIL}`,
-    accent: "#7c3aed",
-    bg: "#f5f3ff",
-  },
-  {
-    id: "nw-contact-address",
-    Icon: MapPin,
-    label: "Visit us",
-    value: "Bhubaneswar, Odisha, India",
-    href: null,
-    accent: "#16a34a",
-    bg: "#f0fdf4",
-  },
-  {
-    id: "nw-contact-hours",
-    Icon: Clock,
-    label: "Office hours",
-    value: "Monday to Saturday, 10am – 7pm",
-    href: null,
-    accent: "#0891b2",
-    bg: "#ecfeff",
-  },
+  { id: "nw-contact-phone",   Icon: Phone,  label: "Call us",      value: "+91 79780 73201",            href: "tel:+917978073201" },
+  { id: "nw-contact-mail",    Icon: Mail,   label: "Email us",     value: CONTACT_EMAIL,                href: `mailto:${CONTACT_EMAIL}` },
+  { id: "nw-contact-address", Icon: MapPin, label: "Visit us",     value: "Bhubaneswar, Odisha, India", href: null },
+  { id: "nw-contact-hours",   Icon: Clock,  label: "Office hours", value: "Monday to Saturday, 10am – 7pm", href: null },
 ];
 
 // `vertical` maps onto the backend's LeadVertical enum where the choice implies
@@ -73,12 +47,8 @@ const interests = [
 const LIMITS = { name: 120, email: 200, phone: 40, institution: 160, message: 2000 };
 
 const EMPTY = {
-  name: "",
-  institution: "",
-  email: "",
-  phone: "",
-  interest: interests[0].label,
-  message: "",
+  name: "", institution: "", email: "", phone: "",
+  interest: interests[0].label, message: "",
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -163,113 +133,96 @@ const ContactSection = () => {
   return (
     <section className="nw-contactp" id="nw-contact-page">
       <div className="nw-contactp__container">
+        <div className="nw-contactp__card">
 
-        <header className="nw-contactp__header">
-          <h2 className="nw-contactp__heading">Talk to the EDDVA Team</h2>
-          <p className="nw-contactp__lead">
-            Tell us about your institution and we will show you exactly how
-            EDDVA fits — academics, administration and analytics in one place.
-          </p>
-        </header>
+          {/* ── Reach us ── */}
+          <aside className="nw-contactp__aside">
+            <span className="nw-contactp__glow" aria-hidden="true" />
+            <span className="nw-contactp__grid-bg" aria-hidden="true" />
 
-        <div className="nw-contactp__grid">
+            <div className="nw-contactp__aside-inner">
+              <h2 className="nw-contactp__aside-title">Talk to the EDDVA Team</h2>
+              <p className="nw-contactp__aside-lead">
+                Tell us about your institution and we will show you exactly how
+                EDDVA fits — academics, administration and analytics in one place.
+              </p>
 
-          {/* LEFT — how to reach us */}
-          <div className="nw-contactp__details">
-            {details.map(({ id, Icon, label, value, href, accent, bg }) => (
-              <div
-                className="nw-contactp__detail"
-                key={id}
-                id={id}
-                style={{ "--nw-contact-accent": accent }}
-              >
-                <span
-                  className="nw-contactp__detail-icon"
-                  style={{ background: bg, color: accent }}
-                  aria-hidden="true"
-                >
-                  <Icon size={20} strokeWidth={1.8} />
-                </span>
-                <div className="nw-contactp__detail-copy">
-                  <span className="nw-contactp__detail-label">{label}</span>
-                  {href ? (
-                    <a href={href} className="nw-contactp__detail-value">{value}</a>
-                  ) : (
-                    <span className="nw-contactp__detail-value">{value}</span>
-                  )}
-                </div>
+              <ul className="nw-contactp__details">
+                {details.map(({ id, Icon, label, value, href }) => (
+                  <li className="nw-contactp__detail" key={id} id={id}>
+                    <span className="nw-contactp__detail-icon" aria-hidden="true">
+                      <Icon size={17} strokeWidth={1.9} />
+                    </span>
+                    <span className="nw-contactp__detail-copy">
+                      <span className="nw-contactp__detail-label">{label}</span>
+                      {href ? (
+                        <a href={href} className="nw-contactp__detail-value">{value}</a>
+                      ) : (
+                        <span className="nw-contactp__detail-value">{value}</span>
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="nw-contactp__socials">
+                {socials.map(({ id, label, href, path }) => (
+                  <a
+                    key={id}
+                    id={`${id}-contact`}
+                    href={href}
+                    className="nw-contactp__social"
+                    aria-label={label}
+                    target={href.startsWith("http") ? "_blank" : undefined}
+                    rel={href.startsWith("http") ? "noreferrer" : undefined}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                      <path d={path} />
+                    </svg>
+                  </a>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          </aside>
 
-          {/* RIGHT — enquiry form */}
+          {/* ── Enquiry form ── */}
           <form className="nw-contactp__form" id="nw-contact-form" onSubmit={handleSubmit} noValidate>
+            <h3 className="nw-contactp__form-title">Send us an enquiry</h3>
+
             <div className="nw-contactp__row">
               {field("name", "Your name",
-                <input
-                  className="nw-contactp__input"
-                  id="nw-contact-name"
-                  type="text"
-                  placeholder=" "
-                  maxLength={LIMITS.name}
-                  value={form.name}
-                  onChange={update("name")}
-                  onBlur={blur("name")}
-                  aria-invalid={Boolean(showError("name"))}
-                />
+                <input className="nw-contactp__input" id="nw-contact-name" type="text"
+                  placeholder=" " maxLength={LIMITS.name} value={form.name}
+                  onChange={update("name")} onBlur={blur("name")}
+                  aria-invalid={Boolean(showError("name"))} />
               )}
               {field("institution", "Institution",
-                <input
-                  className="nw-contactp__input"
-                  id="nw-contact-institution"
-                  type="text"
-                  placeholder=" "
-                  maxLength={LIMITS.institution}
-                  value={form.institution}
-                  onChange={update("institution")}
-                  onBlur={blur("institution")}
-                  aria-invalid={Boolean(showError("institution"))}
-                />
+                <input className="nw-contactp__input" id="nw-contact-institution" type="text"
+                  placeholder=" " maxLength={LIMITS.institution} value={form.institution}
+                  onChange={update("institution")} onBlur={blur("institution")}
+                  aria-invalid={Boolean(showError("institution"))} />
               )}
             </div>
 
             <div className="nw-contactp__row">
               {field("email", "Email",
-                <input
-                  className="nw-contactp__input"
-                  id="nw-contact-email"
-                  type="email"
-                  placeholder=" "
-                  maxLength={LIMITS.email}
-                  value={form.email}
-                  onChange={update("email")}
-                  onBlur={blur("email")}
-                  aria-invalid={Boolean(showError("email"))}
-                />
+                <input className="nw-contactp__input" id="nw-contact-email" type="email"
+                  placeholder=" " maxLength={LIMITS.email} value={form.email}
+                  onChange={update("email")} onBlur={blur("email")}
+                  aria-invalid={Boolean(showError("email"))} />
               )}
               {field("phone", "Phone",
-                <input
-                  className="nw-contactp__input"
-                  id="nw-contact-phone-field"
-                  type="tel"
-                  placeholder=" "
-                  maxLength={LIMITS.phone}
-                  value={form.phone}
-                  onChange={update("phone")}
-                  onBlur={blur("phone")}
-                  aria-invalid={Boolean(showError("phone"))}
-                />
+                <input className="nw-contactp__input" id="nw-contact-phone-field" type="tel"
+                  placeholder=" " maxLength={LIMITS.phone} value={form.phone}
+                  onChange={update("phone")} onBlur={blur("phone")}
+                  aria-invalid={Boolean(showError("phone"))} />
               )}
             </div>
 
             {/* A select always has a value, so its label sits raised permanently */}
             <label className="nw-contactp__field nw-contactp__field--filled">
-              <select
-                className="nw-contactp__input nw-contactp__select"
-                id="nw-contact-interest"
-                value={form.interest}
-                onChange={update("interest")}
-              >
+              <select className="nw-contactp__input nw-contactp__select" id="nw-contact-interest"
+                value={form.interest} onChange={update("interest")}>
                 {interests.map(({ label }) => (
                   <option key={label} value={label}>{label}</option>
                 ))}
@@ -278,29 +231,18 @@ const ContactSection = () => {
             </label>
 
             {field("message", "Message",
-              <textarea
-                className="nw-contactp__input nw-contactp__textarea"
-                id="nw-contact-message"
-                rows={5}
-                placeholder=" "
-                maxLength={LIMITS.message}
-                value={form.message}
-                onChange={update("message")}
-                onBlur={blur("message")}
-                aria-invalid={Boolean(showError("message"))}
-              />
+              <textarea className="nw-contactp__input nw-contactp__textarea" id="nw-contact-message"
+                rows={5} placeholder=" " maxLength={LIMITS.message} value={form.message}
+                onChange={update("message")} onBlur={blur("message")}
+                aria-invalid={Boolean(showError("message"))} />
             )}
             <span className="nw-contactp__counter">
               {form.message.length} / {LIMITS.message}
             </span>
 
             <div className="nw-contactp__actions">
-              <button
-                className="nw-contactp__submit"
-                id="nw-contact-submit"
-                type="submit"
-                disabled={!isValid || status === "sending"}
-              >
+              <button className="nw-contactp__submit" id="nw-contact-submit" type="submit"
+                disabled={!isValid || status === "sending"}>
                 {status === "sending" ? (
                   <>
                     <Loader2 size={16} strokeWidth={2.2} className="nw-contactp__spin" />
