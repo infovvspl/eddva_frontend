@@ -792,9 +792,9 @@ export default function Assessments() {
       )}
 
       {activeTab === 'results' && (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {resultsLoading ? (
-            <div className="flex h-48 items-center justify-center">
+            <div className="col-span-full flex h-48 items-center justify-center">
               <Loader2 className="h-7 w-7 animate-spin text-blue-600" />
             </div>
           ) : filteredResults.length === 0 ? (
