@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Check, ExternalLink, FileText, Loader2, X } from 'lucide-react';
+import { Check, Download, ExternalLink, FileText, Loader2, Printer, X } from 'lucide-react';
 import FlashcardViewer from '@/components/resources/FlashcardViewer';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
-import { MindMapCanvas } from '@/components/school/MindMapVisualizer';
+import { MindMapCanvas, type MindMapCanvasHandle, type LayoutMode } from '@/components/school/MindMapVisualizer';
 import { mindmapMarkdownToTree } from '@/lib/mindmap-markdown';
 import { presentationMarkdownToSlides, type Slide } from '@/lib/presentation-markdown';
 import { materialDisplayTitle } from '@/lib/material-download';
@@ -52,7 +52,7 @@ function labelFromType(value?: unknown) {
   return labels[type] || type.replace(/[_-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || 'Material';
 }
 
-function materialPageHeading(material: SchoolMaterial) {
+function materialTopicLabel(material: SchoolMaterial) {
   const typeLabel = labelFromType(material.fileType);
   const rawLabel =
     cleanHeadingPart(material.topicName) ||
@@ -60,10 +60,13 @@ function materialPageHeading(material: SchoolMaterial) {
     cleanHeadingPart(material.title) ||
     cleanHeadingPart(material.fileName) ||
     'Material';
-  const topicLabel = rawLabel
+  return rawLabel
     .replace(new RegExp(`^${typeLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*[-–—:]\\s*`, 'i'), '')
     .trim() || rawLabel;
-  return `${typeLabel} - ${topicLabel}`;
+}
+
+function materialPageHeading(material: SchoolMaterial) {
+  return `${labelFromType(material.fileType)} - ${materialTopicLabel(material)}`;
 }
 
 function findSectionStart(content: string, patterns: RegExp[]) {
@@ -262,6 +265,61 @@ function MaterialBody({ material, isStudent }: { material: SchoolMaterial; isStu
   return <div className="rounded-xl border border-dashed border-slate-200 p-10 text-center text-sm font-semibold text-slate-400">No preview content is available.</div>;
 }
 
+const MINDMAP_TABS: Array<{ mode: LayoutMode; label: string }> = [
+  { mode: 'org', label: 'Org Chart' },
+  { mode: 'hybrid', label: 'Hybrid Tree' },
+];
+
+function MindmapFullScreenView({ material, tree }: { material: SchoolMaterial; tree: ReturnType<typeof mindmapMarkdownToTree> }) {
+  const [mode, setMode] = useState<LayoutMode>('org');
+  const canvasRef = useRef<MindMapCanvasHandle>(null);
+  const topicLabel = materialTopicLabel(material);
+
+  return (
+    <div className="flex h-full min-h-[600px] flex-col bg-slate-50">
+      <div className="flex flex-nowrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-6">
+        <div className="min-w-0">
+          <div className="mb-1 inline-flex items-center gap-2 rounded-full bg-violet-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-violet-600">
+            <FileText size={14} /> {labelFromType(material.fileType)}
+          </div>
+          <h1 className="truncate text-xl font-black text-slate-900 sm:text-2xl">{topicLabel}</h1>
+        </div>
+        <div className="flex flex-shrink-0 items-center gap-1.5">
+          {MINDMAP_TABS.map(t => (
+            <button
+              key={t.mode}
+              type="button"
+              onClick={() => setMode(t.mode)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${
+                mode === t.mode ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => canvasRef.current?.exportPNG(topicLabel)}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm hover:bg-slate-50"
+          >
+            <Download size={14} /> Download
+          </button>
+          <button
+            type="button"
+            onClick={() => canvasRef.current?.printMindmap(topicLabel)}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm hover:bg-slate-50"
+          >
+            <Printer size={14} /> Print
+          </button>
+        </div>
+      </div>
+      <div className="min-h-0 flex-1 p-3 sm:p-4">
+        <MindMapCanvas ref={canvasRef} data={tree} height="100%" mode={mode} onModeChange={setMode} hideToggle />
+      </div>
+    </div>
+  );
+}
+
 export default function SchoolMaterialViewPage() {
   const { materialId } = useParams();
   const navigate = useNavigate();
@@ -294,6 +352,17 @@ export default function SchoolMaterialViewPage() {
   const fileType = String(material?.fileType ?? material?.type ?? '').toLowerCase();
   const fileUrl = resolveFileUrl(material?.fileUrl ?? material?.file_url);
   const isPdf = !!fileUrl?.match(/\.pdf(?:$|[?#])/i) || fileType.includes('pdf') || fileType.includes('ebook');
+  const isMindmap = fileType === 'mindmap';
+  const mindmapContent = material?.description || '';
+  const mindmapTitle = material ? materialDisplayTitle(material) : '';
+  const mindmapTree = useMemo(
+    () => (isMindmap && mindmapContent ? mindmapMarkdownToTree(mindmapContent, mindmapTitle) : null),
+    [isMindmap, mindmapContent, mindmapTitle],
+  );
+
+  if (!loading && material && isMindmap && mindmapTree?.children?.length) {
+    return <MindmapFullScreenView material={material} tree={mindmapTree} />;
+  }
 
   if (!loading && material && isPdf) {
     return (
@@ -313,13 +382,6 @@ export default function SchoolMaterialViewPage() {
 
   return (
     <div className="min-h-full bg-slate-50 p-4 sm:p-6">
-      <button
-        type="button"
-        onClick={() => fromPath ? navigate(fromPath, { replace: true, state: { courseContentState: routeState?.courseContentState } }) : navigate(-1)}
-        className="mb-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 shadow-sm"
-      >
-        <ArrowLeft size={16} /> Back
-      </button>
       {loading ? (
         <div className="flex h-64 items-center justify-center gap-2 text-sm font-semibold text-slate-500">
           <Loader2 size={18} className="animate-spin" /> Loading material...
@@ -333,7 +395,7 @@ export default function SchoolMaterialViewPage() {
               <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-violet-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-violet-600">
                 <FileText size={14} /> {labelFromType(material.fileType)}
               </div>
-              <h1 className="text-2xl font-black text-slate-900">{materialPageHeading(material)}</h1>
+              <h1 className="text-2xl font-black text-slate-900">{materialTopicLabel(material)}</h1>
               <p className="mt-1 text-sm font-semibold text-slate-400">{material.subjectName || material.chapterName || material.topicName || ''}</p>
             </div>
             {fileType === 'ppt' ? (
