@@ -35,6 +35,7 @@ export interface CareerItem {
 }
 
 export interface CareerReport {
+  id: string;
   topCareers: CareerItem[];
   overallAnalysis: string;
   streamRecommendation: string | null;
@@ -42,6 +43,7 @@ export interface CareerReport {
   encouragement: string;
   generatedAt: string;
   generatedForGrade: number;
+  feedbackRating: 'up' | 'down' | null;
 }
 
 export interface CareerPath {
@@ -94,28 +96,36 @@ export async function submitQuiz(answers: { questionId: string; value: string }[
   return unwrap<QuizResult>(res.data);
 }
 
-interface GenerateResponse {
-  report: Omit<CareerReport, 'generatedAt' | 'generatedForGrade'> & Partial<Pick<CareerReport, 'generatedForGrade'>>;
+interface ReportEnvelope {
+  id: string;
+  report: Omit<CareerReport, 'id' | 'generatedAt' | 'generatedForGrade' | 'feedbackRating'>
+    & Partial<Pick<CareerReport, 'generatedForGrade'>>;
   generatedAt?: string;
   validUntil?: string;
+  feedbackRating?: 'up' | 'down' | null;
 }
 
-export async function generateCareerReport(): Promise<{ report: CareerReport }> {
-  const res = await api.post('/career/report/generate', {});
-  const data = unwrap<GenerateResponse>(res.data);
-  return { report: normaliseReport(data) };
+// Report generation is async on the backend (queued via Bull) — this just
+// enqueues the job. Callers must poll getCareerReport() for the result.
+export async function generateCareerReport(): Promise<void> {
+  await api.post('/career/report/generate', {});
 }
 
 export async function getCareerReport(): Promise<CareerReport | null> {
   const res = await api.get('/career/report');
-  const data = unwrap<GenerateResponse | null>(res.data);
+  const data = unwrap<ReportEnvelope | null>(res.data);
   if (!data || !data.report) return null;
   return normaliseReport(data);
 }
 
-function normaliseReport(data: GenerateResponse): CareerReport {
+export async function submitCareerFeedback(rating: 'up' | 'down', comment?: string): Promise<void> {
+  await api.post('/career/report/feedback', { rating, comment });
+}
+
+function normaliseReport(data: ReportEnvelope): CareerReport {
   const r = data.report;
   return {
+    id: data.id,
     topCareers: Array.isArray(r?.topCareers) ? r.topCareers : [],
     overallAnalysis: r?.overallAnalysis ?? '',
     streamRecommendation: r?.streamRecommendation ?? null,
@@ -123,6 +133,7 @@ function normaliseReport(data: GenerateResponse): CareerReport {
     encouragement: r?.encouragement ?? '',
     generatedAt: data.generatedAt ?? new Date().toISOString(),
     generatedForGrade: r?.generatedForGrade ?? 0,
+    feedbackRating: data.feedbackRating ?? null,
   };
 }
 
