@@ -913,7 +913,7 @@ const MindMapCanvasInner = forwardRef<MindMapCanvasHandle, MindMapCanvasProps & 
 });
 
 const TABS: Array<{ mode: LayoutMode; label: string }> = [
-  { mode: 'org', label: 'Org Chart' },
+  { mode: 'org', label: 'Organisational Tree' },
   { mode: 'hybrid', label: 'Hybrid Tree' },
 ];
 

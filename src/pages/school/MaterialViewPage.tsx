@@ -266,7 +266,7 @@ function MaterialBody({ material, isStudent }: { material: SchoolMaterial; isStu
 }
 
 const MINDMAP_TABS: Array<{ mode: LayoutMode; label: string }> = [
-  { mode: 'org', label: 'Org Chart' },
+  { mode: 'org', label: 'Organisational Tree' },
   { mode: 'hybrid', label: 'Hybrid Tree' },
 ];
 
