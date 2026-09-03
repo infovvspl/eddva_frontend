@@ -481,7 +481,10 @@ export default function Dashboard() {
           <div className="bg-white rounded-[1.5rem] p-5 shadow-sm border border-slate-100 flex-1 min-h-[260px]">
             <SmartCalendar />
           </div>
-          <div className="shrink-0 h-[104px]">
+          {/* Fixed height fit the sm:flex-row layout only — below sm the card
+              stacks (icon+text, then a full-width button) and needs more
+              room, so the height floor is dropped on mobile. */}
+          <div className="shrink-0 h-auto sm:h-[104px]">
              <NextLiveClassCard schedule={todayPlan} />
           </div>
         </div>

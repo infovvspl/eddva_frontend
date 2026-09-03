@@ -7,13 +7,18 @@
 // Socials sit in the bottom bar, balancing the legal links rather than
 // crowding the blurb; contact details keep their own column.
 //
+// No photograph behind it: the footer paints its own ground — a soft blue
+// gradient with a radial bloom and a faint dot grid — and closes on a solid
+// navy bar. assets/footer bg.jpg is no longer referenced here.
+//
 // Copy is unchanged throughout — the blurb, the column titles, every label and
 // the bottom bar text are exactly as they were. Only the treatment moved.
 
 import { Link } from "react-router-dom";
-import { Phone, Mail, MapPin, ArrowUp } from "lucide-react";
+import { Phone, Mail, MapPin, ArrowUp, Download } from "lucide-react";
 import { LOGO, LOGO_ALT } from "../brand";
 import { socials } from "../data/socials";
+import { emails, PHONE, ADDRESS } from "../data/contact";
 
 const columns = [
   {
@@ -30,11 +35,11 @@ const columns = [
     id: "nw-foot-products",
     title: "Products",
     links: [
-      { id: "lms",      label: "AI-LMS",                    href: "#nw-prod-lms" },
-      { id: "erp",      label: "ERP",                       href: "#nw-prod-erp" },
-      { id: "combo",    label: "Combo (ERP + AI-LMS)",      href: "#nw-prod-combo" },
-      { id: "jeeai",    label: "JEE / NEET (AI Model)",     href: "#nw-prod-jee-ai" },
-      { id: "jeenonai", label: "JEE / NEET (Non-AI Model)", href: "#nw-prod-jee-nonai" },
+      { id: "lms",      label: "EDDVA AI Learn",            href: "#nw-prod-lms" },
+      { id: "erp",      label: "EDDVA ERP",                 href: "#nw-prod-erp" },
+      { id: "combo",    label: "EDDVA Plus",                href: "#nw-prod-combo" },
+      { id: "jeeai",    label: "EDDVA JEE NEET AI",         href: "#nw-prod-jee-ai" },
+      { id: "jeenonai", label: "EDDVA JEE NEET",            href: "#nw-prod-jee-nonai" },
     ],
   },
   {
@@ -50,10 +55,22 @@ const columns = [
   },
 ];
 
+// Both mailboxes are published — schools and coaching institutes are
+// different inboxes, so a visitor should not have to guess.
+/* ⚠ The brochure PDF is not in the repo yet. This points at a public/ path,
+   so dropping the file in at public/eddva-brochure.pdf makes the link work
+   with no code change — until then it 404s. Update the filename here if the
+   team names it something else. */
+const BROCHURE_URL = "/eddva-brochure.pdf";
+
+const DEVELOPER = { label: "vvspltech.com", href: "https://vvspltech.com" };
+
 const contacts = [
-  { id: "phone", Icon: Phone,  label: "+91 79780 73201",            href: "tel:+917978073201" },
-  { id: "mail",  Icon: Mail,   label: "info@eddva.com",             href: "mailto:info@eddva.com" },
-  { id: "place", Icon: MapPin, label: "Bhubaneswar, Odisha, India", href: null },
+  { id: "phone", Icon: Phone, label: PHONE.display, href: PHONE.href },
+  ...emails.map(({ id, address }) => ({
+    id, Icon: Mail, label: address, href: `mailto:${address}`,
+  })),
+  { id: "place", Icon: MapPin, label: ADDRESS, href: null },
 ];
 
 const Footer = () => {
@@ -63,6 +80,7 @@ const Footer = () => {
     <footer className="nw-footer" id="nw-contact">
       <span className="nw-footer__rule" aria-hidden="true" />
       <span className="nw-footer__glow" aria-hidden="true" />
+      <span className="nw-footer__grid" aria-hidden="true" />
 
       <div className="nw-footer__container">
 
@@ -73,6 +91,16 @@ const Footer = () => {
             Education Development &amp; Advancement<br />
             All-in-one AI-Powered Platform for Schools &amp; Institutes.
           </p>
+
+          <a
+            href={BROCHURE_URL}
+            className="nw-footer__brochure"
+            id="nw-foot-brochure"
+            download
+          >
+            <Download size={16} strokeWidth={2.2} />
+            Download Brochure
+          </a>
         </div>
 
         {/* Link columns */}
@@ -139,6 +167,17 @@ const Footer = () => {
 
         <span className="nw-footer__copy">
           © {new Date().getFullYear()} EDDVA. All Rights Reserved.
+          <span className="nw-footer__sep">|</span>
+          Developed by{" "}
+          <a
+            href={DEVELOPER.href}
+            className="nw-footer__dev"
+            id="nw-foot-dev"
+            target="_blank"
+            rel="noreferrer"
+          >
+            {DEVELOPER.label}
+          </a>
         </span>
 
         <div className="nw-footer__legal">

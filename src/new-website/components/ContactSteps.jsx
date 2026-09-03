@@ -6,6 +6,7 @@
 // response time against what the team actually commits to.
 
 import { Send, PhoneCall, MonitorPlay, Rocket } from "lucide-react";
+import useInView from "../hooks/useInView";
 
 const steps = [
   {
@@ -35,15 +36,17 @@ const steps = [
 ];
 
 const ContactSteps = () => {
+  const [ref, inView] = useInView({ threshold: 0.25 });
+
   return (
     <section className="nw-steps" id="nw-contact-steps">
       <div className="nw-steps__container">
 
         <h2 className="nw-steps__heading">What Happens Next</h2>
 
-        <ol className="nw-steps__list">
+        <ol className={`nw-steps__list${inView ? " nw-in" : ""}`} ref={ref}>
           {steps.map(({ id, Icon, title, desc }, i) => (
-            <li className="nw-steps__step" key={id} id={id}>
+            <li className="nw-steps__step" key={id} id={id} style={{ "--i": i }}>
               <span className="nw-steps__marker" aria-hidden="true">
                 <span className="nw-steps__icon">
                   <Icon size={20} strokeWidth={1.9} />

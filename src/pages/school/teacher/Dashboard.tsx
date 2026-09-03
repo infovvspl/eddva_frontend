@@ -194,13 +194,13 @@ const Dashboard: React.FC = () => {
   return (
     <div className="dashboard">
       <MaintenanceBroadcastBanner />
-      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 mb-6">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 mb-6 items-start">
         {/* Welcome Banner */}
-        <div className="lg:col-span-2 xl:col-span-3 relative overflow-hidden rounded-[2rem] shadow-sm group">
+        <div className="lg:col-span-2 xl:col-span-3 relative overflow-hidden rounded-[2rem] shadow-sm group min-h-[300px]">
           <div className="absolute inset-0 bg-cover bg-[center_top] bg-no-repeat z-0" style={{ backgroundImage: `url(${BgBanner})` }} />
           <div className="absolute inset-y-0 left-0 w-full md:w-[60%] lg:w-[45%] bg-gradient-to-r from-white/95 via-white/70 to-transparent z-10" />
 
-          <div className="relative z-20 flex flex-col justify-center max-w-xl p-8 md:p-10">
+          <div className="relative z-20 flex flex-col justify-center max-w-xl p-6 md:p-8 min-h-[300px]">
             <h1 className="text-3xl md:text-4xl font-extrabold text-[#112A46] tracking-tight leading-tight">
               Welcome back, <br /><span className="text-blue-600">{user?.name || 'Teacher'}!</span>
             </h1>
@@ -220,8 +220,10 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Today's Schedule */}
-        <div className="hidden lg:flex lg:col-span-1 rounded-[2rem] border border-slate-100 bg-white shadow-sm flex-col overflow-hidden">
+        {/* Today's Schedule — spans both grid rows so its height comes from
+            Banner + Today's Overview combined, instead of leaving empty
+            space next to a now-shorter banner. */}
+        <div className="hidden lg:flex lg:col-span-1 lg:row-span-2 rounded-[2rem] border border-slate-100 bg-white shadow-sm flex-col overflow-hidden">
           <div className="p-5 sm:p-6 border-b border-slate-100 flex justify-between items-center bg-white">
             <h3 className="text-[15px] sm:text-[17px] font-extrabold text-[#112A46] flex items-center gap-2">
               <Calendar size={18} className="text-[#1C4ED8]" /> Today's Schedule
@@ -287,9 +289,10 @@ const Dashboard: React.FC = () => {
             </button>
           </div>
         </div>
-      </div>
 
-      <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 mb-6">
+        {/* Today's Overview — row 2, same column span as the banner above it,
+            so Schedule's row-span-2 sits flush beside both. */}
+        <div className="lg:col-span-2 xl:col-span-3 bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
         <div className="flex justify-between items-end mb-6">
           <h2 className="text-xl font-extrabold text-[#112A46] tracking-tight">Today's Overview</h2>
         </div>
@@ -354,6 +357,7 @@ const Dashboard: React.FC = () => {
               Scheduled
             </div>
           </div>
+        </div>
         </div>
       </div>
 

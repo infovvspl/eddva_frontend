@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
+import useInView from "../hooks/useInView";
 
 const faqs = [
   {
@@ -39,6 +40,7 @@ const faqs = [
 
 const FaqSection = () => {
   const [openId, setOpenId] = useState(null);
+  const [ref, inView] = useInView({ threshold: 0.1 });
 
   const toggle = (id) => setOpenId(prev => (prev === id ? null : id));
 
@@ -51,11 +53,15 @@ const FaqSection = () => {
           <h2 className="nw-faq__heading">Frequently Asked Questions</h2>
         </div>
 
-        <div className="nw-faq__grid">
-          {faqs.map(({ id, q, a }) => {
+        <div className={`nw-faq__grid${inView ? " nw-in" : ""}`} ref={ref}>
+          {faqs.map(({ id, q, a }, i) => {
             const open = openId === id;
             return (
-              <div className={`nw-faq__item${open ? " nw-open" : ""}`} key={id} id={id}>
+              <div
+                className={`nw-faq__item${open ? " nw-open" : ""}`}
+                key={id} id={id}
+                style={{ "--i": i }}
+              >
                 <button
                   className="nw-faq__question"
                   id={`${id}-btn`}

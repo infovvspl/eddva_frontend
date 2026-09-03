@@ -1,6 +1,7 @@
 // CtaBanner.jsx — New Website Mockup
 // Violet band: "Ready to Transform Your Institution?"
 
+import { Link } from "react-router-dom";
 import { CalendarDays, ArrowRight } from "lucide-react";
 
 const CtaBanner = () => {
@@ -20,10 +21,10 @@ const CtaBanner = () => {
           </div>
         </div>
 
-        <a href="#nw-contact" className="nw-cta__btn" id="nw-cta-demo-btn">
+        <Link to="/contact" className="nw-cta__btn" id="nw-cta-demo-btn">
           Book a Free Demo
           <ArrowRight size={16} strokeWidth={2.2} />
-        </a>
+        </Link>
 
       </div>
     </section>

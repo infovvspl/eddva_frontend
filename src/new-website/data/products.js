@@ -1,7 +1,6 @@
 // Shared product copy.
-// Used by ProductsSection (home page card grid) and ProductCompare (the
-// capability matrix on /products, which also supplies its column
-// order from data/comparison.js).
+// Used by ProductsSection (home page card grid) and ProductGrid (the
+// five self-contained cards on /products).
 //
 // Artwork lives in `img`. The last product has no illustration supplied yet, so
 // it falls back to `Icon`; drop an "Icon 5.png" beside the others, import it
@@ -24,7 +23,7 @@ import iconJee   from "../assets/Icon 4.png";
 export const products = [
   {
     id: "nw-prod-lms",
-    title: "AI-LMS",
+    title: "EDDVA AI Learn",
     desc: "AI-powered LMS with smart content, assessments, analytics and more.",
     tagline: "Next-Gen Learning Management System",
     TileIcon: MonitorPlay,
@@ -44,7 +43,7 @@ export const products = [
   },
   {
     id: "nw-prod-erp",
-    title: "ERP",
+    title: "EDDVA ERP",
     desc: "Manage academic, administrative & financial operations seamlessly.",
     tagline: "Run Your Institution Seamlessly",
     TileIcon: Landmark,
@@ -64,9 +63,9 @@ export const products = [
   },
   {
     id: "nw-prod-combo",
-    title: "Combo",
-    desc: "Get the best of ERP + AI-LMS in one integrated platform.",
-    tagline: "Best of ERP + AI-LMS",
+    title: "EDDVA Plus",
+    desc: "Get the best of EDDVA ERP + EDDVA AI Learn in one integrated platform.",
+    tagline: "Best of EDDVA ERP + EDDVA AI Learn",
     TileIcon: Boxes,
     cta: "Know More",
     bullets: [
@@ -84,7 +83,7 @@ export const products = [
   },
   {
     id: "nw-prod-jee-ai",
-    title: "JEE / NEET\n(AI Model)",
+    title: "EDDVA JEE NEET AI",
     desc: "AI-driven learning & practice for competitive exam success.",
     tagline: "AI-Powered Preparation for Top Ranks",
     TileIcon: BrainCircuit,
@@ -104,7 +103,7 @@ export const products = [
   },
   {
     id: "nw-prod-jee-nonai",
-    title: "JEE / NEET\n(Non-AI Model)",
+    title: "EDDVA JEE NEET",
     desc: "Structured content & tests for effective exam preparation.",
     tagline: "Structured Content & Practice",
     TileIcon: GraduationCap,
