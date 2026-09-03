@@ -75,12 +75,15 @@ const SolutionRoles = () => {
                   </button>
                 </h3>
 
+                {/* Height is animated with a 0fr→1fr grid row, so the panel
+                    slides rather than snapping. `hidden` cannot be used with
+                    that, so the collapsed state relies on visibility:hidden in
+                    CSS — which still takes it out of the accessibility tree. */}
                 <div
                   className="nw-roles__region"
                   id={`${id}-region`}
                   role="region"
                   aria-labelledby={`${id}-trigger`}
-                  hidden={!isOpen}
                 >
                   <div className="nw-roles__groups">
                     {groups.map(({ id: groupId, label, items }) => (

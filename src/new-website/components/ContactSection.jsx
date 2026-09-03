@@ -18,20 +18,28 @@
 // If the request fails the form says so and offers the mailto: fallback rather
 // than pretending the message went through.
 //
-// Phone, email and address are the same values the footer publishes.
+// Phone, addresses and both mailboxes come from data/contact.js, so the
+// footer and this page publish exactly the same details.
 
 import { useState } from "react";
 import { Phone, Mail, MapPin, Clock, Send, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { submitLead } from "../../lib/api/leads";
 import { socials } from "../data/socials";
+import { emails, emailFor, PHONE, ADDRESS, HOURS } from "../data/contact";
 
-const CONTACT_EMAIL = "info@eddva.com";
-
+// Schools and coaching institutes have separate mailboxes, so both are listed
+// with the label that says which is which.
 const details = [
-  { id: "nw-contact-phone",   Icon: Phone,  label: "Call us",      value: "+91 79780 73201",            href: "tel:+917978073201" },
-  { id: "nw-contact-mail",    Icon: Mail,   label: "Email us",     value: CONTACT_EMAIL,                href: `mailto:${CONTACT_EMAIL}` },
-  { id: "nw-contact-address", Icon: MapPin, label: "Visit us",     value: "Bhubaneswar, Odisha, India", href: null },
-  { id: "nw-contact-hours",   Icon: Clock,  label: "Office hours", value: "Monday to Saturday, 10am – 7pm", href: null },
+  { id: "nw-contact-phone", Icon: Phone, label: "Call us", value: PHONE.display, href: PHONE.href },
+  ...emails.map(({ id, address, label }) => ({
+    id: `nw-contact-mail-${id}`,
+    Icon: Mail,
+    label,
+    value: address,
+    href: `mailto:${address}`,
+  })),
+  { id: "nw-contact-address", Icon: MapPin, label: "Visit us",     value: ADDRESS, href: null },
+  { id: "nw-contact-hours",   Icon: Clock,  label: "Office hours", value: HOURS,   href: null },
 ];
 
 // `vertical` maps onto the backend's LeadVertical enum where the choice implies
@@ -83,6 +91,10 @@ const ContactSection = () => {
 
   const errors = validate(form);
   const isValid = Object.keys(errors).length === 0;
+  // If the send fails, point them at the mailbox matching their enquiry
+  const fallbackEmail = emailFor(
+    interests.find(i => i.label === form.interest)?.vertical,
+  );
   // An error only shows once the field has been left, or after a failed submit
   const showError = field => (touched[field] || status === "error") && errors[field];
 
@@ -273,8 +285,8 @@ const ContactSection = () => {
                 <AlertCircle size={17} strokeWidth={2.2} />
                 <span>
                   That did not go through. Please try again, or write to{" "}
-                  <a href={`mailto:${CONTACT_EMAIL}`} className="nw-contactp__note-link">
-                    {CONTACT_EMAIL}
+                  <a href={`mailto:${fallbackEmail.address}`} className="nw-contactp__note-link">
+                    {fallbackEmail.address}
                   </a>{" "}
                   directly.
                 </span>

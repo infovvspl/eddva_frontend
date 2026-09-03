@@ -24,10 +24,18 @@ const AboutSection = () => {
             Enriching <span className="nw-about__heading-accent">Futures.</span>
           </h2>
           <p className="nw-about__desc" id="nw-about-desc">
-            EDDVA is a next-generation platform built for the future of
+            EDDVA is a next generation platform built for the future of
             education. We combine AI, automation and analytics to deliver
-            personalized learning, simplified operations and better outcomes
-            for every stakeholder.
+            personalised learning, simplify school operations and create
+            better outcomes for every stakeholder.
+          </p>
+          <p className="nw-about__desc" id="nw-about-desc-2">
+            By bringing students, teachers, parents and school management
+            together on one intelligent ecosystem, EDDVA makes education
+            smarter, more connected and more impactful.
+          </p>
+          <p className="nw-about__tagline" id="nw-about-tagline">
+            Learn Smarter. Teach Better. Grow Together.
           </p>
         </div>
 

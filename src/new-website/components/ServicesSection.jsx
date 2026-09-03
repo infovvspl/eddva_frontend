@@ -4,6 +4,7 @@
 
 import { ArrowRight } from "lucide-react";
 import { services, stakeholders } from "../data/services";
+import useInView from "../hooks/useInView";
 
 
 /* Decorative campus behind the section header. Drawn rather than imported —
@@ -45,6 +46,9 @@ const CampusScene = () => (
 );
 
 const ServicesSection = () => {
+  const [listRef, listIn] = useInView({ threshold: 0.2 });
+  const [shRef, shIn] = useInView({ threshold: 0.15 });
+
   return (
     <section className="nw-services" id="nw-solution">
       <div className="nw-services__container">
@@ -67,13 +71,13 @@ const ServicesSection = () => {
         </div>
 
         {/* Services */}
-        <div className="nw-services__list">
-          {services.map(({ id, title, desc, Icon, color, bg }) => (
+        <div className={`nw-services__list${listIn ? " nw-in" : ""}`} ref={listRef}>
+          {services.map(({ id, title, desc, Icon, color, bg }, i) => (
             <div
               className="nw-services__item"
               key={id}
               id={id}
-              style={{ "--nw-svc-accent": color }}
+              style={{ "--nw-svc-accent": color, "--i": i }}
             >
               <div className="nw-services__item-icon" style={{ background: bg, color }}>
                 <Icon size={36} />
@@ -92,13 +96,13 @@ const ServicesSection = () => {
         {/* Stakeholders */}
         <div className="nw-services__right">
           <span className="nw-services__label nw-services__label--center">OUR STAKEHOLDERS</span>
-          <div className="nw-services__stakeholders">
-            {stakeholders.map(({ id, title, desc, Icon, color, bg }) => (
+          <div className={`nw-services__stakeholders${shIn ? " nw-in" : ""}`} ref={shRef}>
+            {stakeholders.map(({ id, title, desc, Icon, color, bg }, i) => (
               <div
                 className="nw-services__sh-card"
                 key={id}
                 id={id}
-                style={{ "--nw-sh-accent": color }}
+                style={{ "--nw-sh-accent": color, "--i": i }}
               >
                 <div className="nw-services__sh-avatar" style={{ background: bg, color }}>
                   <Icon size={32} strokeWidth={1.5} />

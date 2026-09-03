@@ -59,7 +59,7 @@ const HeroSection = () => {
 
           <span className="nw-hero__badge nw-rise" id="nw-hero-badge" style={{ "--nw-delay": "0s" }}>
             <Sparkles size={14} strokeWidth={2.2} />
-            AI Powered Digital Transformation Platform
+            EDDVA – Education Development &amp; Advancement
           </span>
 
           <h1 className="nw-hero__heading nw-rise" style={{ "--nw-delay": "0.1s" }}>
@@ -68,8 +68,15 @@ const HeroSection = () => {
           </h1>
 
           <p className="nw-hero__sub nw-rise" id="nw-hero-sub" style={{ "--nw-delay": "0.22s" }}>
-            EDDVA is an all-in-one digital platform for Schools &amp; Institutes
-            to manage, teach, learn and grow &ndash; smarter, together.
+            Keeping the essence of traditional teaching alive, while
+            empowering it with the intelligence of AI. EDDVA connects
+            Students, Teachers, Parents and School Management through one
+            intelligent ecosystem designed to enhance learning, empower
+            educators and enable smarter decisions.
+          </p>
+
+          <p className="nw-hero__tagline nw-rise" id="nw-hero-tagline" style={{ "--nw-delay": "0.3s" }}>
+            Personalised Learning. Smarter Teaching. Better Decisions.
           </p>
 
           <div className="nw-hero__actions nw-rise" style={{ "--nw-delay": "0.34s" }}>

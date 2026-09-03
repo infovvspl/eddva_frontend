@@ -4,21 +4,24 @@
 // screens). Copy comes from data/achievements.js.
 
 import { achievements } from "../data/achievements";
+import useInView from "../hooks/useInView";
 
 const AwardsTimeline = () => {
+  const [ref, inView] = useInView({ threshold: 0.25 });
+
   return (
     <section className="nw-timeline" id="nw-awards-timeline">
       <div className="nw-timeline__container">
 
         <h2 className="nw-timeline__heading">Recognized for Excellence</h2>
 
-        <ol className="nw-timeline__track">
-          {achievements.map(({ id, title, subtitle, Icon, color, bg, ring }) => (
+        <ol className={`nw-timeline__track${inView ? " nw-in" : ""}`} ref={ref}>
+          {achievements.map(({ id, title, subtitle, Icon, color, bg, ring }, i) => (
             <li
               className="nw-timeline__stop"
               key={id}
               id={`${id}-stop`}
-              style={{ "--nw-award-accent": color, "--nw-award-ring": ring }}
+              style={{ "--nw-award-accent": color, "--nw-award-ring": ring, "--i": i }}
             >
               <span
                 className="nw-timeline__node"
