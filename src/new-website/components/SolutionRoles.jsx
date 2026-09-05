@@ -8,21 +8,43 @@
 // open Students and Teachers side by side and read down both.
 //
 // Each header is a real <button> with aria-expanded/aria-controls; the panel is
-// a labelled region. Students is open on load so the section never reads as an
-// empty list of headings.
+// a labelled region. The first role that still expands in place is open on
+// load so the section never reads as an empty list of headings.
+//
+// Teachers and Students each have a full dedicated page now, so their rows
+// render as a link-out card instead of an accordion — see DEDICATED_PAGE
+// below.
 //
 // The capability list is the module inventory that actually ships in this repo
 // — see data/solutions.js.
 
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ChevronDown, ArrowRight } from "lucide-react";
 import { roleSolutions } from "../data/solutions";
 
 const countFor = role =>
   role.groups.reduce((sum, group) => sum + group.items.length, 0);
 
+// Teachers and Students each got a full dedicated page (their complete
+// capability breakdown, always expanded, with room to breathe). Their rows
+// here link out to that page instead of expanding inline — showing the same
+// content twice, once squeezed among four roles and once properly, was
+// redundant. Parents and Institute Admin have no page of their own yet, so
+// they keep the original expand-in-place behaviour.
+const DEDICATED_PAGE = {
+  "nw-sol-teachers": "/solution/teachers",
+  "nw-sol-students": "/solution/students",
+};
+
 const SolutionRoles = () => {
-  const [open, setOpen] = useState({ [roleSolutions[0].id]: true });
+  // Default-open the first role that still expands in place — Students
+  // (roleSolutions[0]) now links out instead, so opening it by default would
+  // do nothing.
+  const firstAccordionRole = roleSolutions.find(r => !DEDICATED_PAGE[r.id]);
+  const [open, setOpen] = useState(
+    firstAccordionRole ? { [firstAccordionRole.id]: true } : {},
+  );
 
   const toggle = id => setOpen(prev => ({ ...prev, [id]: !prev[id] }));
 
@@ -41,6 +63,35 @@ const SolutionRoles = () => {
         <div className="nw-roles__list">
           {roleSolutions.map(role => {
             const { id, title, blurb, Icon, color, bg, groups } = role;
+            const dedicatedPage = DEDICATED_PAGE[id];
+
+            if (dedicatedPage) {
+              return (
+                <Link
+                  to={dedicatedPage}
+                  className="nw-roles__item nw-roles__item--linkout"
+                  key={id}
+                  id={id}
+                  style={{ "--nw-role-accent": color, "--nw-role-bg": bg }}
+                >
+                  <span className="nw-roles__icon" aria-hidden="true">
+                    <Icon size={22} strokeWidth={1.8} />
+                  </span>
+                  <span className="nw-roles__names">
+                    <span className="nw-roles__title">{title}</span>
+                    <span className="nw-roles__blurb">{blurb}</span>
+                  </span>
+                  <span className="nw-roles__count">{countFor(role)}</span>
+                  <ArrowRight
+                    size={19}
+                    strokeWidth={2.2}
+                    className="nw-roles__linkout-arrow"
+                    aria-hidden="true"
+                  />
+                </Link>
+              );
+            }
+
             const isOpen = Boolean(open[id]);
             return (
               <article

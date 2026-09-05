@@ -6,7 +6,9 @@
 // work out what each product actually did — useful for someone already
 // comparing, confusing for someone landing on the page cold. Each card here
 // stands on its own: icon, name, tagline, description, its own top
-// capabilities, one CTA. Nothing to reconcile against a neighbouring column.
+// capabilities, and two ways out — "Learn more" to that product's own page
+// (pages/ProductDetailPage, at /products/:slug) and its original demo CTA.
+// Nothing to reconcile against a neighbouring column.
 //
 // Same fields as before (`bullets`, `tagline`, `TileIcon`, `cta`) — this is a
 // presentation change only, no new copy.
@@ -19,7 +21,7 @@ import useInView from "../hooks/useInView";
 const FEATURED = "nw-prod-combo";
 
 const ProductCard = ({ product, index }) => {
-  const { id, title, desc, tagline, bullets, cta, TileIcon, img, Icon, color, bg, border, btn } = product;
+  const { id, slug, title, desc, tagline, bullets, cta, TileIcon, img, Icon, color, bg, border, btn } = product;
   const [ref, inView] = useInView({ threshold: 0.15 });
   const featured = id === FEATURED;
 
@@ -71,14 +73,20 @@ const ProductCard = ({ product, index }) => {
         ))}
       </ul>
 
-      <Link
-        to="/contact"
-        className={`nw-pgrid__cta${featured ? " nw-pgrid__cta--filled" : ""}`}
-        id={`${id}-cta`}
-      >
-        {cta}
-        <ArrowRight size={14} strokeWidth={2.6} />
-      </Link>
+      <div className="nw-pgrid__actions">
+        <Link to={`/products/${slug}`} className="nw-pgrid__more" id={`${id}-more`}>
+          Learn more
+          <ArrowRight size={13} strokeWidth={2.6} />
+        </Link>
+        <Link
+          to="/contact"
+          className={`nw-pgrid__cta${featured ? " nw-pgrid__cta--filled" : ""}`}
+          id={`${id}-cta`}
+        >
+          {cta}
+          <ArrowRight size={14} strokeWidth={2.6} />
+        </Link>
+      </div>
     </article>
   );
 };

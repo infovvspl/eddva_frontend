@@ -49,10 +49,16 @@ const Index = lazy(() => import("./pages/Index"));
 const NewWebsitePage = lazy(() => import("./new-website/NewWebsitePage"));
 const NewWebsiteContactPage = lazy(() => import("./new-website/pages/ContactPage"));
 const NewWebsiteAboutPage = lazy(() => import("./new-website/pages/AboutPage"));
+const NewWebsiteAboutStoryPage = lazy(() => import("./new-website/pages/AboutStoryPage"));
 const NewWebsiteProductsPage = lazy(() => import("./new-website/pages/ProductsPage"));
 const NewWebsiteSolutionPage = lazy(() => import("./new-website/pages/SolutionPage"));
 const NewWebsiteFeaturesPage = lazy(() => import("./new-website/pages/FeaturesPage"));
+const NewWebsiteFaqPage = lazy(() => import("./new-website/pages/FaqPage"));
+const NewWebsiteSchoolSolutionPage = lazy(() => import("./new-website/pages/SchoolSolutionPage"));
+const NewWebsiteTeacherSolutionPage = lazy(() => import("./new-website/pages/TeacherSolutionPage"));
+const NewWebsiteStudentSolutionPage = lazy(() => import("./new-website/pages/StudentSolutionPage"));
 const NewWebsiteFeatureDetailPage = lazy(() => import("./new-website/pages/FeatureDetailPage"));
+const NewWebsiteProductDetailPage = lazy(() => import("./new-website/pages/ProductDetailPage"));
 const Courses = lazy(() => import("./pages/Courses"));
 const Contact = lazy(() => import("./pages/Contact"));
 const AboutUs = lazy(() => import("./pages/AboutUs"));
@@ -762,10 +768,16 @@ const TenantRoutes = () => (
     {/* ── New Website Mockup — isolated, do not merge ── */}
     <Route path="/contact" element={<NewWebsiteContactPage />} />
     <Route path="/about" element={<NewWebsiteAboutPage />} />
+    <Route path="/about/story" element={<NewWebsiteAboutStoryPage />} />
     <Route path="/products" element={<NewWebsiteProductsPage />} />
+    <Route path="/products/:slug" element={<NewWebsiteProductDetailPage />} />
     <Route path="/solution" element={<NewWebsiteSolutionPage />} />
+    <Route path="/solution/schools" element={<NewWebsiteSchoolSolutionPage />} />
+    <Route path="/solution/teachers" element={<NewWebsiteTeacherSolutionPage />} />
+    <Route path="/solution/students" element={<NewWebsiteStudentSolutionPage />} />
     <Route path="/features" element={<NewWebsiteFeaturesPage />} />
     <Route path="/features/:slug" element={<NewWebsiteFeatureDetailPage />} />
+    <Route path="/faq" element={<NewWebsiteFaqPage />} />
     {/* Old dev URLs kept alive so nothing already pointing there 404s */}
     <Route path="/new-website/*" element={<Navigate to="/" replace />} />
     <Route path="/new-website" element={<Navigate to="/" replace />} />
@@ -807,10 +819,16 @@ const PlatformRoutes = () => (
     {/* ── New Website Mockup — isolated, do not merge ── */}
     <Route path="/contact" element={<NewWebsiteContactPage />} />
     <Route path="/about" element={<NewWebsiteAboutPage />} />
+    <Route path="/about/story" element={<NewWebsiteAboutStoryPage />} />
     <Route path="/products" element={<NewWebsiteProductsPage />} />
+    <Route path="/products/:slug" element={<NewWebsiteProductDetailPage />} />
     <Route path="/solution" element={<NewWebsiteSolutionPage />} />
+    <Route path="/solution/schools" element={<NewWebsiteSchoolSolutionPage />} />
+    <Route path="/solution/teachers" element={<NewWebsiteTeacherSolutionPage />} />
+    <Route path="/solution/students" element={<NewWebsiteStudentSolutionPage />} />
     <Route path="/features" element={<NewWebsiteFeaturesPage />} />
     <Route path="/features/:slug" element={<NewWebsiteFeatureDetailPage />} />
+    <Route path="/faq" element={<NewWebsiteFaqPage />} />
     {/* Old dev URLs kept alive so nothing already pointing there 404s */}
     <Route path="/new-website/*" element={<Navigate to="/" replace />} />
     <Route path="/new-website" element={<Navigate to="/" replace />} />

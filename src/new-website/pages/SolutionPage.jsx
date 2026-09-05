@@ -17,6 +17,9 @@ import SolutionRoles from "../components/SolutionRoles";
 import WhyChooseSection from "../components/WhyChooseSection";
 import CtaBanner from "../components/CtaBanner";
 import Footer from "../components/Footer";
+import { services } from "../data/services";
+import { roleSolutions } from "../data/solutions";
+import { Layers } from "lucide-react";
 
 const SolutionPage = () => {
   useEffect(() => { window.scrollTo(0, 0); }, []);
@@ -31,6 +34,13 @@ const SolutionPage = () => {
           title="Solutions for Every"
           accent="Institution"
           lead="Schools, institutes and the people inside them — each with tools built for the job."
+          icon={Layers}
+          color="#1a56db"
+          bg="#eaf1fd"
+          stats={[
+            { value: services.length, label: "Institution Types" },
+            { value: roleSolutions.length, label: "Stakeholder Roles" },
+          ]}
         />
         <SolutionAudience />
         <SolutionRoles />

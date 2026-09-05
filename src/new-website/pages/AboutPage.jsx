@@ -8,11 +8,9 @@
 // unique to this page. Its section id was "nw-about" — the same id
 // AboutSection uses — and is now "nw-who".
 //
-// AboutStory closes the page with the full "About Us" narrative — the
-// signed-off copy naming Our Vision and Our Promise. It repeats the page's
-// opening heading ("Empowering Education. Enriching Futures.") once more as
-// the story's own headline, which is intentional in the source copy — the
-// same line opens the pillars above and closes the narrative below.
+// The full "About Us" narrative (AboutStory — Our Vision, Our Promise) used
+// to close this page directly; it now has its own page at /about/story, and
+// this page links out to it instead — see AboutStoryLink.
 import { useEffect } from "react";
 import "../new-website.css";
 import TopBar from "../components/TopBar";
@@ -21,8 +19,14 @@ import PageHead from "../components/PageHead";
 import AboutPillars from "../components/AboutPillars";
 import WhoWeAreSection from "../components/WhoWeAreSection";
 import AwardsTimeline from "../components/AwardsTimeline";
-import AboutStory from "../components/AboutStory";
+import AboutStoryLink from "../components/AboutStoryLink";
+import PlatformStats from "../components/PlatformStats";
 import Footer from "../components/Footer";
+import { products } from "../data/products";
+import { erpModules } from "../data/erpModules";
+import { lmsModules } from "../data/lmsModules";
+import { features } from "../data/features";
+import { GraduationCap } from "lucide-react";
 
 const AboutPage = () => {
   useEffect(() => { window.scrollTo(0, 0); }, []);
@@ -37,11 +41,20 @@ const AboutPage = () => {
           title="About"
           accent="EDDVA"
           lead="Built for the future of education — AI, automation and analytics in one platform."
+          icon={GraduationCap}
+          color="#1a56db"
+          bg="#eaf1fd"
+          stats={[
+            { value: products.length, label: "Products" },
+            { value: erpModules.length + lmsModules.length, label: "Modules" },
+            { value: features.length, label: "AI Features" },
+          ]}
         />
         <AboutPillars />
         <WhoWeAreSection />
+        <PlatformStats />
         <AwardsTimeline />
-        <AboutStory />
+        <AboutStoryLink />
       </main>
       <Footer />
     </div>

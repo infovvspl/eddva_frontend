@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Users, UserCheck, FileText, ClipboardList, Clock, MapPin, MessageSquare, CalendarDays,
-  Sparkles, ChevronRight, CheckSquare, PlusCircle, Video, TrendingUp, AlertCircle, ArrowUpRight,
+  ChevronRight, CheckSquare, PlusCircle, Video, TrendingUp, AlertCircle, ArrowUpRight,
   BookOpen, Edit3, UploadCloud, Calendar, ArrowRight, Presentation
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from 'recharts';
@@ -206,16 +206,6 @@ const Dashboard: React.FC = () => {
             </h1>
             <div className="my-1.5">
               <p className="text-[15px] font-medium text-slate-700/90 leading-relaxed max-w-md">Here's what's happening with your classes today. You have {upcomingClasses.length} upcoming sessions.</p>
-            </div>
-          </div>
-
-          <div className="absolute right-6 top-6 bg-white/95 backdrop-blur px-5 py-3.5 rounded-full shadow-xl border border-white/60 hidden lg:flex items-center gap-3.5 z-30 transform hover:scale-105 transition-transform cursor-pointer" onClick={() => navigate('/teacher/TeacherAIToolsPage')}>
-            <div className="bg-[#F3E8FF] p-2.5 rounded-full text-[#9333EA]">
-              <Sparkles size={20} />
-            </div>
-            <div>
-              <p className="text-[10px] font-extrabold text-[#9333EA] uppercase tracking-wider">AI Assistant</p>
-              <p className="text-sm font-bold text-slate-800 leading-tight">Try Smart Grading</p>
             </div>
           </div>
         </div>

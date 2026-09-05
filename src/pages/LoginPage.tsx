@@ -405,7 +405,7 @@ const LoginPage = () => {
             ) : (
               <div className="flex flex-col items-center">
                 <EddvaLogo className="h-24 w-auto" />
-                <p className="text-base font-bold text-slate-500 mt-2 text-center whitespace-nowrap">
+                <p className="text-sm sm:text-base font-bold text-slate-500 mt-2 text-center max-w-xs sm:max-w-sm">
                   AI Powered Digital Transformation Platform For Schools & Institutes
                 </p>
               </div>

@@ -11,8 +11,15 @@ import { ArrowRight, Check } from "lucide-react";
 import { services } from "../data/services";
 import useInView from "../hooks/useInView";
 
+// Only Schools has its own dedicated page so far (pages/SchoolSolutionPage,
+// at /solution/schools) — Teachers and Students each got the same treatment
+// (pages/TeacherSolutionPage, pages/StudentSolutionPage). Institutes stays as
+// this panel only until it gets a page of its own too.
+const DEDICATED_PAGE = { "nw-svc-schools": "/solution/schools" };
+
 const Panel = ({ service, index }) => {
   const { id, title, desc, covers, Icon, color, bg } = service;
+  const dedicatedPage = DEDICATED_PAGE[id];
   const [ref, inView] = useInView({ threshold: 0.2 });
 
   return (
@@ -45,10 +52,18 @@ const Panel = ({ service, index }) => {
           ))}
         </ul>
 
-        <Link to="/contact" className="nw-aud__cta" id={`${id}-audience-cta`}>
-          Talk to us
-          <ArrowRight size={15} strokeWidth={2.5} />
-        </Link>
+        <div className="nw-aud__actions">
+          {dedicatedPage && (
+            <Link to={dedicatedPage} className="nw-aud__more" id={`${id}-audience-more`}>
+              Full breakdown
+              <ArrowRight size={14} strokeWidth={2.5} />
+            </Link>
+          )}
+          <Link to="/contact" className="nw-aud__cta" id={`${id}-audience-cta`}>
+            Talk to us
+            <ArrowRight size={15} strokeWidth={2.5} />
+          </Link>
+        </div>
       </div>
     </article>
   );

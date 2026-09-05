@@ -23,6 +23,7 @@ import iconJee   from "../assets/Icon 4.png";
 export const products = [
   {
     id: "nw-prod-lms",
+    slug: "lms",
     title: "EDDVA AI Learn",
     desc: "AI-powered LMS with smart content, assessments, analytics and more.",
     tagline: "Next-Gen Learning Management System",
@@ -43,6 +44,7 @@ export const products = [
   },
   {
     id: "nw-prod-erp",
+    slug: "erp",
     title: "EDDVA ERP",
     desc: "Manage academic, administrative & financial operations seamlessly.",
     tagline: "Run Your Institution Seamlessly",
@@ -63,6 +65,7 @@ export const products = [
   },
   {
     id: "nw-prod-combo",
+    slug: "plus",
     title: "EDDVA Plus",
     desc: "Get the best of EDDVA ERP + EDDVA AI Learn in one integrated platform.",
     tagline: "Best of EDDVA ERP + EDDVA AI Learn",
@@ -83,6 +86,7 @@ export const products = [
   },
   {
     id: "nw-prod-jee-ai",
+    slug: "jee-neet-ai",
     title: "EDDVA JEE NEET AI",
     desc: "AI-driven learning & practice for competitive exam success.",
     tagline: "AI-Powered Preparation for Top Ranks",
@@ -103,6 +107,7 @@ export const products = [
   },
   {
     id: "nw-prod-jee-nonai",
+    slug: "jee-neet",
     title: "EDDVA JEE NEET",
     desc: "Structured content & tests for effective exam preparation.",
     tagline: "Structured Content & Practice",
@@ -122,3 +127,7 @@ export const products = [
     btnHover: "#115e59",
   },
 ];
+
+// `slug` is the URL segment for /products/:slug — changing one breaks any
+// link already pointing at that page, so treat these as fixed once published.
+export const findProduct = slug => products.find(p => p.slug === slug);

@@ -1,6 +1,12 @@
 // Navbar.jsx — New Website Mockup
-// Home · About · Product · Features · Solution · Contact us + Login / Register
+// Home · About · Product · Features · Solution · Contact us + Login
 // A link may declare `children` to render a hover dropdown; none do by default.
+//
+// Bar is static (not sticky) — it scrolls away with the page rather than
+// pinning to the top. Register was removed from the CTA slot; Login is now
+// the sole action, promoted to the filled pill style so the bar keeps one
+// clear primary action instead of reading as unbalanced with only an
+// outline button left.
 //
 // A link is either an in-page anchor on the one-pager (`href`) or its own
 // route (`to`). Since this bar is also mounted on the sub-pages, where an
@@ -13,12 +19,25 @@ import { LOGO, LOGO_ALT } from "../brand";
 
 const HOME_PATH = "/";
 
+// A dropdown child always uses a full "/page#anchor-id" path, never a bare
+// "#anchor-id" — the nav is mounted on every page, so a bare hash would only
+// work while already sitting on /solution. Anchor ids are the real section
+// ids from SolutionAudience/SolutionRoles.
 const links = [
   { id: "home",     label: "Home",       href: "#nw-home" },
   { id: "about",    label: "About",      to: "/about" },
   { id: "product",  label: "Product",    to: "/products" },
   { id: "features", label: "Features",   to: "/features" },
-  { id: "solution", label: "Solution",   to: "/solution" },
+  {
+    id: "solution", label: "Solution",   to: "/solution",
+    children: [
+      { id: "schools",    label: "For Schools",    to: "/solution/schools" },
+      { id: "institutes", label: "For Institutes", to: "/solution#nw-svc-institutes-audience" },
+      { id: "teachers",   label: "For Teachers",   to: "/solution/teachers" },
+      { id: "students",   label: "For Students",   to: "/solution/students" },
+    ],
+  },
+  { id: "faq",      label: "FAQ",        to: "/faq" },
   { id: "contact",  label: "Contact us", to: "/contact" },
 ];
 
@@ -114,15 +133,15 @@ const Navbar = () => {
                   id={`nw-dropdown-${link.id}`}
                 >
                   {link.children.map(child => (
-                    <a
+                    <Link
                       key={child.id}
-                      href={child.href}
+                      to={child.to}
                       className="nw-navbar__dropdown-link"
                       id={`nw-dropdown-${link.id}-${child.id}`}
                       onClick={() => { setActive(link.id); setOpenDropdown(null); }}
                     >
                       {child.label}
-                    </a>
+                    </Link>
                   ))}
                 </div>
               )}
@@ -132,8 +151,7 @@ const Navbar = () => {
 
         {/* ── CTA Buttons ── */}
         <div className="nw-navbar__actions">
-          <Link to="/login"    className="nw-btn nw-btn--pill-outline" id="nw-btn-login">Login</Link>
-          <Link to="/register" className="nw-btn nw-btn--pill"         id="nw-btn-register">Register</Link>
+          <Link to="/login" className="nw-btn nw-btn--pill" id="nw-btn-login">Login</Link>
         </div>
 
         {/* ── Mobile hamburger ── */}
@@ -164,25 +182,23 @@ const Navbar = () => {
             {link.children && (
               <div className="nw-navbar__mobile-sub">
                 {link.children.map(child => (
-                  <a
+                  <Link
                     key={child.id}
-                    href={child.href}
+                    to={child.to}
                     className="nw-navbar__mobile-sublink"
                     id={`nw-mob-${link.id}-${child.id}`}
                     onClick={() => setMenuOpen(false)}
                   >
                     {child.label}
-                  </a>
+                  </Link>
                 ))}
               </div>
             )}
           </div>
         ))}
         <div className="nw-navbar__mobile-actions">
-          <Link to="/login"    className="nw-btn nw-btn--pill-outline" id="nw-mob-login"
+          <Link to="/login" className="nw-btn nw-btn--pill" id="nw-mob-login"
                 onClick={() => setMenuOpen(false)}>Login</Link>
-          <Link to="/register" className="nw-btn nw-btn--pill"         id="nw-mob-register"
-                onClick={() => setMenuOpen(false)}>Register</Link>
         </div>
       </div>
     </header>

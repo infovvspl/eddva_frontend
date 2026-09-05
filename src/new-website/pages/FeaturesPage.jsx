@@ -9,6 +9,8 @@ import PageHead from "../components/PageHead";
 import FeatureIndex from "../components/FeatureIndex";
 import CtaBanner from "../components/CtaBanner";
 import Footer from "../components/Footer";
+import { features, featureCategories } from "../data/features";
+import { Sparkles } from "lucide-react";
 
 const FeaturesPage = () => {
   useEffect(() => { window.scrollTo(0, 0); }, []);
@@ -23,6 +25,13 @@ const FeaturesPage = () => {
           title="AI"
           accent="Features"
           lead="Everything EDDVA does with AI — teaching, content, practice and the reporting around them."
+          icon={Sparkles}
+          color="#7c3aed"
+          bg="#f5f3ff"
+          stats={[
+            { value: features.length, label: "AI Features" },
+            { value: featureCategories.length, label: "Categories" },
+          ]}
         />
         <FeatureIndex />
         <CtaBanner />
