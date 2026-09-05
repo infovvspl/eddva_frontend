@@ -2,10 +2,30 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Sparkles, RefreshCw, Loader2, CheckCircle2, Circle, Quote, ChevronRight, Trophy, ArrowLeft,
+  ThumbsUp, ThumbsDown,
 } from 'lucide-react';
 import { useAuth } from '@/context/SchoolAuthContext';
-import { generateCareerReport, getCareerReport, type CareerReport as Report } from '@/lib/api/career';
+import { generateCareerReport, getCareerReport, submitCareerFeedback, type CareerReport as Report } from '@/lib/api/career';
 import { ErrorState, SkeletonBlock, fitTextColor } from './_shared';
+
+// The generate endpoint only enqueues the job (202, no report body) — poll
+// until a report newer than whatever was showing before actually lands.
+const POLL_INTERVAL_MS = 2500;
+const POLL_TIMEOUT_MS = 60_000;
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function pollForReport(previousReportId: string | undefined): Promise<Report> {
+  const deadline = Date.now() + POLL_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    const r = await getCareerReport();
+    if (r && r.id !== previousReportId && r.topCareers.length > 0) return r;
+    await sleep(POLL_INTERVAL_MS);
+  }
+  throw new Error('Your report is taking longer than expected — check back in a moment.');
+}
 
 const GEN_STEPS = [
   'Academic performance reviewed',
@@ -65,45 +85,6 @@ const getFormattedStream = (recommendation: string, topCareers: any[]) => {
   return recommendation;
 };
 
-const KNOWN_IDS = new Set([
-  'medicine', 'engineering', 'data_science', 'architecture', 'law',
-  'chartered_accountancy', 'journalism', 'design', 'psychology', 'entrepreneurship',
-]);
-
-/**
- * Maps an AI-generated careerId + title to a canonical CAREER_PATHS id.
- * Uses the title string first (more reliable than the arbitrary id the AI picks),
- * then falls back to keyword matching on the careerId.
- * Returns the raw careerId unchanged for unknown/custom careers so the fallback
- * dynamic detail page can render them.
- */
-const resolveCareerId = (careerId: string, title: string = ''): string => {
-  // 1. Already a valid known ID — use it directly
-  const normId = (careerId || '').toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
-  if (KNOWN_IDS.has(normId)) return normId;
-
-  // 2. Build a combined search string from title + careerId
-  //    Title is more reliable because the AI always fills it in correctly
-  const src = `${(title || '')} ${(careerId || '')}`.toLowerCase();
-
-  // NOTE: Order matters — put specific patterns BEFORE broad ones.
-  // e.g. "psych" must come before "tech" so "psychology" never hits engineering.
-  if (/psych|counsel|therap|mental.health|behavioural/.test(src)) return 'psychology';
-  if (/data.sci|machine.learn|artificial.intel|big.data|data.anal/.test(src)) return 'data_science';
-  if (/architect/.test(src)) return 'architecture';
-  if (/mbbs|medic|doctor|dental|surgery|physician|neet|health.care/.test(src)) return 'medicine';
-  if (/journal|media|broadcast|news/.test(src)) return 'journalism';
-  if (/fashion|graphic|interior.design|ux.design|product.design/.test(src)) return 'design';
-  if (/software|engineer|coding|program|tech/.test(src)) return 'engineering';
-  if (/law|legal|advocate|judiciary|clat/.test(src)) return 'law';
-  if (/account|chartered|audit|finance|ca\b|tax/.test(src)) return 'chartered_accountancy';
-  if (/entrepreneur|startup|venture|business|mba/.test(src)) return 'entrepreneurship';
-
-  // 3. Unknown career — return careerId as-is so the fallback page renders
-  return careerId;
-};
-
-
 export default function CareerReport() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -114,11 +95,43 @@ export default function CareerReport() {
   const [error, setError] = useState<string | null>(null);
   const stepTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const [feedbackRating, setFeedbackRating] = useState<'up' | 'down' | null>(null);
+  const [feedbackComment, setFeedbackComment] = useState('');
+  const [showCommentBox, setShowCommentBox] = useState(false);
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+
   const currentStudentName = user?.name || 'Student';
-  const formatReportText = (text: string) => {
-    if (!text) return '';
-    if (!currentStudentName || currentStudentName === 'Student' || currentStudentName.toLowerCase() === 'pratap') return text;
-    return text.replace(/\bPratap\b/gi, currentStudentName);
+
+  useEffect(() => {
+    setFeedbackRating(report?.feedbackRating ?? null);
+    setShowCommentBox(false);
+    setFeedbackComment('');
+  }, [report?.id]);
+
+  const submitFeedback = async (rating: 'up' | 'down') => {
+    const previous = feedbackRating;
+    setFeedbackRating(rating);
+    setFeedbackSubmitting(true);
+    try {
+      await submitCareerFeedback(rating);
+      if (rating === 'down') setShowCommentBox(true);
+    } catch {
+      setFeedbackRating(previous);
+    } finally {
+      setFeedbackSubmitting(false);
+    }
+  };
+
+  const submitFeedbackComment = async () => {
+    const comment = feedbackComment.trim();
+    if (!comment) { setShowCommentBox(false); return; }
+    setFeedbackSubmitting(true);
+    try {
+      await submitCareerFeedback('down', comment);
+      setShowCommentBox(false);
+    } finally {
+      setFeedbackSubmitting(false);
+    }
   };
 
   const loadSaved = () => {
@@ -141,12 +154,14 @@ export default function CareerReport() {
     stepTimer.current = setInterval(() => {
       setGenStep((s) => Math.min(GEN_STEPS.length - 1, s + 1));
     }, 2800);
+    const previousReportId = report?.id;
     try {
-      const { report: r } = await generateCareerReport();
+      await generateCareerReport();
+      const r = await pollForReport(previousReportId);
       setReport(r);
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(msg || 'Could not generate your report. Please try again.');
+      setError(msg || (e instanceof Error ? e.message : 'Could not generate your report. Please try again.'));
     } finally {
       if (stepTimer.current) clearInterval(stepTimer.current);
       setGenerating(false);
@@ -231,7 +246,7 @@ export default function CareerReport() {
       {/* Overall analysis */}
       {report.overallAnalysis && (
         <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-5">
-          <p className="text-sm leading-relaxed text-slate-700">{formatReportText(report.overallAnalysis)}</p>
+          <p className="text-sm leading-relaxed text-slate-700">{report.overallAnalysis}</p>
         </div>
       )}
 
@@ -252,7 +267,7 @@ export default function CareerReport() {
               {c.reasoning && (
                 <div className="mt-3">
                   <p className="text-xs font-black uppercase tracking-wide text-slate-400">Why this fits you</p>
-                  <p className="mt-1 text-sm leading-relaxed text-slate-600">{formatReportText(c.reasoning)}</p>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-600">{c.reasoning}</p>
                 </div>
               )}
 
@@ -272,14 +287,14 @@ export default function CareerReport() {
                     {c.actionPlan.map((a, i) => (
                       <li key={i} className="flex gap-2 text-sm text-slate-600">
                         <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-500">{i + 1}</span>
-                        <span>{formatReportText(a)}</span>
+                        <span>{a}</span>
                       </li>
                     ))}
                   </ol>
                 </div>
               )}
 
-              <button onClick={() => navigate(`/school/student/career/explore/${resolveCareerId(c.careerId, c.title)}`, { state: { fallbackCareer: c } })}
+              <button onClick={() => navigate(`/school/student/career/explore/${c.careerId}`, { state: { fallbackCareer: c } })}
                 className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-blue-600 hover:underline">
                 Explore this career <ChevronRight className="h-4 w-4" />
               </button>
@@ -293,7 +308,7 @@ export default function CareerReport() {
                 {report.immediateActions.map((a, i) => (
                   <div key={i} className="flex items-start gap-2.5 text-sm text-slate-600 bg-slate-50/70 p-3 rounded-xl border border-slate-100">
                     <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-500">{i + 1}</span>
-                    <span className="font-semibold leading-relaxed">{formatReportText(a)}</span>
+                    <span className="font-semibold leading-relaxed">{a}</span>
                   </div>
                 ))}
               </div>
@@ -306,10 +321,57 @@ export default function CareerReport() {
       {report.encouragement && (
         <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-violet-600 p-6 text-white shadow-sm">
           <Quote className="h-6 w-6 opacity-70" />
-          <p className="mt-2 text-base font-semibold leading-relaxed">{formatReportText(report.encouragement)}</p>
+          <p className="mt-2 text-base font-semibold leading-relaxed">{report.encouragement}</p>
           <p className="mt-3 flex items-center gap-1.5 text-sm font-bold opacity-90"><Trophy className="h-4 w-4" /> {currentStudentName}</p>
         </div>
       )}
+
+      {/* Feedback */}
+      <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+        <p className="text-sm font-bold text-slate-700">Was this report helpful?</p>
+        <div className="mt-2.5 flex gap-2">
+          <button
+            onClick={() => submitFeedback('up')}
+            disabled={feedbackSubmitting}
+            className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-sm font-bold disabled:opacity-50 ${
+              feedbackRating === 'up' ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <ThumbsUp className="h-4 w-4" /> Yes
+          </button>
+          <button
+            onClick={() => submitFeedback('down')}
+            disabled={feedbackSubmitting}
+            className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-sm font-bold disabled:opacity-50 ${
+              feedbackRating === 'down' ? 'border-rose-300 bg-rose-50 text-rose-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <ThumbsDown className="h-4 w-4" /> Not really
+          </button>
+        </div>
+        {feedbackRating && !showCommentBox && (
+          <p className="mt-2 text-xs text-slate-400">Thanks for letting us know.</p>
+        )}
+        {showCommentBox && (
+          <div className="mt-3">
+            <textarea
+              value={feedbackComment}
+              onChange={(e) => setFeedbackComment(e.target.value)}
+              placeholder="What could be better? (optional)"
+              maxLength={1000}
+              rows={2}
+              className="w-full rounded-xl border border-slate-200 p-2.5 text-sm text-slate-700 focus:border-blue-400 focus:outline-none"
+            />
+            <button
+              onClick={submitFeedbackComment}
+              disabled={feedbackSubmitting}
+              className="mt-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
+            >
+              Send
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
