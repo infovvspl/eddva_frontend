@@ -52,7 +52,6 @@ const NewWebsiteAboutPage = lazy(() => import("./new-website/pages/AboutPage"));
 const NewWebsiteAboutStoryPage = lazy(() => import("./new-website/pages/AboutStoryPage"));
 const NewWebsiteProductsPage = lazy(() => import("./new-website/pages/ProductsPage"));
 const NewWebsiteSolutionPage = lazy(() => import("./new-website/pages/SolutionPage"));
-const NewWebsiteFeaturesPage = lazy(() => import("./new-website/pages/FeaturesPage"));
 const NewWebsiteFaqPage = lazy(() => import("./new-website/pages/FaqPage"));
 const NewWebsiteSchoolSolutionPage = lazy(() => import("./new-website/pages/SchoolSolutionPage"));
 const NewWebsiteTeacherSolutionPage = lazy(() => import("./new-website/pages/TeacherSolutionPage"));
@@ -775,7 +774,6 @@ const TenantRoutes = () => (
     <Route path="/solution/schools" element={<NewWebsiteSchoolSolutionPage />} />
     <Route path="/solution/teachers" element={<NewWebsiteTeacherSolutionPage />} />
     <Route path="/solution/students" element={<NewWebsiteStudentSolutionPage />} />
-    <Route path="/features" element={<NewWebsiteFeaturesPage />} />
     <Route path="/features/:slug" element={<NewWebsiteFeatureDetailPage />} />
     <Route path="/faq" element={<NewWebsiteFaqPage />} />
     {/* Old dev URLs kept alive so nothing already pointing there 404s */}
@@ -826,7 +824,6 @@ const PlatformRoutes = () => (
     <Route path="/solution/schools" element={<NewWebsiteSchoolSolutionPage />} />
     <Route path="/solution/teachers" element={<NewWebsiteTeacherSolutionPage />} />
     <Route path="/solution/students" element={<NewWebsiteStudentSolutionPage />} />
-    <Route path="/features" element={<NewWebsiteFeaturesPage />} />
     <Route path="/features/:slug" element={<NewWebsiteFeatureDetailPage />} />
     <Route path="/faq" element={<NewWebsiteFaqPage />} />
     {/* Old dev URLs kept alive so nothing already pointing there 404s */}

@@ -389,7 +389,7 @@ const LoginPage = () => {
   return (
     <div className="flex min-h-screen w-full bg-white font-sans">
       {/* ══════════ LEFT: Form Panel ══════════ */}
-      <div className="relative flex w-full flex-col justify-center px-6 py-12 md:w-1/2 md:px-12 lg:px-16 xl:px-24">
+      <div className="relative flex w-full flex-col justify-center px-6 py-12 lg:w-1/2 lg:px-16 xl:px-24">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
@@ -689,7 +689,7 @@ const LoginPage = () => {
       </div>
 
       {/* ══════════ RIGHT: Decorative Panel ══════════ */}
-      <div className="hidden md:flex w-1/2 bg-blue-50 relative flex-col items-center justify-center overflow-hidden">
+      <div className="hidden lg:flex w-1/2 bg-blue-50 relative flex-col items-center justify-center overflow-hidden">
         {/* Background Decorative Rings */}
         <div className="absolute inset-0 pointer-events-none">
           <motion.div

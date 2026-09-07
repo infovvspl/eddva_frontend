@@ -1,12 +1,14 @@
 // Navbar.jsx — New Website Mockup
-// Home · About · Product · Features · Solution · Contact us + Login
+// Home · About · Product · Solution · FAQ · Contact us + Login
 // A link may declare `children` to render a hover dropdown; none do by default.
 //
 // Bar is static (not sticky) — it scrolls away with the page rather than
 // pinning to the top. Register was removed from the CTA slot; Login is now
 // the sole action, promoted to the filled pill style so the bar keeps one
 // clear primary action instead of reading as unbalanced with only an
-// outline button left.
+// outline button left. The Features hub link was removed too — individual
+// feature pages (/features/:slug) still exist and are reachable from the
+// home page's AI Features marquee, just not from this bar.
 //
 // A link is either an in-page anchor on the one-pager (`href`) or its own
 // route (`to`). Since this bar is also mounted on the sub-pages, where an
@@ -14,7 +16,7 @@
 // to the one-pager carrying the hash — see NavItemLink.
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, LogIn } from "lucide-react";
 import { LOGO, LOGO_ALT } from "../brand";
 
 const HOME_PATH = "/";
@@ -27,14 +29,13 @@ const links = [
   { id: "home",     label: "Home",       href: "#nw-home" },
   { id: "about",    label: "About",      to: "/about" },
   { id: "product",  label: "Product",    to: "/products" },
-  { id: "features", label: "Features",   to: "/features" },
   {
     id: "solution", label: "Solution",   to: "/solution",
     children: [
-      { id: "schools",    label: "For Schools",    to: "/solution/schools" },
       { id: "institutes", label: "For Institutes", to: "/solution#nw-svc-institutes-audience" },
       { id: "teachers",   label: "For Teachers",   to: "/solution/teachers" },
       { id: "students",   label: "For Students",   to: "/solution/students" },
+      { id: "schools",    label: "For Schools",    to: "/solution/schools" },
     ],
   },
   { id: "faq",      label: "FAQ",        to: "/faq" },
@@ -151,7 +152,10 @@ const Navbar = () => {
 
         {/* ── CTA Buttons ── */}
         <div className="nw-navbar__actions">
-          <Link to="/login" className="nw-btn nw-btn--pill" id="nw-btn-login">Login</Link>
+          <Link to="/login" className="nw-btn nw-btn--pill" id="nw-btn-login">
+            <LogIn size={16} strokeWidth={2.2} />
+            Login
+          </Link>
         </div>
 
         {/* ── Mobile hamburger ── */}
@@ -198,7 +202,10 @@ const Navbar = () => {
         ))}
         <div className="nw-navbar__mobile-actions">
           <Link to="/login" className="nw-btn nw-btn--pill" id="nw-mob-login"
-                onClick={() => setMenuOpen(false)}>Login</Link>
+                onClick={() => setMenuOpen(false)}>
+            <LogIn size={16} strokeWidth={2.2} />
+            Login
+          </Link>
         </div>
       </div>
     </header>
