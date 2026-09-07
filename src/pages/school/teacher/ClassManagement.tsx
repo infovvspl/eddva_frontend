@@ -145,6 +145,7 @@ import { useConfirm } from '@/context/ConfirmContext';
 import './ClassManagement.css';
 import { CourseTabs, CourseTabId } from '@/components/student/lecture/CourseTabs';
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { resolveRecordingUpload, type UploadedVideo } from './recordingUpload';
 
 const ClassManagement: React.FC = () => {
   const { user, institute } = useAuth();
@@ -249,6 +250,12 @@ const ClassManagement: React.FC = () => {
   const [uploadingRecording, setUploadingRecording] = useState(false);
   const [uploadPct, setUploadPct] = useState(0);
   const [recordingFile, setRecordingFile] = useState<File | null>(null);
+  // P0-3: the presigned upload result, kept for the life of this modal session.
+  // Re-presigning on every retry would mint a NEW S3 key, and the server dedupes
+  // a replayed submission on that key — so a retry after a failed create must
+  // send the SAME key or it creates a second recording (and a second AI run).
+  // `file` pins the cache to the chosen file, so picking a different one re-uploads.
+  const [uploadedVideo, setUploadedVideo] = useState<UploadedVideo | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [videoSource, setVideoSource] = useState<'upload' | 'youtube'>('upload');
   const [recChapters, setRecChapters] = useState<any[]>([]);
@@ -741,6 +748,7 @@ const ClassManagement: React.FC = () => {
     setShowRecordingModal(false);
     setRecordingForm({ title: '', description: '', classId: '', sectionId: '', subjectId: '', chapterId: '', topicId: '', recordedDate: '', duration: '', youtubeUrl: '', language: 'en' });
     setRecordingFile(null);
+    setUploadedVideo(null);
     setThumbnailFile(null);
     setVideoSource('upload');
     setUploadPct(0);
@@ -782,7 +790,10 @@ const ClassManagement: React.FC = () => {
       let videoUrl = '';
       let videoKey: string | undefined;
       if (videoSource === 'upload' && recordingFile) {
-        const up = await uploadRecordingFile(recordingFile);
+        // Reuse the object already uploaded for this exact file, so a retry after
+        // a failed create replays the same videoKey instead of creating a duplicate.
+        const up = await resolveRecordingUpload(uploadedVideo, recordingFile, uploadRecordingFile);
+        setUploadedVideo(up);
         videoUrl = up.url;
         videoKey = up.key;
       } else {
@@ -3071,7 +3082,7 @@ const ClassManagement: React.FC = () => {
               <input
                 type="file"
                 accept="video/*,audio/*"
-                onChange={(e) => setRecordingFile(e.target.files?.[0] ?? null)}
+                onChange={(e) => { setRecordingFile(e.target.files?.[0] ?? null); setUploadedVideo(null); }}
                 className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
               />
               {recordingFile && (
