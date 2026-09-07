@@ -8,6 +8,8 @@
 //
 // The role `title` and `blurb` are the same strings the stakeholder cards use
 // in data/services.js; the group and item copy is written for this section.
+//
+// Order: Institute Admin, Teachers, Students, Parents.
 
 import {
   MonitorPlay, PlayCircle, Library, BookMarked, NotebookPen, ClipboardList,
@@ -21,6 +23,147 @@ import {
 } from "lucide-react";
 
 export const roleSolutions = [
+  /* ────────────────────── INSTITUTE ADMIN ────────────────────── */
+  {
+    id: "nw-sol-admin",
+    title: "Institute Admin",
+    blurb: "Streamlined operations, data & decision-making.",
+    Icon: Building2,
+    color: "#dc2626",
+    bg: "#fff1f2",
+    groups: [
+      {
+        id: "people",
+        label: "People",
+        items: [
+          { Icon: Users,     name: "Student records",   desc: "Admission, edit, exit and full student history." },
+          { Icon: TrendingUp, name: "Student promotion", desc: "Move a whole cohort up a year in one pass." },
+          { Icon: UserCheck, name: "Teachers & staff",  desc: "Onboard staff and review their performance." },
+          { Icon: Lock,      name: "Roles & permissions", desc: "Decide exactly who can see and do what." },
+        ],
+      },
+      {
+        id: "academics",
+        label: "Academics",
+        items: [
+          { Icon: Layers,       name: "Classes & sections", desc: "Structure the school, class by class." },
+          { Icon: BookMarked,   name: "Subjects",           desc: "Subjects mapped to each class." },
+          { Icon: CalendarDays, name: "Timetable",          desc: "Build and publish the whole timetable." },
+          { Icon: UserCheck,    name: "Attendance",         desc: "Institute-wide attendance, daily." },
+          { Icon: RouteIcon,    name: "Syllabus planning",  desc: "Plan, track and analyse syllabus coverage." },
+          { Icon: ListChecks,   name: "Mock tests & PYQ",   desc: "Central test bank and previous-year questions." },
+        ],
+      },
+      {
+        id: "operations",
+        label: "Operations",
+        items: [
+          { Icon: Database,  name: "Full ERP",           desc: "Academic, administrative and financial operations." },
+          { Icon: Banknote,  name: "Fees & finance",     desc: "Dues, collection and payment records." },
+          { Icon: Receipt,   name: "Document generator", desc: "Generate certificates and official documents." },
+          { Icon: Boxes,     name: "Batches",            desc: "Create batches and assign teachers to them." },
+          { Icon: HardDrive, name: "Storage",            desc: "See what content and media are using space." },
+        ],
+      },
+      {
+        id: "communication",
+        label: "Communication",
+        items: [
+          { Icon: Megaphone,     name: "Notices & announcements", desc: "Reach the whole institute at once." },
+          { Icon: MessageSquare, name: "Communications",   desc: "Message any group, with a log of what was sent." },
+          { Icon: Bell,          name: "Notifications",    desc: "Push alerts to students, teachers or parents." },
+          { Icon: Contact,       name: "Complaints & tickets", desc: "Route and resolve issues with an audit trail." },
+        ],
+      },
+      {
+        id: "intelligence",
+        label: "Intelligence",
+        items: [
+          { Icon: BarChart3,    name: "Analytics",        desc: "Institute-wide performance and engagement." },
+          { Icon: FileBarChart, name: "Reports",          desc: "Exportable reports for every module." },
+          { Icon: BrainCircuit, name: "AI usage",         desc: "See how much AI the institute is actually using." },
+          { Icon: Network,      name: "Live usage",       desc: "Live class load in real time." },
+          { Icon: Star,         name: "Gamification",     desc: "Tune points and rewards across the institute." },
+        ],
+      },
+      {
+        id: "governance",
+        label: "Governance",
+        items: [
+          { Icon: ShieldCheck, name: "Security",       desc: "Enterprise-grade controls over institute data." },
+          { Icon: ScrollText,  name: "Audit logs",     desc: "A record of who changed what, and when." },
+          { Icon: BadgeCheck,  name: "Feature flags",  desc: "Turn modules on and off per institute." },
+          { Icon: Settings,    name: "Institute profile & settings", desc: "Branding, defaults and configuration." },
+          { Icon: Cog,         name: "ERP modules",    desc: "Choose which ERP modules are in play." },
+        ],
+      },
+    ],
+  },
+
+  /* ─────────────────────────── TEACHERS ─────────────────────────── */
+  {
+    id: "nw-sol-teachers",
+    title: "Teachers",
+    blurb: "Smart tools, lesson planning, assessments & insights.",
+    Icon: Presentation,
+    color: "#0891b2",
+    bg: "#ecfeff",
+    groups: [
+      {
+        id: "teach",
+        label: "Teach",
+        items: [
+          { Icon: MonitorPlay, name: "Live lectures",      desc: "Run live classes with a teaching dashboard beside them." },
+          { Icon: PlayCircle,  name: "Recorded lectures",  desc: "Sessions recorded automatically and published to the batch." },
+          { Icon: FolderKanban, name: "Course content",    desc: "Build the topic tree and attach material to each node." },
+          { Icon: BookMarked,  name: "Study materials",    desc: "Upload notes and resources students can open in place." },
+          { Icon: Table2,      name: "Textbook coverage",  desc: "Mark chapters covered against the prescribed textbook." },
+        ],
+      },
+      {
+        id: "assess",
+        label: "Assess",
+        items: [
+          { Icon: SquarePen,     name: "Quiz builder",      desc: "Create topic quizzes and question banks." },
+          { Icon: ClipboardCheck, name: "Assessments",      desc: "Set assessments, then view every submission." },
+          { Icon: Percent,       name: "Manual grading",    desc: "Grade written answers session by session." },
+          { Icon: FileBarChart,  name: "Test results",      desc: "Per-question breakdowns across the batch." },
+          { Icon: HelpCircle,    name: "Doubt resolution",  desc: "A queue of student doubts to answer and close." },
+        ],
+      },
+      {
+        id: "plan",
+        label: "Plan",
+        items: [
+          { Icon: RouteIcon,    name: "Syllabus planner",  desc: "Lay out the term against teaching days." },
+          { Icon: Target,       name: "Syllabus tracker",  desc: "Record what was actually taught, week by week." },
+          { Icon: CalendarDays, name: "Timetable & calendar", desc: "Your teaching schedule in one place." },
+          { Icon: Boxes,        name: "Batches & classes", desc: "Every batch you own, with its roster." },
+        ],
+      },
+      {
+        id: "insight",
+        label: "Understand the class",
+        items: [
+          { Icon: LineChart, name: "Class analytics",    desc: "Where the batch is strong and where it is stuck." },
+          { Icon: UserRound, name: "Student profiles",   desc: "One page per student: work, results, attendance." },
+          { Icon: Gauge,     name: "Performance view",   desc: "Students grouped into performance brackets." },
+          { Icon: UserCheck, name: "Attendance",         desc: "Mark and review attendance per session." },
+        ],
+      },
+      {
+        id: "communicate",
+        label: "Communicate",
+        items: [
+          { Icon: MessageSquare, name: "Communication",  desc: "Message students and parents from the platform." },
+          { Icon: Megaphone,     name: "Announcements",  desc: "Post notices to a batch or a class." },
+          { Icon: Bell,          name: "Notifications",  desc: "Reach a batch without leaving the dashboard." },
+          { Icon: Contact,       name: "Support tickets", desc: "Raise and track issues with the institute." },
+        ],
+      },
+    ],
+  },
+
   /* ─────────────────────────── STUDENTS ─────────────────────────── */
   {
     id: "nw-sol-students",
@@ -96,70 +239,6 @@ export const roleSolutions = [
     ],
   },
 
-  /* ─────────────────────────── TEACHERS ─────────────────────────── */
-  {
-    id: "nw-sol-teachers",
-    title: "Teachers",
-    blurb: "Smart tools, lesson planning, assessments & insights.",
-    Icon: Presentation,
-    color: "#0891b2",
-    bg: "#ecfeff",
-    groups: [
-      {
-        id: "teach",
-        label: "Teach",
-        items: [
-          { Icon: MonitorPlay, name: "Live lectures",      desc: "Run live classes with a teaching dashboard beside them." },
-          { Icon: PlayCircle,  name: "Recorded lectures",  desc: "Sessions recorded automatically and published to the batch." },
-          { Icon: FolderKanban, name: "Course content",    desc: "Build the topic tree and attach material to each node." },
-          { Icon: BookMarked,  name: "Study materials",    desc: "Upload notes and resources students can open in place." },
-          { Icon: Table2,      name: "Textbook coverage",  desc: "Mark chapters covered against the prescribed textbook." },
-        ],
-      },
-      {
-        id: "assess",
-        label: "Assess",
-        items: [
-          { Icon: SquarePen,     name: "Quiz builder",      desc: "Create topic quizzes and question banks." },
-          { Icon: ClipboardCheck, name: "Assessments",      desc: "Set assessments, then view every submission." },
-          { Icon: Percent,       name: "Manual grading",    desc: "Grade written answers session by session." },
-          { Icon: FileBarChart,  name: "Test results",      desc: "Per-question breakdowns across the batch." },
-          { Icon: HelpCircle,    name: "Doubt resolution",  desc: "A queue of student doubts to answer and close." },
-        ],
-      },
-      {
-        id: "plan",
-        label: "Plan",
-        items: [
-          { Icon: RouteIcon,    name: "Syllabus planner",  desc: "Lay out the term against teaching days." },
-          { Icon: Target,       name: "Syllabus tracker",  desc: "Record what was actually taught, week by week." },
-          { Icon: CalendarDays, name: "Timetable & calendar", desc: "Your teaching schedule in one place." },
-          { Icon: Boxes,        name: "Batches & classes", desc: "Every batch you own, with its roster." },
-        ],
-      },
-      {
-        id: "insight",
-        label: "Understand the class",
-        items: [
-          { Icon: LineChart, name: "Class analytics",    desc: "Where the batch is strong and where it is stuck." },
-          { Icon: UserRound, name: "Student profiles",   desc: "One page per student: work, results, attendance." },
-          { Icon: Gauge,     name: "Performance view",   desc: "Students grouped into performance brackets." },
-          { Icon: UserCheck, name: "Attendance",         desc: "Mark and review attendance per session." },
-        ],
-      },
-      {
-        id: "communicate",
-        label: "Communicate",
-        items: [
-          { Icon: MessageSquare, name: "Communication",  desc: "Message students and parents from the platform." },
-          { Icon: Megaphone,     name: "Announcements",  desc: "Post notices to a batch or a class." },
-          { Icon: Bell,          name: "Notifications",  desc: "Reach a batch without leaving the dashboard." },
-          { Icon: Contact,       name: "Support tickets", desc: "Raise and track issues with the institute." },
-        ],
-      },
-    ],
-  },
-
   /* ─────────────────────────── PARENTS ─────────────────────────── */
   {
     id: "nw-sol-parents",
@@ -187,83 +266,6 @@ export const roleSolutions = [
           { Icon: Megaphone,     name: "Announcements",  desc: "School notices delivered as they go out." },
           { Icon: Bell,          name: "Notifications",  desc: "Alerts for results, absence and events." },
           { Icon: UserCog,       name: "Profile",        desc: "Keep your own contact details current." },
-        ],
-      },
-    ],
-  },
-
-  /* ────────────────────── INSTITUTE ADMIN ────────────────────── */
-  {
-    id: "nw-sol-admin",
-    title: "Institute Admin",
-    blurb: "Streamlined operations, data & decision-making.",
-    Icon: Building2,
-    color: "#dc2626",
-    bg: "#fff1f2",
-    groups: [
-      {
-        id: "people",
-        label: "People",
-        items: [
-          { Icon: Users,     name: "Student records",   desc: "Admission, edit, exit and full student history." },
-          { Icon: TrendingUp, name: "Student promotion", desc: "Move a whole cohort up a year in one pass." },
-          { Icon: UserCheck, name: "Teachers & staff",  desc: "Onboard staff and review their performance." },
-          { Icon: Lock,      name: "Roles & permissions", desc: "Decide exactly who can see and do what." },
-        ],
-      },
-      {
-        id: "academics",
-        label: "Academics",
-        items: [
-          { Icon: Layers,       name: "Classes & sections", desc: "Structure the school, class by class." },
-          { Icon: BookMarked,   name: "Subjects",           desc: "Subjects mapped to each class." },
-          { Icon: CalendarDays, name: "Timetable",          desc: "Build and publish the whole timetable." },
-          { Icon: UserCheck,    name: "Attendance",         desc: "Institute-wide attendance, daily." },
-          { Icon: RouteIcon,    name: "Syllabus planning",  desc: "Plan, track and analyse syllabus coverage." },
-          { Icon: ListChecks,   name: "Mock tests & PYQ",   desc: "Central test bank and previous-year questions." },
-        ],
-      },
-      {
-        id: "operations",
-        label: "Operations",
-        items: [
-          { Icon: Database,  name: "Full ERP",           desc: "Academic, administrative and financial operations." },
-          { Icon: Banknote,  name: "Fees & finance",     desc: "Dues, collection and payment records." },
-          { Icon: Receipt,   name: "Document generator", desc: "Generate certificates and official documents." },
-          { Icon: Boxes,     name: "Batches",            desc: "Create batches and assign teachers to them." },
-          { Icon: HardDrive, name: "Storage",            desc: "See what content and media are using space." },
-        ],
-      },
-      {
-        id: "communication",
-        label: "Communication",
-        items: [
-          { Icon: Megaphone,     name: "Notices & announcements", desc: "Reach the whole institute at once." },
-          { Icon: MessageSquare, name: "Communications",   desc: "Message any group, with a log of what was sent." },
-          { Icon: Bell,          name: "Notifications",    desc: "Push alerts to students, teachers or parents." },
-          { Icon: Contact,       name: "Complaints & tickets", desc: "Route and resolve issues with an audit trail." },
-        ],
-      },
-      {
-        id: "intelligence",
-        label: "Intelligence",
-        items: [
-          { Icon: BarChart3,    name: "Analytics",        desc: "Institute-wide performance and engagement." },
-          { Icon: FileBarChart, name: "Reports",          desc: "Exportable reports for every module." },
-          { Icon: BrainCircuit, name: "AI usage",         desc: "See how much AI the institute is actually using." },
-          { Icon: Network,      name: "Live usage",       desc: "Live class load in real time." },
-          { Icon: Star,         name: "Gamification",     desc: "Tune points and rewards across the institute." },
-        ],
-      },
-      {
-        id: "governance",
-        label: "Governance",
-        items: [
-          { Icon: ShieldCheck, name: "Security",       desc: "Enterprise-grade controls over institute data." },
-          { Icon: ScrollText,  name: "Audit logs",     desc: "A record of who changed what, and when." },
-          { Icon: BadgeCheck,  name: "Feature flags",  desc: "Turn modules on and off per institute." },
-          { Icon: Settings,    name: "Institute profile & settings", desc: "Branding, defaults and configuration." },
-          { Icon: Cog,         name: "ERP modules",    desc: "Choose which ERP modules are in play." },
         ],
       },
     ],

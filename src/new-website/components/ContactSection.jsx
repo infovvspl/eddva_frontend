@@ -22,7 +22,10 @@
 // footer and this page publish exactly the same details.
 
 import { useState } from "react";
-import { Phone, Mail, MapPin, Clock, Send, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  Phone, Mail, MapPin, Clock, Send, Loader2, CheckCircle2, AlertCircle,
+  User, Building2, FileText, SlidersHorizontal, ShieldCheck,
+} from "lucide-react";
 import { submitLead } from "../../lib/api/leads";
 import { socials } from "../data/socials";
 import { emails, emailFor, PHONE, ADDRESS, HOURS } from "../data/contact";
@@ -56,7 +59,7 @@ const LIMITS = { name: 120, email: 200, phone: 40, institution: 160, message: 20
 
 const EMPTY = {
   name: "", institution: "", email: "", phone: "",
-  interest: interests[0].label, message: "",
+  interest: "", message: "",
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -76,6 +79,8 @@ const validate = form => {
 
   if (form.institution.length > LIMITS.institution)
     errors.institution = `Keep this under ${LIMITS.institution} characters.`;
+
+  if (!form.interest) errors.interest = "Please choose one.";
 
   if (!form.message.trim()) errors.message = "Tell us a little about what you need.";
   else if (form.message.length > LIMITS.message)
@@ -129,8 +134,15 @@ const ContactSection = () => {
     }
   };
 
-  const field = (name, label, input) => (
-    <label className={`nw-contactp__field${showError(name) ? " nw-contactp__field--bad" : ""}`}>
+  const field = (name, label, input, Icon) => (
+    <label
+      className={`nw-contactp__field${Icon ? " nw-contactp__field--icon" : ""}${showError(name) ? " nw-contactp__field--bad" : ""}`}
+    >
+      {Icon && (
+        <span className="nw-contactp__field-icon" aria-hidden="true">
+          <Icon size={16} strokeWidth={1.9} />
+        </span>
+      )}
       {input}
       <span className="nw-contactp__label">{label}</span>
       {showError(name) && (
@@ -154,6 +166,7 @@ const ContactSection = () => {
 
             <div className="nw-contactp__aside-inner">
               <h2 className="nw-contactp__aside-title">Talk to the EDDVA Team</h2>
+              <span className="nw-contactp__aside-rule" aria-hidden="true" />
               <p className="nw-contactp__aside-lead">
                 Tell us about your institution and we will show you exactly how
                 EDDVA fits — academics, administration and analytics in one place.
@@ -200,53 +213,75 @@ const ContactSection = () => {
           {/* ── Enquiry form ── */}
           <form className="nw-contactp__form" id="nw-contact-form" onSubmit={handleSubmit} noValidate>
             <h3 className="nw-contactp__form-title">Send us an enquiry</h3>
+            <p className="nw-contactp__form-lead">
+              Fill in the details and our team will get back to you shortly.
+            </p>
 
             <div className="nw-contactp__row">
-              {field("name", "Your name",
+              {field("name", "Your name *",
                 <input className="nw-contactp__input" id="nw-contact-name" type="text"
                   placeholder=" " maxLength={LIMITS.name} value={form.name}
                   onChange={update("name")} onBlur={blur("name")}
-                  aria-invalid={Boolean(showError("name"))} />
+                  aria-invalid={Boolean(showError("name"))} />,
+                User
               )}
-              {field("institution", "Institution",
+              {field("institution", "Institution name",
                 <input className="nw-contactp__input" id="nw-contact-institution" type="text"
                   placeholder=" " maxLength={LIMITS.institution} value={form.institution}
                   onChange={update("institution")} onBlur={blur("institution")}
-                  aria-invalid={Boolean(showError("institution"))} />
+                  aria-invalid={Boolean(showError("institution"))} />,
+                Building2
               )}
             </div>
 
             <div className="nw-contactp__row">
-              {field("email", "Email",
+              {field("email", "Email address *",
                 <input className="nw-contactp__input" id="nw-contact-email" type="email"
                   placeholder=" " maxLength={LIMITS.email} value={form.email}
                   onChange={update("email")} onBlur={blur("email")}
-                  aria-invalid={Boolean(showError("email"))} />
+                  aria-invalid={Boolean(showError("email"))} />,
+                Mail
               )}
-              {field("phone", "Phone",
+              {field("phone", "Phone number",
                 <input className="nw-contactp__input" id="nw-contact-phone-field" type="tel"
                   placeholder=" " maxLength={LIMITS.phone} value={form.phone}
                   onChange={update("phone")} onBlur={blur("phone")}
-                  aria-invalid={Boolean(showError("phone"))} />
+                  aria-invalid={Boolean(showError("phone"))} />,
+                Phone
               )}
             </div>
 
-            {/* A select always has a value, so its label sits raised permanently */}
-            <label className="nw-contactp__field nw-contactp__field--filled">
+            {/* Label sits raised permanently — the box shows "Select an option"
+               until a real choice is made, so it never overlaps a floating label. */}
+            <label
+              className={`nw-contactp__field nw-contactp__field--filled nw-contactp__field--icon${showError("interest") ? " nw-contactp__field--bad" : ""}`}
+            >
+              <span className="nw-contactp__field-icon" aria-hidden="true">
+                <SlidersHorizontal size={16} strokeWidth={1.9} />
+              </span>
               <select className="nw-contactp__input nw-contactp__select" id="nw-contact-interest"
-                value={form.interest} onChange={update("interest")}>
+                value={form.interest} onChange={update("interest")} onBlur={blur("interest")}
+                aria-invalid={Boolean(showError("interest"))}>
+                <option value="" disabled>Select an option</option>
                 {interests.map(({ label }) => (
                   <option key={label} value={label}>{label}</option>
                 ))}
               </select>
               <span className="nw-contactp__label">I am interested in</span>
+              {showError("interest") && (
+                <span className="nw-contactp__error" role="alert">
+                  <AlertCircle size={13} strokeWidth={2.2} />
+                  {errors.interest}
+                </span>
+              )}
             </label>
 
-            {field("message", "Message",
+            {field("message", "Message *",
               <textarea className="nw-contactp__input nw-contactp__textarea" id="nw-contact-message"
                 rows={5} placeholder=" " maxLength={LIMITS.message} value={form.message}
                 onChange={update("message")} onBlur={blur("message")}
-                aria-invalid={Boolean(showError("message"))} />
+                aria-invalid={Boolean(showError("message"))} />,
+              FileText
             )}
             <span className="nw-contactp__counter">
               {form.message.length} / {LIMITS.message}
@@ -270,6 +305,10 @@ const ContactSection = () => {
               {!isValid && Object.keys(touched).length > 0 && (
                 <span className="nw-contactp__hint">Fill the highlighted fields to send.</span>
               )}
+              <span className="nw-contactp__trust">
+                <ShieldCheck size={15} strokeWidth={2} />
+                Your information is safe with us.
+              </span>
             </div>
 
             {status === "sent" && (

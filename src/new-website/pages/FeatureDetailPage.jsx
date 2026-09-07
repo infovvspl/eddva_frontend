@@ -3,8 +3,9 @@
 // existing as nine near-identical files; each still has its own URL, and a new
 // feature in data/features.js gets a page without any routing change.
 //
-// An unrecognised slug redirects to the index rather than rendering an empty
-// shell — a typo in a shared link should land somewhere useful.
+// There is no /features index page anymore, so an unrecognised slug redirects
+// to the home page rather than rendering an empty shell — a typo in a shared
+// link should land somewhere useful.
 
 import { useEffect } from "react";
 import { Navigate, useParams } from "react-router-dom";
@@ -22,7 +23,7 @@ const FeatureDetailPage = () => {
   // Re-runs on slug change, so moving between features starts at the top
   useEffect(() => { window.scrollTo(0, 0); }, [slug]);
 
-  if (!feature) return <Navigate to="/features" replace />;
+  if (!feature) return <Navigate to="/" replace />;
 
   return (
     <div className="nw-root" id="nw-root">

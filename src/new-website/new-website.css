@@ -3,7 +3,11 @@
    Scoped under .nw-* (zero conflict with eddva_frontend styles)
    ================================================================ */
 
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap");
+/* Poppins is already loaded globally in index.html (preconnected, weights
+   300–900) — this file used to @import its own copy on top of that, a
+   second, non-preconnected, render-blocking request for a font already on
+   the page. Removed; every .nw-root font-family declaration still resolves
+   to the same family via the global <link>. */
 
 /* ── Design tokens ── */
 .nw-root {
@@ -792,12 +796,46 @@ html { scroll-behavior: smooth; }
 .nw-faq__header { text-align: center; margin-bottom: 40px; }
 .nw-faq__label {
   font-size: 0.72rem; font-weight: 700; color: #1a56db;
-  letter-spacing: 0.14em; text-transform: uppercase; display: block; margin-bottom: 10px;
+  letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 10px;
 }
 .nw-faq__heading { font-size: clamp(1.6rem, 2.5vw, 2.1rem); font-weight: 800; color: #0f172a; }
+.nw-faq__sub {
+  max-width: 480px; margin: 12px auto 0;
+  font-size: 0.94rem; color: #64748b; line-height: 1.6;
+}
+
+/* ── Layout: promo illustration beside the accordion ── */
+.nw-faq__layout { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 44px; align-items: center; }
+.nw-faq__promo { display: flex; align-items: flex-end; gap: 14px; min-width: 0; }
+/* Extra specificity needed: .nw-root img sets max-width:100% and would
+   otherwise win over a single-class selector here. */
+.nw-faq__promo .nw-faq__promo-img {
+  width: 100%; max-width: 190px; height: auto; display: block; flex-shrink: 0;
+}
+.nw-faq__promo-copy {
+  position: relative; text-align: left; padding-top: 34px;
+  flex: 1 1 auto; min-width: 0; max-width: 210px;
+}
+.nw-faq__promo-arrow {
+  position: absolute; top: -4px; left: -6px; color: var(--nw-blue); opacity: 0.85;
+}
+.nw-faq__promo-text {
+  margin: 0; font-family: "Caveat", cursive; font-size: 2.1rem; font-weight: 700;
+  color: var(--nw-blue); line-height: 1.05;
+}
+.nw-faq__promo-sub { margin: 2px 0 0; font-size: 0.92rem; color: #64748b; font-weight: 500; }
+.nw-faq__promo-cta {
+  display: inline-flex; align-items: center; gap: 8px; margin-top: 20px;
+  font-size: 0.85rem; font-weight: 700; color: var(--nw-blue); text-decoration: none;
+  background: #fff; border: 1.5px solid var(--nw-blue); white-space: nowrap;
+  border-radius: 999px; padding: 11px 22px;
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+.nw-faq__promo-cta:hover { background: var(--nw-blue); color: #fff; transform: translateY(-2px); }
+
 .nw-faq__grid {
-  display: grid; grid-template-columns: repeat(2, 1fr);
-  gap: 14px 20px; align-items: start;
+  display: grid; grid-template-columns: 1fr;
+  gap: 12px; align-items: start;
 }
 .nw-faq__item {
   background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
@@ -813,6 +851,13 @@ html { scroll-behavior: smooth; }
 }
 .nw-faq__question:hover { color: #1a56db; }
 .nw-faq__item.nw-open .nw-faq__question { color: #1a56db; }
+.nw-faq__question-icon {
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 999px;
+  background: var(--nw-blue); color: #fff;
+}
+.nw-faq__question-text { flex: 1; }
 .nw-faq__chevron { flex-shrink: 0; color: #94a3b8; transition: transform 0.25s, color 0.2s; }
 .nw-faq__item.nw-open .nw-faq__chevron { transform: rotate(180deg); color: #1a56db; }
 .nw-faq__answer {
@@ -898,9 +943,8 @@ html { scroll-behavior: smooth; }
    grid that fades out before it reaches the copy. Closes on a solid navy bar. */
 .nw-footer {
   position: relative; overflow: hidden; isolation: isolate;
-  background: linear-gradient(180deg, #f6f9fd 0%, #e9f0fa 62%, #e3ecf8 100%);
-  color: #52627a;
-  border-top: 1px solid var(--nw-card-border);
+  background: linear-gradient(165deg, #17439c 0%, #0e2c6d 100%);
+  color: #b3c9ee;
 }
 /* Gradient hairline sitting on the border */
 .nw-footer__rule {
@@ -915,14 +959,14 @@ html { scroll-behavior: smooth; }
   position: absolute; z-index: -1; width: 1000px; height: 480px;
   top: -300px; left: 50%; transform: translateX(-50%);
   border-radius: 50%; filter: blur(80px);
-  background: radial-gradient(circle, rgba(26,86,219,0.18) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(122,165,245,0.3) 0%, transparent 70%);
   pointer-events: none;
 }
 /* Dot grid, faded out before it reaches the columns */
 .nw-footer__grid {
   position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  background-image: radial-gradient(#9fb9e0 1.5px, transparent 1.6px);
-  background-size: 22px 22px; opacity: 0.35;
+  background-image: radial-gradient(rgba(255,255,255,0.14) 1.5px, transparent 1.6px);
+  background-size: 22px 22px; opacity: 0.6;
   mask-image: linear-gradient(180deg, #000 0%, transparent 62%);
   -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 62%);
 }
@@ -937,9 +981,11 @@ html { scroll-behavior: smooth; }
 .nw-footer__brand { display: flex; flex-direction: column; gap: 16px; }
 .nw-footer__logo {
   height: 44px; width: auto; object-fit: contain; align-self: flex-start;
+  /* Same PNG as the navbar, flattened to a white mark for the dark ground. */
+  filter: brightness(0) invert(1);
 }
 .nw-footer__blurb {
-  font-size: 0.84rem; font-weight: 600; color: #4a5b73;
+  font-size: 0.84rem; font-weight: 600; color: #b3c9ee;
   line-height: 1.8; max-width: 34ch;
 }
 .nw-footer__brochure {
@@ -957,23 +1003,23 @@ html { scroll-behavior: smooth; }
 
 .nw-footer__col-title {
   position: relative; padding-bottom: 12px; margin-bottom: 18px;
-  font-size: 0.9rem; font-weight: 900; color: var(--nw-ink);
+  font-size: 0.9rem; font-weight: 900; color: #fff;
   letter-spacing: -0.01em;
 }
 .nw-footer__col-title::after {
   content: ""; position: absolute; left: 0; bottom: 0;
-  width: 26px; height: 2px; border-radius: 2px; background: var(--nw-blue);
+  width: 26px; height: 2px; border-radius: 2px; background: #7dd3fc;
 }
 .nw-footer__list { display: flex; flex-direction: column; gap: 11px; }
 .nw-footer__link {
-  font-size: 0.83rem; font-weight: 600; color: #4a5b73; text-decoration: none;
+  font-size: 0.83rem; font-weight: 600; color: #b3c9ee; text-decoration: none;
   transition: color 0.18s, padding-left 0.18s;
 }
-.nw-footer__list .nw-footer__link:hover { color: var(--nw-blue); padding-left: 5px; }
+.nw-footer__list .nw-footer__link:hover { color: #fff; padding-left: 5px; }
 .nw-footer__link--static { cursor: default; }
-.nw-footer__link--static:hover { color: #4a5b73; padding-left: 0; }
+.nw-footer__link--static:hover { color: #b3c9ee; padding-left: 0; }
 .nw-footer__contact { display: flex; align-items: flex-start; gap: 9px; }
-.nw-footer__contact svg { color: var(--nw-blue); flex-shrink: 0; margin-top: 3px; }
+.nw-footer__contact svg { color: #7dd3fc; flex-shrink: 0; margin-top: 3px; }
 
 /* ── Solid navy bar closing the footer ── */
 .nw-footer__bottom {
@@ -1116,6 +1162,11 @@ html { scroll-behavior: smooth; }
   .nw-why__stats { grid-template-columns: repeat(2, 1fr); gap: 24px 0; padding: 24px 8px; }
   .nw-why__stat:nth-child(2) { border-right: none; }
   .nw-faq { padding: 56px 20px; }
+  .nw-faq__layout { grid-template-columns: 1fr; gap: 28px; }
+  .nw-faq__promo { flex-wrap: wrap; justify-content: center; text-align: center; }
+  .nw-faq__promo .nw-faq__promo-img { max-width: 150px; }
+  .nw-faq__promo-copy { padding-top: 0; text-align: center; max-width: none; }
+  .nw-faq__promo-arrow { display: none; }
   .nw-faq__grid { grid-template-columns: 1fr; }
   .nw-achievements { padding: 56px 20px; }
   .nw-cta { padding: 28px 20px; }
@@ -1466,7 +1517,8 @@ html { scroll-behavior: smooth; }
 }
 /* Only the centred headers get flanking rules */
 .nw-products__label::before, .nw-products__label::after,
-.nw-achievements__label::before, .nw-achievements__label::after {
+.nw-achievements__label::before, .nw-achievements__label::after,
+.nw-faq__label::before, .nw-faq__label::after {
   content: ""; width: 46px; height: 1px; background: #c3d9f5;
 }
 
@@ -2137,9 +2189,45 @@ html { scroll-behavior: smooth; }
 
 
 
+/* ── Contact: hero banner (assets/contactbg.png) ── */
+.nw-chero {
+  position: relative;
+  background-color: #eaf1fd;
+  background-size: cover;
+  background-position: right center;
+  background-repeat: no-repeat;
+  min-height: 420px;
+  display: flex; align-items: center;
+  padding: 40px var(--nw-sec-pad-x);
+}
+.nw-chero__container { position: relative; max-width: 1280px; margin: 0 auto; width: 100%; }
+.nw-chero__eyebrow {
+  display: inline-block;
+  font-size: 0.78rem; font-weight: 700; color: var(--nw-blue);
+  letter-spacing: 0.12em; text-transform: uppercase;
+}
+.nw-chero__title {
+  margin: 14px 0 0; font-size: clamp(2rem, 3.6vw, 3rem); font-weight: 700;
+  color: var(--nw-ink); letter-spacing: -0.03em; line-height: 1.12;
+}
+.nw-chero__title-accent { color: var(--nw-blue); }
+.nw-chero__title-rule {
+  display: block; width: 46px; height: 4px; margin-top: 14px;
+  border-radius: 2px; background: var(--nw-blue);
+}
+.nw-chero__lead {
+  margin: 16px 0 0; max-width: 46ch;
+  font-size: 0.98rem; line-height: 1.7; color: #475569;
+}
+
 /* ── Contact ── */
 /* ── Contact: one card, blue panel beside the form ── */
-.nw-contactp { padding: var(--nw-sec-pad-y, 72px) var(--nw-sec-pad-x); }
+.nw-contactp {
+  padding: var(--nw-sec-pad-y, 72px) var(--nw-sec-pad-x);
+  /* Carries the hero's light-blue ground down behind the card instead of
+     cutting to white right at the hero's bottom edge. */
+  background: linear-gradient(180deg, #eaf1fd 0%, #f5f9fe 55%, #ffffff 100%);
+}
 .nw-contactp__container { max-width: 1120px; margin: 0 auto; }
 .nw-contactp__card {
   display: grid; grid-template-columns: 0.82fr 1.18fr;
@@ -2175,17 +2263,23 @@ html { scroll-behavior: smooth; }
   margin: 0; font-size: 1.5rem; font-weight: 800; line-height: 1.25;
   letter-spacing: -0.02em; color: #fff;
 }
+.nw-contactp__aside-rule {
+  display: block; width: 40px; height: 3px; margin-top: 12px;
+  border-radius: 2px; background: #7dd3fc;
+}
 .nw-contactp__aside-lead {
   margin: 14px 0 0; font-size: 0.88rem; line-height: 1.75; color: #b3c9ee;
 }
 
-.nw-contactp__details { list-style: none; margin: 30px 0 0; padding: 0; flex: 1; }
-.nw-contactp__detail {
-  display: flex; align-items: flex-start; gap: 13px;
-  padding: 13px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+/* Two-up grid of detail blocks rather than a single stacked list — reads
+   closer to a set of quick-reference facts than a form-style list. */
+.nw-contactp__details {
+  list-style: none; margin: 30px 0 0; padding: 0; flex: 1;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 20px 16px;
 }
-.nw-contactp__detail:last-child { border-bottom: none; }
+.nw-contactp__detail {
+  display: flex; align-items: flex-start; gap: 12px;
+}
 .nw-contactp__detail-icon {
   flex-shrink: 0;
   display: inline-flex; align-items: center; justify-content: center;
@@ -2220,6 +2314,9 @@ a.nw-contactp__detail-value:hover { color: #9fc0f5; }
 .nw-contactp__form-title {
   margin: 0 0 2px; font-size: 1.1rem; font-weight: 800; color: var(--nw-ink);
 }
+.nw-contactp__form-lead {
+  margin: -14px 0 2px; font-size: 0.86rem; color: #64748b;
+}
 .nw-contactp__row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
 /* Floating label: the input comes first in the DOM so the label can react to
@@ -2233,6 +2330,19 @@ a.nw-contactp__detail-value:hover { color: #9fc0f5; }
   transition: transform 0.16s ease, font-size 0.16s ease, color 0.16s ease, font-weight 0.16s;
   transform-origin: left top;
 }
+
+/* Icon-prefixed fields: a leading glyph sits inside the box, left of the
+   placeholder/label, so the input and label shift right to clear it. */
+.nw-contactp__field-icon {
+  position: absolute; left: 14px; top: 13px; z-index: 1;
+  display: flex; align-items: center; height: 20px;
+  color: #94a3b8; pointer-events: none;
+  transition: color 0.16s ease;
+}
+.nw-contactp__field--icon .nw-contactp__input { padding-left: 40px; }
+.nw-contactp__field--icon .nw-contactp__label { left: 40px; }
+.nw-contactp__field--icon:focus-within .nw-contactp__field-icon { color: var(--nw-blue); }
+.nw-contactp__field--icon.nw-contactp__field--bad .nw-contactp__field-icon { color: #dc2626; }
 .nw-contactp__field:focus-within .nw-contactp__label,
 .nw-contactp__input:not(:placeholder-shown) + .nw-contactp__label,
 .nw-contactp__field--filled .nw-contactp__label {
@@ -2276,6 +2386,11 @@ a.nw-contactp__detail-value:hover { color: #9fc0f5; }
 }
 
 .nw-contactp__actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.nw-contactp__trust {
+  display: flex; align-items: center; gap: 6px; margin-left: auto;
+  font-size: 0.78rem; color: #64748b;
+}
+.nw-contactp__trust svg { color: var(--nw-blue); flex-shrink: 0; }
 .nw-contactp__submit {
   display: inline-flex; align-items: center; gap: 9px;
   font: inherit; font-size: 0.9rem; font-weight: 700; color: #fff;
@@ -2304,9 +2419,14 @@ a.nw-contactp__detail-value:hover { color: #9fc0f5; }
   .nw-contactp__card { grid-template-columns: 1fr; border-radius: 20px; }
   .nw-contactp__aside { padding: 34px 26px; }
   .nw-contactp__form { padding: 32px 26px; }
+  .nw-chero { min-height: 320px; }
 }
 @media (max-width: 560px) {
   .nw-contactp__submit { width: 100%; justify-content: center; }
+  .nw-contactp__trust { margin-left: 0; width: 100%; justify-content: center; }
+  .nw-contactp__details { grid-template-columns: 1fr; }
+  .nw-chero { min-height: 260px; padding: 32px 20px; }
+  .nw-chero__lead { max-width: none; }
 }
 
 /* ── Contact: what happens next ── */
@@ -2793,84 +2913,9 @@ a.nw-contactp__detail-value:hover { color: #9fc0f5; }
 }
 
 /* ══════════════════════════════════════════════════════
-   FEATURES — /features index and /features/:slug detail
+   FEATURES — /features/:slug detail
+   No index page anymore — see FeatureDetail.jsx's header comment.
 ══════════════════════════════════════════════════════ */
-
-/* ── Index ── */
-.nw-findex { padding: var(--nw-sec-pad-y, 72px) var(--nw-sec-pad-x); }
-.nw-findex__container { max-width: 1180px; margin: 0 auto; }
-
-.nw-findex__filters {
-  display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
-  margin-bottom: 40px;
-}
-.nw-findex__filter {
-  display: inline-flex; align-items: center; gap: 8px;
-  font: inherit; font-size: 0.84rem; font-weight: 700; cursor: pointer;
-  color: #64748b; background: #fff;
-  border: 1px solid var(--nw-card-border); border-radius: 999px;
-  padding: 10px 18px;
-  transition: color 0.2s, border-color 0.2s, background 0.2s, transform 0.2s;
-}
-.nw-findex__filter:hover { transform: translateY(-2px); border-color: var(--nw-f-accent); }
-.nw-findex__filter.nw-on {
-  color: #fff; background: var(--nw-f-accent); border-color: var(--nw-f-accent);
-}
-.nw-findex__filter-count {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px;
-  font-size: 0.7rem; font-weight: 800;
-  background: #f1f5f9; color: #94a3b8;
-}
-.nw-findex__filter.nw-on .nw-findex__filter-count {
-  background: rgba(255,255,255,0.25); color: #fff;
-}
-
-.nw-findex__grid {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
-}
-.nw-findex__card {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 12px;
-  text-decoration: none;
-  background: #fff;
-  border: 1px solid var(--nw-card-border);
-  border-top: 4px solid var(--nw-f-accent);
-  border-radius: 18px;
-  padding: 26px 24px 24px;
-  box-shadow: 0 8px 22px rgba(15,23,42,0.04);
-  opacity: 0; transform: translateY(24px);
-  transition: opacity 0.5s cubic-bezier(.2,.7,.3,1),
-              transform 0.5s cubic-bezier(.2,.7,.3,1),
-              box-shadow 0.25s;
-  transition-delay: calc(var(--i) * 60ms);
-}
-.nw-findex__grid.nw-in .nw-findex__card { opacity: 1; transform: none; }
-.nw-findex__card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 20px 42px rgba(15,23,42,0.10);
-}
-.nw-findex__thumb {
-  display: flex; align-items: center; justify-content: center;
-  width: 72px; height: 72px; border-radius: 18px;
-  background: var(--nw-f-bg);
-}
-.nw-findex__img { max-width: 50px; max-height: 50px; width: auto; height: auto; display: block; }
-.nw-findex__tag {
-  font-size: 0.66rem; font-weight: 800; letter-spacing: 0.11em;
-  text-transform: uppercase; color: var(--nw-f-accent);
-}
-.nw-findex__title {
-  margin: 0; font-size: 1.05rem; font-weight: 800; line-height: 1.3; color: var(--nw-ink);
-}
-.nw-findex__tagline {
-  margin: 0; font-size: 0.84rem; line-height: 1.65; color: #64748b; flex: 1;
-}
-.nw-findex__more {
-  display: inline-flex; align-items: center; gap: 7px; margin-top: 4px;
-  font-size: 0.8rem; font-weight: 700; color: var(--nw-f-accent);
-  transition: gap 0.2s;
-}
-.nw-findex__card:hover .nw-findex__more { gap: 11px; }
 
 /* ── Detail: overview ── */
 .nw-fdet__hero {
@@ -3025,21 +3070,19 @@ a.nw-contactp__detail-value:hover { color: #9fc0f5; }
 .nw-fdet__related-arrow { flex-shrink: 0; color: var(--nw-f-accent); }
 
 @media (max-width: 1024px) {
-  .nw-findex__grid { grid-template-columns: repeat(2, 1fr); }
   .nw-fdet__hero-inner { grid-template-columns: 1fr; gap: 32px; }
   .nw-fdet__hero-art { order: -1; min-height: 190px; }
   .nw-fdet__intro { max-width: none; }
   .nw-fdet__related-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 620px) {
-  .nw-findex__grid { grid-template-columns: 1fr; }
   .nw-fdet__hero { padding: 34px 20px 40px; }
   .nw-fdet__cta-card { padding: 22px 20px; }
   .nw-fdet__cta { width: 100%; justify-content: center; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .nw-findex__card, .nw-fdet__point {
+  .nw-fdet__point {
     opacity: 1 !important; transform: none !important; transition: none !important;
   }
   .nw-fdet__halo { animation: none !important; }
@@ -3322,14 +3365,13 @@ a.nw-contactp__detail-value:hover { color: #9fc0f5; }
 .nw-about__card:hover .nw-about__card-icon,
 .nw-services__item:hover .nw-services__item-icon,
 .nw-achievements__card:hover .nw-achievements__badge,
-.nw-findex__card:hover .nw-findex__thumb,
 .nw-steps__step:hover .nw-steps__icon,
 .nw-contactp__detail:hover .nw-contactp__detail-icon,
 .nw-aud__panel:hover .nw-aud__mark {
   transform: translateY(-4px) scale(1.07) rotate(-4deg);
 }
 .nw-about__card-icon, .nw-services__item-icon, .nw-achievements__badge,
-.nw-findex__thumb, .nw-steps__icon, .nw-contactp__detail-icon, .nw-aud__mark {
+.nw-steps__icon, .nw-contactp__detail-icon, .nw-aud__mark {
   transition: transform 0.28s cubic-bezier(.2,1.4,.5,1), box-shadow 0.28s;
 }
 /* Footer contact glyphs nudge with their link */
@@ -3345,12 +3387,10 @@ a.nw-contactp__detail-value:hover { color: #9fc0f5; }
 
 /* ── Images: reveal on scroll is per-component; this is the shared hover ── */
 .nw-about__media img,
-.nw-findex__img,
 .nw-fdet__related-thumb img {
   transition: transform 0.45s cubic-bezier(.2,.7,.3,1);
 }
 .nw-about__media:hover img { transform: scale(1.05); }
-.nw-findex__card:hover .nw-findex__img { transform: scale(1.1) rotate(-3deg); }
 .nw-fdet__related-card:hover .nw-fdet__related-thumb img { transform: scale(1.1); }
 /* Partner logos lift out of the strip */
 .nw-partners__item { transition: transform 0.25s, filter 0.25s; }
@@ -3378,8 +3418,8 @@ a.nw-contactp__detail-value:hover { color: #9fc0f5; }
   .nw-trust__icon { animation: none !important; }
   .nw-pillars__icon, .nw-timeline__node, .nw-roles__entry-icon,
   .nw-about__card-icon, .nw-services__item-icon, .nw-achievements__badge,
-  .nw-findex__thumb, .nw-steps__icon, .nw-contactp__detail-icon, .nw-aud__mark,
-  .nw-about__media img, .nw-findex__img, .nw-fdet__related-thumb img,
+  .nw-steps__icon, .nw-contactp__detail-icon, .nw-aud__mark,
+  .nw-about__media img, .nw-fdet__related-thumb img,
   .nw-partners__item, .nw-products__card-img, .nw-app__orbit-chip--face img,
   .nw-footer__contact svg {
     transition: none !important; transform: none !important;
@@ -3444,8 +3484,12 @@ a.nw-contactp__detail-value:hover { color: #9fc0f5; }
   transition-delay: calc(var(--i) * 70ms);
 }
 .nw-faq__grid.nw-in .nw-faq__item { opacity: 1; transform: none; }
-.nw-faq__question span { display: inline-block; transition: transform 0.2s; }
-.nw-faq__question:hover span { transform: translateX(3px); }
+/* Scoped to the text span specifically — a bare "span" here also matched
+   .nw-faq__question-icon (also a <span>), forcing it from inline-flex to
+   inline-block and, once blockified as a flex item, breaking the icon's
+   centering inside its circle. */
+.nw-faq__question-text { display: inline-block; transition: transform 0.2s; }
+.nw-faq__question:hover .nw-faq__question-text { transform: translateX(3px); }
 
 /* ── Who We Are: copy and image arrive from opposite sides ── */
 .nw-who__left {

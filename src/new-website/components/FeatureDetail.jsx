@@ -4,6 +4,9 @@
 //
 // Rendered for whichever feature the route resolved; the page component handles
 // an unknown slug before this ever mounts.
+//
+// There is no /features index page anymore — the "back" link goes to the
+// home page's AI Features marquee (id="nw-ai-features") instead.
 
 import { Link } from "react-router-dom";
 import { Check, ArrowRight, ArrowLeft, Users } from "lucide-react";
@@ -30,7 +33,7 @@ const FeatureDetail = ({ feature }) => {
       <section className="nw-fdet__hero" id={`nw-feature-${slug}`}>
         <div className="nw-fdet__hero-inner">
           <div className="nw-fdet__hero-copy">
-            <Link to="/features" className="nw-fdet__back">
+            <Link to="/#nw-ai-features" className="nw-fdet__back">
               <ArrowLeft size={15} strokeWidth={2.4} />
               All features
             </Link>

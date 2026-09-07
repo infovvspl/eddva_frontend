@@ -1,13 +1,14 @@
 // Footer.jsx — New Website Mockup
-// Light footer: an off-white ground that continues the page rather than
-// capping it with a dark block. A tinted gradient hairline sits on the top
-// border, the brand block runs beside four link columns, and a bottom bar
-// carries the socials, copyright, legal links and a back-to-top control.
+// Dark navy footer, matching the blue used on the contact card's aside panel
+// (same gradient family) so the two blue surfaces on /contact read as one
+// system. A tinted gradient hairline sits on the top border, the brand block
+// runs beside four link columns, and a bottom bar carries the socials,
+// copyright, legal links and a back-to-top control.
 //
 // Socials sit in the bottom bar, balancing the legal links rather than
 // crowding the blurb; contact details keep their own column.
 //
-// No photograph behind it: the footer paints its own ground — a soft blue
+// No photograph behind it: the footer paints its own ground — a blue
 // gradient with a radial bloom and a faint dot grid — and closes on a solid
 // navy bar. assets/footer bg.jpg is no longer referenced here.
 //
@@ -19,36 +20,41 @@ import { Phone, Mail, MapPin, ArrowUp, Download } from "lucide-react";
 import { LOGO, LOGO_ALT } from "../brand";
 import { socials } from "../data/socials";
 import { emails, PHONE, ADDRESS } from "../data/contact";
+import { products } from "../data/products";
 
+// Every link here is a real route now, not a same-page anchor — the footer
+// is mounted on every page (including all the dedicated sub-pages), so a
+// bare "#nw-x" href only ever worked while already sitting on "/", and did
+// nothing from anywhere else. Institutes and Stakeholders still point at
+// anchors, but full ones ("/solution#id") that resolve on any page.
 const columns = [
   {
     id: "nw-foot-quick",
     title: "Quick Links",
     links: [
-      { id: "home",     label: "Home",     href: "#nw-home" },
-      { id: "about",    label: "About Us", href: "#nw-about" },
-      { id: "products", label: "Products", href: "#nw-product" },
-      { id: "services", label: "Services", href: "#nw-solution" },
+      { id: "home",     label: "Home",     to: "/" },
+      { id: "about",    label: "About Us", to: "/about" },
+      { id: "products", label: "Products", to: "/products" },
+      { id: "services", label: "Services", to: "/solution" },
     ],
   },
   {
     id: "nw-foot-products",
     title: "Products",
-    links: [
-      { id: "lms",      label: "EDDVA AI Learn",            href: "#nw-prod-lms" },
-      { id: "erp",      label: "EDDVA ERP",                 href: "#nw-prod-erp" },
-      { id: "combo",    label: "EDDVA Plus",                href: "#nw-prod-combo" },
-      { id: "jeeai",    label: "EDDVA JEE NEET AI",         href: "#nw-prod-jee-ai" },
-      { id: "jeenonai", label: "EDDVA JEE NEET",            href: "#nw-prod-jee-nonai" },
-    ],
+    // Each product now has its own page (see pages/ProductDetailPage) —
+    // built straight from data/products.js so a new product never needs a
+    // matching footer entry written by hand.
+    links: products.map(({ id, slug, title }) => ({
+      id, label: title, to: `/products/${slug}`,
+    })),
   },
   {
     id: "nw-foot-services",
     title: "Services",
     links: [
-      { id: "schools",      label: "For Schools",    href: "#nw-svc-schools" },
-      { id: "institutes",   label: "For Institutes", href: "#nw-svc-institutes" },
-      { id: "stakeholders", label: "Stakeholders",   href: "#nw-solution" },
+      { id: "schools",      label: "For Schools",    to: "/solution/schools" },
+      { id: "institutes",   label: "For Institutes", to: "/solution#nw-svc-institutes-audience" },
+      { id: "stakeholders", label: "Stakeholders",   to: "/solution#nw-solution-roles" },
       { id: "demo",         label: "Book a Demo",    to: "/contact" },
       { id: "login",        label: "Login",          to: "/login" },
     ],
@@ -181,9 +187,9 @@ const Footer = () => {
         </span>
 
         <div className="nw-footer__legal">
-          <a href="#nw-privacy" className="nw-footer__link" id="nw-foot-privacy">Privacy Policy</a>
+          <Link to="/privacy-policy" className="nw-footer__link" id="nw-foot-privacy">Privacy Policy</Link>
           <span className="nw-footer__sep">|</span>
-          <a href="#nw-terms" className="nw-footer__link" id="nw-foot-terms">Terms &amp; Conditions</a>
+          <Link to="/terms" className="nw-footer__link" id="nw-foot-terms">Terms &amp; Conditions</Link>
           <button
             type="button"
             className="nw-footer__top"
