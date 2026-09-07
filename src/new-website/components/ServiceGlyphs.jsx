@@ -1,8 +1,9 @@
 // ServiceGlyphs.jsx — New Website Mockup
-// Solid glyphs for the two service cards. Lucide is stroke-only, so the flat
+// Solid glyphs for the service cards. Lucide is stroke-only, so the flat
 // filled look is drawn here instead; the windows, clock and doorway are knocked
-// out with evenodd so the tinted tile shows through them. Both take their
-// colour from the tile via currentColor.
+// out with evenodd so the tinted tile shows through them. UniversityGlyph
+// (a pediment-and-columns building) is plain fill shapes, no knockouts needed.
+// All three take their colour from the tile via currentColor.
 //
 // Lives in its own file because both ServicesSection (home page) and
 // SolutionAudience (/solution) render them.
@@ -15,6 +16,19 @@ export const SchoolGlyph = ({ size = 36 }) => (
       fillRule="evenodd"
       d="M12 3.4 1.9 10.4v1.1h1.85v8.85a0.75 0.75 0 0 0 0.75 0.75h15a0.75 0.75 0 0 0 0.75-0.75V11.5h1.85v-1.1zM12 6.35a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM5.9 12.9h2.5v2.4H5.9zm9.7 0h2.5v2.4h-2.5zM5.9 16.9h2.5v2.4H5.9zm9.7 0h2.5v2.4h-2.5zm-5.45 4.2v-3.3a1.85 1.85 0 0 1 3.7 0v3.3z"
     />
+  </svg>
+);
+
+export const UniversityGlyph = ({ size = 36 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M12 1.6 22.5 7.4H1.5z" />
+    <rect x="1.3" y="8.4" width="21.4" height="1.7" />
+    <rect x="3.3" y="11.1" width="2.1" height="8" />
+    <rect x="8.3" y="11.1" width="2.1" height="8" />
+    <rect x="13.3" y="11.1" width="2.1" height="8" />
+    <rect x="18.3" y="11.1" width="2.1" height="8" />
+    <rect x="1.3" y="19.9" width="21.4" height="1.7" />
+    <rect x="0.4" y="22.1" width="23.2" height="1.1" />
   </svg>
 );
 

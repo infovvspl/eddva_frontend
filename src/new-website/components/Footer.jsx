@@ -52,9 +52,8 @@ const columns = [
     id: "nw-foot-services",
     title: "Services",
     links: [
-      { id: "schools",      label: "For Schools",    to: "/solution/schools" },
-      { id: "institutes",   label: "For Institutes", to: "/solution#nw-svc-institutes-audience" },
-      { id: "stakeholders", label: "Stakeholders",   to: "/solution#nw-solution-roles" },
+      { id: "institutions", label: "For Institutions", to: "/solution/institutions" },
+      { id: "stakeholders", label: "Stakeholders",     to: "/solution#nw-solution-roles" },
       { id: "demo",         label: "Book a Demo",    to: "/contact" },
       { id: "login",        label: "Login",          to: "/login" },
     ],

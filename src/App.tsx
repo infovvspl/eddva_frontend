@@ -53,9 +53,10 @@ const NewWebsiteAboutStoryPage = lazy(() => import("./new-website/pages/AboutSto
 const NewWebsiteProductsPage = lazy(() => import("./new-website/pages/ProductsPage"));
 const NewWebsiteSolutionPage = lazy(() => import("./new-website/pages/SolutionPage"));
 const NewWebsiteFaqPage = lazy(() => import("./new-website/pages/FaqPage"));
-const NewWebsiteSchoolSolutionPage = lazy(() => import("./new-website/pages/SchoolSolutionPage"));
+const NewWebsiteInstitutionSolutionPage = lazy(() => import("./new-website/pages/InstitutionSolutionPage"));
 const NewWebsiteTeacherSolutionPage = lazy(() => import("./new-website/pages/TeacherSolutionPage"));
 const NewWebsiteStudentSolutionPage = lazy(() => import("./new-website/pages/StudentSolutionPage"));
+const NewWebsiteParentSolutionPage = lazy(() => import("./new-website/pages/ParentSolutionPage"));
 const NewWebsiteFeatureDetailPage = lazy(() => import("./new-website/pages/FeatureDetailPage"));
 const NewWebsiteProductDetailPage = lazy(() => import("./new-website/pages/ProductDetailPage"));
 const Courses = lazy(() => import("./pages/Courses"));
@@ -771,9 +772,12 @@ const TenantRoutes = () => (
     <Route path="/products" element={<NewWebsiteProductsPage />} />
     <Route path="/products/:slug" element={<NewWebsiteProductDetailPage />} />
     <Route path="/solution" element={<NewWebsiteSolutionPage />} />
-    <Route path="/solution/schools" element={<NewWebsiteSchoolSolutionPage />} />
+    <Route path="/solution/institutions" element={<NewWebsiteInstitutionSolutionPage />} />
+    <Route path="/solution/schools" element={<Navigate to="/solution/institutions#nw-svc-schools" replace />} />
+    <Route path="/solution/universities" element={<Navigate to="/solution/institutions#nw-svc-universities" replace />} />
     <Route path="/solution/teachers" element={<NewWebsiteTeacherSolutionPage />} />
     <Route path="/solution/students" element={<NewWebsiteStudentSolutionPage />} />
+    <Route path="/solution/parents" element={<NewWebsiteParentSolutionPage />} />
     <Route path="/features/:slug" element={<NewWebsiteFeatureDetailPage />} />
     <Route path="/faq" element={<NewWebsiteFaqPage />} />
     {/* Old dev URLs kept alive so nothing already pointing there 404s */}
@@ -821,9 +825,12 @@ const PlatformRoutes = () => (
     <Route path="/products" element={<NewWebsiteProductsPage />} />
     <Route path="/products/:slug" element={<NewWebsiteProductDetailPage />} />
     <Route path="/solution" element={<NewWebsiteSolutionPage />} />
-    <Route path="/solution/schools" element={<NewWebsiteSchoolSolutionPage />} />
+    <Route path="/solution/institutions" element={<NewWebsiteInstitutionSolutionPage />} />
+    <Route path="/solution/schools" element={<Navigate to="/solution/institutions#nw-svc-schools" replace />} />
+    <Route path="/solution/universities" element={<Navigate to="/solution/institutions#nw-svc-universities" replace />} />
     <Route path="/solution/teachers" element={<NewWebsiteTeacherSolutionPage />} />
     <Route path="/solution/students" element={<NewWebsiteStudentSolutionPage />} />
+    <Route path="/solution/parents" element={<NewWebsiteParentSolutionPage />} />
     <Route path="/features/:slug" element={<NewWebsiteFeatureDetailPage />} />
     <Route path="/faq" element={<NewWebsiteFaqPage />} />
     {/* Old dev URLs kept alive so nothing already pointing there 404s */}

@@ -11,9 +11,9 @@
 // a labelled region. The first role that still expands in place is open on
 // load so the section never reads as an empty list of headings.
 //
-// Teachers and Students each have a full dedicated page now, so their rows
-// render as a link-out card instead of an accordion — see DEDICATED_PAGE
-// below.
+// Teachers, Students and Parents each have a full dedicated page now, so
+// their rows render as a link-out card instead of an accordion — see
+// DEDICATED_PAGE below.
 //
 // The capability list is the module inventory that actually ships in this repo
 // — see data/solutions.js.
@@ -26,15 +26,16 @@ import { roleSolutions } from "../data/solutions";
 const countFor = role =>
   role.groups.reduce((sum, group) => sum + group.items.length, 0);
 
-// Teachers and Students each got a full dedicated page (their complete
-// capability breakdown, always expanded, with room to breathe). Their rows
-// here link out to that page instead of expanding inline — showing the same
-// content twice, once squeezed among four roles and once properly, was
-// redundant. Parents and Institute Admin have no page of their own yet, so
-// they keep the original expand-in-place behaviour.
+// Teachers, Students and Parents each got a full dedicated page (their
+// complete capability breakdown, always expanded, with room to breathe).
+// Their rows here link out to that page instead of expanding inline —
+// showing the same content twice, once squeezed among four roles and once
+// properly, was redundant. Institute Admin has no page of its own yet, so it
+// keeps the original expand-in-place behaviour.
 const DEDICATED_PAGE = {
   "nw-sol-teachers": "/solution/teachers",
   "nw-sol-students": "/solution/students",
+  "nw-sol-parents": "/solution/parents",
 };
 
 const SolutionRoles = () => {

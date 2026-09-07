@@ -2,19 +2,30 @@
 // Home · About · Product · Solution · FAQ · Contact us + Login
 // A link may declare `children` to render a hover dropdown; none do by default.
 //
-// Bar is static (not sticky) — it scrolls away with the page rather than
-// pinning to the top. Register was removed from the CTA slot; Login is now
-// the sole action, promoted to the filled pill style so the bar keeps one
-// clear primary action instead of reading as unbalanced with only an
-// outline button left. The Features hub link was removed too — individual
-// feature pages (/features/:slug) still exist and are reachable from the
-// home page's AI Features marquee, just not from this bar.
+// Bar pins to the top once scrolled past its natural position, so the nav
+// stays reachable on long pages. Plain CSS `position: sticky` does not work
+// here — `#root`/`body` in the app's global index.css carry `overflow-x:
+// hidden`, which per spec forces their `overflow-y` to compute as `auto`,
+// making `#root` (which never itself scrolls — the real scrolling happens on
+// `html`) the nearest ancestor scroll container `sticky` binds to instead of
+// the viewport. Rather than touch that global, app-wide reset, pinning is
+// done by hand: a zero-height sentinel sits right where the bar naturally
+// starts (after TopBar); once it scrolls past the viewport top the bar
+// switches to `position: fixed` and a spacer of its own height opens up in
+// flow so content below does not jump.
+//
+// Register was removed from the CTA slot; Login is now the sole action,
+// promoted to the filled pill style so the bar keeps one clear primary
+// action instead of reading as unbalanced with only an outline button left.
+// The Features hub link was removed too — individual feature pages
+// (/features/:slug) still exist and are reachable from the home page's AI
+// Features marquee, just not from this bar.
 //
 // A link is either an in-page anchor on the one-pager (`href`) or its own
 // route (`to`). Since this bar is also mounted on the sub-pages, where an
 // anchor has nothing to scroll to, anchors are rewritten there as links back
 // to the one-pager carrying the hash — see NavItemLink.
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ChevronDown, LogIn } from "lucide-react";
 import { LOGO, LOGO_ALT } from "../brand";
@@ -32,10 +43,10 @@ const links = [
   {
     id: "solution", label: "Solution",   to: "/solution",
     children: [
-      { id: "institutes", label: "For Institutes", to: "/solution#nw-svc-institutes-audience" },
-      { id: "teachers",   label: "For Teachers",   to: "/solution/teachers" },
-      { id: "students",   label: "For Students",   to: "/solution/students" },
-      { id: "schools",    label: "For Schools",    to: "/solution/schools" },
+      { id: "institutions", label: "For Institutions", to: "/solution/institutions" },
+      { id: "teachers",     label: "For Teachers",     to: "/solution/teachers" },
+      { id: "students",     label: "For Students",     to: "/solution/students" },
+      { id: "parents",      label: "For Parents",      to: "/solution/parents" },
     ],
   },
   { id: "faq",      label: "FAQ",        to: "/faq" },
@@ -76,6 +87,10 @@ const Navbar = () => {
   const current = onHome ? active : routeActive;
   const [openDropdown, setOpenDropdown] = useState(null);
   const [scrolled, setScrolled] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const [navHeight, setNavHeight] = useState(0);
+  const sentinelRef = useRef(null);
+  const navRef = useRef(null);
 
   // Compact the bar once the page is scrolled past the hero fold
   useEffect(() => {
@@ -85,11 +100,37 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Pins the bar once the sentinel (sitting right where the bar naturally
+  // starts) scrolls past the viewport top — see the file header comment for
+  // why this replaces plain `position: sticky`.
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setPinned(!entry.isIntersecting),
+      { threshold: 0 },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, []);
+
+  // Measures the bar's own height for the spacer that opens up once pinned.
+  // Re-measured on resize since the compact/mobile layouts differ in height.
+  useEffect(() => {
+    const measure = () => { if (navRef.current) setNavHeight(navRef.current.offsetHeight); };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [menuOpen]);
+
   return (
-    <header
-      className={`nw-navbar${scrolled ? " nw-navbar--scrolled" : ""}`}
-      id="nw-navbar"
-    >
+    <>
+      <span ref={sentinelRef} aria-hidden="true" style={{ display: "block", height: 0 }} />
+      <header
+        ref={navRef}
+        className={`nw-navbar${scrolled ? " nw-navbar--scrolled" : ""}${pinned ? " nw-navbar--pinned" : ""}`}
+        id="nw-navbar"
+      >
       <div className="nw-navbar__container">
 
         {/* ── Logo ── */}
@@ -208,7 +249,9 @@ const Navbar = () => {
           </Link>
         </div>
       </div>
-    </header>
+      </header>
+      {pinned && <div className="nw-navbar__spacer" style={{ height: navHeight }} aria-hidden="true" />}
+    </>
   );
 };
 

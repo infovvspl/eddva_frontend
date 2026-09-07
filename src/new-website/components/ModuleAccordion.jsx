@@ -27,7 +27,7 @@ const ModuleAccordion = ({ id, heading, headingAccent, lead, modules, defaultOpe
         </header>
 
         <div className="nw-modacc__list">
-          {modules.map(({ id: moduleId, title, Icon, bullets }) => {
+          {modules.map(({ id: moduleId, title, Icon, desc, bullets }) => {
             const isOpen = Boolean(open[moduleId]);
             return (
               <article className={`nw-modacc__item${isOpen ? " nw-open" : ""}`} key={moduleId}>
@@ -55,16 +55,23 @@ const ModuleAccordion = ({ id, heading, headingAccent, lead, modules, defaultOpe
                   role="region"
                   aria-labelledby={`${id}-${moduleId}-trigger`}
                 >
-                  <ul className="nw-modacc__bullets">
-                    {bullets.map(bullet => (
-                      <li className="nw-modacc__bullet" key={bullet}>
-                        <span className="nw-modacc__tick" aria-hidden="true">
-                          <Check size={10} strokeWidth={3.2} />
-                        </span>
-                        {bullet}
-                      </li>
-                    ))}
-                  </ul>
+                  {/* One wrapper, not two siblings — .nw-modacc__region is a
+                     single-row 0fr/1fr grid collapse; a second direct child
+                     lands in an auto-sized implicit row that never collapses,
+                     leaving a gap under the panel when it's closed. */}
+                  <div className="nw-modacc__region-inner">
+                    {desc && <p className="nw-modacc__desc">{desc}</p>}
+                    <ul className="nw-modacc__bullets">
+                      {bullets.map(bullet => (
+                        <li className="nw-modacc__bullet" key={bullet}>
+                          <span className="nw-modacc__tick" aria-hidden="true">
+                            <Check size={10} strokeWidth={3.2} />
+                          </span>
+                          {bullet}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               </article>
             );

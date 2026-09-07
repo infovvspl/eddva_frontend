@@ -1,10 +1,10 @@
 // ProductDetail.jsx — /products/:slug
-// One product's own page: overview, what it does, then — for EDDVA ERP and
-// EDDVA AI Learn only — the full module accordion that used to sit directly
-// on /products underneath the five-card grid. It moved here so the hub page
-// carries just the grid, not all five products' full depth at once; the
-// other three products (EDDVA Plus, EDDVA JEE NEET AI, EDDVA JEE NEET) have
-// no separate module dataset, so their page is the overview alone.
+// One product's own page: overview, what it does, then — for every product
+// with its own module dataset — the full module accordion that used to sit
+// directly on /products underneath the five-card grid. It moved here so the
+// hub page carries just the grid, not every product's full depth at once;
+// EDDVA Plus has no separate module dataset of its own (it's ERP + AI Learn
+// combined), so its page is the overview alone.
 //
 // Rendered for whichever product the route resolved; the page component
 // handles an unknown slug before this ever mounts. Titles are unchanged from
@@ -15,11 +15,15 @@ import { Check, ArrowRight, ArrowLeft } from "lucide-react";
 import { products } from "../data/products";
 import ErpModules from "./ErpModules";
 import LmsModules from "./LmsModules";
+import JeeNeetAiModules from "./JeeNeetAiModules";
+import JeeNeetModules from "./JeeNeetModules";
 import useInView from "../hooks/useInView";
 
 const MODULE_BLOCK = {
   "nw-prod-erp": ErpModules,
   "nw-prod-lms": LmsModules,
+  "nw-prod-jee-ai": JeeNeetAiModules,
+  "nw-prod-jee-nonai": JeeNeetModules,
 };
 
 const ProductDetail = ({ product }) => {

@@ -8,7 +8,7 @@
 // have it confirmed.
 
 import { Users, BookUser, UserRound, ShieldCheck } from "lucide-react";
-import { SchoolGlyph, CapGlyph } from "../components/ServiceGlyphs";
+import { SchoolGlyph, CapGlyph, UniversityGlyph } from "../components/ServiceGlyphs";
 
 export const services = [
   {
@@ -38,6 +38,20 @@ export const services = [
     Icon: CapGlyph,
     color: "#7c3aed",
     bg: "#f5f3ff",
+  },
+  {
+    id: "nw-svc-universities",
+    title: "For Universities",
+    desc: "One platform across departments and programs — nursing, PG, management and graduation courses alike.",
+    covers: [
+      "Multi-department and multi-program setup",
+      "Semester-wise academics and examinations",
+      "Faculty, batch and course management",
+      "Institution-wide analytics and reporting",
+    ],
+    Icon: UniversityGlyph,
+    color: "#c2410c",
+    bg: "#fff7ed",
   },
 ];
 

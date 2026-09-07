@@ -1,7 +1,7 @@
 // SolutionAudience.jsx — /solution
-// "Which one are you?" — schools and institutes as two split panels, each with
-// its glyph set large as a watermark behind the copy and the four things that
-// panel actually covers listed underneath.
+// "Which one are you?" — schools, institutes and universities as split
+// panels, each with its glyph set large as a watermark behind the copy and
+// the four things that panel actually covers listed underneath.
 //
 // Replaces the plain tinted panels that were here before. Copy comes from
 // data/services.js.
@@ -11,11 +11,15 @@ import { ArrowRight, Check } from "lucide-react";
 import { services } from "../data/services";
 import useInView from "../hooks/useInView";
 
-// Only Schools has its own dedicated page so far (pages/SchoolSolutionPage,
-// at /solution/schools) — Teachers and Students each got the same treatment
-// (pages/TeacherSolutionPage, pages/StudentSolutionPage). Institutes stays as
-// this panel only until it gets a page of its own too.
-const DEDICATED_PAGE = { "nw-svc-schools": "/solution/schools" };
+// Institutes, Schools and Universities all get their full breakdown on the
+// one combined page (pages/InstitutionSolutionPage) — each panel here links
+// to its own section there via hash. Teachers, Students and Parents each
+// have a full dedicated page of their own instead.
+const DEDICATED_PAGE = {
+  "nw-svc-institutes": "/solution/institutions#nw-svc-institutes",
+  "nw-svc-schools": "/solution/institutions#nw-svc-schools",
+  "nw-svc-universities": "/solution/institutions#nw-svc-universities",
+};
 
 const Panel = ({ service, index }) => {
   const { id, title, desc, covers, Icon, color, bg } = service;
@@ -75,14 +79,14 @@ const SolutionAudience = () => {
       <div className="nw-aud__container">
 
         <header className="nw-aud__header">
-          <h2 className="nw-aud__heading">Built for Both Kinds of Institution</h2>
+          <h2 className="nw-aud__heading">Built for Every Kind of Institution</h2>
           <p className="nw-aud__lead">
             The same platform, configured around how your institution actually
-            runs — whether that is a school day or a coaching timetable.
+            runs — a school day, a coaching timetable or a university semester.
           </p>
         </header>
 
-        <div className="nw-aud__pair">
+        <div className="nw-aud__pair nw-aud__pair--triple">
           {services.map((service, i) => (
             <Panel key={service.id} service={service} index={i} />
           ))}

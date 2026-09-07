@@ -31,7 +31,7 @@ const faqs = [
     id: "nw-faq-who",
     Icon: Building2,
     q: "Which institutions can use EDDVA?",
-    a: "Schools, colleges, coaching centres and competitive-exam institutes. Modules can be switched on or off so a 200-student school and a 20,000-student group both get a setup that fits.",
+    a: "Schools, colleges, universities (nursing, PG, management and graduation programs), coaching centres and competitive-exam institutes. Modules can be switched on or off so a 200-student school and a 20,000-student group both get a setup that fits.",
   },
   {
     id: "nw-faq-custom",

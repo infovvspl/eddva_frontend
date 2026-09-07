@@ -15,10 +15,16 @@ const ContactHero = () => (
       // A white-to-transparent fade layered under the photo, so the eyebrow/
       // heading/lead stay legible regardless of how much of the photo a
       // narrow viewport's `background-size: cover` ends up cropping in.
-      // Clears fully by 38% — the source image's doodle icons (cap, book,
-      // bulb) sit further right than that, so they stay at full opacity
-      // rather than getting washed out under the fade.
-      backgroundImage: `linear-gradient(90deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.8) 22%, rgba(255,255,255,0) 38%), url(${contactBg})`,
+      // Clears fully by 38% on desktop — the source image's doodle icons
+      // (cap, book, bulb) sit further right than that, so they stay at full
+      // opacity rather than getting washed out under the fade.
+      //
+      // The two fade stops are CSS custom properties (default: desktop
+      // values) so new-website.css can push them out further on narrow
+      // viewports, where the lead paragraph loses its max-width and spans
+      // close to the full section — at the desktop-sized fade it used to run
+      // straight onto the photo, right over the people in it.
+      backgroundImage: `linear-gradient(90deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.85) var(--nw-chero-fade-mid, 22%), rgba(255,255,255,0) var(--nw-chero-fade-end, 38%)), url(${contactBg})`,
     }}
   >
     <div className="nw-chero__container">

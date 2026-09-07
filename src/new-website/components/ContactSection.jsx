@@ -50,7 +50,6 @@ const details = [
 const interests = [
   { label: "A demo for my school",    vertical: "SCHOOL" },
   { label: "A demo for my institute", vertical: "COACHING" },
-  { label: "Pricing and plans",       vertical: null },
   { label: "Partnership",             vertical: null },
   { label: "Something else",          vertical: null },
 ];
