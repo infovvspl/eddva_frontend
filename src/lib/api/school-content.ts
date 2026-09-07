@@ -94,20 +94,39 @@ export const schoolContent = {
     extraContext?: string;
     /** Output language: 'hindi' → Devanagari via Groq, 'odia' → Odia script via Gemini. Default: English. */
     language?: 'hindi' | 'odia';
+    /** Which source(s) to ground generation on. Default 'ebook' — unchanged behaviour. */
+    sourceMode?: 'ebook' | 'lecture' | 'both';
   }) => schoolApi.post('/materials/ai-generate', body)
     .then((res) => extractData<{
       content: string;
       contentType: string;
       topicName: string;
-      /** Whether the chapter's indexed textbook was used, and which pages.
-       *  The teacher needs this stated: inline [p.N] markers appear only when
-       *  the model remembers to add them, but this flag is set by the server. */
+      /** Whether the chapter's indexed textbook and/or an indexed lecture
+       *  transcript was used, and which pages/lectures it cites. The teacher
+       *  needs this stated: inline citation markers appear only when the model
+       *  remembers to add them, but this flag is set by the server. */
       source?: {
         grounded: boolean;
         pages?: number[];
-        reason?: 'not_indexed' | 'unavailable';
+        citations?: string[];
+        hasEbook?: boolean;
+        hasLecture?: boolean;
+        reason?: 'not_indexed' | 'unavailable' | 'no_source_available';
       };
+      sourceMode?: 'ebook' | 'lecture' | 'both';
+      sourceAvailability?: { ebook: boolean; lecture: boolean };
+      requestedSourceMode?: 'ebook' | 'lecture' | 'both';
+      sourceModeDowngraded?: boolean;
     }>(res)),
+
+  /** What can this topic/chapter be generated from right now (before the teacher generates). */
+  getAiSourceAvailability: (query: { topicId?: string; chapterId?: string }) =>
+    schoolApi.get('/materials/ai-generate/source-availability', { params: query })
+      .then((res) => extractData<{
+        ebookAvailable: boolean;
+        lectureAvailable: boolean;
+        lectureGroundingEnabled: boolean;
+      }>(res)),
 
   /** Persist AI-generated markdown as a study material for students. */
   saveAiMaterial: (body: {
