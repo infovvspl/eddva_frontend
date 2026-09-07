@@ -51,12 +51,30 @@ function scopeFields(scope) {
 
 window.API = {
 
-  async generatePresentation(topic, slideCount, theme, language, scope) {
+  /** What can this deck's scope be generated from right now (before generating). */
+  async getSourceAvailability(scope) {
+    try {
+      const params = new URLSearchParams(scopeFields(scope));
+      const response = await fetch(window.PPT_CFG.pptUrl('/source-availability?' + params.toString()), {
+        method: 'GET',
+        headers: pptHeaders(),
+      });
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data && data.success !== false ? data.data : null;
+    } catch (_e) {
+      return null; // best-effort — the source selector just stays hidden
+    }
+  },
+
+  async generatePresentation(topic, slideCount, theme, language, scope, sourceMode) {
     try {
       const response = await fetch(window.PPT_CFG.pptUrl('/generate'), {
         method: 'POST',
         headers: pptHeaders(),
-        body: JSON.stringify({ topic, slideCount, theme, language, ...scopeFields(scope) }),
+        body: JSON.stringify({
+          topic, slideCount, theme, language, sourceMode, ...scopeFields(scope),
+        }),
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);

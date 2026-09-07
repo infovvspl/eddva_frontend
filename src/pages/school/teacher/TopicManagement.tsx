@@ -2022,7 +2022,9 @@ function splitGeneratedPracticeContent(content: string, typeId: string) {
  * with 143 markers and a slide deck, equally grounded, with 2 — so a teacher
  * cannot use their absence to conclude anything.
  */
-function SourceBadge({ source }: { source: { grounded: boolean; pages?: number[]; reason?: string } | null }) {
+function SourceBadge({ source }: {
+  source: { grounded: boolean; pages?: number[]; citations?: string[]; hasEbook?: boolean; hasLecture?: boolean; reason?: string } | null;
+}) {
   if (!source) return null;
 
   if (source.grounded) {
@@ -2032,13 +2034,22 @@ function SourceBadge({ source }: { source: { grounded: boolean; pages?: number[]
           ? ` · page ${Math.min(...pages)}`
           : ` · pages ${Math.min(...pages)}–${Math.max(...pages)}`)
       : '';
+    const bothSources = source.hasEbook && source.hasLecture;
+    const label = bothSources
+      ? 'From your textbook & lecture'
+      : source.hasLecture
+        ? 'From your lecture transcript'
+        : `From your textbook${range}`;
+    const title = source.citations?.length
+      ? `Cited: ${source.citations.join(', ')}`
+      : 'Every section was written from the chapter PDF uploaded for this class.';
     return (
       <span
-        title="Every section was written from the chapter PDF uploaded for this class."
+        title={title}
         className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
       >
         <span className="h-1.5 w-1.5 rounded-full bg-current" />
-        From your textbook{range}
+        {label}
       </span>
     );
   }
@@ -2072,7 +2083,9 @@ function SourceBadge({ source }: { source: { grounded: boolean; pages?: number[]
     <span
       title={
         aiSideTitle
-          ?? 'This chapter has no indexed textbook, so it was written from general knowledge. Upload the chapter PDF under Textbook Coverage to change that.'
+          ?? (reason === 'no_source_available'
+            ? 'No indexed textbook or lecture transcript was available for the source you picked, so this used general knowledge.'
+            : 'This chapter has no indexed textbook, so it was written from general knowledge. Upload the chapter PDF under Textbook Coverage to change that.')
       }
       className={
         isAiSide
@@ -2165,7 +2178,27 @@ function AiGeneratePanel({
   // Whether the chapter's indexed textbook was actually used. Set by the server,
   // so it is reliable — inline [p.N] markers only appear when the model happens
   // to add them, and a teacher cannot tell "no citations" from "not grounded".
-  const [source, setSource] = useState<{ grounded: boolean; pages?: number[]; reason?: string } | null>(null);
+  const [source, setSource] = useState<{ grounded: boolean; pages?: number[]; citations?: string[]; reason?: string } | null>(null);
+
+  // Which source(s) to ground generation on. Only offered when this topic
+  // actually has an indexed lecture transcript AND the institute has lecture
+  // grounding enabled — otherwise generation stays ebook-only, unchanged.
+  const [sourceMode, setSourceMode] = useState<'ebook' | 'lecture' | 'both'>('ebook');
+  const [sourceAvailability, setSourceAvailability] = useState<{
+    ebookAvailable: boolean; lectureAvailable: boolean; lectureGroundingEnabled: boolean;
+  } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    schoolContent.getAiSourceAvailability(scopeRef).then((res) => {
+      if (!cancelled) setSourceAvailability(res);
+    }).catch(() => { if (!cancelled) setSourceAvailability(null); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topic.id, topic.kind]);
+  const showLectureOption = !!(sourceAvailability?.lectureGroundingEnabled && sourceAvailability?.lectureAvailable);
+  useEffect(() => {
+    if (!showLectureOption && sourceMode !== 'ebook') setSourceMode('ebook');
+  }, [showLectureOption]);
 
   const cfg = AI_GEN_TYPES.find((t) => t.id === typeId)!;
   const isQuestionType = typeId === 'dpp' || typeId === 'pyq';
@@ -2217,6 +2250,7 @@ function AiGeneratePanel({
         questionCount: isQuestionType ? questionCount : undefined,
         extraContext: mergedExtraContext || undefined,
         language: language !== 'english' ? language : undefined,
+        sourceMode: showLectureOption ? sourceMode : undefined,
       });
       const generated = res.content ?? '';
       if (typeId === 'faq' && language === 'english' && !/\*\*\s*Q(?:uestion)?\s*\d*\.?/i.test(generated) && !/^#{1,3}\s*FAQ\b/im.test(generated)) {
@@ -2347,6 +2381,39 @@ function AiGeneratePanel({
 
           <p className="mb-3 mt-6 text-[11px] font-black uppercase tracking-wider text-surface-400">2 · Settings</p>
           <div className="space-y-4">
+            {showLectureOption && (
+              <div>
+                <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-surface-400">Generate from</p>
+                <div className="flex gap-2">
+                  {([
+                    ['ebook', 'Textbook', sourceAvailability?.ebookAvailable !== false],
+                    ['lecture', 'Lecture Transcript', true],
+                    ['both', 'Both', sourceAvailability?.ebookAvailable !== false],
+                  ] as const).map(([mode, label, enabled]) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      disabled={!enabled}
+                      onClick={() => { setSourceMode(mode); setContent(null); }}
+                      title={!enabled ? 'No indexed textbook for this chapter yet' : undefined}
+                      className={`rounded-xl border-2 px-3 py-2 text-sm font-bold transition-all disabled:cursor-not-allowed disabled:opacity-40 ${sourceMode === mode
+                          ? 'border-violet-400 bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300'
+                          : 'border-surface-200 text-surface-600 hover:border-surface-300 dark:border-surface-700 dark:text-surface-300'
+                        }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-1 text-[11px] font-medium text-surface-400">
+                  {sourceMode === 'both'
+                    ? 'Written from the chapter PDF and this topic’s recorded-lecture transcript(s).'
+                    : sourceMode === 'lecture'
+                      ? 'Written from this topic’s recorded-lecture transcript(s) only.'
+                      : 'Written from the chapter PDF only.'}
+                </p>
+              </div>
+            )}
             <div>
               <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-surface-400">Language</p>
               <div className="flex gap-2">

@@ -57,6 +57,20 @@
       <!-- Curriculum scope (populated from the launching page's selection) -->
       <div id="scope-banner" class="scope-banner" hidden></div>
 
+      <!-- Generate from: textbook / lecture transcript / both. Hidden until
+           source-availability confirms an indexed lecture transcript exists
+           for this scope AND the institute has lecture grounding enabled —
+           otherwise generation stays textbook-only, unchanged. -->
+      <section class="input-section" id="sec-source-mode" hidden>
+        <label class="input-label">Generate from</label>
+        <div class="source-mode-options" role="group" aria-label="Generate from">
+          <button type="button" class="source-mode-btn selected" data-source-mode="ebook">Textbook</button>
+          <button type="button" class="source-mode-btn" data-source-mode="lecture">Lecture Transcript</button>
+          <button type="button" class="source-mode-btn" data-source-mode="both">Both</button>
+        </div>
+        <p id="source-mode-hint" class="source-mode-hint"></p>
+      </section>
+
       <!-- Topic Input -->
       <section class="input-section" id="sec-topic">
         <label class="input-label" for="topic-input">What's your presentation about?</label>

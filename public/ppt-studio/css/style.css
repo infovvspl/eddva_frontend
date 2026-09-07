@@ -477,6 +477,47 @@ body {
   transition: color var(--transition-fast);
 }
 
+/* ─── Generate-from (source) picker ─────────────────────────────── */
+.source-mode-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.source-mode-btn {
+  padding: 8px 14px;
+  background: var(--bg-surface);
+  border: 2px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.source-mode-btn:hover {
+  border-color: var(--brand-500);
+}
+
+.source-mode-btn.selected {
+  border-color: var(--brand-600);
+  background: var(--bg-surface-active);
+  box-shadow: 0 0 0 3px var(--ring);
+  color: var(--brand-700);
+}
+
+.source-mode-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.source-mode-hint {
+  margin-top: 6px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
 /* ─── Presentation Style Picker ─────────────────────────────────── */
 .style-grid {
   display: grid;
