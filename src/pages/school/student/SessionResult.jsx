@@ -48,6 +48,25 @@ function parseJsonArray(value) {
   }
 }
 
+// The marks-upload flow stores a per-component breakdown (theory/practical/
+// internal/etc.) as a JSON blob inside the plain-text `remarks` column
+// (see school-student.service.ts). Parse it back out so it renders as a
+// score breakdown instead of a raw JSON string; anything that isn't that
+// exact shape (older/plain teacher remarks) passes through as normal text.
+function parseResultRemarks(raw) {
+  if (!raw) return { breakdown: null, text: null };
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && parsed.type === 'breakdown' && parsed.components) {
+      const text = parsed.userRemarks && parsed.userRemarks !== 'Overall calculated total' ? parsed.userRemarks : null;
+      return { breakdown: parsed.components, text };
+    }
+  } catch {
+    // Not JSON -- a normal free-text remark, fall through.
+  }
+  return { breakdown: null, text: raw };
+}
+
 function getQuestions(assessment) {
   const questions = assessment?.questions_json || assessment?.questionsJson || assessment?.questions || [];
   return Array.isArray(questions) ? questions : parseJsonArray(questions);
@@ -192,7 +211,7 @@ export default function SessionResult() {
   const pct           = marks != null && totalMarks ? Math.round((marks / totalMarks) * 100) : null;
   const isAbsent      = Boolean(myResult?.is_absent);
   const grade         = myResult?.grade ?? null;
-  const remarks       = myResult?.remarks ?? null;
+  const { breakdown: remarksBreakdown, text: remarks } = parseResultRemarks(myResult?.remarks ?? null);
   const resultSaved   = !!myResult && !isAbsent && marks != null;
   const reviewRows    = buildReviewRows(assessment, mySubmission);
 
@@ -205,7 +224,7 @@ export default function SessionResult() {
     :                      'from-rose-400 to-red-500';
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="space-y-6">
       {/* Back */}
       <Link
         to="/school/student/assessments"
@@ -346,6 +365,25 @@ export default function SessionResult() {
               <span>{totalMarks}</span>
             </div>
           </div>
+
+          {/* Marks breakdown (theory/practical/internal/etc.) */}
+          {remarksBreakdown && (
+            <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <h3 className="mb-3 text-base font-black text-slate-900 dark:text-white">Marks Breakdown</h3>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(remarksBreakdown)
+                  .filter(([, c]) => c?.enabled && Number(c?.max) > 0)
+                  .map(([key, c]) => (
+                    <span
+                      key={key}
+                      className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                    >
+                      {key.charAt(0).toUpperCase() + key.slice(1)}: {c.obtained}/{c.max}
+                    </span>
+                  ))}
+              </div>
+            </div>
+          )}
 
           {/* Teacher remarks */}
           {remarks && (

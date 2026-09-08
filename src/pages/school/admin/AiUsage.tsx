@@ -57,6 +57,7 @@ const AI_FEATURES = [
   { id: 'content_flashcard', label: 'Flashcards', category: 'content' },
   { id: 'content_revision_checklist', label: 'Revision Checklist', category: 'content' },
   { id: 'content_faq', label: 'FAQ', category: 'content' },
+  { id: 'content_lecture_grounding', label: 'Generate from Lecture Transcripts', category: 'content' },
   // ── Student features ───────────────────────────────────────────────────────
   { id: 'doubt_resolver', label: 'Doubt Resolver', category: 'student' },
   { id: 'personalised_study_plan', label: 'Personalised Study Plan', category: 'student' },
@@ -129,7 +130,7 @@ const FEATURE_CATEGORY_MAP: Record<string, 'teacher' | 'content' | 'student' | '
   content_dpp: 'content', content_mindmap: 'content', content_pyq: 'content',
   content_study_guide: 'content', content_key_concepts: 'content',
   content_flashcard: 'content', content_revision_checklist: 'content',
-  content_faq: 'content',
+  content_faq: 'content', content_lecture_grounding: 'content',
   // Student
   doubt_resolver: 'student', doubt_resolve: 'student', ai_doubt_solver: 'student',
   personalised_study_plan: 'student', plan_generate: 'student',

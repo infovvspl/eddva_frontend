@@ -475,7 +475,7 @@ const StudentRegisterPage = () => {
     <div className="flex min-h-screen w-full bg-white font-sans selection:bg-blue-100 selection:text-blue-900 overflow-hidden">
 
       {/* ════════ LEFT — FORM ════════ */}
-      <div className="relative flex w-full flex-col items-center justify-center bg-slate-50 px-8 py-16 md:w-[50%] lg:px-24">
+      <div className="relative flex w-full flex-col items-center justify-center bg-slate-50 px-8 py-16 lg:w-[50%] lg:px-24">
 
         {/* decorative orbs */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -804,7 +804,7 @@ const StudentRegisterPage = () => {
       </div>
 
       {/* ════════ RIGHT — VISUAL ════════ */}
-      <div className="relative hidden md:flex md:w-[50%] flex-col items-center justify-center overflow-hidden bg-white border-l border-slate-100">
+      <div className="relative hidden lg:flex lg:w-[50%] flex-col items-center justify-center overflow-hidden bg-white border-l border-slate-100">
 
         {/* Dynamic Aura Orbs */}
         <div className="absolute inset-0 pointer-events-none">

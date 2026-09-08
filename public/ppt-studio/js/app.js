@@ -77,6 +77,12 @@ window.App = {
   /** Currently active view: 'setup' or 'preview' */
   currentView: 'setup',
 
+  /** 'ebook' (default), 'lecture', or 'both' — which source(s) to ground the
+   *  deck on. Only offered when a lecture transcript is actually indexed for
+   *  this scope and the institute has lecture grounding enabled (see
+   *  loadSourceAvailability). */
+  sourceMode: 'ebook',
+
   /* ========================================================
    * Initialization
    * ======================================================== */
@@ -90,6 +96,7 @@ window.App = {
     this.initSliderSync();
     this.initThemePicker();
     this.initStylePicker();
+    this.initSourceModePicker();
 
     // Initialize the editor module
     if (window.SlideEditor) {
@@ -245,6 +252,7 @@ window.App = {
         topicName:   params.get('topicName')   || '',
       };
       this.renderScopeBanner();
+      this.loadSourceAvailability();
       const slides = parseInt(params.get('slides') || '', 10);
       if (Number.isFinite(slides)) {
         const slider = document.getElementById('slide-count-slider');
@@ -303,6 +311,53 @@ window.App = {
     const d = document.createElement('div');
     d.textContent = String(str);
     return d.innerHTML;
+  },
+
+  /* Show the "Generate from" picker only when this scope actually has an
+     indexed lecture transcript AND the institute has lecture grounding
+     enabled — otherwise generation stays textbook-only, exactly as before. */
+  async loadSourceAvailability() {
+    const section = document.getElementById('sec-source-mode');
+    if (!section || !this.scope || (!this.scope.chapterId && !this.scope.topicId)) return;
+    const availability = await API.getSourceAvailability(this.scope);
+    const show = !!(availability && availability.lectureGroundingEnabled && availability.lectureAvailable);
+    section.hidden = !show;
+    if (!show) {
+      this.sourceMode = 'ebook';
+      return;
+    }
+    const ebookAvailable = availability.ebookAvailable !== false;
+    document.querySelectorAll('.source-mode-btn').forEach((btn) => {
+      const mode = btn.dataset.sourceMode;
+      btn.disabled = (mode === 'ebook' || mode === 'both') && !ebookAvailable;
+      btn.title = btn.disabled ? 'No indexed textbook for this chapter yet' : '';
+    });
+    this.renderSourceModeHint();
+  },
+
+  renderSourceModeHint() {
+    const hint = document.getElementById('source-mode-hint');
+    if (!hint) return;
+    const HINTS = {
+      ebook: 'Written from the chapter PDF only.',
+      lecture: 'Written from this topic’s recorded-lecture transcript(s) only.',
+      both: 'Written from the chapter PDF and this topic’s recorded-lecture transcript(s).',
+    };
+    hint.textContent = HINTS[this.sourceMode] || '';
+  },
+
+  initSourceModePicker() {
+    const buttons = document.querySelectorAll('.source-mode-btn');
+    if (!buttons.length) return;
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (btn.disabled) return;
+        buttons.forEach((b) => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        this.sourceMode = btn.dataset.sourceMode || 'ebook';
+        this.renderSourceModeHint();
+      });
+    });
   },
 
   /* ========================================================
@@ -456,7 +511,7 @@ window.App = {
       );
       this.updateProgress(20);
 
-      const result = await API.generatePresentation(topic, slideCount, theme, language, this.scope);
+      const result = await API.generatePresentation(topic, slideCount, theme, language, this.scope, this.sourceMode);
 
       // Step 2 — Images (if the API handled it, just show progress)
       this.updateLoadingStatus(
@@ -521,9 +576,17 @@ window.App = {
         const hi = Math.max.apply(null, pages);
         range = lo === hi ? ` · page ${lo}` : ` · pages ${lo}–${hi}`;
       }
+      const bothSources = source.hasEbook && source.hasLecture;
+      const label = bothSources
+        ? 'From your textbook & lecture'
+        : source.hasLecture
+          ? 'From your lecture transcript'
+          : 'From your textbook' + range;
       el.className = 'source-badge source-badge--grounded';
-      el.innerHTML = '<span class="badge-dot"></span>From your textbook' + range;
-      el.title = 'Every slide was written from the chapter PDF uploaded for this class.';
+      el.innerHTML = '<span class="badge-dot"></span>' + label;
+      el.title = Array.isArray(source.citations) && source.citations.length
+        ? 'Cited: ' + source.citations.join(', ')
+        : 'Every slide was written from the chapter PDF uploaded for this class.';
       el.hidden = false;
       return;
     }
@@ -548,6 +611,8 @@ window.App = {
         'The chapter IS indexed, but the textbook AI model is unavailable for the configured key, so this deck fell back to general knowledge. Ask an admin to check the Gemini setup.',
       gemini_unavailable:
         'The chapter IS indexed, but the textbook AI is not configured on the server, so this deck fell back to general knowledge. Ask an admin to configure Gemini.',
+      no_source_available:
+        'No indexed textbook or lecture transcript was available for the source you picked, so this deck was written from general knowledge.',
     };
     el.className = 'source-badge source-badge--general';
     el.innerHTML = '<span class="badge-dot"></span>General knowledge';

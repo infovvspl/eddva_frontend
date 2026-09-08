@@ -267,7 +267,7 @@ export default function SyllabusPlanner() {
   const handleOpenEdit = async (plan) => {
     setEditingPlan(plan);
     let allocs = Array.isArray(plan.chapter_allocations) ? plan.chapter_allocations : [];
-    
+
     // If no chapter allocations saved yet, fetch chapters for this plan's subject
     if (allocs.length === 0 && plan.subject_id) {
       try {
@@ -284,6 +284,19 @@ export default function SyllabusPlanner() {
         });
       } catch {}
     }
+
+    // A chapter allocation saved without a term (e.g. added before this field
+    // existed, or by a path that never set one) used to slip through here
+    // untouched: the per-chapter dropdown below falls back to displaying
+    // "Unit 1" for a missing term via `ch.term || 'Unit 1'`, which looks
+    // exactly like a real selection, but that fallback is display-only and
+    // never gets written back into the saved data unless the admin manually
+    // re-picks the same option. The chapter then keeps no term forever, and
+    // silently drops out of every Unit/Term section on the syllabus plan's
+    // own detail page. Backfilling it here means simply opening and saving
+    // Edit Targets heals any chapter like that, and what the dropdown shows
+    // is guaranteed to match what actually gets saved.
+    allocs = allocs.map((a) => (a.term ? a : { ...a, term: 'Unit 1' }));
 
     const startDateStr = plan.planned_start_date ? new Date(plan.planned_start_date).toISOString().split('T')[0] : '';
     const endDateStr = plan.planned_completion_date ? new Date(plan.planned_completion_date).toISOString().split('T')[0] : '';

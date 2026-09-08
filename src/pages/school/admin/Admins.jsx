@@ -189,21 +189,16 @@ export default function Admins() {
     const roleString = teacher.role || '';
     const rolesList = roleString.split(',').map(r => r.trim().toUpperCase());
     const isCurrentlyAdmin = rolesList.includes('INSTITUTE_ADMIN');
-    
-    let newRolesList;
-    if (isCurrentlyAdmin) {
-      newRolesList = rolesList.filter(r => r !== 'INSTITUTE_ADMIN');
-      if (newRolesList.length === 0) newRolesList = ['TEACHER'];
-    } else {
-      newRolesList = [...rolesList, 'INSTITUTE_ADMIN'];
-    }
-    const newRole = newRolesList.join(',');
 
     try {
-      await api.put(`/teachers/${teacher.id}`, {
-        name: teacher.name,
-        role: newRole
+      // A dedicated endpoint, not PUT /teachers/:id — that route's `role` field
+      // means the teacher's designation (job title), not the system access
+      // role, so sending it there silently updated the wrong column and admin
+      // access was never actually granted.
+      const res = await api.put(`/teachers/${teacher.id}/admin-role`, {
+        isAdmin: !isCurrentlyAdmin,
       });
+      const newRole = res?.data?.data?.role ?? (isCurrentlyAdmin ? 'TEACHER' : `${roleString},INSTITUTE_ADMIN`);
       toast.success(`${teacher.name} ${isCurrentlyAdmin ? 'removed as' : 'added as'} administrator`);
       setTeachersList(prev => prev.map(t => t.id === teacher.id ? { ...t, role: newRole } : t));
       fetchAdmins();

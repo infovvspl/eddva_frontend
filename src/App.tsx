@@ -45,6 +45,20 @@ function FeatureGuard({ moduleKey, children }: { moduleKey: string, children: Re
 // â”€â”€ Route-level code splitting: each page loads its own JS chunk (faster first paint) â”€â”€
 
 const Index = lazy(() => import("./pages/Index"));
+// ── NEW WEBSITE MOCKUP (isolated design — do not merge with existing pages) ──
+const NewWebsitePage = lazy(() => import("./new-website/NewWebsitePage"));
+const NewWebsiteContactPage = lazy(() => import("./new-website/pages/ContactPage"));
+const NewWebsiteAboutPage = lazy(() => import("./new-website/pages/AboutPage"));
+const NewWebsiteAboutStoryPage = lazy(() => import("./new-website/pages/AboutStoryPage"));
+const NewWebsiteProductsPage = lazy(() => import("./new-website/pages/ProductsPage"));
+const NewWebsiteSolutionPage = lazy(() => import("./new-website/pages/SolutionPage"));
+const NewWebsiteFaqPage = lazy(() => import("./new-website/pages/FaqPage"));
+const NewWebsiteInstitutionSolutionPage = lazy(() => import("./new-website/pages/InstitutionSolutionPage"));
+const NewWebsiteTeacherSolutionPage = lazy(() => import("./new-website/pages/TeacherSolutionPage"));
+const NewWebsiteStudentSolutionPage = lazy(() => import("./new-website/pages/StudentSolutionPage"));
+const NewWebsiteParentSolutionPage = lazy(() => import("./new-website/pages/ParentSolutionPage"));
+const NewWebsiteFeatureDetailPage = lazy(() => import("./new-website/pages/FeatureDetailPage"));
+const NewWebsiteProductDetailPage = lazy(() => import("./new-website/pages/ProductDetailPage"));
 const Courses = lazy(() => import("./pages/Courses"));
 const Contact = lazy(() => import("./pages/Contact"));
 const AboutUs = lazy(() => import("./pages/AboutUs"));
@@ -231,6 +245,7 @@ const SchoolAdminGamification = lazy(() => import("./pages/school/admin/AdminGam
 const SchoolTeacherLayout = SchoolAdminLayout;
 const SchoolTeacherDashboard = lazy(() => import("./pages/school/teacher/Dashboard"));
 const SchoolTeacherStudents = lazy(() => import("./pages/school/teacher/Students"));
+const SchoolTeacherStudentProfile = lazy(() => import("./pages/school/teacher/StudentProfile"));
 const SchoolTopicManagement = lazy(() => import("./pages/school/teacher/TopicManagement"));
 const SchoolTextbookCoverage = lazy(() => import("./pages/school/teacher/TextbookCoverage"));
 const SchoolClassManagement = lazy(() => import("./pages/school/teacher/ClassManagement"));
@@ -555,6 +570,7 @@ const SchoolRoutes = () => (
     >
       <Route index element={<SchoolTeacherDashboard />} />
       <Route path="students" element={<SchoolTeacherStudents />} />
+      <Route path="students/:id" element={<SchoolTeacherStudentProfile />} />
       <Route path="profile" element={<SchoolTeacherProfile />} />
       <Route path="settings" element={<SchoolTeacherSettings />} />
       <Route path="notifications" element={<SchoolTeacherNotifications />} />
@@ -718,11 +734,14 @@ const SuperAdminRoutes = () => (
 /** Routes for tenant subdomains (e.g. iit.edva.in) */
 const TenantRoutes = () => (
   <Routes>
-    <Route path="/" element={<Index />} />
+    {/* ── New website is the landing page; the previous Index is kept at
+        /legacy-home so nothing is lost. Swap these two back to revert. ── */}
+    <Route path="/" element={<NewWebsitePage />} />
+    <Route path="/legacy-home" element={<Index />} />
     <Route path="/courses" element={<Courses />} />
-    <Route path="/contact" element={<Contact />} />
+    <Route path="/legacy-contact" element={<Contact />} />
     <Route path="/about-us" element={<AboutUs />} />
-    <Route path="/about" element={<AboutUs />} />
+    <Route path="/legacy-about" element={<AboutUs />} />
     <Route path="/exams-registration" element={<ExamsRegistrationPage />} />
     <Route path="/career" element={<CareerPage />} />
     <Route path="/exam/:track" element={<ExamTrackDemoPage />} />
@@ -746,6 +765,24 @@ const TenantRoutes = () => (
     {TeacherRoutes()}
     {StudentRoutes()}
     {SchoolRoutes()}
+    {/* ── New Website Mockup — isolated, do not merge ── */}
+    <Route path="/contact" element={<NewWebsiteContactPage />} />
+    <Route path="/about" element={<NewWebsiteAboutPage />} />
+    <Route path="/about/story" element={<NewWebsiteAboutStoryPage />} />
+    <Route path="/products" element={<NewWebsiteProductsPage />} />
+    <Route path="/products/:slug" element={<NewWebsiteProductDetailPage />} />
+    <Route path="/solution" element={<NewWebsiteSolutionPage />} />
+    <Route path="/solution/institutions" element={<NewWebsiteInstitutionSolutionPage />} />
+    <Route path="/solution/schools" element={<Navigate to="/solution/institutions#nw-svc-schools" replace />} />
+    <Route path="/solution/universities" element={<Navigate to="/solution/institutions#nw-svc-universities" replace />} />
+    <Route path="/solution/teachers" element={<NewWebsiteTeacherSolutionPage />} />
+    <Route path="/solution/students" element={<NewWebsiteStudentSolutionPage />} />
+    <Route path="/solution/parents" element={<NewWebsiteParentSolutionPage />} />
+    <Route path="/features/:slug" element={<NewWebsiteFeatureDetailPage />} />
+    <Route path="/faq" element={<NewWebsiteFaqPage />} />
+    {/* Old dev URLs kept alive so nothing already pointing there 404s */}
+    <Route path="/new-website/*" element={<Navigate to="/" replace />} />
+    <Route path="/new-website" element={<Navigate to="/" replace />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
@@ -753,11 +790,14 @@ const TenantRoutes = () => (
 /** Routes for the main platform domain */
 const PlatformRoutes = () => (
   <Routes>
-    <Route path="/" element={<Index />} />
+    {/* ── New website is the landing page; the previous Index is kept at
+        /legacy-home so nothing is lost. Swap these two back to revert. ── */}
+    <Route path="/" element={<NewWebsitePage />} />
+    <Route path="/legacy-home" element={<Index />} />
     <Route path="/courses" element={<Courses />} />
-    <Route path="/contact" element={<Contact />} />
+    <Route path="/legacy-contact" element={<Contact />} />
     <Route path="/about-us" element={<AboutUs />} />
-    <Route path="/about" element={<AboutUs />} />
+    <Route path="/legacy-about" element={<AboutUs />} />
     <Route path="/exams-registration" element={<ExamsRegistrationPage />} />
     <Route path="/career" element={<CareerPage />} />
     <Route path="/exam/:track" element={<ExamTrackDemoPage />} />
@@ -778,6 +818,24 @@ const PlatformRoutes = () => (
     {TeacherRoutes()}
     {StudentRoutes()}
     {SchoolRoutes()}
+    {/* ── New Website Mockup — isolated, do not merge ── */}
+    <Route path="/contact" element={<NewWebsiteContactPage />} />
+    <Route path="/about" element={<NewWebsiteAboutPage />} />
+    <Route path="/about/story" element={<NewWebsiteAboutStoryPage />} />
+    <Route path="/products" element={<NewWebsiteProductsPage />} />
+    <Route path="/products/:slug" element={<NewWebsiteProductDetailPage />} />
+    <Route path="/solution" element={<NewWebsiteSolutionPage />} />
+    <Route path="/solution/institutions" element={<NewWebsiteInstitutionSolutionPage />} />
+    <Route path="/solution/schools" element={<Navigate to="/solution/institutions#nw-svc-schools" replace />} />
+    <Route path="/solution/universities" element={<Navigate to="/solution/institutions#nw-svc-universities" replace />} />
+    <Route path="/solution/teachers" element={<NewWebsiteTeacherSolutionPage />} />
+    <Route path="/solution/students" element={<NewWebsiteStudentSolutionPage />} />
+    <Route path="/solution/parents" element={<NewWebsiteParentSolutionPage />} />
+    <Route path="/features/:slug" element={<NewWebsiteFeatureDetailPage />} />
+    <Route path="/faq" element={<NewWebsiteFaqPage />} />
+    {/* Old dev URLs kept alive so nothing already pointing there 404s */}
+    <Route path="/new-website/*" element={<Navigate to="/" replace />} />
+    <Route path="/new-website" element={<Navigate to="/" replace />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

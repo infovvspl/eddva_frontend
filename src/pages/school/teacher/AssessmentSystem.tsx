@@ -20,6 +20,7 @@ import api, { unwrapSchoolList } from "@/lib/api/school-client";
 import { useAcademicStore } from "@/lib/academic-store";
 import "./AssessmentSystem.css";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { toUtcIsoDateTime } from "./assessment-utils";
 
 function normaliseType(value: any) {
   const type = String(value || "topic").trim().toLowerCase();
@@ -593,9 +594,7 @@ const AssessmentSystem: React.FC = () => {
 
     setSubmittingTest(true);
     try {
-      const scheduledDateTime = (formData.scheduled_date && formData.start_time)
-        ? `${formData.scheduled_date}T${formData.start_time}:00`
-        : formData.scheduled_date || null;
+      const scheduledDateTime = toUtcIsoDateTime(formData.scheduled_date, formData.start_time) || formData.scheduled_date || null;
 
       const payload: Record<string, any> = {
         title: formData.title,

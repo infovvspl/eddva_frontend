@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Loader2, User, Filter, X } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import Badge from '@/components/school/Badge';
@@ -9,6 +10,7 @@ import GlassCard from '@/components/school/GlassCard';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
 
 const Students: React.FC = () => {
+  const navigate = useNavigate();
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -191,7 +193,11 @@ const Students: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
                 {paginatedStudents.map((student) => (
-                  <tr key={student.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors">
+                  <tr
+                    key={student.id}
+                    onClick={() => navigate(`/school/teacher/students/${student.id}`)}
+                    className="cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors"
+                  >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="h-8 w-8 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400 flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden">

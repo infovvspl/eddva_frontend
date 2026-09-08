@@ -1,0 +1,174 @@
+// SolutionRoles.jsx — /solution
+// "What we do for each of them" as an accordion rather than the tab rail this
+// replaces: all four stakeholders stay on screen with their capability counts,
+// and any number of them can be open at once.
+//
+// The tab version only ever showed one role, which made the four impossible to
+// compare. Here the headers are always visible and each panel is independent —
+// open Students and Teachers side by side and read down both.
+//
+// Each header is a real <button> with aria-expanded/aria-controls; the panel is
+// a labelled region. The first role that still expands in place is open on
+// load so the section never reads as an empty list of headings.
+//
+// Teachers, Students and Parents each have a full dedicated page now, so
+// their rows render as a link-out card instead of an accordion — see
+// DEDICATED_PAGE below.
+//
+// The capability list is the module inventory that actually ships in this repo
+// — see data/solutions.js.
+
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { ChevronDown, ArrowRight } from "lucide-react";
+import { roleSolutions } from "../data/solutions";
+
+const countFor = role =>
+  role.groups.reduce((sum, group) => sum + group.items.length, 0);
+
+// Teachers, Students and Parents each got a full dedicated page (their
+// complete capability breakdown, always expanded, with room to breathe).
+// Their rows here link out to that page instead of expanding inline —
+// showing the same content twice, once squeezed among four roles and once
+// properly, was redundant. Institute Admin has no page of its own yet, so it
+// keeps the original expand-in-place behaviour.
+const DEDICATED_PAGE = {
+  "nw-sol-teachers": "/solution/teachers",
+  "nw-sol-students": "/solution/students",
+  "nw-sol-parents": "/solution/parents",
+};
+
+const SolutionRoles = () => {
+  // Default-open the first role that still expands in place — Students
+  // (roleSolutions[0]) now links out instead, so opening it by default would
+  // do nothing.
+  const firstAccordionRole = roleSolutions.find(r => !DEDICATED_PAGE[r.id]);
+  const [open, setOpen] = useState(
+    firstAccordionRole ? { [firstAccordionRole.id]: true } : {},
+  );
+
+  const toggle = id => setOpen(prev => ({ ...prev, [id]: !prev[id] }));
+
+  return (
+    <section className="nw-roles" id="nw-solution-roles">
+      <div className="nw-roles__container">
+
+        <header className="nw-roles__header">
+          <h2 className="nw-roles__heading">What EDDVA Does for Each of Them</h2>
+          <p className="nw-roles__lead">
+            Every module below is live in the platform. Open a role to see
+            exactly what they get.
+          </p>
+        </header>
+
+        <div className="nw-roles__list">
+          {roleSolutions.map(role => {
+            const { id, title, blurb, Icon, color, bg, groups } = role;
+            const dedicatedPage = DEDICATED_PAGE[id];
+
+            if (dedicatedPage) {
+              return (
+                <Link
+                  to={dedicatedPage}
+                  className="nw-roles__item nw-roles__item--linkout"
+                  key={id}
+                  id={id}
+                  style={{ "--nw-role-accent": color, "--nw-role-bg": bg }}
+                >
+                  <span className="nw-roles__icon" aria-hidden="true">
+                    <Icon size={22} strokeWidth={1.8} />
+                  </span>
+                  <span className="nw-roles__names">
+                    <span className="nw-roles__title">{title}</span>
+                    <span className="nw-roles__blurb">{blurb}</span>
+                  </span>
+                  <span className="nw-roles__count">{countFor(role)}</span>
+                  <ArrowRight
+                    size={19}
+                    strokeWidth={2.2}
+                    className="nw-roles__linkout-arrow"
+                    aria-hidden="true"
+                  />
+                </Link>
+              );
+            }
+
+            const isOpen = Boolean(open[id]);
+            return (
+              <article
+                className={`nw-roles__item${isOpen ? " nw-open" : ""}`}
+                key={id}
+                id={id}
+                style={{ "--nw-role-accent": color, "--nw-role-bg": bg }}
+              >
+                <h3 className="nw-roles__head">
+                  <button
+                    type="button"
+                    className="nw-roles__trigger"
+                    id={`${id}-trigger`}
+                    aria-expanded={isOpen}
+                    aria-controls={`${id}-region`}
+                    onClick={() => toggle(id)}
+                  >
+                    <span className="nw-roles__icon" aria-hidden="true">
+                      <Icon size={22} strokeWidth={1.8} />
+                    </span>
+                    <span className="nw-roles__names">
+                      <span className="nw-roles__title">{title}</span>
+                      <span className="nw-roles__blurb">{blurb}</span>
+                    </span>
+                    <span className="nw-roles__count">{countFor(role)}</span>
+                    <ChevronDown
+                      size={19}
+                      strokeWidth={2.2}
+                      className="nw-roles__chev"
+                      aria-hidden="true"
+                    />
+                  </button>
+                </h3>
+
+                {/* Height is animated with a 0fr→1fr grid row, so the panel
+                    slides rather than snapping. `hidden` cannot be used with
+                    that, so the collapsed state relies on visibility:hidden in
+                    CSS — which still takes it out of the accessibility tree. */}
+                <div
+                  className="nw-roles__region"
+                  id={`${id}-region`}
+                  role="region"
+                  aria-labelledby={`${id}-trigger`}
+                >
+                  <div className="nw-roles__groups">
+                    {groups.map(({ id: groupId, label, items }) => (
+                      <div className="nw-roles__group" key={groupId}>
+                        <h4 className="nw-roles__group-label">
+                          {label}
+                          <span className="nw-roles__group-count">{items.length}</span>
+                        </h4>
+                        <ul className="nw-roles__items">
+                          {items.map(({ Icon: ItemIcon, name, desc }) => (
+                            <li className="nw-roles__entry" key={name}>
+                              <span className="nw-roles__entry-icon" aria-hidden="true">
+                                <ItemIcon size={16} strokeWidth={1.9} />
+                              </span>
+                              <span className="nw-roles__entry-copy">
+                                <span className="nw-roles__entry-name">{name}</span>
+                                <span className="nw-roles__entry-desc">{desc}</span>
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+
+      </div>
+    </section>
+  );
+};
+
+export default SolutionRoles;
