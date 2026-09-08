@@ -44,6 +44,7 @@ type RunStatus = {
   // path, which is the only part of indexing a single book takes long enough
   // to need a progress bar of its own.
   currentChapter?: string | null;
+  currentMaterialId?: string | null;
   currentPagesDone?: number | null;
   currentPagesTotal?: number | null;
 } | null;
@@ -84,6 +85,14 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [run, setRun] = useState<RunStatus>(null);
+  // Which chapter WE just told the backend to index, kept true from the moment of the click until
+  // a poll confirms the run is actually done — not just until the first poll round-trip resolves
+  // (that's what `busy` tracks, and it clears in well under a second). Relying on `run.status ===
+  // 'running'` being caught by a live poll breaks for a fast job: a chapter with a normal text
+  // layer (or, after fixing a slow/misconfigured Redis connection, even a scanned one) can finish
+  // in a few seconds — fast enough that by the time any poll's response comes back, the run has
+  // already moved to 'finished', and the spinner/"Reading…" indicator never gets to show at all.
+  const [activeChapterId, setActiveChapterId] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = useCallback(async () => {
@@ -106,6 +115,12 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
       const res = await api.get('/textbooks/ingest-status', { params: instituteId ? { instituteId } : undefined });
       const s: RunStatus = res?.data?.data ?? res?.data ?? null;
       setRun(s);
+      if (s && s.status !== 'running') {
+        // The run reached a terminal state — whether or not a live poll ever caught it as
+        // "running" in between, it is now confirmed NOT in flight, so the optimistic per-row
+        // indicator can safely clear.
+        setActiveChapterId(null);
+      }
       if (s && s.status !== 'running' && pollRef.current) {
         clearInterval(pollRef.current);
         pollRef.current = null;
@@ -169,6 +184,7 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
       // and cannot sit on one HTTP request), so start progress polling instead of
       // waiting for a result here. The poll shows the run and toasts on finish.
       if (d?.runId) {
+        setActiveChapterId(r.chapterId);
         toast.info(`Indexing "${r.chapterName}" started — large or scanned PDFs can take a minute.`);
         await pollRun();
         startPolling();
@@ -210,6 +226,7 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
       // Upload done; indexing now runs in the background (see indexOne). Start
       // progress polling instead of waiting for the read to finish.
       if (d?.runId) {
+        setActiveChapterId(r.chapterId);
         toast.success(`"${r.chapterName}" uploaded — indexing started (large/scanned PDFs can take a minute).`);
         await pollRun();
         startPolling();
@@ -263,6 +280,7 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
       await api.post('/textbooks/ingest-cancel', { instituteId });
       toast.success('Indexing cancelled. Chapters already indexed are kept.');
       setRun(null);
+      setActiveChapterId(null);
       load();
     } catch (e: any) {
       toast.error(e?.response?.data?.message || 'Could not cancel indexing.');
@@ -321,7 +339,12 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
         })}
       </div>
 
-      {run && run.status === 'running' && (
+      {/* Overall bulk-run summary — only for a genuine multi-book run. A single-chapter index
+          (run.total === 1, the common case from clicking "Index" on one row) has nothing to
+          summarize here; its progress shows inline on that book's own row below instead, where
+          it's actually visible "along with the book being trained" rather than in a banner
+          disconnected from the list. */}
+      {run && run.status === 'running' && run.total > 1 && (
         <div className="rounded-xl border border-brand-200 bg-brand-50 p-3 dark:border-brand-900 dark:bg-brand-950/40">
           <div className="flex items-center justify-between gap-3 text-sm">
             <span className="flex items-center gap-2 font-bold text-brand-700 dark:text-brand-300">
@@ -330,25 +353,17 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
             </span>
             <div className="flex items-center gap-3">
               <span className="hidden text-xs text-brand-600 dark:text-brand-400 sm:inline">
-                {run.currentChapter
-                  ? `Reading "${run.currentChapter}"${
-                      run.currentPagesTotal ? ` — page ${run.currentPagesDone ?? 0} of ${run.currentPagesTotal}` : ''
-                    }`
-                  : run.lastChapter
-                    ? `Last: ${run.lastChapter}`
-                    : 'Starting…'}
+                {run.currentChapter ? `Reading "${run.currentChapter}"` : run.lastChapter ? `Last: ${run.lastChapter}` : 'Starting…'}
               </span>
-              {run.total > 1 && (
-                <button
-                  type="button"
-                  onClick={cancelIndexing}
-                  disabled={busy === 'cancel'}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-2.5 py-1 text-xs font-bold text-rose-600 transition hover:bg-rose-50 disabled:opacity-60 dark:border-rose-900 dark:bg-transparent dark:text-rose-300 dark:hover:bg-rose-950/40"
-                >
-                  {busy === 'cancel' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
-                  Cancel
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={cancelIndexing}
+                disabled={busy === 'cancel'}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-2.5 py-1 text-xs font-bold text-rose-600 transition hover:bg-rose-50 disabled:opacity-60 dark:border-rose-900 dark:bg-transparent dark:text-rose-300 dark:hover:bg-rose-950/40"
+              >
+                {busy === 'cancel' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
+                Cancel
+              </button>
             </div>
           </div>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-brand-100 dark:bg-brand-900">
@@ -357,23 +372,6 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
               style={{ width: `${run.total ? (run.done / run.total) * 100 : 0}%` }}
             />
           </div>
-
-          {/* This book's own progress — only shown once the current chapter's slow
-              (scanned-page) OCR pass has published a page count. A chapter with a
-              normal text layer never reaches this: it's read in one fast pass. */}
-          {!!run.currentPagesTotal && (
-            <div className="mt-2 flex items-center gap-2">
-              <div className="h-1 flex-1 overflow-hidden rounded-full bg-brand-100/70 dark:bg-brand-900/60">
-                <div
-                  className="h-full rounded-full bg-brand-400 transition-all"
-                  style={{ width: `${Math.min(100, ((run.currentPagesDone ?? 0) / run.currentPagesTotal) * 100)}%` }}
-                />
-              </div>
-              <span className="shrink-0 text-[11px] tabular-nums text-brand-600 dark:text-brand-400">
-                {run.currentPagesDone ?? 0}/{run.currentPagesTotal} pages
-              </span>
-            </div>
-          )}
         </div>
       )}
 
@@ -456,68 +454,103 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
                         {list.map((r) => {
                           const st = stateOf(r);
                           const m = STATE_META[st];
+                          // This is the one book the active run is reading right now — matched by
+                          // materialId (the backend's own heartbeat), not local click state, so a
+                          // bulk run (which sets busy='bulk', never a specific chapterId) still
+                          // shows live progress on the right row instead of nowhere.
+                          // Backend heartbeat (works for a bulk run we didn't personally click into)
+                          // OR our own optimistic flag (works even if the job finishes faster than
+                          // any poll can catch it "running" — see activeChapterId's comment above).
+                          const isIndexingNow =
+                            (run?.status === 'running' && !!r.materialId && r.materialId === run.currentMaterialId) ||
+                            activeChapterId === r.chapterId;
+                          const disableActions = busy === r.chapterId || isIndexingNow;
                           return (
-                            <div key={r.chapterId} className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-surface-50 dark:hover:bg-surface-800/40">
-                              <m.Icon className={`h-4 w-4 shrink-0 ${st === 'ready' ? 'text-emerald-500' : st === 'pending' ? 'text-amber-500' : st === 'broken' ? 'text-rose-500' : 'text-surface-400'}`} />
-                              <span className="flex-1 min-w-0">
-                                <span className="block truncate text-surface-800 dark:text-surface-100">{r.chapterName}</span>
-                                {r.fileName ? (
-                                  r.fileUrl ? (
-                                    <a
-                                      href={r.fileUrl}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      onClick={(e) => e.stopPropagation()}
-                                      className="mt-0.5 inline-flex max-w-full items-center gap-1 truncate text-[11px] text-surface-500 underline-offset-2 hover:text-brand-600 hover:underline"
-                                      title={r.fileName}
-                                    >
-                                      <FileText className="h-3 w-3 shrink-0" />
-                                      <span className="truncate">{r.fileName}</span>
-                                    </a>
-                                  ) : (
-                                    <span className="mt-0.5 flex items-center gap-1 text-[11px] text-surface-500">
-                                      <FileText className="h-3 w-3" /> {r.fileName}
-                                    </span>
-                                  )
-                                ) : null}
-                              </span>
-                              {r.indexed && (
-                                <span className="hidden text-[11px] tabular-nums text-surface-400 sm:inline">
-                                  {r.pages}p · {r.passages} passages{r.method === 'ocr' ? ' · scanned' : ''}
+                            <div key={r.chapterId} className="border-b border-surface-50 last:border-0 dark:border-surface-800/60">
+                              <div className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-surface-50 dark:hover:bg-surface-800/40">
+                                {isIndexingNow ? (
+                                  <Loader2 className="h-4 w-4 shrink-0 animate-spin text-brand-500" />
+                                ) : (
+                                  <m.Icon className={`h-4 w-4 shrink-0 ${st === 'ready' ? 'text-emerald-500' : st === 'pending' ? 'text-amber-500' : st === 'broken' ? 'text-rose-500' : 'text-surface-400'}`} />
+                                )}
+                                <span className="flex-1 min-w-0">
+                                  <span className="block truncate text-surface-800 dark:text-surface-100">{r.chapterName}</span>
+                                  {r.fileName ? (
+                                    r.fileUrl ? (
+                                      <a
+                                        href={r.fileUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="mt-0.5 inline-flex max-w-full items-center gap-1 truncate text-[11px] text-surface-500 underline-offset-2 hover:text-brand-600 hover:underline"
+                                        title={r.fileName}
+                                      >
+                                        <FileText className="h-3 w-3 shrink-0" />
+                                        <span className="truncate">{r.fileName}</span>
+                                      </a>
+                                    ) : (
+                                      <span className="mt-0.5 flex items-center gap-1 text-[11px] text-surface-500">
+                                        <FileText className="h-3 w-3" /> {r.fileName}
+                                      </span>
+                                    )
+                                  ) : null}
                                 </span>
-                              )}
-                              <span className={`rounded-md border px-1.5 py-0.5 text-[10px] font-bold ${m.cls}`}>
-                                {m.label}
-                              </span>
-                              {st === 'pending' && (
-                                <button
-                                  onClick={() => indexOne(r)}
-                                  disabled={busy === r.chapterId}
-                                  className="rounded-lg bg-brand-600 px-2 py-1 text-[11px] font-bold text-white disabled:opacity-50"
+                                {r.indexed && (
+                                  <span className="hidden text-[11px] tabular-nums text-surface-400 sm:inline">
+                                    {r.pages}p · {r.passages} passages{r.method === 'ocr' ? ' · scanned' : ''}
+                                  </span>
+                                )}
+                                <span className={`rounded-md border px-1.5 py-0.5 text-[10px] font-bold ${isIndexingNow ? 'text-brand-700 bg-brand-50 border-brand-200 dark:text-brand-300 dark:bg-brand-950/40 dark:border-brand-900' : m.cls}`}>
+                                  {isIndexingNow ? 'Reading…' : m.label}
+                                </span>
+                                {st === 'pending' && !isIndexingNow && (
+                                  <button
+                                    onClick={() => indexOne(r)}
+                                    disabled={disableActions}
+                                    className="rounded-lg bg-brand-600 px-2 py-1 text-[11px] font-bold text-white disabled:opacity-50"
+                                  >
+                                    {busy === r.chapterId ? 'Reading…' : 'Index'}
+                                  </button>
+                                )}
+                                <label
+                                  className={`cursor-pointer rounded-lg border px-2 py-1 text-[11px] font-bold ${
+                                    st === 'ready' || st === 'pending'
+                                      ? 'border-surface-200 text-surface-600 hover:bg-surface-100 dark:border-surface-700 dark:text-surface-300'
+                                      : 'border-brand-600 bg-brand-600 text-white hover:bg-brand-700'
+                                  } ${disableActions ? 'pointer-events-none opacity-50' : ''}`}
+                                  title={st === 'ready' ? 'Replace this book and read it again' : 'Upload this chapter as a PDF'}
                                 >
-                                  {busy === r.chapterId ? 'Reading…' : 'Index'}
-                                </button>
+                                  {busy === r.chapterId ? 'Reading…' : st === 'ready' || st === 'pending' ? 'Replace' : 'Upload'}
+                                  <input
+                                    type="file"
+                                    accept="application/pdf,.pdf"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      const f = e.target.files?.[0];
+                                      e.target.value = '';
+                                      if (f) uploadOne(r, f);
+                                    }}
+                                  />
+                                </label>
+                              </div>
+
+                              {/* Pagewise tracker — lives on the book actually being read, not in a
+                                  banner elsewhere on the page. Only appears once the slow scanned-page
+                                  OCR pass has published a page count; a chapter with a normal text
+                                  layer is read in one fast pass and never reaches this. */}
+                              {isIndexingNow && !!run?.currentPagesTotal && (
+                                <div className="flex items-center gap-2 px-4 pb-2 pl-11">
+                                  <div className="h-1 flex-1 overflow-hidden rounded-full bg-brand-100 dark:bg-brand-900">
+                                    <div
+                                      className="h-full rounded-full bg-brand-500 transition-all"
+                                      style={{ width: `${Math.min(100, ((run.currentPagesDone ?? 0) / run.currentPagesTotal) * 100)}%` }}
+                                    />
+                                  </div>
+                                  <span className="shrink-0 text-[11px] tabular-nums text-brand-600 dark:text-brand-400">
+                                    page {run.currentPagesDone ?? 0} of {run.currentPagesTotal}
+                                  </span>
+                                </div>
                               )}
-                              <label
-                                className={`cursor-pointer rounded-lg border px-2 py-1 text-[11px] font-bold ${
-                                  st === 'ready' || st === 'pending'
-                                    ? 'border-surface-200 text-surface-600 hover:bg-surface-100 dark:border-surface-700 dark:text-surface-300'
-                                    : 'border-brand-600 bg-brand-600 text-white hover:bg-brand-700'
-                                } ${busy === r.chapterId ? 'pointer-events-none opacity-50' : ''}`}
-                                title={st === 'ready' ? 'Replace this book and read it again' : 'Upload this chapter as a PDF'}
-                              >
-                                {busy === r.chapterId ? 'Reading…' : st === 'ready' || st === 'pending' ? 'Replace' : 'Upload'}
-                                <input
-                                  type="file"
-                                  accept="application/pdf,.pdf"
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    const f = e.target.files?.[0];
-                                    e.target.value = '';
-                                    if (f) uploadOne(r, f);
-                                  }}
-                                />
-                              </label>
                             </div>
                           );
                         })}
