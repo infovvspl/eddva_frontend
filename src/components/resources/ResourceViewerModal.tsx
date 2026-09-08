@@ -29,6 +29,16 @@ import 'react-pdf/dist/Page/TextLayer.css';
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 const _API_ORIGIN = getApiOrigin();
 
+/**
+ * Authorization header for /school/materials/proxy-pdf. The endpoint is
+ * authenticated (STUDENT/TEACHER/INSTITUTE_ADMIN/SUPER_ADMIN); an anonymous
+ * request now gets 401 instead of a PDF.
+ */
+function proxyAuthHeaders(): Record<string, string> {
+  const token = tokenStorage.getAccess();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 function resolveUrl(url?: string | null): string | undefined {
   if (!url) return undefined;
   if (url.startsWith("http")) return url;
@@ -320,11 +330,16 @@ function InternalPdfViewer({ url, resourceId, isTeacher, allowHighlights, curren
       return;
     }
 
-    const targetUrl = (url.startsWith('http') && !url.includes('/proxy-pdf'))
+    const isProxied = url.startsWith('http') && !url.includes('/proxy-pdf');
+    const targetUrl = isProxied
       ? `${_API_ORIGIN}/api/v1/school/materials/proxy-pdf?url=${encodeURIComponent(url)}`
       : url;
 
-    fetch(targetUrl)
+    // proxy-pdf now requires a school session (it used to be public, which made
+    // it an open SSRF), so this fetch has to carry the token. A direct R2/CDN
+    // URL must NOT get the header — signed S3 requests reject an unexpected
+    // Authorization header.
+    fetch(targetUrl, isProxied ? { headers: proxyAuthHeaders() } : undefined)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.blob();
@@ -472,12 +487,17 @@ function InternalPdfViewer({ url, resourceId, isTeacher, allowHighlights, curren
     return () => document.removeEventListener("mouseup", handleMouseUp);
   }, [handleMouseUp, canAnnotate]);
 
+  // Fallback for when the blob prefetch above failed. react-pdf accepts an
+  // object so the proxy request can carry the same Authorization header.
   const safePdfUrl = useMemo(() => {
     if (blobUrl) return blobUrl;
     if (!url) return null;
     if (url.startsWith('blob:') || url.startsWith('data:')) return url;
     if (url.startsWith('http')) {
-      return `${_API_ORIGIN}/api/v1/school/materials/proxy-pdf?url=${encodeURIComponent(url)}`;
+      return {
+        url: `${_API_ORIGIN}/api/v1/school/materials/proxy-pdf?url=${encodeURIComponent(url)}`,
+        httpHeaders: proxyAuthHeaders(),
+      };
     }
     return url;
   }, [blobUrl, url]);

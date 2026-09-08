@@ -115,8 +115,12 @@ function normalizeAiMessage(message: unknown): string {
 
 function normalizeLessonMarkdown(md: string): string {
   return String(md || "")
-    // Unescape double-escaped backslashes from JSON payloads
-    .replace(/\\\\/g, "\\")
+    // Unescape double-escaped backslashes from JSON payloads. Restricted to a backslash pair
+    // immediately followed by a letter (a double-escaped command name, e.g. "\\text{Na}") —
+    // collapsing it unconditionally also destroyed the genuine LaTeX row-separator "\\" inside
+    // \begin{cases}/array/matrix (followed by whitespace/newline, never a letter), silently
+    // running a system of equations onto one line.
+    .replace(/\\\\(?=[a-zA-Z])/g, "\\")
     // Convert LaTeX bracket math to markdown math delimiters
     .replace(/\\\[((?:.|\n)*?)\\\]/g, (_m, inner) => `\n\n$$${inner}$$\n\n`)
     .replace(/\\\(((?:.|\n)*?)\\\)/g, (_m, inner) => `$${inner}$`)
