@@ -145,6 +145,75 @@ interface MarkdownRendererProps {
 }
 
 /**
+ * THE single authoritative definition of "is this text already inside existing math" in this
+ * file. Splits on whole "$$...$$" / "$...$" spans (correctly, across multiple lines) rather than
+ * naively splitting on a single "$" or checking one line at a time for a "$" character — those
+ * ad-hoc, hand-rolled checks are what caused a long-running class of bugs this file has had:
+ * a heuristic meant to find UN-delimited math in prose and wrap it in "$...$" would instead land
+ * on a line/segment that's already inside a multi-line "$$...$$" block (whose delimiters sit on
+ * their own lines, so the content line itself has zero "$" characters), and wrap it AGAIN —
+ * nesting a new "$...$" inside the existing "$$...$$" and leaving literal "$" characters visible
+ * once rendered, or in some cases produced an odd/unpaired "$" count that made remark-math refuse
+ * to render the whole paragraph as math at all.
+ *
+ * Any new heuristic that decides whether to ADD "$" delimiters around some pattern must run via
+ * `mapOutsideMath` below, never re-implement its own "am I inside $ already" check.
+ */
+function splitMathProse(text: string): Array<{ type: "prose" | "math" | "image"; text: string }> {
+  const tokens: Array<{ type: "prose" | "math" | "image"; text: string }> = [];
+  let lastIndex = 0;
+  const mathRegex = /(\$\$(?:[\s\S]*?)\$\$)|(\$(?:[^$]+?)\$)|(!\[[\s\S]*?\]\([^)]+\))/g;
+  let match: RegExpExecArray | null;
+  while ((match = mathRegex.exec(text)) !== null) {
+    const matchIndex = match.index;
+    if (matchIndex > lastIndex) {
+      tokens.push({ type: "prose", text: text.slice(lastIndex, matchIndex) });
+    }
+    tokens.push({ type: match[3] ? "image" : "math", text: match[0] });
+    lastIndex = mathRegex.lastIndex;
+  }
+  if (lastIndex < text.length) {
+    tokens.push({ type: "prose", text: text.slice(lastIndex) });
+  }
+  return tokens;
+}
+
+/**
+ * Applies `fn` only to the prose runs of `text`, leaving existing math/image spans byte-for-byte
+ * untouched, then rejoins. This is how a heuristic that wraps un-delimited math patterns in new
+ * "$...$" must be scoped — see splitMathProse's doc comment for why.
+ */
+function mapOutsideMath(text: string, fn: (prose: string) => string): string {
+  return splitMathProse(text)
+    .map((tok) => (tok.type === "prose" ? fn(tok.text) : tok.text))
+    .join("");
+}
+
+/**
+ * Line-based counterpart to mapOutsideMath, for a heuristic that inspects ONE LINE at a time and
+ * decides whether to wrap it in new math delimiters (e.g. "does this whole line look like a bare
+ * equation?"). A bare `.split("\n").map(lineFn).join("\n")` cannot tell a content line of an
+ * existing multi-line "$$\ncontent\n$$" block (which has no "$" of its own — the delimiters sit
+ * on their own lines) from genuine un-delimited prose, and would wrap it again. This tracks
+ * entry/exit of such a block explicitly and passes those lines through untouched. Any new
+ * heuristic that classifies text line-by-line must use this, not a bare split/map/join.
+ */
+function mapProseLines(text: string, lineFn: (line: string) => string): string {
+  let insideDisplayMathBlock = false;
+  return text
+    .split("\n")
+    .map((line) => {
+      if (line.trim() === "$$") {
+        insideDisplayMathBlock = !insideDisplayMathBlock;
+        return line;
+      }
+      if (insideDisplayMathBlock) return line;
+      return lineFn(line);
+    })
+    .join("\n");
+}
+
+/**
  * Pre-processes markdown text to handle common AI formatting quirks
  * and ensures LaTeX delimiters are correctly interpreted by remark-math.
  */
@@ -161,6 +230,22 @@ function replaceNewlinesOutsideMath(text: string): string {
         
         result += lines[k];
         if (k < lines.length - 1) {
+          // An already-blank separator line (from an upstream "\n\n" paragraph break, e.g. right
+          // after a heading) needs no synthesized separator of its own — falling through to the
+          // generic hard-break branch below would inject a stray "  \n" (a visible <br>) between
+          // what should just be two cleanly separated paragraphs.
+          if (!currentLine) {
+            result += "\n";
+            continue;
+          }
+          // Symmetric case: the NEXT line is the blank separator (this line is the last content
+          // before a "\n\n" gap). Same reasoning — a plain newline here, not a hard break; the
+          // following iteration's empty-currentLine check above emits the second newline.
+          if (!nextLine) {
+            result += "\n";
+            continue;
+          }
+
           // Preserve Markdown tables. A table row ends with "|", which the
           // operator test below treats as a line-continuation \u2014 that joined every
           // row onto one line, so remark-gfm could not parse it and the raw pipes
@@ -191,6 +276,13 @@ function replaceNewlinesOutsideMath(text: string): string {
             continue;
           }
           if (isBullet(currentLine)) {
+            result += "\n\n";
+            continue;
+          }
+          // A bare option letter ("A", "B.", "(C)") immediately followed by the NEXT question's
+          // number needs a full paragraph break, not a hard line break — otherwise it visually
+          // reads as if the empty option belongs to the next question's list.
+          if (/^[A-Za-z][.):]?$/.test(currentLine) && /^(?:Q\s*)?\d{1,3}[.)]\s/i.test(nextLine)) {
             result += "\n\n";
             continue;
           }
@@ -276,8 +368,15 @@ function normalizeBrokenMathText(text: string): string {
     .replace(/([A-Za-z0-9_{}^)\]])\s+\\\s+([A-Za-z0-9_{}^(])/g, "$1/$2")
     // A common bad transcript form for multiplication is "\ *".
     .replace(/\\\s*\*\s*/g, "\\cdot ")
-    // Raw generated equations often use programming multiplication. KaTeX accepts \cdot more reliably.
-    .replace(/([A-Za-z0-9_{}^)\]])\s*\*\s*([A-Za-z0-9_{}^(])/g, "$1 \\cdot $2");
+    // Raw generated equations often use programming multiplication ("a*b", "2*x"). Real math
+    // variables/units are short (1-3 chars); a longer word flanking a lone "*" is prose — most
+    // often a "**Term** (aside)" bold marker that lost an asterisk somewhere — and must never be
+    // rewritten into a math dot. The negative look-behind/-ahead reject a SUFFIX/PREFIX of a
+    // longer token (so "Writing" can't sneak in as its last-3-chars "ing"), not just length.
+    .replace(/([)\]])\s*\*\s*([A-Za-z0-9_{}^]{1,3})(?![A-Za-z0-9_{}^])/g, "$1 \\cdot $2")
+    .replace(/(?<![A-Za-z0-9_{}^])([A-Za-z0-9_{}^]{1,3})\s*\*\s*([A-Za-z0-9_{}^]{1,3})(?![A-Za-z0-9_{}^])/g, "$1 \\cdot $2")
+    .replace(/([)\]])\s*\*(\()/g, "$1 \\cdot $2")
+    .replace(/(?<![A-Za-z0-9_{}^])([A-Za-z0-9_{}^]{1,3})\s*\*(\()/g, "$1 \\cdot $2");
 }
 
 function unwrapMathCodeSpans(text: string): string {
@@ -338,9 +437,7 @@ function wrapStandaloneSubscriptVariables(text: string): string {
 }
 
 function wrapFullEquationLines(text: string): string {
-  return text
-    .split("\n")
-    .map((line) => {
+  return mapProseLines(text, (line) => {
       const trimmed = line.trim();
       if (!trimmed || trimmed.includes("$")) return line;
       // Must contain = or a Unicode math relation (≠ ≤ ≥ ≈)
@@ -367,8 +464,7 @@ function wrapFullEquationLines(text: string): string {
         .replace(/\u00F7/g, " \\div ")
         .replace(/\u00B7/g, " \\cdot ");
       return `${prefix}$${latexTrimmed}$${suffix}`;
-    })
-    .join("\n");
+  });
 }
 
 
@@ -522,13 +618,7 @@ function _collectCompoundLatex(text: string): string {
  * braces like \text{\frac{Energy}{ATP}} are handled correctly.
  */
 function wrapCompoundLatexExpressions(text: string): string {
-  return text
-    .split("$")
-    .map((segment, index) => {
-      if (index % 2 !== 0) return segment; // inside $…$, skip
-      return _collectCompoundLatex(segment);
-    })
-    .join("$");
+  return mapOutsideMath(text, _collectCompoundLatex);
 }
 
 /** Wrap structured, un-delimited LaTeX commands found inside prose. */
@@ -601,12 +691,44 @@ function wrapStructuredLatex(text: string): string {
   return result;
 }
 
+/**
+ * Repairs a bold span whose closing "**" lost one asterisk before a
+ * parenthetical aside — e.g. "**Term* (explanation)" instead of
+ * "**Term** (explanation)", the exact shape this app's "Key Term (aside)"
+ * content style produces when the model drops a character. Only fires on a
+ * lone "*" immediately before whitespace + "(" while a "**" opened earlier
+ * in the text is still unclosed, so a genuine single-asterisk italic
+ * (never preceded by an unclosed "**") is left untouched.
+ */
+function repairDroppedBoldCloser(text: string): string {
+  let boldOpen = false;
+  return text.replace(/\*\*|\*(?=\s+\()/g, (match) => {
+    if (match === "**") {
+      boldOpen = !boldOpen;
+      return match;
+    }
+    if (boldOpen) {
+      boldOpen = false;
+      return "**";
+    }
+    return match;
+  });
+}
+
 export const formatMarkdown = (text?: string) => {
   if (!text) return "";
-  
-  let formatted = text
-    // 1. Unescape double-escaped backslashes from JSON payloads
-    .replace(/\\\\/g, "\\")
+
+  let formatted = repairDroppedBoldCloser(text);
+  formatted = formatted
+    // 1. Unescape double-escaped backslashes from JSON payloads. Restricted to a backslash pair
+    // immediately followed by a letter — that shape is what a double-JSON-encoded command name
+    // looks like ("\\text{Na}" meaning the intended "\text{Na}" picked up one extra escape layer
+    // in transport). A genuine LaTeX row-separator inside \begin{cases}/array/matrix is the SAME
+    // two-character command "\\" but is followed by whitespace or a newline before the next row,
+    // never a letter — collapsing it here too turned it into a single stray "\" that a later rule
+    // (meant for OCR line-wrapped fractions) then read as "S = k \\n P" and rewrote as "S/P",
+    // silently deleting the row break and running a two-equation system onto one line.
+    .replace(/\\\\(?=[a-zA-Z])/g, "\\")
     // 1b. Unescape dollar delimiters (\$ -> $). Models and JSON transport
     // sometimes emit "\$formula\$"; remark-math ignores an escaped dollar, so the
     // formula rendered as literal "$…$" text with raw \times / \quad commands.
@@ -616,8 +738,13 @@ export const formatMarkdown = (text?: string) => {
     .replace(/\x0B/g, "\\v")
     .replace(/\x07/g, "\\a")
     .replace(/\x08/g, "\\b")
-    // 3. Convert LaTeX delimiters from \[ \] and \( \) to $$ and $ for remark-math / KaTeX parsing
-    .replace(/\\\[/g, "$$").replace(/\\\]/g, "$$")
+    // 3. Convert LaTeX delimiters from \[ \] and \( \) to $$ and $ for remark-math / KaTeX parsing.
+    // Replacer must be a FUNCTION, not the string "$$" — in a replacement STRING, "$$" is JS's
+    // own escape for a single literal "$" (like $&, $1), so it silently produced "$" instead of
+    // "$$", turning every \[...\] display-math block into single-dollar inline math. That single
+    // (rather than doubled) boundary is exactly what let later regexes — which only check the
+    // single character immediately before/after a match — reach inside and fragment the equation.
+    .replace(/\\\[/g, () => "$$").replace(/\\\]/g, () => "$$")
     .replace(/\\\(/g, "$").replace(/\\\)/g, "$")
     // 4. Keep carriage returns as simple newlines
     .replace(/\\n(?![a-zA-Z])/g, "\n");
@@ -686,33 +813,31 @@ export const formatMarkdown = (text?: string) => {
     }
   );
 
-  // Clean up 4 or 3 dollar sequences: $$$$ -> $$, $$$ -> $$
-  formatted = formatted.replace(/\$\$\$\$/g, "$$").replace(/\$\$\$/g, "$$");
+  // Clean up 4 or 3 dollar sequences: $$$$ -> $$, $$$ -> $$. Same "$$" replacement-string gotcha
+  // as above — must be a function or these collapse all the way down to a single "$".
+  formatted = formatted.replace(/\$\$\$\$/g, () => "$$").replace(/\$\$\$/g, () => "$$");
 
   // ── Step 1: Strip stray $ signs that appear inside prose function call arguments
   // e.g. LCM(306, $657) or $657) → but ONLY when not already inside a $...$ span
-  // We protect existing math by tokenising on $ boundaries (even-indexed segments are prose).
-  formatted = formatted
-    .split("$$")
-    .map((segment, i) => {
-      if (i % 2 !== 0) return segment; // inside $$...$$
-      return segment
-        .split("$")
-        .map((s, j) => {
-          if (j % 2 !== 0) return s; // inside $...$
-          return s.replace(/\$(\d+)([),])/g, "$1$2");
-        })
-        .join("$");
-    })
-    .join("$$");
+  formatted = mapOutsideMath(formatted, (s) => s.replace(/\$(\d+)([),])/g, "$1$2"));
   // Strip orphan $ = $ or $=$ patterns (dollar-wrapped equals signs): $=$ → =
   formatted = formatted.replace(/\$\s*=\s*\$/g, " = ");
 
   // Join equation labels that appear on a separate line: "...equation text\n(Equation 1)" -> "...equation text ... (Equation 1)"
   // Also handles bare "(1)", "(2)" etc.
+  // Group 1 must contain a digit or operator, not just letters \u2014 a heading/sentence ending in a
+  // plain word (e.g. "Quick Revision Summary") followed by an unrelated "(1)." list marker on the
+  // next line otherwise matches too (any alphabetic run satisfies the old charset), producing a
+  // bogus "Summary ... ((1))." \u2014 a fabricated ellipsis plus a doubled paren around the list number.
+  // "*" is deliberately excluded from that trigger set \u2014 it is far more often a markdown "**bold**"
+  // delimiter than a multiplication sign, so "**label:**\n1. item" (a bold label right before an
+  // ordinary numbered list) was qualifying on the "**" alone and getting the same treatment.
+  // Group 2 requires real parens, or the literal "Equation"/"Eq" keyword \u2014 a bare "1" with nothing
+  // marking it as an equation number is an ordinary "1. list item", not a wrapped label, and must
+  // be left with its own trailing "." rather than grown a pair of fabricated parens.
   formatted = formatted.replace(
-    /([A-Za-z0-9_+=\-*\/^.\u2260\u2264\u2265]+)[ \t]*\r?\n[ \t]*(\(?(?:Equation|Eq\.?)?[ \t]*\d{1,2}\)?)/gi,
-    "$1 ... ($2)"
+    /([A-Za-z0-9_.]*[0-9+=\-/^\u2260\u2264\u2265][A-Za-z0-9_+=\-*/^.\u2260\u2264\u2265]*)[ \t]*\r?\n[ \t]*(\((?:Equation|Eq\.?)?[ \t]*\d{1,2}\)|(?:Equation|Eq\.?)[ \t]*\d{1,2})/gi,
+    (_m, expr, label) => `${expr} ... ${label.startsWith("(") ? label : `(${label})`}`,
   );
   // Simpler: line ending with 0 or equation chars followed by newline then just "(1)" or "(Equation 1)"
   formatted = formatted.replace(
@@ -723,10 +848,22 @@ export const formatMarkdown = (text?: string) => {
   // Clean up broken equation numbering splits e.g. "a1x + b1y + c1 = 0 ... \n (\n 1." -> "a1x + b1y + c1 = 0 ... (1)"
   formatted = formatted.replace(/\.\.\.\s*\n\s*\(\s*\n\s*(\d{1,2})[.)]/g, "... ($1)");
 
+  // A heading is meant to be its own line ("## Exam Strategy"), with the section's actual content
+  // starting fresh below it. The model sometimes runs the first content straight onto the heading
+  // line instead — either via a " - Label:" separator ("## Exam Strategy - Question Types: Expect
+  // ...") or by gluing an embedded example's "Question:" directly on ("### Example 3 ... Question:
+  // The passage ..."). Split both shapes so the label starts its own paragraph, not the heading.
+  formatted = formatted.replace(/^(#{1,6}\s+[^\n]*?)\s-\s([A-Z][A-Za-z0-9 ]{2,40}:)/gm, "$1\n\n$2");
+  formatted = formatted.replace(/^(#{1,6}\s+[^\n]*?)\s+((?:\*\*|__)?Question:(?:\*\*|__)?)/gm, "$1\n\n$2");
+
   // Clean up vertical line breaks around operators e.g. "x \n = \n 10" -> "x = 10"
-  formatted = formatted.replace(/([A-Za-z0-9_]+)\s*\r?\n\s*(=|\+|-|\*|\/)\s*\r?\n\s*([A-Za-z0-9_]+)/g, "$1 $2 $3");
-  formatted = formatted.replace(/([A-Za-z0-9_]+)\s*\r?\n\s*(=|\+|-|\*|\/)/g, "$1 $2");
-  formatted = formatted.replace(/(=|\+|-|\*|\/)\s*\r?\n\s*([A-Za-z0-9_]+)/g, "$1 $2");
+  // "-", "+" and "*" are also CommonMark bullet markers, so an operator immediately followed by
+  // whitespace ("- ", "+ ", "* ") is excluded — that shape is a list item starting the next line,
+  // not a wrapped operator, and joining it here was erasing the newline that made it a list at all
+  // (e.g. "## Heading\n- **First bullet**" collapsed into "## Heading - **First bullet**").
+  formatted = formatted.replace(/([A-Za-z0-9_]+)\s*\r?\n\s*(=|\+(?!\s)|-(?!\s)|\*(?!\s)(?!\*)|\/)\s*\r?\n\s*([A-Za-z0-9_]+)/g, "$1 $2 $3");
+  formatted = formatted.replace(/([A-Za-z0-9_]+)\s*\r?\n\s*(=|\+(?!\s)|-(?!\s)|\*(?!\s)(?!\*)|\/)/g, "$1 $2");
+  formatted = formatted.replace(/(=|\+(?!\s)|-(?!\s)|\*(?!\s)(?!\*)|\/)\s*\r?\n\s*([A-Za-z0-9_]+)/g, "$1 $2");
   formatted = formatted
     .replace(/(?:=\s*){2,}/g, "= ")
     .replace(/=\s*>\s*=?/g, "=> ")
@@ -787,6 +924,22 @@ export const formatMarkdown = (text?: string) => {
       const duplicateTag = new RegExp(String.raw`\s*(?:\*\*)?(?:\[|\()?\s*${escapedTag}\s*(?:\]|\))?(?:\*\*)?\s*[:.\u2014\u2013-]?\s*`, "gi");
       return `${prefix}${String(question).replace(duplicateTag, " ").trim()}`;
     },
+  );
+
+  // An EXAMTAG line with nothing else on it ("4. [EXAMTAG: ...]") is the number+tag alone; the
+  // actual question text was on the next line. Pull it onto the same line — unless that next line
+  // is itself another option/list marker, in which case force a full paragraph break instead so it
+  // doesn't get glued onto the tag either.
+  formatted = formatted.replace(
+    /^(\d+\.\s*\[EXAMTAG:\s*[^\]]+\]\s*)\r?\n(?=\s*(?:[A-Za-z][.):]\s|\([A-Za-z]\)\s|\d+[.)]\s|#{1,6}\s|[-*+]\s))/gim,
+    "$1\n\n",
+  );
+  // Group 1's trailing whitespace is deliberately [ \t]*, not \s* — \s would also match a
+  // newline, so a greedy match could backtrack across the blank line the rule above just
+  // inserted (swallowing one of its two newlines into group 1) and merge anyway, undoing it.
+  formatted = formatted.replace(
+    /^(\d+\.\s*\[EXAMTAG:\s*[^\]]+\][ \t]*)\r?\n([^\n]+)/gim,
+    "$1$2",
   );
 
   // Merge stacked option letters with their contents (e.g. A.\n0 -> A. 0)
@@ -873,24 +1026,42 @@ export const formatMarkdown = (text?: string) => {
     return `${prefix}$${body}$`;
   };
 
-  formatted = formatted
-    .split("\n")
-    .map(normalizeMathLine)
-    .join("\n");
+  formatted = mapProseLines(formatted, normalizeMathLine);
 
   // Step-based and final answer formatting
   formatted = formatted
     .replace(/(?:\r?\n|^)[ \t]*(\*\*Step\s*\d+[^:]*:\*\*|Step\s*\d+[^:\n]*:?|Final\s*Answer\s*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1\n")
     // Format action steps (e.g. "Add y to both sides:", "Minus 10 from both sides:", "Divide both sides by 2:") onto newlines
     .replace(/([^\n])\s+((?:Add|Subtract|Minus|Multiply|Divide|Substitute|Replacing|Using|Pick)\s+[^:\n]{3,40}:)/g, "$1\n\n$2\n")
+    // A numbered point like "(1). Text" can arrive INLINE mid-paragraph rather than at a line
+    // start (the model runs a whole "(1). ... (2). ... (3). ..." list into one block) - the rule
+    // below only re-spaces markers already at a line start, so it never splits this run-on case.
+    // Force a break before every such marker regardless of position; \d{1,2} (not the single-digit
+    // \d below) also covers "(10)." onward. Also swallow a leading "..." separator so it doesn't
+    // dangle at the end of the previous line.
+    // (?<!\*\*) stops this from splitting a bold-wrapped label like "**(1). Text**" into an
+    // orphaned "**" on its own line followed by "(1). Text**" — the "**" there opens the bold
+    // span, not a separate sentence, so there is nothing to break before.
+    .replace(/(?<!\*\*)(?:\.\.\.)?\s*\((\d{1,2})\)\.\s*(?=[A-Z"])/g, "\n\n($1). ")
+    // Same run-on problem, for lettered/roman sub-part markers: "(a) ... (b) ..." or
+    // "(i) ... (ii) ... (iii) ..." — used throughout multi-part answers ("Answer: (a) ... (b) ...")
+    // but, unlike the numbered case above, these markers are never followed by a period, so they
+    // need their own rule. Requiring a capital letter right after is what keeps this from firing on
+    // an ordinary lowercase parenthetical aside ("a biological process") or a chemical state symbol
+    // ("H_2(g). The reaction...") — both leave a lowercase letter or punctuation right after ")",
+    // never whitespace then a capital.
+    // Same (?<!\*\*) guard as the numbered rule above — don't split a bold-wrapped
+    // "**(a) Label:**" into an orphaned "**" plus "(a) Label:**".
+    .replace(/(?<!\*\*)(?:\.\.\.)?\s*\(([a-z]|i{1,3}|iv|vi{0,3}|ix|x)\)\s+(?=[A-Z"])/g, "\n\n($1) ")
     // Theory-specific 5-part numerical/theory headers - only match standalone (1), (2) etc at START of line or after explicit heading context
     .replace(/(?:^|\n)(\(\d\)\s*(?=[A-Z])[A-Z][a-zA-Z\s/-]*[:\u2014\u2013\u002D.]?)/gm, "\n\n$1")
-    // Legacy sub-headers
-    .replace(/(?:\r?\n|^)(\s*(?:[-*+]\s+)?(?:\*\*|__)?)(Reason\s*[:\u2014\u2013\u002D.]?|Explanation\s*[:\u2014\u2013\u002D.]?|Logic\s*[:\u2014\u2013\u002D.]?|Key\s*Concept\s*[:\u2014\u2013\u002D.]?|Verification\s*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1$2");
+    // Legacy sub-headers, extended with this app's "Common Mistakes" section labels
+    .replace(/(?:\r?\n|^)(\s*(?:[-*+]\s+)?(?:\*\*|__)?)(Reason\s*[:\u2014\u2013\u002D.]?|Explanation\s*[:\u2014\u2013\u002D.]?|Logic\s*[:\u2014\u2013\u002D.]?|Key\s*Concept\s*[:\u2014\u2013\u002D.]?|Verification\s*[:\u2014\u2013\u002D.]?|Mistake\s*[:\u2014\u2013\u002D.]?|Why\s*it\s*happens\s*[:\u2014\u2013\u002D.]?|Correct\s*approach\s*[:\u2014\u2013\u002D.]?)/gi, "\n\n$1$2");
 
-  // 4. Convert LaTeX delimiters from \[ \] and \( \) to $$ and $ if remark-math needs them
+  // 4. Convert LaTeX delimiters from \[ \] and \( \) to $$ and $ if remark-math needs them.
+  // Same "$$"-replacement-string gotcha as the first pass above.
   formatted = formatted
-    .replace(/\\\[/g, "$$").replace(/\\\]/g, "$$")
+    .replace(/\\\[/g, () => "$$").replace(/\\\]/g, () => "$$")
     .replace(/\\\(/g, "$").replace(/\\\)/g, "$");
 
   // 5. Restore missing backslashes for common math symbols (e.g. frac, sqrt, pi, theta, etc.)
@@ -911,15 +1082,46 @@ export const formatMarkdown = (text?: string) => {
     .replace(/\\text\{\s*[_.\-]{2,}\s*\}/g, "\\underline{\\quad\\quad}")
     .replace(/\\text\{([^}]+)\}/g, "$1");
 
-  // Separate numbered observation headers and headings onto newlines - only when number is at start of a new line context
+  // Separate numbered observation headers and headings onto newlines - only when number is at start of a new line context.
+  // The trailing [:\u2014\u2013-] is mandatory, not optional \u2014 it was previously optional, so this matched
+  // "Observation" as a bare SUBSTRING with nothing after it, firing inside ordinary prose plurals
+  // ("...everyday observations...") and phrases ("...write balanced chemical equations...") and
+  // splitting a single sentence into three paragraphs. A genuine lab-report-style label ("Observation:
+  // bubbles form...") always has the colon; ordinary prose usage never does.
   formatted = formatted
-    .replace(/([^\n])\s*(Observation\s*[:\u2014\u2013-]?|Balanced Chemical Equation\s*[:\u2014\u2013-]?)/gi, "$1\n\n$2");
+    .replace(/([^\n])\s*\b(Observation\s*[:\u2014\u2013-]|Balanced Chemical Equation\s*[:\u2014\u2013-])/gi, "$1\n\n$2");
 
-  // Automatically wrap un-delimited chemical reaction equations (containing -> or \rightarrow with + and chemical terms) into KaTeX math blocks
-  formatted = formatted.replace(
-    /(?<!\$)(?:\b\d+\s*)?[A-Z][a-z]?(?:_\{\d+\}|_\d+|\([a-z]+\)|_\{\([a-z]+\)\})*\s*(?:\+\s*(?:\d+\s*)?[A-Z][a-z]?(?:_\{\d+\}|_\d+|\([a-z]+\)|_\{\([a-z]+\)\})*\s*)*(?:\\rightarrow|->|\u2192)\s*(?:\d+\s*)?[A-Z][a-z]?(?:_\{\d+\}|_\d+|\([a-z]+\)|_\{\([a-z]+\)\})*(?:\s*\+\s*(?:\d+\s*)?[A-Z][a-z]?(?:_\{\d+\}|_\d+|\([a-z]+\)|_\{\([a-z]+\)\})*)*(?!\$)/g,
-    (match) => `$${match.trim()}$`
-  );
+  // Automatically wrap un-delimited chemical reaction equations (containing -> or \rightarrow with + and chemical terms) into KaTeX math blocks.
+  // A compound like "MgCl_2" or "HCl" is several element symbols concatenated with no separator
+  // between them \u2014 the element sub-pattern only matched ONE such symbol, so the regex could start
+  // mid-compound (e.g. at the "Cl" inside "HCl") and treat the rest of "HCl" as if it belonged to
+  // the next term, wrapping only "Cl \rightarrow Mg" and leaving stray "$" signs splitting both
+  // "HCl" and "MgCl_2" apart. The element sub-pattern now repeats (one or more) so a full compound
+  // is consumed as a single term before the "+" / arrow separators are considered.
+  // A polyatomic group like "(OH)" or "(NO3)" holds UPPERCASE element letters, not lowercase —
+  // "Fe(OH)_3" was matching only "Fe" (the paren-group alternative required lowercase, e.g. the
+  // "(aq)"/"(s)" state-indicator use), leaving "(OH)_3" outside the wrap: an odd, unpaired "$"
+  // count that made remark-math refuse to render ANY of it as math, falling back to raw text.
+  {
+    // A polyatomic ion inside the parens can carry its own LaTeX subscript, e.g. "(NO_3)" — allow
+    // that inside the group too, not just after it (covers "Zn(NO_3)_2", "Ca(SO_4)" etc.).
+    const chemElement = String.raw`[A-Z][a-z]?(?:_\{\d+\}|_\d+|\((?:[A-Za-z0-9]|_\{\d+\}|_\d+)+\)(?:_\{\d+\}|_\d+)?|_\{\([a-z]+\)\})*`;
+    const chemCompound = `(?:${chemElement})+`;
+    const chemTerm = String.raw`(?:\d+\s*)?${chemCompound}(?:\\uparrow|\\downarrow)?`;
+    const chemEquation = new RegExp(
+      String.raw`${chemTerm}\s*(?:\+\s*${chemTerm}\s*)*(?:\\rightarrow|->|\u2192)\s*${chemTerm}(?:\s*\+\s*${chemTerm})*`,
+      "g",
+    );
+    // Restricted to segments OUTSIDE existing $...$/$$...$$ \u2014 the (?<!\$)/(?!\$) this rule used to
+    // rely on only inspects the single character at each match's own edge, which does nothing to
+    // stop the match from landing entirely INSIDE an already math-delimited equation (e.g.
+    // "$2Na + ... H_2\uparrow$") and re-wrapping a middle slice of it in its own "$...$". That
+    // leaves fragments of the original delimiters stranded outside the new wrap \u2014 e.g. "$2$Na +
+    // ... H_2$\uparrow$" \u2014 which is worse than doing nothing: remark-math can no longer parse any
+    // of it as math at all.
+    const wrapChemEquations = (prose: string) => prose.replace(chemEquation, (match) => `$${match.trim()}$`);
+    formatted = mapOutsideMath(formatted, wrapChemEquations);
+  }
 
   // Convert caret/subscript with parentheses to curly braces e.g. ^(n-1) -> ^{n-1}
   formatted = formatted
@@ -966,10 +1168,7 @@ export const formatMarkdown = (text?: string) => {
     return s;
   };
   // Apply fraction conversions only to prose (outside $...$ spans)
-  formatted = formatted
-    .split("$$")
-    .map((seg, i) => i % 2 !== 0 ? seg : seg.split("$").map((s, j) => j % 2 !== 0 ? s : applyFractionConversions(s)).join("$"))
-    .join("$$");
+  formatted = mapOutsideMath(formatted, applyFractionConversions);
 
   // Wrap chemical formulas with dots (e.g. Fe_2O_3 \cdot H_2O or (Fe_2O_3 . H_2O))
   //
@@ -1002,39 +1201,14 @@ export const formatMarkdown = (text?: string) => {
   // Wrap any balanced, structured LaTeX command embedded in prose. The generic
   // math detector below cannot reliably consume spaces inside command arguments
   // arguments (for example: "The value of \frac{sin 30°}{cos 60°} is").
-  // Splitting on `$` keeps existing inline/display math untouched.
-  formatted = formatted
-    .split("$")
-    .map((segment, index) => index % 2 === 0
-      ? wrapStructuredLatex(segment)
-      : segment)
-    .join("$");
+  formatted = mapOutsideMath(formatted, wrapStructuredLatex);
 
   // Brace multi-letter subscripts/superscripts inside math spans now that all
   // equation-wrapping above is done (e.g. "C_total" -> "C_{total}").
   formatted = wrapMultiLetterSubSup(formatted);
 
   // 7. Tokenize to protect already-formatted math blocks ($...$ and $$...$$) and markdown image tags (![...]())
-  const tokenize = (text: string) => {
-    const tokens: { type: "prose" | "math" | "image"; text: string }[] = [];
-    let lastIndex = 0;
-    const mathRegex = /(\$\$(?:[\s\S]*?)\$\$)|(\$(?:[^$]+?)\$)|(!\[[\s\S]*?\]\([^\)]+\))/g;
-    let match;
-    while ((match = mathRegex.exec(text)) !== null) {
-      const matchIndex = match.index;
-      if (matchIndex > lastIndex) {
-        tokens.push({ type: "prose", text: text.slice(lastIndex, matchIndex) });
-      }
-      tokens.push({ type: match[3] ? "image" : "math", text: match[0] });
-      lastIndex = mathRegex.lastIndex;
-    }
-    if (lastIndex < text.length) {
-      tokens.push({ type: "prose", text: text.slice(lastIndex) });
-    }
-    return tokens;
-  };
-
-  const tokens = tokenize(formatted);
+  const tokens = splitMathProse(formatted);
   // Un-delimited LaTeX symbol commands sometimes leak into prose (e.g. the model
   // writes "physically \cdot mixed" instead of a bullet). KaTeX never sees them
   // because they are not wrapped in $…$, so they render as the literal text
@@ -1083,7 +1257,15 @@ export const formatMarkdown = (text?: string) => {
 
   formatted = formatted
     .replace(/\n{3,}/g, "\n\n")
-    .replace(/[ \t]+/g, " ")
+    // Collapse runs of horizontal whitespace to one space — but never a run that lands right
+    // before a newline. Trailing "  \n" is CommonMark's hard line break (renders as <br>); it's
+    // how labels like "**Question:**" / "**Model Answer:**" stay on their own visual line inside
+    // one paragraph. Flattening it to a single space silently turns the hard break into an
+    // ordinary soft wrap, which browsers render as nothing — every such label then runs together
+    // with the next one. Backtracking always leaves exactly one trailing space unconsumed right
+    // before the newline, so a genuine hard break (2+ spaces) is normalized to exactly two, while
+    // ordinary mid-line whitespace still collapses as before.
+    .replace(/[ \t]+(?!\n)/g, " ")
     .trim();
 
   // Reinsert the protected tables verbatim, with blank lines around each so
@@ -1097,6 +1279,19 @@ export const formatMarkdown = (text?: string) => {
       },
     );
   }
+
+  // Add breathing room between rows of a system of equations (\begin{cases}...\end{cases}) and
+  // similar multi-row environments — KaTeX renders consecutive rows tight by default, which reads
+  // as cramped for a 2-3 line system. KaTeX's row separator accepts an optional spacing argument
+  // ("\\[0.5em]" instead of bare "\\"), so add one to every row break inside these environments,
+  // skipping any that already carry an explicit spacing argument.
+  formatted = formatted.replace(
+    /\\begin\{(cases|array|matrix|pmatrix|bmatrix|vmatrix|Vmatrix|aligned|align\*?)\}([\s\S]*?)\\end\{\1\}/g,
+    (_whole, envName: string, body: string) => {
+      const spaced = body.replace(/\\\\(?!\[)/g, "\\\\[0.5em]");
+      return `\\begin{${envName}}${spaced}\\end{${envName}}`;
+    },
+  );
 
   return formatted;
 };

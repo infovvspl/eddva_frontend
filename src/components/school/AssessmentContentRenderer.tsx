@@ -25,8 +25,11 @@ function prepareAssessmentText(raw: string): string {
   let text = (raw || "").trim();
   if (!text) return text;
 
-  // Unescape double backslashes
-  text = text.replace(/\\\\/g, "\\");
+  // Unescape double backslashes. Restricted to a backslash pair immediately followed by a letter
+  // (a double-escaped command name, e.g. "\\text{Na}") — collapsing it unconditionally also
+  // destroys the genuine LaTeX row-separator "\\" inside \begin{cases}/array/matrix (followed by
+  // whitespace/newline, never a letter), silently running a system of equations onto one line.
+  text = text.replace(/\\\\(?=[a-zA-Z])/g, "\\");
 
   // Convert LaTeX delimiters \[ \] and \( \) to $$ and $ for remark-math / KaTeX parsing
   text = text
