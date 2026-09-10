@@ -42,6 +42,8 @@ import logoUrl from '@/assets/eddva-logo.svg';
 
 function pageTitle(pathname, state) {
   if (pathname === '/' || pathname.includes('dashboard')) return 'Dashboard';
+  if (pathname === '/school/teacher/classes') return 'My Schedule';
+  if (/^\/school\/(?:teacher|student)\/recorded-classes\/[^/]+$/.test(pathname)) return state?.recordingTitle || 'Recorded Class';
   if (/^\/school\/teacher\/course-content\/materials\/[^/]+$/.test(pathname)) return state?.materialTypeLabel || 'Material';
   if (/^\/school\/teacher\/reports\/student\/[^/]+(?:\/report-card)?$/.test(pathname)) return 'Reports';
   if (/\/school\/admin\/teachers\/[^/]+$/.test(pathname)) return 'Teacher Profile';

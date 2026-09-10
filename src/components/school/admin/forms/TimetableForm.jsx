@@ -239,6 +239,17 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    if (name === 'periodId') {
+      const period = periods.find(p => String(p.id) === String(value));
+      setFormData(prev => ({
+        ...prev,
+        periodId: value,
+        startTime: period?.startTime || prev.startTime,
+        endTime: period?.endTime || prev.endTime,
+        periodNumber: period?.sequenceNo ? String(period.sequenceNo) : prev.periodNumber,
+      }));
+      return;
+    }
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 

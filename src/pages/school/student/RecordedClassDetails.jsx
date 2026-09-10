@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { SchoolVideoPlayer } from '@/components/school/SchoolVideoPlayer';
 import { SchoolAskDoubtPanel } from '@/components/school/SchoolAskDoubtPanel';
 import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
@@ -63,6 +63,8 @@ function getAvatarColor(name = '') {
 
 export default function RecordedClassDetails() {
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { recordingId } = useParams();
   const { user } = useAuth();
   const isTeacher = user?.role === 'TEACHER' || user?.role === 'INSTITUTE_ADMIN' || user?.role === 'SUPER_ADMIN';
@@ -82,6 +84,17 @@ export default function RecordedClassDetails() {
     () => recordings.find((item) => item.id === recordingId) ?? null,
     [recordings, recordingId],
   );
+
+  // Sync the recording's title into navigation state so the top navbar
+  // can show it instead of the raw recordingId (works on refresh/deep links too).
+  useEffect(() => {
+    if (recording?.title && location.state?.recordingTitle !== recording.title) {
+      navigate(`${location.pathname}${location.search}`, {
+        replace: true,
+        state: { ...location.state, recordingTitle: recording.title },
+      });
+    }
+  }, [recording?.title, location.pathname, location.search, location.state, navigate]);
 
   const availableTabs = useMemo(() => {
     const list = [];
