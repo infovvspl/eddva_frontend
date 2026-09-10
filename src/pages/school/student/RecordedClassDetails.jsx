@@ -104,9 +104,14 @@ export default function RecordedClassDetails() {
     if (hasQuizGen) list.push('quiz');
     // Only show the Q&A tab for recordings that originated from a live class
     if (recording?.lectureId) list.push('questions');
-    if (hasDoubtResolution) list.push('doubt');
+    // Students only. /school/teacher/recorded-classes/:id renders this same
+    // page, and the doubt endpoint is STUDENT-scoped, so a teacher was shown an
+    // "Ask AI / Ask Teacher" box that always failed with
+    // "Role 'TEACHER' is not authorized to access this resource".
+    // Teachers answer doubts from Student Doubts; they do not raise them.
+    if (hasDoubtResolution && !isTeacher) list.push('doubt');
     return list;
-  }, [hasNotesGen, hasQuizGen, hasDoubtResolution, recording?.lectureId]);
+  }, [hasNotesGen, hasQuizGen, hasDoubtResolution, recording?.lectureId, isTeacher]);
 
   const [detailTab, setDetailTab] = useState(() => {
     if (hasNotesGen) return 'notes';
