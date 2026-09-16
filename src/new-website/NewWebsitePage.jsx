@@ -22,6 +22,7 @@ import MobileAppSection from "./components/MobileAppSection";
 import AchievementsSection from "./components/AchievementsSection";
 import CtaBanner from "./components/CtaBanner";
 import Footer from "./components/Footer";
+import WhatsAppButton from "./components/WhatsAppButton";
 
 const NewWebsitePage = () => {
   return (
@@ -41,6 +42,7 @@ const NewWebsitePage = () => {
         <CtaBanner />
       </main>
       <Footer />
+      <WhatsAppButton />
     </div>
   );
 };
