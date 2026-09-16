@@ -202,6 +202,7 @@ const SchoolSyllabusTracker = lazy(() => import("./pages/school/admin/SyllabusTr
 const SchoolSyllabusTrackerDetails = lazy(() => import("./pages/school/admin/SyllabusTrackerDetailsPage"));
 const SchoolSyllabusAnalytics = lazy(() => import("./pages/school/admin/SyllabusAnalytics"));
 const SchoolTeacherTeachingPlan = lazy(() => import("./pages/school/teacher/TeacherTeachingPlan"));
+const SchoolLessonPlanDetails = lazy(() => import("./pages/school/teacher/LessonPlanDetails"));
 const SchoolStudentSyllabusView = lazy(() => import("./pages/school/student/StudentSyllabusView"));
 const SchoolParentSyllabusView = lazy(() => import("./pages/school/parent/ParentSyllabusView"));
 const SchoolFinance = lazy(() => import("./pages/school/admin/Finance"));
@@ -249,6 +250,7 @@ const SchoolTeacherStudentProfile = lazy(() => import("./pages/school/teacher/St
 const SchoolTopicManagement = lazy(() => import("./pages/school/teacher/TopicManagement"));
 const SchoolTextbookCoverage = lazy(() => import("./pages/school/teacher/TextbookCoverage"));
 const SchoolClassManagement = lazy(() => import("./pages/school/teacher/ClassManagement"));
+const SchoolTeacherRecordedClassDetails = lazy(() => import("./pages/school/teacher/RecordedClassDetails"));
 const SchoolTeacherCalendar = lazy(() => import("./pages/school/teacher/Calendar"));
 const SchoolAttendanceSystem = lazy(() => import("./pages/school/teacher/AttendanceSystem"));
 const SchoolAssignmentManagement = lazy(() => import("./pages/school/teacher/AssignmentManagement"));
@@ -584,9 +586,10 @@ const SchoolRoutes = () => (
       <Route path="live/:id/studio" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'live_classes' }}><SchoolTeacherStudio /></SchoolGuard>} />
       <Route path="topics" element={<Navigate to="/school/teacher/course-content" replace />} />
       <Route path="classes" element={<SchoolClassManagement />} />
-      <Route path="recorded-classes/:recordingId" element={<SchoolStudentRecordedClassDetails />} />
+      <Route path="recorded-classes/:recordingId" element={<SchoolTeacherRecordedClassDetails />} />
       <Route path="teaching-plan" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'teacher_teaching_plan' }}><SchoolTeacherTeachingPlan /></SchoolGuard>} />
       <Route path="syllabus-planner/:planId" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'teacher_teaching_plan' }}><SchoolSyllabusPlanDetails /></SchoolGuard>} />
+      <Route path="lesson-plans/:lessonId" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'teacher_teaching_plan' }}><SchoolLessonPlanDetails /></SchoolGuard>} />
       <Route path="calendar" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'academic_calendar' }}><SchoolTeacherCalendar /></SchoolGuard>} />
       <Route path="attendance" element={<SchoolAttendanceSystem />} />
       <Route path="assignments" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'assignments' }}><SchoolAssignmentManagement /></SchoolGuard>} />

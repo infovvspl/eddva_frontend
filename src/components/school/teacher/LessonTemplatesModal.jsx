@@ -3,15 +3,16 @@ import { X, Layers, Plus, BookOpen, CheckCircle2, Loader2, Sparkles } from 'luci
 import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
 
-export default function LessonTemplatesModal({ isOpen, onClose, onSelectTemplate }) {
+export default function LessonTemplatesModal({ open, isOpen, onClose, onSelectTemplate }) {
+  const isVisible = open ?? isOpen;
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isVisible) {
       fetchTemplates();
     }
-  }, [isOpen]);
+  }, [isVisible]);
 
   const fetchTemplates = async () => {
     setLoading(true);
@@ -26,7 +27,7 @@ export default function LessonTemplatesModal({ isOpen, onClose, onSelectTemplate
     }
   };
 
-  if (!isOpen) return null;
+  if (!isVisible) return null;
 
   const defaultTemplates = [
     {

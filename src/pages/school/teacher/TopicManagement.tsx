@@ -138,6 +138,8 @@ const TopicManagement: React.FC = () => {
   const [pptStudioOpen, setPptStudioOpen] = useState(false);
   // Bumped after any topic mutation so open chapter nodes re-fetch their topics.
   const [curriculumVersion, setCurriculumVersion] = useState(0);
+  // Bumped after a PPT (or other material) is saved so the open MaterialWorkspace re-fetches its list.
+  const [materialsRefreshToken, setMaterialsRefreshToken] = useState(0);
   const restoredReturnState = useRef(false);
   const restoredSubjectId = useRef<string | null>(null);
 
@@ -429,6 +431,8 @@ const TopicManagement: React.FC = () => {
         });
         toast.success('PPT saved to Course Content');
         reply('EDVA_PPT_SAVED');
+        setMaterialsRefreshToken((v) => v + 1);
+        setPptStudioOpen(false);
       } catch (err: unknown) {
         const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Save failed';
         toast.error(msg);
@@ -629,6 +633,7 @@ const TopicManagement: React.FC = () => {
                 canEdit={canEditCurriculum}
                 returnState={{ selectedClass, selectedSection, selectedSubject, selectedTopic }}
                 onOpenPptStudio={() => setPptStudioOpen(true)}
+                refreshToken={materialsRefreshToken}
               />
             ) : (
               <div className="flex h-full min-h-[300px] items-center justify-center p-6">
@@ -1043,6 +1048,7 @@ function MaterialWorkspace({
   canEdit,
   returnState,
   onOpenPptStudio,
+  refreshToken,
 }: {
   topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' | 'subject' };
   subjectId: string;
@@ -1051,6 +1057,7 @@ function MaterialWorkspace({
   canEdit: boolean;
   returnState: CourseContentReturnState;
   onOpenPptStudio: () => void;
+  refreshToken?: number;
 }) {
   const confirm = useConfirm();
   const navigate = useNavigate();
@@ -1081,7 +1088,7 @@ function MaterialWorkspace({
       .finally(() => setLoading(false));
   }, [topic.id, isChapter, classId, sectionId]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); }, [load, refreshToken]);
 
   const grouped = useMemo(() => {
     const g: Record<string, SchoolMaterial[]> = {

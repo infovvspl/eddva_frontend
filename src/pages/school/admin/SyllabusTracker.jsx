@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   BarChart3, CheckCircle2, Clock, AlertTriangle, Layers, Filter, 
-  Search, ArrowRight, TrendingUp, Sparkles, Loader2, BookOpen, Users,
+  Search, ArrowRight, Sparkles, Loader2, BookOpen, Users,
   Flame, UserX, Activity, Calendar, ShieldAlert, Award, PieChart, LineChart,
   ArrowUpRight, Target, Gauge, Hourglass, Percent
 } from 'lucide-react';
@@ -143,8 +143,17 @@ export default function SyllabusTracker() {
 
   // --- COMPUTE NUMERIC VALUES FOR THE 10 SPECIFIED CARDS ---
   const overallProgressVal = summary?.overallProgress || 0;
-  const expectedVsActualPaceVal = `${overallProgressVal}% vs 65%`;
-  
+  // Average of each plan's own time-elapsed-vs-duration benchmark (same formula the
+  // plan detail tracker uses) — a real institute-wide expected pace, not a fixed guess.
+  const plansWithExpected = trackerData.filter(i => typeof i.expectedProgressPercentage === 'number');
+  const expectedProgressVal = plansWithExpected.length > 0
+    ? Math.round(plansWithExpected.reduce((a, b) => a + b.expectedProgressPercentage, 0) / plansWithExpected.length)
+    : null;
+  const expectedVsActualPaceVal = expectedProgressVal !== null
+    ? `${overallProgressVal}% vs ${expectedProgressVal}%`
+    : `${overallProgressVal}%`;
+  const paceDelta = expectedProgressVal !== null ? overallProgressVal - expectedProgressVal : null;
+
   const subjectsAtRiskCount = trackerData.filter(i => i.status === 'BEHIND' || (i.progressPercentage || 0) < 50).length;
 
   const classRiskMap = {};
@@ -176,6 +185,24 @@ export default function SyllabusTracker() {
 
   const totalPlannedPeriods = trackerData.reduce((a, b) => a + (b.plannedPeriods || 0), 0);
   const avgPeriodsVal = (totalPlannedPeriods / Math.max(1, totalTopicsCount)).toFixed(1);
+  const currentMonthName = new Date().toLocaleString('default', { month: 'long' });
+
+  const handleExportCsv = () => {
+    const headers = ['Class', 'Section', 'Subject', 'Teacher', 'Term', 'Status', 'Progress %', 'Completed Topics', 'In Progress Topics', 'Pending Topics', 'Planned Periods'];
+    const escapeCsv = (val) => `"${String(val ?? '').replace(/"/g, '""')}"`;
+    const rows = trackerData.map(t => [
+      t.className, t.sectionName || 'All Sections', t.subjectName, t.teacherName, t.term,
+      t.status, t.progressPercentage, t.completedTopics, t.inProgressTopics, t.pendingTopics, t.plannedPeriods
+    ]);
+    const csv = [headers, ...rows].map(row => row.map(escapeCsv).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `syllabus-tracker-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   const analyticsNumberCards = [
     {
@@ -194,7 +221,9 @@ export default function SyllabusTracker() {
       subtext: 'Pace Benchmark Variance',
       icon: Activity,
       color: 'from-indigo-600 to-purple-600',
-      badge: overallProgressVal >= 65 ? '+3% Ahead' : '-5% Behind'
+      badge: paceDelta === null
+        ? 'No Schedule Set'
+        : paceDelta >= 0 ? `+${paceDelta}% Ahead` : `${paceDelta}% Behind`
     },
     {
       id: 'subjects-at-risk',
@@ -239,16 +268,7 @@ export default function SyllabusTracker() {
       subtext: 'Current Month Run-Rate',
       icon: Calendar,
       color: 'from-blue-500 to-cyan-600',
-      badge: 'September Pace'
-    },
-    {
-      id: 'completion-trend',
-      title: 'Syllabus Completion Trend',
-      value: '+12% Pace',
-      subtext: 'Month-over-Month Velocity',
-      icon: TrendingUp,
-      color: 'from-emerald-600 to-teal-600',
-      badge: 'Upward Trend'
+      badge: `${currentMonthName} Pace`
     },
     {
       id: 'avg-periods',
@@ -257,7 +277,7 @@ export default function SyllabusTracker() {
       subtext: 'Period Efficiency Ratio',
       icon: Layers,
       color: 'from-sky-600 to-blue-700',
-      badge: 'Standard 2.4'
+      badge: 'Institute Average'
     },
     {
       id: 'teacher-completion-rate',
@@ -306,6 +326,13 @@ export default function SyllabusTracker() {
             Click any stat card below to open its dedicated analytics details page.
           </p>
         </div>
+
+        <button
+          onClick={handleExportCsv}
+          className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 transition-all self-start"
+        >
+          <BarChart3 size={15} /> Export CSV
+        </button>
       </div>
 
       {/* 10 STAT NUMERIC CARDS GRID (CLICKABLE TO OPEN DETAILS PAGE) */}

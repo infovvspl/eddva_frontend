@@ -33,6 +33,7 @@ import {
   StructuredAnswerRow,
   percentage,
   gradeFromPercent,
+  clampMarks,
   resolveUploadUrl,
   getStructuredAnswerRows,
   getEffectiveQuestion,
@@ -112,7 +113,7 @@ export function StructuredAnswersView({
                       return (
                         <div
                           key={optionId || option.text}
-                          className={`rounded-md border px-3 py-2 text-xs font-semibold ${
+                          className={`flex items-center gap-2 rounded-md border px-3 py-2 text-xs font-semibold ${
                             correct
                               ? "border-emerald-300 bg-emerald-50 text-emerald-800"
                               : selected
@@ -120,8 +121,8 @@ export function StructuredAnswersView({
                                 : "border-gray-200 bg-white text-gray-600"
                           }`}
                         >
-                          {showLabel && <span className="mr-2 font-black uppercase">{label}</span>}
-                          <AssessmentContentRenderer>{optionText || ''}</AssessmentContentRenderer>
+                          {showLabel && <span className="shrink-0 font-black uppercase">{label}</span>}
+                          <AssessmentContentRenderer className="min-w-0 flex-1 [&_p]:my-0 [&_p]:text-xs [&_p]:font-semibold [&_p]:text-inherit [&_p]:leading-5">{optionText || ''}</AssessmentContentRenderer>
                         </div>
                       );
                     })}
@@ -129,11 +130,14 @@ export function StructuredAnswersView({
                 )}
                 {!["mcq_single", "true_false"].includes(row.type) && (
                   <div className={`mt-2 rounded-md bg-white p-3 text-sm font-bold leading-6 ${row.submitted ? "text-gray-900" : "text-gray-400"}`}>
-                    {row.submitted ? row.answerText : "Not answered"}
+                    {row.submitted ? <AssessmentContentRenderer>{row.answerText}</AssessmentContentRenderer> : "Not answered"}
                   </div>
                 )}
                 {row.correctAnswer && (
-                  <p className="mt-2 text-xs font-semibold text-emerald-700">Answer key: {row.correctAnswer}</p>
+                  <div className="mt-2 flex items-start gap-1.5 text-xs font-semibold text-emerald-700">
+                    <span className="shrink-0 uppercase tracking-wide">Answer key:</span>
+                    <AssessmentContentRenderer className="min-w-0 flex-1 [&_p]:my-0">{row.correctAnswer}</AssessmentContentRenderer>
+                  </div>
                 )}
               </div>
             );
@@ -174,6 +178,18 @@ const AssessmentDetails: React.FC = () => {
   const totalMarks = Number(assessment?.total_marks || assessment?.totalMarks || 100);
   const previousPage = location.state?.from;
   const [assessmentWorkspace, setAssessmentWorkspace] = useState<any>(location.state?.assessmentWorkspace || null);
+
+  // Sync the assessment's title into navigation state so the top navbar can show
+  // it instead of falling back to the raw id (Navbar's pageTitle() humanizes an
+  // unrecognized path's last segment, which for a UUID reads as garbage).
+  useEffect(() => {
+    if (assessment?.title && location.state?.assessmentTitle !== assessment.title) {
+      navigate(`${location.pathname}${location.search}`, {
+        replace: true,
+        state: { ...location.state, assessmentTitle: assessment.title },
+      });
+    }
+  }, [assessment?.title, location.pathname, location.search, location.state, navigate]);
 
   const goBackToPreviousPage = () => {
     if (previousPage) {
@@ -445,7 +461,7 @@ const AssessmentDetails: React.FC = () => {
     if (!id) return;
     const studentId = String(student.id || student.student_user_id || student.studentId);
     const draft = drafts[studentId] || { marksObtained: "", grade: "", remarks: "", isAbsent: false };
-    const marks = draft.isAbsent ? 0 : Number(draft.marksObtained || 0);
+    const marks = draft.isAbsent ? 0 : clampMarks(Number(draft.marksObtained || 0), totalMarks);
     const pct = percentage(marks, totalMarks);
     const grade = draft.grade || gradeFromPercent(pct);
     const nextDraft = {
@@ -547,7 +563,8 @@ const AssessmentDetails: React.FC = () => {
             value={draft?.marksObtained || ""}
             disabled={draft?.isAbsent}
             onChange={(event) => {
-              const marks = event.target.value;
+              const raw = event.target.value;
+              const marks = raw === "" ? "" : String(clampMarks(Number(raw), totalMarks));
               const pct = percentage(Number(marks || 0), totalMarks);
               updateDraft(student.id, { marksObtained: marks, grade: marks === "" ? "" : gradeFromPercent(pct) });
             }}
@@ -1076,7 +1093,8 @@ const AssessmentDetails: React.FC = () => {
                     value={reviewDraft?.marksObtained || ""}
                     disabled={reviewDraft?.isAbsent}
                     onChange={(event) => {
-                      const marks = event.target.value;
+                      const raw = event.target.value;
+                      const marks = raw === "" ? "" : String(clampMarks(Number(raw), totalMarks));
                       const pct = percentage(Number(marks || 0), totalMarks);
                       updateDraft(reviewStudent.id, {
                         marksObtained: marks,

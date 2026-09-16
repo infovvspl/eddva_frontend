@@ -1,16 +1,113 @@
 // TeacherTeachingPlan - My Teaching Plan Dashboard & Lesson Execution Portal
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Calendar, Clock, CheckCircle2, AlertCircle, Plus, Sparkles, 
+import {
+  Calendar, Clock, CheckCircle2, AlertCircle, Plus, Sparkles,
   Layers, BookOpen, Loader2, ArrowRight, Play, Filter, TrendingUp,
-  AlertTriangle, Hourglass, ShieldAlert, CheckSquare, CalendarDays
+  AlertTriangle, Hourglass, ShieldAlert, CheckSquare, CalendarDays,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import { toast } from 'sonner';
 import LessonPlanFormModal from '@/components/school/teacher/LessonPlanFormModal';
 import LessonCompletionModal from '@/components/school/teacher/LessonCompletionModal';
 import LessonTemplatesModal from '@/components/school/teacher/LessonTemplatesModal';
+
+const PAGE_SIZE = 6;
+
+// Builds deduped {id, name} filter options from a mixed-source item list. Different
+// sources (timetable slots, lesson plans, syllabus plans, teacher assignments) don't all
+// carry a real ID for every dimension — this prefers a real ID over a name-fallback ID
+// when merging duplicates, regardless of which source happens to be processed last, so a
+// class/section/subject that appears in a source lacking its real ID doesn't silently
+// clobber a good ID discovered elsewhere.
+function buildFilterOptions(items, getName, getId) {
+  const map = new Map();
+  items.forEach(item => {
+    const name = getName(item);
+    if (!name) return;
+    const key = String(name).toLowerCase();
+    const id = getId(item) || name;
+    const existing = map.get(key);
+    if (!existing || (existing.id === existing.name && id !== name)) {
+      map.set(key, { id, name });
+    }
+  });
+  return Array.from(map.values());
+}
+
+function PageControls({ page, totalPages, onPageChange }) {
+  if (totalPages <= 1) return null;
+  const safePage = Math.min(page, totalPages);
+  return (
+    <div className="flex items-center justify-center gap-3 pt-2">
+      <button
+        type="button"
+        onClick={() => onPageChange(Math.max(1, safePage - 1))}
+        disabled={safePage <= 1}
+        className="flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed dark:border-slate-800 dark:text-slate-300"
+      >
+        <ChevronLeft size={14} /> Prev
+      </button>
+      <span className="text-xs font-bold text-slate-500">Page {safePage} of {totalPages}</span>
+      <button
+        type="button"
+        onClick={() => onPageChange(Math.min(totalPages, safePage + 1))}
+        disabled={safePage >= totalPages}
+        className="flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed dark:border-slate-800 dark:text-slate-300"
+      >
+        Next <ChevronRight size={14} />
+      </button>
+    </div>
+  );
+}
+
+function LessonPlanCard({ lesson, onMarkComplete }) {
+  const navigate = useNavigate();
+  const isDone = lesson.status === 'COMPLETED';
+  return (
+    <div id={`lesson-${lesson.id}`} className="rounded-2xl border border-slate-200 p-5 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900 space-y-3 flex flex-col justify-between scroll-mt-24">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+            {lesson.class_name} {lesson.section_name ? `(${lesson.section_name})` : ''}
+          </span>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${isDone ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'}`}>
+            {isDone ? 'Completed' : (lesson.status || 'Scheduled')}
+          </span>
+        </div>
+
+        <h4 className="text-sm font-bold text-slate-900 dark:text-white">{lesson.subject_name || 'Subject'}</h4>
+        {lesson.chapter_name && (
+          <p className="text-xs text-slate-500 font-semibold">Chapter: <strong className="text-slate-800 dark:text-slate-200">{lesson.chapter_name}</strong></p>
+        )}
+        {lesson.topic_name && (
+          <p className="text-xs text-slate-500 font-semibold">Topic: <strong className="text-slate-800 dark:text-slate-200">{lesson.topic_name}</strong></p>
+        )}
+        <p className="text-[10px] font-bold text-slate-400">{lesson.date ? new Date(lesson.date).toLocaleDateString() : ''}</p>
+      </div>
+
+      <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex gap-2">
+        <button
+          type="button"
+          onClick={() => navigate(`/school/teacher/lesson-plans/${lesson.id}`, { state: { subjectName: lesson.subject_name } })}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border border-blue-200 text-blue-600 text-xs font-extrabold hover:bg-blue-50 transition-all dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950/30"
+        >
+          <Sparkles size={13} /> {lesson.ai_brief ? 'View Brief' : 'View'}
+        </button>
+        {!isDone && (
+          <button
+            type="button"
+            onClick={() => onMarkComplete(lesson)}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 text-white text-xs font-extrabold transition-all shadow-sm"
+          >
+            <CheckCircle2 size={13} /> Mark Complete
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function TeacherTeachingPlan() {
   const navigate = useNavigate();
@@ -23,16 +120,51 @@ export default function TeacherTeachingPlan() {
 
   const [selectedTimetableSlot, setSelectedTimetableSlot] = useState(null);
   const [selectedLesson, setSelectedLesson] = useState(null);
+  const [selectedTemplateData, setSelectedTemplateData] = useState(null);
 
-  // Class, Section & Subject Filter States
+  // Class, Section, Subject, Chapter & Topic Filter States
   const [selectedClass, setSelectedClass] = useState('ALL');
   const [selectedSection, setSelectedSection] = useState('ALL');
   const [selectedSubject, setSelectedSubject] = useState('ALL');
+  const [selectedChapter, setSelectedChapter] = useState('ALL');
+  const [selectedTopic, setSelectedTopic] = useState('ALL');
   const [activeTab, setActiveTab] = useState('ALL');
+
+  // Per-section pagination
+  const [annualPage, setAnnualPage] = useState(1);
+  const [todayPage, setTodayPage] = useState(1);
+  const [lessonPlansPage, setLessonPlansPage] = useState(1);
+  const [topicsPage, setTopicsPage] = useState(1);
+
+  // Full curriculum catalog for the selected subject (Chapter/Topic filter options) —
+  // NOT derived from syllabus-plan JSON or already-created lessons, since either of
+  // those only ever cover a subset of a subject's real chapters/topics.
+  const [catalogChapters, setCatalogChapters] = useState([]);
+  const [catalogTopics, setCatalogTopics] = useState([]);
 
   useEffect(() => {
     fetchTeachingPlan();
   }, []);
+
+  useEffect(() => {
+    if (selectedSubject === 'ALL') {
+      setCatalogChapters([]);
+      setCatalogTopics([]);
+      return;
+    }
+    const params = {
+      subjectId: selectedSubject,
+      classId: selectedClass !== 'ALL' ? selectedClass : undefined,
+      sectionId: selectedSection !== 'ALL' ? selectedSection : undefined,
+    };
+    api.get('/topics/chapters', { params }).then(res => {
+      setCatalogChapters(unwrapSchoolList(res));
+    }).catch(() => setCatalogChapters([]));
+    api.get('/topics', { params: { subjectId: selectedSubject } }).then(res => {
+      setCatalogTopics(unwrapSchoolList(res));
+    }).catch(() => setCatalogTopics([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSubject, selectedClass, selectedSection]);
 
   const fetchTeachingPlan = async () => {
     setLoading(true);
@@ -72,17 +204,27 @@ export default function TeacherTeachingPlan() {
     ...timetable
   ];
 
+  // Shared "does this item belong to the currently selected class/section?" check, used to
+  // progressively narrow Section → Subject option lists. Matches by ID when both sides have
+  // one, falling back to a name comparison only when an ID is missing on the item.
+  const itemInSelectedClass = (item) => {
+    if (selectedClass === 'ALL') return true;
+    const cid = item.class_id || item.classId;
+    const cname = item.class_name || item.className;
+    return cid === selectedClass || cname?.toLowerCase() === selectedClass.toLowerCase();
+  };
+  const itemInSelectedSection = (item) => {
+    if (selectedSection === 'ALL') return true;
+    const secId = item.section_id || item.sectionId;
+    const secName = item.section_name || item.sectionName;
+    return secId === selectedSection || secName?.toLowerCase() === selectedSection.toLowerCase();
+  };
+
   // 1. Available Classes assigned to this teacher
-  const availableClasses = Array.from(
-    new Map(
-      allItems
-        .filter(item => item.class_name || item.className)
-        .map(item => {
-          const name = item.class_name || item.className;
-          const id = item.class_id || item.classId || name;
-          return [name.toLowerCase(), { id, name }];
-        })
-    ).values()
+  const availableClasses = buildFilterOptions(
+    allItems,
+    item => item.class_name || item.className,
+    item => item.class_id || item.classId
   ).sort((a, b) => {
     const numA = parseInt((a.name || '').replace(/\D/g, ''), 10) || 0;
     const numB = parseInt((b.name || '').replace(/\D/g, ''), 10) || 0;
@@ -91,56 +233,23 @@ export default function TeacherTeachingPlan() {
   });
 
   // 2. Available Sections dynamically filtered by selectedClass
-  const availableSections = Array.from(
-    new Map(
-      allItems
-        .filter(item => {
-          const name = item.section_name || item.sectionName;
-          if (!name) return false;
-          if (selectedClass !== 'ALL') {
-            const cid = item.class_id || item.classId;
-            const cname = item.class_name || item.className;
-            if (cid !== selectedClass && cname?.toLowerCase() !== selectedClass.toLowerCase()) return false;
-          }
-          return true;
-        })
-        .map(item => {
-          const name = item.section_name || item.sectionName;
-          const id = item.section_id || item.sectionId || name;
-          return [name.toLowerCase(), { id, name }];
-        })
-    ).values()
+  const availableSections = buildFilterOptions(
+    allItems.filter(itemInSelectedClass),
+    item => item.section_name || item.sectionName,
+    item => item.section_id || item.sectionId
   ).sort((a, b) => a.name.localeCompare(b.name));
 
   // 3. Available Subjects dynamically filtered by selectedClass & selectedSection
-  const availableSubjects = Array.from(
-    new Map(
-      allItems
-        .filter(item => {
-          const name = item.subject_name || item.subjectName;
-          if (!name) return false;
-          if (selectedClass !== 'ALL') {
-            const cid = item.class_id || item.classId;
-            const cname = item.class_name || item.className;
-            if (cid !== selectedClass && cname?.toLowerCase() !== selectedClass.toLowerCase()) return false;
-          }
-          if (selectedSection !== 'ALL') {
-            const secId = item.section_id || item.sectionId;
-            const secName = item.section_name || item.sectionName;
-            if (secId !== selectedSection && secName?.toLowerCase() !== selectedSection.toLowerCase()) return false;
-          }
-          return true;
-        })
-        .map(item => {
-          const name = item.subject_name || item.subjectName;
-          const id = item.subject_id || item.subjectId || name;
-          return [name.toLowerCase(), { id, name }];
-        })
-    ).values()
+  const availableSubjects = buildFilterOptions(
+    allItems.filter(item => itemInSelectedClass(item) && itemInSelectedSection(item)),
+    item => item.subject_name || item.subjectName,
+    item => item.subject_id || item.subjectId
   ).sort((a, b) => a.name.localeCompare(b.name));
 
-  // Generic Filter Matcher
-  const matchesFilter = (item) => {
+  // Generic Filter Matcher. checkTopicDimension additionally constrains by chapter/topic —
+  // only meaningful for topic-/lesson-grained items (a whole syllabus plan or a timetable
+  // slot doesn't represent a single chapter/topic, so they never pass this option).
+  const matchesFilter = (item, { checkTopicDimension = false } = {}) => {
     const itemClassId = item.class_id || item.classId;
     const itemClassName = item.class_name || item.className;
     const itemSecId = item.section_id || item.sectionId;
@@ -157,12 +266,30 @@ export default function TeacherTeachingPlan() {
     if (selectedSubject !== 'ALL') {
       if (itemSubId !== selectedSubject && itemSubName?.toLowerCase() !== selectedSubject.toLowerCase()) return false;
     }
+    if (checkTopicDimension) {
+      const itemChId = item.chapterId || item.chapter_id;
+      const itemChName = item.chapterName || item.chapter_name;
+      const itemTopId = item.topicId || item.topic_id;
+      const itemTopName = item.topicName || item.topic_name || item.name;
+      if (selectedChapter !== 'ALL') {
+        if (itemChId !== selectedChapter && itemChName?.toLowerCase() !== selectedChapter.toLowerCase()) return false;
+      }
+      if (selectedTopic !== 'ALL') {
+        if (itemTopId !== selectedTopic && itemTopName?.toLowerCase() !== selectedTopic.toLowerCase()) return false;
+      }
+    }
     return true;
   };
 
   const filteredTimetable = timetable.filter(matchesFilter);
   const filteredPlans = Array.from(new Map(publishedPlans.map(plan => [plan.id, plan])).values()).filter(matchesFilter);
-  const filteredLessons = lessons.filter(matchesFilter);
+  const filteredLessons = lessons.filter(item => matchesFilter(item, { checkTopicDimension: true }));
+
+  // Lesson attached to a given timetable slot, if any — lets "Today's Scheduled Classes"
+  // show what's already covered instead of always offering "Attach Lesson Plan".
+  const lessonByTimetableId = new Map(
+    lessons.filter(l => l.timetable_id).map(l => [l.timetable_id, l])
+  );
 
   // Flatten all topics from filteredPlans (syllabus plan chapter_allocations)
   const planTopicsList = filteredPlans.flatMap(plan => {
@@ -174,43 +301,67 @@ export default function TeacherTeachingPlan() {
       return topics.map(t => ({
         ...t,
         planId: plan.id,
+        chapterId: ch.chapterId,
         chapterName: ch.chapterName,
+        // IDs (not just display names) are required here — matchesFilter compares by ID
+        // first and only falls back to a name match when an ID is missing, so without
+        // these a topic can silently fail to match a class/section/subject filter even
+        // though its own parent plan already matched.
+        subject_id: plan.subject_id || plan.subjectId,
         subject_name: plan.subject_name || plan.subjectName,
+        class_id: plan.class_id || plan.classId,
         class_name: plan.class_name || plan.className,
+        section_id: plan.section_id || plan.sectionId,
         section_name: plan.section_name || plan.sectionName,
       }));
     });
   });
 
+  // Chapter/Topic filter options — sourced from the real curriculum catalog for the
+  // selected subject (fetched above), not from syllabus-plan JSON or already-created
+  // lessons, either of which only ever covers a subset of a subject's actual chapters/topics.
+  const availableChapters = catalogChapters
+    .map(ch => ({ id: ch.id, name: ch.name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const availableTopics = catalogTopics
+    .filter(t => selectedChapter === 'ALL' || String(t.chapter_id) === String(selectedChapter))
+    .map(t => ({ id: t.id, name: t.name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  // Syllabus topics narrowed by chapter/topic too (class/section/subject already applied
+  // upstream via filteredPlans).
+  const filteredPlanTopics = planTopicsList.filter(t => matchesFilter(t, { checkTopicDimension: true }));
+
   // --- COMPUTE THE DASHBOARD METRIC CARDS DYNAMICALLY FROM SYLLABUS PLAN TOPICS ---
   const todayStr = new Date().toISOString().split('T')[0];
 
-  // Map activeTab to plan topics
+  // Map activeTab to plan topics (chapter/topic-filtered)
   const getDisplayPlanTopics = () => {
     switch (activeTab) {
-      case 'TODAY': return planTopicsList.filter(t => t.status === 'in_progress' || t.startDate === todayStr);
-      case 'PENDING':   return planTopicsList.filter(t => t.status === 'pending' || !t.status || t.status === 'in_progress');
-      case 'COMPLETED': return planTopicsList.filter(t => t.status === 'completed' || t.progress >= 100);
-      case 'DELAYED':   return planTopicsList.filter(t => t.delayReason && t.status !== 'completed');
-      default:          return planTopicsList;
+      case 'TODAY': return filteredPlanTopics.filter(t => t.status === 'in_progress' || t.startDate === todayStr);
+      case 'PENDING':   return filteredPlanTopics.filter(t => t.status === 'pending' || !t.status || t.status === 'in_progress');
+      case 'COMPLETED': return filteredPlanTopics.filter(t => t.status === 'completed' || t.progress >= 100);
+      case 'DELAYED':   return filteredPlanTopics.filter(t => t.delayReason && t.status !== 'completed');
+      default:          return filteredPlanTopics;
     }
   };
   const displayPlanTopics = getDisplayPlanTopics();
 
   // 1. Today's lessons / topics scheduled today or in_progress
-  const todaysLessons = planTopicsList.filter(t => t.status === 'in_progress' || t.startDate === todayStr);
+  const todaysLessons = filteredPlanTopics.filter(t => t.status === 'in_progress' || t.startDate === todayStr);
 
   // 2. Pending lessons: count of topics with no updates yet or status = 'pending' or 'in_progress'
-  const pendingLessons = planTopicsList.filter(t => !t.status || t.status === 'pending' || t.status === 'in_progress');
+  const pendingLessons = filteredPlanTopics.filter(t => !t.status || t.status === 'pending' || t.status === 'in_progress');
 
   // 3. Completed topics
-  const completedLessons = planTopicsList.filter(t => t.status === 'completed' || t.progress >= 100);
+  const completedLessons = filteredPlanTopics.filter(t => t.status === 'completed' || t.progress >= 100);
 
   // 4. Delayed topics
-  const delayedLessons = planTopicsList.filter(t => t.delayReason && t.status !== 'completed');
+  const delayedLessons = filteredPlanTopics.filter(t => t.delayReason && t.status !== 'completed');
 
   // 5. Syllabus completion %
-  const rawTotalTopicsCount = planTopicsList.length;
+  const rawTotalTopicsCount = filteredPlanTopics.length;
   const totalTopicsCount = rawTotalTopicsCount || 1;
   const syllabusCompletionPercentage = Math.round((completedLessons.length / totalTopicsCount) * 100);
 
@@ -230,6 +381,24 @@ export default function TeacherTeachingPlan() {
 
   const displayLessonsList = getDisplayLessons();
 
+  // Pagination — clamp against the current filtered length at render time so changing a
+  // filter never strands the view on an empty out-of-range page.
+  const annualTotalPages = Math.max(1, Math.ceil(filteredPlans.length / PAGE_SIZE));
+  const safeAnnualPage = Math.min(annualPage, annualTotalPages);
+  const paginatedPlans = filteredPlans.slice((safeAnnualPage - 1) * PAGE_SIZE, safeAnnualPage * PAGE_SIZE);
+
+  const todayTotalPages = Math.max(1, Math.ceil(filteredTimetable.length / PAGE_SIZE));
+  const safeTodayPage = Math.min(todayPage, todayTotalPages);
+  const paginatedTimetable = filteredTimetable.slice((safeTodayPage - 1) * PAGE_SIZE, safeTodayPage * PAGE_SIZE);
+
+  const lessonPlansTotalPages = Math.max(1, Math.ceil(filteredLessons.length / PAGE_SIZE));
+  const safeLessonPlansPage = Math.min(lessonPlansPage, lessonPlansTotalPages);
+  const paginatedLessons = filteredLessons.slice((safeLessonPlansPage - 1) * PAGE_SIZE, safeLessonPlansPage * PAGE_SIZE);
+
+  const topicsTotalPages = Math.max(1, Math.ceil(displayPlanTopics.length / PAGE_SIZE));
+  const safeTopicsPage = Math.min(topicsPage, topicsTotalPages);
+  const paginatedPlanTopics = displayPlanTopics.slice((safeTopicsPage - 1) * PAGE_SIZE, safeTopicsPage * PAGE_SIZE);
+
   return (
     <div className="w-full px-4 py-6 sm:px-6 lg:px-8 space-y-6 font-poppins">
       {/* Page Header */}
@@ -242,15 +411,6 @@ export default function TeacherTeachingPlan() {
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">Track today's sessions, lesson progress, remaining topics, and classroom execution.</p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setTemplatesModalOpen(true)}
-            className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 transition-all"
-          >
-            <Layers size={15} /> Lesson Templates
-          </button>
         </div>
       </div>
 
@@ -331,10 +491,10 @@ export default function TeacherTeachingPlan() {
         </div>
       </div>
 
-      {/* Class, Section & Subject Filter Bar */}
+      {/* Class, Section, Subject, Chapter & Topic Filter Bar */}
       <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2 text-xs font-extrabold text-slate-700 dark:text-slate-200">
-          <Filter size={16} className="text-blue-600 dark:text-blue-400" /> Filter Class & Subject:
+          <Filter size={16} className="text-blue-600 dark:text-blue-400" /> Filter:
         </div>
 
         <div className="flex flex-wrap items-center gap-3 flex-1">
@@ -362,7 +522,13 @@ export default function TeacherTeachingPlan() {
 
           <select
             value={selectedSubject}
-            onChange={e => setSelectedSubject(e.target.value)}
+            onChange={e => {
+              // A chapter/topic picked under a different subject won't exist in the new
+              // subject's catalog — reset both rather than silently filtering to nothing.
+              setSelectedSubject(e.target.value);
+              setSelectedChapter('ALL');
+              setSelectedTopic('ALL');
+            }}
             className="rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
           >
             <option value="ALL">All Subjects</option>
@@ -371,12 +537,40 @@ export default function TeacherTeachingPlan() {
             ))}
           </select>
 
-          {(selectedClass !== 'ALL' || selectedSection !== 'ALL' || selectedSubject !== 'ALL') && (
+          <select
+            value={selectedChapter}
+            onChange={e => { setSelectedChapter(e.target.value); setSelectedTopic('ALL'); }}
+            disabled={selectedSubject === 'ALL'}
+            title={selectedSubject === 'ALL' ? 'Select a subject first' : undefined}
+            className="rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-semibold outline-none focus:border-blue-600 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+          >
+            <option value="ALL">{selectedSubject === 'ALL' ? 'Select subject first' : 'All Chapters'}</option>
+            {availableChapters.map(ch => (
+              <option key={ch.id} value={ch.id}>{ch.name}</option>
+            ))}
+          </select>
+
+          <select
+            value={selectedTopic}
+            onChange={e => setSelectedTopic(e.target.value)}
+            disabled={selectedSubject === 'ALL'}
+            title={selectedSubject === 'ALL' ? 'Select a subject first' : undefined}
+            className="rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-semibold outline-none focus:border-blue-600 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+          >
+            <option value="ALL">{selectedSubject === 'ALL' ? 'Select subject first' : 'All Topics'}</option>
+            {availableTopics.map(t => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
+
+          {(selectedClass !== 'ALL' || selectedSection !== 'ALL' || selectedSubject !== 'ALL' || selectedChapter !== 'ALL' || selectedTopic !== 'ALL') && (
             <button
               onClick={() => {
                 setSelectedClass('ALL');
                 setSelectedSection('ALL');
                 setSelectedSubject('ALL');
+                setSelectedChapter('ALL');
+                setSelectedTopic('ALL');
               }}
               className="text-xs font-bold text-rose-600 hover:underline px-2 py-1"
             >
@@ -407,10 +601,10 @@ export default function TeacherTeachingPlan() {
           <p className="text-xs text-slate-400 py-4 text-center italic">No published annual target plans assigned for this filter selection.</p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredPlans.map(plan => (
+            {paginatedPlans.map(plan => (
               <div 
                 key={plan.id}
-                onClick={() => navigate(`/school/teacher/syllabus-planner/${plan.id}`)}
+                onClick={() => navigate(`/school/teacher/syllabus-planner/${plan.id}`, { state: { subjectName: plan.subject_name || plan.subjectName } })}
                 className="group cursor-pointer rounded-2xl border border-slate-200 bg-white p-5 shadow-xs hover:border-blue-500 hover:shadow-md transition-all dark:border-slate-800 dark:bg-slate-900 space-y-3"
               >
                 <div className="flex items-center justify-between">
@@ -434,7 +628,7 @@ export default function TeacherTeachingPlan() {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigate(`/school/teacher/syllabus-planner/${plan.id}`);
+                      navigate(`/school/teacher/syllabus-planner/${plan.id}`, { state: { subjectName: plan.subject_name || plan.subjectName } });
                     }}
                     className="w-full flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 text-white text-xs font-extrabold transition-all shadow-md shadow-blue-600/20"
                   >
@@ -445,6 +639,7 @@ export default function TeacherTeachingPlan() {
             ))}
           </div>
         )}
+        <PageControls page={safeAnnualPage} totalPages={annualTotalPages} onPageChange={setAnnualPage} />
       </div>
 
       {/* Today's Timetable Sessions */}
@@ -465,29 +660,88 @@ export default function TeacherTeachingPlan() {
           <p className="text-xs text-slate-400 py-4 text-center">No class periods scheduled for the selected filter.</p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredTimetable.map(slot => (
-              <div key={slot.id} className="rounded-2xl border border-slate-200 p-4 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-950/30 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold text-blue-600 dark:text-blue-400">{slot.class_name} ({slot.section_name})</span>
-                  <span className="text-[10px] font-bold text-slate-400">{slot.start_time} - {slot.end_time}</span>
+            {paginatedTimetable.map(slot => {
+              const attachedLesson = lessonByTimetableId.get(slot.id);
+              return (
+                <div key={slot.id} className="rounded-2xl border border-slate-200 p-4 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-950/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-extrabold text-blue-600 dark:text-blue-400">{slot.class_name} ({slot.section_name})</span>
+                    <span className="text-[10px] font-bold text-slate-400">{slot.start_time} - {slot.end_time}</span>
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">{slot.subject_name || 'Subject Period'}</h4>
+                  {attachedLesson ? (
+                    <div className="space-y-2">
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${attachedLesson.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'}`}>
+                        {attachedLesson.status === 'COMPLETED' ? 'Completed' : 'Lesson Attached'}
+                      </span>
+                      <button
+                        onClick={() => navigate(`/school/teacher/lesson-plans/${attachedLesson.id}`, { state: { subjectName: attachedLesson.subject_name } })}
+                        className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-blue-200 text-blue-600 py-2 text-xs font-bold hover:bg-blue-50 transition-colors dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950/30"
+                      >
+                        <ArrowRight size={14} /> View Lesson
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setSelectedTimetableSlot(slot);
+                        setCreateModalOpen(true);
+                      }}
+                      className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 text-white py-2 text-xs font-bold hover:bg-blue-700 transition-colors"
+                    >
+                      <Plus size={14} /> Attach Lesson Plan
+                    </button>
+                  )}
                 </div>
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white">{slot.subject_name || 'Subject Period'}</h4>
-                <button
-                  onClick={() => {
-                    setSelectedTimetableSlot(slot);
-                    setCreateModalOpen(true);
-                  }}
-                  className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 text-white py-2 text-xs font-bold hover:bg-blue-700 transition-colors"
-                >
-                  <Plus size={14} /> Attach Lesson Plan
-                </button>
-              </div>
+              );
+            })}
+          </div>
+        )}
+        <PageControls page={safeTodayPage} totalPages={todayTotalPages} onPageChange={setTodayPage} />
+      </div>
+
+      {/* MY LESSON PLANS — actual lesson_plans records you've created (AI brief or manual) */}
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30">
+              <Sparkles size={20} />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">My Lesson Plans</h3>
+              <p className="text-xs text-slate-500">Lesson plans you've created — AI briefs and manual write-ups.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setTemplatesModalOpen(true)}
+              className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 transition-all"
+            >
+              <Layers size={15} /> Lesson Templates
+            </button>
+            <span className="px-3 py-1 rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 text-xs font-black">
+              {filteredLessons.length} Lesson{filteredLessons.length === 1 ? '' : 's'}
+            </span>
+          </div>
+        </div>
+
+        {filteredLessons.length === 0 ? (
+          <p className="text-xs text-slate-400 py-4 text-center italic">No lesson plans yet for this filter selection — create one from "Today's Scheduled Classes" or "+ New Lesson."</p>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {paginatedLessons.map(lesson => (
+              <LessonPlanCard
+                key={lesson.id}
+                lesson={lesson}
+                onMarkComplete={(l) => { setSelectedLesson(l); setCompletionModalOpen(true); }}
+              />
             ))}
           </div>
         )}
+        <PageControls page={safeLessonPlansPage} totalPages={lessonPlansTotalPages} onPageChange={setLessonPlansPage} />
       </div>
 
-      {/* Lesson Plans & Topic Execution — sourced directly from syllabus plan */}
+      {/* Syllabus Topics — Progress Tracker (sourced from the admin-assigned syllabus plan's topics) */}
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-3">
@@ -495,7 +749,7 @@ export default function TeacherTeachingPlan() {
               <BookOpen size={20} />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Lesson Plans & Topic Execution</h3>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Syllabus Topics — Progress Tracker</h3>
               <p className="text-xs text-slate-500">Topics from your assigned syllabus plan. Click a topic to update progress.</p>
             </div>
           </div>
@@ -519,7 +773,7 @@ export default function TeacherTeachingPlan() {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {displayPlanTopics.map((topic, idx) => {
+            {paginatedPlanTopics.map((topic, idx) => {
               const isDone = topic.status === 'completed' || topic.progress >= 100;
               const isInProgress = topic.status === 'in_progress' && !isDone;
               const hasDelay = !isDone && topic.delayReason;
@@ -578,7 +832,7 @@ export default function TeacherTeachingPlan() {
 
                   <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
                     <button
-                      onClick={() => navigate(`/school/teacher/syllabus-planner/${topic.planId}`)}
+                      onClick={() => navigate(`/school/teacher/syllabus-planner/${topic.planId}`, { state: { subjectName: topic.subject_name } })}
                       className="w-full flex items-center justify-center gap-1.5 py-2 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 text-white text-xs font-extrabold transition-all shadow-sm"
                     >
                       <ArrowRight size={13} /> {isDone ? 'View in Plan' : 'Update Progress →'}
@@ -589,16 +843,19 @@ export default function TeacherTeachingPlan() {
             })}
           </div>
         )}
+        <PageControls page={safeTopicsPage} totalPages={topicsTotalPages} onPageChange={setTopicsPage} />
       </div>
 
       {/* Modals */}
       {createModalOpen && (
         <LessonPlanFormModal
           open={createModalOpen}
-          onClose={() => setCreateModalOpen(false)}
+          onClose={() => { setCreateModalOpen(false); setSelectedTemplateData(null); }}
           onSuccess={fetchTeachingPlan}
           timetableSlot={selectedTimetableSlot}
           publishedPlans={publishedPlans}
+          templateData={selectedTemplateData}
+          teacherAssignments={teacherAssignments}
         />
       )}
 
@@ -615,7 +872,8 @@ export default function TeacherTeachingPlan() {
         <LessonTemplatesModal
           open={templatesModalOpen}
           onClose={() => setTemplatesModalOpen(false)}
-          onSelectTemplate={() => {
+          onSelectTemplate={(contentJson) => {
+            setSelectedTemplateData(contentJson || null);
             setTemplatesModalOpen(false);
             setCreateModalOpen(true);
           }}

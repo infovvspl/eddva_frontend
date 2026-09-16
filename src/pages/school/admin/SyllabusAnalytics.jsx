@@ -81,20 +81,14 @@ export default function SyllabusAnalytics() {
   const totalTopicsCount = trackerData.reduce((a, b) => a + (b.totalTopics || 0), 0);
   const totalPendingTopics = trackerData.reduce((a, b) => a + (b.pendingTopics || 0), 0);
   const chaptersPendingCount = trackerData.reduce((a, b) => a + Math.ceil((b.pendingTopics || 0) / 3), 0);
+  const totalPlannedPeriods = trackerData.reduce((a, b) => a + (b.plannedPeriods || 0), 0);
+  const avgPeriodsVal = (totalPlannedPeriods / Math.max(1, totalTopicsCount)).toFixed(1);
 
-  const monthlyCompletionData = [
-    { month: 'Apr', expected: 10, actual: 10 },
-    { month: 'May', expected: 20, actual: 18 },
-    { month: 'Jun', expected: 30, actual: 28 },
-    { month: 'Jul', expected: 45, actual: 42 },
-    { month: 'Aug', expected: 55, actual: 50 },
-    { month: 'Sep', expected: 65, actual: overallProgress },
-    { month: 'Oct', expected: 75, actual: Math.min(100, overallProgress + 8) },
-    { month: 'Nov', expected: 85, actual: Math.min(100, overallProgress + 18) },
-    { month: 'Dec', expected: 92, actual: Math.min(100, overallProgress + 25) },
-    { month: 'Jan', expected: 98, actual: Math.min(100, overallProgress + 30) },
-    { month: 'Feb', expected: 100, actual: 100 }
-  ];
+  // Each plan's own time-elapsed-vs-duration benchmark, computed server-side from its
+  // real planned dates — the same formula used everywhere else "expected progress"
+  // appears, so this stays honest instead of a guessed month-by-month curve.
+  const plansWithExpected = trackerData.filter(i => typeof i.expectedProgressPercentage === 'number');
+  const currentMonthName = new Date().toLocaleString('default', { month: 'long' });
 
   const viewsList = [
     { id: 'overall-progress', title: 'Overall Syllabus Progress' },
@@ -104,7 +98,6 @@ export default function SyllabusAnalytics() {
     { id: 'delayed-teachers', title: 'Teachers with Delayed Syllabus' },
     { id: 'chapters-pending', title: 'Chapters Pending' },
     { id: 'monthly-completion', title: 'Monthly Syllabus Completion' },
-    { id: 'completion-trend', title: 'Syllabus Completion Trend' },
     { id: 'avg-periods', title: 'Avg Teaching Periods per Topic' },
     { id: 'teacher-completion-rate', title: 'Completion Rate by Teacher' }
   ];
@@ -172,29 +165,46 @@ export default function SyllabusAnalytics() {
         </div>
       )}
 
-      {(selectedType === 'expected-vs-actual' || selectedType === 'monthly-completion' || selectedType === 'completion-trend') && (
+      {selectedType === 'expected-vs-actual' && (
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-6">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-            <div>
-              <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase">Monthly Syllabus Completion & Pace Trend</h2>
-              <p className="text-xs text-slate-500">Target benchmark pace vs actual topic delivery rates across all terms.</p>
-            </div>
-            <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-extrabold">2025–2026 Academic Session</span>
+          <div className="border-b border-slate-100 dark:border-slate-800 pb-4">
+            <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase">Expected vs Actual Progress by Plan</h2>
+            <p className="text-xs text-slate-500">Expected % is each plan's elapsed time as a share of its planned start–completion window; Actual % is real topic completion.</p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {monthlyCompletionData.map(m => (
-              <div key={m.month} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 space-y-2 text-center">
-                <span className="text-xs font-black uppercase text-slate-700 dark:text-slate-300">{m.month} Progress</span>
-                <div className="flex items-center justify-center gap-3">
-                  <span className="text-xs font-bold text-slate-400">Exp: {m.expected}%</span>
-                  <span className="text-sm font-black text-blue-600">Act: {m.actual}%</span>
+          {plansWithExpected.length === 0 ? (
+            <p className="text-xs text-slate-400 italic py-6 text-center">No plans have both a planned start and completion date set, so an expected pace can't be computed yet.</p>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {plansWithExpected.map((p, idx) => (
+                <div key={p.planId || idx} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 space-y-2">
+                  <span className="text-[10px] font-black uppercase text-blue-600 dark:text-blue-400 block">{p.className} — {p.subjectName}</span>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-slate-400">Expected: {p.expectedProgressPercentage}%</span>
+                    <span className="font-black text-slate-900 dark:text-white">Actual: {p.progressPercentage}%</span>
+                  </div>
+                  <div className="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden relative">
+                    <div className="bg-blue-600 h-full rounded-full" style={{ width: `${p.progressPercentage}%` }} />
+                  </div>
                 </div>
-                <div className="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
-                  <div className="bg-blue-600 h-full rounded-full" style={{ width: `${m.actual}%` }} />
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {selectedType === 'monthly-completion' && (
+        <div className="rounded-3xl bg-gradient-to-br from-blue-500 to-cyan-600 p-8 text-white shadow-xl space-y-4">
+          <span className="text-xs font-black uppercase tracking-wider text-blue-100">{currentMonthName} Run-Rate</span>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-4xl font-black">{overallProgress}%</h2>
+              <p className="text-sm font-semibold text-blue-100 mt-1">Overall Curriculum Completed So Far This Month</p>
+            </div>
+            <Calendar size={48} className="text-blue-100" />
+          </div>
+          <div className="w-full bg-blue-900/40 h-3 rounded-full overflow-hidden">
+            <div className="bg-white h-full rounded-full transition-all duration-500" style={{ width: `${overallProgress}%` }} />
           </div>
         </div>
       )}
@@ -292,8 +302,8 @@ export default function SyllabusAnalytics() {
             <Layers className="text-indigo-600" size={20} /> Average Teaching Periods per Topic Analysis
           </h2>
           <div className="p-6 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900 space-y-2">
-            <p className="text-3xl font-black text-indigo-900 dark:text-indigo-100">2.4 Periods / Topic</p>
-            <p className="text-xs font-semibold text-indigo-800 dark:text-indigo-200">Standard textbook curriculum allocation average across all subjects.</p>
+            <p className="text-3xl font-black text-indigo-900 dark:text-indigo-100">{avgPeriodsVal} Periods / Topic</p>
+            <p className="text-xs font-semibold text-indigo-800 dark:text-indigo-200">Institute-wide average: total planned periods across all plans ÷ total topics.</p>
           </div>
         </div>
       )}

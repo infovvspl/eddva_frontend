@@ -38,6 +38,13 @@ export function percentage(marks: number, total: number) {
   return Math.round((marks / total) * 100);
 }
 
+// Keeps a teacher's marks entry within [0, total] — the <input max> attribute
+// alone doesn't stop someone from typing past it, so this is the actual guard.
+export function clampMarks(marks: number, total: number) {
+  if (!Number.isFinite(marks)) return 0;
+  return Math.min(Math.max(marks, 0), total);
+}
+
 export function gradeFromPercent(pct: number) {
   if (pct >= 90) return "A+";
   if (pct >= 75) return "A";

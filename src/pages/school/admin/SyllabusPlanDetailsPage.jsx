@@ -2,8 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  ArrowLeft, BookOpen, Calendar, Clock, User, Layers, 
-  Sparkles, CheckCircle2, AlertCircle, Edit3, Shield, ListTree, ChevronRight, Plus, Loader2
+  ArrowLeft, BookOpen, Calendar, Clock, User, Layers,
+  Sparkles, CheckCircle2, AlertCircle, Edit3, Shield, ListTree, ChevronRight
 } from 'lucide-react';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import { toast } from 'sonner';
@@ -26,11 +26,6 @@ export default function SyllabusPlanDetailsPage() {
     completionDate: ''
   });
 
-  const [addingTopicChapter, setAddingTopicChapter] = useState(null);
-  const [newTopicName, setNewTopicName] = useState('');
-  const [newTopicPeriods, setNewTopicPeriods] = useState(2);
-  const [submittingTopic, setSubmittingTopic] = useState(false);
-
   useEffect(() => {
     fetchPlan();
   }, [planId]);
@@ -38,9 +33,12 @@ export default function SyllabusPlanDetailsPage() {
   const fetchPlan = async (isBackground = false) => {
     if (!isBackground) setLoading(true);
     try {
-      const res = await api.get('/syllabus/plans');
-      const allPlans = unwrapSchoolList(res);
-      const found = allPlans.find(p => String(p.id) === String(planId));
+      // Chapter_allocations here already carries each topic's live status/progress,
+      // merged server-side against syllabus_topic_progress (the source of truth) —
+      // not the raw, identity-only JSON GET /syllabus/plans (list) returns, which
+      // never reflects a progress update after the page reloads.
+      const res = await api.get(`/syllabus/plans/${planId}`).catch(() => null);
+      const found = res?.data?.data ?? res?.data;
       if (found) {
         let allocs = Array.isArray(found.chapter_allocations) ? found.chapter_allocations : [];
         
@@ -132,29 +130,6 @@ export default function SyllabusPlanDetailsPage() {
     });
   };
 
-  const handleAddTopicToChapter = async (e) => {
-    e.preventDefault();
-    if (!newTopicName.trim() || !addingTopicChapter) return;
-    setSubmittingTopic(true);
-    try {
-      await api.patch(`/syllabus/plans/${planId}/progress`, {
-        chapterId: addingTopicChapter.chapterId || addingTopicChapter.chapterName,
-        newTopicName: newTopicName.trim(),
-        periods: parseInt(newTopicPeriods, 10) || 2
-      });
-      toast.success('New topic added to syllabus plan successfully!');
-      setAddingTopicChapter(null);
-      setNewTopicName('');
-      setNewTopicPeriods(2);
-      fetchPlan();
-    } catch (err) {
-      console.error('Failed to add topic to chapter:', err);
-      toast.error('Failed to add topic to plan');
-    } finally {
-      setSubmittingTopic(false);
-    }
-  };
-
   const handleSaveTopicProgress = async () => {
     if (!updatingTopic) return;
     try {
@@ -221,11 +196,19 @@ export default function SyllabusPlanDetailsPage() {
   const isTeacherView = typeof window !== 'undefined' && window.location.pathname.includes('/school/teacher');
 
   const renderChapterCard = (c, i, accentColor) => {
-    const topics = Array.isArray(c.topics) ? c.topics : [];
-    const chapterPeriods = c.periods || c.plannedPeriods || (topics.length > 0 ? topics.length * 2 : 4);
+    const realTopics = Array.isArray(c.topics) ? c.topics : [];
+    // No topics defined yet in the shared catalog for this chapter — synthesize one
+    // "whole chapter" placeholder so progress can still be tracked. Uses the same
+    // non-UUID `ch-<chapterId>` identity and "Core Curriculum: <chapterName>" name the
+    // backend's tracker aggregation (computeTopicsProgress) already recognizes, so this
+    // stays in sync with the completion % shown elsewhere instead of drifting from it.
+    const topics = realTopics.length > 0
+      ? realTopics
+      : [{ topicId: `ch-${c.chapterId || i}`, topicName: `Core Curriculum: ${c.chapterName}`, status: 'pending', progress: 0 }];
+    const chapterPeriods = c.periods || c.plannedPeriods || (realTopics.length > 0 ? realTopics.length * 2 : 4);
     const plannedPeriodsPerTopic = Math.max(1, Math.ceil(chapterPeriods / Math.max(1, topics.length)));
     const completedTopicsCount = topics.filter(t => t.status === 'completed' || t.progress >= 100).length;
-    const isChapterFullyCompleted = topics.length > 0 && completedTopicsCount === topics.length;
+    const isChapterFullyCompleted = completedTopicsCount === topics.length;
 
     return (
       <div key={c.chapterId || i} className="p-5 rounded-3xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 space-y-3 shadow-xs">
@@ -242,31 +225,17 @@ export default function SyllabusPlanDetailsPage() {
             )}
           </div>
           <div className="flex items-center gap-2">
-            {isTeacherView && (
-              <button
-                type="button"
-                onClick={() => {
-                  setAddingTopicChapter(c);
-                  setNewTopicName('');
-                  setNewTopicPeriods(2);
-                }}
-                className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-blue-600 hover:bg-blue-700 text-white transition-all flex items-center gap-1 shadow-xs"
-              >
-                <Plus size={11} /> Add Topic
-              </button>
-            )}
             <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 flex items-center gap-1">
               <Clock size={11} /> {chapterPeriods} Periods
             </span>
             <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300">
-              {topics.length > 0 ? `${completedTopicsCount}/${topics.length} Done` : 'All Topics Included'}
+              {completedTopicsCount}/{topics.length} Done
             </span>
           </div>
         </div>
 
-        {topics.length > 0 ? (
-          <div className="pl-4 space-y-2 border-l-2 border-slate-200 dark:border-slate-800">
-            {topics.map((t, tIdx) => {
+        <div className="pl-4 space-y-2 border-l-2 border-slate-200 dark:border-slate-800">
+          {topics.map((t, tIdx) => {
               const isTopicDone = t.status === 'completed' || t.progress >= 100;
               const isPending = !t.status || t.status === 'pending';
               const topicProg = t.progress ?? (isTopicDone ? 100 : 0);
@@ -358,13 +327,8 @@ export default function SyllabusPlanDetailsPage() {
                   )}
                 </div>
               );
-            })}
-          </div>
-        ) : (
-          <p className="text-xs text-slate-400 italic pl-4 border-l-2 border-slate-200 dark:border-slate-800">
-            All curriculum sub-topics covered in this milestone.
-          </p>
-        )}
+          })}
+        </div>
       </div>
     );
   };
@@ -706,70 +670,6 @@ export default function SyllabusPlanDetailsPage() {
         </div>
       )}
 
-      {/* ADD NEW TOPIC TO CHAPTER MODAL FOR TEACHER */}
-      {addingTopicChapter && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-          <form onSubmit={handleAddTopicToChapter} className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900 space-y-4 font-poppins">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div>
-                <h3 className="text-base font-black text-slate-900 dark:text-white">Add Topic to Syllabus Plan</h3>
-                <p className="text-xs text-slate-500">Chapter: {addingTopicChapter.chapterName}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setAddingTopicChapter(null)}
-                className="p-1 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Topic Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={newTopicName}
-                  onChange={e => setNewTopicName(e.target.value)}
-                  placeholder="e.g. Sub-topic 3: Practice Problem Solving"
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Allocated Periods *</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="20"
-                  required
-                  value={newTopicPeriods}
-                  onChange={e => setNewTopicPeriods(parseInt(e.target.value, 10) || 1)}
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={() => setAddingTopicChapter(null)}
-                className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 dark:border-slate-800 dark:text-slate-300"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={submittingTopic}
-                className="px-5 py-2 rounded-xl bg-blue-600 text-xs font-extrabold text-white shadow-md hover:bg-blue-700 transition-all flex items-center gap-1.5 disabled:opacity-50"
-              >
-                {submittingTopic ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />} Add Topic to Plan
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
     </div>
   );
 }

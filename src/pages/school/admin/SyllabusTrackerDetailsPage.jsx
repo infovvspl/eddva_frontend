@@ -6,7 +6,7 @@ import {
   TrendingUp, AlertTriangle, CheckCircle2, Loader2, Sparkles, Filter, 
   Search, Shield, ListTree, ArrowUpRight, Flame, Hourglass, CalendarX
 } from 'lucide-react';
-import api, { unwrapSchoolList } from '@/lib/api/school-client';
+import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
 
 export default function SyllabusTrackerDetailsPage() {
@@ -24,113 +24,18 @@ export default function SyllabusTrackerDetailsPage() {
   const fetchPlanData = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/syllabus/tracker', { params: { planId } }).catch(() => null);
-      const data = res?.data?.plan || res?.data?.data?.plan || res?.data;
-      if (data && (data.id || data.subjectName)) {
+      const res = await api.get('/syllabus/tracker', { params: { planId } });
+      const data = res?.data?.plan;
+      if (data) {
         setPlan(data);
-        return;
-      }
-      
-      // Multi-tier Fallback
-      const [trackerRes, plansRes] = await Promise.all([
-        api.get('/syllabus/tracker').catch(() => ({ data: [] })),
-        api.get('/syllabus/plans').catch(() => ({ data: [] }))
-      ]);
-
-      const plans = unwrapSchoolList(plansRes);
-      const trackerList = trackerRes.data?.data?.tracker || [];
-      
-      let foundPlan = plans.find(p => String(p.id) === String(planId) || String(p.subject_id) === String(planId));
-      let foundTracker = trackerList.find(t => String(t.planId) === String(planId) || String(t.subjectId) === String(planId));
-
-      if (!foundPlan && !foundTracker) {
-        foundPlan = plans[0];
-        foundTracker = trackerList[0];
-      }
-
-      if (foundPlan || foundTracker) {
-        const merged = {
-          ...(foundPlan || {}),
-          ...(foundTracker || {})
-        };
-
-        const sid = merged.subject_id || merged.subjectId;
-        const cid = merged.class_id || merged.classId;
-
-        const chRes = await api.get('/topics/chapters', { params: { subjectId: sid, classId: cid } }).catch(() => ({ data: [] }));
-        const chList = unwrapSchoolList(chRes);
-
-        const allocs = await Promise.all(chList.map(async (ch, idx) => {
-          let term = 'Unit 1';
-          const ratio = chList.length > 0 ? (idx + 1) / chList.length : 0;
-          if (ratio <= 0.25) term = 'Unit 1';
-          else if (ratio <= 0.50) term = 'Term 1';
-          else if (ratio <= 0.75) term = 'Unit 2';
-          else term = 'Term 2';
-
-          let topList = [];
-          try {
-            const topRes = await api.get('/topics', { params: { chapterId: ch.id } }).catch(() => ({ data: [] }));
-            topList = unwrapSchoolList(topRes).map(t => ({ topicId: t.id, topicName: t.name }));
-          } catch {}
-
-          return { chapterId: ch.id, chapterName: ch.name, term, topics: topList };
-        }));
-
-        const now = new Date();
-        const startDate = merged.planned_start_date ? new Date(merged.planned_start_date) : new Date(Date.now() - 30 * 86400000);
-        const endDate = merged.planned_completion_date ? new Date(merged.planned_completion_date) : new Date(Date.now() + 60 * 86400000);
-
-        const totalDays = Math.max(1, Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)));
-        const elapsedDays = Math.max(0, Math.min(totalDays, Math.ceil((now - startDate) / (1000 * 60 * 60 * 24))));
-        const overallPlannedProgress = Math.min(100, Math.round((elapsedDays / totalDays) * 100));
-
-        let topicCalculations = [];
-        allocs.forEach((ch, chIdx) => {
-          const rawTopics = Array.isArray(ch.topics) && ch.topics.length > 0 ? ch.topics : [{ topicId: `ch-${ch.chapterId}`, topicName: `Core Curriculum: ${ch.chapterName}` }];
-          rawTopics.forEach((t, tIdx) => {
-            topicCalculations.push({
-              id: t.topicId || `t-${chIdx}-${tIdx}`,
-              chapterName: ch.chapterName,
-              chapterTerm: ch.term,
-              topicName: t.topicName || t.name,
-              status: chIdx === 0 ? 'Completed' : (chIdx === 1 ? 'In Progress' : 'Planned'),
-              plannedStartDate: new Date(startDate.getTime() + (chIdx * 5) * 86400000).toISOString().split('T')[0],
-              plannedEndDate: new Date(startDate.getTime() + (chIdx * 5 + 4) * 86400000).toISOString().split('T')[0],
-              actualStartDate: new Date(startDate.getTime() + (chIdx * 5) * 86400000).toISOString().split('T')[0],
-              actualCompletionDate: chIdx === 0 ? new Date(startDate.getTime() + (chIdx * 5 + 4) * 86400000).toISOString().split('T')[0] : '—',
-              plannedPeriods: 2,
-              actualPeriods: chIdx === 0 ? 2 : 1,
-              plannedProgress: 100,
-              actualProgress: chIdx === 0 ? 100 : 50,
-              delayInDays: 0,
-              delayInPeriods: 0,
-              isCompleted: chIdx === 0,
-              isInProgress: chIdx === 1,
-              isDelayed: false,
-              isUpcomingDeadline: false
-            });
-          });
-        });
-
-        setPlan({
-          id: merged.id || planId,
-          className: merged.className || merged.class_name || 'Class Plan',
-          sectionName: merged.sectionName || merged.section_name || 'All Sections',
-          academicYear: merged.academic_year || '2025-2026',
-          subjectName: merged.subjectName || merged.subject_name || 'Subject Plan',
-          teacherName: merged.teacherName || merged.teacher_name || 'Unassigned',
-          overallPlannedProgress,
-          overallActualProgress: merged.progressPercentage || 50,
-          chapterAllocations: allocs,
-          topicCalculations
-        });
       } else {
+        setPlan(null);
         toast.error('Syllabus plan not found');
       }
     } catch (err) {
       console.error('Failed to fetch plan tracker details:', err);
-      toast.error('Failed to load syllabus tracker details');
+      setPlan(null);
+      toast.error(err?.response?.status === 404 ? 'Syllabus plan not found' : 'Failed to load syllabus tracker details');
     } finally {
       setLoading(false);
     }
