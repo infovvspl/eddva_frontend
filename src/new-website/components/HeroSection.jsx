@@ -7,12 +7,29 @@
 // shift with the pointer. The photograph itself never moves. All of it stops
 // under prefers-reduced-motion.
 
-import { useEffect, useRef } from "react";
-import { ArrowRight, Play, Brain, Users, Sparkles, Star, Quote } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowRight, Play, Brain, Users, Sparkles, Star, Quote, X } from "lucide-react";
 import schoolHero from "../assets/school-banner.png";
+
+// youtu.be/BIr6J6bSyTQ — the demo walkthrough linked from "Watch Video"
+const DEMO_VIDEO_ID = "BIr6J6bSyTQ";
 
 const HeroSection = () => {
   const ref = useRef(null);
+  const [videoOpen, setVideoOpen] = useState(false);
+
+  // Esc closes the modal; body scroll is locked while it's open
+  useEffect(() => {
+    if (!videoOpen) return;
+    const onKey = (e) => { if (e.key === "Escape") setVideoOpen(false); };
+    document.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [videoOpen]);
 
   // Pointer parallax — publishes a normalised -1..1 cursor offset as CSS vars.
   // Each layer multiplies it by its own depth, so nearer things move further.
@@ -86,12 +103,17 @@ const HeroSection = () => {
                 <ArrowRight size={15} strokeWidth={2.6} />
               </span>
             </a>
-            <a href="#nw-video" className="nw-hero__btn nw-hero__btn--secondary" id="nw-hero-video">
+            <button
+              type="button"
+              className="nw-hero__btn nw-hero__btn--secondary"
+              id="nw-hero-video"
+              onClick={() => setVideoOpen(true)}
+            >
               <span className="nw-hero__play" aria-hidden="true">
                 <Play size={11} strokeWidth={2} fill="currentColor" />
               </span>
               Watch Video
-            </a>
+            </button>
           </div>
 
         </div>
@@ -185,6 +207,35 @@ const HeroSection = () => {
         </div>
 
       </div>
+
+      {videoOpen && (
+        <div
+          className="nw-video-modal"
+          id="nw-video-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Demo video"
+          onClick={(e) => { if (e.target === e.currentTarget) setVideoOpen(false); }}
+        >
+          <div className="nw-video-modal__frame">
+            <button
+              type="button"
+              className="nw-video-modal__close"
+              aria-label="Close video"
+              onClick={() => setVideoOpen(false)}
+            >
+              <X size={20} strokeWidth={2.4} />
+            </button>
+            <iframe
+              className="nw-video-modal__iframe"
+              src={`https://www.youtube-nocookie.com/embed/${DEMO_VIDEO_ID}?autoplay=1`}
+              title="EDDVA demo video"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        </div>
+      )}
     </section>
   );
 };
