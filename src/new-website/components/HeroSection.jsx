@@ -8,11 +8,12 @@
 // under prefers-reduced-motion.
 
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { ArrowRight, Play, Brain, Users, Sparkles, Star, Quote, X } from "lucide-react";
 import schoolHero from "../assets/school-banner.png";
 
-// youtu.be/BIr6J6bSyTQ — the demo walkthrough linked from "Watch Video"
-const DEMO_VIDEO_ID = "BIr6J6bSyTQ";
+// youtube.com/shorts/OXY5dOQ9wlw — the demo walkthrough linked from "Watch Video"
+const DEMO_VIDEO_ID = "OXY5dOQ9wlw";
 
 const HeroSection = () => {
   const ref = useRef(null);
@@ -97,12 +98,12 @@ const HeroSection = () => {
           </p>
 
           <div className="nw-hero__actions nw-rise" style={{ "--nw-delay": "0.34s" }}>
-            <a href="#nw-demo" className="nw-hero__btn nw-hero__btn--primary" id="nw-hero-demo">
+            <Link to="/contact" className="nw-hero__btn nw-hero__btn--primary" id="nw-hero-demo">
               Request Free Demo
               <span className="nw-hero__btn-arrow" aria-hidden="true">
                 <ArrowRight size={15} strokeWidth={2.6} />
               </span>
-            </a>
+            </Link>
             <button
               type="button"
               className="nw-hero__btn nw-hero__btn--secondary"

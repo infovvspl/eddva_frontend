@@ -950,6 +950,11 @@ html { scroll-behavior: smooth; }
   max-width: 1280px; margin: 0 auto;
   display: flex; align-items: center; justify-content: space-between;
   gap: 28px; flex-wrap: wrap;
+  opacity: 0; transform: translateY(16px); transition: opacity 0.6s, transform 0.6s;
+}
+.nw-cta__container.nw-in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .nw-cta__container { transition: none; opacity: 1; transform: none; }
 }
 .nw-cta__left { display: flex; align-items: center; gap: 20px; }
 .nw-cta__icon {
@@ -2271,6 +2276,11 @@ html { scroll-behavior: smooth; }
   border-radius: 24px;
   overflow: hidden;
   box-shadow: 0 26px 60px rgba(15,23,42,0.10);
+  opacity: 0; transform: translateY(18px); transition: opacity 0.6s, transform 0.6s;
+}
+.nw-contactp__card.nw-in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .nw-contactp__card { transition: none; opacity: 1; transform: none; }
 }
 
 .nw-contactp__aside {
@@ -3223,8 +3233,11 @@ a.nw-contactp__detail-value:hover { color: #9fc0f5; }
   border-left: 4px solid transparent;
   border-radius: var(--nw-card-radius);
   overflow: hidden;
-  transition: border-color 0.25s, box-shadow 0.25s;
+  transition: border-color 0.25s, box-shadow 0.25s, opacity 0.5s, transform 0.5s;
+  opacity: 0; transform: translateY(14px);
+  transition-delay: 0s, 0s, calc(var(--i, 0) * 80ms), calc(var(--i, 0) * 80ms);
 }
+.nw-roles__list.nw-in .nw-roles__item { opacity: 1; transform: none; }
 .nw-roles__item:hover { border-left-color: var(--nw-role-accent); }
 .nw-roles__item.nw-open {
   border-left-color: var(--nw-role-accent);
@@ -3446,7 +3459,7 @@ a.nw-contactp__detail-value:hover { color: #9fc0f5; }
 .nw-pgrid__cta:active { transform: translateY(0) scale(0.97); }
 
 @media (prefers-reduced-motion: reduce) {
-  .nw-pillars__row, .nw-pillars__num, .nw-timeline__stop, .nw-roles__entry {
+  .nw-pillars__row, .nw-pillars__num, .nw-timeline__stop, .nw-roles__entry, .nw-roles__item {
     opacity: 1 !important; transform: none !important; transition: none !important;
   }
   .nw-timeline__track::before { transform: none !important; }
@@ -3808,7 +3821,9 @@ a.nw-contactp__detail-value:hover { color: #9fc0f5; }
 .nw-faqp__pills {
   display: flex; flex-wrap: wrap; justify-content: center; gap: 9px;
   margin-bottom: 40px;
+  opacity: 0; transform: translateY(14px); transition: opacity 0.5s, transform 0.5s;
 }
+.nw-faqp__pills.nw-in { opacity: 1; transform: none; }
 .nw-faqp__pill {
   display: inline-flex; align-items: center; gap: 8px;
   font: inherit; font-size: 0.82rem; font-weight: 700; cursor: pointer;
@@ -3888,6 +3903,7 @@ a.nw-contactp__detail-value:hover { color: #9fc0f5; }
 @media (prefers-reduced-motion: reduce) {
   .nw-faqp__panel { animation: none !important; }
   .nw-faqp__answer, .nw-faqp__chevron, .nw-faqp__pill { transition: none !important; }
+  .nw-faqp__pills { transition: none !important; opacity: 1; transform: none; }
 }
 
 /* ══════════════════════════════════════════════════════
@@ -4413,7 +4429,9 @@ a.nw-abouthero__crumb:hover { color: var(--nw-blue); }
 .nw-abouthero__crumb--current { color: var(--nw-ink); font-weight: 600; }
 .nw-abouthero__crumb-icon { color: var(--nw-blue); margin-left: 4px; }
 .nw-abouthero__title {
-  font-size: clamp(2.1rem, 3.6vw, 3.1rem); font-weight: 800;
+  /* 700, not 800 — matches the home hero, PageHead, ContactHero and
+     ProductsHero titles; this was the one page-banner heading off-weight. */
+  font-size: clamp(2.1rem, 3.6vw, 3.1rem); font-weight: 700;
   color: var(--nw-ink); letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 14px;
 }
 .nw-abouthero__title-accent { color: var(--nw-blue); }
@@ -4549,33 +4567,43 @@ a.nw-abouthero__crumb:hover { color: var(--nw-blue); }
 /* ══════════════════════════════════════════════════════
    MEET THE TEAM  (/about)
 ══════════════════════════════════════════════════════ */
+/* Dark navy band — a deliberate break from the light sections around it,
+   with elevated white cards popping off the background and each member's
+   photo ring / accent bar cycling through the site's palette (set inline
+   per-card as --nw-accent; see TeamSection.jsx's PALETTE). */
 .nw-team {
   position: relative; overflow: hidden;
-  padding: 80px var(--nw-pad, 48px); background: var(--nw-wash, #f4f8ff);
+  padding: 84px var(--nw-pad, 48px);
+  background: linear-gradient(170deg, var(--nw-navy, #0b1c46) 0%, var(--nw-navy-deep, #081537) 100%);
 }
-.nw-team__blob {
-  position: absolute; width: 460px; height: 460px; border-radius: 50%;
-  background: #dbe7fb; filter: blur(110px); opacity: 0.6;
-  bottom: -200px; left: -160px; pointer-events: none;
+.nw-team__glow--1 {
+  position: absolute; width: 480px; height: 480px; border-radius: 50%;
+  background: rgba(21,101,216,0.35); filter: blur(120px);
+  top: -220px; right: -140px; pointer-events: none;
+}
+.nw-team__glow--2 {
+  position: absolute; width: 380px; height: 380px; border-radius: 50%;
+  background: rgba(124,58,237,0.22); filter: blur(110px);
+  bottom: -180px; left: -120px; pointer-events: none;
 }
 .nw-team__dots {
-  position: absolute; width: 140px; height: 120px; top: 12%; right: 5%;
-  opacity: 0.5; pointer-events: none;
-  background-image: radial-gradient(#93b4e8 1.6px, transparent 1.6px);
+  position: absolute; width: 140px; height: 120px; top: 12%; right: 8%;
+  opacity: 0.35; pointer-events: none;
+  background-image: radial-gradient(rgba(255,255,255,0.5) 1.6px, transparent 1.6px);
   background-size: 17px 17px;
 }
 .nw-team__container { position: relative; z-index: 1; max-width: var(--nw-max, 1280px); margin: 0 auto; }
 .nw-team__header { text-align: center; max-width: 640px; margin: 0 auto 44px; }
 .nw-team__label {
-  font-size: 0.75rem; font-weight: 700; color: var(--nw-blue);
+  font-size: 0.75rem; font-weight: 700; color: #7dd3fc;
   letter-spacing: 0.15em; text-transform: uppercase; display: block; margin-bottom: 10px;
 }
 .nw-team__heading {
   font-size: clamp(1.7rem, 2.6vw, 2.3rem); font-weight: 700;
-  color: var(--nw-ink); letter-spacing: -0.03em; margin-bottom: 10px;
+  color: #fff; letter-spacing: -0.03em; margin-bottom: 10px;
 }
-.nw-team__heading-accent { color: var(--nw-blue); }
-.nw-team__sub { font-size: 0.95rem; color: #64748b; line-height: 1.6; }
+.nw-team__heading-accent { color: #7dd3fc; }
+.nw-team__sub { font-size: 0.95rem; color: rgba(255,255,255,0.68); line-height: 1.6; }
 .nw-team__row { display: flex; align-items: flex-end; gap: 32px; }
 .nw-team__grid {
   /* 6 members read best as two balanced rows of 3, not a lopsided 5+1. */
@@ -4583,27 +4611,31 @@ a.nw-abouthero__crumb:hover { color: var(--nw-blue); }
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
 }
 .nw-team__card {
+  position: relative; overflow: hidden;
   display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px;
-  background: #fff; border: 1px solid var(--nw-card-border, #e6ecf5); border-radius: 16px;
-  padding: 22px 14px 20px;
+  background: #fff; border-radius: 20px;
+  padding: 26px 16px 22px;
+  box-shadow: 0 18px 40px -14px rgba(2,8,28,0.55);
   opacity: 0; transform: translateY(16px);
-  transition: opacity 0.5s, transform 0.5s, box-shadow 0.25s, border-color 0.25s;
+  transition: opacity 0.5s, transform 0.5s, box-shadow 0.25s;
   transition-delay: calc(var(--nw-i, 0) * 70ms);
 }
 .nw-team__grid.nw-in .nw-team__card { opacity: 1; transform: none; }
-.nw-team__card:hover { box-shadow: 0 16px 34px rgba(15,23,42,0.1); border-color: #cfe0fa; }
+.nw-team__card:hover { transform: translateY(-4px); box-shadow: 0 26px 54px -14px rgba(2,8,28,0.65); }
 .nw-team__avatar {
   width: 84px; height: 84px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(150deg, #4aa3f5, #1565d8);
-  color: #fff; font-size: 1.4rem; font-weight: 800;
+  font-size: 1.4rem; font-weight: 800;
+  border: 3px solid var(--nw-accent, #1565d8);
+  box-shadow: 0 0 0 4px rgba(21,101,216,0.14);
 }
 .nw-team__avatar img { width: 100%; height: 100%; object-fit: cover; }
 .nw-team__name { font-size: 0.92rem; font-weight: 700; color: var(--nw-ink); }
 .nw-team__role { font-size: 0.78rem; color: #64748b; }
+.nw-team__accent-bar { width: 30px; height: 3px; border-radius: 2px; margin-top: 2px; }
 .nw-team__note {
   flex: 0 0 auto; font-family: "Caveat", cursive; font-size: 1.4rem; font-weight: 700;
-  color: var(--nw-blue); line-height: 1.15; text-align: right; padding-bottom: 8px;
+  color: #7dd3fc; line-height: 1.15; text-align: right; padding-bottom: 8px;
 }
 @media (max-width: 1100px) {
   .nw-team__grid { grid-template-columns: repeat(3, 1fr); }
@@ -4661,13 +4693,15 @@ a.nw-abouthero__crumb:hover { color: var(--nw-blue); }
 
 /* ══════════════════════════════════════════════════════
    BE A PART OF THE CHANGE  (/about) — closing band
-   A violet-to-blue gradient, deliberately not the footer's blue-to-navy
-   one right below it — the two used to be near-identical and ran together
-   with no visible seam between them.
+   A dark teal-to-emerald gradient — deliberately not the footer's
+   blue-to-navy one right below it (the two used to be near-identical and
+   ran together with no visible seam), and not the blue/violet used
+   everywhere else on this page either, so the band reads as its own
+   moment rather than blending into the site's default blue.
 ══════════════════════════════════════════════════════ */
 .nw-change {
   position: relative; overflow: hidden;
-  background: linear-gradient(125deg, #4338ca 0%, #5b5bd6 32%, #1565d8 68%, #0ea5e9 100%);
+  background: linear-gradient(125deg, #064e3b 0%, #0f766e 45%, #059669 78%, #10b981 100%);
   border-radius: 48px 48px 0 0;
   padding: 56px var(--nw-pad, 48px);
 }
@@ -4678,7 +4712,7 @@ a.nw-abouthero__crumb:hover { color: var(--nw-blue); }
 }
 .nw-change__glow--2 {
   position: absolute; width: 320px; height: 320px; border-radius: 50%;
-  background: rgba(14,165,233,0.35); filter: blur(90px);
+  background: rgba(16,185,129,0.35); filter: blur(90px);
   bottom: -140px; right: -60px; pointer-events: none;
 }
 .nw-change__container {
@@ -4689,13 +4723,15 @@ a.nw-abouthero__crumb:hover { color: var(--nw-blue); }
 .nw-change__container.nw-in { opacity: 1; transform: none; }
 .nw-change__body { text-align: center; max-width: 480px; }
 .nw-change__heading {
-  font-size: clamp(1.5rem, 2.4vw, 2rem); font-weight: 800; color: #fff;
+  /* 700, matching the shared CtaBanner heading and every other section
+     heading on this page — was the other off-weight spot. */
+  font-size: clamp(1.5rem, 2.4vw, 2rem); font-weight: 700; color: #fff;
   letter-spacing: -0.02em; margin-bottom: 8px;
 }
 .nw-change__sub { font-size: 0.94rem; color: rgba(255,255,255,0.78); margin-bottom: 20px; }
 .nw-change__btn {
   display: inline-flex; align-items: center; gap: 8px;
-  font-size: 0.94rem; font-weight: 700; color: #0b1c46;
+  font-size: 0.94rem; font-weight: 700; color: #065f46;
   background: #fff; border-radius: 999px; padding: 13px 28px;
   transition: transform 0.2s, box-shadow 0.2s;
 }

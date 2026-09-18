@@ -7,9 +7,10 @@ import PageHead from "../components/PageHead";
 import RoleDetail from "../components/RoleDetail";
 import CtaBanner from "../components/CtaBanner";
 import Footer from "../components/Footer";
-import { roleSolutions } from "../data/solutions";
+import { roleSolutions, ROLE_PAGE_ACCENT } from "../data/solutions";
 
-const students = roleSolutions.find(r => r.id === "nw-sol-students");
+const studentsSource = roleSolutions.find(r => r.id === "nw-sol-students");
+const students = studentsSource && { ...studentsSource, ...ROLE_PAGE_ACCENT };
 const studentCapabilityCount = students
   ? students.groups.reduce((sum, group) => sum + group.items.length, 0)
   : 0;
