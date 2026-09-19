@@ -53,6 +53,8 @@ const NewWebsiteAboutStoryPage = lazy(() => import("./new-website/pages/AboutSto
 const NewWebsiteProductsPage = lazy(() => import("./new-website/pages/ProductsPage"));
 const NewWebsiteSolutionPage = lazy(() => import("./new-website/pages/SolutionPage"));
 const NewWebsiteFaqPage = lazy(() => import("./new-website/pages/FaqPage"));
+const NewWebsiteBlogPage = lazy(() => import("./new-website/pages/BlogPage"));
+const NewWebsiteBlogDetailPage = lazy(() => import("./new-website/pages/BlogDetailPage"));
 const NewWebsiteInstitutionSolutionPage = lazy(() => import("./new-website/pages/InstitutionSolutionPage"));
 const NewWebsiteTeacherSolutionPage = lazy(() => import("./new-website/pages/TeacherSolutionPage"));
 const NewWebsiteStudentSolutionPage = lazy(() => import("./new-website/pages/StudentSolutionPage"));
@@ -104,6 +106,10 @@ const SupportTicketsPage = lazy(() => import("./pages/admin/SupportTicketsPage")
 const TeacherSupportTicketsPage = lazy(() => import("./pages/teacher/TeacherSupportTicketsPage"));
 const SuperAdminSupportTicketsPage = lazy(() => import("./pages/super-admin/SuperAdminSupportTicketsPage"));
 const SuperAdminLeadsPage = lazy(() => import("./pages/super-admin/LeadsPage"));
+// Blog admin panel has its own login, separate from the LMS entirely — see
+// pages/blog-admin and modules/blog-admin-auth on the backend.
+const BlogAdminLoginPage = lazy(() => import("./pages/blog-admin/BlogAdminLoginPage"));
+const BlogAdminDashboardPage = lazy(() => import("./pages/blog-admin/BlogAdminDashboardPage"));
 const CoachingTicketDetailPage = lazy(() => import("./pages/shared/CoachingTicketDetailPage"));
 const AdminCalendarPage = lazy(() => import("./pages/admin/AdminCalendarPage"));
 const TeacherCalendarPage = lazy(() => import("./pages/teacher/TeacherCalendarPage"));
@@ -754,6 +760,8 @@ const TenantRoutes = () => (
     <Route path="/cookie-policy" element={<CookiePolicyPage />} />
     <Route path="/terms" element={<TermsOfServicePage />} />
     <Route path="/login" element={<LoginPage />} />
+    <Route path="/blog-admin/login" element={<BlogAdminLoginPage />} />
+    <Route path="/blog-admin" element={<BlogAdminDashboardPage />} />
     <Route path="/suspended" element={<SuspendedPage />} />
     <Route path="/register" element={<StudentRegisterPage />} />
     <Route path="/register-admin" element={<RegisterWithOtpPage />} />
@@ -783,6 +791,8 @@ const TenantRoutes = () => (
     <Route path="/solution/parents" element={<NewWebsiteParentSolutionPage />} />
     <Route path="/features/:slug" element={<NewWebsiteFeatureDetailPage />} />
     <Route path="/faq" element={<NewWebsiteFaqPage />} />
+    <Route path="/blog" element={<NewWebsiteBlogPage />} />
+    <Route path="/blog/:slug" element={<NewWebsiteBlogDetailPage />} />
     {/* Old dev URLs kept alive so nothing already pointing there 404s */}
     <Route path="/new-website/*" element={<Navigate to="/" replace />} />
     <Route path="/new-website" element={<Navigate to="/" replace />} />
@@ -810,6 +820,8 @@ const PlatformRoutes = () => (
     <Route path="/cookie-policy" element={<CookiePolicyPage />} />
     <Route path="/terms" element={<TermsOfServicePage />} />
     <Route path="/login" element={<LoginPage />} />
+    <Route path="/blog-admin/login" element={<BlogAdminLoginPage />} />
+    <Route path="/blog-admin" element={<BlogAdminDashboardPage />} />
     <Route path="/suspended" element={<SuspendedPage />} />
     <Route path="/register" element={<StudentRegisterPage />} />
     <Route path="/register-admin" element={<RegisterWithOtpPage />} />
@@ -836,6 +848,8 @@ const PlatformRoutes = () => (
     <Route path="/solution/parents" element={<NewWebsiteParentSolutionPage />} />
     <Route path="/features/:slug" element={<NewWebsiteFeatureDetailPage />} />
     <Route path="/faq" element={<NewWebsiteFaqPage />} />
+    <Route path="/blog" element={<NewWebsiteBlogPage />} />
+    <Route path="/blog/:slug" element={<NewWebsiteBlogDetailPage />} />
     {/* Old dev URLs kept alive so nothing already pointing there 404s */}
     <Route path="/new-website/*" element={<Navigate to="/" replace />} />
     <Route path="/new-website" element={<Navigate to="/" replace />} />
