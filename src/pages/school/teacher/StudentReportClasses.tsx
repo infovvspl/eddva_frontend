@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, GraduationCap, Clock, CheckCircle, Edit2, FileText, 
-  Loader2, Plus, Trash2, X, PlusCircle, Calendar
+import {
+  ArrowLeft, GraduationCap, Clock, CheckCircle, Edit2, FileText,
+  Loader2, Plus, Trash2, X, PlusCircle, Calendar, ClipboardList
 } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
 import GlassCard from '@/components/school/GlassCard';
 import Badge from '@/components/school/Badge';
+import Tabs from '@/components/school/Tabs';
+import DataTable from '@/components/school/DataTable';
+import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import './StudentReportClasses.css';
 
 interface SubjectRow {
@@ -23,6 +26,10 @@ export default function StudentReportClasses() {
   const [loading, setLoading] = useState(true);
   const [isAddPrevOpen, setIsAddPrevOpen] = useState(false);
   const [isSavingPrev, setIsSavingPrev] = useState(false);
+  const [assessmentPage, setAssessmentPage] = useState(1);
+  const [assessmentPageSize, setAssessmentPageSize] = useState(10);
+  const [assignmentPage, setAssignmentPage] = useState(1);
+  const [assignmentPageSize, setAssignmentPageSize] = useState(10);
 
   const getClassNumberFromName = (className = '') => {
     const cls = String(className || '').toLowerCase();
@@ -623,16 +630,121 @@ export default function StudentReportClasses() {
   const currentClassName = profile.section?.class?.name || student.className || '—';
   const currentAcademicYear = profile.section?.class?.academicYear || student.academicYear || '—';
 
-  return (
-    <div className="student-report-classes pb-12 font-poppins">
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <button 
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold transition-colors text-sm"
-        >
-          <ArrowLeft size={16} />
-          Back to Reports
-        </button>
+  const allAssessments = Array.isArray(student.allAssessments) ? student.allAssessments : [];
+
+  const assessmentStatusBadge = (status: string) => {
+    switch (status) {
+      case 'evaluated':
+        return <Badge variant="success">Evaluated</Badge>;
+      case 'pending_evaluation':
+        return <Badge variant="warning">Pending Evaluation</Badge>;
+      case 'absent':
+        return <Badge variant="error">Absent</Badge>;
+      default:
+        return <Badge variant="default">Not Attempted</Badge>;
+    }
+  };
+
+  const assessmentColumns = [
+    {
+      key: 'title',
+      title: 'Assessment',
+      render: (v: string, row: any) => (
+        <div>
+          <span className="font-bold text-slate-800 dark:text-white">{v}</span>
+          {row.type && <span className="block text-[10px] font-semibold text-slate-400 uppercase mt-0.5">{row.type}</span>}
+        </div>
+      ),
+    },
+    { key: 'subjectName', title: 'Subject', render: (v: string) => v || 'General' },
+    {
+      key: 'scheduledDate',
+      title: 'Scheduled',
+      render: (v: string) => v ? new Date(v).toLocaleDateString() : '—',
+    },
+    {
+      key: 'marksObtained',
+      title: 'Marks',
+      render: (v: number | null, row: any) => {
+        if (row.status !== 'evaluated') return <span className="text-slate-400">—</span>;
+        const total = row.resultTotalMarks ?? row.assessmentTotalMarks;
+        return <span className="font-bold text-slate-800 dark:text-white">{v}{total != null ? ` / ${total}` : ''}</span>;
+      },
+    },
+    {
+      key: 'status',
+      title: 'Status',
+      render: (v: string) => assessmentStatusBadge(v),
+    },
+  ];
+
+  const attemptedCount = allAssessments.filter((a: any) => a.status === 'evaluated' || a.status === 'pending_evaluation').length;
+  const notAttemptedCount = allAssessments.filter((a: any) => a.status === 'not_attempted').length;
+
+  const assessmentTotalPages = Math.max(1, Math.ceil(allAssessments.length / assessmentPageSize));
+  const assessmentPageClamped = Math.min(assessmentPage, assessmentTotalPages);
+  const paginatedAssessments = allAssessments.slice(
+    (assessmentPageClamped - 1) * assessmentPageSize,
+    assessmentPageClamped * assessmentPageSize,
+  );
+
+  const allAssignments = Array.isArray(student.allAssignments) ? student.allAssignments : [];
+
+  const assignmentStatusBadge = (status: string) => {
+    switch (status) {
+      case 'evaluated':
+        return <Badge variant="success">Evaluated</Badge>;
+      case 'submitted':
+        return <Badge variant="warning">Pending Evaluation</Badge>;
+      default:
+        return <Badge variant="default">Not Submitted</Badge>;
+    }
+  };
+
+  const assignmentColumns = [
+    {
+      key: 'title',
+      title: 'Assignment',
+      render: (v: string, row: any) => (
+        <div>
+          <span className="font-bold text-slate-800 dark:text-white">{v}</span>
+          {row.type && <span className="block text-[10px] font-semibold text-slate-400 uppercase mt-0.5">{row.type}</span>}
+        </div>
+      ),
+    },
+    { key: 'subjectName', title: 'Subject', render: (v: string) => v || 'General' },
+    {
+      key: 'dueDate',
+      title: 'Due Date',
+      render: (v: string) => v ? new Date(v).toLocaleDateString() : '—',
+    },
+    {
+      key: 'marksObtained',
+      title: 'Marks',
+      render: (v: number | null, row: any) => row.status === 'evaluated'
+        ? <span className="font-bold text-slate-800 dark:text-white">{v}</span>
+        : <span className="text-slate-400">—</span>,
+    },
+    {
+      key: 'status',
+      title: 'Status',
+      render: (v: string) => assignmentStatusBadge(v),
+    },
+  ];
+
+  const assignmentAttemptedCount = allAssignments.filter((a: any) => a.status === 'evaluated' || a.status === 'submitted').length;
+  const assignmentNotAttemptedCount = allAssignments.filter((a: any) => a.status === 'not_attempted').length;
+
+  const assignmentTotalPages = Math.max(1, Math.ceil(allAssignments.length / assignmentPageSize));
+  const assignmentPageClamped = Math.min(assignmentPage, assignmentTotalPages);
+  const paginatedAssignments = allAssignments.slice(
+    (assignmentPageClamped - 1) * assignmentPageSize,
+    assignmentPageClamped * assignmentPageSize,
+  );
+
+  const reportCardsContent = (
+    <>
+      <div className="mb-6 flex justify-end">
         <button
           type="button"
           onClick={openAddPrevModal}
@@ -641,18 +753,6 @@ export default function StudentReportClasses() {
           <PlusCircle size={16} />
           Add Class Result
         </button>
-      </div>
-
-      <div className="bg-white dark:bg-slate-950 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/30 dark:shadow-none mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Student Profile</span>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white leading-tight">{student.name}</h1>
-          <p className="text-xs font-semibold text-slate-500 mt-1">Class: {currentClassName} | Roll No: {profile.rollNo || '—'}</p>
-        </div>
-        <div className="text-left sm:text-right">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Ongoing Term</span>
-          <Badge variant="purple">{currentAcademicYear}</Badge>
-        </div>
       </div>
 
       <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-6">
@@ -724,6 +824,106 @@ export default function StudentReportClasses() {
           No previous class results found on record.
         </div>
       )}
+    </>
+  );
+
+  const assessmentMarksContent = (
+    <>
+      <div className="mb-6 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest">
+          All Assessments
+        </h3>
+        <p className="text-xs font-semibold text-slate-500">
+          {attemptedCount} attempted &middot; {notAttemptedCount} not attempted &middot; {allAssessments.length} total
+        </p>
+      </div>
+      {allAssessments.length > 0 ? (
+        <GlassCard className="p-0 overflow-hidden">
+          <DataTable columns={assessmentColumns} data={paginatedAssessments} />
+          <DataTablePagination
+            page={assessmentPageClamped}
+            limit={assessmentPageSize}
+            total={allAssessments.length}
+            totalPages={assessmentTotalPages}
+            onPageChange={setAssessmentPage}
+            onLimitChange={(limit) => {
+              setAssessmentPageSize(limit);
+              setAssessmentPage(1);
+            }}
+          />
+        </GlassCard>
+      ) : (
+        <div className="text-center py-12 bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-3xl text-slate-500 font-bold">
+          No assessments have been scheduled for this student's class yet.
+        </div>
+      )}
+    </>
+  );
+
+  const assignmentsContent = (
+    <>
+      <div className="mb-6 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest">
+          All Assignments
+        </h3>
+        <p className="text-xs font-semibold text-slate-500">
+          {assignmentAttemptedCount} submitted &middot; {assignmentNotAttemptedCount} not submitted &middot; {allAssignments.length} total
+        </p>
+      </div>
+      {allAssignments.length > 0 ? (
+        <GlassCard className="p-0 overflow-hidden">
+          <DataTable columns={assignmentColumns} data={paginatedAssignments} />
+          <DataTablePagination
+            page={assignmentPageClamped}
+            limit={assignmentPageSize}
+            total={allAssignments.length}
+            totalPages={assignmentTotalPages}
+            onPageChange={setAssignmentPage}
+            onLimitChange={(limit) => {
+              setAssignmentPageSize(limit);
+              setAssignmentPage(1);
+            }}
+          />
+        </GlassCard>
+      ) : (
+        <div className="text-center py-12 bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-3xl text-slate-500 font-bold">
+          No assignments have been set for this student's class yet.
+        </div>
+      )}
+    </>
+  );
+
+  return (
+    <div className="student-report-classes pb-12 font-poppins">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold transition-colors text-sm"
+        >
+          <ArrowLeft size={16} />
+          Back to Reports
+        </button>
+      </div>
+
+      <div className="bg-white dark:bg-slate-950 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/30 dark:shadow-none mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Student Profile</span>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white leading-tight">{student.name}</h1>
+          <p className="text-xs font-semibold text-slate-500 mt-1">Class: {currentClassName} | Roll No: {profile.rollNo || '—'}</p>
+        </div>
+        <div className="text-left sm:text-right">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Ongoing Term</span>
+          <Badge variant="purple">{currentAcademicYear}</Badge>
+        </div>
+      </div>
+
+      <Tabs
+        tabs={[
+          { id: 'report-cards', label: 'Report Cards', icon: <FileText size={16} />, content: reportCardsContent },
+          { id: 'assessment-marks', label: 'Assessment Marks', icon: <ClipboardList size={16} />, content: assessmentMarksContent },
+          { id: 'assignments', label: 'Assignments', icon: <Calendar size={16} />, content: assignmentsContent },
+        ]}
+      />
 
       {isAddPrevOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>

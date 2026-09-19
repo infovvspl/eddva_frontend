@@ -121,7 +121,10 @@ function buildReviewRows(assessment, submission) {
 
     return {
       id: questionId,
-      number: question.displayNumber || question.number || index + 1,
+      // `number` is the question's position across the whole paper (1..N);
+      // `displayNumber` resets to 1 at each section boundary — `number` must
+      // win so numbering stays continuous across sections here.
+      number: question.number || question.displayNumber || index + 1,
       sectionTitle: question.sectionTitle || question.section || '',
       type: question.type || 'answer',
       text: question.text || `Question ${index + 1}`,
