@@ -106,7 +106,10 @@ const SupportTicketsPage = lazy(() => import("./pages/admin/SupportTicketsPage")
 const TeacherSupportTicketsPage = lazy(() => import("./pages/teacher/TeacherSupportTicketsPage"));
 const SuperAdminSupportTicketsPage = lazy(() => import("./pages/super-admin/SuperAdminSupportTicketsPage"));
 const SuperAdminLeadsPage = lazy(() => import("./pages/super-admin/LeadsPage"));
-const SuperAdminBlogPage = lazy(() => import("./pages/super-admin/BlogManagementPage"));
+// Blog admin panel has its own login, separate from the LMS entirely — see
+// pages/blog-admin and modules/blog-admin-auth on the backend.
+const BlogAdminLoginPage = lazy(() => import("./pages/blog-admin/BlogAdminLoginPage"));
+const BlogAdminDashboardPage = lazy(() => import("./pages/blog-admin/BlogAdminDashboardPage"));
 const CoachingTicketDetailPage = lazy(() => import("./pages/shared/CoachingTicketDetailPage"));
 const AdminCalendarPage = lazy(() => import("./pages/admin/AdminCalendarPage"));
 const TeacherCalendarPage = lazy(() => import("./pages/teacher/TeacherCalendarPage"));
@@ -702,7 +705,6 @@ const SuperAdminRoutes = () => (
       <Route path="/super-admin/tenants/:id/courses/:courseId" element={<SuperAdminCourseDetailPage />} />
       <Route path="/super-admin/users" element={<UsersPage />} />
       <Route path="/super-admin/leads" element={<SuperAdminLeadsPage />} />
-      <Route path="/super-admin/blog" element={<SuperAdminBlogPage />} />
       <Route path="/super-admin/enrollments" element={<EnrollmentsPage />} />
       <Route path="/super-admin/announcements" element={<Navigate to="/super-admin/communication" replace />} />
       <Route path="/super-admin/communication" element={<SuperAdminCommunication />} />
@@ -758,6 +760,8 @@ const TenantRoutes = () => (
     <Route path="/cookie-policy" element={<CookiePolicyPage />} />
     <Route path="/terms" element={<TermsOfServicePage />} />
     <Route path="/login" element={<LoginPage />} />
+    <Route path="/blog-admin/login" element={<BlogAdminLoginPage />} />
+    <Route path="/blog-admin" element={<BlogAdminDashboardPage />} />
     <Route path="/suspended" element={<SuspendedPage />} />
     <Route path="/register" element={<StudentRegisterPage />} />
     <Route path="/register-admin" element={<RegisterWithOtpPage />} />
@@ -816,6 +820,8 @@ const PlatformRoutes = () => (
     <Route path="/cookie-policy" element={<CookiePolicyPage />} />
     <Route path="/terms" element={<TermsOfServicePage />} />
     <Route path="/login" element={<LoginPage />} />
+    <Route path="/blog-admin/login" element={<BlogAdminLoginPage />} />
+    <Route path="/blog-admin" element={<BlogAdminDashboardPage />} />
     <Route path="/suspended" element={<SuspendedPage />} />
     <Route path="/register" element={<StudentRegisterPage />} />
     <Route path="/register-admin" element={<RegisterWithOtpPage />} />

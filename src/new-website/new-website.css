@@ -4875,6 +4875,19 @@ a.nw-abouthero__crumb:hover { color: var(--nw-blue); }
 .nw-bpost__section + .nw-bpost__section { margin-top: 32px; }
 .nw-bpost__h2 { font-size: 1.25rem; font-weight: 700; color: var(--nw-ink); margin-bottom: 12px; }
 .nw-bpost__p { font-size: 1rem; color: #334155; line-height: 1.85; }
+.nw-bpost__p + .nw-bpost__p,
+.nw-bpost__p + .nw-bpost__list,
+.nw-bpost__list + .nw-bpost__p { margin-top: 14px; }
+.nw-bpost__list { display: flex; flex-direction: column; gap: 8px; margin: 0; }
+.nw-bpost__list li {
+  position: relative; padding-left: 20px;
+  font-size: 1rem; color: #334155; line-height: 1.7;
+}
+.nw-bpost__list li::before {
+  content: ""; position: absolute; left: 4px; top: 0.75em;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--nw-bp-accent, var(--nw-blue));
+}
 
 .nw-bpost__cta-card {
   display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;

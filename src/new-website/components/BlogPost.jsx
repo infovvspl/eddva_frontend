@@ -7,6 +7,7 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Calendar, Clock, User } from "lucide-react";
 import { getCategoryStyle } from "../data/blogCategoryStyle";
+import renderBlogText from "../lib/renderBlogText";
 
 const formatDate = iso =>
   new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
@@ -67,7 +68,7 @@ const BlogPost = ({ post, allPosts = [] }) => {
           {sections.map(section => (
             <div className="nw-bpost__section" key={section.heading}>
               <h2 className="nw-bpost__h2">{section.heading}</h2>
-              <p className="nw-bpost__p">{section.body}</p>
+              {renderBlogText(section.body)}
             </div>
           ))}
 
