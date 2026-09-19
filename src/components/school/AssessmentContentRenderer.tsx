@@ -11,6 +11,58 @@ type AssessmentContentRendererProps = {
 };
 
 /**
+ * The AI generator occasionally repeats a section heading verbatim (or
+ * glues a second copy directly onto the previous sentence with no newline)
+ * — a generation glitch, not two different sections. Collapses any run of
+ * consecutive "## Section X" / "### Section X" headings that share the same
+ * section letter down to just the last (fullest) one, keeping genuinely
+ * different back-to-back sections (e.g. an empty Section B) intact.
+ */
+function dedupeSectionHeadings(text: string): string {
+  // Force every heading onto its own line first, even when the source glued
+  // it straight onto trailing punctuation from the previous line. The
+  // negative lookbehind keeps this from re-triggering on every "#" inside an
+  // already-multi-hash marker (e.g. "###" would otherwise also match at its
+  // own 2nd and 3rd characters, shredding the marker into lone "#" lines).
+  const spaced = text.replace(/(?<!#)[ \t]*(?=#{1,4}\s*Section\s+[A-E]\b)/gi, "\n\n");
+  const lines = spaced.split("\n");
+  const headingRe = /^#{1,4}\s*Section\s+([A-E])\b/i;
+  const output: string[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const trimmed = lines[i].trim();
+    const match = trimmed.match(headingRe);
+    if (!match) {
+      output.push(lines[i]);
+      i++;
+      continue;
+    }
+    const letter = match[1].toUpperCase();
+    let lastHeadingLine = trimmed;
+    let cursor = i;
+    let j = i + 1;
+    while (j < lines.length) {
+      const nextTrimmed = lines[j].trim();
+      if (!nextTrimmed) {
+        j++;
+        continue;
+      }
+      const nextMatch = nextTrimmed.match(headingRe);
+      if (nextMatch && nextMatch[1].toUpperCase() === letter) {
+        lastHeadingLine = nextTrimmed;
+        cursor = j;
+        j++;
+        continue;
+      }
+      break;
+    }
+    output.push("", lastHeadingLine);
+    i = cursor + 1;
+  }
+  return output.join("\n");
+}
+
+/**
  * Pre-processor for assessment paper / answer key text.
  *
  * Goals:
@@ -24,6 +76,8 @@ type AssessmentContentRendererProps = {
 function prepareAssessmentText(raw: string): string {
   let text = (raw || "").trim();
   if (!text) return text;
+
+  text = dedupeSectionHeadings(text);
 
   // Unescape double backslashes. Restricted to a backslash pair immediately followed by a letter
   // (a double-escaped command name, e.g. "\\text{Na}") — collapsing it unconditionally also
@@ -112,6 +166,16 @@ function prepareAssessmentText(raw: string): string {
     /((?:^|\n)\s*(?:Q\s*)?\d{1,3}[.)])\s*(?:\r?\n)+\s*(?!(?:[A-E][.):]\s*|\([A-E]\)\s*|Q?\d{1,3}[.)]\s*|#{1,6}\s|[-*+]\s))/gi,
     "$1 "
   );
+
+  // Renumber "Qn." markers sequentially across the WHOLE document (1, 2, 3, ...)
+  // instead of the authored numbering, which restarts at 1 in every section
+  // (Section A: Q1-Q3, Section B: Q1-Q3, ...). Only markers with a literal "Q"
+  // prefix are touched, so the separate bare-numbered "General Instructions"
+  // list is left alone. content_text and answer_key each get their own counter
+  // via their own AssessmentContentRenderer call, but since both list the same
+  // questions in the same section order, the two stay in sync.
+  let questionCounter = 0;
+  text = text.replace(/^Q\s*\d{1,3}(?=[.)])/gm, () => `Q${++questionCounter}`);
 
   // Escape the dot after line-starting numbers (1. -> 1\.) so Markdown renders
   // them as a single inline paragraph instead of an HTML <ol><li> list element.

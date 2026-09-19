@@ -19,7 +19,7 @@ const PageHead = ({ title, accent, lead, id, icon: Icon, color, bg, stats }) => 
     style={color ? { "--nw-ph-accent": color, "--nw-ph-bg": bg } : undefined}
   >
     <div className="nw-pagehead__container">
-      <nav className="nw-pagehead__crumbs" aria-label="Breadcrumb">
+      <nav className="nw-pagehead__crumbs nw-rise" style={{ "--nw-delay": "0s" }} aria-label="Breadcrumb">
         <Link to="/" className="nw-pagehead__crumb">Home</Link>
         <ChevronRight size={14} strokeWidth={2.2} aria-hidden="true" />
         <span className="nw-pagehead__crumb nw-pagehead__crumb--current" aria-current="page">
@@ -28,19 +28,19 @@ const PageHead = ({ title, accent, lead, id, icon: Icon, color, bg, stats }) => 
       </nav>
 
       {Icon && (
-        <span className="nw-pagehead__icon" aria-hidden="true">
+        <span className="nw-pagehead__icon nw-rise" style={{ "--nw-delay": "0.06s" }} aria-hidden="true">
           <Icon size={28} strokeWidth={1.8} />
         </span>
       )}
 
-      <h1 className="nw-pagehead__title">
+      <h1 className="nw-pagehead__title nw-rise" style={{ "--nw-delay": "0.12s" }}>
         {title} <span className="nw-pagehead__title-accent">{accent}</span>
       </h1>
 
-      {lead && <p className="nw-pagehead__lead">{lead}</p>}
+      {lead && <p className="nw-pagehead__lead nw-rise" style={{ "--nw-delay": "0.18s" }}>{lead}</p>}
 
       {stats && stats.length > 0 && (
-        <div className="nw-pagehead__stats">
+        <div className="nw-pagehead__stats nw-rise" style={{ "--nw-delay": "0.24s" }}>
           {stats.map(stat => (
             <div className="nw-pagehead__stat" key={stat.label}>
               <span className="nw-pagehead__stat-value">{stat.value}</span>

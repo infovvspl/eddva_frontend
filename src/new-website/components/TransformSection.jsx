@@ -1,5 +1,7 @@
 ﻿// TransformSection.jsx — New Website Mockup
 
+import { Link } from "react-router-dom";
+
 const features = [
   {
     id: "nw-feature-ai",
@@ -85,7 +87,7 @@ const TransformSection = () => {
 
         {/* CTA Buttons */}
         <div className="nw-transform__actions">
-          <a href="#nw-demo"    className="nw-transform__btn--filled"   id="nw-btn-demo">Book a Free Demo</a>
+          <Link to="/contact" className="nw-transform__btn--filled" id="nw-btn-demo">Book a Free Demo</Link>
           <a href="#nw-product" className="nw-transform__btn--outlined" id="nw-btn-explore">Explore Products</a>
         </div>
 

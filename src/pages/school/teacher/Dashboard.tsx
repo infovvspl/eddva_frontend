@@ -56,6 +56,49 @@ const getTeacherFallbackUrl = (n: any) => {
 
 const MAX_CLASS_CARDS_SHOWN = 4;
 
+// Today's Schedule timeline — shared by the desktop panel (in the banner
+// row) and the mobile/tablet panel (stacked below it, since the two never
+// show at the same time).
+const scheduleItems = [
+  { time: '09:00 AM', timeColor: '#1E293B', subject: 'Mathematics', meta: 'Class 10 - Section A', dot: '#10B981',
+    badge: (
+      <span className="flex items-center gap-1 text-[9px] sm:text-[10px] font-bold text-[#059669] bg-[#ECFDF5] px-2 py-1 rounded-full border border-[#D1FAE5]">
+        <div className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" /> Live
+      </span>
+    ) },
+  { time: '11:00 AM', timeColor: '#64748B', subject: 'Science', meta: 'Class 9 - Section A', dot: '#3B82F6',
+    badge: (
+      <span className="text-[9px] sm:text-[10px] font-bold text-[#2563EB] bg-[#EFF6FF] px-2 py-1 rounded-full border border-[#DBEAFE]">
+        Upcoming
+      </span>
+    ) },
+  { time: '02:00 PM', timeColor: '#64748B', subject: 'Assignment Review', meta: 'Class 10 - Section A', dot: '#9333EA',
+    badge: (
+      <span className="text-[9px] sm:text-[10px] font-bold text-[#9333EA] bg-[#FAF5FF] px-2 py-1 rounded-full border border-[#F3E8FF]">
+        Review
+      </span>
+    ) },
+];
+
+const ScheduleTimeline = () => (
+  <div className="relative pl-6 space-y-8">
+    <div className="absolute left-1 top-2 bottom-2 w-0.5 bg-slate-100" />
+    {scheduleItems.map((item) => (
+      <div className="relative" key={item.subject}>
+        <div className="absolute -left-[27px] top-1 w-3 h-3 rounded-full ring-4 ring-white" style={{ background: item.dot }} />
+        <div className="flex justify-between items-start">
+          <div>
+            <p className="text-[11px] font-bold mb-1" style={{ color: item.timeColor }}>{item.time}</p>
+            <p className="text-[14px] sm:text-[15px] font-bold text-[#112A46]">{item.subject}</p>
+            <p className="text-[10px] sm:text-[11px] font-medium text-[#64748B]">{item.meta}</p>
+          </div>
+          {item.badge}
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 const performanceData = [
   { name: 'Mon', score: 65 },
   { name: 'Tue', score: 72 },
@@ -223,57 +266,32 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
           <div className="p-5 sm:p-6 flex flex-col gap-6 flex-1">
-            {/* Timeline Items */}
-            <div className="relative pl-6 space-y-8">
-              <div className="absolute left-1 top-2 bottom-2 w-0.5 bg-slate-100" />
-
-              {/* Item 1 - Live */}
-              <div className="relative">
-                <div className="absolute -left-[27px] top-1 w-3 h-3 rounded-full bg-[#10B981] ring-4 ring-white" />
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-[11px] font-bold text-[#1E293B] mb-1">09:00 AM</p>
-                    <p className="text-[14px] sm:text-[15px] font-bold text-[#112A46]">Mathematics</p>
-                    <p className="text-[10px] sm:text-[11px] font-medium text-[#64748B]">Class 10 - Section A</p>
-                  </div>
-                  <span className="flex items-center gap-1 text-[9px] sm:text-[10px] font-bold text-[#059669] bg-[#ECFDF5] px-2 py-1 rounded-full border border-[#D1FAE5]">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" /> Live
-                  </span>
-                </div>
-              </div>
-
-              {/* Item 2 - Upcoming */}
-              <div className="relative">
-                <div className="absolute -left-[27px] top-1 w-3 h-3 rounded-full bg-[#3B82F6] ring-4 ring-white" />
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-[11px] font-bold text-[#64748B] mb-1">11:00 AM</p>
-                    <p className="text-[14px] sm:text-[15px] font-bold text-[#112A46]">Science</p>
-                    <p className="text-[10px] sm:text-[11px] font-medium text-[#64748B]">Class 9 - Section A</p>
-                  </div>
-                  <span className="text-[9px] sm:text-[10px] font-bold text-[#2563EB] bg-[#EFF6FF] px-2 py-1 rounded-full border border-[#DBEAFE]">
-                    Upcoming
-                  </span>
-                </div>
-              </div>
-
-              {/* Item 3 - Review */}
-              <div className="relative">
-                <div className="absolute -left-[27px] top-1 w-3 h-3 rounded-full bg-[#9333EA] ring-4 ring-white" />
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-[11px] font-bold text-[#64748B] mb-1">02:00 PM</p>
-                    <p className="text-[14px] sm:text-[15px] font-bold text-[#112A46]">Assignment Review</p>
-                    <p className="text-[10px] sm:text-[11px] font-medium text-[#64748B]">Class 10 - Section A</p>
-                  </div>
-                  <span className="text-[9px] sm:text-[10px] font-bold text-[#9333EA] bg-[#FAF5FF] px-2 py-1 rounded-full border border-[#F3E8FF]">
-                    Review
-                  </span>
-                </div>
-              </div>
-            </div>
+            <ScheduleTimeline />
           </div>
           <div className="p-4 border-t border-slate-100 bg-white mt-auto">
+            <button onClick={() => navigate('/school/teacher/timetable')} className="w-full text-[12px] sm:text-[13px] font-bold text-[#1C4ED8] hover:text-[#1E40AF] flex items-center justify-center gap-1 transition-colors">
+              View Full Calendar <ArrowRight size={16} />
+            </button>
+          </div>
+        </div>
+
+        {/* Today's Schedule — mobile/tablet counterpart to the panel above.
+            That one is `hidden` below lg (it's row-spanned against the
+            banner + overview grid, which only holds at lg+); below lg this
+            stacks as its own full-width card instead of disappearing. */}
+        <div className="lg:hidden rounded-[2rem] border border-slate-100 bg-white shadow-sm flex flex-col overflow-hidden">
+          <div className="p-5 sm:p-6 border-b border-slate-100 flex justify-between items-center bg-white">
+            <h3 className="text-[15px] sm:text-[17px] font-extrabold text-[#112A46] flex items-center gap-2">
+              <Calendar size={18} className="text-[#1C4ED8]" /> Today's Schedule
+            </h3>
+            <div className="text-[10px] sm:text-[11px] font-bold text-[#1C4ED8] bg-[#EFF6FF] px-2 sm:px-3 py-1 sm:py-1.5 rounded-full flex items-center gap-1 cursor-pointer hover:bg-blue-100 transition-colors">
+              <PlusCircle size={14} /> Add
+            </div>
+          </div>
+          <div className="p-5 sm:p-6">
+            <ScheduleTimeline />
+          </div>
+          <div className="p-4 border-t border-slate-100 bg-white">
             <button onClick={() => navigate('/school/teacher/timetable')} className="w-full text-[12px] sm:text-[13px] font-bold text-[#1C4ED8] hover:text-[#1E40AF] flex items-center justify-center gap-1 transition-colors">
               View Full Calendar <ArrowRight size={16} />
             </button>
@@ -430,7 +448,7 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-center gap-6 border-l border-slate-100 pl-6 h-full">
+                <div className="flex items-center justify-center gap-6 border-t sm:border-t-0 sm:border-l border-slate-100 pt-6 sm:pt-0 sm:pl-6 w-full sm:w-auto h-full">
                   <div className="relative w-28 h-28 shrink-0">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>

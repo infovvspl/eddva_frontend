@@ -28,12 +28,12 @@ const ContactHero = () => (
     }}
   >
     <div className="nw-chero__container">
-      <span className="nw-chero__eyebrow">We&rsquo;d Love to Hear From You</span>
-      <h1 className="nw-chero__title">
+      <span className="nw-chero__eyebrow nw-rise" style={{ "--nw-delay": "0s" }}>We&rsquo;d Love to Hear From You</span>
+      <h1 className="nw-chero__title nw-rise" style={{ "--nw-delay": "0.08s" }}>
         Get in <span className="nw-chero__title-accent">Touch</span>
       </h1>
       <span className="nw-chero__title-rule" aria-hidden="true" />
-      <p className="nw-chero__lead">
+      <p className="nw-chero__lead nw-rise" style={{ "--nw-delay": "0.16s" }}>
         Have questions, a demo request or a plan that fits your needs — we&rsquo;re
         just a message away. Our team will get back to you soon.
       </p>

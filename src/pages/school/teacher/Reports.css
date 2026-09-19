@@ -370,6 +370,10 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  /* Without a floor, this flex item shrinks to fit its selected label —
+     picking a short value (e.g. a section name) visibly shrinks the box
+     compared to a longer placeholder/previous selection. */
+  min-width: 160px;
 }
 
 .reports__filter-group label {

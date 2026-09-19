@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
+import { useState, useRef, useEffect, useMemo, forwardRef, useImperativeHandle } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 
 interface Option {
   value: string | number;
@@ -22,6 +22,12 @@ interface CustomSelectProps {
   placeholder?: string;
   /** Additional classes for the trigger button */
   triggerClassName?: string;
+  /** Adds a text filter above the option list — for long lists (parents, students, subjects) */
+  searchable?: boolean;
+  /** Placeholder for the search input; defaults to "Search..." */
+  searchPlaceholder?: string;
+  /** Shown in the menu when a search filters every option out */
+  noResultsText?: string;
 }
 
 export const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
@@ -35,10 +41,15 @@ export const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
   id,
   placeholder,
   triggerClassName,
+  searchable,
+  searchPlaceholder,
+  noResultsText,
 }: CustomSelectProps, forwardedRef) => {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dropUp, setDropUp] = useState(false);
+  const [query, setQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useImperativeHandle(forwardedRef, () => containerRef.current!);
 
@@ -90,6 +101,21 @@ export const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
     }
   }, [open]);
 
+  // Reset the filter each time the menu closes, and focus it each time it opens.
+  useEffect(() => {
+    if (open && searchable) {
+      setQuery("");
+      const id = window.setTimeout(() => searchInputRef.current?.focus(), 0);
+      return () => window.clearTimeout(id);
+    }
+  }, [open, searchable]);
+
+  const visibleOptions = useMemo(() => {
+    if (!searchable || !query.trim()) return options;
+    const q = query.trim().toLowerCase();
+    return options.filter((o) => o.label.toLowerCase().includes(q));
+  }, [options, searchable, query]);
+
   const selectedOption = options.find((o) => String(o.value) === String(value));
   const displayLabel = selectedOption?.label || placeholder || "Select...";
 
@@ -135,26 +161,51 @@ export const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
                 ? { bottom: coords?.bottom ?? 0 } 
                 : { top: coords?.top ?? 0 }),
             }}
-            className={`custom-select-menu z-[9999] rounded-lg sm:rounded-xl border border-slate-200 bg-white shadow-xl overflow-auto max-h-60 py-1 ${menuClassName || ""}`}
+            className={`custom-select-menu z-[9999] rounded-lg sm:rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden py-1 ${menuClassName || ""}`}
           >
-            {options.map((opt) => (
-              <button
-                key={String(opt.value)}
-                type="button"
-                disabled={opt.disabled}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSelect(opt.value);
-                }}
-                className={`w-full text-left px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm transition-colors whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed ${
-                  String(value) === String(opt.value)
-                    ? "bg-indigo-50 text-indigo-700 font-bold"
-                    : "text-slate-600 hover:bg-slate-50 font-medium"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
+            {searchable && (
+              <div className="sticky top-0 z-10 border-b border-slate-100 bg-white px-2 pb-1.5">
+                <div className="relative mt-1">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                  <input
+                    ref={searchInputRef}
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    placeholder={searchPlaceholder || "Search..."}
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-2 text-xs font-semibold text-slate-700 outline-none focus:border-indigo-400 focus:bg-white"
+                  />
+                </div>
+              </div>
+            )}
+            <div className="max-h-60 overflow-auto">
+              {visibleOptions.length === 0 ? (
+                <p className="px-3 py-4 text-center text-xs font-semibold text-slate-400">
+                  {noResultsText || "No matches"}
+                </p>
+              ) : (
+                visibleOptions.map((opt) => (
+                  <button
+                    key={String(opt.value)}
+                    type="button"
+                    disabled={opt.disabled}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelect(opt.value);
+                    }}
+                    className={`w-full text-left px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                      searchable ? "whitespace-normal break-words" : "whitespace-nowrap"
+                    } ${
+                      String(value) === String(opt.value)
+                        ? "bg-indigo-50 text-indigo-700 font-bold"
+                        : "text-slate-600 hover:bg-slate-50 font-medium"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))
+              )}
+            </div>
         </motion.div>,
         document.body
       )}

@@ -359,7 +359,10 @@ function buildStructuredAnswerRow(
   detail: any
 ): StructuredAnswerRow {
   const effectiveQuestion = getEffectiveQuestion(question);
-  const number = String(effectiveQuestion.displayNumber || effectiveQuestion.number || index + 1);
+  // `number` is the question's position across the whole paper (1..N); `displayNumber`
+  // is its position within its own section (resets to 1 at each section boundary).
+  // `number` must win so numbering stays continuous across sections here.
+  const number = String(effectiveQuestion.number || effectiveQuestion.displayNumber || index + 1);
   const submitted = hasSubmittedValue(value);
   const isObjective = ["mcq_single", "true_false", "fill_blank", "integer"].includes(effectiveQuestion.type);
   const correctAnswer = isObjective
