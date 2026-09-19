@@ -12,7 +12,7 @@ import {
   LayoutDashboard, ClipboardList, Library, Bell, BellOff,
   ChevronDown, ChevronLeft, Loader2, HelpCircle,
   Ticket, FileText, Shield, ToggleRight,
-  TrendingUp, Activity, Server, CreditCard,
+  TrendingUp, Activity, Server, CreditCard, Newspaper,
 } from "lucide-react";
 
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
@@ -83,6 +83,7 @@ const superAdminGroups = [
     items: [
       { path: "/super-admin/communication", label: "Communication", icon: Megaphone },
       { path: "/super-admin/leads", label: "Leads", icon: TrendingUp },
+      { path: "/super-admin/blog", label: "Blog", icon: Newspaper },
       { path: "/super-admin/complaints", label: "Support Tickets", icon: Ticket },
     ],
   },
@@ -120,6 +121,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "Dashboard", path: "/super-admin", icon: LayoutDashboard },
     { label: "Institutes", path: "/super-admin/tenants", icon: Building2 },
     { label: "Leads", path: "/super-admin/leads", icon: TrendingUp },
+    { label: "Blog", path: "/super-admin/blog", icon: Newspaper },
     { label: "Support Tickets", path: "/super-admin/support-tickets", icon: Ticket },
     { label: "Communication", path: "/super-admin/communication", icon: Megaphone },
     { label: "Analytics", path: "/super-admin/analytics", icon: BarChart3 },

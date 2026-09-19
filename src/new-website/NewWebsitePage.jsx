@@ -20,6 +20,7 @@ import ProductsSection from "./components/ProductsSection";
 import ServicesSection from "./components/ServicesSection";
 import MobileAppSection from "./components/MobileAppSection";
 import AchievementsSection from "./components/AchievementsSection";
+import BlogSection from "./components/BlogSection";
 import CtaBanner from "./components/CtaBanner";
 import Footer from "./components/Footer";
 import WhatsAppButton from "./components/WhatsAppButton";
@@ -39,6 +40,7 @@ const NewWebsitePage = () => {
         <AiFeaturesSection />
         <AchievementsSection />
         <MobileAppSection />
+        <BlogSection />
         <CtaBanner />
       </main>
       <Footer />

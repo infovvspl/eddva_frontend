@@ -36,6 +36,7 @@ const columns = [
       { id: "about",    label: "About Us", to: "/about" },
       { id: "products", label: "Products", to: "/products" },
       { id: "services", label: "Services", to: "/solution" },
+      { id: "blog",     label: "Blog",     to: "/blog" },
     ],
   },
   {

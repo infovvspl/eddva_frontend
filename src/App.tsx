@@ -53,6 +53,8 @@ const NewWebsiteAboutStoryPage = lazy(() => import("./new-website/pages/AboutSto
 const NewWebsiteProductsPage = lazy(() => import("./new-website/pages/ProductsPage"));
 const NewWebsiteSolutionPage = lazy(() => import("./new-website/pages/SolutionPage"));
 const NewWebsiteFaqPage = lazy(() => import("./new-website/pages/FaqPage"));
+const NewWebsiteBlogPage = lazy(() => import("./new-website/pages/BlogPage"));
+const NewWebsiteBlogDetailPage = lazy(() => import("./new-website/pages/BlogDetailPage"));
 const NewWebsiteInstitutionSolutionPage = lazy(() => import("./new-website/pages/InstitutionSolutionPage"));
 const NewWebsiteTeacherSolutionPage = lazy(() => import("./new-website/pages/TeacherSolutionPage"));
 const NewWebsiteStudentSolutionPage = lazy(() => import("./new-website/pages/StudentSolutionPage"));
@@ -104,6 +106,7 @@ const SupportTicketsPage = lazy(() => import("./pages/admin/SupportTicketsPage")
 const TeacherSupportTicketsPage = lazy(() => import("./pages/teacher/TeacherSupportTicketsPage"));
 const SuperAdminSupportTicketsPage = lazy(() => import("./pages/super-admin/SuperAdminSupportTicketsPage"));
 const SuperAdminLeadsPage = lazy(() => import("./pages/super-admin/LeadsPage"));
+const SuperAdminBlogPage = lazy(() => import("./pages/super-admin/BlogManagementPage"));
 const CoachingTicketDetailPage = lazy(() => import("./pages/shared/CoachingTicketDetailPage"));
 const AdminCalendarPage = lazy(() => import("./pages/admin/AdminCalendarPage"));
 const TeacherCalendarPage = lazy(() => import("./pages/teacher/TeacherCalendarPage"));
@@ -699,6 +702,7 @@ const SuperAdminRoutes = () => (
       <Route path="/super-admin/tenants/:id/courses/:courseId" element={<SuperAdminCourseDetailPage />} />
       <Route path="/super-admin/users" element={<UsersPage />} />
       <Route path="/super-admin/leads" element={<SuperAdminLeadsPage />} />
+      <Route path="/super-admin/blog" element={<SuperAdminBlogPage />} />
       <Route path="/super-admin/enrollments" element={<EnrollmentsPage />} />
       <Route path="/super-admin/announcements" element={<Navigate to="/super-admin/communication" replace />} />
       <Route path="/super-admin/communication" element={<SuperAdminCommunication />} />
@@ -783,6 +787,8 @@ const TenantRoutes = () => (
     <Route path="/solution/parents" element={<NewWebsiteParentSolutionPage />} />
     <Route path="/features/:slug" element={<NewWebsiteFeatureDetailPage />} />
     <Route path="/faq" element={<NewWebsiteFaqPage />} />
+    <Route path="/blog" element={<NewWebsiteBlogPage />} />
+    <Route path="/blog/:slug" element={<NewWebsiteBlogDetailPage />} />
     {/* Old dev URLs kept alive so nothing already pointing there 404s */}
     <Route path="/new-website/*" element={<Navigate to="/" replace />} />
     <Route path="/new-website" element={<Navigate to="/" replace />} />
@@ -836,6 +842,8 @@ const PlatformRoutes = () => (
     <Route path="/solution/parents" element={<NewWebsiteParentSolutionPage />} />
     <Route path="/features/:slug" element={<NewWebsiteFeatureDetailPage />} />
     <Route path="/faq" element={<NewWebsiteFaqPage />} />
+    <Route path="/blog" element={<NewWebsiteBlogPage />} />
+    <Route path="/blog/:slug" element={<NewWebsiteBlogDetailPage />} />
     {/* Old dev URLs kept alive so nothing already pointing there 404s */}
     <Route path="/new-website/*" element={<Navigate to="/" replace />} />
     <Route path="/new-website" element={<Navigate to="/" replace />} />

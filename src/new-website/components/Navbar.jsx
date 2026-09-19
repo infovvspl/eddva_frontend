@@ -50,6 +50,7 @@ const links = [
     ],
   },
   { id: "faq",      label: "FAQ",        to: "/faq" },
+  { id: "blog",     label: "Blog",       to: "/blog" },
   { id: "contact",  label: "Contact us", to: "/contact" },
 ];
 
