@@ -22,6 +22,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, ArrowRight } from "lucide-react";
 import { roleSolutions } from "../data/solutions";
+import useInView from "../hooks/useInView";
 
 const countFor = role =>
   role.groups.reduce((sum, group) => sum + group.items.length, 0);
@@ -48,6 +49,7 @@ const SolutionRoles = () => {
   );
 
   const toggle = id => setOpen(prev => ({ ...prev, [id]: !prev[id] }));
+  const [ref, inView] = useInView({ threshold: 0.1 });
 
   return (
     <section className="nw-roles" id="nw-solution-roles">
@@ -61,8 +63,8 @@ const SolutionRoles = () => {
           </p>
         </header>
 
-        <div className="nw-roles__list">
-          {roleSolutions.map(role => {
+        <div className={`nw-roles__list${inView ? " nw-in" : ""}`} ref={ref}>
+          {roleSolutions.map((role, i) => {
             const { id, title, blurb, Icon, color, bg, groups } = role;
             const dedicatedPage = DEDICATED_PAGE[id];
 
@@ -73,7 +75,7 @@ const SolutionRoles = () => {
                   className="nw-roles__item nw-roles__item--linkout"
                   key={id}
                   id={id}
-                  style={{ "--nw-role-accent": color, "--nw-role-bg": bg }}
+                  style={{ "--nw-role-accent": color, "--nw-role-bg": bg, "--i": i }}
                 >
                   <span className="nw-roles__icon" aria-hidden="true">
                     <Icon size={22} strokeWidth={1.8} />
@@ -99,7 +101,7 @@ const SolutionRoles = () => {
                 className={`nw-roles__item${isOpen ? " nw-open" : ""}`}
                 key={id}
                 id={id}
-                style={{ "--nw-role-accent": color, "--nw-role-bg": bg }}
+                style={{ "--nw-role-accent": color, "--nw-role-bg": bg, "--i": i }}
               >
                 <h3 className="nw-roles__head">
                   <button

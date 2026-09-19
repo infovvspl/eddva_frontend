@@ -31,16 +31,16 @@ export function AttentionRequiredWidget({ className }) {
 
       <div className="flex flex-col gap-3">
         {tasks.map((task, i) => (
-          <div key={i} className="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 transition-colors">
-            <div className="flex items-center gap-3">
+          <div key={i} className="flex items-center justify-between gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
               <div className={cn("w-9 h-9 rounded-full flex items-center justify-center shrink-0", task.bg, task.color)}>
                 <task.icon className="w-4 h-4" />
               </div>
-              <span className="text-sm font-semibold text-slate-700">{task.label}</span>
+              <span className="text-sm font-semibold text-slate-700 leading-snug">{task.label}</span>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4 shrink-0">
               <span className="font-bold text-rose-600">{task.count}</span>
-              <button className={cn("px-4 py-1.5 rounded-full text-xs font-bold transition-colors w-20 text-center", task.btn)}>
+              <button className={cn("px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-colors w-16 sm:w-20 text-center", task.btn)}>
                 {task.action}
               </button>
             </div>

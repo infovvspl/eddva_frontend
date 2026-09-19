@@ -7,9 +7,10 @@ import PageHead from "../components/PageHead";
 import RoleDetail from "../components/RoleDetail";
 import CtaBanner from "../components/CtaBanner";
 import Footer from "../components/Footer";
-import { roleSolutions } from "../data/solutions";
+import { roleSolutions, ROLE_PAGE_ACCENT } from "../data/solutions";
 
-const parents = roleSolutions.find(r => r.id === "nw-sol-parents");
+const parentsSource = roleSolutions.find(r => r.id === "nw-sol-parents");
+const parents = parentsSource && { ...parentsSource, ...ROLE_PAGE_ACCENT };
 const parentCapabilityCount = parents
   ? parents.groups.reduce((sum, group) => sum + group.items.length, 0)
   : 0;
