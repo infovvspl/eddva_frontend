@@ -9,8 +9,9 @@
  *   reads either a figure or a sentence, never "[DIAGRAM: a3f91c04]".
  *
  *   A WITHHELD DIAGRAM IS EXPLAINED. A student simply does not get the figure;
- *   a teacher needs to know which of the four reasons applies, because each
- *   has a different fix.
+ *   a teacher needs to know which reason applies, because each has a different
+ *   fix — and the two reasons that are about this screen rather than about the
+ *   paper must never be phrased as a fault in the marker.
  *
  * And the regression that matters most: a paper with no diagrams must come out
  * of this byte-identical.
@@ -88,7 +89,7 @@ describe('expandMarkersForPreview', () => {
     expect(out.markers[0].state).toBe('unknown');
   });
 
-  it('7. an empty or failed diagram list degrades to explanations, never raw markers', () => {
+  it('7. an empty list that loaded successfully degrades to explanations, never raw markers', () => {
     for (const list of [[], null, undefined]) {
       const out = expandMarkersForPreview(PAPER, list as any);
       expect(out.text).not.toContain('[DIAGRAM:');
@@ -153,5 +154,85 @@ describe('expandMarkersForPreview', () => {
   it('15. an empty paper stays empty', () => {
     expect(expandMarkersForPreview('', [record()]).text).toBe('');
     expect(expandMarkersForPreview(null as any, [record()]).text).toBe('');
+  });
+});
+
+// ── Not-yet-loaded is not the same as wrong (Phase 9.10) ────────────────────
+
+describe('the preview distinguishes a missing list from a missing diagram', () => {
+  /**
+   * The defect this closes: an empty list arrived in three situations — still
+   * loading, request failed, and genuinely no such diagram — and all three
+   * produced "does not match any diagram on this paper — check the key, or
+   * create the diagram". A teacher following that advice on a slow or broken
+   * connection would delete a correct marker and detach a real figure.
+   */
+  const ACCUSATION = /does not match any diagram/;
+
+  it('16. while the list is loading, the marker is not called into question', () => {
+    const out = expandMarkersForPreview(PAPER, [], 'loading');
+
+    expect(out.markers[0].state).toBe('loading');
+    expect(out.text).toContain('still loading');
+    expect(out.text).not.toMatch(ACCUSATION);
+    expect(out.text).not.toContain('[DIAGRAM:');
+    expect(out.text).not.toContain('![');
+  });
+
+  it('17. when the list request failed, the placeholder says so and clears the marker', () => {
+    const out = expandMarkersForPreview(PAPER, [], 'failed');
+
+    expect(out.markers[0].state).toBe('unavailable');
+    expect(out.text).toContain('could not be loaded');
+    expect(out.text).toContain('the marker itself is fine');
+    expect(out.text).not.toMatch(ACCUSATION);
+    expect(out.text).not.toContain('[DIAGRAM:');
+  });
+
+  it('18. once the list has loaded, an unknown key IS reported as a mistake', () => {
+    const out = expandMarkersForPreview(PAPER, [record({ markerKey: 'ffff9999' })], 'ready');
+
+    expect(out.markers[0].state).toBe('unknown');
+    expect(out.text).toMatch(ACCUSATION);
+  });
+
+  it('19. a loaded list with a valid diagram still renders the image', () => {
+    const out = expandMarkersForPreview(PAPER, [record()], 'ready');
+
+    expect(out.markers[0].state).toBe('shown');
+    expect(out.text).toContain('![Triangle ABC with AB marked](https://media.eddva.in/');
+    expect(out.text).not.toMatch(ACCUSATION);
+  });
+
+  it('20. a pending or failed list never resolves a marker, even if records are present', () => {
+    // Guards against a future refactor consulting the records first: whatever
+    // is in hand while the list is unsettled must not be treated as complete.
+    for (const state of ['loading', 'failed'] as const) {
+      const out = expandMarkersForPreview(PAPER, [record()], state);
+      expect(out.text).not.toContain('![');
+      expect(out.text).not.toMatch(ACCUSATION);
+    }
+  });
+
+  it('21. the list state defaults to ready, so existing callers are unchanged', () => {
+    expect(expandMarkersForPreview(PAPER, [record()]).markers[0].state).toBe('shown');
+    expect(expandMarkersForPreview(PAPER, []).markers[0].state).toBe('unknown');
+    expect(markerState(record())).toBe('shown');
+  });
+
+  it('22. a paper with no markers is byte-identical in every list state', () => {
+    const plain = '## Section A\n\n1. Define a rational number. [1]';
+    for (const state of ['loading', 'ready', 'failed'] as const) {
+      const out = expandMarkersForPreview(plain, [], state);
+      expect(out.text).toBe(plain);
+      expect(out.markers).toEqual([]);
+    }
+  });
+
+  it('23. neither new placeholder emits HTML', () => {
+    for (const state of ['loading', 'failed'] as const) {
+      const out = expandMarkersForPreview(PAPER, [], state);
+      expect(out.text).not.toMatch(/<\s*(img|svg|script|iframe)/i);
+    }
   });
 });

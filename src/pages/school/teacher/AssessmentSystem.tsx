@@ -25,7 +25,7 @@ import DiagramManager from "@/components/school/diagram/DiagramManager";
 import DiagramsButton from "@/components/school/diagram/DiagramsButton";
 import { insertMarkerAtCursor } from "@/components/school/diagram/marker-insert";
 import { diagramApi, type DiagramRecord } from "@/components/school/diagram/diagram-api";
-import { expandMarkersForPreview } from "@/components/school/diagram/expand-markers";
+import { expandMarkersForPreview, type PreviewListState } from "@/components/school/diagram/expand-markers";
 
 function normaliseType(value: any) {
   const type = String(value || "topic").trim().toLowerCase();
@@ -165,6 +165,7 @@ function ContentEditor({
   const [editorPage, setEditorPage] = useState<"questions" | "answerKey">("questions");
   const [showDiagrams, setShowDiagrams] = useState(false);
   const [diagramRecords, setDiagramRecords] = useState<DiagramRecord[]>([]);
+  const [diagramsState, setDiagramsState] = useState<PreviewListState>('loading');
   const questionsRef = React.useRef<HTMLTextAreaElement | null>(null);
 
   // The paper's diagrams, so the preview can show a figure where a marker sits
@@ -175,13 +176,17 @@ function ContentEditor({
   // it should say when the list could not be read.
   const reloadDiagrams = React.useCallback(() => {
     if (!assessmentId) {
+      // An unsaved test has no diagrams and never will until it is saved, so
+      // this is a settled answer rather than a missing one.
       setDiagramRecords([]);
+      setDiagramsState('ready');
       return;
     }
+    setDiagramsState('loading');
     diagramApi
       .list(assessmentId)
-      .then(setDiagramRecords)
-      .catch(() => setDiagramRecords([]));
+      .then((rows) => { setDiagramRecords(rows); setDiagramsState('ready'); })
+      .catch(() => { setDiagramRecords([]); setDiagramsState('failed'); });
   }, [assessmentId]);
 
   useEffect(() => { reloadDiagrams(); }, [reloadDiagrams]);
@@ -194,9 +199,13 @@ function ContentEditor({
   // What a student would be served, plus an explanation wherever they would be
   // served nothing. The server remains the authority on which diagrams reach a
   // student; this only mirrors that decision so a teacher can see it.
+  // The list state travels with the records. Without it an empty list reads as
+  // "this marker is wrong" whether the request failed, is still in flight, or
+  // genuinely returned nothing — and only the last of those is the teacher's
+  // to act on.
   const previewQuestions = useMemo(
-    () => expandMarkersForPreview(questions, diagramRecords).text,
-    [questions, diagramRecords],
+    () => expandMarkersForPreview(questions, diagramRecords, diagramsState).text,
+    [questions, diagramRecords, diagramsState],
   );
 
   // The marker lands on its own line after the line the cursor is in, so the

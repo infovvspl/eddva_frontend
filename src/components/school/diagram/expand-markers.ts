@@ -31,8 +31,23 @@ import type { DiagramRecord } from './diagram-api';
  */
 export const PREVIEW_MARKER_RE = /\[\s*DIAGRAM\s*:\s*([A-Za-z0-9]{4,16})\s*\]/gi;
 
+/**
+ * Whether the paper's diagram list is actually in hand.
+ *
+ * WITHOUT THIS, A MISSING LIST LOOKS LIKE A MISTAKEN MARKER. An empty list
+ * arrives in three different situations — the request has not answered yet,
+ * the request failed, and the paper genuinely has no such diagram — and only
+ * the third is the teacher's to fix. Collapsing them meant that a slow or
+ * failed request told the teacher, of every valid marker on the paper, that it
+ * "does not match any diagram — check the key, or create the diagram". Acting
+ * on that advice deletes a correct marker and detaches a real figure.
+ */
+export type PreviewListState = 'loading' | 'ready' | 'failed';
+
 /** Why a marker did not become a picture. */
-export type PreviewMarkerState = 'shown' | 'unapproved' | 'detached' | 'unrendered' | 'unknown';
+export type PreviewMarkerState =
+  | 'shown' | 'unapproved' | 'detached' | 'unrendered' | 'unknown'
+  | 'loading' | 'unavailable';
 
 export interface PreviewMarkerSummary {
   markerKey: string;
@@ -61,8 +76,19 @@ function safeAlt(record: DiagramRecord): string {
   return /diagram$/i.test(kind) ? kind : `${kind} diagram`;
 }
 
-/** The state of one marker, given the diagram it resolved to (or did not). */
-export function markerState(record: DiagramRecord | undefined): PreviewMarkerState {
+/**
+ * The state of one marker, given the diagram it resolved to (or did not).
+ *
+ * The list state is consulted FIRST. Until the list is actually in hand there
+ * is no basis on which to call a marker unknown, so a pending or failed
+ * lookup is reported as itself rather than as a fault in the paper.
+ */
+export function markerState(
+  record: DiagramRecord | undefined,
+  listState: PreviewListState = 'ready',
+): PreviewMarkerState {
+  if (listState === 'loading') return 'loading';
+  if (listState === 'failed') return 'unavailable';
   if (!record) return 'unknown';
   if (!record.url) return 'unrendered';
   if (record.detached) return 'detached';
@@ -74,12 +100,20 @@ export function markerState(record: DiagramRecord | undefined): PreviewMarkerSta
  * What the teacher reads in place of a figure that students will not get.
  *
  * A blockquote rather than an image: it is visibly not part of the question,
- * it renders through the existing blockquote styling, and it says which of the
- * four reasons applies so the fix is obvious. The marker key is included
- * because that is what a teacher matches against the diagram list.
+ * it renders through the existing blockquote styling, and it says which reason
+ * applies so the fix is obvious. The marker key is included because that is
+ * what a teacher matches against the diagram list.
+ *
+ * The first two reasons below are about THIS SCREEN, not about the paper. They
+ * say the preview cannot show figures right now and say nothing about the
+ * marker, because at that point nothing is known about it. Only `unknown`
+ * suggests changing the paper, and it is reachable solely when the list came
+ * back and genuinely had no such key.
  */
 function placeholder(markerKey: string, state: PreviewMarkerState): string {
   const reason: Record<Exclude<PreviewMarkerState, 'shown'>, string> = {
+    loading: 'the diagrams for this paper are still loading, so figures are not shown in this preview yet',
+    unavailable: 'the diagrams for this paper could not be loaded, so figures are not shown in this preview — the marker itself is fine',
     unapproved: 'waiting for your approval — students will not see it until you approve it',
     detached: 'not attached to this paper any more; insert its marker again from Diagrams to bring it back',
     unrendered: 'has no rendered image yet, so there is nothing to show',
@@ -98,6 +132,7 @@ function placeholder(markerKey: string, state: PreviewMarkerState): string {
 export function expandMarkersForPreview(
   text: string,
   records: DiagramRecord[] | null | undefined,
+  listState: PreviewListState = 'ready',
 ): PreviewExpansion {
   const source = String(text ?? '');
   const markers: PreviewMarkerSummary[] = [];
@@ -114,7 +149,7 @@ export function expandMarkersForPreview(
   const expanded = source.replace(pattern, (_match, rawKey: string) => {
     const markerKey = String(rawKey).toLowerCase();
     const record = byKey.get(markerKey);
-    const state = markerState(record);
+    const state = markerState(record, listState);
     markers.push({ markerKey, state });
     if (state === 'shown' && record) {
       return `![${safeAlt(record)}](${record.url})`;
