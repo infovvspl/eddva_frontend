@@ -183,7 +183,18 @@ export default function DiagramManager({ assessmentId, onInsertMarker, onClose }
         const updated = fresh.find((r) => r.markerKey === record.markerKey);
         if (updated) setMode({ type: 'edit', record: updated });
       }
-      toast.success(approved ? 'Diagram approved — it will appear on the paper.' : 'Approval withdrawn.');
+      if (!approved) {
+        toast.success('Approval withdrawn.');
+      } else if (record.warnings.length) {
+        // Approving is allowed — the points listed are things the checker
+        // cannot judge, not errors — but the teacher is told what they just
+        // took responsibility for rather than only having seen it beforehand.
+        toast.success(
+          `Diagram approved — it will appear on the paper. ${record.warnings.length} point(s) could not be verified; you have accepted them.`,
+        );
+      } else {
+        toast.success('Diagram approved — it will appear on the paper.');
+      }
     } catch (err: any) {
       const e = toDiagramError(err);
       toast.error(e.rejected ? e.errors.join(' ') : e.message);
@@ -235,8 +246,12 @@ export default function DiagramManager({ assessmentId, onInsertMarker, onClose }
     );
   }, [problem]);
 
+  const storedWarnings = mode.type === 'edit' ? mode.record.warnings : [];
   const warnings = preview?.warnings?.length ? preview.warnings
-    : (problem && problem.rejected ? problem.warnings : []);
+    : (problem && problem.rejected ? problem.warnings
+      // Nothing rendered yet in this session: fall back to what was recorded
+      // when the diagram was made, so opening an old one does not look clean.
+      : storedWarnings);
 
   return (
     <div className="space-y-4">
@@ -330,6 +345,21 @@ export default function DiagramManager({ assessmentId, onInsertMarker, onClose }
                       <p className="mt-1 text-[11px] text-gray-500">
                         Its marker is not in the paper. Insert it again to put it back — nothing was deleted.
                       </p>
+                    ) : null}
+                    {record.warnings.length ? (
+                      /* Recorded when the diagram was rendered, shown here
+                         because approval is what puts it in front of students
+                         and may happen long after it was drawn. */
+                      <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2">
+                        <p className="text-[11px] font-bold uppercase tracking-wide text-amber-800">
+                          Not verified — check before approving
+                        </p>
+                        <ul className="mt-1 list-disc space-y-0.5 pl-4">
+                          {record.warnings.map((w, i) => (
+                            <li key={i} className="text-[11px] text-amber-800">{w}</li>
+                          ))}
+                        </ul>
+                      </div>
                     ) : null}
                     <div className="mt-2 flex flex-wrap gap-2">
                       <Button type="button" size="sm" variant="outline" icon={<Copy size={13} />}

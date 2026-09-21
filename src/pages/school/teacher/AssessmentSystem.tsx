@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useConfirm } from "@/context/ConfirmContext";
 import {
-  FileText, Key, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, Shapes, BarChart3, ClipboardList, Target, Trophy, Clock
+  FileText, Key, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target, Trophy, Clock
 } from "lucide-react";
 import AssessmentContentRenderer from "@/components/school/AssessmentContentRenderer";
 import GlassCard from "@/components/school/GlassCard";
@@ -22,7 +22,10 @@ import "./AssessmentSystem.css";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { toUtcIsoDateTime } from "./assessment-utils";
 import DiagramManager from "@/components/school/diagram/DiagramManager";
+import DiagramsButton from "@/components/school/diagram/DiagramsButton";
 import { insertMarkerAtCursor } from "@/components/school/diagram/marker-insert";
+import { diagramApi, type DiagramRecord } from "@/components/school/diagram/diagram-api";
+import { expandMarkersForPreview } from "@/components/school/diagram/expand-markers";
 
 function normaliseType(value: any) {
   const type = String(value || "topic").trim().toLowerCase();
@@ -161,7 +164,40 @@ function ContentEditor({
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
   const [editorPage, setEditorPage] = useState<"questions" | "answerKey">("questions");
   const [showDiagrams, setShowDiagrams] = useState(false);
+  const [diagramRecords, setDiagramRecords] = useState<DiagramRecord[]>([]);
   const questionsRef = React.useRef<HTMLTextAreaElement | null>(null);
+
+  // The paper's diagrams, so the preview can show a figure where a marker sits
+  // instead of the marker's raw text. Refetched whenever the Diagrams panel
+  // closes, because that is when a teacher has just created, edited or
+  // approved one. A failure is silent on purpose: the preview then falls back
+  // to explaining that each marker resolved to nothing, which is exactly what
+  // it should say when the list could not be read.
+  const reloadDiagrams = React.useCallback(() => {
+    if (!assessmentId) {
+      setDiagramRecords([]);
+      return;
+    }
+    diagramApi
+      .list(assessmentId)
+      .then(setDiagramRecords)
+      .catch(() => setDiagramRecords([]));
+  }, [assessmentId]);
+
+  useEffect(() => { reloadDiagrams(); }, [reloadDiagrams]);
+
+  const closeDiagrams = () => {
+    setShowDiagrams(false);
+    reloadDiagrams();
+  };
+
+  // What a student would be served, plus an explanation wherever they would be
+  // served nothing. The server remains the authority on which diagrams reach a
+  // student; this only mirrors that decision so a teacher can see it.
+  const previewQuestions = useMemo(
+    () => expandMarkersForPreview(questions, diagramRecords).text,
+    [questions, diagramRecords],
+  );
 
   // The marker lands on its own line after the line the cursor is in, so the
   // teacher chooses the question rather than anything guessing it. The paper
@@ -171,7 +207,7 @@ function ContentEditor({
     const at = el ? el.selectionStart : questions.length;
     const next = insertMarkerAtCursor(questions, at, marker);
     onQuestionsChange(next.text);
-    setShowDiagrams(false);
+    closeDiagrams();
     setEditorPage("questions");
     setActiveTab("edit");
     window.requestAnimationFrame(() => {
@@ -211,17 +247,8 @@ function ContentEditor({
 
         {/* Quick Page Switcher Buttons */}
         <div className="flex items-center gap-2 pb-1">
-          {assessmentId && editorPage === "questions" ? (
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="border-violet-300 bg-violet-50 text-violet-800 hover:bg-violet-100 font-bold"
-              icon={<Shapes size={14} />}
-              onClick={() => setShowDiagrams(true)}
-            >
-              Diagrams
-            </Button>
+          {editorPage === "questions" ? (
+            <DiagramsButton assessmentId={assessmentId} onOpen={() => setShowDiagrams(true)} />
           ) : null}
           {editorPage === "questions" ? (
             <Button
@@ -300,7 +327,7 @@ function ContentEditor({
               </div>
               <div className="h-[45vh] overflow-y-auto rounded-lg bg-white p-6 border border-gray-100 shadow-inner">
                 {questions.trim() ? (
-                  <AssessmentContentRenderer>{questions}</AssessmentContentRenderer>
+                  <AssessmentContentRenderer>{previewQuestions}</AssessmentContentRenderer>
                 ) : (
                   <p className="text-sm text-gray-400 text-center py-12">The rendered question paper will appear here once questions are added.</p>
                 )}
@@ -329,14 +356,14 @@ function ContentEditor({
       {assessmentId && showDiagrams ? (
         <Modal
           isOpen
-          onClose={() => setShowDiagrams(false)}
+          onClose={closeDiagrams}
           title="Diagrams"
           size="xl"
         >
           <DiagramManager
             assessmentId={assessmentId}
             onInsertMarker={handleInsertMarker}
-            onClose={() => setShowDiagrams(false)}
+            onClose={closeDiagrams}
           />
         </Modal>
       ) : null}

@@ -50,6 +50,13 @@ export interface DiagramRecord {
   approvedAt: string | null;
   /** The teacher removed its marker from the paper. Never auto-deleted. */
   detached: boolean;
+  /**
+   * What the consistency checker could NOT establish about this drawing,
+   * recorded when it was rendered. An empty list means nothing was recorded —
+   * which for a diagram saved before these were stored is not the same as
+   * "nothing to check".
+   */
+  warnings: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -121,7 +128,13 @@ export const diagramApi = {
 
   async list(assessmentId: string): Promise<DiagramRecord[]> {
     const res = await api.get(base(assessmentId));
-    return Array.isArray(res.data?.data) ? res.data.data : [];
+    const rows = Array.isArray(res.data?.data) ? res.data.data : [];
+    // Normalised here so no caller has to guard it: a server predating the
+    // stored-warnings column simply omits the field.
+    return rows.map((row: any) => ({
+      ...row,
+      warnings: Array.isArray(row?.warnings) ? row.warnings.map(String) : [],
+    }));
   },
 
   /** Renders without storing anything and without approving anything. */

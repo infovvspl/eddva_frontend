@@ -431,3 +431,69 @@ describe('api helpers', () => {
     expect(src).toContain('%3Cscript%3E');
   });
 });
+
+// ── Caveats travel with the diagram (Phase 9.4) ─────────────────────────────
+
+describe('stored consistency warnings', () => {
+  /**
+   * Warnings used to live only in the editor session that produced them, and
+   * approval is usually a separate act, often days later and from this list.
+   * The teacher pulling the lever that puts a figure in front of students is
+   * the one who most needs to see what could not be checked.
+   */
+  const WARNED = {
+    ...PENDING,
+    id: 'row-9', markerKey: 'dd44ee55', marker: '[DIAGRAM: dd44ee55]',
+    altText: 'Chord with a measurement',
+    warnings: ['shapes: 1 measurement label(s) cannot be checked against the drawing'],
+  };
+
+  it('25. a diagram awaiting approval shows what could not be verified', async () => {
+    mockLoad([WARNED]);
+    renderManager();
+
+    expect(await screen.findByText('Not verified — check before approving')).toBeInTheDocument();
+    expect(
+      screen.getByText('shapes: 1 measurement label(s) cannot be checked against the drawing'),
+    ).toBeInTheDocument();
+  });
+
+  it('26. the caveat sits with the Approve control, not somewhere else', async () => {
+    mockLoad([WARNED]);
+    renderManager();
+
+    const item = (await screen.findByText('Not verified — check before approving')).closest('li');
+    expect(item).not.toBeNull();
+    expect(within(item as HTMLElement).getByRole('button', { name: /approve/i })).toBeInTheDocument();
+  });
+
+  it('27. a diagram with nothing to flag shows no warning block', async () => {
+    mockLoad([APPROVED]);
+    renderManager();
+
+    await screen.findByText('Approved');
+    expect(screen.queryByText('Not verified — check before approving')).toBeNull();
+  });
+
+  it('28. a server that sends no warnings field does not break the list', async () => {
+    // Every diagram created before the column existed comes back without it.
+    const { warnings: _dropped, ...legacy } = WARNED;
+    mockLoad([legacy]);
+    renderManager();
+
+    expect(await screen.findByText('Chord with a measurement')).toBeInTheDocument();
+    expect(screen.queryByText('Not verified — check before approving')).toBeNull();
+  });
+
+  it('29. approving a warned diagram says what was accepted', async () => {
+    mockLoad([WARNED]);
+    post.mockResolvedValue({ data: { data: { markerKey: WARNED.markerKey, approved: true } } });
+    renderManager();
+
+    await click(await screen.findByRole('button', { name: /approve/i }));
+    const { toast } = await import('sonner');
+    expect(toast.success).toHaveBeenCalledWith(
+      expect.stringContaining('could not be verified'),
+    );
+  });
+});
