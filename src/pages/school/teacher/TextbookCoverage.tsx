@@ -28,6 +28,8 @@ type Row = {
   materialId: string | null;
   pages: number | null;
   passages: number | null;
+  /** Diagrams cropped from this chapter's PDF. Absent on an older backend. */
+  figures?: number | null;
   method: string | null;
   quality: string | null;
   fileName: string | null;
@@ -498,18 +500,47 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
                                 {r.indexed && (
                                   <span className="hidden text-[11px] tabular-nums text-surface-400 sm:inline">
                                     {r.pages}p · {r.passages} passages{r.method === 'ocr' ? ' · scanned' : ''}
+                                    {/* Figures are what a generated paper can illustrate a
+                                        question with. Shown because "Ready" alone cannot tell
+                                        a chapter whose book has no diagrams from one indexed
+                                        before figures were extracted at all — both look
+                                        identical, and both produce a paper with no images. */}
+                                    {typeof r.figures === 'number' && (
+                                      <>
+                                        {' · '}
+                                        <span className={r.figures > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}>
+                                          {r.figures} figures
+                                        </span>
+                                      </>
+                                    )}
                                   </span>
                                 )}
                                 <span className={`rounded-md border px-1.5 py-0.5 text-[10px] font-bold ${isIndexingNow ? 'text-brand-700 bg-brand-50 border-brand-200 dark:text-brand-300 dark:bg-brand-950/40 dark:border-brand-900' : m.cls}`}>
                                   {isIndexingNow ? 'Reading…' : m.label}
                                 </span>
-                                {st === 'pending' && !isIndexingNow && (
+                                {/* A chapter already marked Ready used to offer nothing but
+                                    Replace, so refreshing one meant re-uploading its PDF.
+                                    Indexing improves over time — figure extraction is the
+                                    current example — and every chapter indexed before an
+                                    improvement stays stale until it is read again. */}
+                                {(st === 'pending' || st === 'ready') && !isIndexingNow && (
                                   <button
                                     onClick={() => indexOne(r)}
-                                    disabled={disableActions}
-                                    className="rounded-lg bg-brand-600 px-2 py-1 text-[11px] font-bold text-white disabled:opacity-50"
+                                    disabled={disableActions || !r.materialId}
+                                    title={
+                                      st === 'ready'
+                                        ? 'Read this book again — picks up figures and any other indexing improvements'
+                                        : 'Read this book and index it'
+                                    }
+                                    className={`rounded-lg px-2 py-1 text-[11px] font-bold disabled:opacity-50 ${
+                                      st === 'ready'
+                                        ? 'border border-surface-200 text-surface-600 hover:bg-surface-100 dark:border-surface-700 dark:text-surface-300'
+                                        : 'bg-brand-600 text-white'
+                                    }`}
                                   >
-                                    {busy === r.chapterId ? 'Reading…' : 'Index'}
+                                    {busy === r.chapterId
+                                      ? 'Reading…'
+                                      : st === 'ready' ? 'Re-index' : 'Index'}
                                   </button>
                                 )}
                                 <label

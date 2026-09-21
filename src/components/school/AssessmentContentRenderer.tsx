@@ -73,9 +73,50 @@ function dedupeSectionHeadings(text: string): string {
  *     break lines on certain browser/CSS list marker layouts).
  *  3. Preserve LaTeX delimiters so KaTeX renders equations ($V = s^3$).
  */
+/**
+ * Markdown images, pulled out before the text transformations below and put
+ * back afterwards.
+ *
+ * Every pass in prepareAssessmentText is written for exam prose and is actively
+ * harmful to a URL: the bare-underscore rule inserts a backslash inside the
+ * path, the "[p. 12]" citation cleanup eats bracketed alt text, and the
+ * LaTeX auto-wrapping treats a backslash or a digit-caret in a filename as
+ * maths. Chapter figures arrive as Markdown images, so they have to sit out
+ * every one of those passes.
+ */
+const IMAGE_TOKEN_RE = /!\[[^\]]*\]\([^)\s]+\)/g;
+
+function protectImages(text: string): { text: string; images: string[] } {
+  const images: string[] = [];
+  const masked = text.replace(IMAGE_TOKEN_RE, (match) => {
+    images.push(match);
+    // Deliberately plain letters and digits on their own line: no underscore
+    // for the escaping pass to touch, no bracket for the citation cleanup, no
+    // backslash or digit-caret for the LaTeX heuristics, and nothing that
+    // looks like a question number to the paragraph-splitting rules.
+    return `\n\nIMGTOKEN${images.length - 1}ENDIMG\n\n`;
+  });
+  return { text: masked, images };
+}
+
+function restoreImages(text: string, images: string[]): string {
+  if (!images.length) return text;
+  return text.replace(/IMGTOKEN(\d+)ENDIMG/g, (whole, index) => {
+    const image = images[Number(index)];
+    // Kept on their own lines so ReactMarkdown renders a block image rather
+    // than wedging it inside the question's paragraph.
+    return image ? `\n\n${image}\n\n` : whole;
+  });
+}
+
 function prepareAssessmentText(raw: string): string {
   let text = (raw || "").trim();
   if (!text) return text;
+
+  // Images are masked out FIRST, before any other pass can touch them: every
+  // heuristic below is written for exam prose and is hostile to a URL.
+  const protectedImages = protectImages(text);
+  text = protectedImages.text;
 
   text = dedupeSectionHeadings(text);
 
@@ -181,6 +222,9 @@ function prepareAssessmentText(raw: string): string {
   // them as a single inline paragraph instead of an HTML <ol><li> list element.
   text = text.replace(/^(\s*(?:Q\s*)?\d{1,3})\.(?!\s*[\$\\])/gm, "$1\\.");
 
+  text = restoreImages(text, protectedImages.images);
+  text = text.replace(/\n{3,}/g, "\n\n");
+
   return text;
 }
 
@@ -230,6 +274,21 @@ const assessmentComponents = {
   ),
   hr: ({ ...props }: any) => (
     <hr {...props} className="my-4 border-gray-200" />
+  ),
+  // Chapter figures. ReactMarkdown's default <img> carries no width constraint,
+  // so a 1200px crop would push the paper into horizontal scrolling; and since
+  // the surrounding <p> is the block that lays it out, the figure is centred
+  // and given a caption-ish max width rather than filling the column edge to
+  // edge. Lazy-loaded because a paper can carry a dozen of them.
+  img: ({ src, alt, ...props }: any) => (
+    <img
+      {...props}
+      src={src}
+      alt={alt || "Figure"}
+      loading="lazy"
+      className="my-3 mx-auto block h-auto max-w-full rounded border border-gray-200 bg-white"
+      style={{ maxHeight: "420px" }}
+    />
   ),
   blockquote: ({ children, ...props }: any) => (
     <blockquote {...props} className="my-3 border-l-4 border-gray-300 pl-4 text-sm text-gray-600 italic">
