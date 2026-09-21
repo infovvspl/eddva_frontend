@@ -48,8 +48,9 @@ function pageTitle(pathname, state) {
   if (/^\/school\/teacher\/course-content\/materials\/[^/]+$/.test(pathname)) return state?.materialTypeLabel || 'Material';
   if (/^\/school\/teacher\/reports\/student\/[^/]+(?:\/report-card)?$/.test(pathname)) return 'Reports';
   if (/\/school\/admin\/teachers\/[^/]+$/.test(pathname)) return 'Teacher Profile';
-  if (/\/school\/admin\/students\/[^/]+$/.test(pathname)) return 'Student Profile';
+  if (/\/school\/(?:admin|teacher)\/students\/[^/]+$/.test(pathname)) return 'Student Profile';
   if (/^\/school\/(?:teacher|admin)\/syllabus-planner\/[^/]+$/.test(pathname)) return state?.subjectName || 'Syllabus Plan';
+  if (/^\/school\/admin\/syllabus-tracker\/[^/]+$/.test(pathname)) return state?.subjectName || 'Syllabus Tracker';
   if (/^\/school\/teacher\/lesson-plans\/[^/]+$/.test(pathname)) return state?.subjectName || 'Lesson Plan';
   if (/^\/school\/admin\/subjects\/[^/]+$/.test(pathname)) return state?.className ? `${state.className} Subjects` : 'Class Subjects';
   if (/\/school\/(?:super-)?admin\/institutes\/[^/]+$/.test(pathname)) {
