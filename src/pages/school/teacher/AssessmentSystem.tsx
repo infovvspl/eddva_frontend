@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useConfirm } from "@/context/ConfirmContext";
 import {
-  FileText, Key, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target, Trophy, Clock
+  FileText, Key, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, Shapes, BarChart3, ClipboardList, Target, Trophy, Clock
 } from "lucide-react";
 import AssessmentContentRenderer from "@/components/school/AssessmentContentRenderer";
 import GlassCard from "@/components/school/GlassCard";
@@ -21,6 +21,8 @@ import { useAcademicStore } from "@/lib/academic-store";
 import "./AssessmentSystem.css";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { toUtcIsoDateTime } from "./assessment-utils";
+import DiagramManager from "@/components/school/diagram/DiagramManager";
+import { insertMarkerAtCursor } from "@/components/school/diagram/marker-insert";
 
 function normaliseType(value: any) {
   const type = String(value || "topic").trim().toLowerCase();
@@ -147,14 +149,38 @@ function ContentEditor({
   onQuestionsChange,
   answerKey,
   onAnswerKeyChange,
+  assessmentId,
 }: {
   questions: string;
   onQuestionsChange: (v: string) => void;
   answerKey: string;
   onAnswerKeyChange: (v: string) => void;
+  /** Present only for a saved assessment — diagrams belong to one. */
+  assessmentId?: string;
 }) {
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
   const [editorPage, setEditorPage] = useState<"questions" | "answerKey">("questions");
+  const [showDiagrams, setShowDiagrams] = useState(false);
+  const questionsRef = React.useRef<HTMLTextAreaElement | null>(null);
+
+  // The marker lands on its own line after the line the cursor is in, so the
+  // teacher chooses the question rather than anything guessing it. The paper
+  // is spliced at a line boundary, so nothing else changes.
+  const handleInsertMarker = (marker: string) => {
+    const el = questionsRef.current;
+    const at = el ? el.selectionStart : questions.length;
+    const next = insertMarkerAtCursor(questions, at, marker);
+    onQuestionsChange(next.text);
+    setShowDiagrams(false);
+    setEditorPage("questions");
+    setActiveTab("edit");
+    window.requestAnimationFrame(() => {
+      const box = questionsRef.current;
+      if (!box) return;
+      box.focus();
+      box.setSelectionRange(next.cursor, next.cursor);
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -185,6 +211,18 @@ function ContentEditor({
 
         {/* Quick Page Switcher Buttons */}
         <div className="flex items-center gap-2 pb-1">
+          {assessmentId && editorPage === "questions" ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="border-violet-300 bg-violet-50 text-violet-800 hover:bg-violet-100 font-bold"
+              icon={<Shapes size={14} />}
+              onClick={() => setShowDiagrams(true)}
+            >
+              Diagrams
+            </Button>
+          ) : null}
           {editorPage === "questions" ? (
             <Button
               type="button"
@@ -224,6 +262,7 @@ function ContentEditor({
                 </div>
               </div>
               <textarea
+                ref={questionsRef}
                 value={questions}
                 onChange={(e) => onQuestionsChange(e.target.value)}
                 placeholder="Type or paste the question paper here. Markdown supported (## Section A, 1. question, etc.)."
@@ -286,6 +325,21 @@ function ContentEditor({
           )}
         </div>
       )}
+
+      {assessmentId && showDiagrams ? (
+        <Modal
+          isOpen
+          onClose={() => setShowDiagrams(false)}
+          title="Diagrams"
+          size="xl"
+        >
+          <DiagramManager
+            assessmentId={assessmentId}
+            onInsertMarker={handleInsertMarker}
+            onClose={() => setShowDiagrams(false)}
+          />
+        </Modal>
+      ) : null}
     </div>
   );
 }
@@ -1398,6 +1452,7 @@ const AssessmentSystem: React.FC = () => {
                   onQuestionsChange={setContentText}
                   answerKey={answerKey}
                   onAnswerKeyChange={setAnswerKey}
+                  assessmentId={editingTest?.id}
                 />
               )}
 
@@ -1419,6 +1474,7 @@ const AssessmentSystem: React.FC = () => {
                     onQuestionsChange={setContentText}
                     answerKey={answerKey}
                     onAnswerKeyChange={setAnswerKey}
+                    assessmentId={editingTest?.id}
                   />
                 </div>
               )}
@@ -1546,6 +1602,7 @@ const AssessmentSystem: React.FC = () => {
                       onQuestionsChange={setContentText}
                       answerKey={answerKey}
                       onAnswerKeyChange={setAnswerKey}
+                      assessmentId={editingTest?.id}
                     />
                   )}
                 </div>
