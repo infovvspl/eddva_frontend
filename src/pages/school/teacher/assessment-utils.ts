@@ -38,6 +38,13 @@ export function percentage(marks: number, total: number) {
   return Math.round((marks / total) * 100);
 }
 
+// Keeps a teacher's marks entry within [0, total] — the <input max> attribute
+// alone doesn't stop someone from typing past it, so this is the actual guard.
+export function clampMarks(marks: number, total: number) {
+  if (!Number.isFinite(marks)) return 0;
+  return Math.min(Math.max(marks, 0), total);
+}
+
 export function gradeFromPercent(pct: number) {
   if (pct >= 90) return "A+";
   if (pct >= 75) return "A";
@@ -352,7 +359,10 @@ function buildStructuredAnswerRow(
   detail: any
 ): StructuredAnswerRow {
   const effectiveQuestion = getEffectiveQuestion(question);
-  const number = String(effectiveQuestion.displayNumber || effectiveQuestion.number || index + 1);
+  // `number` is the question's position across the whole paper (1..N); `displayNumber`
+  // is its position within its own section (resets to 1 at each section boundary).
+  // `number` must win so numbering stays continuous across sections here.
+  const number = String(effectiveQuestion.number || effectiveQuestion.displayNumber || index + 1);
   const submitted = hasSubmittedValue(value);
   const isObjective = ["mcq_single", "true_false", "fill_blank", "integer"].includes(effectiveQuestion.type);
   const correctAnswer = isObjective

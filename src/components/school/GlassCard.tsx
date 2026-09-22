@@ -10,7 +10,18 @@ interface GlassCardProps {
 
 const GlassCard: React.FC<GlassCardProps> = ({ children, className = '', hover = false, onClick }) => {
   return (
-    <div className={`glass-card ${hover ? 'glass-card--hover' : ''} ${className}`} onClick={onClick}>
+    <div
+      className={`glass-card ${hover ? 'glass-card--hover' : ''} ${className}`}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      } : undefined}
+    >
       {children}
     </div>
   );

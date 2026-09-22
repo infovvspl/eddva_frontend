@@ -58,6 +58,10 @@ const AttendanceSystem: React.FC = () => {
   const [sections, setSections] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [periods, setPeriods] = useState<any[]>([]);
+  // The institute's own configured periods (Admin Settings → Period Management) —
+  // used as the fallback period list instead of a fixed guess, so a school with a
+  // different period count/duration still sees its real periods, not made-up ones.
+  const [institutePeriods, setInstitutePeriods] = useState<{ value: string; label: string }[]>([]);
 
   // Selected values for Marking Attendance
   const [selectedClass, setSelectedClass] = useState('');
@@ -234,23 +238,38 @@ const AttendanceSystem: React.FC = () => {
     fetchSubjects();
   }, [selectedClass, selectedSection, user, editingSessionId]);
 
-const DEFAULT_PERIODS = [
-  { value: 'Period 1 (08:00 - 08:45)', label: 'Period 1 (08:00 - 08:45)' },
-  { value: 'Period 2 (08:45 - 09:30)', label: 'Period 2 (08:45 - 09:30)' },
-  { value: 'Period 3 (09:30 - 10:15)', label: 'Period 3 (09:30 - 10:15)' },
-  { value: 'Period 4 (10:15 - 11:00)', label: 'Period 4 (10:15 - 11:00)' },
-  { value: 'Period 5 (11:00 - 11:45)', label: 'Period 5 (11:00 - 11:45)' },
-  { value: 'Period 6 (11:45 - 12:30)', label: 'Period 6 (11:45 - 12:30)' },
-  { value: 'Period 7 (12:30 - 13:15)', label: 'Period 7 (12:30 - 13:15)' },
-  { value: 'Period 8 (13:15 - 14:00)', label: 'Period 8 (13:15 - 14:00)' },
-];
+  // The institute's real period configuration, used whenever there's no specific
+  // timetable slot to derive periods from (see fetchPeriods below).
+  useEffect(() => {
+    const fetchInstitutePeriods = async () => {
+      try {
+        const res = await api.get('/academic/periods');
+        const list = res.data?.data || [];
+        const options = list
+          .slice()
+          // Breaks/assembly/etc. aren't real class periods — exclude them so a
+          // teacher can't accidentally mark attendance against "Lunch Break".
+          .filter((p: any) => !p.periodType || p.periodType === 'Academic')
+          .sort((a: any, b: any) => Number(a.sequenceNo || 0) - Number(b.sequenceNo || 0))
+          .map((p: any) => {
+            const value = `Period ${p.sequenceNo} (${p.startTime} - ${p.endTime})`;
+            const label = p.periodName ? `${p.periodName} (${p.startTime} - ${p.endTime})` : value;
+            return { value, label };
+          });
+        setInstitutePeriods(options);
+      } catch (err) {
+        console.error('Failed to fetch institute periods:', err);
+      }
+    };
+    fetchInstitutePeriods();
+  }, []);
 
   // Fetch periods dynamically based on timetable
   useEffect(() => {
     const fetchPeriods = async () => {
       if (!selectedClass || !selectedSection || !date) {
-         setPeriods(DEFAULT_PERIODS);
-         if (!editingSessionId && !selectedPeriod) setSelectedPeriod(DEFAULT_PERIODS[0].value);
+         setPeriods(institutePeriods);
+         if (!editingSessionId && !selectedPeriod && institutePeriods.length > 0) setSelectedPeriod(institutePeriods[0].value);
          return;
       }
       try {
@@ -296,7 +315,7 @@ const DEFAULT_PERIODS = [
 
         let finalOptions = timetableOptions;
         if (finalOptions.length === 0) {
-           finalOptions = DEFAULT_PERIODS;
+           finalOptions = institutePeriods;
         }
 
         const uniquePeriodOptions = Array.from(new Map(finalOptions.map((item: any) => [item.value, item])).values());
@@ -317,12 +336,12 @@ const DEFAULT_PERIODS = [
         }
       } catch (err) {
         console.error('Failed to fetch periods:', err);
-        setPeriods(DEFAULT_PERIODS);
-        if (!selectedPeriod) setSelectedPeriod(DEFAULT_PERIODS[0].value);
+        setPeriods(institutePeriods);
+        if (!selectedPeriod && institutePeriods.length > 0) setSelectedPeriod(institutePeriods[0].value);
       }
     };
     fetchPeriods();
-  }, [selectedClass, selectedSection, selectedSubject, date, user, editingSessionId]);
+  }, [selectedClass, selectedSection, selectedSubject, date, user, editingSessionId, institutePeriods]);
 
   // Fetch History Records
   const fetchHistory = async () => {

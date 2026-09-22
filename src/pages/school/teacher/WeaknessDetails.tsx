@@ -23,6 +23,7 @@ const WeaknessDetails: React.FC = () => {
     studentPerformance?: any[];
     classId?: string;
     sectionId?: string;
+    subjectId?: string;
     subjectName?: string;
   } | null;
 
@@ -56,9 +57,19 @@ const WeaknessDetails: React.FC = () => {
   });
 
   // Filter students who are weak in this subject (topic)
+  const topicKey = String(topic || '').trim().toLowerCase();
   const weakStudents = scopedStudents.filter((student) => {
     const areas = Array.isArray(student.weakAreas) ? student.weakAreas : [];
-    return areas.some((area: string) => String(area || '').trim().toLowerCase() === String(topic || '').trim().toLowerCase());
+    return areas.some((area: any) => {
+      // Match by subject id first — the same subject can exist as more than
+      // one row in `subjects` (e.g. legacy "Maths" vs "Mathematics"), so a
+      // name-only match can miss a real weak area.
+      if (area && typeof area === 'object') {
+        if (stateData?.subjectId && area.subjectId) return String(area.subjectId) === String(stateData.subjectId);
+        return String(area.name || '').trim().toLowerCase() === topicKey;
+      }
+      return String(area || '').trim().toLowerCase() === topicKey;
+    });
   });
 
   // Filter based on search query
@@ -69,6 +80,13 @@ const WeaknessDetails: React.FC = () => {
   const totalClassStudents = scopedStudents.length || 1;
   const weakCount = weakStudents.length;
   const percentageAtRisk = Math.round((weakCount / totalClassStudents) * 100);
+  const classAverageScore = Math.round(
+    scopedStudents.reduce((acc, curr) => acc + (curr.avgScore || 0), 0) / totalClassStudents,
+  );
+  // StatCard only supports positive/negative/neutral tones — band the class
+  // average into one instead of the invalid "info" value it silently ignored.
+  const classAverageTone: 'positive' | 'negative' | 'neutral' =
+    classAverageScore >= 70 ? 'positive' : classAverageScore >= 40 ? 'neutral' : 'negative';
 
   const columns = [
     { 
@@ -105,12 +123,16 @@ const WeaknessDetails: React.FC = () => {
       )
     },
     {
-      key: 'strongAreas', 
-      title: 'Strong Areas', 
-      render: (v: string[]) => (
+      key: 'strongAreas',
+      title: 'Strong Areas',
+      render: (v: any[]) => (
         <div className="weakness-details__tags">
           {Array.isArray(v) && v.length > 0 ? (
-            v.map((a) => <Badge key={a} variant="success">{a}</Badge>)
+            v.map((a) => {
+              const label = a && typeof a === 'object' ? a.name : a;
+              const key = a && typeof a === 'object' ? (a.subjectId || a.name) : a;
+              return <Badge key={key} variant="success">{label}</Badge>;
+            })
           ) : (
             <span className="text-gray-400 text-xs">-</span>
           )}
@@ -152,12 +174,12 @@ const WeaknessDetails: React.FC = () => {
               icon={<AlertTriangle size={24} />} 
               gradient="var(--gradient-warm)"
             />
-            <StatCard 
-              title="Class Average" 
-              value={`${Math.round(scopedStudents.reduce((acc, curr) => acc + (curr.avgScore || 0), 0) / totalClassStudents)}%`}
-              change="Overall" 
-              changeType="info"
-              icon={<GraduationCap size={24} />} 
+            <StatCard
+              title="Class Average"
+              value={`${classAverageScore}%`}
+              change="Overall"
+              changeType={classAverageTone}
+              icon={<GraduationCap size={24} />}
             />
             <StatCard 
               title="Assigned Students" 

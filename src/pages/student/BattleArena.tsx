@@ -224,11 +224,17 @@ interface BattleResult {
 function MathText({ text }: { text: string }) {
   const parts: React.ReactNode[] = [];
 
-  // Normalize mangled LaTeX from AI
+  // Normalize mangled LaTeX from AI.
+  // "$$" as a replacement STRING is JS's own escape for a single literal "$" (like $&, $1), so
+  // this silently produced "$" instead of "$$" — a function replacer avoids that gotcha.
+  // The backslash-pair collapse below is restricted to one followed by a letter (a double-escaped
+  // command name, e.g. "\\text{Na}") — collapsing it unconditionally also destroyed the genuine
+  // LaTeX row-separator "\\" inside \begin{cases}/array/matrix (followed by whitespace/newline,
+  // never a letter), silently running a system of equations onto one line.
   let normalized = String(text || "")
-    .replace(/\\\[/g, "$$").replace(/\\\]/g, "$$")
+    .replace(/\\\[/g, () => "$$").replace(/\\\]/g, () => "$$")
     .replace(/\\\(/g, "$").replace(/\\\)/g, "$")
-    .replace(/\\\\/g, "\\")
+    .replace(/\\\\(?=[a-zA-Z])/g, "\\")
     .replace(/\x0C/g, "\\f")
     .replace(/\x0B/g, "\\v")
     .replace(/\x07/g, "\\a")

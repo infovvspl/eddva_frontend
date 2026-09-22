@@ -551,7 +551,7 @@ const AssessmentSubmissionReview: React.FC = () => {
                                     return (
                                       <div
                                         key={optionId || option.text}
-                                        className={`rounded-md border px-3 py-2 text-xs font-semibold ${
+                                        className={`flex items-center gap-2 rounded-md border px-3 py-2 text-xs font-semibold ${
                                           correct
                                             ? "border-emerald-300 bg-emerald-50 text-emerald-800"
                                             : selected
@@ -559,8 +559,8 @@ const AssessmentSubmissionReview: React.FC = () => {
                                               : "border-gray-200 bg-white text-gray-600"
                                         }`}
                                       >
-                                        {showLabel && <span className="mr-2 font-black uppercase">{label}</span>}
-                                        {optionText}
+                                        {showLabel && <span className="shrink-0 font-black uppercase">{label}</span>}
+                                        <AssessmentContentRenderer className="min-w-0 flex-1 [&_p]:my-0 [&_p]:text-xs [&_p]:font-semibold [&_p]:text-inherit [&_p]:leading-5">{optionText}</AssessmentContentRenderer>
                                       </div>
                                     );
                                   })}

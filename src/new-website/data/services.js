@@ -55,14 +55,16 @@ export const services = [
   },
 ];
 
+// Order: Institute Admin, Teachers, Students, Parents — matches the order
+// used for the same four stakeholders in data/solutions.js.
 export const stakeholders = [
   {
-    id: "nw-sh-students",
-    title: "Students",
-    desc: "Personalized learning paths, progress tracking & more.",
-    Icon: Users,
-    color: "#1a56db",
-    bg: "#eff6ff",
+    id: "nw-sh-admin",
+    title: "Institute Admin",
+    desc: "Streamlined operations, data & decision-making.",
+    Icon: ShieldCheck,
+    color: "#dc2626",
+    bg: "#fff1f2",
   },
   {
     id: "nw-sh-teachers",
@@ -73,19 +75,19 @@ export const stakeholders = [
     bg: "#ecfeff",
   },
   {
+    id: "nw-sh-students",
+    title: "Students",
+    desc: "Personalized learning paths, progress tracking & more.",
+    Icon: Users,
+    color: "#1a56db",
+    bg: "#eff6ff",
+  },
+  {
     id: "nw-sh-parents",
     title: "Parents",
     desc: "Real-time updates, communication & performance reports.",
     Icon: UserRound,
     color: "#16a34a",
     bg: "#f0fdf4",
-  },
-  {
-    id: "nw-sh-admin",
-    title: "Institute Admin",
-    desc: "Streamlined operations, data & decision-making.",
-    Icon: ShieldCheck,
-    color: "#dc2626",
-    bg: "#fff1f2",
   },
 ];

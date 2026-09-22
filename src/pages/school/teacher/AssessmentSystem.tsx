@@ -21,6 +21,11 @@ import { useAcademicStore } from "@/lib/academic-store";
 import "./AssessmentSystem.css";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { toUtcIsoDateTime } from "./assessment-utils";
+import DiagramManager from "@/components/school/diagram/DiagramManager";
+import DiagramsButton from "@/components/school/diagram/DiagramsButton";
+import { insertMarkerAtCursor } from "@/components/school/diagram/marker-insert";
+import { diagramApi, type DiagramRecord } from "@/components/school/diagram/diagram-api";
+import { expandMarkersForPreview, type PreviewListState } from "@/components/school/diagram/expand-markers";
 
 function normaliseType(value: any) {
   const type = String(value || "topic").trim().toLowerCase();
@@ -147,14 +152,80 @@ function ContentEditor({
   onQuestionsChange,
   answerKey,
   onAnswerKeyChange,
+  assessmentId,
 }: {
   questions: string;
   onQuestionsChange: (v: string) => void;
   answerKey: string;
   onAnswerKeyChange: (v: string) => void;
+  /** Present only for a saved assessment — diagrams belong to one. */
+  assessmentId?: string;
 }) {
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
   const [editorPage, setEditorPage] = useState<"questions" | "answerKey">("questions");
+  const [showDiagrams, setShowDiagrams] = useState(false);
+  const [diagramRecords, setDiagramRecords] = useState<DiagramRecord[]>([]);
+  const [diagramsState, setDiagramsState] = useState<PreviewListState>('loading');
+  const questionsRef = React.useRef<HTMLTextAreaElement | null>(null);
+
+  // The paper's diagrams, so the preview can show a figure where a marker sits
+  // instead of the marker's raw text. Refetched whenever the Diagrams panel
+  // closes, because that is when a teacher has just created, edited or
+  // approved one. A failure is silent on purpose: the preview then falls back
+  // to explaining that each marker resolved to nothing, which is exactly what
+  // it should say when the list could not be read.
+  const reloadDiagrams = React.useCallback(() => {
+    if (!assessmentId) {
+      // An unsaved test has no diagrams and never will until it is saved, so
+      // this is a settled answer rather than a missing one.
+      setDiagramRecords([]);
+      setDiagramsState('ready');
+      return;
+    }
+    setDiagramsState('loading');
+    diagramApi
+      .list(assessmentId)
+      .then((rows) => { setDiagramRecords(rows); setDiagramsState('ready'); })
+      .catch(() => { setDiagramRecords([]); setDiagramsState('failed'); });
+  }, [assessmentId]);
+
+  useEffect(() => { reloadDiagrams(); }, [reloadDiagrams]);
+
+  const closeDiagrams = () => {
+    setShowDiagrams(false);
+    reloadDiagrams();
+  };
+
+  // What a student would be served, plus an explanation wherever they would be
+  // served nothing. The server remains the authority on which diagrams reach a
+  // student; this only mirrors that decision so a teacher can see it.
+  // The list state travels with the records. Without it an empty list reads as
+  // "this marker is wrong" whether the request failed, is still in flight, or
+  // genuinely returned nothing — and only the last of those is the teacher's
+  // to act on.
+  const previewQuestions = useMemo(
+    () => expandMarkersForPreview(questions, diagramRecords, diagramsState).text,
+    [questions, diagramRecords, diagramsState],
+  );
+
+  // The marker lands on its own line after the line the cursor is in, so the
+  // teacher chooses the question rather than anything guessing it. The paper
+  // is spliced at a line boundary, so nothing else changes.
+  const handleInsertMarker = (marker: string) => {
+    const el = questionsRef.current;
+    const at = el ? el.selectionStart : questions.length;
+    const next = insertMarkerAtCursor(questions, at, marker);
+    onQuestionsChange(next.text);
+    closeDiagrams();
+    setEditorPage("questions");
+    setActiveTab("edit");
+    window.requestAnimationFrame(() => {
+      const box = questionsRef.current;
+      if (!box) return;
+      box.focus();
+      box.setSelectionRange(next.cursor, next.cursor);
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -185,6 +256,9 @@ function ContentEditor({
 
         {/* Quick Page Switcher Buttons */}
         <div className="flex items-center gap-2 pb-1">
+          {editorPage === "questions" ? (
+            <DiagramsButton assessmentId={assessmentId} onOpen={() => setShowDiagrams(true)} />
+          ) : null}
           {editorPage === "questions" ? (
             <Button
               type="button"
@@ -224,6 +298,7 @@ function ContentEditor({
                 </div>
               </div>
               <textarea
+                ref={questionsRef}
                 value={questions}
                 onChange={(e) => onQuestionsChange(e.target.value)}
                 placeholder="Type or paste the question paper here. Markdown supported (## Section A, 1. question, etc.)."
@@ -261,7 +336,7 @@ function ContentEditor({
               </div>
               <div className="h-[45vh] overflow-y-auto rounded-lg bg-white p-6 border border-gray-100 shadow-inner">
                 {questions.trim() ? (
-                  <AssessmentContentRenderer>{questions}</AssessmentContentRenderer>
+                  <AssessmentContentRenderer>{previewQuestions}</AssessmentContentRenderer>
                 ) : (
                   <p className="text-sm text-gray-400 text-center py-12">The rendered question paper will appear here once questions are added.</p>
                 )}
@@ -286,6 +361,21 @@ function ContentEditor({
           )}
         </div>
       )}
+
+      {assessmentId && showDiagrams ? (
+        <Modal
+          isOpen
+          onClose={closeDiagrams}
+          title="Diagrams"
+          size="xl"
+        >
+          <DiagramManager
+            assessmentId={assessmentId}
+            onInsertMarker={handleInsertMarker}
+            onClose={closeDiagrams}
+          />
+        </Modal>
+      ) : null}
     </div>
   );
 }
@@ -1398,6 +1488,7 @@ const AssessmentSystem: React.FC = () => {
                   onQuestionsChange={setContentText}
                   answerKey={answerKey}
                   onAnswerKeyChange={setAnswerKey}
+                  assessmentId={editingTest?.id}
                 />
               )}
 
@@ -1419,6 +1510,7 @@ const AssessmentSystem: React.FC = () => {
                     onQuestionsChange={setContentText}
                     answerKey={answerKey}
                     onAnswerKeyChange={setAnswerKey}
+                    assessmentId={editingTest?.id}
                   />
                 </div>
               )}
@@ -1546,6 +1638,7 @@ const AssessmentSystem: React.FC = () => {
                       onQuestionsChange={setContentText}
                       answerKey={answerKey}
                       onAnswerKeyChange={setAnswerKey}
+                      assessmentId={editingTest?.id}
                     />
                   )}
                 </div>

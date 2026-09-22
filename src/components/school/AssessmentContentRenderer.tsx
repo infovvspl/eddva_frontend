@@ -11,6 +11,58 @@ type AssessmentContentRendererProps = {
 };
 
 /**
+ * The AI generator occasionally repeats a section heading verbatim (or
+ * glues a second copy directly onto the previous sentence with no newline)
+ * — a generation glitch, not two different sections. Collapses any run of
+ * consecutive "## Section X" / "### Section X" headings that share the same
+ * section letter down to just the last (fullest) one, keeping genuinely
+ * different back-to-back sections (e.g. an empty Section B) intact.
+ */
+function dedupeSectionHeadings(text: string): string {
+  // Force every heading onto its own line first, even when the source glued
+  // it straight onto trailing punctuation from the previous line. The
+  // negative lookbehind keeps this from re-triggering on every "#" inside an
+  // already-multi-hash marker (e.g. "###" would otherwise also match at its
+  // own 2nd and 3rd characters, shredding the marker into lone "#" lines).
+  const spaced = text.replace(/(?<!#)[ \t]*(?=#{1,4}\s*Section\s+[A-E]\b)/gi, "\n\n");
+  const lines = spaced.split("\n");
+  const headingRe = /^#{1,4}\s*Section\s+([A-E])\b/i;
+  const output: string[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const trimmed = lines[i].trim();
+    const match = trimmed.match(headingRe);
+    if (!match) {
+      output.push(lines[i]);
+      i++;
+      continue;
+    }
+    const letter = match[1].toUpperCase();
+    let lastHeadingLine = trimmed;
+    let cursor = i;
+    let j = i + 1;
+    while (j < lines.length) {
+      const nextTrimmed = lines[j].trim();
+      if (!nextTrimmed) {
+        j++;
+        continue;
+      }
+      const nextMatch = nextTrimmed.match(headingRe);
+      if (nextMatch && nextMatch[1].toUpperCase() === letter) {
+        lastHeadingLine = nextTrimmed;
+        cursor = j;
+        j++;
+        continue;
+      }
+      break;
+    }
+    output.push("", lastHeadingLine);
+    i = cursor + 1;
+  }
+  return output.join("\n");
+}
+
+/**
  * Pre-processor for assessment paper / answer key text.
  *
  * Goals:
@@ -21,12 +73,58 @@ type AssessmentContentRendererProps = {
  *     break lines on certain browser/CSS list marker layouts).
  *  3. Preserve LaTeX delimiters so KaTeX renders equations ($V = s^3$).
  */
+/**
+ * Markdown images, pulled out before the text transformations below and put
+ * back afterwards.
+ *
+ * Every pass in prepareAssessmentText is written for exam prose and is actively
+ * harmful to a URL: the bare-underscore rule inserts a backslash inside the
+ * path, the "[p. 12]" citation cleanup eats bracketed alt text, and the
+ * LaTeX auto-wrapping treats a backslash or a digit-caret in a filename as
+ * maths. Chapter figures arrive as Markdown images, so they have to sit out
+ * every one of those passes.
+ */
+const IMAGE_TOKEN_RE = /!\[[^\]]*\]\([^)\s]+\)/g;
+
+function protectImages(text: string): { text: string; images: string[] } {
+  const images: string[] = [];
+  const masked = text.replace(IMAGE_TOKEN_RE, (match) => {
+    images.push(match);
+    // Deliberately plain letters and digits on their own line: no underscore
+    // for the escaping pass to touch, no bracket for the citation cleanup, no
+    // backslash or digit-caret for the LaTeX heuristics, and nothing that
+    // looks like a question number to the paragraph-splitting rules.
+    return `\n\nIMGTOKEN${images.length - 1}ENDIMG\n\n`;
+  });
+  return { text: masked, images };
+}
+
+function restoreImages(text: string, images: string[]): string {
+  if (!images.length) return text;
+  return text.replace(/IMGTOKEN(\d+)ENDIMG/g, (whole, index) => {
+    const image = images[Number(index)];
+    // Kept on their own lines so ReactMarkdown renders a block image rather
+    // than wedging it inside the question's paragraph.
+    return image ? `\n\n${image}\n\n` : whole;
+  });
+}
+
 function prepareAssessmentText(raw: string): string {
   let text = (raw || "").trim();
   if (!text) return text;
 
-  // Unescape double backslashes
-  text = text.replace(/\\\\/g, "\\");
+  // Images are masked out FIRST, before any other pass can touch them: every
+  // heuristic below is written for exam prose and is hostile to a URL.
+  const protectedImages = protectImages(text);
+  text = protectedImages.text;
+
+  text = dedupeSectionHeadings(text);
+
+  // Unescape double backslashes. Restricted to a backslash pair immediately followed by a letter
+  // (a double-escaped command name, e.g. "\\text{Na}") — collapsing it unconditionally also
+  // destroys the genuine LaTeX row-separator "\\" inside \begin{cases}/array/matrix (followed by
+  // whitespace/newline, never a letter), silently running a system of equations onto one line.
+  text = text.replace(/\\\\(?=[a-zA-Z])/g, "\\");
 
   // Convert LaTeX delimiters \[ \] and \( \) to $$ and $ for remark-math / KaTeX parsing
   text = text
@@ -110,9 +208,22 @@ function prepareAssessmentText(raw: string): string {
     "$1 "
   );
 
+  // Renumber "Qn." markers sequentially across the WHOLE document (1, 2, 3, ...)
+  // instead of the authored numbering, which restarts at 1 in every section
+  // (Section A: Q1-Q3, Section B: Q1-Q3, ...). Only markers with a literal "Q"
+  // prefix are touched, so the separate bare-numbered "General Instructions"
+  // list is left alone. content_text and answer_key each get their own counter
+  // via their own AssessmentContentRenderer call, but since both list the same
+  // questions in the same section order, the two stay in sync.
+  let questionCounter = 0;
+  text = text.replace(/^Q\s*\d{1,3}(?=[.)])/gm, () => `Q${++questionCounter}`);
+
   // Escape the dot after line-starting numbers (1. -> 1\.) so Markdown renders
   // them as a single inline paragraph instead of an HTML <ol><li> list element.
   text = text.replace(/^(\s*(?:Q\s*)?\d{1,3})\.(?!\s*[\$\\])/gm, "$1\\.");
+
+  text = restoreImages(text, protectedImages.images);
+  text = text.replace(/\n{3,}/g, "\n\n");
 
   return text;
 }
@@ -163,6 +274,21 @@ const assessmentComponents = {
   ),
   hr: ({ ...props }: any) => (
     <hr {...props} className="my-4 border-gray-200" />
+  ),
+  // Chapter figures. ReactMarkdown's default <img> carries no width constraint,
+  // so a 1200px crop would push the paper into horizontal scrolling; and since
+  // the surrounding <p> is the block that lays it out, the figure is centred
+  // and given a caption-ish max width rather than filling the column edge to
+  // edge. Lazy-loaded because a paper can carry a dozen of them.
+  img: ({ src, alt, ...props }: any) => (
+    <img
+      {...props}
+      src={src}
+      alt={alt || "Figure"}
+      loading="lazy"
+      className="my-3 mx-auto block h-auto max-w-full rounded border border-gray-200 bg-white"
+      style={{ maxHeight: "420px" }}
+    />
   ),
   blockquote: ({ children, ...props }: any) => (
     <blockquote {...props} className="my-3 border-l-4 border-gray-300 pl-4 text-sm text-gray-600 italic">

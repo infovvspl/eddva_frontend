@@ -3,11 +3,14 @@
 
 import { Link } from "react-router-dom";
 import { CalendarDays, ArrowRight } from "lucide-react";
+import useInView from "../hooks/useInView";
 
 const CtaBanner = () => {
+  const [ref, inView] = useInView({ threshold: 0.3 });
+
   return (
-    <section className="nw-cta" id="nw-demo">
-      <div className="nw-cta__container">
+    <section className="nw-cta" id="nw-demo" ref={ref}>
+      <div className={`nw-cta__container${inView ? " nw-in" : ""}`}>
 
         <div className="nw-cta__left">
           <div className="nw-cta__icon" aria-hidden="true">

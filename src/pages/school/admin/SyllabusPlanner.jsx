@@ -407,7 +407,7 @@ export default function SyllabusPlanner() {
   };
 
   const handleDeletePlan = async (id) => {
-    if (!window.confirm('Are you sure you want to remove this allocated syllabus target?')) return;
+    if (!window.confirm('Remove this syllabus plan? This also permanently deletes all recorded chapter/topic progress for it — this cannot be undone.')) return;
     try {
       await api.delete(`/syllabus/plans/${id}`);
       toast.success('Target removed successfully');
@@ -931,7 +931,7 @@ export default function SyllabusPlanner() {
                     <SyllabusPlanCard
                       key={plan.id}
                       plan={plan}
-                      onViewPlan={(p) => navigate(`/school/admin/syllabus-planner/${p.id}`)}
+                      onViewPlan={(p) => navigate(`/school/admin/syllabus-planner/${p.id}`, { state: { subjectName: p.subject_name || p.subjectName } })}
                       onEdit={handleOpenEdit}
                       onDelete={handleDeletePlan}
                     />

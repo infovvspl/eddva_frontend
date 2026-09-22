@@ -29,6 +29,7 @@ import {
 import { submitLead } from "../../lib/api/leads";
 import { socials } from "../data/socials";
 import { emails, emailFor, PHONE, ADDRESS, HOURS } from "../data/contact";
+import useInView from "../hooks/useInView";
 
 // Schools and coaching institutes have separate mailboxes, so both are listed
 // with the label that says which is which.
@@ -89,6 +90,7 @@ const validate = form => {
 };
 
 const ContactSection = () => {
+  const [cardRef, cardInView] = useInView({ threshold: 0.15 });
   const [form, setForm] = useState(EMPTY);
   const [touched, setTouched] = useState({});
   const [status, setStatus] = useState("idle"); // idle | sending | sent | error
@@ -156,7 +158,7 @@ const ContactSection = () => {
   return (
     <section className="nw-contactp" id="nw-contact-page">
       <div className="nw-contactp__container">
-        <div className="nw-contactp__card">
+        <div className={`nw-contactp__card${cardInView ? " nw-in" : ""}`} ref={cardRef}>
 
           {/* ── Reach us ── */}
           <aside className="nw-contactp__aside">

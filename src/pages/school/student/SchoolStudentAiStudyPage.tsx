@@ -105,7 +105,12 @@ function normalizeAiMessage(message: unknown): string {
 
 function normalizeLessonMarkdown(md: string): string {
   return String(md || "")
-    .replace(/\\\\/g, "\\")
+    // Restricted to a backslash pair immediately followed by a letter (a double-JSON-escaped
+    // command name, e.g. "\\text{Na}" meaning "\text{Na}") — collapsing it unconditionally also
+    // destroyed the genuine LaTeX row-separator "\\" inside \begin{cases}/array/matrix (which is
+    // followed by whitespace/a newline, never a letter), silently running a system of equations
+    // onto one line. Same fix as MarkdownRenderer.tsx's identical first-pass unescape.
+    .replace(/\\\\(?=[a-zA-Z])/g, "\\")
     .replace(/\\\[((?:.|\n)*?)\\\]/g, (_m, inner) => `\n\n$$${inner}$$\n\n`)
     .replace(/\\\(((?:.|\n)*?)\\\)/g, (_m, inner) => `$${inner}$`)
     .replace(

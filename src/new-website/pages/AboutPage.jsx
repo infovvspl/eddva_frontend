@@ -1,32 +1,31 @@
 // AboutPage.jsx — route: /about
 // Sub-page of the new website mockup. Shares only the chrome (TopBar, Navbar,
-// PageHead, Footer) with the other surfaces — every body section here is
-// built for this page. The copy is the same, pulled from src/data;
-// the layouts are not the home page's.
+// Footer) with the other surfaces — every body section here is built for
+// this page.
 //
-// WhoWeAreSection was written but never mounted on the one-pager, so it is
-// unique to this page. Its section id was "nw-about" — the same id
-// AboutSection uses — and is now "nw-who".
+// AboutHero replaces the shared PageHead here: this page wants a photo
+// banner, not PageHead's stat-strip layout. AboutPillars ("Empowering
+// Education. Enriching Futures.") is the one section carried over unchanged
+// from the previous draft. WhoWeAreSection, PlatformStats and AwardsTimeline
+// moved out of this page (AwardsTimeline and PlatformStats are still mounted
+// on the one-pager; WhoWeAreSection is now unmounted everywhere but kept —
+// see that file) in favour of FounderSection, TeamSection and ValuesSection,
+// matching the live dev.eddva.in design this page was out of sync with.
 //
-// The full "About Us" narrative (AboutStory — Our Vision, Our Promise) used
-// to close this page directly; it now has its own page at /about/story, and
-// this page links out to it instead — see AboutStoryLink.
+// The full "About Us" narrative (AboutStory — Our Vision, Our Promise) lives
+// at /about/story; AboutHero's "Our Story" button links out to it, replacing
+// the old AboutStoryLink closing band with PartOfChangeCta.
 import { useEffect } from "react";
 import "../new-website.css";
 import TopBar from "../components/TopBar";
 import Navbar from "../components/Navbar";
-import PageHead from "../components/PageHead";
+import AboutHero from "../components/AboutHero";
 import AboutPillars from "../components/AboutPillars";
-import WhoWeAreSection from "../components/WhoWeAreSection";
-import AwardsTimeline from "../components/AwardsTimeline";
-import AboutStoryLink from "../components/AboutStoryLink";
-import PlatformStats from "../components/PlatformStats";
+import FounderSection from "../components/FounderSection";
+import TeamSection from "../components/TeamSection";
+import ValuesSection from "../components/ValuesSection";
+import PartOfChangeCta from "../components/PartOfChangeCta";
 import Footer from "../components/Footer";
-import { products } from "../data/products";
-import { erpModules } from "../data/erpModules";
-import { lmsModules } from "../data/lmsModules";
-import { features } from "../data/features";
-import { GraduationCap } from "lucide-react";
 
 const AboutPage = () => {
   useEffect(() => { window.scrollTo(0, 0); }, []);
@@ -36,25 +35,12 @@ const AboutPage = () => {
       <TopBar />
       <Navbar />
       <main>
-        <PageHead
-          id="nw-about-head"
-          title="About"
-          accent="EDDVA"
-          lead="Built for the future of education — AI, automation and analytics in one platform."
-          icon={GraduationCap}
-          color="#1a56db"
-          bg="#eaf1fd"
-          stats={[
-            { value: products.length, label: "Products" },
-            { value: erpModules.length + lmsModules.length, label: "Modules" },
-            { value: features.length, label: "AI Features" },
-          ]}
-        />
+        <AboutHero />
         <AboutPillars />
-        <WhoWeAreSection />
-        <PlatformStats />
-        <AwardsTimeline />
-        <AboutStoryLink />
+        <FounderSection />
+        <TeamSection />
+        <ValuesSection />
+        <PartOfChangeCta />
       </main>
       <Footer />
     </div>

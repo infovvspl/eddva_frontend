@@ -37,6 +37,18 @@ const statusMeta = {
   },
 };
 
+function sortByNewest(list, dateField = 'createdAt') {
+  return [...list].sort((a, b) => new Date(b[dateField] || 0) - new Date(a[dateField] || 0));
+}
+
+// "All" mixes answered and unanswered doubts, so it orders by whichever is more
+// recent for each one — resolvedAt (when the teacher replied) or createdAt (when
+// asked) — rather than always the ask time, which would bury a just-answered doubt.
+function sortByActivity(list) {
+  const activityDate = (d) => new Date(d.resolvedAt || d.createdAt || 0).getTime();
+  return [...list].sort((a, b) => activityDate(b) - activityDate(a));
+}
+
 function parseAiAnswer(raw) {
   if (!raw) return null;
   let str = raw.trim();
@@ -151,14 +163,14 @@ function DoubtCard({
               <div className="space-y-3">
                 {viewMode === 'brief' && (
                   <MarkdownRenderer
-                    content={parsedAi.brief?.final_answer || parsedAi.detailed?.explanation || ''}
+                    content={parsedAi.brief?.answer || parsedAi.detailed?.solution || ''}
                     className="prose-slate max-w-none prose-sm"
                   />
                 )}
                 {viewMode === 'detailed' && (
                   <>
                     <MarkdownRenderer
-                      content={parsedAi.detailed?.explanation || ''}
+                      content={parsedAi.detailed?.solution || parsedAi.brief?.answer || ''}
                       className="prose-slate max-w-none prose-sm"
                     />
                     {parsedAi.detailed?.final_answer && (
@@ -312,15 +324,18 @@ export default function DoubtQueue() {
   }, [load]);
 
   const pendingList = useMemo(
-    () => doubts.filter((d) => ['escalated', 'open', 'ai_answered'].includes(d.status)),
+    () => sortByNewest(doubts.filter((d) => ['escalated', 'open', 'ai_answered'].includes(d.status))),
     [doubts],
   );
   const answeredList = useMemo(
-    () => doubts.filter((d) => d.status === 'teacher_answered'),
+    // Most recently *answered* first — resolvedAt is set when the teacher replies,
+    // so this doesn't just echo the original ask order like createdAt would.
+    () => sortByNewest(doubts.filter((d) => d.status === 'teacher_answered'), 'resolvedAt'),
     [doubts],
   );
+  const allList = useMemo(() => sortByActivity(doubts), [doubts]);
   const shown =
-    tab === 'pending' ? pendingList : tab === 'answered' ? answeredList : doubts;
+    tab === 'pending' ? pendingList : tab === 'answered' ? answeredList : allList;
 
   const submitReply = async (id) => {
     if (replyText.trim().length < 5 && !replyImageUrl) return;

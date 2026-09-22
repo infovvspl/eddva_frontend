@@ -11,19 +11,14 @@ import { ArrowRight, Check } from "lucide-react";
 import { services } from "../data/services";
 import useInView from "../hooks/useInView";
 
-// Institutes, Schools and Universities all get their full breakdown on the
-// one combined page (pages/InstitutionSolutionPage) — each panel here links
-// to its own section there via hash. Teachers, Students and Parents each
-// have a full dedicated page of their own instead.
-const DEDICATED_PAGE = {
-  "nw-svc-institutes": "/solution/institutions#nw-svc-institutes",
-  "nw-svc-schools": "/solution/institutions#nw-svc-schools",
-  "nw-svc-universities": "/solution/institutions#nw-svc-universities",
-};
-
+// Institutes, Schools and Universities used to each link out to their own
+// section on /solution/institutions ("Full breakdown") — that page is now
+// the Institute Admin *role* page instead (matching Teachers/Students/
+// Parents), so it no longer has type-specific sections to link to. Each
+// panel here already shows everything there is for that institution type,
+// so there's nothing left to break out to; only "Talk to us" remains.
 const Panel = ({ service, index }) => {
   const { id, title, desc, covers, Icon, color, bg } = service;
-  const dedicatedPage = DEDICATED_PAGE[id];
   const [ref, inView] = useInView({ threshold: 0.2 });
 
   return (
@@ -57,12 +52,6 @@ const Panel = ({ service, index }) => {
         </ul>
 
         <div className="nw-aud__actions">
-          {dedicatedPage && (
-            <Link to={dedicatedPage} className="nw-aud__more" id={`${id}-audience-more`}>
-              Full breakdown
-              <ArrowRight size={14} strokeWidth={2.5} />
-            </Link>
-          )}
           <Link to="/contact" className="nw-aud__cta" id={`${id}-audience-cta`}>
             Talk to us
             <ArrowRight size={15} strokeWidth={2.5} />

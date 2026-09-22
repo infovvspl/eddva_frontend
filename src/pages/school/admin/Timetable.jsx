@@ -1,4 +1,5 @@
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Clock, Plus, Edit2, Trash2, MapPin, Users, Settings, AlertCircle, Search, ChevronDown } from 'lucide-react';
 import api from '@/lib/api/school-client';
@@ -41,6 +42,11 @@ export default function Timetable() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterSubject, setFilterSubject] = useState('');
+  // Class/Section filters local to the "Scheduled Timetable Slots" list — kept
+  // separate from filterClass above (shared by the Period-wise Teacher Map)
+  // so filtering one doesn't affect the other.
+  const [slotsFilterClass, setSlotsFilterClass] = useState('');
+  const [slotsFilterSection, setSlotsFilterSection] = useState('');
   const [activeDay, setActiveDay] = useState(() => {
     const todayIndex = new Date().getDay();
     return todayIndex === 0 ? 'MONDAY' : dayNames[todayIndex];
@@ -82,6 +88,12 @@ export default function Timetable() {
   }, []);
   const [liveTeacherSearch, setLiveTeacherSearch] = useState('');
 
+  // Pagination for the two long lists below: Live Teacher Status ("All Classes")
+  // and the day's Scheduled Timetable Slots.
+  const TIMETABLE_PAGE_SIZE = 8;
+  const [liveTeacherPage, setLiveTeacherPage] = useState(1);
+  const [scheduledSlotsPage, setScheduledSlotsPage] = useState(1);
+
   const confirm = useConfirm();
 
   useEffect(() => { fetchTimetables(); }, []);
@@ -90,6 +102,9 @@ export default function Timetable() {
     return () => window.clearInterval(timer);
   }, []);
   useEffect(() => { setFilterPeriod(''); }, [activeDay]);
+  useEffect(() => { setLiveTeacherPage(1); }, [selectedLiveTeacherId]);
+  useEffect(() => { setScheduledSlotsPage(1); }, [activeDay, slotsFilterClass, slotsFilterSection]);
+  useEffect(() => { setSlotsFilterSection(''); }, [slotsFilterClass]);
 
   useEffect(() => {
     if (!loading && !hasInitializedDefaultDay) {
@@ -474,13 +489,14 @@ export default function Timetable() {
     } finally { setIsSubmitting(false); }
   };
 
-  const handleAssignIdleTeacher = (teacher, period) => {
+  const handleAssignIdleTeacher = (teacher, period, subjectId) => {
     const matchedPeriod = allPeriods.find(p => String(p.id) === String(period.key) || String(p.sequenceNo) === String(period.periodNumber));
     const prefill = {
       dayOfWeek: activeDay,
       periodId: matchedPeriod ? matchedPeriod.id : (period.key.length > 5 ? period.key : ''),
       periodNumber: matchedPeriod ? String(matchedPeriod.sequenceNo) : String(period.periodNumber || '1'),
       teacherId: teacher.profileId || teacher.id,
+      subjectId: subjectId || '',
       startTime: period.startTime,
       endTime: period.endTime
     };
@@ -576,6 +592,7 @@ export default function Timetable() {
           name,
           profileId: teacher.teacherProfile?.id,
           userId: teacher.id,
+          subjects: Array.isArray(teacher.subjects) ? teacher.subjects : [],
         });
       }
     });
@@ -594,6 +611,15 @@ export default function Timetable() {
   const classes = isTeacher && assignedClasses.length ? assignedClasses : timetableClasses;
   const subjects = Array.from(new Set(visibleTimetables.map((t) => t.subject?.name).filter(Boolean))).sort();
   const types = Array.from(new Set(visibleTimetables.map((t) => t.type || 'offline').filter(Boolean))).sort();
+  // Section options for the Scheduled Timetable Slots filter, narrowed to the selected class.
+  const slotsSections = Array.from(
+    new Set(
+      sections
+        .filter((sec) => !slotsFilterClass || sec.className === slotsFilterClass)
+        .map((sec) => sec.name)
+        .filter(Boolean)
+    )
+  ).sort();
   const periodOptions = useMemo(() => {
     const map = new Map();
     visibleTimetables
@@ -710,10 +736,25 @@ export default function Timetable() {
         const idle = schoolTeachers
           .filter((teacher) => !engagedKeys.has(String(teacher.id)))
           .filter((teacher) => !filterTeacher || teacher.name === filterTeacher);
+        // Idle teachers grouped by the subjects actually being taught this period —
+        // "who could cover this period" for a substitution, not just "who's free".
+        // A teacher qualified for more than one of this period's subjects appears
+        // under each; teachers with none of these subjects are left out entirely.
+        const periodSubjectNames = Array.from(
+          new Set(period.slots.map((slot) => slot.subject?.name).filter(Boolean))
+        ).sort();
+        const idleBySubject = periodSubjectNames
+          .map((subjectName) => ({
+            subjectName,
+            teachers: idle.filter((teacher) =>
+              (teacher.subjects || []).some((s) => s.name === subjectName)
+            ),
+          }))
+          .filter((group) => group.teachers.length > 0);
         const start = minutesFromTime(period.startTime);
         const end = minutesFromTime(period.endTime);
         const isCurrentPeriod = activeDay === currentDay && currentMinutes >= start && currentMinutes < end;
-        return { ...period, engaged, idle, isCurrentPeriod };
+        return { ...period, engaged, idle, idleBySubject, isCurrentPeriod };
       })
       .filter((period) => {
         if (filterStatus === 'engaged') return period.engaged.length > 0;
@@ -740,7 +781,28 @@ export default function Timetable() {
 
   if (loading) return <div className="p-8 text-sm font-semibold text-slate-500 dark:text-slate-400">Loading...</div>;
 
+  // Pagination for the three long lists rendered below.
+  const filteredLiveTeacherStatus = liveTeacherStatus.filter(
+    (item) => !selectedLiveTeacherId || String(item.key) === String(selectedLiveTeacherId)
+  );
+  const liveTeacherTotalPages = Math.max(1, Math.ceil(filteredLiveTeacherStatus.length / TIMETABLE_PAGE_SIZE));
+  const safeLiveTeacherPage = Math.min(liveTeacherPage, liveTeacherTotalPages);
+  const paginatedLiveTeacherStatus = filteredLiveTeacherStatus.slice(
+    (safeLiveTeacherPage - 1) * TIMETABLE_PAGE_SIZE,
+    safeLiveTeacherPage * TIMETABLE_PAGE_SIZE
+  );
 
+  const activeDaySlots = (groupedByDay[activeDay] || []).filter((slot) => {
+    if (slotsFilterClass && formatClassName(slot.section) !== slotsFilterClass) return false;
+    if (slotsFilterSection && slot.section?.name !== slotsFilterSection) return false;
+    return true;
+  });
+  const scheduledSlotsTotalPages = Math.max(1, Math.ceil(activeDaySlots.length / TIMETABLE_PAGE_SIZE));
+  const safeScheduledSlotsPage = Math.min(scheduledSlotsPage, scheduledSlotsTotalPages);
+  const paginatedActiveDaySlots = activeDaySlots.slice(
+    (safeScheduledSlotsPage - 1) * TIMETABLE_PAGE_SIZE,
+    safeScheduledSlotsPage * TIMETABLE_PAGE_SIZE
+  );
 
   return (
     <div className="w-full px-3 sm:px-5 lg:px-8 xl:px-10 dark:bg-slate-950 min-h-screen">
@@ -1412,15 +1474,14 @@ export default function Timetable() {
             <div className="mt-5 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-5 text-sm font-semibold text-slate-500 dark:text-slate-400">
               No teachers found.
             </div>
-          ) : liveTeacherStatus.filter(item => !selectedLiveTeacherId || String(item.key) === String(selectedLiveTeacherId)).length === 0 ? (
+          ) : filteredLiveTeacherStatus.length === 0 ? (
             <div className="mt-5 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-8 text-center bg-slate-50 dark:bg-slate-950 text-sm font-semibold text-slate-500 dark:text-slate-400">
               No status records found for the selected teacher.
             </div>
           ) : (
+            <>
             <div className="mt-5 grid gap-3 md:grid-cols-2 2xl:grid-cols-4 animate-fade-in">
-              {liveTeacherStatus
-                .filter(item => !selectedLiveTeacherId || String(item.key) === String(selectedLiveTeacherId))
-                .map((item) => {
+              {paginatedLiveTeacherStatus.map((item) => {
                   const activeSlot = item.activeSlot;
                   const nextSlot = item.nextSlot;
                   const isEngaged = Boolean(activeSlot);
@@ -1484,6 +1545,14 @@ export default function Timetable() {
                   );
                 })}
             </div>
+            <DataTablePagination
+              page={safeLiveTeacherPage}
+              limit={TIMETABLE_PAGE_SIZE}
+              total={filteredLiveTeacherStatus.length}
+              totalPages={liveTeacherTotalPages}
+              onPageChange={setLiveTeacherPage}
+            />
+            </>
           )}
         </div>
       )}
@@ -1663,18 +1732,29 @@ export default function Timetable() {
                         <p className="rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-300">
                           All teachers are engaged in this period
                         </p>
+                      ) : period.idleBySubject.length === 0 ? (
+                        <p className="rounded-xl bg-slate-50 dark:bg-slate-850 px-3 py-2 text-xs font-semibold text-slate-500">
+                          No idle teacher is qualified for this period's subjects
+                        </p>
                       ) : (
-                        <div className="flex flex-wrap gap-2">
-                          {period.idle.map((teacher) => (
-                            <button
-                              key={`${period.key}-${teacher.id}`}
-                              onClick={() => handleAssignIdleTeacher(teacher, period)}
-                              title={`Click to assign ${teacher.name} to this period`}
-                              className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition active:scale-95 cursor-pointer dark:border-blue-950/50 dark:bg-blue-950/30 dark:text-blue-300 dark:hover:bg-blue-600 dark:hover:text-white"
-                            >
-                              <Plus className="h-3 w-3 shrink-0" />
-                              {teacher.name}
-                            </button>
+                        <div className="space-y-2.5">
+                          {period.idleBySubject.map((group) => (
+                            <div key={group.subjectName}>
+                              <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-slate-400">{group.subjectName}</p>
+                              <div className="flex flex-wrap gap-2">
+                                {group.teachers.map((teacher) => (
+                                  <button
+                                    key={`${period.key}-${group.subjectName}-${teacher.id}`}
+                                    onClick={() => handleAssignIdleTeacher(teacher, period, teacher.subjects.find((s) => s.name === group.subjectName)?.id)}
+                                    title={`Click to assign ${teacher.name} to this period`}
+                                    className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition active:scale-95 cursor-pointer dark:border-blue-950/50 dark:bg-blue-950/30 dark:text-blue-300 dark:hover:bg-blue-600 dark:hover:text-white"
+                                  >
+                                    <Plus className="h-3 w-3 shrink-0" />
+                                    {teacher.name}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
                           ))}
                         </div>
                       )}
@@ -1690,22 +1770,42 @@ export default function Timetable() {
 
       {!isTeacher && (
         <section className="mb-6 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex flex-col gap-1 mb-6">
-            <p className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-300">Daily Slots</p>
-            <h2 className="text-xl font-black text-slate-950 dark:text-white">Scheduled Timetable Slots ({activeDay})</h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              List of all timetable entries for the selected day.
-            </p>
+          <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex flex-col gap-1">
+              <p className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-300">Daily Slots</p>
+              <h2 className="text-xl font-black text-slate-950 dark:text-white">Scheduled Timetable Slots ({activeDay})</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                List of all timetable entries for the selected day.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={slotsFilterClass}
+                onChange={(e) => setSlotsFilterClass(e.target.value)}
+                className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 outline-none focus:border-blue-400"
+              >
+                <option value="">All Classes</option>
+                {classes.map((cls) => (<option key={cls} value={cls}>{cls}</option>))}
+              </select>
+              <select
+                value={slotsFilterSection}
+                onChange={(e) => setSlotsFilterSection(e.target.value)}
+                className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 outline-none focus:border-blue-400"
+              >
+                <option value="">All Sections</option>
+                {slotsSections.map((sec) => (<option key={sec} value={sec}>Section {sec}</option>))}
+              </select>
+            </div>
           </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {groupedByDay[activeDay].length === 0 ? (
+            {activeDaySlots.length === 0 ? (
               <div className="col-span-full rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-10 text-center bg-slate-50 dark:bg-slate-950">
                 <Clock className="mx-auto h-10 w-10 text-slate-300 dark:text-slate-700" />
                 <h3 className="mt-4 text-sm font-bold text-slate-700 dark:text-slate-300">No classes scheduled for {activeDay}</h3>
                 <p className="mt-1 text-xs text-slate-400">Create a new slot using the button at the top.</p>
               </div>
             ) : (
-              groupedByDay[activeDay].map((slot) => {
+              paginatedActiveDaySlots.map((slot) => {
                 const teacherName = formatTeacherName(slot.teacher) || 'Unnamed Teacher';
                 const initials = teacherName.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2);
                 return (
@@ -1768,6 +1868,13 @@ export default function Timetable() {
               })
             )}
           </div>
+          <DataTablePagination
+            page={safeScheduledSlotsPage}
+            limit={TIMETABLE_PAGE_SIZE}
+            total={activeDaySlots.length}
+            totalPages={scheduledSlotsTotalPages}
+            onPageChange={setScheduledSlotsPage}
+          />
         </section>
       )}
 

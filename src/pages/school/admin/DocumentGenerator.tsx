@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/use-toast';
 import schoolApi from '@/lib/api/school-client';
 import { Loader2, Download, Plus, CheckCircle2, XCircle, FileWarning, UploadCloud, AlertTriangle } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useSchoolAuth } from '@/context/SchoolAuthContext';
@@ -38,6 +39,27 @@ export default function DocumentGenerator() {
   // History State
   const [historyLogs, setHistoryLogs] = useState<any[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyLimit, setHistoryLimit] = useState(10);
+  const [historyTypeFilter, setHistoryTypeFilter] = useState('all');
+  const [historyStatusFilter, setHistoryStatusFilter] = useState('all');
+  const [historyDateFilter, setHistoryDateFilter] = useState('');
+
+  const filteredHistoryLogs = useMemo(() => {
+    return historyLogs.filter((log: any) => {
+      if (historyTypeFilter !== 'all' && log?.targetType !== historyTypeFilter) return false;
+      if (historyStatusFilter !== 'all' && log?.status !== historyStatusFilter) return false;
+      if (historyDateFilter) {
+        const issuedDate = log?.issuedAt ? new Date(log.issuedAt).toISOString().slice(0, 10) : null;
+        if (issuedDate !== historyDateFilter) return false;
+      }
+      return true;
+    });
+  }, [historyLogs, historyTypeFilter, historyStatusFilter, historyDateFilter]);
+
+  useEffect(() => {
+    setHistoryPage(1);
+  }, [historyTypeFilter, historyStatusFilter, historyDateFilter]);
 
   // Preview State
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -142,6 +164,7 @@ export default function DocumentGenerator() {
     try {
       const res = await schoolApi.get('/institute-admin/document/id-card/history');
       setHistoryLogs(res.data?.data || res.data || []);
+      setHistoryPage(1);
     } catch (err) {
       toast({ title: 'Error', description: 'Failed to load card history', variant: 'destructive' });
     }
@@ -1000,6 +1023,56 @@ export default function DocumentGenerator() {
               <CardDescription>Manage previously generated cards, revoke access, or track lost cards.</CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="flex flex-wrap items-end gap-3 mb-4">
+                <div className="w-40">
+                  <Label className="text-xs text-muted-foreground">Type</Label>
+                  <Select value={historyTypeFilter} onValueChange={setHistoryTypeFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Types" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="STUDENT">Student</SelectItem>
+                      <SelectItem value="STAFF">Staff</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="w-40">
+                  <Label className="text-xs text-muted-foreground">Status</Label>
+                  <Select value={historyStatusFilter} onValueChange={setHistoryStatusFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="ACTIVE">Active</SelectItem>
+                      <SelectItem value="LOST">Lost</SelectItem>
+                      <SelectItem value="INACTIVE">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="w-44">
+                  <Label className="text-xs text-muted-foreground">Issued Date</Label>
+                  <Input
+                    type="date"
+                    value={historyDateFilter}
+                    onChange={(e) => setHistoryDateFilter(e.target.value)}
+                  />
+                </div>
+                {(historyTypeFilter !== 'all' || historyStatusFilter !== 'all' || historyDateFilter) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setHistoryTypeFilter('all');
+                      setHistoryStatusFilter('all');
+                      setHistoryDateFilter('');
+                    }}
+                  >
+                    Clear Filters
+                  </Button>
+                )}
+              </div>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -1011,14 +1084,14 @@ export default function DocumentGenerator() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {historyLogs.length === 0 && (
+                  {filteredHistoryLogs.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                        No ID cards generated yet.
+                        No ID cards found for the selected filters.
                       </TableCell>
                     </TableRow>
                   )}
-                  {historyLogs.map(log => (
+                  {filteredHistoryLogs.slice((historyPage - 1) * historyLimit, historyPage * historyLimit).map(log => (
                     <TableRow key={log?.id}>
                       <TableCell className="font-medium">{log?.targetType}</TableCell>
                       <TableCell className="text-xs text-muted-foreground" title={log?.targetId}>
@@ -1049,6 +1122,17 @@ export default function DocumentGenerator() {
                   ))}
                 </TableBody>
               </Table>
+              <DataTablePagination
+                page={historyPage}
+                limit={historyLimit}
+                total={filteredHistoryLogs.length}
+                totalPages={Math.max(1, Math.ceil(filteredHistoryLogs.length / historyLimit))}
+                onPageChange={setHistoryPage}
+                onLimitChange={(limit) => {
+                  setHistoryLimit(limit);
+                  setHistoryPage(1);
+                }}
+              />
             </CardContent>
           </Card>
         </TabsContent>

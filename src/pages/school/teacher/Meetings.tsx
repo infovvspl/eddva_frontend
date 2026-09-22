@@ -1,11 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  AlertCircle,
   CalendarDays,
+  Check,
   CheckCircle2,
   Clock3,
   Filter,
   MapPin,
   Search,
+  User,
   Users,
   Video,
   X,
@@ -70,6 +73,49 @@ export default function TeacherMeetingsPage() {
     location: '',
   });
   const [step, setStep] = useState(1);
+  const [titleTouched, setTitleTouched] = useState(false);
+  const [step2Error, setStep2Error] = useState('');
+  const [classFilter, setClassFilter] = useState('');
+  const [sectionFilter, setSectionFilter] = useState('');
+
+  const selectedParent = useMemo(
+    () => parents.find((p) => p.id === form.parentId) || null,
+    [parents, form.parentId],
+  );
+
+  // Classes/sections come straight off the loaded parent directory — every
+  // parent row already carries its student's className/sectionName — so these
+  // filters need no extra API call, just a narrower view of the same list.
+  const classOptions = useMemo(() => {
+    const set = new Set<string>();
+    parents.forEach((p) => { if (p.className) set.add(p.className); });
+    return [...set].sort();
+  }, [parents]);
+
+  const sectionOptions = useMemo(() => {
+    const set = new Set<string>();
+    parents.forEach((p) => {
+      if (classFilter && p.className !== classFilter) return;
+      if (p.sectionName) set.add(p.sectionName);
+    });
+    return [...set].sort();
+  }, [parents, classFilter]);
+
+  const filteredParents = useMemo(() => {
+    return parents.filter((p) => {
+      if (classFilter && p.className !== classFilter) return false;
+      if (sectionFilter && p.sectionName !== sectionFilter) return false;
+      return true;
+    });
+  }, [parents, classFilter, sectionFilter]);
+
+  // If a filter narrows the list past the currently-picked parent, drop the
+  // stale selection rather than leaving it selected-but-hidden.
+  useEffect(() => {
+    if (form.parentId && !filteredParents.some((p) => p.id === form.parentId)) {
+      setForm((prev) => ({ ...prev, parentId: '' }));
+    }
+  }, [filteredParents, form.parentId]);
 
   const parentIdFromQuery = useMemo(
     () => new URLSearchParams(window.location.search).get('parentId') || '',
@@ -91,10 +137,8 @@ export default function TeacherMeetingsPage() {
 
   const loadParents = useCallback(async () => {
     setLoadingParents(true);
-    console.log('Modal Opened - Loading Parents');
     try {
       const res = await api.get('/chat/directory');
-      console.log('Parent API Response:', res.data);
       const rows = unwrapList(res.data);
       const unique = new Map<string, ParentOption>();
       rows.forEach((row: any) => {
@@ -109,7 +153,6 @@ export default function TeacherMeetingsPage() {
         });
       });
       const nextParents = [...unique.values()];
-      console.log('Mapped Parent Options:', nextParents);
       setParents(nextParents);
     } catch (error) {
       console.error('Failed to load parent options', error);
@@ -174,8 +217,26 @@ export default function TeacherMeetingsPage() {
     }
   };
 
+  const resetCreateForm = () => {
+    setShowCreate(false);
+    setStep(1);
+    setTitleTouched(false);
+    setStep2Error('');
+    setClassFilter('');
+    setSectionFilter('');
+  };
+
   const createMeeting = async () => {
     if (!form.parentId || !form.title.trim()) return;
+    if (form.meetingMode === 'online' && !form.meetingLink.trim()) {
+      setStep2Error('Add a meeting link so the parent knows where to join.');
+      return;
+    }
+    if (form.meetingMode === 'offline' && !form.location.trim()) {
+      setStep2Error('Add a location so the parent knows where to come.');
+      return;
+    }
+    setStep2Error('');
     setCreating(true);
     try {
       await api.post('/meetings', {
@@ -190,10 +251,11 @@ export default function TeacherMeetingsPage() {
         meetingLink: form.meetingMode === 'online' ? form.meetingLink.trim() || null : null,
         location: form.meetingMode === 'offline' ? form.location.trim() || null : null,
       });
-      setShowCreate(false);
-      setStep(1);
+      resetCreateForm();
       setForm((prev) => ({
         ...prev,
+        parentId: '',
+        title: 'Parent Meeting',
         description: '',
         meetingLink: '',
         location: '',
@@ -201,6 +263,7 @@ export default function TeacherMeetingsPage() {
       await loadMeetings();
     } catch (error) {
       console.error('Failed to create teacher meeting', error);
+      setStep2Error('Could not schedule the meeting. Please try again.');
     } finally {
       setCreating(false);
     }
@@ -221,6 +284,10 @@ export default function TeacherMeetingsPage() {
             type="button"
             onClick={() => {
               setStep(1);
+              setTitleTouched(false);
+              setStep2Error('');
+              setClassFilter('');
+              setSectionFilter('');
               setShowCreate(true);
             }}
             className="inline-flex items-center justify-center rounded-xl sm:rounded-2xl bg-white px-3 py-2 sm:px-5 sm:py-3 text-[11px] sm:text-sm font-black text-cyan-700 shadow-lg transition hover:bg-cyan-50 shrink-0"
@@ -453,48 +520,144 @@ export default function TeacherMeetingsPage() {
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
           <div className="w-full max-w-2xl rounded-2xl sm:rounded-[30px] bg-white p-4 sm:p-6 shadow-2xl">
-            <div className="mb-4 sm:mb-6 flex items-center justify-between">
-              <div>
-                <h2 className="text-base sm:text-xl font-black text-slate-900">Schedule Parent Meeting</h2>
-                <p className="text-[11px] sm:text-sm font-semibold text-slate-500">Step {step} of 2 &bull; Create a focused meeting request outside the chat flow.</p>
-              </div>
+            <div className="mb-4 sm:mb-5 flex items-center justify-between">
+              <h2 className="text-base sm:text-xl font-black text-slate-900">Schedule Parent Meeting</h2>
               <button
                 type="button"
-                onClick={() => {
-                  setShowCreate(false);
-                  setStep(1);
-                }}
+                onClick={resetCreateForm}
                 className="rounded-full p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
               >
                 <X className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
             </div>
 
+            {/* Step indicator */}
+            <div className="mb-4 sm:mb-6 flex items-center gap-2">
+              {[
+                { n: 1, label: 'Who & what' },
+                { n: 2, label: 'When & where' },
+              ].map((s, i) => (
+                <React.Fragment key={s.n}>
+                  {i > 0 && <div className={`h-0.5 flex-1 rounded-full ${step > 1 ? 'bg-cyan-500' : 'bg-slate-200'}`} />}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span
+                      className={`flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full text-[10px] sm:text-xs font-black ${
+                        step === s.n
+                          ? 'bg-cyan-600 text-white'
+                          : step > s.n
+                            ? 'bg-cyan-100 text-cyan-700'
+                            : 'bg-slate-100 text-slate-400'
+                      }`}
+                    >
+                      {step > s.n ? <Check className="h-3 w-3" /> : s.n}
+                    </span>
+                    <span className={`text-[10px] sm:text-xs font-black uppercase tracking-wider ${step === s.n ? 'text-slate-800' : 'text-slate-400'}`}>
+                      {s.label}
+                    </span>
+                  </div>
+                </React.Fragment>
+              ))}
+            </div>
+
+            {selectedParent && (
+              <div className="mb-3 sm:mb-4 flex items-center gap-2.5 rounded-xl sm:rounded-2xl border border-cyan-100 bg-cyan-50/60 px-3 py-2 sm:px-4 sm:py-2.5">
+                <span className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-cyan-100 text-cyan-700">
+                  <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-xs sm:text-sm font-black text-slate-800">{selectedParent.name}</p>
+                  <p className="truncate text-[10px] sm:text-xs font-semibold text-slate-500">
+                    {[
+                      selectedParent.studentName ? `Parent of ${selectedParent.studentName}` : null,
+                      selectedParent.className ? `${selectedParent.className}${selectedParent.sectionName ? `-${selectedParent.sectionName}` : ''}` : null,
+                    ].filter(Boolean).join(' • ') || 'Meeting contact'}
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="grid gap-2.5 sm:gap-4 md:grid-cols-2">
               {step === 1 && (
                 <>
+                  {classOptions.length > 1 && (
+                    <>
+                      <div className="space-y-1 sm:space-y-1.5">
+                        <label className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Class</label>
+                        <CustomSelect
+                          onChange={(val) => {
+                            setClassFilter(val);
+                            setSectionFilter('');
+                          }}
+                          value={classFilter}
+                          placeholder="All classes"
+                          options={classOptions.map((c) => ({ value: c, label: c }))}
+                          className="w-full"
+                          triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 shadow-sm"
+                        />
+                      </div>
+                      <div className="space-y-1 sm:space-y-1.5">
+                        <label className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Section</label>
+                        <CustomSelect
+                          onChange={setSectionFilter}
+                          value={sectionFilter}
+                          disabled={sectionOptions.length === 0}
+                          placeholder="All sections"
+                          options={sectionOptions.map((s) => ({ value: s, label: `Section ${s}` }))}
+                          className="w-full"
+                          triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 shadow-sm disabled:opacity-50"
+                        />
+                      </div>
+                    </>
+                  )}
+
                   <div className="space-y-1 sm:space-y-1.5 md:col-span-2">
                     <label className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Parent</label>
                     <CustomSelect
-                      onChange={(val) => setForm(prev => ({ ...prev, parentId: val }))}
+                      onChange={(val) => {
+                        const parent = parents.find((p) => p.id === val);
+                        setForm((prev) => ({
+                          ...prev,
+                          parentId: val,
+                          title: !titleTouched && parent
+                            ? (parent.studentName ? `Meeting: ${parent.studentName} (parent)` : `Meeting with ${parent.name}`)
+                            : prev.title,
+                        }));
+                      }}
                       value={form.parentId}
-                      options={[
-                        { value: "", label: loadingParents ? 'Loading parents...' : 'Select parent' },
-                        ...parents.map((parent) => ({
-                          value: parent.id,
-                          label: `${parent.name}${parent.studentName ? ` • ${parent.studentName}` : ''}${parent.className ? ` • ${parent.className}` : ''}${parent.sectionName ? `-${parent.sectionName}` : ''}`
-                        })),
-                      ]}
+                      disabled={loadingParents}
+                      placeholder={loadingParents ? 'Loading parents...' : 'Select parent'}
+                      searchable
+                      searchPlaceholder="Search by parent or student name..."
+                      noResultsText="No parent matches that search"
+                      options={filteredParents.map((parent) => ({
+                        value: parent.id,
+                        label: `${parent.name}${parent.studentName ? ` • ${parent.studentName}` : ''}${parent.className ? ` • ${parent.className}` : ''}${parent.sectionName ? `-${parent.sectionName}` : ''}`
+                      }))}
                       className="w-full"
                       triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 shadow-sm"
                     />
+                    {!loadingParents && parents.length === 0 && (
+                      <p className="flex items-start gap-1.5 pt-1 text-[11px] font-semibold text-amber-600">
+                        <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
+                        No parents found for your assigned classes yet. Ask your admin to check class/section assignments.
+                      </p>
+                    )}
+                    {!loadingParents && parents.length > 0 && filteredParents.length === 0 && (
+                      <p className="flex items-start gap-1.5 pt-1 text-[11px] font-semibold text-amber-600">
+                        <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
+                        No parents in {[classFilter, sectionFilter && `Section ${sectionFilter}`].filter(Boolean).join(' ')}. Try a different class or section.
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-1 sm:space-y-1.5 md:col-span-2">
                     <label className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Title</label>
                     <input
                       value={form.title}
-                      onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+                      onChange={(e) => {
+                        setTitleTouched(true);
+                        setForm((prev) => ({ ...prev, title: e.target.value }));
+                      }}
                       className="w-full rounded-xl sm:rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
                     />
                   </div>
@@ -517,13 +680,17 @@ export default function TeacherMeetingsPage() {
                         <button
                           key={mode}
                           type="button"
-                          onClick={() => setForm((prev) => ({ ...prev, meetingMode: mode }))}
-                          className={`rounded-xl sm:rounded-2xl border px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-black capitalize transition ${
+                          onClick={() => {
+                            setStep2Error('');
+                            setForm((prev) => ({ ...prev, meetingMode: mode }));
+                          }}
+                          className={`flex items-center justify-center gap-1.5 rounded-xl sm:rounded-2xl border px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-black capitalize transition ${
                             form.meetingMode === mode
                               ? 'border-cyan-500 bg-cyan-50 text-cyan-700'
                               : 'border-slate-200 bg-slate-50 text-slate-500'
                           }`}
                         >
+                          {mode === 'online' ? <Video className="h-3.5 w-3.5" /> : <MapPin className="h-3.5 w-3.5" />}
                           {mode}
                         </button>
                       ))}
@@ -538,6 +705,7 @@ export default function TeacherMeetingsPage() {
                     <label className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Date</label>
                     <input
                       type="date"
+                      min={new Date().toISOString().split('T')[0]}
                       value={form.meetingDate}
                       onChange={(e) => setForm((prev) => ({ ...prev, meetingDate: e.target.value }))}
                       className="w-full rounded-xl sm:rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
@@ -584,7 +752,10 @@ export default function TeacherMeetingsPage() {
                         <label className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Meeting Link</label>
                         <input
                           value={form.meetingLink}
-                          onChange={(e) => setForm((prev) => ({ ...prev, meetingLink: e.target.value }))}
+                          onChange={(e) => {
+                            setStep2Error('');
+                            setForm((prev) => ({ ...prev, meetingLink: e.target.value }));
+                          }}
                           placeholder="https://meet.google.com/..."
                           className="w-full rounded-xl sm:rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
                         />
@@ -595,7 +766,10 @@ export default function TeacherMeetingsPage() {
                       <label className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Location</label>
                       <input
                         value={form.location}
-                        onChange={(e) => setForm((prev) => ({ ...prev, location: e.target.value }))}
+                        onChange={(e) => {
+                          setStep2Error('');
+                          setForm((prev) => ({ ...prev, location: e.target.value }));
+                        }}
                         placeholder="School campus / classroom / office"
                         className="w-full rounded-xl sm:rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
                       />
@@ -605,15 +779,19 @@ export default function TeacherMeetingsPage() {
               )}
             </div>
 
+            {step2Error && (
+              <p className="mt-3 flex items-start gap-1.5 rounded-xl bg-rose-50 px-3 py-2 text-[11px] sm:text-xs font-bold text-rose-700">
+                <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                {step2Error}
+              </p>
+            )}
+
             <div className="mt-4 sm:mt-6 flex flex-row justify-end gap-2 sm:gap-3">
               <button
                 type="button"
                 onClick={() => {
                   if (step === 2) setStep(1);
-                  else {
-                    setShowCreate(false);
-                    setStep(1);
-                  }
+                  else resetCreateForm();
                 }}
                 className="flex-1 sm:flex-initial rounded-xl sm:rounded-2xl bg-slate-100 px-4 py-2.5 sm:px-5 sm:py-3 text-xs sm:text-sm font-black text-slate-700 transition hover:bg-slate-200"
               >
@@ -622,7 +800,7 @@ export default function TeacherMeetingsPage() {
               {step === 1 ? (
                 <button
                   type="button"
-                  disabled={!form.parentId}
+                  disabled={!form.parentId || !form.title.trim()}
                   onClick={() => setStep(2)}
                   className="flex-1 sm:flex-initial rounded-xl sm:rounded-2xl bg-cyan-600 px-4 py-2.5 sm:px-5 sm:py-3 text-xs sm:text-sm font-black text-white transition hover:bg-cyan-700 disabled:opacity-60"
                 >

@@ -3,7 +3,7 @@
 // intro column. Deliberately NOT the home page's four-up card grid — same
 // copy from data/about.js, different layout.
 
-import aboutHome from "../assets/abouthome.png";
+import aboutHome from "../assets/about.png";
 import { aboutCards } from "../data/about";
 import useInView from "../hooks/useInView";
 
@@ -54,7 +54,7 @@ const AboutPillars = () => {
           <figure className="nw-pillars__media">
             <img
               src={aboutHome}
-              alt="A teacher presenting the EDDVA dashboard on a classroom display"
+              alt="A student answering a water cycle lesson on the EDDVA smartboard while the teacher looks on"
               loading="lazy"
             />
           </figure>

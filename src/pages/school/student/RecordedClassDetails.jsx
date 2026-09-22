@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { SchoolVideoPlayer } from '@/components/school/SchoolVideoPlayer';
 import { SchoolAskDoubtPanel } from '@/components/school/SchoolAskDoubtPanel';
 import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
@@ -63,6 +63,8 @@ function getAvatarColor(name = '') {
 
 export default function RecordedClassDetails() {
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { recordingId } = useParams();
   const { user } = useAuth();
   const isTeacher = user?.role === 'TEACHER' || user?.role === 'INSTITUTE_ADMIN' || user?.role === 'SUPER_ADMIN';
@@ -83,6 +85,17 @@ export default function RecordedClassDetails() {
     [recordings, recordingId],
   );
 
+  // Sync the recording's title into navigation state so the top navbar
+  // can show it instead of the raw recordingId (works on refresh/deep links too).
+  useEffect(() => {
+    if (recording?.title && location.state?.recordingTitle !== recording.title) {
+      navigate(`${location.pathname}${location.search}`, {
+        replace: true,
+        state: { ...location.state, recordingTitle: recording.title },
+      });
+    }
+  }, [recording?.title, location.pathname, location.search, location.state, navigate]);
+
   const availableTabs = useMemo(() => {
     const list = [];
     if (hasNotesGen) list.push('notes');
@@ -91,9 +104,14 @@ export default function RecordedClassDetails() {
     if (hasQuizGen) list.push('quiz');
     // Only show the Q&A tab for recordings that originated from a live class
     if (recording?.lectureId) list.push('questions');
-    if (hasDoubtResolution) list.push('doubt');
+    // Students only. /school/teacher/recorded-classes/:id renders this same
+    // page, and the doubt endpoint is STUDENT-scoped, so a teacher was shown an
+    // "Ask AI / Ask Teacher" box that always failed with
+    // "Role 'TEACHER' is not authorized to access this resource".
+    // Teachers answer doubts from Student Doubts; they do not raise them.
+    if (hasDoubtResolution && !isTeacher) list.push('doubt');
     return list;
-  }, [hasNotesGen, hasQuizGen, hasDoubtResolution, recording?.lectureId]);
+  }, [hasNotesGen, hasQuizGen, hasDoubtResolution, recording?.lectureId, isTeacher]);
 
   const [detailTab, setDetailTab] = useState(() => {
     if (hasNotesGen) return 'notes';

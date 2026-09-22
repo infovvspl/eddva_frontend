@@ -52,6 +52,14 @@ const mergeAssignments = (...groups: any[][]) => {
   return Array.from(map.values());
 };
 
+// Bands a 0-100 score into a StatCard tone + qualitative label instead of the
+// card always showing a hardcoded "positive" pill regardless of the real value.
+const scoreTone = (value: number): { changeType: 'positive' | 'negative' | 'neutral'; label: string } => {
+  if (value >= 70) return { changeType: 'positive', label: 'On track' };
+  if (value >= 40) return { changeType: 'neutral', label: 'Needs attention' };
+  return { changeType: 'negative', label: 'Below target' };
+};
+
 const mapRosterStudentToReportStudent = (student: any) => {
   const profile = student.studentProfile || {};
   const section = profile.section || {};
@@ -69,6 +77,7 @@ const mapRosterStudentToReportStudent = (student: any) => {
     trend: 'consistent',
     weakAreas: [],
     strongAreas: [],
+    subjectScores: [],
   };
 };
 
@@ -116,10 +125,37 @@ const Reports: React.FC = () => {
   const [selectedSection, setSelectedSection] = useState<string>('all');
   const [studentSearchQuery, setStudentSearchQuery] = useState<string>('');
 
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
+  const [classPage, setClassPage] = useState(1);
+  const [classPageSize, setClassPageSize] = useState(10);
+  const [classSearchQuery, setClassSearchQuery] = useState('');
+
+  // The full class/subject roster only feeds the Weakness Analysis tab's "assigned
+  // students" counts, and doesn't depend on the Student Performance class/section
+  // filter — so it's fetched once here instead of on every filter change.
+  useEffect(() => {
+    const fetchRoster = async () => {
+      try {
+        const allRosterRes = await api.get('/students?limit=1000');
+        const allRosterBody: any = allRosterRes.data || {};
+        const allRoster = Array.isArray(allRosterBody.data)
+          ? allRosterBody.data
+          : Array.isArray(allRosterBody)
+            ? allRosterBody
+            : [];
+        setAssignedRoster(allRoster.map(mapRosterStudentToReportStudent));
+      } catch (rosterErr) {
+        console.error('Unable to load assigned roster for reports', rosterErr);
+        setAssignedRoster([]);
+      }
+    };
+    fetchRoster();
+  }, []);
+
+  // Changing the class/section filter should always land back on page 1 of the
+  // (now different) student list, not whatever page happened to still exist.
+  useEffect(() => {
+    setStudentPage(1);
+  }, [selectedClass, selectedSection]);
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -145,22 +181,6 @@ const Reports: React.FC = () => {
         const reportSummary = body.summary || {};
         const analytics = Array.isArray(body.data) ? body.data : [];
         let reportStudents = Array.isArray(body.students) ? body.students : [];
-        let rosterStudents: any[] = [];
-
-        try {
-          const allRosterRes = await api.get('/students?limit=1000');
-          const allRosterBody: any = allRosterRes.data || {};
-          const allRoster = Array.isArray(allRosterBody.data)
-            ? allRosterBody.data
-            : Array.isArray(allRosterBody)
-              ? allRosterBody
-              : [];
-          rosterStudents = allRoster.map(mapRosterStudentToReportStudent);
-          setAssignedRoster(rosterStudents);
-        } catch (rosterErr) {
-          console.error('Unable to load assigned roster for reports', rosterErr);
-          setAssignedRoster([]);
-        }
 
         if (selectedClass !== 'all') {
           const rosterParams = new URLSearchParams();
@@ -208,17 +228,13 @@ const Reports: React.FC = () => {
         });
       } catch (err: any) {
         console.error('Error fetching reports:', err);
-        if (err?.response?.status === 404) {
-          setError('Reports API is not available on the running backend. Restart the backend server to load the new /school/reports/class route.');
-        } else {
-          setError('Unable to load reports right now.');
-        }
+        setError('Unable to load reports right now. Please try again in a moment.');
       } finally {
         setLoading(false);
       }
     };
     fetchReports();
-  }, [page, limit, selectedClass, selectedSection]);
+  }, [selectedClass, selectedSection]);
 
   const classes = useMemo(() => {
     const map = new Map<string, string>();
@@ -246,13 +262,17 @@ const Reports: React.FC = () => {
   }, [reportScope, studentPerformance]);
 
   const sections = useMemo(() => {
-    
-    const map = new Map<string, string>();
+    // Keyed by section id (never ambiguous), but carries its class name too —
+    // with "All Classes" selected, two different classes can each have a
+    // "Section A", and without the class name they'd be two identical-looking
+    // entries in the dropdown with no way to tell them apart.
+    const map = new Map<string, { name: string; className: string }>();
     const assignments = Array.isArray(reportScope?.assignments) ? reportScope.assignments : [];
-    
+
     if (assignments.length > 0) {
       assignments.forEach((item: any) => {
         const classId = item.class_id || item.classId;
+        const className = item.class_name || item.className || '';
         const sectionId = item.section_id || item.sectionId;
         const sectionName = item.section_name || item.sectionName;
         if (
@@ -260,7 +280,7 @@ const Reports: React.FC = () => {
           sectionName &&
           (selectedClass === 'all' || String(classId) === String(selectedClass))
         ) {
-          map.set(String(sectionId), sectionName);
+          map.set(String(sectionId), { name: sectionName, className });
         }
       });
     } else {
@@ -270,13 +290,16 @@ const Reports: React.FC = () => {
           student.sectionName &&
           (selectedClass === 'all' || String(student.classId) === String(selectedClass))
         ) {
-          map.set(String(student.sectionId), student.sectionName);
+          map.set(String(student.sectionId), { name: student.sectionName, className: student.className || '' });
         }
       });
     }
-    
+
     return Array.from(map.entries())
-      .map(([id, name]) => ({ id, name }))
+      .map(([id, { name, className }]) => ({
+        id,
+        name: selectedClass === 'all' && className ? `${name} (${className})` : name,
+      }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [reportScope, studentPerformance, selectedClass]);
 
@@ -310,13 +333,20 @@ const Reports: React.FC = () => {
     () => (Array.isArray(reportScope?.assignments) ? reportScope.assignments : []),
     [reportScope],
   );
+  // Keyed by class+section+subject — the backend now scopes this per class/section
+  // instead of returning one blended average per subject name across the
+  // teacher's whole scope (which used to make e.g. every class's "Mathematics"
+  // card show the exact same number).
   const weaknessMetricBySubject = useMemo(() => {
     const map = new Map<string, any>();
     weaknessData.forEach((item) => {
+      const classId = item.classId || item.class_id;
+      const sectionId = item.sectionId || item.section_id;
+      const scopePrefix = `${classId || ''}|${sectionId || ''}|`;
       const subjectName = item.topic || item.subject || item.subjectName || item.subject_name;
       const subjectId = item.subjectId || item.subject_id;
-      if (subjectName) map.set(normalizeKey(subjectName), item);
-      if (subjectId) map.set(String(subjectId), item);
+      if (subjectName) map.set(scopePrefix + normalizeKey(subjectName), item);
+      if (subjectId) map.set(scopePrefix + String(subjectId), item);
     });
     return map;
   }, [weaknessData]);
@@ -400,7 +430,8 @@ const Reports: React.FC = () => {
   }, [assignedRoster, studentPerformance, reportStudentById]);
   const getWeaknessSubjectStats = (classId: string, sectionId: string, subject: any) => {
     const subjectName = subject?.name || '';
-    const metric = weaknessMetricBySubject.get(String(subject?.id || '')) || weaknessMetricBySubject.get(normalizeKey(subjectName)) || {};
+    const scopePrefix = `${classId || ''}|${sectionId || ''}|`;
+    const metric = weaknessMetricBySubject.get(scopePrefix + String(subject?.id || '')) || weaknessMetricBySubject.get(scopePrefix + normalizeKey(subjectName)) || {};
     const scopedStudents = assignedRosterWithMetrics.filter((student: any) => {
       return String(student.classId || '') === String(classId)
         && String(student.sectionId || '') === String(sectionId);
@@ -408,21 +439,47 @@ const Reports: React.FC = () => {
     const assignedStudents = scopedStudents.length;
     const weakByStudent = scopedStudents.filter((student: any) => {
       const weakAreas = Array.isArray(student.weakAreas) ? student.weakAreas : [];
-      return weakAreas.some((area: string) => normalizeKey(area) === normalizeKey(subjectName));
+      return weakAreas.some((area: any) => {
+        // Match by subject id first — the same subject can exist as more than
+        // one row in `subjects` (e.g. legacy "Maths" vs "Mathematics"), so a
+        // name-only match can miss a real weak area even though the student
+        // count above (which doesn't filter by subject) is correct.
+        if (area && typeof area === 'object') {
+          if (subject?.id && area.subjectId) return String(area.subjectId) === String(subject.id);
+          return normalizeKey(area.name) === normalizeKey(subjectName);
+        }
+        return normalizeKey(area) === normalizeKey(subjectName);
+      });
     }).length;
     const metricWeakStudents = metric.weakStudents || metric.weak_students || 0;
     const atRiskStudents = scopedStudents.length > 0
       ? weakByStudent
       : Math.min(Number(metricWeakStudents) || 0, assignedStudents || Number(metricWeakStudents) || 0);
+    // This card's own subject average — not each student's OVERALL avgScore
+    // (that would show the exact same number on every subject card for a
+    // given class/section). Only students who actually have a recorded score
+    // in this specific subject count toward it.
+    const studentSubjectScore = (student: any): number | null => {
+      const list = Array.isArray(student.subjectScores) ? student.subjectScores : [];
+      const match = list.find((item: any) => {
+        if (subject?.id && item.subjectId) return String(item.subjectId) === String(subject.id);
+        return normalizeKey(item.name) === normalizeKey(subjectName);
+      });
+      return match && Number.isFinite(Number(match.avg)) ? Number(match.avg) : null;
+    };
     const scoredStudents = scopedStudents
-      .map((student: any) => Number(student.avgScore || 0))
-      .filter((score: number) => Number.isFinite(score) && score > 0);
+      .map((student: any) => studentSubjectScore(student))
+      .filter((score: number | null): score is number => score !== null);
     const metricAverage = Number(metric.avgScore || metric.avg_score || 0);
+    // No scored students in this exact class/section AND no scoped backend
+    // metric for it either means nobody has a graded result for this subject
+    // yet — surface that as "no data" rather than a misleading 0%.
+    const hasData = scoredStudents.length > 0 || Number.isFinite(metricAverage) && metric.avgScore !== undefined;
     const classAverage = scoredStudents.length
       ? Math.round(scoredStudents.reduce((sum: number, score: number) => sum + score, 0) / scoredStudents.length)
       : (Number.isFinite(metricAverage) ? metricAverage : 0);
 
-    return { assignedStudents, atRiskStudents, classAverage };
+    return { assignedStudents, atRiskStudents, classAverage, hasData };
   };
   const scopeAssignments = Array.isArray(scope?.assignments) ? scope.assignments : [];
   const scopeLabel = scopeAssignments.length
@@ -433,6 +490,7 @@ const Reports: React.FC = () => {
         .join(', ')
     : 'Assigned class';
   const weeklyDays = Array.isArray(weeklyAnalysis.days) ? weeklyAnalysis.days : [];
+  const maxWeeklyTests = Math.max(1, ...weeklyDays.map((item) => item.tests || 0));
   const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
 
   const studentColumns = [
@@ -468,10 +526,28 @@ const Reports: React.FC = () => {
     { key: 'class', title: 'Class', render: (v: string) => <Badge variant="purple">{v}</Badge> },
     { key: 'avgScore', title: 'Avg Score', render: (v: number) => <span className="reports__score">{v}%</span> },
     { key: 'passRate', title: 'Pass Rate', render: (v: number) => <Badge variant={v >= 90 ? 'success' : 'info'}>{v}%</Badge> },
-    { key: 'topSubject', title: 'Top Subject' },
-    { key: 'weakSubject', title: 'Weak Subject' },
+    { key: 'topSubject', title: 'Top Subject', render: (v: string) => v || <span className="text-gray-400">—</span> },
+    { key: 'weakSubject', title: 'Weak Subject', render: (v: string) => v || <span className="text-gray-400">—</span> },
     { key: 'attendance', title: 'Attendance', render: (v: number) => <span className="reports__score">{v}%</span> },
   ];
+
+  const filteredClassAnalytics = useMemo(() => {
+    if (!classSearchQuery.trim()) return classAnalytics;
+    const q = classSearchQuery.trim().toLowerCase();
+    return classAnalytics.filter((row) =>
+      [row.class, row.topSubject, row.weakSubject].some((field) => String(field || '').toLowerCase().includes(q))
+    );
+  }, [classAnalytics, classSearchQuery]);
+
+  const totalClassPages = Math.max(1, Math.ceil(filteredClassAnalytics.length / classPageSize));
+  const paginatedClassAnalytics = filteredClassAnalytics.slice(
+    (classPage - 1) * classPageSize,
+    (classPage - 1) * classPageSize + classPageSize,
+  );
+
+  useEffect(() => {
+    setClassPage(1);
+  }, [classSearchQuery, classAnalytics]);
 
   const studentContent = (
     <div className="reports__section">
@@ -617,6 +693,11 @@ const Reports: React.FC = () => {
       {!loading && !weaknessClassGroups.length && (
         <div className="reports__empty">No assigned class or subject data is available for weakness analysis.</div>
       )}
+      {!loading && !reportAssignments.length && weaknessData.length > 0 && (
+        <div className="reports__error">
+          Couldn't match this data to your specific classes/sections — showing it grouped generically below. Refresh the page, or contact an admin if this persists.
+        </div>
+      )}
       <div className="reports__weakness-class-list">
         {weaknessClassGroups.map((classGroup: any) => (
           <GlassCard key={classGroup.id} className="reports__weakness-class-card">
@@ -644,7 +725,7 @@ const Reports: React.FC = () => {
                   )}
                   <div className="reports__weakness-grid reports__weakness-grid--nested">
                     {sectionGroup.subjects.map((subject: any) => {
-                      const { assignedStudents, atRiskStudents, classAverage } = getWeaknessSubjectStats(
+                      const { assignedStudents, atRiskStudents, classAverage, hasData } = getWeaknessSubjectStats(
                         classGroup.id,
                         sectionGroup.id,
                         subject,
@@ -680,10 +761,10 @@ const Reports: React.FC = () => {
                             </div>
                             <div className="reports__weakness-stat">
                               <span className="reports__weakness-label">Class Average</span>
-                              <span className="reports__weakness-value">{classAverage}%</span>
+                              <span className="reports__weakness-value">{hasData ? `${classAverage}%` : 'No data yet'}</span>
                             </div>
                           </div>
-                          <ProgressBar value={classAverage} size="sm" color="var(--gradient-warm)" />
+                          <ProgressBar value={hasData ? classAverage : 0} size="sm" color="var(--gradient-warm)" />
                           <div className="reports__weakness-footer">
                             <span>View struggling students</span>
                             <ArrowRight size={12} />
@@ -727,21 +808,30 @@ const Reports: React.FC = () => {
           <div className="reports__empty">No weekly test performance is available yet.</div>
         )}
         <div className="reports__chart">
-          {weeklyDays.map((item: any) => (
-            <div key={item.date || item.day} className="reports__chart-bar-wrapper">
-              <div className="reports__chart-bar-group">
-                <div
-                  className="reports__chart-bar reports__chart-bar--score"
-                  style={{ height: `${item.avgScore || 0}%` }}
-                />
-                <div
-                  className="reports__chart-bar reports__chart-bar--attendance"
-                  style={{ height: `${Math.min((item.tests || 0) * 20, 100)}%` }}
-                />
+          {weeklyDays.map((item: any) => {
+            // Test count has no natural 0-100 ceiling like a score does, so it's
+            // scaled against the week's own busiest day rather than a fixed
+            // guess — a day with 8 tests no longer looks identical to a day with 5.
+            const testCount = item.tests || 0;
+            const pctOfMax = maxWeeklyTests > 0 ? Math.round((testCount / maxWeeklyTests) * 100) : 0;
+            return (
+              <div key={item.date || item.day} className="reports__chart-bar-wrapper">
+                <div className="reports__chart-bar-group">
+                  <div
+                    className="reports__chart-bar reports__chart-bar--score"
+                    style={{ height: `${item.avgScore || 0}%` }}
+                    title={`${item.day}: ${Math.round(item.avgScore || 0)}% avg score`}
+                  />
+                  <div
+                    className="reports__chart-bar reports__chart-bar--attendance"
+                    style={{ height: `${pctOfMax}%` }}
+                    title={`${item.day}: ${testCount} test${testCount === 1 ? '' : 's'}`}
+                  />
+                </div>
+                <span className="reports__chart-label">{item.day}</span>
               </div>
-              <span className="reports__chart-label">{item.day}</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
         <div className="reports__chart-legend">
           <span className="reports__legend-item">
@@ -750,7 +840,7 @@ const Reports: React.FC = () => {
           </span>
           <span className="reports__legend-item">
             <span className="reports__legend-dot reports__legend-dot--attendance" />
-            Test Count
+            Test Count (relative to busiest day — hover a bar for the exact number)
           </span>
         </div>
       </GlassCard>
@@ -766,10 +856,12 @@ const Reports: React.FC = () => {
                 <div
                   className="reports__chart-bar reports__chart-bar--score"
                   style={{ height: `${item.avgScore}%` }}
+                  title={`${item.month}: ${Math.round(item.avgScore || 0)}% avg score`}
                 />
                 <div
                   className="reports__chart-bar reports__chart-bar--attendance"
                   style={{ height: `${item.attendance}%` }}
+                  title={`${item.month}: ${Math.round(item.attendance || 0)}% attendance`}
                 />
               </div>
               <span className="reports__chart-label">{item.month}</span>
@@ -795,11 +887,54 @@ const Reports: React.FC = () => {
       {!loading && !classAnalytics.length && (
         <div className="reports__empty">No class analytics available yet.</div>
       )}
-      <div className="w-full overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
-        <DataTable columns={classColumns} data={classAnalytics} />
-      </div>
+      {classAnalytics.length > 0 && (
+        <div className="reports__filters-row">
+          <div className="reports__filter-group reports__filter-group--search">
+            <label htmlFor="class-analytics-search">Search Class</label>
+            <div className="reports__search-wrapper">
+              <Search size={16} className="reports__search-icon" />
+              <input
+                id="class-analytics-search"
+                type="text"
+                placeholder="Search by class or subject..."
+                value={classSearchQuery}
+                onChange={(e) => setClassSearchQuery(e.target.value)}
+                className="reports__filter-input"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+      {classAnalytics.length > 0 && !filteredClassAnalytics.length && (
+        <div className="reports__empty">No classes match that search.</div>
+      )}
+      {filteredClassAnalytics.length > 0 && (
+        <>
+          <div className="w-full overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+            <DataTable columns={classColumns} data={paginatedClassAnalytics} />
+          </div>
+          <DataTablePagination
+            page={classPage}
+            limit={classPageSize}
+            total={filteredClassAnalytics.length}
+            totalPages={totalClassPages}
+            onPageChange={setClassPage}
+            onLimitChange={(val) => { setClassPageSize(val); setClassPage(1); }}
+          />
+        </>
+      )}
     </div>
   );
+
+  const classAverageTone = scoreTone(summary.classAverage);
+  const passRateTone = scoreTone(summary.passRate);
+  const atRiskPct = summary.totalStudents > 0 ? Math.round((summary.atRiskStudents / summary.totalStudents) * 100) : 0;
+  const atRiskTone: { changeType: 'positive' | 'negative' | 'neutral'; label: string } =
+    summary.atRiskStudents === 0
+      ? { changeType: 'positive', label: 'None flagged' }
+      : atRiskPct >= 25
+        ? { changeType: 'negative', label: `${atRiskPct}% of class` }
+        : { changeType: 'neutral', label: `${atRiskPct}% of class` };
 
   return (
     <div className="reports font-poppins">
@@ -815,9 +950,9 @@ const Reports: React.FC = () => {
         </div>
       )}
       <div className="reports__stats">
-        <StatCard title="Class Average" value={`${summary.classAverage}%`} change="Live" changeType="positive" icon={<BarChart3 size={24} />} />
-        <StatCard title="Pass Rate" value={`${summary.passRate}%`} change="Live" changeType="positive" icon={<Target size={24} />} gradient="var(--gradient-cool)" />
-        <StatCard title="At-Risk Students" value={String(summary.atRiskStudents)} change="Live" changeType="negative" icon={<AlertTriangle size={24} />} gradient="var(--gradient-warm)" />
+        <StatCard title="Class Average" value={`${summary.classAverage}%`} change={classAverageTone.label} changeType={classAverageTone.changeType} icon={<BarChart3 size={24} />} />
+        <StatCard title="Pass Rate" value={`${summary.passRate}%`} change={passRateTone.label} changeType={passRateTone.changeType} icon={<Target size={24} />} gradient="var(--gradient-cool)" />
+        <StatCard title="At-Risk Students" value={String(summary.atRiskStudents)} change={atRiskTone.label} changeType={atRiskTone.changeType} icon={<AlertTriangle size={24} />} gradient="var(--gradient-warm)" />
         <StatCard title="Total Students" value={String(summary.totalStudents)} icon={<Users size={24} />} gradient="var(--gradient-accent)" />
       </div>
 

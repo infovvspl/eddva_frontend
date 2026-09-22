@@ -22,6 +22,15 @@ import {
   Gauge, Route as RouteIcon, Star,
 } from "lucide-react";
 
+// Each role below still carries its own `color`/`bg` — SolutionRoles (the
+// /solution hub's accordion, where all four sit side by side) uses those to
+// tell the roles apart at a glance. The four *dedicated* pages
+// (Institution/Teacher/Student/ParentSolutionPage) don't want that
+// variation — one role per page, so there's nothing to visually
+// distinguish — and instead override to this single shared accent so all
+// four pages read as the same family instead of four different colors.
+export const ROLE_PAGE_ACCENT = { color: "#1565d8", bg: "#eaf1fd" };
+
 export const roleSolutions = [
   /* ────────────────────── INSTITUTE ADMIN ────────────────────── */
   {

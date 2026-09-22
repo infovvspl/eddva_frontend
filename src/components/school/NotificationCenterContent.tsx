@@ -21,7 +21,8 @@ import {
   CreditCard,
   BarChart3,
   Megaphone,
-  AlertTriangle
+  AlertTriangle,
+  BookMarked
 } from "lucide-react";
 import api from "@/lib/api/school-client";
 import { createNotificationSocket } from "@/lib/notification-socket";
@@ -55,7 +56,8 @@ const CATEGORIES = [
   { key: "study_material", label: "Study Materials" },
   { key: "attendance", label: "Attendance" },
   { key: "fee", label: "Fees" },
-  { key: "result", label: "Results" }
+  { key: "result", label: "Results" },
+  { key: "syllabus", label: "Syllabus" }
 ];
 
 const categoryIcons: Record<string, React.ReactNode> = {
@@ -67,6 +69,7 @@ const categoryIcons: Record<string, React.ReactNode> = {
   attendance: <CalendarDays size={16} />,
   fee: <CreditCard size={16} />,
   result: <BarChart3 size={16} />,
+  syllabus: <BookMarked size={16} />,
   general: <Bell size={16} />
 };
 

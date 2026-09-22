@@ -53,6 +53,8 @@ const NewWebsiteAboutStoryPage = lazy(() => import("./new-website/pages/AboutSto
 const NewWebsiteProductsPage = lazy(() => import("./new-website/pages/ProductsPage"));
 const NewWebsiteSolutionPage = lazy(() => import("./new-website/pages/SolutionPage"));
 const NewWebsiteFaqPage = lazy(() => import("./new-website/pages/FaqPage"));
+const NewWebsiteBlogPage = lazy(() => import("./new-website/pages/BlogPage"));
+const NewWebsiteBlogDetailPage = lazy(() => import("./new-website/pages/BlogDetailPage"));
 const NewWebsiteInstitutionSolutionPage = lazy(() => import("./new-website/pages/InstitutionSolutionPage"));
 const NewWebsiteTeacherSolutionPage = lazy(() => import("./new-website/pages/TeacherSolutionPage"));
 const NewWebsiteStudentSolutionPage = lazy(() => import("./new-website/pages/StudentSolutionPage"));
@@ -104,6 +106,10 @@ const SupportTicketsPage = lazy(() => import("./pages/admin/SupportTicketsPage")
 const TeacherSupportTicketsPage = lazy(() => import("./pages/teacher/TeacherSupportTicketsPage"));
 const SuperAdminSupportTicketsPage = lazy(() => import("./pages/super-admin/SuperAdminSupportTicketsPage"));
 const SuperAdminLeadsPage = lazy(() => import("./pages/super-admin/LeadsPage"));
+// Blog admin panel has its own login, separate from the LMS entirely — see
+// pages/blog-admin and modules/blog-admin-auth on the backend.
+const BlogAdminLoginPage = lazy(() => import("./pages/blog-admin/BlogAdminLoginPage"));
+const BlogAdminDashboardPage = lazy(() => import("./pages/blog-admin/BlogAdminDashboardPage"));
 const CoachingTicketDetailPage = lazy(() => import("./pages/shared/CoachingTicketDetailPage"));
 const AdminCalendarPage = lazy(() => import("./pages/admin/AdminCalendarPage"));
 const TeacherCalendarPage = lazy(() => import("./pages/teacher/TeacherCalendarPage"));
@@ -202,6 +208,7 @@ const SchoolSyllabusTracker = lazy(() => import("./pages/school/admin/SyllabusTr
 const SchoolSyllabusTrackerDetails = lazy(() => import("./pages/school/admin/SyllabusTrackerDetailsPage"));
 const SchoolSyllabusAnalytics = lazy(() => import("./pages/school/admin/SyllabusAnalytics"));
 const SchoolTeacherTeachingPlan = lazy(() => import("./pages/school/teacher/TeacherTeachingPlan"));
+const SchoolLessonPlanDetails = lazy(() => import("./pages/school/teacher/LessonPlanDetails"));
 const SchoolStudentSyllabusView = lazy(() => import("./pages/school/student/StudentSyllabusView"));
 const SchoolParentSyllabusView = lazy(() => import("./pages/school/parent/ParentSyllabusView"));
 const SchoolFinance = lazy(() => import("./pages/school/admin/Finance"));
@@ -249,6 +256,7 @@ const SchoolTeacherStudentProfile = lazy(() => import("./pages/school/teacher/St
 const SchoolTopicManagement = lazy(() => import("./pages/school/teacher/TopicManagement"));
 const SchoolTextbookCoverage = lazy(() => import("./pages/school/teacher/TextbookCoverage"));
 const SchoolClassManagement = lazy(() => import("./pages/school/teacher/ClassManagement"));
+const SchoolTeacherRecordedClassDetails = lazy(() => import("./pages/school/teacher/RecordedClassDetails"));
 const SchoolTeacherCalendar = lazy(() => import("./pages/school/teacher/Calendar"));
 const SchoolAttendanceSystem = lazy(() => import("./pages/school/teacher/AttendanceSystem"));
 const SchoolAssignmentManagement = lazy(() => import("./pages/school/teacher/AssignmentManagement"));
@@ -584,9 +592,10 @@ const SchoolRoutes = () => (
       <Route path="live/:id/studio" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'live_classes' }}><SchoolTeacherStudio /></SchoolGuard>} />
       <Route path="topics" element={<Navigate to="/school/teacher/course-content" replace />} />
       <Route path="classes" element={<SchoolClassManagement />} />
-      <Route path="recorded-classes/:recordingId" element={<SchoolStudentRecordedClassDetails />} />
+      <Route path="recorded-classes/:recordingId" element={<SchoolTeacherRecordedClassDetails />} />
       <Route path="teaching-plan" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'teacher_teaching_plan' }}><SchoolTeacherTeachingPlan /></SchoolGuard>} />
       <Route path="syllabus-planner/:planId" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'teacher_teaching_plan' }}><SchoolSyllabusPlanDetails /></SchoolGuard>} />
+      <Route path="lesson-plans/:lessonId" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'teacher_teaching_plan' }}><SchoolLessonPlanDetails /></SchoolGuard>} />
       <Route path="calendar" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'academic_calendar' }}><SchoolTeacherCalendar /></SchoolGuard>} />
       <Route path="attendance" element={<SchoolAttendanceSystem />} />
       <Route path="assignments" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'assignments' }}><SchoolAssignmentManagement /></SchoolGuard>} />
@@ -751,6 +760,8 @@ const TenantRoutes = () => (
     <Route path="/cookie-policy" element={<CookiePolicyPage />} />
     <Route path="/terms" element={<TermsOfServicePage />} />
     <Route path="/login" element={<LoginPage />} />
+    <Route path="/blog-admin/login" element={<BlogAdminLoginPage />} />
+    <Route path="/blog-admin" element={<BlogAdminDashboardPage />} />
     <Route path="/suspended" element={<SuspendedPage />} />
     <Route path="/register" element={<StudentRegisterPage />} />
     <Route path="/register-admin" element={<RegisterWithOtpPage />} />
@@ -780,6 +791,8 @@ const TenantRoutes = () => (
     <Route path="/solution/parents" element={<NewWebsiteParentSolutionPage />} />
     <Route path="/features/:slug" element={<NewWebsiteFeatureDetailPage />} />
     <Route path="/faq" element={<NewWebsiteFaqPage />} />
+    <Route path="/blog" element={<NewWebsiteBlogPage />} />
+    <Route path="/blog/:slug" element={<NewWebsiteBlogDetailPage />} />
     {/* Old dev URLs kept alive so nothing already pointing there 404s */}
     <Route path="/new-website/*" element={<Navigate to="/" replace />} />
     <Route path="/new-website" element={<Navigate to="/" replace />} />
@@ -807,6 +820,8 @@ const PlatformRoutes = () => (
     <Route path="/cookie-policy" element={<CookiePolicyPage />} />
     <Route path="/terms" element={<TermsOfServicePage />} />
     <Route path="/login" element={<LoginPage />} />
+    <Route path="/blog-admin/login" element={<BlogAdminLoginPage />} />
+    <Route path="/blog-admin" element={<BlogAdminDashboardPage />} />
     <Route path="/suspended" element={<SuspendedPage />} />
     <Route path="/register" element={<StudentRegisterPage />} />
     <Route path="/register-admin" element={<RegisterWithOtpPage />} />
@@ -833,6 +848,8 @@ const PlatformRoutes = () => (
     <Route path="/solution/parents" element={<NewWebsiteParentSolutionPage />} />
     <Route path="/features/:slug" element={<NewWebsiteFeatureDetailPage />} />
     <Route path="/faq" element={<NewWebsiteFaqPage />} />
+    <Route path="/blog" element={<NewWebsiteBlogPage />} />
+    <Route path="/blog/:slug" element={<NewWebsiteBlogDetailPage />} />
     {/* Old dev URLs kept alive so nothing already pointing there 404s */}
     <Route path="/new-website/*" element={<Navigate to="/" replace />} />
     <Route path="/new-website" element={<Navigate to="/" replace />} />

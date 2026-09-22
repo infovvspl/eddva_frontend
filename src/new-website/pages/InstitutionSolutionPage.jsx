@@ -1,42 +1,52 @@
 // InstitutionSolutionPage.jsx — route: /solution/institutions
-// Institutes, Schools and Universities used to be split across a bare anchor
-// (Institutes, on /solution) and two standalone pages (SchoolSolutionPage,
-// UniversitySolutionPage). All three now stack on this one page instead — a
-// long scroll rather than tabs, so a visitor arriving for one type can still
-// scroll past and see the others. The nav dropdown and the /solution overview
-// panels link here with a #nw-svc-<id> hash to land on the right section.
+// This used to duplicate the institution-*type* breakdown (Schools /
+// Institutes / Universities) already shown on /solution — the exact same
+// cards, just restyled, with nothing here that wasn't already on the
+// overview page. It's the fourth stakeholder-role page (alongside Teachers,
+// Students, Parents), so it now follows that same pattern instead: the
+// Institute Admin role's own capability breakdown from data/solutions.js
+// (nw-sol-admin), via RoleDetail — matching TeacherSolutionPage /
+// StudentSolutionPage / ParentSolutionPage exactly.
+import { useEffect } from "react";
 import "../new-website.css";
 import TopBar from "../components/TopBar";
 import Navbar from "../components/Navbar";
 import PageHead from "../components/PageHead";
-import AudienceDetail from "../components/AudienceDetail";
+import RoleDetail from "../components/RoleDetail";
 import CtaBanner from "../components/CtaBanner";
 import Footer from "../components/Footer";
-import { services } from "../data/services";
-import { Layers } from "lucide-react";
-import useScrollToTopOrHash from "../hooks/useScrollToTopOrHash";
+import { roleSolutions, ROLE_PAGE_ACCENT } from "../data/solutions";
+
+const adminSource = roleSolutions.find(r => r.id === "nw-sol-admin");
+const admin = adminSource && { ...adminSource, ...ROLE_PAGE_ACCENT };
+const adminCapabilityCount = admin
+  ? admin.groups.reduce((sum, group) => sum + group.items.length, 0)
+  : 0;
 
 const InstitutionSolutionPage = () => {
-  useScrollToTopOrHash();
+  useEffect(() => { window.scrollTo(0, 0); }, []);
 
   return (
     <div className="nw-root" id="nw-root">
       <TopBar />
       <Navbar />
       <main>
-        <PageHead
-          id="nw-institution-sol-head"
-          title="Solutions for Every"
-          accent="Institution"
-          lead="Schools, coaching institutes and universities — the same platform, configured around how each one actually runs."
-          icon={Layers}
-          color="#1a56db"
-          bg="#eaf1fd"
-          stats={[{ value: services.length, label: "Institution Types" }]}
-        />
-        {services.map(service => (
-          <AudienceDetail key={service.id} audience={service} id={service.id} />
-        ))}
+        {admin && (
+          <PageHead
+            id="nw-institution-sol-head"
+            title="EDDVA for"
+            accent="Institutions"
+            lead="Streamlined operations, real-time data and the tools to run your institution with confidence."
+            icon={admin.Icon}
+            color={admin.color}
+            bg={admin.bg}
+            stats={[
+              { value: adminCapabilityCount, label: "Capabilities" },
+              { value: admin.groups.length, label: "Categories" },
+            ]}
+          />
+        )}
+        {admin && <RoleDetail role={admin} />}
         <CtaBanner />
       </main>
       <Footer />

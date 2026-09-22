@@ -36,8 +36,13 @@ const HOME_PATH = "/";
 // "#anchor-id" — the nav is mounted on every page, so a bare hash would only
 // work while already sitting on /solution. Anchor ids are the real section
 // ids from SolutionAudience/SolutionRoles.
+//
+// Home is a plain "/" route, not the "#nw-home" anchor it used to be — that
+// anchor put "/#nw-home" in the address bar on every click, even though the
+// hero section it pointed at already sits at the top of "/". Scrolling back
+// to the top when already home is handled separately, in onClick below.
 const links = [
-  { id: "home",     label: "Home",       href: "#nw-home" },
+  { id: "home",     label: "Home",       to: "/" },
   { id: "about",    label: "About",      to: "/about" },
   { id: "product",  label: "Product",    to: "/products" },
   {
@@ -50,35 +55,27 @@ const links = [
     ],
   },
   { id: "faq",      label: "FAQ",        to: "/faq" },
+  { id: "blog",     label: "Blog",       to: "/blog" },
   { id: "contact",  label: "Contact us", to: "/contact" },
 ];
 
-const NavItemLink = ({ link, onHome, className, id, onClick, children }) => {
-  if (link.to || !onHome) {
-    return (
-      <Link
-        to={link.to || `${HOME_PATH}${link.href}`}
-        className={className}
-        id={id}
-        onClick={onClick}
-      >
-        {children}
-      </Link>
-    );
-  }
-  return (
-    <a href={link.href} className={className} id={id} onClick={onClick}>
-      {children}
-    </a>
-  );
-};
+const NavItemLink = ({ link, className, id, onClick, children }) => (
+  <Link to={link.to} className={className} id={id} onClick={onClick}>
+    {children}
+  </Link>
+);
 
 const Navbar = () => {
   const { pathname } = useLocation();
   // In-page anchors only resolve on the one-pager itself; from a sub-page
   // they have to route back to "/" first, carrying the hash.
   const onHome = pathname === HOME_PATH;
-  const routeActive = links.find(l => l.to && pathname.startsWith(l.to))?.id;
+  // "home"'s `to` is "/", which every path starts with — excluded from the
+  // startsWith scan below (it would otherwise always match first) and
+  // checked as an exact match instead.
+  const routeActive = onHome
+    ? "home"
+    : links.find(l => l.to && l.to !== HOME_PATH && pathname.startsWith(l.to))?.id;
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [active, setActive] = useState("home");
@@ -91,6 +88,13 @@ const Navbar = () => {
   const [navHeight, setNavHeight] = useState(0);
   const sentinelRef = useRef(null);
   const navRef = useRef(null);
+
+  // Clicking Home/the logo while already on "/" no longer has a "#nw-home"
+  // anchor to jump to (see the links array comment) — scroll to top by hand
+  // instead, so the one useful bit of the old behaviour survives.
+  const goHome = () => {
+    if (onHome) window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   // Compact the bar once the page is scrolled past the hero fold
   useEffect(() => {
@@ -134,14 +138,14 @@ const Navbar = () => {
       <div className="nw-navbar__container">
 
         {/* ── Logo ── */}
-        <a href="#nw-home" className="nw-navbar__logo" id="nw-nav-logo">
+        <Link to="/" onClick={goHome} className="nw-navbar__logo" id="nw-nav-logo">
           <img
             src={LOGO}
             alt={LOGO_ALT}
             className="nw-navbar__logo-img"
             id="nw-logo-img"
           />
-        </a>
+        </Link>
 
         {/* ── Desktop nav links ── */}
         <nav className="nw-navbar__nav" id="nw-main-nav" aria-label="Main Navigation">
@@ -154,10 +158,9 @@ const Navbar = () => {
             >
               <NavItemLink
                 link={link}
-                onHome={onHome}
                 id={`nw-nav-${link.id}`}
                 className={`nw-navbar__link${current === link.id ? " nw-navbar__link--active" : ""}`}
-                onClick={() => setActive(link.id)}
+                onClick={() => { setActive(link.id); if (link.id === "home") goHome(); }}
               >
                 {link.label}
                 {link.children && (
@@ -217,10 +220,9 @@ const Navbar = () => {
           <div key={link.id}>
             <NavItemLink
               link={link}
-              onHome={onHome}
               id={`nw-mob-${link.id}`}
               className={`nw-navbar__mobile-link${current === link.id ? " nw-navbar__link--active" : ""}`}
-              onClick={() => { setActive(link.id); setMenuOpen(false); }}
+              onClick={() => { setActive(link.id); setMenuOpen(false); if (link.id === "home") goHome(); }}
             >
               {link.label}
             </NavItemLink>

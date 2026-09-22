@@ -89,7 +89,12 @@ const formatMarkdown = (text?: string | string[] | any) => {
   const str = Array.isArray(text) ? text.join("\n\n") : String(text);
   const sanitized = str
     .replace(/^\s{4,}/gm, "") // Remove 4+ spaces indentation that triggers code blocks
-    .replace(/\\[\s]*(\n|$)/g, "$1"); // Strip trailing backslashes used as line breaks
+    // Strip a LONE trailing backslash used as a manual line break. (?<!\\) keeps this from eating
+    // one backslash out of a genuine LaTeX row-separator "\\" inside \begin{cases}/array/matrix —
+    // that pair is followed by whitespace/a newline too, and reducing it to a single backslash
+    // reproduces the exact "system of equations collapses onto one line" bug MarkdownRenderer.tsx
+    // fixes, except this strips it before formatMarkdown ever sees the text.
+    .replace(/(?<!\\)\\[\s]*(\n|$)/g, "$1");
   return coreFormatMarkdown(sanitized);
 };
 

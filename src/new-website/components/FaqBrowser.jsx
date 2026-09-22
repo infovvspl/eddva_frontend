@@ -6,16 +6,18 @@
 import { useState } from "react";
 import { faqCategories } from "../data/faq";
 import FaqCategoryAccordion from "./FaqCategoryAccordion";
+import useInView from "../hooks/useInView";
 
 const FaqBrowser = () => {
   const [activeId, setActiveId] = useState(faqCategories[0].id);
   const active = faqCategories.find(c => c.id === activeId) || faqCategories[0];
+  const [ref, inView] = useInView({ threshold: 0.1 });
 
   return (
-    <section className="nw-faqp" id="nw-faq-browser">
+    <section className="nw-faqp" id="nw-faq-browser" ref={ref}>
       <div className="nw-faqp__container">
 
-        <div className="nw-faqp__pills" role="tablist" aria-label="FAQ category">
+        <div className={`nw-faqp__pills${inView ? " nw-in" : ""}`} role="tablist" aria-label="FAQ category">
           {faqCategories.map(({ id, label, questions }) => (
             <button
               type="button"
