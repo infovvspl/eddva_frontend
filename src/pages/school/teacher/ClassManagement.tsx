@@ -1769,7 +1769,7 @@ const ClassManagement: React.FC = () => {
                     <div className="mt-3 flex items-start justify-between gap-3 border-t border-slate-100 pt-2">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <button onClick={() => navigate(`/school/teacher/recorded-classes/${rec.id}`)}
+                          <button onClick={() => navigate(`/school/teacher/recorded-classes/${rec.id}`, { state: { openTab: 'overview' } })}
                             className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50">
                             <BarChart3 size={14} /> Live Stats
                           </button>

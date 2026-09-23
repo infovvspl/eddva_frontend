@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { SchoolVideoPlayer } from '@/components/school/SchoolVideoPlayer';
 import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
 import Button from '@/components/school/Button';
@@ -123,6 +123,8 @@ function dateLabel(value) {
 export default function TeacherRecordedClassDetails() {
   const navigate = useNavigate();
   const { recordingId } = useParams();
+  const location = useLocation();
+  const requestedTab = location.state?.openTab;
 
   const [recordings, setRecordings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -159,7 +161,7 @@ export default function TeacherRecordedClassDetails() {
     return list;
   }, [hasNotesGen, hasQuizGen]);
 
-  const [detailTab, setDetailTab] = useState(() => (hasNotesGen ? 'notes' : 'overview'));
+  const [detailTab, setDetailTab] = useState(() => requestedTab || (hasNotesGen ? 'notes' : 'overview'));
 
   useEffect(() => {
     if (availableTabs.length > 0 && !availableTabs.includes(detailTab)) {

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Check, Download, ExternalLink, FileText, Loader2, Printer, X } from 'lucide-react';
+import { ArrowLeft, Check, Download, ExternalLink, FileText, Loader2, Printer, X } from 'lucide-react';
 import FlashcardViewer from '@/components/resources/FlashcardViewer';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { MindMapCanvas, type MindMapCanvasHandle, type LayoutMode } from '@/components/school/MindMapVisualizer';
@@ -270,7 +270,7 @@ const MINDMAP_TABS: Array<{ mode: LayoutMode; label: string }> = [
   { mode: 'hybrid', label: 'Hybrid Tree' },
 ];
 
-function MindmapFullScreenView({ material, tree }: { material: SchoolMaterial; tree: ReturnType<typeof mindmapMarkdownToTree> }) {
+function MindmapFullScreenView({ material, tree, onBack }: { material: SchoolMaterial; tree: ReturnType<typeof mindmapMarkdownToTree>; onBack: () => void }) {
   const [mode, setMode] = useState<LayoutMode>('org');
   const canvasRef = useRef<MindMapCanvasHandle>(null);
   const topicLabel = materialTopicLabel(material);
@@ -278,11 +278,21 @@ function MindmapFullScreenView({ material, tree }: { material: SchoolMaterial; t
   return (
     <div className="flex h-full min-h-[600px] flex-col bg-slate-50">
       <div className="flex flex-nowrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-6">
-        <div className="min-w-0">
-          <div className="mb-1 inline-flex items-center gap-2 rounded-full bg-violet-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-violet-600">
-            <FileText size={14} /> {labelFromType(material.fileType)}
+        <div className="flex min-w-0 items-center gap-3">
+          <button
+            type="button"
+            onClick={onBack}
+            aria-label="Go back"
+            className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50"
+          >
+            <ArrowLeft size={16} />
+          </button>
+          <div className="min-w-0">
+            <div className="mb-1 inline-flex items-center gap-2 rounded-full bg-violet-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-violet-600">
+              <FileText size={14} /> {labelFromType(material.fileType)}
+            </div>
+            <h1 className="truncate text-xl font-black text-slate-900 sm:text-2xl">{topicLabel}</h1>
           </div>
-          <h1 className="truncate text-xl font-black text-slate-900 sm:text-2xl">{topicLabel}</h1>
         </div>
         <div className="flex flex-shrink-0 items-center gap-1.5">
           {MINDMAP_TABS.map(t => (
@@ -327,6 +337,10 @@ export default function SchoolMaterialViewPage() {
   const isStudent = location.pathname.includes('/student/');
   const routeState = location.state as { from?: string; courseContentState?: unknown } | null;
   const fromPath = routeState?.from;
+  const handleBack = () =>
+    fromPath
+      ? navigate(fromPath, { replace: true, state: { courseContentState: routeState?.courseContentState } })
+      : navigate(-1);
   const [material, setMaterial] = useState<SchoolMaterial | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -361,7 +375,7 @@ export default function SchoolMaterialViewPage() {
   );
 
   if (!loading && material && isMindmap && mindmapTree?.children?.length) {
-    return <MindmapFullScreenView material={material} tree={mindmapTree} />;
+    return <MindmapFullScreenView material={material} tree={mindmapTree} onBack={handleBack} />;
   }
 
   if (!loading && material && isPdf) {
@@ -375,7 +389,7 @@ export default function SchoolMaterialViewPage() {
         allowHighlights={isStudent}
         isTeacher={!isStudent}
         isFullPage={true}
-        onClose={() => fromPath ? navigate(fromPath, { replace: true, state: { courseContentState: routeState?.courseContentState } }) : navigate(-1)}
+        onClose={handleBack}
       />
     );
   }
@@ -391,12 +405,22 @@ export default function SchoolMaterialViewPage() {
       ) : (
         <article className="w-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
           <div className="mb-6 flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-5">
-            <div>
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-violet-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-violet-600">
-                <FileText size={14} /> {labelFromType(material.fileType)}
+            <div className="flex min-w-0 items-start gap-3">
+              <button
+                type="button"
+                onClick={handleBack}
+                aria-label="Go back"
+                className="mt-1 inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-violet-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-violet-600">
+                  <FileText size={14} /> {labelFromType(material.fileType)}
+                </div>
+                <h1 className="text-2xl font-black text-slate-900">{materialTopicLabel(material)}</h1>
+                <p className="mt-1 text-sm font-semibold text-slate-400">{material.subjectName || material.chapterName || material.topicName || ''}</p>
               </div>
-              <h1 className="text-2xl font-black text-slate-900">{materialTopicLabel(material)}</h1>
-              <p className="mt-1 text-sm font-semibold text-slate-400">{material.subjectName || material.chapterName || material.topicName || ''}</p>
             </div>
             {fileType === 'ppt' ? (
               <button
