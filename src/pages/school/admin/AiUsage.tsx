@@ -112,6 +112,7 @@ const FEATURE_LABELS: Record<string, string> = {
   ai_notes_generator: 'AI Lecture Notes',
   ai_quiz_generator: 'AI Quiz Generator',
   ai_study_planner: 'AI Study Planner',
+  ai_tutor: 'AI Tutor',
   ai_career_guidance: 'Career Guidance AI',
   topic_content_generation: 'Content Generation',
 };
@@ -136,7 +137,7 @@ const FEATURE_CATEGORY_MAP: Record<string, 'teacher' | 'content' | 'student' | '
   personalised_study_plan: 'student', plan_generate: 'student',
   career_guidance_report: 'student', career_guidance: 'student',
   ai_career_guidance: 'student', resume_analyser: 'student', resume_analyze: 'student',
-  interview_prep: 'student', interview: 'student', ai_study_planner: 'student',
+  interview_prep: 'student', interview: 'student', ai_study_planner: 'student', ai_tutor: 'student',
   syllabus_generate: 'student', test_generate: 'student',
   recommend: 'student', feedback: 'student',
   // Shared

@@ -21,6 +21,7 @@ export interface Institute {
     ai_notes_generator?: boolean;
     ai_quiz_generator?: boolean;
     ai_study_planner?: boolean;
+    ai_tutor?: boolean;
     ai_homework_checker?: boolean;
     ai_attendance_insights?: boolean;
     ai_parent_reports?: boolean;

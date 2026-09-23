@@ -7,6 +7,7 @@ import { EddvaLogo } from '@/components/school/admin/Brand';
 import {
   BarChart3,
   BookOpen,
+  Bot,
   BrainCircuit,
   CalendarDays,
   ClipboardList,
@@ -28,6 +29,7 @@ const allItems = [
   { group: 'My Learning', path: '/school/student/recorded-classes', label: 'Recorded Classes', icon: Video },
   { group: 'My Learning', path: '/school/student/study-materials', label: 'Study Materials', icon: BookOpen },
   { group: 'My Learning', path: '/school/student/planner', label: 'AI Study Planner', icon: BrainCircuit, featType: 'ai', featKey: 'ai_study_planner' },
+  { group: 'My Learning', path: '/school/student/ai-tutor', label: 'AI Tutor', icon: Bot, badge: 'New', featType: 'ai', featKey: 'ai_tutor' },
   { group: 'Academic Work', path: '/school/student/assignments', label: 'Assignments', icon: FileText, featType: 'module', featKey: 'assignments' },
   { group: 'Academic Work', path: '/school/student/assessments', label: 'Assessments', icon: ClipboardList, featType: 'module', featKey: 'assessments' },
   { group: 'Academic Work', path: '/school/student/attendance', label: 'Attendance', icon: UserCheck },
@@ -90,6 +92,7 @@ export default function Sidebar({ open, onClose }) {
   const hasTimetable = useSchoolFeature('module', 'timetable');
   const hasCalendar = useSchoolFeature('module', 'academic_calendar');
   const hasPlanner = useSchoolFeature('ai', 'ai_study_planner');
+  const hasTutor = useSchoolFeature('ai', 'ai_tutor');
   const hasDoubts = useSchoolFeature('ai', 'ai_doubt_solver');
   const hasCareer = useSchoolFeature('ai', 'ai_career_guidance');
   const hasAstro = useSchoolFeature('ai', 'ai_astro_profile');
@@ -115,6 +118,7 @@ export default function Sidebar({ open, onClose }) {
     if (item.featType === 'module' && item.featKey === 'timetable' && !hasTimetable) return;
     if (item.featType === 'module' && item.featKey === 'academic_calendar' && !hasCalendar) return;
     if (item.featType === 'ai' && item.featKey === 'ai_study_planner' && !hasPlanner) return;
+    if (item.featType === 'ai' && item.featKey === 'ai_tutor' && !hasTutor) return;
     if (item.featType === 'ai' && item.featKey === 'ai_doubt_solver' && !hasDoubts) return;
     if (item.featType === 'ai' && item.featKey === 'ai_career_guidance' && !hasCareer) return;
     if (item.featType === 'ai' && item.featKey === 'ai_astro_profile' && !hasAstro) return;

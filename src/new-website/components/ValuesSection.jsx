@@ -17,7 +17,14 @@ const ValuesSection = () => {
 
         <ul className={`nw-values__grid${inView ? " nw-in" : ""}`} ref={ref}>
           {values.map(({ id, title, desc, Icon, color, bg }, i) => (
-            <li className="nw-values__card" key={id} id={id} style={{ "--nw-i": i }}>
+            <li
+              className="nw-values__card"
+              key={id} id={id}
+              style={{ "--nw-i": i, "--nw-value-accent": color }}
+            >
+              <span className="nw-values__watermark" aria-hidden="true">
+                <Icon size={92} strokeWidth={1.3} />
+              </span>
               <span className="nw-values__icon" style={{ background: bg, color }} aria-hidden="true">
                 <Icon size={24} strokeWidth={1.8} />
               </span>

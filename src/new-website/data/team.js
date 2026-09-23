@@ -4,11 +4,11 @@
 // and "Team" sections there) — this is the correct roster, not the earlier
 // placeholder one this file used to carry.
 
-import founderPhoto from "../assets/founder-real.png";
+import founderPhoto from "../assets/mdcolsir.png";
 import ayush from "../assets/team-ayush.png";
 import ankit from "../assets/team-ankit.png";
 import priyanka from "../assets/team-priyanka.png";
-import bhagyashree from "../assets/team-bhagyashree.png";
+import bhagyashree from "../assets/Bhagyasree.png";
 import akankshya from "../assets/team-akankshya.png";
 import subham from "../assets/team-subham.png";
 

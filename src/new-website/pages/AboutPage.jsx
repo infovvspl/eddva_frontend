@@ -13,8 +13,9 @@
 // matching the live dev.eddva.in design this page was out of sync with.
 //
 // The full "About Us" narrative (AboutStory — Our Vision, Our Promise) lives
-// at /about/story; AboutHero's "Our Story" button links out to it, replacing
-// the old AboutStoryLink closing band with PartOfChangeCta.
+// at /about/story; AboutHero's "Our Story" button links out to it. The
+// closing "Be a Part of the Change" band (PartOfChangeCta) was removed —
+// the page now ends on ValuesSection.
 import { useEffect } from "react";
 import "../new-website.css";
 import TopBar from "../components/TopBar";
@@ -24,7 +25,6 @@ import AboutPillars from "../components/AboutPillars";
 import FounderSection from "../components/FounderSection";
 import TeamSection from "../components/TeamSection";
 import ValuesSection from "../components/ValuesSection";
-import PartOfChangeCta from "../components/PartOfChangeCta";
 import Footer from "../components/Footer";
 
 const AboutPage = () => {
@@ -40,7 +40,6 @@ const AboutPage = () => {
         <FounderSection />
         <TeamSection />
         <ValuesSection />
-        <PartOfChangeCta />
       </main>
       <Footer />
     </div>
