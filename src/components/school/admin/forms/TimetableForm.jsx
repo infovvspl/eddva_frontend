@@ -110,13 +110,35 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
   const selectedSection = sections.find(sec => String(sec.id) === String(formData.sectionId));
   const classId = selectedSection?.classId;
 
-  // Filter sections if user is a teacher (declared first — used by the two memos below)
+  // Filter sections/classes to what the relevant teacher can actually teach —
+  // the logged-in teacher when they're using the form themselves, or the
+  // teacher already picked (e.g. substituting an idle teacher into a period)
+  // when an admin is using it. Declared first — used by the two memos below.
   const filteredSections = useMemo(() => {
-    if (!isTeacher) return sections;
-    const assignments = teacherProfile?.assignments || [];
-    const validSectionIds = new Set(assignments.map(a => String(a.sectionId)));
-    return sections.filter(sec => validSectionIds.has(String(sec.id)));
-  }, [isTeacher, sections, teacherProfile]);
+    if (isTeacher) {
+      const assignments = teacherProfile?.assignments || [];
+      const validSectionIds = new Set(assignments.map(a => String(a.sectionId)));
+      return sections.filter(sec => validSectionIds.has(String(sec.id)));
+    }
+    if (formData.teacherId) {
+      // Admin substituting a teacher into a period: show classes/sections where
+      // one of THIS teacher's subjects is actually taught — looked up across ALL
+      // teachers' assignments, not just this teacher's own. A substitute isn't
+      // formally assigned to the section they're covering, so restricting to
+      // their own assignments would hide every section they could actually help.
+      const teacherObj = teachers.find(t => String(t.teacherProfile?.id) === String(formData.teacherId));
+      const teacherSubjectIds = new Set(
+        (teacherObj?.teacherProfile?.subjects || teacherObj?.subjects || []).map(s => String(s.id))
+      );
+      const validSectionIds = new Set(
+        teachers.flatMap(t => t.teacherProfile?.assignments || [])
+          .filter(a => teacherSubjectIds.has(String(a.subjectId)))
+          .map(a => String(a.sectionId))
+      );
+      return sections.filter(sec => validSectionIds.has(String(sec.id)));
+    }
+    return sections;
+  }, [isTeacher, sections, teacherProfile, formData.teacherId, teachers]);
 
   // Sections visible in the second dropdown — filtered by the chosen class
   const sectionsForClass = useMemo(() => {
@@ -134,9 +156,8 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
 
   // Filter subjects based on selected section and selected teacher's assignments/expertise
   const filteredSubjects = useMemo(() => {
-    if (!formData.sectionId) return [];
-
     if (isTeacher) {
+      if (!formData.sectionId) return [];
       // Teacher: only show subjects they are assigned to teach in this section
       const assignments = teacherProfile?.assignments || [];
       const validSubjectIds = new Set(
@@ -148,16 +169,19 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
     }
 
     if (formData.teacherId) {
-      // Admin with teacher already selected: filter to that teacher's subjects in this section
+      // Admin with teacher already selected (e.g. assigning an idle teacher to a
+      // period before a class/section has been picked): show only that teacher's
+      // assigned subjects, narrowed to the chosen section once one is picked.
       const teacherObj = teachers.find(t => String(t.teacherProfile?.id) === String(formData.teacherId));
       const assignments = teacherObj?.teacherProfile?.assignments || [];
-      const validSubjectIds = new Set(
-        assignments
-          .filter(a => String(a.sectionId) === String(formData.sectionId))
-          .map(a => String(a.subjectId))
-      );
+      const relevantAssignments = formData.sectionId
+        ? assignments.filter(a => String(a.sectionId) === String(formData.sectionId))
+        : assignments;
+      const validSubjectIds = new Set(relevantAssignments.map(a => String(a.subjectId)));
       return subjects.filter(sub => validSubjectIds.has(String(sub.id)));
     }
+
+    if (!formData.sectionId) return [];
 
     // Admin, no teacher selected yet: derive subjects taught in this section
     // from ALL teachers' academic assignments (the only reliable section→subject mapping).
@@ -172,6 +196,18 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
     // Fallback: no assignments found yet — show all subjects so the form isn't blocked
     return subjects;
   }, [isTeacher, subjects, teacherProfile, formData.sectionId, formData.teacherId, teachers]);
+
+  // Only one subject to choose from (e.g. a teacher assigned to a single
+  // subject, or a section taught in only one subject) — pick it automatically
+  // instead of making the admin/teacher select it explicitly.
+  useEffect(() => {
+    if (filteredSubjects.length === 1) {
+      const onlySubjectId = String(filteredSubjects[0].id);
+      if (formData.subjectId !== onlySubjectId) {
+        setFormData(prev => ({ ...prev, subjectId: onlySubjectId }));
+      }
+    }
+  }, [filteredSubjects, formData.subjectId]);
 
   const filteredTeachers = useMemo(() => {
     if (isTeacher) return []; // Teachers don't need this filtering, they are auto-assigned
@@ -312,8 +348,10 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
             <CustomSelect
               onChange={(val) => {
                 setSelectedClassId(String(val));
-                // Reset section when class changes
-                setFormData(prev => ({ ...prev, sectionId: '', subjectId: '', teacherId: '' }));
+                // Reset section/subject when class changes, but keep teacherId — it's
+                // a deliberate pre-selection (e.g. substituting an idle teacher into a
+                // period) that shouldn't be wiped out just because the class changed.
+                setFormData(prev => ({ ...prev, sectionId: '', subjectId: '' }));
               }}
               value={selectedClassId}
               options={[
@@ -370,7 +408,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
                   ...filteredSubjects.map((subject) => ({ value: subject.id, label: normalizeSubjectName(subject.name) })),
                 ]}
                   name="subjectId"
-                  disabled={!formData.sectionId}
+                  disabled={!formData.sectionId && !formData.teacherId}
                   className="w-full"
                 />
               </div>

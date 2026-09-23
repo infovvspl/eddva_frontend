@@ -836,8 +836,10 @@ export default function Communications({ heightClass = 'h-full', institutes = []
       {/* 3-Column Redesigned Layout */}
       <div className="mt-2 mb-2 flex-1 min-h-0 overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-xl flex flex-col md:flex-row relative">
 
-        {/* Column 1: Full Width Contacts List (Shown when no chat selected) */}
-        <div className={`w-full border-r border-slate-100 flex flex-col shrink-0 min-h-0 bg-slate-50/10 transition-all ${selectedUser ? 'hidden' : 'flex-1 flex'}`}>
+        {/* Column 1: Contacts List — single-pane takeover below xl (hidden once a
+            chat is open, like a mobile messenger); a fixed-width sidebar at xl+
+            so it stays visible alongside the chat panel, matching Column 3. */}
+        <div className={`w-full border-r border-slate-100 flex flex-col shrink-0 min-h-0 bg-slate-50/10 transition-all ${selectedUser ? 'hidden xl:flex' : 'flex-1 flex'} xl:w-80 xl:flex-none`}>
           <div className="p-4 bg-white border-b border-slate-100/60 shrink-0">
             <div className="flex flex-col sm:flex-row items-center gap-2.5">
               {isSuperAdmin && institutes.length > 0 && (
@@ -940,8 +942,10 @@ export default function Communications({ heightClass = 'h-full', institutes = []
           </div>
         </div>
 
-        {/* Column 2: Full Screen Dedicated Active Chat Page (Covers full screen including headerbar) */}
-        <div className={`flex-1 flex flex-col min-w-0 min-h-0 bg-white ${!selectedUser ? 'hidden' : 'fixed inset-0 z-[100] w-full h-full bg-white flex flex-col'}`}>
+        {/* Column 2: Active Chat — fullscreen takeover only below xl (mobile has
+            no room for list + chat side by side); at xl+ it sits inline next to
+            the contacts list, same breakpoint convention as Column 3. */}
+        <div className={`flex-1 flex flex-col min-w-0 min-h-0 bg-white ${!selectedUser ? 'hidden xl:flex' : 'fixed inset-0 z-[100] w-full h-full bg-white flex flex-col xl:static xl:inset-auto xl:z-auto xl:w-auto xl:h-auto'}`}>
           {!selectedUser ? (
             <div className="flex h-full flex-col items-center justify-center text-center p-6 opacity-60 bg-slate-50/10">
               <MessageSquare className="h-10 w-10 text-slate-350 mb-2" />

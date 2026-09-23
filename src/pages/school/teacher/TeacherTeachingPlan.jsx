@@ -132,7 +132,6 @@ export default function TeacherTeachingPlan() {
 
   // Per-section pagination
   const [annualPage, setAnnualPage] = useState(1);
-  const [todayPage, setTodayPage] = useState(1);
   const [lessonPlansPage, setLessonPlansPage] = useState(1);
   const [topicsPage, setTopicsPage] = useState(1);
 
@@ -281,15 +280,8 @@ export default function TeacherTeachingPlan() {
     return true;
   };
 
-  const filteredTimetable = timetable.filter(matchesFilter);
   const filteredPlans = Array.from(new Map(publishedPlans.map(plan => [plan.id, plan])).values()).filter(matchesFilter);
   const filteredLessons = lessons.filter(item => matchesFilter(item, { checkTopicDimension: true }));
-
-  // Lesson attached to a given timetable slot, if any — lets "Today's Scheduled Classes"
-  // show what's already covered instead of always offering "Attach Lesson Plan".
-  const lessonByTimetableId = new Map(
-    lessons.filter(l => l.timetable_id).map(l => [l.timetable_id, l])
-  );
 
   // Flatten all topics from filteredPlans (syllabus plan chapter_allocations)
   const planTopicsList = filteredPlans.flatMap(plan => {
@@ -386,10 +378,6 @@ export default function TeacherTeachingPlan() {
   const annualTotalPages = Math.max(1, Math.ceil(filteredPlans.length / PAGE_SIZE));
   const safeAnnualPage = Math.min(annualPage, annualTotalPages);
   const paginatedPlans = filteredPlans.slice((safeAnnualPage - 1) * PAGE_SIZE, safeAnnualPage * PAGE_SIZE);
-
-  const todayTotalPages = Math.max(1, Math.ceil(filteredTimetable.length / PAGE_SIZE));
-  const safeTodayPage = Math.min(todayPage, todayTotalPages);
-  const paginatedTimetable = filteredTimetable.slice((safeTodayPage - 1) * PAGE_SIZE, safeTodayPage * PAGE_SIZE);
 
   const lessonPlansTotalPages = Math.max(1, Math.ceil(filteredLessons.length / PAGE_SIZE));
   const safeLessonPlansPage = Math.min(lessonPlansPage, lessonPlansTotalPages);
@@ -582,7 +570,7 @@ export default function TeacherTeachingPlan() {
 
       {/* ANNUAL SYLLABUS TARGET PLAN ASSIGNED BY ADMIN */}
       <div className="rounded-3xl border border-blue-200 bg-blue-50/30 p-6 shadow-sm dark:border-blue-900/30 dark:bg-blue-950/20 space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-blue-100 dark:border-blue-900/40">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-blue-100 dark:border-blue-900/40">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-2xl bg-blue-600 text-white shadow-md">
               <Sparkles size={20} />
@@ -592,9 +580,31 @@ export default function TeacherTeachingPlan() {
               <p className="text-xs text-slate-500">Official annual subject target roadmap published by academic administration.</p>
             </div>
           </div>
-          <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 text-xs font-black">
-            {filteredPlans.length} Annual Targets
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={selectedClass}
+              onChange={e => setSelectedClass(e.target.value)}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold outline-none focus:border-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+            >
+              <option value="ALL">All Classes</option>
+              {availableClasses.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            <select
+              value={selectedSection}
+              onChange={e => setSelectedSection(e.target.value)}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold outline-none focus:border-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+            >
+              <option value="ALL">All Sections</option>
+              {availableSections.map(s => (
+                <option key={s.id} value={s.id}>Section {s.name}</option>
+              ))}
+            </select>
+            <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 text-xs font-black whitespace-nowrap">
+              {filteredPlans.length} Annual Targets
+            </span>
+          </div>
         </div>
 
         {filteredPlans.length === 0 ? (
@@ -642,64 +652,6 @@ export default function TeacherTeachingPlan() {
         <PageControls page={safeAnnualPage} totalPages={annualTotalPages} onPageChange={setAnnualPage} />
       </div>
 
-      {/* Today's Timetable Sessions */}
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/30">
-              <Calendar size={20} />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Today's Scheduled Classes</h3>
-              <p className="text-xs text-slate-500">Attach or launch lesson plans for today's timetable slots.</p>
-            </div>
-          </div>
-        </div>
-
-        {filteredTimetable.length === 0 ? (
-          <p className="text-xs text-slate-400 py-4 text-center">No class periods scheduled for the selected filter.</p>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {paginatedTimetable.map(slot => {
-              const attachedLesson = lessonByTimetableId.get(slot.id);
-              return (
-                <div key={slot.id} className="rounded-2xl border border-slate-200 p-4 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-950/30 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-extrabold text-blue-600 dark:text-blue-400">{slot.class_name} ({slot.section_name})</span>
-                    <span className="text-[10px] font-bold text-slate-400">{slot.start_time} - {slot.end_time}</span>
-                  </div>
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">{slot.subject_name || 'Subject Period'}</h4>
-                  {attachedLesson ? (
-                    <div className="space-y-2">
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${attachedLesson.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'}`}>
-                        {attachedLesson.status === 'COMPLETED' ? 'Completed' : 'Lesson Attached'}
-                      </span>
-                      <button
-                        onClick={() => navigate(`/school/teacher/lesson-plans/${attachedLesson.id}`, { state: { subjectName: attachedLesson.subject_name } })}
-                        className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-blue-200 text-blue-600 py-2 text-xs font-bold hover:bg-blue-50 transition-colors dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950/30"
-                      >
-                        <ArrowRight size={14} /> View Lesson
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setSelectedTimetableSlot(slot);
-                        setCreateModalOpen(true);
-                      }}
-                      className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 text-white py-2 text-xs font-bold hover:bg-blue-700 transition-colors"
-                    >
-                      <Plus size={14} /> Attach Lesson Plan
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-        <PageControls page={safeTodayPage} totalPages={todayTotalPages} onPageChange={setTodayPage} />
-      </div>
-
       {/* MY LESSON PLANS — actual lesson_plans records you've created (AI brief or manual) */}
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
@@ -714,6 +666,15 @@ export default function TeacherTeachingPlan() {
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={() => {
+                setSelectedTimetableSlot(null);
+                setCreateModalOpen(true);
+              }}
+              className="flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-blue-700 transition-all"
+            >
+              <Plus size={15} /> New Lesson
+            </button>
+            <button
               onClick={() => setTemplatesModalOpen(true)}
               className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 transition-all"
             >
@@ -726,7 +687,7 @@ export default function TeacherTeachingPlan() {
         </div>
 
         {filteredLessons.length === 0 ? (
-          <p className="text-xs text-slate-400 py-4 text-center italic">No lesson plans yet for this filter selection — create one from "Today's Scheduled Classes" or "+ New Lesson."</p>
+          <p className="text-xs text-slate-400 py-4 text-center italic">No lesson plans yet for this filter selection — create one with "+ New Lesson."</p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {paginatedLessons.map(lesson => (
@@ -741,20 +702,43 @@ export default function TeacherTeachingPlan() {
         <PageControls page={safeLessonPlansPage} totalPages={lessonPlansTotalPages} onPageChange={setLessonPlansPage} />
       </div>
 
-      {/* Syllabus Topics — Progress Tracker (sourced from the admin-assigned syllabus plan's topics) */}
+      {/* Syllabus Topics — Progress Tracker (sourced from the admin-assigned syllabus plan's topics).
+          Read-only status overview — deliberately doesn't link out to the syllabus planner
+          (that's what the Annual Target cards above are for); delay reason is shown right
+          on the card instead so nothing needs a click-through to be understood. */}
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30">
               <BookOpen size={20} />
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Syllabus Topics — Progress Tracker</h3>
-              <p className="text-xs text-slate-500">Topics from your assigned syllabus plan. Click a topic to update progress.</p>
+              <p className="text-xs text-slate-500">Topics from your assigned syllabus plan, with status and delay reason at a glance.</p>
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={selectedClass}
+              onChange={e => setSelectedClass(e.target.value)}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold outline-none focus:border-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+            >
+              <option value="ALL">All Classes</option>
+              {availableClasses.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            <select
+              value={selectedSection}
+              onChange={e => setSelectedSection(e.target.value)}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold outline-none focus:border-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+            >
+              <option value="ALL">All Sections</option>
+              {availableSections.map(s => (
+                <option key={s.id} value={s.id}>Section {s.name}</option>
+              ))}
+            </select>
             {['ALL', 'TODAY', 'PENDING', 'COMPLETED', 'DELAYED'].map(tab => (
               <button
                 key={tab}
@@ -823,20 +807,16 @@ export default function TeacherTeachingPlan() {
                       </div>
                     )}
 
-                    {hasDelay && (
-                      <p className="text-[10px] font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1">
-                        <AlertCircle size={11} /> {topic.delayReason}
-                      </p>
-                    )}
                   </div>
 
                   <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <button
-                      onClick={() => navigate(`/school/teacher/syllabus-planner/${topic.planId}`, { state: { subjectName: topic.subject_name } })}
-                      className="w-full flex items-center justify-center gap-1.5 py-2 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 text-white text-xs font-extrabold transition-all shadow-sm"
-                    >
-                      <ArrowRight size={13} /> {isDone ? 'View in Plan' : 'Update Progress →'}
-                    </button>
+                    {hasDelay ? (
+                      <p className="text-[10px] font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
+                        <AlertCircle size={12} className="shrink-0" /> {topic.delayReason}
+                      </p>
+                    ) : (
+                      <p className="text-[10px] font-semibold text-slate-400">No delay reported.</p>
+                    )}
                   </div>
                 </div>
               );

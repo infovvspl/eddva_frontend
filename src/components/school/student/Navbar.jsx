@@ -52,6 +52,13 @@ const pageTitles = {
   '/school/student/attendance': 'Attendance',
   '/school/student/analytics': 'Performance Analytics',
   '/school/student/doubts': 'My Doubts',
+  '/school/student/planner': 'AI Study Planner',
+  '/school/student/notifications': 'Notifications',
+  '/school/student/career': 'Career Guidance',
+  '/school/student/astro-profile': 'Astro Profile',
+  '/school/student/syllabus': 'Syllabus',
+  '/school/student/fees': 'Fees',
+  '/school/student/quiz': 'Quiz',
 
   '/school/student/gamification': 'Gamification',
   '/school/student/battle-arena': 'Battle Arena',
@@ -84,8 +91,13 @@ const studentPages = [
 
 function pageTitle(pathname, state) {
   if (/^\/school\/student\/study-materials\/[^/]+$/.test(pathname)) return state?.materialTypeLabel || 'Material';
+  if (/^\/school\/student\/ai-study\/[^/]+$/.test(pathname)) return 'AI Study';
   if (pageTitles[pathname]) return pageTitles[pathname];
   const match = Object.entries(pageTitles)
+    // '/school/student' (the dashboard root) is a startsWith prefix of every
+    // route in this app — exclude it so an unlisted sub-route falls through
+    // to the titlecase default below instead of being mislabeled "Dashboard".
+    .filter(([path]) => path !== '/school/student')
     .sort(([a], [b]) => b.length - a.length)
     .find(([path]) => pathname.startsWith(`${path}/`));
   if (match) return match[1];
