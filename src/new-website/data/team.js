@@ -9,7 +9,7 @@ import ayush from "../assets/team-ayush.png";
 import ankit from "../assets/team-ankit.png";
 import priyanka from "../assets/team-priyanka.png";
 import bhagyashree from "../assets/Bhagyasree.png";
-import akankshya from "../assets/team-akankshya.png";
+import akankshya from "../assets/akankshya.png";
 import subham from "../assets/team-subham.png";
 
 export const founder = {

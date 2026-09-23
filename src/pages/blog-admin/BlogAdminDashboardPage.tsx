@@ -3,12 +3,12 @@
 // DashboardLayout/sidebar. Guarded by presence of a valid blog-admin session
 // (checked against the backend on mount), not by any LMS role.
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   Loader2, Search, RefreshCw, Plus, Pencil, Trash2, X, Image as ImageIcon,
-  Eye, EyeOff, GripVertical, Newspaper, LogOut,
+  Eye, EyeOff, GripVertical, Newspaper, LogOut, Bold, List,
 } from 'lucide-react';
 import {
   getCurrentBlogAdmin, logoutBlogAdmin,
@@ -146,6 +146,50 @@ export default function BlogAdminDashboardPage() {
 
   const removeSection = (index: number) =>
     setForm((f) => ({ ...f, sections: f.sections.filter((_, i) => i !== index) }));
+
+  // ── Formatting toolbar ────────────────────────────────────────────────
+  // A section's body is plain text following the small convention
+  // renderBlogText.jsx parses (blank line = new paragraph, "- " = bullet,
+  // **text** = bold) — these buttons apply that syntax to the current
+  // selection instead of requiring it be typed by hand, so anyone can bold
+  // text without knowing the markdown-ish syntax exists.
+  const bodyRefs = useRef<Record<number, HTMLTextAreaElement | null>>({});
+
+  const applyBold = (index: number) => {
+    const el = bodyRefs.current[index];
+    if (!el) return;
+    const { selectionStart, selectionEnd, value } = el;
+    const selected = value.slice(selectionStart, selectionEnd);
+    const inserted = selected ? `**${selected}**` : '**bold text**';
+    const newValue = value.slice(0, selectionStart) + inserted + value.slice(selectionEnd);
+    updateSection(index, { body: newValue });
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(selectionStart + 2, selectionStart + inserted.length - 2);
+    });
+  };
+
+  const applyBullet = (index: number) => {
+    const el = bodyRefs.current[index];
+    if (!el) return;
+    const { selectionStart, selectionEnd, value } = el;
+    const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1;
+    const nextBreak = value.indexOf('\n', selectionEnd);
+    const lineEnd = nextBreak === -1 ? value.length : nextBreak;
+    const lines = value.slice(lineStart, lineEnd).split('\n');
+    const alreadyBulleted = lines.every((l) => l.trim() === '' || /^[-*]\s/.test(l));
+    const newLines = lines.map((l) => {
+      if (l.trim() === '') return l;
+      return alreadyBulleted ? l.replace(/^[-*]\s+/, '') : `- ${l}`;
+    });
+    const newBlock = newLines.join('\n');
+    const newValue = value.slice(0, lineStart) + newBlock + value.slice(lineEnd);
+    updateSection(index, { body: newValue });
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(lineStart, lineStart + newBlock.length);
+    });
+  };
 
   const handleCropConfirm = async (blob: Blob) => {
     setCropFile(null);
@@ -418,7 +462,26 @@ export default function BlogAdminDashboardPage() {
                         </button>
                       )}
                     </div>
+                    <div className="mb-1.5 flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => applyBold(i)}
+                        title="Bold (wrap selected text in **bold**)"
+                        className="inline-flex items-center justify-center rounded-md border border-slate-200 p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
+                      >
+                        <Bold className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => applyBullet(i)}
+                        title="Bullet list"
+                        className="inline-flex items-center justify-center rounded-md border border-slate-200 p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
+                      >
+                        <List className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                     <textarea
+                      ref={(el) => { bodyRefs.current[i] = el; }}
                       value={section.body}
                       onChange={(e) => updateSection(i, { body: e.target.value })}
                       rows={6}
