@@ -229,7 +229,7 @@ const HeroSection = () => {
             </button>
             <iframe
               className="nw-video-modal__iframe"
-              src={`https://www.youtube-nocookie.com/embed/${DEMO_VIDEO_ID}?autoplay=1`}
+              src={`<iframe width="560" height="315" src="https://www.youtube.com/embed/OXY5dOQ9wlw?si=hNdhWOcT9JhgPDKt" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`}
               title="EDDVA demo video"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
