@@ -28,6 +28,15 @@ export const AI_FEATURES: AiFeature[] = [
     icon: 'CalendarCheck',
   },
   {
+    key: 'ai_tutor',
+    label: 'AI Tutor',
+    description: "Student chatbot that answers questions from the school's own course material first, with safe web search as a fallback",
+    category: 'student',
+    uiType: 'full_page',
+    defaultEnabled: true,
+    icon: 'Bot',
+  },
+  {
     key: 'ai_career_guidance',
     label: 'Career Guidance AI',
     description: 'AI-powered career counselling, aptitude analysis & guidance reports',

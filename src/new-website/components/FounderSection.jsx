@@ -16,22 +16,25 @@ const FounderSection = () => {
       <span className="nw-founder__dots" aria-hidden="true" />
       <div className={`nw-founder__container${inView ? " nw-in" : ""}`}>
 
-        <figure className="nw-founder__photo">
-          {founder.photo ? (
-            <img src={founder.photo} alt={founder.name} loading="lazy" />
-          ) : (
-            <span className="nw-founder__avatar" aria-hidden="true">
-              {getInitials(founder.name)}
-            </span>
-          )}
+        <div className="nw-founder__photo-wrap">
+          <figure className="nw-founder__photo">
+            {founder.photo ? (
+              <img src={founder.photo} alt={founder.name} loading="lazy" />
+            ) : (
+              <span className="nw-founder__avatar" aria-hidden="true">
+                {getInitials(founder.name)}
+              </span>
+            )}
+          </figure>
           <figcaption className="nw-founder__caption">
             <strong>{founder.name}</strong>
             <span>{founder.role}</span>
           </figcaption>
-        </figure>
+        </div>
 
         <div className="nw-founder__body">
           <span className="nw-founder__label">Our Founder</span>
+          <span className="nw-founder__rule" aria-hidden="true" />
           <h2 className="nw-founder__heading">
             Driven by Purpose.<br />
             Committed to <span className="nw-founder__heading-accent">Education.</span>

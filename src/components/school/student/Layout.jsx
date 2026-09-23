@@ -16,6 +16,7 @@ import {
   MonitorPlay,
   FileText,
   BookOpen,
+  Bot,
   BrainCircuit,
   ClipboardList,
   UserCheck,
@@ -48,6 +49,7 @@ export default function Layout() {
   const hasTimetable = useSchoolFeature('module', 'timetable');
   const hasCalendar = useSchoolFeature('module', 'academic_calendar');
   const hasPlanner = useSchoolFeature('ai', 'ai_study_planner');
+  const hasTutor = useSchoolFeature('ai', 'ai_tutor');
   const hasDoubts = useSchoolFeature('ai', 'ai_doubt_solver');
   const hasCareer = useSchoolFeature('ai', 'ai_career_guidance');
 
@@ -70,6 +72,7 @@ export default function Layout() {
     { label: 'Recorded Classes', path: '/school/student/recorded-classes', icon: Video, color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20', enabled: true },
     { label: 'Study Materials', path: '/school/student/study-materials', icon: BookOpen, color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/20', enabled: true },
     { label: 'AI Planner', path: '/school/student/planner', icon: BrainCircuit, color: 'text-purple-500 bg-purple-50 dark:bg-purple-950/20', enabled: hasPlanner },
+    { label: 'AI Tutor', path: '/school/student/ai-tutor', icon: Bot, color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/20', enabled: hasTutor },
     { label: 'Assignments', path: '/school/student/assignments', icon: FileText, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20', enabled: hasAssignments },
     { label: 'Assessments', path: '/school/student/assessments', icon: ClipboardList, color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/20', enabled: hasAssessments },
     { label: 'Attendance', path: '/school/student/attendance', icon: UserCheck, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20', enabled: true },
