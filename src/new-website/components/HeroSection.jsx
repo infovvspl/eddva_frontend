@@ -229,9 +229,10 @@ const HeroSection = () => {
             </button>
             <iframe
               className="nw-video-modal__iframe"
-              src={`https://www.youtube-nocookie.com/embed/${DEMO_VIDEO_ID}?autoplay=1`}
+              src={`https://www.youtube.com/embed/${DEMO_VIDEO_ID}?autoplay=1`}
               title="EDDVA demo video"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
             />
           </div>
