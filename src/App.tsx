@@ -322,7 +322,6 @@ const SchoolStudentCareerReport = lazy(() => import("./pages/school/student/care
 const SchoolStudentCareerExplorer = lazy(() => import("./pages/school/student/career/CareerExplorer"));
 const SchoolStudentCareerDetail = lazy(() => import("./pages/school/student/career/CareerDetail"));
 const SchoolStudentAiStudyPage = lazy(() => import("./pages/school/student/SchoolStudentAiStudyPage"));
-const SchoolStudentAiTutor = lazy(() => import("./pages/school/student/AiTutor"));
 const SchoolStudentTopicQuizPage = lazy(() => import("./pages/school/student/SchoolStudentTopicQuizPage"));
 
 // ——————————————————————————————————————————————————————————————————————————— School parent pages ———————————————————————————————————————————————————————————————————————————
@@ -640,7 +639,8 @@ const SchoolRoutes = () => (
       <Route path="gamification" element={<SchoolStudentGamification />} />
       <Route path="planner" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_study_planner' }}><SchoolStudentStudyPlanner /></SchoolGuard>} />
       <Route path="ai-study/:topicId" element={<SchoolStudentAiStudyPage />} />
-      <Route path="ai-tutor" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_tutor' }}><SchoolStudentAiTutor /></SchoolGuard>} />
+      {/* The AI Tutor is now a panel on every page; old links open it on the dashboard. */}
+      <Route path="ai-tutor" element={<Navigate to="/school/student?aiTutor=open" replace />} />
       <Route path="quiz" element={<SchoolStudentTopicQuizPage />} />
       <Route path="attendance" element={<SchoolStudentAttendance />} />
       <Route path="timetable" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'module', key: 'timetable' }}><SchoolStudentTimetable /></SchoolGuard>} />

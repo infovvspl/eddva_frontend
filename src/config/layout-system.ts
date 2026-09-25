@@ -56,7 +56,6 @@ const ROUTE_LAYOUT_REGISTRY: Map<string, PageLayoutType> = new Map<string, PageL
 
   // Immersives
   ['/school/student/chat', 'immersive'],
-  ['/school/student/ai-tutor', 'immersive'],
 ]);
 
 /**

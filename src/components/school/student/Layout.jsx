@@ -4,6 +4,7 @@ import { AnimatePresence } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
+import AiTutorWidget from './AiTutorWidget';
 import { PageTransition } from '@/components/school/admin/PageTransition';
 import MaintenanceNotice from '@/components/shared/MaintenanceNotice';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -16,7 +17,6 @@ import {
   MonitorPlay,
   FileText,
   BookOpen,
-  Bot,
   BrainCircuit,
   ClipboardList,
   UserCheck,
@@ -54,6 +54,11 @@ export default function Layout() {
   const hasCareer = useSchoolFeature('ai', 'ai_career_guidance');
 
   const layoutConfig = getPageLayoutConfig(location.pathname);
+  // The tutor is paused during a test (the backend refuses it too) and would
+  // cover the controls of a full-screen live class.
+  const showTutor = hasTutor
+    && !/\/assessments\/[^/]+\/take/.test(location.pathname)
+    && !/\/live\/[^/]+\/watch/.test(location.pathname);
 
   // Construct bottom navigation items dynamically
   const navItems = [
@@ -72,7 +77,6 @@ export default function Layout() {
     { label: 'Recorded Classes', path: '/school/student/recorded-classes', icon: Video, color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20', enabled: true },
     { label: 'Study Materials', path: '/school/student/study-materials', icon: BookOpen, color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/20', enabled: true },
     { label: 'AI Planner', path: '/school/student/planner', icon: BrainCircuit, color: 'text-purple-500 bg-purple-50 dark:bg-purple-950/20', enabled: hasPlanner },
-    { label: 'AI Tutor', path: '/school/student/ai-tutor', icon: Bot, color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/20', enabled: hasTutor },
     { label: 'Assignments', path: '/school/student/assignments', icon: FileText, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20', enabled: hasAssignments },
     { label: 'Assessments', path: '/school/student/assessments', icon: ClipboardList, color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/20', enabled: hasAssessments },
     { label: 'Attendance', path: '/school/student/attendance', icon: UserCheck, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20', enabled: true },
@@ -138,6 +142,8 @@ export default function Layout() {
             </span>
           </button>
         </nav>
+
+        {showTutor && <AiTutorWidget />}
 
         {/* Slide-up bottom drawer menu */}
         {moreDrawerOpen && (
@@ -232,6 +238,7 @@ export default function Layout() {
           </AnimatePresence>
         </main>
       </div>
+      {showTutor && <AiTutorWidget />}
     </div>
   );
 }

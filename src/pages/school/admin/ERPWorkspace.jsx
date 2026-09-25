@@ -72,14 +72,16 @@ export default function ERPWorkspace() {
                 localStorage.getItem('school_token') ||
                 localStorage.getItem('token') ||
                 '';
-              const libraryBackendUrl = import.meta.env.VITE_LIBRARY_BACKEND_URL || 'http://localhost:3001';
-              const targetSsoUrl = `${libraryBackendUrl}/api/v1/library/auth/sso?token=${encodeURIComponent(token)}`;
+              // Hand the session to the ERP frontend; the token goes in the URL fragment so it is
+              // never sent to a server or written to logs, and the ERP page removes it on arrival.
+              const erpFrontendUrl = import.meta.env.VITE_ERP_FRONTEND_URL || 'http://localhost:5173';
+              const targetSsoUrl = `${erpFrontendUrl}/sso#token=${encodeURIComponent(token)}&next=${encodeURIComponent('/library')}`;
               
               return (
                 <button
                   key={mod.key || 'library'}
                   type="button"
-                  onClick={() => window.open(targetSsoUrl, '_blank')}
+                  onClick={() => window.open(targetSsoUrl, '_blank', 'noopener')}
                   className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden group hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-lg transition-all cursor-pointer w-full text-left"
                 >
                   {content}
@@ -94,14 +96,14 @@ export default function ERPWorkspace() {
                 localStorage.getItem('school_token') ||
                 localStorage.getItem('token') ||
                 '';
-              const sportsBackendUrl = import.meta.env.VITE_SPORTS_BACKEND_URL || import.meta.env.VITE_LIBRARY_BACKEND_URL || 'http://localhost:3001';
-              const targetSsoUrl = `${sportsBackendUrl}/api/v1/sports/auth/sso?token=${encodeURIComponent(token)}`;
+              const erpFrontendUrl = import.meta.env.VITE_ERP_FRONTEND_URL || 'http://localhost:5173';
+              const targetSsoUrl = `${erpFrontendUrl}/sso#token=${encodeURIComponent(token)}&next=${encodeURIComponent('/sports')}`;
               
               return (
                 <button
                   key={mod.key || 'sports'}
                   type="button"
-                  onClick={() => window.open(targetSsoUrl, '_blank')}
+                  onClick={() => window.open(targetSsoUrl, '_blank', 'noopener')}
                   className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden group hover:border-emerald-500 dark:hover:border-emerald-500 hover:shadow-lg transition-all cursor-pointer w-full text-left"
                 >
                   {content}

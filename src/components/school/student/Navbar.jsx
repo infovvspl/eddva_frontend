@@ -53,7 +53,6 @@ const pageTitles = {
   '/school/student/analytics': 'Performance Analytics',
   '/school/student/doubts': 'My Doubts',
   '/school/student/planner': 'AI Study Planner',
-  '/school/student/ai-tutor': 'AI Tutor',
   '/school/student/notifications': 'Notifications',
   '/school/student/career': 'Career Guidance',
   '/school/student/astro-profile': 'Astro Profile',
