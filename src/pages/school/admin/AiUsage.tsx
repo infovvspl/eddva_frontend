@@ -163,6 +163,14 @@ const num = (v: unknown) => Number(v || 0);
 const money = (v: unknown) => `$${num(v).toFixed(4)}`;
 const moneyShort = (v: unknown) => `$${num(v).toFixed(2)}`;
 const featureLabel = (f: string) => AI_FEATURES.find(x => x.id === f)?.label ?? FEATURE_LABELS[f] ?? f;
+/**
+ * Usage rows store the routed id, e.g. "together:zai-org/GLM-5.3-Flash". Show the
+ * model's own name in the table and keep the full id in the cell's title.
+ */
+const shortModel = (m: string) => {
+  const afterProvider = m.includes(':') ? m.slice(m.indexOf(':') + 1) : m;
+  return afterProvider.includes('/') ? afterProvider.slice(afterProvider.lastIndexOf('/') + 1) : afterProvider;
+};
 const pct = (part: number, total: number) => total > 0 ? Math.round((part / total) * 100) : 0;
 
 function formatSchoolName(id?: string, name?: string, isCoaching = false): string {
@@ -977,6 +985,8 @@ interface OverviewProps {
   loading: boolean;
   overview: Record<string, unknown> | null;
   features: Record<string, unknown>[];
+  /** One row per feature+model, from /ai-usage/by-model. */
+  models: Record<string, unknown>[];
   trend: Record<string, unknown>[];
   schools: SchoolRow[];
   filteredSchools: SchoolRow[];
@@ -989,7 +999,7 @@ interface OverviewProps {
 }
 
 function OverviewTab({
-  loading, overview, features, trend, schools, filteredSchools,
+  loading, overview, features, models, trend, schools, filteredSchools,
   search, sortKey, sortDir, onSort, onViewSchool, isSuper,
 }: OverviewProps) {
   const isCoaching = useAuthStore(s => s.tenantType) === 'coaching';
@@ -997,6 +1007,33 @@ function OverviewTab({
   // Mobile accordion/display states
   const [showAllAlerts, setShowAllAlerts] = useState(false);
   const [expandedGraphs, setExpandedGraphs] = useState<Set<string>>(new Set(['daily-requests']));
+
+  // Feature+model rows, and the per-model roll-up shown above the table. Cost is
+  // only meaningful for providers we have rates for; unpriced rows contribute 0
+  // and are rendered as "—" rather than a misleading $0.0000.
+  const modelRows = useMemo(
+    () => [...models].sort((a, b) => num(b.tokens) - num(a.tokens)),
+    [models],
+  );
+  const modelTotals = useMemo(() => {
+    const byModel = new Map<string, { model: string; provider: string; requests: number; tokens: number; cost: number }>();
+    for (const r of models) {
+      const key = `${r.provider}|${r.model}`;
+      const prev = byModel.get(key) ?? {
+        model: String(r.model ?? 'unknown'), provider: String(r.provider ?? 'unknown'),
+        requests: 0, tokens: 0, cost: 0,
+      };
+      prev.requests += num(r.requests);
+      prev.tokens += num(r.tokens);
+      prev.cost += num(r.cost);
+      byModel.set(key, prev);
+    }
+    return [...byModel.values()].sort((a, b) => b.tokens - a.tokens);
+  }, [models]);
+  const modelTokenTotal = useMemo(
+    () => modelTotals.reduce((sum, m) => sum + m.tokens, 0),
+    [modelTotals],
+  );
 
   const toggleGraph = (id: string) => {
     setExpandedGraphs(prev => {
@@ -1293,6 +1330,158 @@ function OverviewTab({
           </div>
         </div>
       )}
+
+      {/* Token usage per feature AND the model that served it. by-feature cannot
+          show this: the daily rollup it reads has no model column. */}
+      <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
+        <div
+          className="flex items-center justify-between border-b border-slate-100 px-5 py-4 cursor-pointer sm:pointer-events-none"
+          onClick={() => toggleGraph('model-usage')}
+        >
+          <div>
+            <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">Model Usage by Feature</h3>
+            <p className="mt-0.5 text-xs text-slate-400">
+              Which model served each feature, and the tokens it spent
+            </p>
+          </div>
+          <div className="sm:hidden text-slate-400">
+            {expandedGraphs.has('model-usage') ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </div>
+        </div>
+
+        <div className={`sm:block ${expandedGraphs.has('model-usage') ? 'block' : 'hidden'}`}>
+          {loading ? (
+            <div className="px-5 py-10 text-center text-sm text-slate-400">Loading…</div>
+          ) : modelRows.length === 0 ? (
+            <div className="px-5 py-10 text-center text-sm text-slate-400">
+              No model-level usage recorded for this period.
+            </div>
+          ) : (
+            <>
+              {/* Per-model roll-up: share of all tokens in the period */}
+              <div className="grid grid-cols-1 gap-3 border-b border-slate-100 p-5 sm:grid-cols-2 lg:grid-cols-3">
+                {modelTotals.slice(0, 6).map(m => (
+                  <div key={`${m.provider}|${m.model}`} className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="truncate text-xs font-black text-slate-700" title={m.model}>
+                        {shortModel(m.model)}
+                      </p>
+                      <span className="shrink-0 rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold uppercase text-brand-600">
+                        {m.provider}
+                      </span>
+                    </div>
+                    <div className="mt-3 flex items-end justify-between">
+                      <div>
+                        <p className="text-[10px] uppercase text-slate-400">Tokens</p>
+                        <p className="text-lg font-black text-slate-700">{m.tokens.toLocaleString()}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] uppercase text-slate-400">Requests</p>
+                        <p className="text-sm font-bold text-slate-600">{m.requests.toLocaleString()}</p>
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <Progress value={pct(m.tokens, modelTokenTotal)} className="h-1" />
+                      <p className="mt-1 text-[10px] text-slate-400">
+                        {pct(m.tokens, modelTokenTotal)}% of tokens · {m.cost > 0 ? moneyShort(m.cost) : 'unpriced'}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Mobile: one card per feature+model */}
+              <div className="divide-y divide-slate-50 sm:hidden">
+                {modelRows.map(r => (
+                  <div key={`${r.feature}|${r.provider}|${r.model}`} className="p-5">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-black text-slate-700">{featureLabel(String(r.feature))}</p>
+                      <span className="shrink-0 rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold uppercase text-brand-600">
+                        {String(r.provider)}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 truncate text-xs text-slate-500" title={String(r.model)}>
+                      {shortModel(String(r.model))}
+                    </p>
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                      <div className="rounded-lg border border-slate-100 bg-slate-50 p-2">
+                        <p className="text-slate-400">Input</p>
+                        <p className="font-bold text-slate-700">{num(r.prompt_tokens).toLocaleString()}</p>
+                      </div>
+                      <div className="rounded-lg border border-slate-100 bg-slate-50 p-2">
+                        <p className="text-slate-400">Output</p>
+                        <p className="font-bold text-slate-700">{num(r.completion_tokens).toLocaleString()}</p>
+                      </div>
+                      <div className="rounded-lg border border-slate-100 bg-slate-50 p-2">
+                        <p className="text-slate-400">Requests</p>
+                        <p className="font-bold text-slate-700">{num(r.requests).toLocaleString()}</p>
+                      </div>
+                      <div className="rounded-lg border border-slate-100 bg-slate-50 p-2">
+                        <p className="text-slate-400">Est. Cost</p>
+                        <p className="font-bold text-amber-600">{num(r.cost) > 0 ? money(r.cost) : '—'}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop table */}
+              <div className="hidden overflow-x-auto sm:block">
+                <table className="w-full min-w-[860px] text-sm">
+                  <thead className="bg-slate-50/80">
+                    <tr className="text-left text-[10px] uppercase text-slate-400">
+                      <th className="px-5 py-3 font-semibold">Feature</th>
+                      <th className="px-4 py-3 font-semibold">Model</th>
+                      <th className="px-4 py-3 text-right font-semibold">Requests</th>
+                      <th className="px-4 py-3 text-right font-semibold">Input</th>
+                      <th className="px-4 py-3 text-right font-semibold">Output</th>
+                      <th className="px-4 py-3 text-right font-semibold">Total Tokens</th>
+                      <th className="px-4 py-3 text-right font-semibold">Est. Cost</th>
+                      <th className="px-4 py-3 text-right font-semibold">Avg Latency</th>
+                      <th className="px-5 py-3 text-right font-semibold">Success</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {modelRows.map(r => {
+                      const requests = num(r.requests);
+                      const successRate = requests > 0 ? Math.round((num(r.success) / requests) * 100) : 100;
+                      return (
+                        <tr key={`${r.feature}|${r.provider}|${r.model}`} className="transition-colors hover:bg-slate-50/50">
+                          <td className="px-5 py-3 font-semibold text-slate-700">{featureLabel(String(r.feature))}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold uppercase text-brand-600">
+                                {String(r.provider)}
+                              </span>
+                              <span className="text-slate-600" title={String(r.model)}>{shortModel(String(r.model))}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-right text-slate-600">{requests.toLocaleString()}</td>
+                          <td className="px-4 py-3 text-right text-slate-500">{num(r.prompt_tokens).toLocaleString()}</td>
+                          <td className="px-4 py-3 text-right text-slate-500">{num(r.completion_tokens).toLocaleString()}</td>
+                          <td className="px-4 py-3 text-right font-semibold text-slate-700">{num(r.tokens).toLocaleString()}</td>
+                          <td className="px-4 py-3 text-right font-semibold text-amber-600">
+                            {num(r.cost) > 0 ? money(r.cost) : <span className="text-slate-300">—</span>}
+                          </td>
+                          <td className="px-4 py-3 text-right">{latencyBadge(num(r.avg_latency_ms))}</td>
+                          <td className="px-5 py-3 text-right">{successBadge(successRate)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="border-t border-slate-100 px-5 py-3">
+                <p className="text-xs text-slate-400">
+                  {modelRows.length} feature/model {modelRows.length !== 1 ? 'combinations' : 'combination'} ·
+                  {' '}"—" means no price is configured for that provider yet
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
 
       {/* Top Schools Table */}
       {isSuper && (
@@ -1969,6 +2158,7 @@ export default function AiUsage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [overview, setOverview] = useState<Record<string, unknown> | null>(null);
   const [features, setFeatures] = useState<Record<string, unknown>[]>([]);
+  const [models, setModels] = useState<Record<string, unknown>[]>([]);
   const [trend, setTrend] = useState<Record<string, unknown>[]>([]);
   const [schools, setSchools] = useState<SchoolRow[]>([]);
 
@@ -2048,13 +2238,15 @@ export default function AiUsage() {
     try {
       const client = isCoaching ? apiClient : schoolApi;
 
-      const [ov, byF, tr] = await Promise.all([
+      const [ov, byF, byM, tr] = await Promise.all([
         client.get(`/ai-usage/overview${vq}`),
         client.get(`/ai-usage/by-feature${vq}`),
+        client.get(`/ai-usage/by-model${vq}`),
         client.get(`/ai-usage/trend${vq}`),
       ]);
       setOverview((ov.data as { data?: Record<string, unknown> })?.data ?? null);
       setFeatures(((byF.data as { data?: unknown[] })?.data ?? []) as Record<string, unknown>[]);
+      setModels(((byM.data as { data?: unknown[] })?.data ?? []) as Record<string, unknown>[]);
       setTrend(((tr.data as { data?: unknown[] })?.data ?? []) as Record<string, unknown>[]);
       if (isSuper) {
         const inst = await client.get(`/ai-usage/by-institute${vq}`);
@@ -2232,6 +2424,7 @@ export default function AiUsage() {
           loading={loading}
           overview={overview}
           features={features}
+          models={models}
           trend={trend}
           schools={schools}
           filteredSchools={sortedFilteredSchools}

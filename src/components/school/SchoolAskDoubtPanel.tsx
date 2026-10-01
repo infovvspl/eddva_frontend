@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import api, { unwrapSchoolData } from "@/lib/api/school-client";
 import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { isAnswerPlaceholder } from '@/lib/doubt-answer';
 
 interface Props {
   recordingId: string;
@@ -38,8 +39,8 @@ function parseAiAnswer(raw: string | null | undefined): string {
   try {
     const obj = JSON.parse(str);
     if (obj && typeof obj === 'object') {
-      // Backend keys: brief.answer / detailed.solution (the AI service's actual field names).
-      return obj.detailed?.solution || obj.brief?.answer || obj.explanation || raw;
+      // Backend keys: brief.final_answer / detailed.explanation (NOT answer/solution).
+      return obj.brief?.final_answer || obj.brief?.answer || obj.detailed?.explanation || obj.detailed?.solution || obj.explanation || raw;
     }
   } catch (e) {}
   return raw;
@@ -118,14 +119,14 @@ function DoubtHistoryCard({ hd }: { hd: any }) {
               <div className="space-y-3">
                 {viewMode === "brief" && (
                   <MarkdownRenderer
-                    content={parsedAi.brief?.answer || parsedAi.detailed?.solution || ""}
+                    content={parsedAi.brief?.final_answer || parsedAi.brief?.answer || parsedAi.detailed?.explanation || parsedAi.detailed?.solution || ""}
                     className="prose-slate max-w-none prose-sm"
                   />
                 )}
                 {viewMode === "detailed" && (
                   <>
                     <MarkdownRenderer
-                      content={parsedAi.detailed?.solution || parsedAi.brief?.answer || ""}
+                      content={parsedAi.detailed?.explanation || parsedAi.detailed?.solution || parsedAi.brief?.answer || ""}
                       className="prose-slate max-w-none prose-sm"
                     />
                     {parsedAi.detailed?.final_answer && (
@@ -134,13 +135,13 @@ function DoubtHistoryCard({ hd }: { hd: any }) {
                         <MarkdownRenderer content={parsedAi.detailed.final_answer} className="prose-slate max-w-none prose-sm" />
                       </div>
                     )}
-                    {parsedAi.detailed?.verification && parsedAi.detailed.verification !== 'None' && (
+                    {parsedAi.detailed?.verification && !isAnswerPlaceholder(parsedAi.detailed.verification) && (
                       <div className="mt-2 rounded-lg bg-slate-50 p-2.5 border border-slate-150">
                         <h4 className="text-[9px] font-bold uppercase tracking-wider text-slate-500 mb-1">Verification</h4>
                         <MarkdownRenderer content={parsedAi.detailed.verification} className="prose-slate max-w-none prose-sm" />
                       </div>
                     )}
-                    {parsedAi.detailed?.key_concept && parsedAi.detailed.key_concept !== 'None' && (
+                    {parsedAi.detailed?.key_concept && !isAnswerPlaceholder(parsedAi.detailed.key_concept) && (
                       <div className="mt-2 rounded-lg bg-amber-50/60 p-2.5 border border-amber-100/60">
                         <h4 className="text-[9px] font-bold uppercase tracking-wider text-amber-600 mb-1">Key Concept</h4>
                         <MarkdownRenderer content={parsedAi.detailed.key_concept} className="prose-slate max-w-none prose-sm" />
@@ -545,7 +546,7 @@ export function SchoolAskDoubtPanel({
                               return (
                                 <>
                                   <MarkdownRenderer
-                                    content={obj.detailed?.solution || obj.brief?.answer || ''}
+                                    content={obj.detailed?.explanation || obj.detailed?.solution || obj.brief?.answer || ''}
                                     className="prose-slate max-w-none prose-sm"
                                   />
                                   {obj.detailed?.final_answer && (
@@ -554,13 +555,13 @@ export function SchoolAskDoubtPanel({
                                       <MarkdownRenderer content={obj.detailed.final_answer} className="prose-slate max-w-none prose-sm" />
                                     </div>
                                   )}
-                                  {obj.detailed?.verification && obj.detailed.verification !== 'None' && (
+                                  {obj.detailed?.verification && !isAnswerPlaceholder(obj.detailed.verification) && (
                                     <div className="mt-3 rounded-xl border border-slate-200 bg-white/60 p-3.5">
                                       <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">✓ Verification</h4>
                                       <MarkdownRenderer content={obj.detailed.verification} className="prose-slate max-w-none prose-sm" />
                                     </div>
                                   )}
-                                  {obj.detailed?.key_concept && obj.detailed.key_concept !== 'None' && (
+                                  {obj.detailed?.key_concept && !isAnswerPlaceholder(obj.detailed.key_concept) && (
                                     <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/60 p-3.5">
                                       <h4 className="text-[10px] font-black uppercase tracking-widest text-amber-600 mb-2">💡 Key Concept</h4>
                                       <MarkdownRenderer content={obj.detailed.key_concept} className="prose-slate max-w-none prose-sm" />

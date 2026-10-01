@@ -70,6 +70,7 @@ function parseAiAnswer(raw: string | null | undefined) {
 }
 
 import { formatMarkdown } from "@/components/shared/MarkdownRenderer";
+import { isAnswerPlaceholder } from '@/lib/doubt-answer';
 
 
 export function AskDoubtPanel({
@@ -358,13 +359,13 @@ export function AskDoubtPanel({
                             <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
                               {formatMarkdown(parsed.detailed?.solution || parsed.detailed?.explanation || parsed.brief?.answer || response.aiExplanation)}
                             </ReactMarkdown>
-                            {parsed.detailed?.verification && (
+                            {parsed.detailed?.verification && !isAnswerPlaceholder(parsed.detailed.verification) && (
                               <div className="p-3 bg-violet-50/50 border border-violet-100 rounded-lg not-prose">
                                 <p className="text-[10px] font-bold text-violet-600 uppercase tracking-wide mb-1">✓ Verification</p>
                                 <p className="text-xs text-slate-600 leading-relaxed">{parsed.detailed.verification}</p>
                               </div>
                             )}
-                            {parsed.detailed?.key_concept && (
+                            {parsed.detailed?.key_concept && !isAnswerPlaceholder(parsed.detailed.key_concept) && (
                               <div className="p-3 bg-indigo-50/50 border border-indigo-100 rounded-lg not-prose">
                                 <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wide mb-1">💡 Key Concept</p>
                                 <p className="text-xs text-slate-600 leading-relaxed">{parsed.detailed.key_concept}</p>

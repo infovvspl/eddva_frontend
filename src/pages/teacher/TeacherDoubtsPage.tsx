@@ -104,6 +104,7 @@ function parseAiAnswer(raw: string | null | undefined): AiAnswerStructured | nul
 
 import { formatMarkdown } from "@/components/shared/MarkdownRenderer";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { isAnswerPlaceholder } from '@/lib/doubt-answer';
 
 
 // ─── Status Badge ──────────────────────────────────────────────────────────────
@@ -599,13 +600,13 @@ function DoubtDetailPanel({ doubt, onRefresh, onDelete }: { doubt: Doubt; onRefr
                         {formatMarkdown(parsed.detailed?.solution || parsed.brief?.answer || doubt.aiExplanation)}
                       </ReactMarkdown>
                     </div>
-                    {parsed.detailed?.verification && (
+                    {parsed.detailed?.verification && !isAnswerPlaceholder(parsed.detailed.verification) && (
                       <div className="p-3 bg-blue-100/40 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800/50">
                         <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-1">✓ Verification</p>
                         <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed">{parsed.detailed.verification}</p>
                       </div>
                     )}
-                    {parsed.detailed?.key_concept && (
+                    {parsed.detailed?.key_concept && !isAnswerPlaceholder(parsed.detailed.key_concept) && (
                       <div className="p-3 bg-indigo-50/50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/50 rounded-lg">
                         <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide mb-1">💡 Key Concept</p>
                         <p className="text-xs text-indigo-800 dark:text-indigo-300 leading-relaxed">{parsed.detailed.key_concept}</p>
