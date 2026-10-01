@@ -83,6 +83,7 @@ function parseAiAnswer(raw: string | null | undefined): AiAnswerStructured | nul
 
 import { MarkdownRenderer, formatMarkdown as coreFormatMarkdown } from "@/components/shared/MarkdownRenderer";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { isAnswerPlaceholder } from '@/lib/doubt-answer';
 
 const formatMarkdown = (text?: string | string[] | any) => {
   if (!text) return "";
@@ -315,7 +316,7 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
                             )}
 
                             {/* Verification */}
-                            {!isTheory && parsedAi.detailed?.verification && (
+                            {!isTheory && parsedAi.detailed?.verification && !isAnswerPlaceholder(parsedAi.detailed.verification) && (
                               <div className="p-3 bg-blue-100/60 rounded-lg border border-blue-200/50">
                                 <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wide mb-1">
                                   {isNumerical ? "✓ Verification" : "✓ Academic Reasoning"}
@@ -329,7 +330,7 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
                             )}
 
                             {/* Key Concept */}
-                            {!isTheory && parsedAi.detailed?.key_concept && (
+                            {!isTheory && parsedAi.detailed?.key_concept && !isAnswerPlaceholder(parsedAi.detailed.key_concept) && (
                               <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
                                 <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wide mb-1">💡 Key Concept</p>
                                 <div className="text-xs text-indigo-800 leading-relaxed prose prose-xs prose-indigo max-w-none">

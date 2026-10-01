@@ -2544,7 +2544,7 @@ const ClassManagement: React.FC = () => {
                           try {
                             const obj = JSON.parse(str);
                             if (obj && typeof obj === 'object') {
-                              return obj.detailed?.solution || obj.brief?.answer || obj.explanation || raw;
+                              return obj.brief?.final_answer || obj.brief?.answer || obj.detailed?.explanation || obj.detailed?.solution || obj.explanation || raw;
                             }
                           } catch (e) {}
                           return raw;
