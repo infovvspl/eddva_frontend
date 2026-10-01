@@ -262,6 +262,14 @@ function MaterialBody({ material, isStudent }: { material: SchoolMaterial; isStu
   if (fileUrl && /\.pdf($|\?)/i.test(fileUrl)) {
     return <iframe title={title} src={fileUrl} className="h-[75vh] w-full rounded-xl border border-slate-200 bg-white" />;
   }
+  // Photos of notes, mind-map exports etc. — the upload form accepts JPG/PNG.
+  if (fileUrl && /\.(png|jpe?g|webp|gif)($|[?#])/i.test(fileUrl)) {
+    return (
+      <a href={fileUrl} target="_blank" rel="noreferrer" title="Open full size" className="block">
+        <img src={fileUrl} alt={title} className="mx-auto max-h-[75vh] w-auto max-w-full rounded-xl border border-slate-200 bg-white object-contain" />
+      </a>
+    );
+  }
   return <div className="rounded-xl border border-dashed border-slate-200 p-10 text-center text-sm font-semibold text-slate-400">No preview content is available.</div>;
 }
 

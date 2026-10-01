@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, Loader2, Lock } from 'lucide-react';
 import {
   getQuizQuestions, submitQuiz,
   type QuizQuestion, type QuizStatus,
 } from '@/lib/api/career';
-import { ErrorState, SkeletonBlock } from './_shared';
+import { CooldownCountdown, ErrorState, SkeletonBlock } from './_shared';
 
 export default function CareerQuiz() {
   const navigate = useNavigate();
@@ -43,8 +43,13 @@ export default function CareerQuiz() {
       navigate('/school/student/career/quiz/result', { state: { result } });
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(msg || 'Failed to submit quiz');
       setSubmitting(false);
+      if (msg && /retake the interest quiz after/i.test(msg)) {
+        // Already completed elsewhere (stale tab/session) - refresh status to show the locked screen instead of a generic error.
+        load();
+        return;
+      }
+      setError(msg || 'Failed to submit quiz');
     }
   };
 
@@ -61,15 +66,26 @@ export default function CareerQuiz() {
     return <div className="mx-auto max-w-2xl p-1"><ErrorState message={error} onRetry={load} /></div>;
   }
 
+  // Status failed to load in a recognizable shape - fail closed rather than
+  // silently rendering an answerable quiz.
+  if (!status) {
+    return <div className="mx-auto max-w-2xl p-1"><ErrorState message="Unable to verify quiz status. Please retry." onRetry={load} /></div>;
+  }
+
   // Already completed and locked
-  if (status?.completed && !status.canRetake) {
+  if (status.completed && !status.canRetake) {
     return (
       <div className="mx-auto max-w-2xl p-1">
         <div className="rounded-2xl border border-slate-100 bg-white p-8 text-center shadow-sm">
-          <Check className="mx-auto h-10 w-10 text-emerald-500" />
-          <h2 className="mt-3 text-lg font-bold text-slate-900">You have already completed the quiz</h2>
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
+            <Lock className="h-7 w-7 text-slate-400" />
+          </div>
+          <h2 className="mt-4 text-lg font-bold text-slate-900">You have already completed the quiz</h2>
+          <p className="mt-1 text-sm text-slate-500">You can retake it once the cooldown ends.</p>
           {status.canRetakeAfter && (
-            <p className="mt-1 text-sm text-slate-500">Next retake available: {new Date(status.canRetakeAfter).toLocaleDateString('en-GB')}</p>
+            <div className="mt-3 flex justify-center">
+              <CooldownCountdown targetDate={status.canRetakeAfter} onFinish={load} />
+            </div>
           )}
           <button onClick={() => navigate('/school/student/career/report')} className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700">
             View Career Report <ChevronRight className="h-4 w-4" />

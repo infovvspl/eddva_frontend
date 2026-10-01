@@ -3,6 +3,17 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import FlashcardViewer from '@/components/resources/FlashcardViewer';
+import FlashcardEditor from '@/components/resources/FlashcardEditor';
+import ChecklistEditor from '@/components/resources/ChecklistEditor';
+import {
+  completeCards, incompleteCardCount, parseFlashcards, serializeFlashcards, toEditableCards, type EditableCard,
+} from '@/components/resources/flashcard-format';
+import {
+  completeRows, parseChecklist, serializeChecklist, toEditableRows, type EditableChecklistRow,
+} from '@/components/resources/checklist-format';
+import {
+  LINK_TIPS, MAX_UPLOAD_MB, TYPED_CARD_TIPS, TYPED_CHECKLIST_TIPS, acceptAttribute, formatSummary, isSupportedUpload, materialUploadGuide,
+} from '@/lib/material-upload-guide';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 
 import {
@@ -1071,6 +1082,8 @@ function MaterialWorkspace({
   const [addType, setAddType] = useState<SchoolMaterialType | undefined>(undefined);
   const [showAi, setShowAi] = useState(false);
   const [viewMaterial, setViewMaterial] = useState<SchoolMaterial | null>(null);
+  const [editingFlashcards, setEditingFlashcards] = useState<SchoolMaterial | null>(null);
+  const [editingChecklist, setEditingChecklist] = useState<SchoolMaterial | null>(null);
   const [animationUrl, setAnimationUrl] = useState<string | null>(null);
   const [downloadingAll, setDownloadingAll] = useState(false);
 
@@ -1153,6 +1166,12 @@ function MaterialWorkspace({
   const isFlashcardMaterial = (m: SchoolMaterial) => {
     const type = String(m.fileType ?? '').toLowerCase();
     return type.includes('flashcard') || String(m.title || '').toLowerCase().includes('flashcard');
+  };
+  // Only a typed (no-file) checklist can be edited row by row — an uploaded
+  // document has no structured content to parse back into items.
+  const isTypedChecklistMaterial = (m: SchoolMaterial) => {
+    const type = String(m.fileType ?? '').toLowerCase();
+    return type === 'revision_checklist' && !!m.description && !(m.fileUrl || m.file_url);
   };
 
   return (
@@ -1263,9 +1282,14 @@ function MaterialWorkspace({
                             <div className="min-w-0 flex-1">
                               <p className="truncate text-sm font-semibold text-surface-800 dark:text-surface-100">{displayTitle}</p>
                               <div className="flex items-center gap-2">
-                                {isText && (
+                                {isText && m.contentSource !== 'manual' && (
                                   <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-violet-500">
                                     <Sparkles size={11} /> AI Generated
+                                  </span>
+                                )}
+                                {isText && m.contentSource === 'manual' && (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-brand-500">
+                                    <Pencil size={11} /> Created by teacher
                                   </span>
                                 )}
                                 {!!m.fileSizeKb && <span className="text-[11px] font-medium text-surface-400">{m.fileSizeKb < 1024 ? `${m.fileSizeKb} KB` : `${(m.fileSizeKb / 1024).toFixed(1)} MB`}</span>}
@@ -1315,6 +1339,12 @@ function MaterialWorkspace({
                                 </a>
                               )
                             )}
+                            {canEdit && isText && isFlashcardMaterial(m) && (
+                              <IconButton label="Edit flashcards" onClick={() => setEditingFlashcards(m)}><Pencil size={15} /></IconButton>
+                            )}
+                            {canEdit && isText && isTypedChecklistMaterial(m) && (
+                              <IconButton label="Edit checklist" onClick={() => setEditingChecklist(m)}><Pencil size={15} /></IconButton>
+                            )}
                             {canEdit && (
                               <IconButton label="Delete material" danger onClick={() => handleDelete(m)}><Trash2 size={15} /></IconButton>
                             )}
@@ -1339,6 +1369,7 @@ function MaterialWorkspace({
           initialType={addType}
           onClose={() => setShowAdd(false)}
           onSaved={() => { setShowAdd(false); load(); }}
+          onOpenPptStudio={() => { setShowAdd(false); onOpenPptStudio(); }}
         />
       )}
 
@@ -1355,6 +1386,22 @@ function MaterialWorkspace({
 
       {viewMaterial && (
         <MarkdownViewer material={viewMaterial} onClose={() => setViewMaterial(null)} />
+      )}
+
+      {editingFlashcards && (
+        <EditFlashcardsModal
+          material={editingFlashcards}
+          onClose={() => setEditingFlashcards(null)}
+          onSaved={() => { setEditingFlashcards(null); load(); }}
+        />
+      )}
+
+      {editingChecklist && (
+        <EditChecklistModal
+          material={editingChecklist}
+          onClose={() => setEditingChecklist(null)}
+          onSaved={() => { setEditingChecklist(null); load(); }}
+        />
       )}
 
       {animationUrl && (
@@ -1985,6 +2032,7 @@ const AI_GEN_TYPES: { id: string; label: string; desc: string; saveAs: string; i
   { id: 'presentation', label: 'Presentation', desc: 'Opens AI PPT Studio — build, edit & save a slide deck to this topic', saveAs: 'ppt', icon: Presentation, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
   { id: 'study_guide', label: 'Study Guide', desc: 'Exam-ready summary with must-know points for revision', saveAs: 'study_guide', icon: BookOpen, soft: 'bg-indigo-50 dark:bg-indigo-900/30', text: 'text-indigo-600 dark:text-indigo-400' },
   { id: 'key_concepts', label: 'Key Concepts', desc: 'Bulleted must-know concepts, formulas & definitions', saveAs: 'key_concepts', icon: Lightbulb, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
+  { id: 'formula_sheet', label: 'Formula Sheet', desc: 'Every key formula, grouped by sub-topic, with variables explained', saveAs: 'formula_sheet', icon: FileSpreadsheet, soft: 'bg-amber-50 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400' },
   { id: 'mindmap', label: 'Mindmap', desc: 'Hierarchical breakdown of topic concepts & sub-topics', saveAs: 'mindmap', icon: Brain, soft: 'bg-teal-50 dark:bg-teal-900/30', text: 'text-teal-600 dark:text-teal-400' },
   { id: 'flashcard', label: 'Flashcards', desc: 'Bite-sized Q&A cards for quick recall', saveAs: 'flashcard', icon: FileText, soft: 'bg-blue-50 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400' },
   { id: 'revision_checklist', label: 'Revision Checklist', desc: 'Subtopic checklist students can tick off', saveAs: 'revision_checklist', icon: ListChecks, soft: 'bg-emerald-50 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400' },
@@ -2237,7 +2285,9 @@ function AiGeneratePanel({
           ? 'Generate FAQ only. Do not generate notes, introduction, summary, study guide, key concepts, or lesson content. The output must start with "# FAQ" and every item must be a frequently asked question that is repeatedly asked in target exams. For every question, you must specify the actual past board years it was asked (e.g., CBSE Class 10 2018, 2021). Format each question as: "**Q1. [EXAMTAG: <exam target and comma-separated years>] <question?>**" on its own line, then "**A.** <answer>" on a new line. Include 12-15 Q&A pairs grouped under sub-topic headings. For numerical questions, the answer must provide a detailed step-by-step solution where each new step is on a new line (never in paragraph format). For theory questions, the answer must provide a total, complete solution explaining the concept. Do not just give the final answer; provide the full, comprehensive explanation. CRITICAL MATH NOTATION: For all mathematics, equations, exponents, and variables, always use valid KaTeX/LaTeX Markdown. Exponents must use carets (e.g., $x^2$, $x^3$), and all mathematical expressions must be wrapped in single dollar signs (e.g. $3\\sqrt{5}$, $f(3) = 0$). Never output raw math or variables without dollar signs, and never use raw exponents like x2 or x3.'
           : typeId === 'revision_checklist'
             ? 'Generate revision checklist only. Do not generate notes. Every actionable item must be a Markdown checkbox using "- [ ]".'
-            : typeId === 'flashcard'
+            : typeId === 'formula_sheet'
+              ? 'Generate a formula sheet only. Do not generate notes, an introduction, or explanatory paragraphs. List every key formula for this topic, grouped under sub-topic Markdown headings. For each formula: write it on its own line, name every variable used in it directly underneath, and give a one-line hint on when to use it. CRITICAL MATH NOTATION: For all formulas, equations, exponents, and variables, always use valid KaTeX/LaTeX Markdown. Exponents must use carets (e.g., $x^2$, $x^3$), and every mathematical expression must be wrapped in single dollar signs (e.g. $F = ma$, $3\\sqrt{5}$). Never output raw math or variables without dollar signs, and never use the Unicode square-root symbol.'
+              : typeId === 'flashcard'
               ? 'Generate flashcards only. Do not generate notes. Use repeated "**Q:**" and "**A:**" pairs.'
               : typeId === 'pyq'
                 ? 'Generate school PYQ practice only. Put all detailed step-by-step solutions on the next page by adding a separate Markdown heading "## Detailed Solutions" only after all questions. Do not include solutions inline with questions. For every solution, provide a detailed step-by-step explanation showing all workings, formulas used, and conceptual steps, where each new mathematical step is written on a new line (never combined into a single paragraph). For theory/MCQ questions, provide the complete explanation/reasoning along with the correct option, not just the option letter alone. Each question must show the exact real, authentic year and class of the board exam (e.g. CBSE Class 10 2021) next to the question number. The question text must start on the same line immediately after the exam year tag (do not insert a newline between the tag and the question text). CRITICAL MCQ FORMATTING: Write each option (A-D) on a new line, never inline on a single line. CRITICAL MATH NOTATION: For all mathematics, equations, exponents, and variables, always use valid KaTeX/LaTeX Markdown. Exponents must use carets (e.g., $x^2$, $x^3$), and all mathematical expressions must be wrapped in single dollar signs (e.g. $3\\sqrt{5}$, $f(3) = 0$). Never output raw math or variables without dollar signs, and never use raw exponents like x2 or x3. For mathematics, wrap only the expression in single dollar signs, e.g. Determine whether $3\\sqrt{5}$ is rational.'
@@ -2512,13 +2562,183 @@ function AiGeneratePanel({
 
 // ── Add Material modal (pick type → upload file or paste link) ───────────────
 
+/** "Supported formats + how to prepare it" hint shown in the Add Material dialog. */
+function UploadGuidePanel({ label, formats, tips }: { label: string; formats?: string; tips: string[] }) {
+  return (
+    <div className="rounded-2xl border border-sky-100 bg-sky-50/70 p-3 text-xs text-surface-600 dark:border-sky-900/50 dark:bg-sky-900/20 dark:text-surface-300">
+      {formats && (
+        <p className="mb-2">
+          <span className="font-bold text-surface-800 dark:text-surface-100">Supported files: </span>{formats}
+        </p>
+      )}
+      <p className="mb-1 font-bold text-surface-800 dark:text-surface-100">How to prepare your {label.toLowerCase()}</p>
+      <ul className="list-disc space-y-1 pl-4">
+        {tips.map((t) => <li key={t}>{t}</li>)}
+      </ul>
+    </div>
+  );
+}
+
+/** Edit an existing flashcard set (teacher-typed or AI-generated) card by card. */
+function EditFlashcardsModal({ material, onClose, onSaved }: {
+  material: SchoolMaterial;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const confirm = useConfirm();
+  const original = useMemo(() => parseFlashcards(material.description || ''), [material.description]);
+  const [cards, setCards] = useState<EditableCard[]>(() => toEditableCards(original));
+  const [title, setTitle] = useState(material.title || '');
+  const [busy, setBusy] = useState(false);
+
+  const serialized = serializeFlashcards(completeCards(cards));
+  const dirty = title.trim() !== (material.title || '').trim() || serialized !== serializeFlashcards(original);
+
+  const requestClose = async () => {
+    if (dirty && !busy) {
+      const ok = await confirm({
+        title: 'Discard changes?',
+        message: 'Your edits to these flashcards have not been saved.',
+        confirmLabel: 'Discard',
+        cancelLabel: 'Keep editing',
+      });
+      if (!ok) return;
+    }
+    onClose();
+  };
+
+  const save = async () => {
+    const incomplete = incompleteCardCount(cards);
+    if (incomplete) { toast.warning(`${incomplete} card${incomplete === 1 ? ' is' : 's are'} missing a front or back`); return; }
+    const count = completeCards(cards).length;
+    if (!count) { toast.warning('A set needs at least one card — delete the set instead'); return; }
+    if (!title.trim()) { toast.warning('Give the set a title'); return; }
+    setBusy(true);
+    try {
+      await schoolContent.updateMaterial(material.id, { title: title.trim(), description: serialized });
+      toast.success(`Flashcards updated (${count} card${count === 1 ? '' : 's'})`);
+      onSaved();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to update flashcards');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      onClick={(e) => { if (e.target === e.currentTarget) void requestClose(); }}>
+      <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900">
+        <div className="flex shrink-0 items-center justify-between border-b border-surface-100 px-5 py-4 dark:border-surface-700">
+          <h3 className="text-sm font-bold text-surface-900 dark:text-white">Edit Flashcards</h3>
+          <button onClick={() => void requestClose()} aria-label="Close" className="grid h-8 w-8 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><X size={16} /></button>
+        </div>
+        {original.length === 0 ? (
+          // Never open an unreadable set as an empty editor — saving it would wipe the content.
+          <div className="space-y-4 p-5">
+            <p className="text-sm text-surface-600 dark:text-surface-300">
+              This set isn't in question-and-answer form, so it can't be edited card by card. Delete it and add the cards again with <b>Add Material → Flashcards → Type cards</b>.
+            </p>
+            <Button className="w-full justify-center" variant="outline" onClick={onClose}>Close</Button>
+          </div>
+        ) : (
+          <div className="space-y-4 overflow-y-auto p-5">
+            <InputField label="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
+            <FlashcardEditor cards={cards} onChange={setCards} />
+            <Button className="w-full justify-center" onClick={save} disabled={busy || !dirty}>
+              {busy ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Saving…</span> : 'Save Changes'}
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EditChecklistModal({ material, onClose, onSaved }: {
+  material: SchoolMaterial;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const confirm = useConfirm();
+  const original = useMemo(() => parseChecklist(material.description || ''), [material.description]);
+  const [rows, setRows] = useState<EditableChecklistRow[]>(() => toEditableRows(original));
+  const [title, setTitle] = useState(material.title || '');
+  const [busy, setBusy] = useState(false);
+
+  const serialized = serializeChecklist(completeRows(rows));
+  const dirty = title.trim() !== (material.title || '').trim() || serialized !== serializeChecklist(original);
+
+  const requestClose = async () => {
+    if (dirty && !busy) {
+      const ok = await confirm({
+        title: 'Discard changes?',
+        message: 'Your edits to this checklist have not been saved.',
+        confirmLabel: 'Discard',
+        cancelLabel: 'Keep editing',
+      });
+      if (!ok) return;
+    }
+    onClose();
+  };
+
+  const save = async () => {
+    const count = completeRows(rows).filter((r) => !r.heading).length;
+    if (!count) { toast.warning('A checklist needs at least one item — delete it instead'); return; }
+    if (!title.trim()) { toast.warning('Give the checklist a title'); return; }
+    setBusy(true);
+    try {
+      await schoolContent.updateMaterial(material.id, { title: title.trim(), description: serialized });
+      toast.success(`Checklist updated (${count} item${count === 1 ? '' : 's'})`);
+      onSaved();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to update checklist');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      onClick={(e) => { if (e.target === e.currentTarget) void requestClose(); }}>
+      <div className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900">
+        <div className="flex shrink-0 items-center justify-between border-b border-surface-100 px-5 py-4 dark:border-surface-700">
+          <h3 className="text-sm font-bold text-surface-900 dark:text-white">Edit Revision Checklist</h3>
+          <button onClick={() => void requestClose()} aria-label="Close" className="grid h-8 w-8 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><X size={16} /></button>
+        </div>
+        <div className="space-y-4 overflow-y-auto p-5">
+          <InputField label="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <ChecklistEditor rows={rows} onChange={setRows} />
+          <Button className="w-full justify-center" onClick={save} disabled={busy || !dirty}>
+            {busy ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Saving…</span> : 'Save Changes'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AddMaterialModal({
-  topic, subjectId, classId, sectionId, initialType, onClose, onSaved,
+  topic, subjectId, classId, sectionId, initialType, onClose, onSaved, onOpenPptStudio,
+}: {
+  topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' | 'subject' };
+  subjectId: string;
+  classId?: string;
+  sectionId?: string;
+  initialType?: SchoolMaterialType;
+  onClose: () => void;
+  onSaved: () => void;
+  onOpenPptStudio: () => void;
 }) {
   const isSubject = topic.kind === 'subject';
   const [step, setStep] = useState<'type' | 'input'>(initialType || isSubject ? 'input' : 'type');
   const [type, setType] = useState<SchoolMaterialType>(initialType ?? (isSubject ? 'ebook' : 'notes'));
-  const [source, setSource] = useState<'file' | 'link'>('file');
+  const confirm = useConfirm();
+  const [source, setSource] = useState<'file' | 'link' | 'cards'>(
+    initialType === 'flashcard' || initialType === 'revision_checklist' ? 'cards' : 'file',
+  );
+  const [cards, setCards] = useState<EditableCard[]>(() => toEditableCards([]));
+  const [checklistRows, setChecklistRows] = useState<EditableChecklistRow[]>(() => toEditableRows([]));
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
   const [file, setFile] = useState<File | null>(null);
@@ -2526,15 +2746,101 @@ function AddMaterialModal({
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const cfg = mCfg(type);
+  const guide = materialUploadGuide(type);
 
   const cleanName = (n: string) => n.replace(/\.[^.]+$/, '').replace(/[_-]/g, ' ').trim();
   const stageFile = (f: File) => {
-    if (f.size > 100 * 1024 * 1024) { toast.error('File must be ≤ 100 MB'); return; }
+    // Drag-and-drop ignores the input's `accept`, so check the extension here too.
+    if (!isSupportedUpload(guide, f.name)) { toast.error(`${cfg.label}: upload ${guide.formats}`); return; }
+    if (f.size > MAX_UPLOAD_MB * 1024 * 1024) { toast.error(`File must be ≤ ${MAX_UPLOAD_MB} MB`); return; }
     setFile(f);
     if (!title.trim()) setTitle(cleanName(f.name));
   };
 
+  const isTypingCards = type === 'flashcard' && source === 'cards';
+  const isTypingChecklist = type === 'revision_checklist' && source === 'cards';
+  const hasTypedCards = cards.some((c) => c.q.trim() || c.a.trim());
+  const hasTypedChecklist = checklistRows.some((r) => r.text.trim());
+
+  // Typed content lives only in this modal — don't lose it to a stray click.
+  const requestClose = async () => {
+    if (isTypingCards && hasTypedCards && !busy) {
+      const ok = await confirm({
+        title: 'Discard flashcards?',
+        message: 'The cards you typed have not been saved.',
+        confirmLabel: 'Discard',
+        cancelLabel: 'Keep editing',
+      });
+      if (!ok) return;
+    }
+    if (isTypingChecklist && hasTypedChecklist && !busy) {
+      const ok = await confirm({
+        title: 'Discard checklist?',
+        message: 'The checklist you typed has not been saved.',
+        confirmLabel: 'Discard',
+        cancelLabel: 'Keep editing',
+      });
+      if (!ok) return;
+    }
+    onClose();
+  };
+
+  const saveTypedCards = async () => {
+    const incomplete = incompleteCardCount(cards);
+    if (incomplete) { toast.warning(`${incomplete} card${incomplete === 1 ? ' is' : 's are'} missing a front or back`); return; }
+    const complete = completeCards(cards);
+    if (!complete.length) { toast.warning('Add at least one card'); return; }
+    setBusy(true);
+    try {
+      await schoolContent.createMaterial({
+        title: title.trim() || `Flashcards — ${topic.name}`,
+        fileType: 'flashcard',
+        fileUrl: '',
+        description: serializeFlashcards(complete),
+        subjectIdFk: subjectId,
+        chapterId: topic.kind === 'subject' ? undefined : topic.chapterId,
+        topicId: topic.kind === 'topic' ? topic.id : undefined,
+        classId,
+        sectionId,
+      });
+      toast.success(`${complete.length} flashcard${complete.length === 1 ? '' : 's'} saved — students can now study them`);
+      onSaved();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to save flashcards');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const saveTypedChecklist = async () => {
+    const complete = completeRows(checklistRows);
+    const itemCount = complete.filter((r) => !r.heading).length;
+    if (!itemCount) { toast.warning('Add at least one checklist item'); return; }
+    setBusy(true);
+    try {
+      await schoolContent.createMaterial({
+        title: title.trim() || `Revision Checklist — ${topic.name}`,
+        fileType: 'revision_checklist',
+        fileUrl: '',
+        description: serializeChecklist(complete),
+        subjectIdFk: subjectId,
+        chapterId: topic.kind === 'subject' ? undefined : topic.chapterId,
+        topicId: topic.kind === 'topic' ? topic.id : undefined,
+        classId,
+        sectionId,
+      });
+      toast.success(`${itemCount} checklist item${itemCount === 1 ? '' : 's'} saved — students can now tick them off`);
+      onSaved();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to save checklist');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const save = async () => {
+    if (isTypingCards) { await saveTypedCards(); return; }
+    if (isTypingChecklist) { await saveTypedChecklist(); return; }
     const finalTitle = title.trim() || (file ? cleanName(file.name) : 'Material');
     setBusy(true);
     try {
@@ -2573,9 +2879,9 @@ function AddMaterialModal({
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900">
-        <div className="flex items-center justify-between border-b border-surface-100 px-5 py-4 dark:border-surface-700">
+      onClick={(e) => { if (e.target === e.currentTarget) void requestClose(); }}>
+      <div className={`flex max-h-[92vh] w-full flex-col ${(isTypingCards || isTypingChecklist) && step === 'input' ? 'max-w-3xl' : 'max-w-md'} overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900`}>
+        <div className="flex shrink-0 items-center justify-between border-b border-surface-100 px-5 py-4 dark:border-surface-700">
           <div className="flex items-center gap-2">
             {step === 'input' && !initialType && !isSubject && (
               <button onClick={() => setStep('type')} className="grid h-8 w-8 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><ChevronLeft size={16} /></button>
@@ -2585,27 +2891,47 @@ function AddMaterialModal({
               <p className="max-w-[240px] truncate text-xs text-surface-400">{topic.name}</p>
             </div>
           </div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><X size={16} /></button>
+          <button onClick={() => void requestClose()} aria-label="Close" className="grid h-8 w-8 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><X size={16} /></button>
         </div>
 
         {step === 'type' ? (
-          <div className="grid grid-cols-2 gap-3 p-5">
+          <div className="grid grid-cols-2 gap-3 overflow-y-auto p-5">
             {MATERIAL_TYPES.map((mt) => {
               const Icon = mt.icon;
               return (
-                <button key={mt.value} onClick={() => { setType(mt.value); setStep('input'); }}
+                <button key={mt.value}
+                  onClick={() => {
+                    setType(mt.value);
+                    setSource(mt.value === 'flashcard' || mt.value === 'revision_checklist' ? 'cards' : 'file');
+                    if (file && !isSupportedUpload(materialUploadGuide(mt.value), file.name)) setFile(null);
+                    setStep('input');
+                  }}
                   className={`flex items-center gap-3 rounded-2xl border border-surface-100 p-4 text-left transition-all hover:shadow-sm dark:border-surface-700 ${mt.soft}`}>
-                  <Icon size={20} className={mt.text} />
-                  <span className={`text-sm font-bold ${mt.text}`}>{mt.label}</span>
+                  <Icon size={20} className={`shrink-0 ${mt.text}`} />
+                  <span className="min-w-0">
+                    <span className={`block text-sm font-bold ${mt.text}`}>{mt.label}</span>
+                    <span className="block truncate text-[11px] font-medium text-surface-500 dark:text-surface-400">{formatSummary(mt.value)}</span>
+                  </span>
                 </button>
               );
             })}
           </div>
         ) : (
-          <div className="space-y-4 p-5">
-            <InputField label="Title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Give this material a clear title…" />
+          <div className="space-y-4 overflow-y-auto p-5">
+            <InputField label="Title" value={title} onChange={(e) => setTitle(e.target.value)}
+              placeholder={isTypingCards ? `Flashcards — ${topic.name}` : isTypingChecklist ? `Revision Checklist — ${topic.name}` : 'Give this material a clear title…'} />
 
             <div className="flex gap-2">
+              {type === 'flashcard' && (
+                <button onClick={() => setSource('cards')} className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-2 text-sm font-bold transition-colors ${source === 'cards' ? 'border-brand-400 bg-brand-50 text-brand-700 dark:bg-brand-900/30' : 'border-surface-200 text-surface-500 dark:border-surface-700'}`}>
+                  <Pencil size={15} /> Type cards
+                </button>
+              )}
+              {type === 'revision_checklist' && (
+                <button onClick={() => setSource('cards')} className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-2 text-sm font-bold transition-colors ${source === 'cards' ? 'border-brand-400 bg-brand-50 text-brand-700 dark:bg-brand-900/30' : 'border-surface-200 text-surface-500 dark:border-surface-700'}`}>
+                  <Pencil size={15} /> Type checklist
+                </button>
+              )}
               <button onClick={() => setSource('file')} className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-2 text-sm font-bold transition-colors ${source === 'file' ? 'border-brand-400 bg-brand-50 text-brand-700 dark:bg-brand-900/30' : 'border-surface-200 text-surface-500 dark:border-surface-700'}`}>
                 <Upload size={15} /> Upload file
               </button>
@@ -2614,7 +2940,21 @@ function AddMaterialModal({
               </button>
             </div>
 
-            {source === 'link' ? (
+            {type === 'ppt' && (
+              <button
+                type="button"
+                onClick={onOpenPptStudio}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-rose-200 bg-rose-50/50 py-2.5 text-sm font-bold text-rose-600 transition-colors hover:border-rose-300 hover:bg-rose-50 dark:border-rose-800 dark:bg-rose-900/10 dark:text-rose-300"
+              >
+                <Presentation size={15} /> Build it in PPT Studio instead
+              </button>
+            )}
+
+            {source === 'cards' && type === 'flashcard' ? (
+              <FlashcardEditor cards={cards} onChange={setCards} />
+            ) : source === 'cards' && type === 'revision_checklist' ? (
+              <ChecklistEditor rows={checklistRows} onChange={setChecklistRows} />
+            ) : source === 'link' ? (
               <InputField label="URL" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://… (PDF, Drive, YouTube, etc.)" />
             ) : file ? (
               <div className="space-y-3">
@@ -2648,16 +2988,24 @@ function AddMaterialModal({
                   {type === 'animation' ? 'Drop video or ' : 'Drop file or '}<span className="text-brand-600">browse</span>
                 </p>
                 <p className="mt-1 text-xs text-surface-400">
-                  {type === 'animation' ? 'Max 100 MB · MP4, WebM, OGV' : type === 'ebook' ? 'Max 100 MB · PDF only' : 'Max 100 MB · PDF, DOC, images'}
+                  {guide.formats} · max {MAX_UPLOAD_MB} MB
                 </p>
                 <input ref={fileRef} type="file" className="hidden"
-                  accept={type === 'animation' ? '.mp4,.webm,.ogv,video/*' : type === 'ebook' ? '.pdf' : '.pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.jpeg,.png'}
+                  accept={acceptAttribute(guide)}
                   onChange={(e) => { if (e.target.files?.[0]) stageFile(e.target.files[0]); }} />
               </div>
             )}
 
+            <UploadGuidePanel
+              label={cfg.label}
+              formats={source === 'file' ? `${guide.formats} · max ${MAX_UPLOAD_MB} MB` : undefined}
+              tips={isTypingCards ? TYPED_CARD_TIPS : isTypingChecklist ? TYPED_CHECKLIST_TIPS : source === 'link' ? LINK_TIPS : guide.tips}
+            />
+
             <Button className="w-full justify-center" onClick={save} disabled={busy}>
-              {busy ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> {source === 'file' ? 'Uploading…' : 'Saving…'}</span> : (source === 'file' ? 'Upload & Save' : 'Save Link')}
+              {busy
+                ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> {source === 'file' ? 'Uploading…' : 'Saving…'}</span>
+                : isTypingCards ? 'Save Flashcards' : isTypingChecklist ? 'Save Checklist' : source === 'file' ? 'Upload & Save' : 'Save Link'}
             </Button>
           </div>
         )}

@@ -9,51 +9,12 @@ import {
   getQuizStatus, getCareerReport, hollandLabel,
   type QuizStatus, type CareerReport,
 } from '@/lib/api/career';
-import { gradeBadge, SkeletonBlock } from './_shared';
+import { CooldownCountdown, gradeBadge, SkeletonBlock } from './_shared';
 
 interface SubjectPerf { subjectName: string; accuracy: number }
 
 const toLetter = (p: number): string =>
   p >= 90 ? 'A+' : p >= 80 ? 'A' : p >= 70 ? 'B' : p >= 60 ? 'C' : p >= 40 ? 'D' : 'E';
-
-function CooldownCountdown({ targetDate, onFinish }: { targetDate: string; onFinish: () => void }) {
-  const [timeLeft, setTimeLeft] = useState('');
-
-  useEffect(() => {
-    const calculateTimeLeft = () => {
-      const difference = +new Date(targetDate) - +new Date();
-      if (difference <= 0) {
-        onFinish();
-        return;
-      }
-
-      const months = Math.floor(difference / (1000 * 60 * 60 * 24 * 30));
-      const days = Math.floor((difference / (1000 * 60 * 60 * 24)) % 30);
-      const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
-      const minutes = Math.floor((difference / 1000 / 60) % 60);
-      const seconds = Math.floor((difference / 1000) % 60);
-
-      const parts = [];
-      if (months > 0) parts.push(`${months}mo`);
-      if (days > 0 || months > 0) parts.push(`${days}d`);
-      if (hours > 0 || days > 0 || months > 0) parts.push(`${hours}h`);
-      if (minutes > 0 || hours > 0 || days > 0 || months > 0) parts.push(`${minutes}m`);
-      parts.push(`${seconds}s`);
-
-      setTimeLeft(parts.join(' '));
-    };
-
-    calculateTimeLeft();
-    const timer = setInterval(calculateTimeLeft, 1000);
-    return () => clearInterval(timer);
-  }, [targetDate, onFinish]);
-
-  return (
-    <div className="mt-2 text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-100 rounded-lg px-3 py-1.5 inline-block">
-      ⏱️ Retake unlocked in: <span className="font-mono text-slate-900 font-bold">{timeLeft || 'calculating...'}</span>
-    </div>
-  );
-}
 
 const normalizeSubjectName = (name: string): string => {
   if (!name) return 'General';

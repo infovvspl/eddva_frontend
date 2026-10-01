@@ -54,6 +54,7 @@ const AI_FEATURES = [
   { id: 'content_pyq', label: 'PYQ Practice', category: 'content' },
   { id: 'content_study_guide', label: 'Study Guide', category: 'content' },
   { id: 'content_key_concepts', label: 'Key Concepts', category: 'content' },
+  { id: 'content_formula_sheet', label: 'Formula Sheet', category: 'content' },
   { id: 'content_flashcard', label: 'Flashcards', category: 'content' },
   { id: 'content_revision_checklist', label: 'Revision Checklist', category: 'content' },
   { id: 'content_faq', label: 'FAQ', category: 'content' },
@@ -86,6 +87,7 @@ const FEATURE_LABELS: Record<string, string> = {
   content_pyq: 'PYQ Practice',
   content_study_guide: 'Study Guide',
   content_key_concepts: 'Key Concepts',
+  content_formula_sheet: 'Formula Sheet',
   content_flashcard: 'Flashcards',
   content_revision_checklist: 'Revision Checklist',
   content_faq: 'FAQ',
@@ -129,7 +131,7 @@ const FEATURE_CATEGORY_MAP: Record<string, 'teacher' | 'content' | 'student' | '
   // Content Generation (new per-type + legacy bucket)
   content_generate: 'content', topic_content_generation: 'content',
   content_dpp: 'content', content_mindmap: 'content', content_pyq: 'content',
-  content_study_guide: 'content', content_key_concepts: 'content',
+  content_study_guide: 'content', content_key_concepts: 'content', content_formula_sheet: 'content',
   content_flashcard: 'content', content_revision_checklist: 'content',
   content_faq: 'content', content_lecture_grounding: 'content',
   // Student
