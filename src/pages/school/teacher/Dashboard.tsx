@@ -495,13 +495,13 @@ const Dashboard: React.FC = () => {
                   </div>
                   
                   {/* Right Content */}
-                  <div className="flex flex-col flex-1 py-1 pr-2 justify-between">
-                    <div className="flex justify-between items-start">
-                      <h3 className="text-[17px] font-extrabold text-[#112A46] leading-tight">Class 10 - Section A</h3>
+                  <div className="flex flex-col flex-1 min-w-0 py-1 pr-2 justify-between">
+                    <div className="flex justify-between items-start gap-2">
+                      <h3 className="text-[17px] font-extrabold text-[#112A46] leading-tight truncate min-w-0">Class 10 - Section A</h3>
                       <span className="text-[10px] font-bold bg-[#DCFCE7] text-[#059669] px-2.5 py-1 rounded-full shrink-0">Class Teacher</span>
                     </div>
-                    
-                    <div className="flex items-center gap-4 my-2">
+
+                    <div className="flex items-center flex-wrap gap-x-4 gap-y-1 my-2">
                       <div className="flex items-center gap-1.5 text-[12px] font-bold text-[#475569]">
                         <Users size={14} className="text-[#64748B]"/> 42 Students
                       </div>
@@ -527,12 +527,12 @@ const Dashboard: React.FC = () => {
                   </div>
                   
                   {/* Right Content */}
-                  <div className="flex flex-col flex-1 py-1 pr-2 justify-between">
-                    <div className="flex justify-between items-start">
-                      <h3 className="text-[17px] font-extrabold text-[#112A46] leading-tight">Class 9 - Section A</h3>
+                  <div className="flex flex-col flex-1 min-w-0 py-1 pr-2 justify-between">
+                    <div className="flex justify-between items-start gap-2">
+                      <h3 className="text-[17px] font-extrabold text-[#112A46] leading-tight truncate min-w-0">Class 9 - Section A</h3>
                     </div>
-                    
-                    <div className="flex items-center gap-4 my-2">
+
+                    <div className="flex items-center flex-wrap gap-x-4 gap-y-1 my-2">
                       <div className="flex items-center gap-1.5 text-[12px] font-bold text-[#475569]">
                         <Users size={14} className="text-[#64748B]"/> 39 Students
                       </div>
