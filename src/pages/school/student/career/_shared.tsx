@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 export const streamBadge = (stream: string): string => {
@@ -47,6 +47,45 @@ export function ErrorState({ message, onRetry }: { message?: string; onRetry: ()
 
 export function SkeletonBlock({ className = '' }: { className?: string }) {
   return <div className={`animate-pulse rounded-xl bg-slate-100 ${className}`} />;
+}
+
+export function CooldownCountdown({ targetDate, onFinish }: { targetDate: string; onFinish: () => void }) {
+  const [timeLeft, setTimeLeft] = useState('');
+
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      const difference = +new Date(targetDate) - +new Date();
+      if (difference <= 0) {
+        onFinish();
+        return;
+      }
+
+      const months = Math.floor(difference / (1000 * 60 * 60 * 24 * 30));
+      const days = Math.floor((difference / (1000 * 60 * 60 * 24)) % 30);
+      const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((difference / 1000 / 60) % 60);
+      const seconds = Math.floor((difference / 1000) % 60);
+
+      const parts = [];
+      if (months > 0) parts.push(`${months}mo`);
+      if (days > 0 || months > 0) parts.push(`${days}d`);
+      if (hours > 0 || days > 0 || months > 0) parts.push(`${hours}h`);
+      if (minutes > 0 || hours > 0 || days > 0 || months > 0) parts.push(`${minutes}m`);
+      parts.push(`${seconds}s`);
+
+      setTimeLeft(parts.join(' '));
+    };
+
+    calculateTimeLeft();
+    const timer = setInterval(calculateTimeLeft, 1000);
+    return () => clearInterval(timer);
+  }, [targetDate, onFinish]);
+
+  return (
+    <div className="mt-2 text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-100 rounded-lg px-3 py-1.5 inline-block">
+      ⏱️ Retake unlocked in: <span className="font-mono text-slate-900 font-bold">{timeLeft || 'calculating...'}</span>
+    </div>
+  );
 }
 
 /** CSS-only confetti burst (no library). */

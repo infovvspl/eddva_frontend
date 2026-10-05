@@ -23,6 +23,10 @@ type Row = {
   subjectName: string;
   className: string | null;
   indexed: boolean;
+  /** Indexed, but against a file that isn't the one linked any more — a newer
+   *  PDF was uploaded after the last index and nothing re-read it yet.
+   *  Absent on an older backend. */
+  stale?: boolean;
   hasPdf: boolean;
   linkReachable: boolean | null;
   materialId: string | null;
@@ -51,10 +55,11 @@ type RunStatus = {
   currentPagesTotal?: number | null;
 } | null;
 
-/** The four states a chapter can be in, in the order a school works through them. */
-type State = 'ready' | 'pending' | 'broken' | 'missing';
+/** The five states a chapter can be in, in the order a school works through them. */
+type State = 'ready' | 'stale' | 'pending' | 'broken' | 'missing';
 
 const stateOf = (r: Row): State => {
+  if (r.indexed && r.stale) return 'stale';
   if (r.indexed) return 'ready';
   if (r.hasPdf && r.linkReachable === false) return 'broken';
   if (r.hasPdf) return 'pending';
@@ -63,6 +68,10 @@ const stateOf = (r: Row): State => {
 
 const STATE_META: Record<State, { label: string; hint: string; cls: string; Icon: any }> = {
   ready:   { label: 'Ready',        hint: 'AI writes from this book',        cls: 'text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-300 dark:bg-emerald-950/40 dark:border-emerald-900', Icon: CheckCircle2 },
+  // A chapter can be genuinely wrong in this state — indexed, but from an
+  // older file than the one now linked to it — so it gets its own color
+  // rather than being folded into "Ready".
+  stale:   { label: 'Needs re-index', hint: 'A newer file was uploaded — re-index to use it', cls: 'text-orange-700 bg-orange-50 border-orange-200 dark:text-orange-300 dark:bg-orange-950/40 dark:border-orange-900', Icon: RefreshCw },
   pending: { label: 'Not indexed',  hint: 'Book uploaded, not read yet',     cls: 'text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-300 dark:bg-amber-950/40 dark:border-amber-900', Icon: CircleDashed },
   broken:  { label: 'File missing', hint: 'Upload again — the file is gone', cls: 'text-rose-700 bg-rose-50 border-rose-200 dark:text-rose-300 dark:bg-rose-950/40 dark:border-rose-900', Icon: Link2Off },
   missing: { label: 'No book',      hint: 'Nothing uploaded for this chapter', cls: 'text-slate-600 bg-slate-100 border-slate-200 dark:text-slate-400 dark:bg-slate-800/60 dark:border-slate-700', Icon: AlertTriangle },
@@ -147,7 +156,7 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
   };
 
   const counts = useMemo(() => {
-    const c = { ready: 0, pending: 0, broken: 0, missing: 0 };
+    const c = { ready: 0, stale: 0, pending: 0, broken: 0, missing: 0 };
     rows.forEach((r) => { c[stateOf(r)]++; });
     return c;
   }, [rows]);
@@ -317,8 +326,8 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
       )}
 
       {/* Counts first — the question is what is missing, not what exists. */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {(['ready', 'pending', 'broken', 'missing'] as State[]).map((k) => {
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        {(['ready', 'stale', 'pending', 'broken', 'missing'] as State[]).map((k) => {
           const m = STATE_META[k];
           const active = filter === k;
           return (
@@ -404,12 +413,12 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
             </button>
             <button
               onClick={indexAll}
-              disabled={!!busy || run?.status === 'running' || counts.pending === 0}
-              title={counts.pending === 0 ? 'Nothing waiting to be indexed' : undefined}
+              disabled={!!busy || run?.status === 'running' || counts.pending + counts.stale === 0}
+              title={counts.pending + counts.stale === 0 ? 'Nothing waiting to be indexed' : undefined}
               className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
             >
               {busy === 'bulk' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PlayCircle className="h-3.5 w-3.5" />}
-              Index {counts.pending} waiting
+              Index {counts.pending + counts.stale} waiting
             </button>
           </>
         )}
@@ -430,7 +439,7 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
             .map((cls) => {
               const subjects = grouped[cls];
             const total = Object.values(subjects).reduce((n, l) => n + l.length, 0);
-            const ready = Object.values(subjects).flat().filter((r) => r.indexed).length;
+            const ready = Object.values(subjects).flat().filter((r) => r.indexed && !r.stale).length;
             const isOpen = open[cls] ?? false;
             return (
               <div key={cls} className="overflow-hidden rounded-xl border border-surface-200 bg-white dark:border-surface-800 dark:bg-surface-900">
@@ -473,7 +482,7 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
                                 {isIndexingNow ? (
                                   <Loader2 className="h-4 w-4 shrink-0 animate-spin text-brand-500" />
                                 ) : (
-                                  <m.Icon className={`h-4 w-4 shrink-0 ${st === 'ready' ? 'text-emerald-500' : st === 'pending' ? 'text-amber-500' : st === 'broken' ? 'text-rose-500' : 'text-surface-400'}`} />
+                                  <m.Icon className={`h-4 w-4 shrink-0 ${st === 'ready' ? 'text-emerald-500' : st === 'stale' ? 'text-orange-500' : st === 'pending' ? 'text-amber-500' : st === 'broken' ? 'text-rose-500' : 'text-surface-400'}`} />
                                 )}
                                 <span className="flex-1 min-w-0">
                                   <span className="block truncate text-surface-800 dark:text-surface-100">{r.chapterName}</span>
@@ -523,35 +532,39 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
                                     Indexing improves over time — figure extraction is the
                                     current example — and every chapter indexed before an
                                     improvement stays stale until it is read again. */}
-                                {(st === 'pending' || st === 'ready') && !isIndexingNow && (
+                                {(st === 'pending' || st === 'ready' || st === 'stale') && !isIndexingNow && (
                                   <button
                                     onClick={() => indexOne(r)}
                                     disabled={disableActions || !r.materialId}
                                     title={
-                                      st === 'ready'
+                                      st === 'stale'
+                                        ? 'A newer file was uploaded since this was last read — index it to fix what the AI generates'
+                                        : st === 'ready'
                                         ? 'Read this book again — picks up figures and any other indexing improvements'
                                         : 'Read this book and index it'
                                     }
                                     className={`rounded-lg px-2 py-1 text-[11px] font-bold disabled:opacity-50 ${
                                       st === 'ready'
                                         ? 'border border-surface-200 text-surface-600 hover:bg-surface-100 dark:border-surface-700 dark:text-surface-300'
+                                        : st === 'stale'
+                                        ? 'bg-orange-600 text-white'
                                         : 'bg-brand-600 text-white'
                                     }`}
                                   >
                                     {busy === r.chapterId
                                       ? 'Reading…'
-                                      : st === 'ready' ? 'Re-index' : 'Index'}
+                                      : st === 'ready' || st === 'stale' ? 'Re-index' : 'Index'}
                                   </button>
                                 )}
                                 <label
                                   className={`cursor-pointer rounded-lg border px-2 py-1 text-[11px] font-bold ${
-                                    st === 'ready' || st === 'pending'
+                                    st === 'ready' || st === 'pending' || st === 'stale'
                                       ? 'border-surface-200 text-surface-600 hover:bg-surface-100 dark:border-surface-700 dark:text-surface-300'
                                       : 'border-brand-600 bg-brand-600 text-white hover:bg-brand-700'
                                   } ${disableActions ? 'pointer-events-none opacity-50' : ''}`}
-                                  title={st === 'ready' ? 'Replace this book and read it again' : 'Upload this chapter as a PDF'}
+                                  title={st === 'ready' || st === 'stale' ? 'Replace this book and read it again' : 'Upload this chapter as a PDF'}
                                 >
-                                  {busy === r.chapterId ? 'Reading…' : st === 'ready' || st === 'pending' ? 'Replace' : 'Upload'}
+                                  {busy === r.chapterId ? 'Reading…' : st === 'ready' || st === 'pending' || st === 'stale' ? 'Replace' : 'Upload'}
                                   <input
                                     type="file"
                                     accept="application/pdf,.pdf"

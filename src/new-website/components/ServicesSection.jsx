@@ -93,10 +93,14 @@ const ServicesSection = () => {
           ))}
         </div>
 
-        {/* Stakeholders */}
+        {/* Stakeholders — one connected ecosystem, not four separate cards */}
         <div className="nw-services__right">
           <span className="nw-services__label nw-services__label--center">OUR STAKEHOLDERS</span>
           <div className={`nw-services__stakeholders${shIn ? " nw-in" : ""}`} ref={shRef}>
+            <svg className="nw-services__sh-line" viewBox="0 0 100 2" preserveAspectRatio="none" aria-hidden="true">
+              <line x1="0" y1="1" x2="100" y2="1" />
+            </svg>
+            <span className="nw-services__sh-dot" aria-hidden="true" />
             {stakeholders.map(({ id, title, desc, Icon, color, bg }, i) => (
               <div
                 className="nw-services__sh-card"

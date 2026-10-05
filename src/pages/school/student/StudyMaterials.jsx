@@ -464,11 +464,13 @@ export default function StudyMaterials() {
     return (selectedSubject && selectedChapter && selectedTopic) ? activeTopics[selectedTopic] || [] : [];
   }, [activeTopics, selectedTopic]);
 
+  // Full subject → chapter → topic tree, ignoring search/type filters.
+  const unfilteredTree = useMemo(() => groupMaterials(allMaterials), [allMaterials]);
+
   const unfilteredTopicMaterials = useMemo(() => {
     if (!selectedSubject || !selectedChapter || !selectedTopic) return [];
-    const unfilteredTree = groupMaterials(allMaterials);
     return unfilteredTree[selectedSubject]?.[selectedChapter]?.[selectedTopic] || [];
-  }, [allMaterials, selectedSubject, selectedChapter, selectedTopic]);
+  }, [unfilteredTree, selectedSubject, selectedChapter, selectedTopic]);
 
   const groupedTopicMaterials = useMemo(() => {
     const buckets = { video: [], animation: [], material: [], practice: [] };
@@ -496,7 +498,24 @@ export default function StudyMaterials() {
     return buckets;
   }, [topicMaterials]);
 
-  const totalCount = allMaterials.length;
+  // Resources count for the header card, scoped to whatever is currently open.
+  const scopedResources = useMemo(() => {
+    const countTopics = (topics) => Object.values(topics || {}).reduce((n, list) => n + (list?.length || 0), 0);
+    if (selectedSubject && selectedChapter && selectedTopic) {
+      return { count: unfilteredTopicMaterials.length, scope: 'in this topic' };
+    }
+    if (selectedSubject && selectedChapter) {
+      return { count: countTopics(unfilteredTree[selectedSubject]?.[selectedChapter]), scope: 'in this chapter' };
+    }
+    if (selectedSubject) {
+      const chapters = unfilteredTree[selectedSubject] || {};
+      return { count: Object.values(chapters).reduce((n, topics) => n + countTopics(topics), 0), scope: 'in this subject' };
+    }
+    // Count from the tree (not allMaterials) so the total equals what students can browse.
+    const total = Object.values(unfilteredTree).reduce(
+      (n, chapters) => n + Object.values(chapters).reduce((m, topics) => m + countTopics(topics), 0), 0);
+    return { count: total, scope: 'available' };
+  }, [unfilteredTree, unfilteredTopicMaterials, selectedSubject, selectedChapter, selectedTopic]);
 
   const resetFilters = () => { setSearchQuery(''); setSelectedType('ALL'); };
 
@@ -796,7 +815,7 @@ export default function StudyMaterials() {
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-[10px] font-bold text-slate-700 dark:text-slate-300">
             <BookOpen size={12} />
-            {totalCount} resources
+            {scopedResources.count} resources{scopedResources.scope === 'available' ? '' : ` ${scopedResources.scope}`}
           </span>
         </div>
       ) : (
@@ -820,7 +839,7 @@ export default function StudyMaterials() {
 
             <div className="grid grid-cols-2 gap-3 w-full lg:w-auto lg:min-w-[380px]">
               <StatChip icon={<GraduationCap size={17} />} label="Class" value={`${className} · Sec ${sectionName}`} />
-              <StatChip icon={<BookOpen size={17} />} label="Resources" value={`${totalCount} available`} />
+              <StatChip icon={<BookOpen size={17} />} label="Resources" value={`${scopedResources.count} ${scopedResources.scope}`} />
             </div>
           </div>
         </section>

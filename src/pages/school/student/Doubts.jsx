@@ -23,6 +23,7 @@ import DoubtImageAttach, { DoubtImagePreview } from '@/components/school/DoubtIm
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { isAnswerPlaceholder } from '@/lib/doubt-answer';
 
 const statusLabels = {
   ai_answered: { label: 'AI answered', tone: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300' },
@@ -141,14 +142,14 @@ function DoubtCard({ doubt, onHelpful, escalating }) {
               <div className="space-y-4">
                 {viewMode === 'brief' && (
                   <MarkdownRenderer
-                    content={parsedAi.brief?.answer || parsedAi.detailed?.solution || ''}
+                    content={parsedAi.brief?.final_answer || parsedAi.brief?.answer || parsedAi.detailed?.explanation || parsedAi.detailed?.solution || ''}
                     className="prose-slate max-w-none prose-sm"
                   />
                 )}
                 {viewMode === 'detailed' && (
                   <>
                     <MarkdownRenderer
-                      content={parsedAi.detailed?.solution || parsedAi.brief?.answer || ''}
+                      content={parsedAi.detailed?.explanation || parsedAi.detailed?.solution || parsedAi.brief?.answer || ''}
                       className="prose-slate max-w-none prose-sm"
                     />
                     {parsedAi.detailed?.final_answer && (
@@ -157,13 +158,13 @@ function DoubtCard({ doubt, onHelpful, escalating }) {
                         <MarkdownRenderer content={parsedAi.detailed.final_answer} className="prose-slate max-w-none prose-sm" />
                       </div>
                     )}
-                    {parsedAi.detailed?.verification && (
+                    {parsedAi.detailed?.verification && !isAnswerPlaceholder(parsedAi.detailed.verification) && (
                       <div className="mt-3 rounded-xl border border-slate-200 bg-white/60 p-4 dark:border-slate-700 dark:bg-slate-800/60">
                         <h4 className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2">✓ Verification</h4>
                         <MarkdownRenderer content={parsedAi.detailed.verification} className="prose-slate max-w-none prose-sm" />
                       </div>
                     )}
-                    {parsedAi.detailed?.key_concept && (
+                    {parsedAi.detailed?.key_concept && !isAnswerPlaceholder(parsedAi.detailed.key_concept) && (
                       <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900/30 dark:bg-amber-950/20">
                         <h4 className="text-xs font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-2">💡 Key Concept</h4>
                         <MarkdownRenderer content={parsedAi.detailed.key_concept} className="prose-slate max-w-none prose-sm" />

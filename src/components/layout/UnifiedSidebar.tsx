@@ -59,7 +59,7 @@ export interface UnifiedSidebarProps {
 
 /* ─────────────────────── Dimension constants ──────────────────────── */
 
-const EXPANDED_WIDTH = 295;
+const EXPANDED_WIDTH = 210;
 const COLLAPSED_WIDTH = 72;
 
 /* ──────────────────────── Tooltip Component ───────────────────────── */
@@ -142,10 +142,10 @@ function SidebarItem({
         onClick={() => onNavClick?.(item.path)}
         className={({ isActive }) =>
           cn(
-            "group relative flex items-center rounded-2xl text-[15px] font-medium transition-all duration-300 tracking-tight",
+            "group relative flex items-center rounded-2xl text-[13px] font-medium transition-all duration-300 tracking-tight",
             collapsed
               ? "h-11 w-11 mx-auto justify-center my-0.5"
-              : "gap-3.5 px-4 py-3.5 my-0.5",
+              : "gap-2.5 px-3 py-3 my-0.5",
             isActive
               ? collapsed
                 ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/25"
@@ -168,7 +168,7 @@ function SidebarItem({
             </div>
 
             {!collapsed && (
-              <span className="truncate transition-[opacity] duration-200">{item.label}</span>
+              <span className="truncate transition-[opacity] duration-200" title={item.label}>{item.label}</span>
             )}
 
             {/* Badge — expanded only */}

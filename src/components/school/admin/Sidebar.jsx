@@ -13,7 +13,6 @@ import {
   BookOpen,
   Building2,
   CalendarDays,
-  ChevronDown,
   ClipboardCheck,
   ClipboardList,
   FileText,
@@ -213,8 +212,6 @@ export default function Sidebar({ open, onClose }) {
   
   const groups = isSuperAdmin ? superAdminGroups : isInstitute ? adminGroups : teacherGroups;
   const [collapsed, setCollapsed] = useState(false);
-  const roleLabel = isSuperAdmin ? 'Super Admin' : isInstitute ? 'Institute Admin' : 'Teacher Workspace';
-  const workspaceName = isSuperAdmin ? 'EDDVA HQ' : isInstitute ? institute?.name || 'Institute' : user?.name || 'Teacher';
 
   const handleAction = (action) => {
     if (action === 'logout') {
@@ -232,9 +229,9 @@ export default function Sidebar({ open, onClose }) {
       onMobileClose={onClose}
       logo={
         !isSuperAdmin ? (
-          <div className="flex flex-row items-center gap-3 w-full px-4 pt-4 pb-1 text-left">
+          <div className="flex flex-col items-center gap-1.5 w-full pt-4 pb-1 text-center">
             <SchoolLogo src={institute?.logo} alt={institute?.name} size="navbar" className="w-[42px] h-[42px] shrink-0" />
-            <div className="flex flex-col min-w-0">
+            <div className="flex flex-col items-center min-w-0">
               <h2 className="text-xs font-black tracking-tight text-slate-800 dark:text-white uppercase leading-tight line-clamp-2">
                 {institute?.name || 'Army Public School'}
               </h2>
@@ -262,47 +259,6 @@ export default function Sidebar({ open, onClose }) {
       }
       onNavClick={() => onClose?.()}
       onAction={handleAction}
-      profileCard={(isCollapsed) => (
-        !isSuperAdmin ? (
-          <div className={cn(
-            "transition-all duration-200 py-1 px-1 bg-transparent flex items-center justify-between group",
-            isCollapsed ? "justify-center" : "w-full"
-          )}>
-            {isCollapsed ? (
-              <div className="h-9 w-9 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center font-extrabold text-xs border border-blue-100 dark:border-blue-900/40 shadow-xs">
-                {(user?.name || 'A').charAt(0).toUpperCase()}
-              </div>
-            ) : (
-              <div className="flex items-center gap-3 w-full justify-between">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="h-9 w-9 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center font-extrabold text-xs border border-blue-100 dark:border-blue-900/40 shrink-0 shadow-xs">
-                    {(user?.name || 'A').substring(0, 2).toUpperCase()}
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <p className="text-[13px] font-extrabold leading-tight truncate text-blue-600 dark:text-blue-400 max-w-[140px]">
-                      {institute?.name || user?.name || 'Army Public School'}
-                    </p>
-                    <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mt-0.5 truncate">
-                      {roleLabel}
-                    </p>
-                  </div>
-                </div>
-                <ChevronDown className="h-4 w-4 text-slate-400 dark:text-slate-500 shrink-0 group-hover:text-blue-600 transition-colors" />
-              </div>
-            )}
-          </div>
-        ) : (
-          isCollapsed ? (
-            <div className="flex items-center justify-center h-9 w-9 rounded-xl bg-blue-50 text-blue-600 dark:bg-slate-900 dark:text-blue-400 font-extrabold text-[10px] select-none" title="Super Admin">
-              SA
-            </div>
-          ) : (
-            <div className="py-1 px-1 w-full flex items-center justify-between">
-              <p className="text-[13px] font-extrabold text-blue-600 dark:text-blue-400">Super Admin Console</p>
-            </div>
-          )
-        )
-      )}
     />
   );
 }
