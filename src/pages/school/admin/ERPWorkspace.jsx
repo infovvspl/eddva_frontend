@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import * as LucideIcons from 'lucide-react';
 import { apiClient as api } from '@/lib/api/client';
 
@@ -39,17 +38,7 @@ export default function ERPWorkspace() {
           {modules.map(mod => {
             const Icon = LucideIcons[mod.icon] || LucideIcons.Box;
             const colorClass = mod.color || 'slate';
-            
-            const isLibraryModule =
-              mod.ssoKey === 'library' ||
-              mod.key === 'library' ||
-              (mod.name && mod.name.toLowerCase().includes('library'));
 
-            const isSportsModule =
-              mod.ssoKey === 'sports' ||
-              mod.key === 'sports' ||
-              (mod.name && mod.name.toLowerCase().includes('sports'));
-            
             const content = (
               <>
                 <div className="absolute inset-0 bg-slate-50 dark:bg-slate-800 opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -57,7 +46,7 @@ export default function ERPWorkspace() {
                   <Icon className="h-8 w-8" />
                 </div>
                 <h3 className="font-bold text-slate-900 dark:text-white text-lg relative z-10">{mod.name}</h3>
-                {!mod.path && !isLibraryModule && !isSportsModule && (
+                {!mod.path && (
                   <span className="mt-2 text-xs font-bold uppercase tracking-widest text-slate-400 bg-slate-100 dark:bg-slate-800 dark:text-slate-500 px-3 py-1 rounded-full relative z-10">
                     Coming Soon
                   </span>
@@ -65,57 +54,29 @@ export default function ERPWorkspace() {
               </>
             );
 
-            // SSO redirect for Library Management Platform
-            if (isLibraryModule) {
+            // Every module with a path lives in the ERP frontend, a separate app —
+            // hand off via SSO instead of an in-app <Link>, which would try (and
+            // fail) to resolve mod.path against this app's own router.
+            if (mod.path) {
               const token =
                 localStorage.getItem('eddva_access_token') ||
                 localStorage.getItem('school_token') ||
                 localStorage.getItem('token') ||
                 '';
-              // Hand the session to the ERP frontend; the token goes in the URL fragment so it is
-              // never sent to a server or written to logs, and the ERP page removes it on arrival.
+              // The token goes in the URL fragment so it is never sent to a server
+              // or written to logs; the ERP page removes it on arrival.
               const erpFrontendUrl = import.meta.env.VITE_ERP_FRONTEND_URL || 'http://localhost:5173';
-              const targetSsoUrl = `${erpFrontendUrl}/sso#token=${encodeURIComponent(token)}&next=${encodeURIComponent('/library')}`;
-              
+              const targetSsoUrl = `${erpFrontendUrl}/sso#token=${encodeURIComponent(token)}&next=${encodeURIComponent(mod.path)}`;
+
               return (
                 <button
-                  key={mod.key || 'library'}
+                  key={mod.key}
                   type="button"
                   onClick={() => window.open(targetSsoUrl, '_blank', 'noopener')}
                   className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden group hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-lg transition-all cursor-pointer w-full text-left"
                 >
                   {content}
                 </button>
-              );
-            }
-
-            // SSO redirect for Sports Management Platform
-            if (isSportsModule) {
-              const token =
-                localStorage.getItem('eddva_access_token') ||
-                localStorage.getItem('school_token') ||
-                localStorage.getItem('token') ||
-                '';
-              const erpFrontendUrl = import.meta.env.VITE_ERP_FRONTEND_URL || 'http://localhost:5173';
-              const targetSsoUrl = `${erpFrontendUrl}/sso#token=${encodeURIComponent(token)}&next=${encodeURIComponent('/sports')}`;
-              
-              return (
-                <button
-                  key={mod.key || 'sports'}
-                  type="button"
-                  onClick={() => window.open(targetSsoUrl, '_blank', 'noopener')}
-                  className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden group hover:border-emerald-500 dark:hover:border-emerald-500 hover:shadow-lg transition-all cursor-pointer w-full text-left"
-                >
-                  {content}
-                </button>
-              );
-            }
-
-            if (mod.path) {
-              return (
-                <Link to={mod.path} key={mod.key} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden group hover:border-blue-200 dark:hover:border-blue-900/50 hover:shadow-md transition-all">
-                  {content}
-                </Link>
               );
             }
 
