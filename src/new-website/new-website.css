@@ -2064,7 +2064,7 @@ html { scroll-behavior: smooth; }
 .nw-services__scene-svg { width: 100%; max-width: 420px; height: auto; display: block; }
 
 /* ── Service cards ── */
-.nw-services__list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px; }
+.nw-services__list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
 .nw-services__item {
   position: relative; overflow: hidden;
   display: flex; align-items: center; gap: 20px;
@@ -2087,7 +2087,8 @@ html { scroll-behavior: smooth; }
   border-left-color: var(--nw-svc-accent, #1565d8);
 }
 .nw-services__item-icon {
-  width: 76px; height: 76px; border-radius: 18px; flex-shrink: 0;
+  width: 64px; height: 64px; border-radius: 16px; flex-shrink: 0;
+  box-shadow: 0 10px 20px -6px color-mix(in srgb, var(--nw-svc-accent, #1565d8) 55%, transparent);
 }
 .nw-services__item-copy { flex: 1; min-width: 0; }
 .nw-services__item-title {
@@ -2116,30 +2117,63 @@ html { scroll-behavior: smooth; }
   content: ""; width: 62px; height: 2px; background: #1565d8; border-radius: 2px;
 }
 .nw-services__stakeholders {
+  position: relative;
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
   width: 100%; margin-top: 0;
 }
+/* The connecting line/dot run through the vertical centre of the 88px
+   avatars (44px from the top of each column). Horizontal inset of 12.5%
+   lands exactly on the centre of the 1st/4th column in a 4-col grid. */
+.nw-services__sh-line {
+  position: absolute; top: 44px; left: 12.5%; width: 75%; height: 2px;
+  overflow: visible; z-index: 0; pointer-events: none;
+}
+.nw-services__sh-line line {
+  stroke: #cbd5e1; stroke-width: 2.5; stroke-dasharray: 1 4; stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.nw-services__sh-dot {
+  position: absolute; top: 39px; width: 12px; height: 12px; border-radius: 50%;
+  background: var(--nw-blue); z-index: 1; pointer-events: none;
+  box-shadow: 0 0 0 5px rgba(26,86,219,0.16), 0 0 16px rgba(26,86,219,0.65);
+  animation: nw-sh-travel 12s ease-in-out infinite;
+}
+@keyframes nw-sh-travel {
+  0%   { left: 12.5%; opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { left: 87.5%; opacity: 1; }
+  100% { left: 87.5%; opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nw-services__sh-dot { animation: none !important; left: 12.5%; opacity: 1; }
+}
 .nw-services__sh-card {
-  position: relative; overflow: hidden;
+  position: relative; z-index: 2;
   display: flex; flex-direction: column; align-items: center;
   text-align: center; gap: 12px;
-  background: #fff; border: 1px solid var(--nw-card-border, #e2e8f0);
-  border-radius: 18px; padding: 30px 22px 30px;
-  box-shadow: 0 10px 26px rgba(15,23,42,0.05);
 }
-/* Accent strip along the bottom edge */
-.nw-services__sh-card::after {
-  content: ""; position: absolute; left: 0; right: 0; bottom: 0;
-  height: 4px; background: var(--nw-sh-accent, #1565d8);
-}
-.nw-services__sh-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 18px 38px rgba(15,23,42,0.10);
-}
+/* Each avatar pulses once per 12s loop, timed to when the travelling dot
+   (nw-sh-travel, also 12s) reaches that node: the dot moves linearly from
+   left:12.5% at 10% of the cycle to left:87.5% at 90%, and the 4 nodes sit
+   at 12.5/37.5/62.5/87.5% — evenly spaced — so arrival times are evenly
+   spaced too: 1.2s, 4.4s, 7.6s, 10.8s for i = 0..3. */
 .nw-services__sh-avatar {
-  width: 88px; height: 88px; border: none; box-shadow: none;
+  width: 88px; height: 88px; border: 4px solid #fff; box-shadow: 0 6px 18px rgba(15,23,42,0.1);
+  animation: nw-sh-pulse 12s ease-in-out infinite;
+  animation-delay: calc(1.2s + var(--i) * 3.2s);
 }
-.nw-services__sh-card:hover .nw-services__sh-avatar { box-shadow: none; }
+@keyframes nw-sh-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 6px 18px rgba(15,23,42,0.1); }
+  4% {
+    transform: scale(1.12);
+    box-shadow: 0 6px 18px rgba(15,23,42,0.1),
+                0 0 0 9px color-mix(in srgb, var(--nw-sh-accent, #1565d8) 32%, transparent);
+  }
+  16% { transform: scale(1); box-shadow: 0 6px 18px rgba(15,23,42,0.1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nw-services__sh-avatar { animation: none !important; }
+}
 .nw-services__sh-title { font-size: 1.02rem; font-weight: 700; color: #0f172a; }
 .nw-services__sh-desc { font-size: 0.83rem; line-height: 1.6; }
 
@@ -2148,7 +2182,10 @@ html { scroll-behavior: smooth; }
   .nw-services__scene { justify-content: center; }
   .nw-services__scene-svg { max-width: 330px; }
   .nw-services__lead { max-width: none; }
+  .nw-services__list { grid-template-columns: repeat(2, 1fr); }
   .nw-services__stakeholders { grid-template-columns: repeat(2, 1fr); }
+  /* The connector only makes sense across a single row of 4 */
+  .nw-services__sh-line, .nw-services__sh-dot { display: none; }
 }
 @media (max-width: 768px) {
   .nw-services__list { grid-template-columns: 1fr; }
@@ -3521,8 +3558,65 @@ a.nw-contactp__detail-value:hover { color: #9fc0f5; }
   transition-delay: calc(var(--i) * 90ms);
 }
 .nw-services__stakeholders.nw-in .nw-services__sh-card { opacity: 1; transform: none; }
-.nw-services__sh-avatar { transition: transform 0.28s cubic-bezier(.2,1.4,.5,1); }
-.nw-services__sh-card:hover .nw-services__sh-avatar { transform: translateY(-4px) scale(1.06); }
+.nw-services__sh-avatar { transition: transform 0.3s cubic-bezier(.2,1.4,.5,1), box-shadow 0.3s; }
+.nw-services__sh-card:hover .nw-services__sh-avatar {
+  transform: translateY(-4px) scale(1.08);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--nw-sh-accent, #1565d8) 16%, transparent),
+              0 10px 24px -6px color-mix(in srgb, var(--nw-sh-accent, #1565d8) 45%, transparent);
+}
+
+/* ── About: copy slides from the left, media from the right, cards stagger up ── */
+.nw-about__left {
+  opacity: 0; transform: translateX(-26px);
+  transition: opacity 0.6s cubic-bezier(.2,.7,.3,1), transform 0.6s cubic-bezier(.2,.7,.3,1);
+}
+.nw-about__left.nw-in { opacity: 1; transform: none; }
+.nw-about__right {
+  opacity: 0; transform: translateX(26px);
+  transition: opacity 0.6s cubic-bezier(.2,.7,.3,1), transform 0.6s cubic-bezier(.2,.7,.3,1);
+}
+.nw-about__right.nw-in { opacity: 1; transform: none; }
+.nw-about__card {
+  opacity: 0; transform: translateY(22px);
+  transition: opacity 0.5s cubic-bezier(.2,.7,.3,1), transform 0.5s cubic-bezier(.2,.7,.3,1);
+  transition-delay: calc(var(--i) * 90ms);
+}
+.nw-about__cards.nw-in .nw-about__card { opacity: 1; transform: none; }
+
+/* ── Products: cards rise on a stagger ── */
+.nw-products__card {
+  opacity: 0; transform: translateY(26px) scale(0.97);
+  transition: opacity 0.5s cubic-bezier(.2,.7,.3,1), transform 0.5s cubic-bezier(.2,.7,.3,1);
+  transition-delay: calc(var(--i) * 90ms);
+}
+.nw-products__grid.nw-in .nw-products__card { opacity: 1; transform: none; }
+
+/* ── AI Features: heading fades up (the marquee strip scrolls continuously) ── */
+.nw-aifeat__heading {
+  opacity: 0; transform: translateY(16px);
+  transition: opacity 0.5s, transform 0.5s;
+}
+.nw-aifeat__heading.nw-in { opacity: 1; transform: none; }
+
+/* ── Mobile app: copy fades up, perks stagger in ── */
+.nw-app__content {
+  opacity: 0; transform: translateY(20px);
+  transition: opacity 0.55s cubic-bezier(.2,.7,.3,1), transform 0.55s cubic-bezier(.2,.7,.3,1);
+}
+.nw-app__content.nw-in { opacity: 1; transform: none; }
+.nw-app__perk {
+  opacity: 0; transform: translateY(16px);
+  transition: opacity 0.45s cubic-bezier(.2,.7,.3,1), transform 0.45s cubic-bezier(.2,.7,.3,1);
+  transition-delay: calc(var(--i) * 80ms);
+}
+.nw-app__perks.nw-in .nw-app__perk { opacity: 1; transform: none; }
+
+/* ── Partners: title fades up before the logo marquee ── */
+.nw-partners__title {
+  opacity: 0; transform: translateY(14px);
+  transition: opacity 0.5s, transform 0.5s;
+}
+.nw-partners__title.nw-in { opacity: 1; transform: none; }
 
 /* ── FAQ: items rise on a stagger, question text nudges on hover ── */
 .nw-faq__item {
@@ -3816,33 +3910,38 @@ a.nw-contactp__detail-value:hover { color: #9fc0f5; }
    accordion. 85 questions across 10 categories is too many to show flat.
 ══════════════════════════════════════════════════════ */
 .nw-faqp { padding: var(--nw-sec-pad-y, 72px) var(--nw-sec-pad-x); }
-.nw-faqp__container { max-width: 900px; margin: 0 auto; }
+.nw-faqp__container { max-width: 1120px; margin: 0 auto; }
 
-.nw-faqp__pills {
-  display: flex; flex-wrap: wrap; justify-content: center; gap: 9px;
-  margin-bottom: 40px;
+.nw-faqp__layout {
+  display: grid; grid-template-columns: 260px 1fr; gap: 32px; align-items: start;
   opacity: 0; transform: translateY(14px); transition: opacity 0.5s, transform 0.5s;
 }
-.nw-faqp__pills.nw-in { opacity: 1; transform: none; }
-.nw-faqp__pill {
-  display: inline-flex; align-items: center; gap: 8px;
-  font: inherit; font-size: 0.82rem; font-weight: 700; cursor: pointer;
-  color: #64748b; background: #fff;
-  border: 1px solid var(--nw-card-border); border-radius: 999px;
-  padding: 9px 16px;
-  transition: color 0.2s, border-color 0.2s, background 0.2s, transform 0.2s;
+.nw-faqp__layout.nw-in { opacity: 1; transform: none; }
+
+.nw-faqp__sidebar {
+  display: flex; flex-direction: column; gap: 4px;
+  position: sticky; top: 100px;
+  background: #fff; border: 1px solid var(--nw-card-border); border-radius: 18px;
+  padding: 10px;
 }
-.nw-faqp__pill:hover { transform: translateY(-2px); border-color: var(--nw-blue); }
-.nw-faqp__pill.nw-on { color: #fff; background: var(--nw-blue); border-color: var(--nw-blue); }
-.nw-faqp__pill-count {
+.nw-faqp__sidebar-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  font: inherit; font-size: 0.86rem; font-weight: 700; text-align: left; cursor: pointer;
+  color: #475569; background: transparent; border: none; border-radius: 12px;
+  padding: 12px 14px;
+  transition: color 0.2s, background 0.2s;
+}
+.nw-faqp__sidebar-item:hover { background: #f1f5f9; color: var(--nw-ink); }
+.nw-faqp__sidebar-item.nw-on { color: #fff; background: var(--nw-blue); }
+.nw-faqp__sidebar-count {
   display: inline-flex; align-items: center; justify-content: center;
-  min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
-  font-size: 0.66rem; font-weight: 800;
+  min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px;
+  font-size: 0.68rem; font-weight: 800; flex-shrink: 0;
   background: #f1f5f9; color: #94a3b8;
 }
-.nw-faqp__pill.nw-on .nw-faqp__pill-count { background: rgba(255,255,255,0.25); color: #fff; }
+.nw-faqp__sidebar-item.nw-on .nw-faqp__sidebar-count { background: rgba(255,255,255,0.25); color: #fff; }
 
-.nw-faqp__panel { animation: nw-faqp-in 0.25s ease both; }
+.nw-faqp__panel { min-width: 0; animation: nw-faqp-in 0.25s ease both; }
 @keyframes nw-faqp-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .nw-faqp__panel-title {
   text-align: center; margin: 0 0 28px;
@@ -3894,16 +3993,24 @@ a.nw-contactp__detail-value:hover { color: #9fc0f5; }
   width: 6px; height: 6px; border-radius: 999px; background: var(--nw-blue);
 }
 
+@media (max-width: 860px) {
+  .nw-faqp__layout { grid-template-columns: 1fr; }
+  .nw-faqp__sidebar {
+    position: static; flex-direction: row; flex-wrap: nowrap;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+  }
+  .nw-faqp__sidebar-item { flex-shrink: 0; }
+}
+
 @media (max-width: 700px) {
-  .nw-faqp__pills { gap: 7px; }
-  .nw-faqp__pill { padding: 8px 13px; font-size: 0.78rem; }
+  .nw-faqp__sidebar-item { padding: 9px 13px; font-size: 0.78rem; }
   .nw-faqp__question { padding: 13px 15px; font-size: 0.86rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .nw-faqp__panel { animation: none !important; }
-  .nw-faqp__answer, .nw-faqp__chevron, .nw-faqp__pill { transition: none !important; }
-  .nw-faqp__pills { transition: none !important; opacity: 1; transform: none; }
+  .nw-faqp__answer, .nw-faqp__chevron, .nw-faqp__sidebar-item { transition: none !important; }
+  .nw-faqp__layout { transition: none !important; opacity: 1; transform: none; }
 }
 
 /* ══════════════════════════════════════════════════════
@@ -4403,28 +4510,30 @@ a.nw-contactp__detail-value:hover { color: #9fc0f5; }
 .nw-abouthero {
   position: relative; overflow: hidden;
   background-color: #eef4ff;
-  background-size: cover; background-position: center right; background-repeat: no-repeat;
   padding: 56px var(--nw-pad, 48px);
   min-height: 440px; display: flex; align-items: center;
 }
-/* Fixed px stops, not percentages: the text column's width is capped in
-   px (.nw-abouthero__content, 560px + the section's own left padding), so
-   a percentage-based fade covered it fine on a wide desktop viewport but
-   left the tail end of the copy sitting directly on the photo with no
-   wash at tablet widths, where the same percentage lands much closer in. */
-.nw-abouthero__scrim {
-  position: absolute; inset: 0; z-index: 0; pointer-events: none;
-  background: linear-gradient(90deg,
-    #fff 0, #fff 620px, rgba(255,255,255,0.85) 720px, rgba(255,255,255,0.35) 820px, rgba(255,255,255,0) 900px);
+/* The photo sits on its own ::before (not the section's own background) so
+   opacity can fade the image alone, not the text stacked above it. */
+.nw-abouthero::before {
+  content: ""; position: absolute; inset: 0; z-index: 0;
+  background-image: var(--nw-abouthero-bg);
+  background-size: cover; background-position: center right; background-repeat: no-repeat;
+  opacity: 0.55;
 }
+/* No white wash over the photo — the banner stays fully visible. Legibility
+   instead comes from a soft white text-shadow glow on the copy itself
+   (see .nw-abouthero__title/__lead/__body/__crumbs below). */
+.nw-abouthero__scrim { display: none; }
 .nw-abouthero__container {
   position: relative; z-index: 1; max-width: var(--nw-max, 1280px); margin: 0 auto; width: 100%;
 }
 .nw-abouthero__content { max-width: 560px; }
 .nw-abouthero__crumbs {
-  display: flex; align-items: center; gap: 6px; color: #64748b; font-size: 0.85rem; margin-bottom: 18px;
+  display: flex; align-items: center; gap: 6px; color: #334155; font-size: 0.85rem; margin-bottom: 18px;
+  text-shadow: 0 1px 2px rgba(255,255,255,0.95), 0 0 6px rgba(255,255,255,0.9), 0 0 16px rgba(255,255,255,0.8);
 }
-.nw-abouthero__crumb { color: #64748b; transition: color 0.18s; }
+.nw-abouthero__crumb { color: #334155; transition: color 0.18s; }
 a.nw-abouthero__crumb:hover { color: var(--nw-blue); }
 .nw-abouthero__crumb--current { color: var(--nw-ink); font-weight: 600; }
 .nw-abouthero__crumb-icon { color: var(--nw-blue); margin-left: 4px; }
@@ -4433,14 +4542,13 @@ a.nw-abouthero__crumb:hover { color: var(--nw-blue); }
      ProductsHero titles; this was the one page-banner heading off-weight. */
   font-size: clamp(2.1rem, 3.6vw, 3.1rem); font-weight: 700;
   color: var(--nw-ink); letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 14px;
+  text-shadow: 0 1px 2px rgba(255,255,255,0.95), 0 0 8px rgba(255,255,255,0.9), 0 0 22px rgba(255,255,255,0.75), 0 0 40px rgba(255,255,255,0.55);
 }
 .nw-abouthero__title-accent { color: var(--nw-blue); }
 .nw-abouthero__lead {
-  font-size: clamp(1rem, 1.3vw, 1.15rem); font-weight: 600; color: #334155;
-  line-height: 1.55; max-width: 52ch; margin-bottom: 12px;
-}
-.nw-abouthero__body {
-  font-size: 0.96rem; line-height: 1.75; color: #64748b; max-width: 54ch; margin-bottom: 26px;
+  font-size: clamp(1rem, 1.3vw, 1.15rem); font-weight: 600; color: #0f172a;
+  line-height: 1.55; max-width: 52ch; margin-bottom: 28px;
+  text-shadow: 0 1px 2px rgba(255,255,255,0.95), 0 0 6px rgba(255,255,255,0.9), 0 0 18px rgba(255,255,255,0.75);
 }
 .nw-abouthero__btn {
   display: inline-flex; align-items: center; gap: 8px;
@@ -4461,10 +4569,7 @@ a.nw-abouthero__crumb:hover { color: var(--nw-blue); }
      desktop position) shows the caption baked into the image's right edge
      instead of the photo — ghosting a second "Education today…" behind the
      real heading. Plain "center" keeps the crop window over the girl. */
-  .nw-abouthero { background-position: center; }
-  .nw-abouthero__scrim {
-    background: linear-gradient(90deg, #fff 0%, rgba(255,255,255,0.96) 55%, rgba(255,255,255,0.7) 78%, rgba(255,255,255,0.25) 100%);
-  }
+  .nw-abouthero::before { background-position: center; }
   .nw-abouthero__content { max-width: none; }
 }
 @media (prefers-reduced-motion: reduce) {

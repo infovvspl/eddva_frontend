@@ -21,7 +21,7 @@ const AboutHero = () => (
   <section
     className="nw-abouthero"
     id="nw-about-head"
-    style={{ backgroundImage: `url(${aboutBanner})` }}
+    style={{ "--nw-abouthero-bg": `url(${aboutBanner})` }}
   >
     <span className="nw-abouthero__scrim" aria-hidden="true" />
     <div className="nw-abouthero__container">
@@ -44,18 +44,11 @@ const AboutHero = () => (
           Built for the future of education — AI, automation and analytics in one platform.
         </p>
 
-        <p className="nw-abouthero__body nw-rise" style={{ "--nw-delay": "0.24s" }}>
-          At EDDVA, we believe education can be simpler, smarter and more
-          impactful with the right technology. We work with schools,
-          institutes and educators to create connected learning environments
-          that empower every learner.
-        </p>
-
         <Link
           to="/about/story"
           className="nw-abouthero__btn nw-rise"
           id="nw-abouthero-story"
-          style={{ "--nw-delay": "0.32s" }}
+          style={{ "--nw-delay": "0.24s" }}
         >
           Our Story
           <ChevronRight size={16} strokeWidth={2.4} />

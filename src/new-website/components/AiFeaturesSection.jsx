@@ -9,6 +9,7 @@
 
 import { Link } from "react-router-dom";
 import { features } from "../data/features";
+import useInView from "../hooks/useInView";
 
 
 const Strip = ({ clone }) => (
@@ -38,11 +39,13 @@ const Strip = ({ clone }) => (
 );
 
 const AiFeaturesSection = () => {
+  const [headRef, headIn] = useInView({ threshold: 0.3 });
+
   return (
     <section className="nw-aifeat nw-bg-frame" id="nw-ai-features">
       <div className="nw-aifeat__container">
 
-        <h2 className="nw-aifeat__heading" id="nw-aifeat-heading">
+        <h2 className={`nw-aifeat__heading${headIn ? " nw-in" : ""}`} id="nw-aifeat-heading" ref={headRef}>
           Discover Our Top AI Features
         </h2>
 

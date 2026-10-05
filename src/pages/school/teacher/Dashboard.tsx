@@ -237,9 +237,9 @@ const Dashboard: React.FC = () => {
   return (
     <div className="dashboard">
       <MaintenanceBroadcastBanner />
-      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 mb-6 items-start">
-        {/* Welcome Banner */}
-        <div className="lg:col-span-2 xl:col-span-3 relative overflow-hidden rounded-[2rem] shadow-sm group min-h-[300px]">
+      <div className="flex flex-col gap-6 mb-6">
+        {/* Welcome Banner — full width */}
+        <div className="relative overflow-hidden rounded-[2rem] shadow-sm group min-h-[300px]">
           <div className="absolute inset-0 bg-cover bg-[center_top] bg-no-repeat z-0" style={{ backgroundImage: `url(${BgBanner})` }} />
           <div className="absolute inset-y-0 left-0 w-full md:w-[60%] lg:w-[45%] bg-gradient-to-r from-white/95 via-white/70 to-transparent z-10" />
 
@@ -253,33 +253,9 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Today's Schedule — spans both grid rows so its height comes from
-            Banner + Today's Overview combined, instead of leaving empty
-            space next to a now-shorter banner. */}
-        <div className="hidden lg:flex lg:col-span-1 lg:row-span-2 rounded-[2rem] border border-slate-100 bg-white shadow-sm flex-col overflow-hidden">
-          <div className="p-5 sm:p-6 border-b border-slate-100 flex justify-between items-center bg-white">
-            <h3 className="text-[15px] sm:text-[17px] font-extrabold text-[#112A46] flex items-center gap-2">
-              <Calendar size={18} className="text-[#1C4ED8]" /> Today's Schedule
-            </h3>
-            <div className="text-[10px] sm:text-[11px] font-bold text-[#1C4ED8] bg-[#EFF6FF] px-2 sm:px-3 py-1 sm:py-1.5 rounded-full flex items-center gap-1 cursor-pointer hover:bg-blue-100 transition-colors">
-              <PlusCircle size={14} /> Add
-            </div>
-          </div>
-          <div className="p-5 sm:p-6 flex flex-col gap-6 flex-1">
-            <ScheduleTimeline />
-          </div>
-          <div className="p-4 border-t border-slate-100 bg-white mt-auto">
-            <button onClick={() => navigate('/school/teacher/timetable')} className="w-full text-[12px] sm:text-[13px] font-bold text-[#1C4ED8] hover:text-[#1E40AF] flex items-center justify-center gap-1 transition-colors">
-              View Full Calendar <ArrowRight size={16} />
-            </button>
-          </div>
-        </div>
-
-        {/* Today's Schedule — mobile/tablet counterpart to the panel above.
-            That one is `hidden` below lg (it's row-spanned against the
-            banner + overview grid, which only holds at lg+); below lg this
-            stacks as its own full-width card instead of disappearing. */}
-        <div className="lg:hidden rounded-[2rem] border border-slate-100 bg-white shadow-sm flex flex-col overflow-hidden">
+        {/* Today's Schedule + Today's Overview — side by side, 50/50 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <div className="rounded-[2rem] border border-slate-100 bg-white shadow-sm flex flex-col overflow-hidden">
           <div className="p-5 sm:p-6 border-b border-slate-100 flex justify-between items-center bg-white">
             <h3 className="text-[15px] sm:text-[17px] font-extrabold text-[#112A46] flex items-center gap-2">
               <Calendar size={18} className="text-[#1C4ED8]" /> Today's Schedule
@@ -298,21 +274,20 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Today's Overview — row 2, same column span as the banner above it,
-            so Schedule's row-span-2 sits flush beside both. */}
-        <div className="lg:col-span-2 xl:col-span-3 bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
+        {/* Today's Overview — full width */}
+        <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
         <div className="flex justify-between items-end mb-6">
           <h2 className="text-xl font-extrabold text-[#112A46] tracking-tight">Today's Overview</h2>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Students Card */}
           <div className="bg-[#F0F7FF] rounded-[1.5rem] p-5 border border-[#E0F0FE]/60 flex flex-col hover:-translate-y-1 transition-transform cursor-pointer" onClick={() => navigate('/school/teacher/students')}>
             <div className="flex items-start gap-4">
               <div className="bg-[#E0F0FE] text-[#2563EB] w-14 h-14 flex items-center justify-center rounded-full shrink-0 shadow-sm"><Users size={24} /></div>
-              <div className="flex flex-col">
+              <div className="flex flex-col min-w-0">
                 <p className="text-3xl font-black text-[#1E293B] leading-none">{stats?.totalStudents ?? 0}</p>
-                <p className="text-sm font-semibold text-[#64748B] mt-1">Students</p>
+                <p className="text-sm font-semibold text-[#64748B] mt-1 break-words">Students</p>
               </div>
             </div>
             <div className="mt-5 flex items-center gap-1.5 text-[12px] font-bold text-[#059669]">
@@ -325,9 +300,9 @@ const Dashboard: React.FC = () => {
           <div className="bg-[#FFF7ED] rounded-[1.5rem] p-5 border border-[#FFEDD5]/60 flex flex-col hover:-translate-y-1 transition-transform cursor-pointer" onClick={() => navigate('/school/teacher/timetable')}>
             <div className="flex items-start gap-4">
               <div className="bg-[#FFEDD5] text-[#EA580C] w-14 h-14 flex items-center justify-center rounded-full shrink-0 shadow-sm"><Presentation size={24} /></div>
-              <div className="flex flex-col">
+              <div className="flex flex-col min-w-0">
                 <p className="text-3xl font-black text-[#1E293B] leading-none">{upcomingClasses.length}</p>
-                <p className="text-sm font-semibold text-[#64748B] mt-1">Classes Today</p>
+                <p className="text-sm font-semibold text-[#64748B] mt-1 break-words">Classes Today</p>
               </div>
             </div>
             <div className="mt-5 flex items-center gap-1.5 text-[12px] font-bold text-[#EA580C]">
@@ -340,9 +315,9 @@ const Dashboard: React.FC = () => {
           <div className="bg-[#F5F3FF] rounded-[1.5rem] p-5 border border-[#EDE9FE]/60 flex flex-col hover:-translate-y-1 transition-transform cursor-pointer" onClick={() => navigate('/school/teacher/assignments')}>
             <div className="flex items-start gap-4">
               <div className="bg-[#EDE9FE] text-[#7C3AED] w-14 h-14 flex items-center justify-center rounded-full shrink-0 shadow-sm"><FileText size={24} /></div>
-              <div className="flex flex-col">
+              <div className="flex flex-col min-w-0">
                 <p className="text-3xl font-black text-[#1E293B] leading-none">{stats?.assignments ?? 0}</p>
-                <p className="text-sm font-semibold text-[#64748B] mt-1">Assignments</p>
+                <p className="text-sm font-semibold text-[#64748B] mt-1 break-words">Assignments</p>
               </div>
             </div>
             <div className="mt-5 flex items-center gap-1.5 text-[12px] font-bold text-[#7C3AED]">
@@ -355,9 +330,9 @@ const Dashboard: React.FC = () => {
           <div className="bg-[#FEF2F2] rounded-[1.5rem] p-5 border border-[#FEE2E2]/60 flex flex-col hover:-translate-y-1 transition-transform cursor-pointer" onClick={() => navigate('/school/teacher/assessments')}>
             <div className="flex items-start gap-4">
               <div className="bg-[#FEE2E2] text-[#DC2626] w-14 h-14 flex items-center justify-center rounded-full shrink-0 shadow-sm"><CheckSquare size={24} /></div>
-              <div className="flex flex-col">
+              <div className="flex flex-col min-w-0">
                 <p className="text-3xl font-black text-[#1E293B] leading-none">{stats?.assessments ?? 0}</p>
-                <p className="text-sm font-semibold text-[#64748B] mt-1">Assessments</p>
+                <p className="text-sm font-semibold text-[#64748B] mt-1 break-words">Assessments</p>
               </div>
             </div>
             <div className="mt-5 flex items-center gap-1.5 text-[12px] font-bold text-[#2563EB]">
@@ -365,6 +340,7 @@ const Dashboard: React.FC = () => {
               Scheduled
             </div>
           </div>
+        </div>
         </div>
         </div>
       </div>
@@ -391,9 +367,9 @@ const Dashboard: React.FC = () => {
                 <div className={`w-10 h-10 rounded-full ${iconBg} flex items-center justify-center transition-colors ${text} shrink-0`}>
                   {icon}
                 </div>
-                <div className="flex flex-col items-start text-left">
-                  <p className={`text-[15px] font-extrabold ${text} leading-tight mb-1`}>{label}</p>
-                  <p className={`text-[11px] font-semibold ${text} opacity-80 leading-tight`}>{desc}</p>
+                <div className="flex flex-col items-start text-left min-w-0">
+                  <p className={`text-[15px] font-extrabold ${text} leading-tight mb-1 break-words`}>{label}</p>
+                  <p className={`text-[11px] font-semibold ${text} opacity-80 leading-tight break-words`}>{desc}</p>
                 </div>
               </div>
               {/* 3D Graphic */}

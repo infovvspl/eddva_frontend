@@ -20,6 +20,7 @@ import avStudent from "../assets/mobile icons/Img 1.png";
 import avTeacher from "../assets/mobile icons/Img 2 (1).png";
 import avLearner from "../assets/mobile icons/Img 3 (1).png";
 import avPrincipal from "../assets/mobile icons/Img 4 (1).png";
+import useInView from "../hooks/useInView";
 
 const perks = [
   { id: "nw-app-learn",   title: "Learn on the move",   desc: "Classes, notes and tests in your pocket.", Icon: Smartphone },
@@ -41,6 +42,9 @@ const orbit = [
 ];
 
 const MobileAppSection = () => {
+  const [contentRef, contentIn] = useInView({ threshold: 0.25 });
+  const [perksRef, perksIn] = useInView({ threshold: 0.15 });
+
   return (
     <section className="nw-app" id="nw-app">
       <div className="nw-app__glow nw-app__glow--1" aria-hidden="true" />
@@ -49,7 +53,7 @@ const MobileAppSection = () => {
       <div className="nw-app__container">
 
         {/* TOP — copy + store badges, centred */}
-        <div className="nw-app__content">
+        <div className={`nw-app__content${contentIn ? " nw-in" : ""}`} ref={contentRef}>
           <span className="nw-app__label">MOBILE APPLICATION</span>
           <h2 className="nw-app__heading">Take EDDVA Anywhere</h2>
           <p className="nw-app__lead">
@@ -115,9 +119,9 @@ const MobileAppSection = () => {
         </div>
 
         {/* BOTTOM — the four perks */}
-        <ul className="nw-app__perks">
-          {perks.map(({ id, title, desc, Icon }) => (
-            <li className="nw-app__perk" key={id} id={id}>
+        <ul className={`nw-app__perks${perksIn ? " nw-in" : ""}`} ref={perksRef}>
+          {perks.map(({ id, title, desc, Icon }, i) => (
+            <li className="nw-app__perk" key={id} id={id} style={{ "--i": i }}>
               <span className="nw-app__perk-icon" aria-hidden="true">
                 <Icon size={19} strokeWidth={1.9} />
               </span>
