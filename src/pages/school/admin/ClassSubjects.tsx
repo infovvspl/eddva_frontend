@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Edit2, Layers, Plus, Search, Trash2, Filter } from 'lucide-react';
+import { ArrowLeft, BookOpen, Edit2, Layers, Plus, Search, Trash2, Filter, GraduationCap, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/admin/Modal';
@@ -29,6 +29,7 @@ type Subject = {
   class_id?: string;
   section_id?: string;
   section_name?: string;
+  content_type?: 'school' | 'competitive';
 };
 
 type SubjectFormState = {
@@ -38,6 +39,7 @@ type SubjectFormState = {
   type: string;
   classId: string;
   sectionId: string;
+  contentType: 'school' | 'competitive';
 };
 
 const fieldClassName =
@@ -77,6 +79,7 @@ export default function ClassSubjects() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
+  const [contentType, setContentType] = useState<'school' | 'competitive'>('school');
   const [formData, setFormData] = useState<SubjectFormState>({
     name: '',
     code: '',
@@ -84,12 +87,13 @@ export default function ClassSubjects() {
     type: 'Theory',
     classId: classId || '',
     sectionId: '',
+    contentType: 'school',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchData();
-  }, [classId]);
+  }, [classId, contentType]);
 
   const selectedClass = useMemo(
     () => classes.find((cls) => String(cls.id) === String(classId)),
@@ -111,9 +115,13 @@ export default function ClassSubjects() {
         String(subject.section_id) === String(sectionFilter) ||
         (!subject.section_id && sectionFilter !== 'all-sections');
 
-      return matchesSearch && matchesSection;
+      const matchesContentType = 
+        !subject.content_type || 
+        subject.content_type === contentType;
+
+      return matchesSearch && matchesSection && matchesContentType;
     });
-  }, [subjects, searchQuery, sectionFilter]);
+  }, [subjects, searchQuery, sectionFilter, contentType]);
 
   const mappedSectionCount = useMemo(
     () => new Set(subjects.map((subject) => subject.section_id).filter(Boolean)).size,
@@ -134,7 +142,7 @@ export default function ClassSubjects() {
     try {
       const [classRes, subjectRes] = await Promise.all([
         api.get('/academic/classes'),
-        api.get('/subjects', { params: { page: 1, limit: 500, classId } }),
+        api.get('/subjects', { params: { page: 1, limit: 500, classId, contentType } }),
       ]);
 
       const classPayload = classRes.data?.data ?? classRes.data;
@@ -170,6 +178,7 @@ export default function ClassSubjects() {
         type: subject.type || 'Theory',
         classId: subject.class_id || classId || '',
         sectionId: subject.section_id || '',
+        contentType: subject.content_type || 'school',
       });
     } else {
       setEditingSubject(null);
@@ -180,6 +189,7 @@ export default function ClassSubjects() {
         type: 'Theory',
         classId: classId || '',
         sectionId: '',
+        contentType: contentType,
       });
     }
     setIsModalOpen(true);
@@ -205,6 +215,7 @@ export default function ClassSubjects() {
         type: formData.type,
         classId: formData.classId,
         sectionId: formData.sectionId,
+        contentType: formData.contentType,
       };
 
       if (editingSubject) {
@@ -345,6 +356,40 @@ export default function ClassSubjects() {
         </div>
       </div>
 
+      {/* Content Type Mode Selector */}
+      <div className="flex gap-3">
+        <button
+          onClick={() => setContentType('school')}
+          className={cn(
+            "flex-1 flex flex-col items-center gap-2 rounded-2xl border-2 p-4 transition-all",
+            contentType === 'school'
+              ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20"
+              : "border-slate-200 bg-white hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-indigo-500"
+          )}
+        >
+          <GraduationCap className={cn("w-8 h-8", contentType === 'school' ? "text-indigo-600" : "text-slate-400")} />
+          <span className={cn("text-sm font-bold", contentType === 'school' ? "text-indigo-900 dark:text-indigo-100" : "text-slate-600 dark:text-slate-300")}>
+            School Curriculum
+          </span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">CBSE, ICSE, State Board</span>
+        </button>
+        <button
+          onClick={() => setContentType('competitive')}
+          className={cn(
+            "flex-1 flex flex-col items-center gap-2 rounded-2xl border-2 p-4 transition-all",
+            contentType === 'competitive'
+              ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20"
+              : "border-slate-200 bg-white hover:border-emerald-300 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-emerald-500"
+          )}
+        >
+          <Target className={cn("w-8 h-8", contentType === 'competitive' ? "text-emerald-600" : "text-slate-400")} />
+          <span className={cn("text-sm font-bold", contentType === 'competitive' ? "text-emerald-900 dark:text-emerald-100" : "text-slate-600 dark:text-slate-300")}>
+            Competitive Preparation
+          </span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">JEE, NEET, etc.</span>
+        </button>
+      </div>
+
       <div className="grid grid-cols-2 xl:grid-cols-3 gap-2 sm:gap-4">
         <SummaryCard icon={BookOpen} tone="blue" label="Total Subjects" value={uniqueSubjectsCount} helper={`Inside ${selectedClass.name}`} />
         <SummaryCard icon={Layers} tone="emerald" label="Mapped Sections" value={mappedSectionCount} helper={`${(selectedClass.sections || []).length} sections available`} />
@@ -458,6 +503,7 @@ export default function ClassSubjects() {
                 <th className="px-3 py-4">Subject Name</th>
                 <th className="px-3 py-4">Section</th>
                 <th className="px-3 py-4">Type</th>
+                <th className="px-3 py-4">Curriculum</th>
                 <th className="px-3 py-4">Description</th>
                 <th className="px-3 py-4 text-center">Actions</th>
               </tr>
@@ -484,6 +530,16 @@ export default function ClassSubjects() {
                     <td className="px-3 py-4 font-bold text-surface-950 dark:text-white">{subject.name}</td>
                     <td className="px-3 py-4 text-surface-700 dark:text-surface-200">{subject.section_id ? `Section ${subject.section_name}` : 'All Sections'}</td>
                     <td className="px-3 py-4 text-surface-700 dark:text-surface-200">{subject.type || 'Theory'}</td>
+                    <td className="px-3 py-4">
+                      <span className={cn(
+                        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold",
+                        subject.content_type === 'competitive'
+                          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                          : "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400"
+                      )}>
+                        {subject.content_type === 'competitive' ? 'Competitive' : 'School'}
+                      </span>
+                    </td>
                     <td className="px-3 py-4 text-surface-700 dark:text-surface-200">{subject.description || '-'}</td>
                     <td className="px-3 py-4">
                       <div className="flex justify-center gap-2">
@@ -532,7 +588,18 @@ export default function ClassSubjects() {
                     <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-bold">Type</span>
                     <span className="font-semibold">{subject.type || 'Theory'}</span>
                   </div>
-                  <div className="col-span-2">
+                  <div>
+                    <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-bold">Curriculum</span>
+                    <span className={cn(
+                      "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-bold",
+                      subject.content_type === 'competitive'
+                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                        : "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400"
+                    )}>
+                      {subject.content_type === 'competitive' ? 'Competitive' : 'School'}
+                    </span>
+                  </div>
+                  <div>
                     <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-bold">Description</span>
                     <span className="font-semibold">{subject.description || '-'}</span>
                   </div>
@@ -633,21 +700,33 @@ function SubjectEditor({
             className="w-full"
           />
         </FormField>
-        <FormField label="Section">
+        <FormField label="Curriculum Type">
           <CustomSelect
-            onChange={(val) => setFormData(prev => ({ ...prev, sectionId: val }))}
-            value={formData.sectionId}
+            onChange={(val) => setFormData(prev => ({ ...prev, contentType: val as 'school' | 'competitive' }))}
+            value={formData.contentType}
             options={[
-              { value: "", label: "All Sections / Class-wide" },
-              ...(selectedClass?.sections || []).map((sec) => ({
-                value: sec.id,
-                label: `Section ${sec.name}`,
-              })),
+              { value: "school", label: "School Curriculum" },
+              { value: "competitive", label: "Competitive Preparation" },
             ]}
             className="w-full"
           />
         </FormField>
       </div>
+
+      <FormField label="Section">
+        <CustomSelect
+          onChange={(val) => setFormData(prev => ({ ...prev, sectionId: val }))}
+          value={formData.sectionId}
+          options={[
+            { value: "", label: "All Sections / Class-wide" },
+            ...(selectedClass?.sections || []).map((sec) => ({
+              value: sec.id,
+              label: `Section ${sec.name}`,
+            })),
+          ]}
+          className="w-full"
+        />
+      </FormField>
 
       <div className="flex justify-end gap-3 border-t border-surface-100 pt-4 dark:border-surface-800">
         <button type="button" onClick={onCancel} className="rounded-lg border border-surface-200 px-4 py-2.5 text-sm font-bold text-surface-700 hover:bg-surface-50 dark:border-surface-800 dark:text-surface-200">

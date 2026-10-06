@@ -15,6 +15,7 @@ import {
   LINK_TIPS, MAX_UPLOAD_MB, TYPED_CARD_TIPS, TYPED_CHECKLIST_TIPS, acceptAttribute, formatSummary, isSupportedUpload, materialUploadGuide,
 } from '@/lib/material-upload-guide';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
+import { cn } from '@/lib/utils';
 
 import {
   Plus,
@@ -52,6 +53,7 @@ import {
   ZoomIn,
   Clapperboard,
   Play,
+  Target,
 } from 'lucide-react';
 
 import GlassCard from '@/components/school/GlassCard';
@@ -117,6 +119,9 @@ const TopicManagement: React.FC = () => {
       Object.entries(updates).forEach(([key, val]) => {
         if (val === null || val === undefined) {
           next.delete(key);
+        } else if (key === 'contentType') {
+          // contentType should be plain string, not JSON
+          next.set(key, val);
         } else {
           next.set(key, JSON.stringify(val));
         }
@@ -127,6 +132,10 @@ const TopicManagement: React.FC = () => {
 
   const getParam = (key: string) => {
     const val = searchParams.get(key);
+    if (key === 'contentType') {
+      // contentType is plain string, strip any quotes
+      return val?.replace(/"/g, '') || null;
+    }
     try { return val ? JSON.parse(val) : null; } catch { return null; }
   };
 
@@ -225,14 +234,82 @@ const TopicManagement: React.FC = () => {
     return Array.from(map.values());
   }, [all, selectedClass]);
 
-  const subjects = useMemo(() => {
-    if (!selectedClass || !selectedSection) return [];
-    const map = new Map<string, Ref>();
-    all
-      .filter((a) => a.classId === selectedClass.id && a.sectionId === selectedSection.id)
-      .forEach((a) => { if (a.subjectId) map.set(a.subjectId, { id: a.subjectId, name: a.subjectName }); });
-    return Array.from(map.values());
-  }, [all, selectedClass, selectedSection]);
+  // ── Content Type Mode Selector ───────────────────────────────────────────────
+  const contentType = (getParam('contentType') as 'school' | 'competitive') || 'school';
+
+  const setContentType = (type: 'school' | 'competitive') => {
+    updateUrlState({ contentType: type, subject: null });
+  };
+
+  // ── Fetch subjects from API ─────────────────────────────────────────────────
+  const [subjects, setSubjects] = useState<Ref[]>([]);
+  const [loadingSubjects, setLoadingSubjects] = useState(false);
+
+  useEffect(() => {
+    if (!selectedClass || !selectedSection) {
+      setSubjects([]);
+      return;
+    }
+
+    const fetchSubjects = async () => {
+      try {
+        setLoadingSubjects(true);
+        
+        console.log('=== Fetching Subjects ===');
+        console.log('Selected Class:', selectedClass);
+        console.log('Selected Section:', selectedSection);
+        console.log('Content Type:', contentType);
+        
+        // Fetch both section-specific and class-wide subjects
+        const [sectionRes, classWideRes] = await Promise.all([
+          api.get('/subjects', {
+            params: {
+              classId: selectedClass.id,
+              sectionId: selectedSection.id,
+              contentType,
+              limit: 100
+            }
+          }),
+          api.get('/subjects', {
+            params: {
+              classId: selectedClass.id,
+              sectionId: '', // Class-wide subjects
+              contentType,
+              limit: 100
+            }
+          })
+        ]);
+        
+        const sectionSubjects = sectionRes.data?.data || sectionRes.data || [];
+        const classWideSubjects = classWideRes.data?.data || classWideRes.data || [];
+        
+        console.log('Section subjects:', sectionSubjects);
+        console.log('Class-wide subjects:', classWideSubjects);
+        
+        // Combine and deduplicate by ID
+        const combined = [...sectionSubjects, ...classWideSubjects];
+        const uniqueSubjects = Array.from(new Map(combined.map((s: any) => [s.id, s])).values());
+        
+        const mappedSubjects: Ref[] = uniqueSubjects.map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          curriculumType: s.content_type || s.curriculumType || 'school'
+        }));
+        setSubjects(mappedSubjects);
+        
+        console.log('Combined subjects:', mappedSubjects);
+        console.log('=== End Fetch ===');
+      } catch (err) {
+        console.error('Failed to fetch subjects', err);
+        toast.error('Failed to load subjects');
+        setSubjects([]);
+      } finally {
+        setLoadingSubjects(false);
+      }
+    };
+
+    void fetchSubjects();
+  }, [selectedClass?.id, selectedSection?.id, contentType, searchParams]);
 
   // ── Curriculum fetches ─────────────────────────────────────────────────────
   const fetchChapters = async (subjectId: string) => {
@@ -541,23 +618,65 @@ const TopicManagement: React.FC = () => {
 
       {/* ── SUBJECTS ── */}
       {level === 'subjects' && (
-        filteredSubjects.length === 0 ? (
-          <EmptyState icon={<BookOpen size={40} />} title="No subjects" message="No subjects found for this section." />
-        ) : (
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredSubjects.map((s, i) => (
-              <NavCard
-                key={`${s.id}-${i}`}
-                icon={<BookOpen size={22} />}
-                tone="emerald"
-                title={s.name}
-                meta="Chapters & topics"
-                actionLabel="Open curriculum"
-                onClick={() => { setSelectedSubject({ id: s.id, name: s.name }); setSearch(''); }}
-              />
-            ))}
+        <>
+          {/* Content Type Mode Selector */}
+          <div className="flex gap-3 mb-6">
+            <button
+              onClick={() => setContentType('school')}
+              className={cn(
+                "flex-1 flex flex-col items-center gap-2 rounded-2xl border-2 p-4 transition-all",
+                contentType === 'school'
+                  ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20"
+                  : "border-slate-200 bg-white hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-indigo-500"
+              )}
+            >
+              <GraduationCap className={cn("w-8 h-8", contentType === 'school' ? "text-indigo-600" : "text-slate-400")} />
+              <span className={cn("text-sm font-bold", contentType === 'school' ? "text-indigo-900 dark:text-indigo-100" : "text-slate-600 dark:text-slate-300")}>
+                School Curriculum
+              </span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">CBSE, ICSE, State Board</span>
+            </button>
+            <button
+              onClick={() => setContentType('competitive')}
+              className={cn(
+                "flex-1 flex flex-col items-center gap-2 rounded-2xl border-2 p-4 transition-all",
+                contentType === 'competitive'
+                  ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20"
+                  : "border-slate-200 bg-white hover:border-emerald-300 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-emerald-500"
+              )}
+            >
+              <Target className={cn("w-8 h-8", contentType === 'competitive' ? "text-emerald-600" : "text-slate-400")} />
+              <span className={cn("text-sm font-bold", contentType === 'competitive' ? "text-emerald-900 dark:text-emerald-100" : "text-slate-600 dark:text-slate-300")}>
+                Competitive Preparation
+              </span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">JEE, NEET, etc.</span>
+            </button>
           </div>
-        )
+
+          {loadingSubjects ? (
+            <CardGridSkeleton />
+          ) : subjects.length === 0 ? (
+            <EmptyState 
+              icon={<BookOpen size={40} />} 
+              title={`No ${contentType} subjects`} 
+              message={`No ${contentType} subjects found for this section.`} 
+            />
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {subjects.map((s, i) => (
+                <NavCard
+                  key={`${s.id}-${i}`}
+                  icon={<BookOpen size={22} />}
+                  tone={contentType === 'competitive' ? 'emerald' : 'indigo'}
+                  title={s.name}
+                  meta="Chapters & topics"
+                  actionLabel="Open curriculum"
+                  onClick={() => { setSelectedSubject({ id: s.id, name: s.name }); setSearch(''); }}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* ── CURRICULUM (chapters + topics) ── */}
@@ -759,6 +878,7 @@ const toneStyles: Record<string, { soft: string; icon: string }> = {
   brand: { soft: 'bg-brand-100 dark:bg-brand-900/40', icon: 'text-brand-600 dark:text-brand-400' },
   violet: { soft: 'bg-violet-100 dark:bg-violet-900/40', icon: 'text-violet-600 dark:text-violet-400' },
   emerald: { soft: 'bg-emerald-100 dark:bg-emerald-900/40', icon: 'text-emerald-600 dark:text-emerald-400' },
+  indigo: { soft: 'bg-indigo-100 dark:bg-indigo-900/40', icon: 'text-indigo-600 dark:text-indigo-400' },
 };
 
 function NavCard({
@@ -859,7 +979,7 @@ function RowSkeleton() {
 
 // ── Material type config ─────────────────────────────────────────────────────
 
-const MATERIAL_TYPES: { value: SchoolMaterialType; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; soft: string; text: string }[] = [
+const MATERIAL_TYPES: { value: SchoolMaterialType; label: string; icon: any; soft: string; text: string }[] = [
   { value: 'notes', label: 'Notes', icon: FileText, soft: 'bg-blue-50 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400' },
   { value: 'study_guide', label: 'Study Guide', icon: BookOpen, soft: 'bg-indigo-50 dark:bg-indigo-900/30', text: 'text-indigo-600 dark:text-indigo-400' },
   { value: 'key_concepts', label: 'Key Concepts', icon: Lightbulb, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
@@ -1983,7 +2103,7 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
             {material.description
               ? isFlashcard
                 ? <FlashcardViewer content={material.description} />
-                : <ReactMarkdown remarkPlugins={[remarkGfm]}>{material.description}</ReactMarkdown>
+                : <MarkdownRenderer content={material.description} />
               : <p className="text-surface-400">No content.</p>}
 
             {/* Floating Color Picker */}
@@ -2028,7 +2148,7 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
 
 // ── AI Content Generator panel ───────────────────────────────────────────────
 
-const AI_GEN_TYPES: { id: string; label: string; desc: string; saveAs: string; icon: React.ComponentType<{ size?: number; className?: string }>; soft: string; text: string }[] = [
+const AI_GEN_TYPES: { id: string; label: string; desc: string; saveAs: string; icon: any; soft: string; text: string }[] = [
   { id: 'presentation', label: 'Presentation', desc: 'Opens AI PPT Studio — build, edit & save a slide deck to this topic', saveAs: 'ppt', icon: Presentation, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
   { id: 'study_guide', label: 'Study Guide', desc: 'Exam-ready summary with must-know points for revision', saveAs: 'study_guide', icon: BookOpen, soft: 'bg-indigo-50 dark:bg-indigo-900/30', text: 'text-indigo-600 dark:text-indigo-400' },
   { id: 'key_concepts', label: 'Key Concepts', desc: 'Bulleted must-know concepts, formulas & definitions', saveAs: 'key_concepts', icon: Lightbulb, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },

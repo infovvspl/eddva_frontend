@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Edit2, Eye, Layers, Plus, Search, Trash2 } from 'lucide-react';
+import { BookOpen, Edit2, Eye, Layers, Plus, Search, Trash2, GraduationCap, Target } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/admin/Modal';
 import { toast } from 'sonner';
@@ -29,6 +30,7 @@ type Subject = {
   section_id?: string;
   class_name?: string;
   section_name?: string;
+  content_type?: 'school' | 'competitive';
 };
 
 type SubjectFormState = {
@@ -38,6 +40,7 @@ type SubjectFormState = {
   type: string;
   classId: string;
   sectionId: string;
+  contentType: 'school' | 'competitive';
 };
 
 const emptyForm: SubjectFormState = {
@@ -47,6 +50,7 @@ const emptyForm: SubjectFormState = {
   type: 'Theory',
   classId: '',
   sectionId: '',
+  contentType: 'school',
 };
 
 const fieldClassName =
@@ -62,12 +66,13 @@ export default function Subjects() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
+  const [contentType, setContentType] = useState<'school' | 'competitive'>('school');
   const [formData, setFormData] = useState<SubjectFormState>(emptyForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [contentType]);
 
   const totalSections = useMemo(
     () => classes.reduce((sum, cls) => sum + (cls.sections || []).length, 0),
@@ -81,35 +86,42 @@ export default function Subjects() {
 
   const filteredClasses = useMemo(() => {
     const term = searchQuery.trim().toLowerCase();
-    if (!term) return classes;
-
     return classes.filter((cls) => {
       const classSubjects = subjectsForClass(cls.id);
-      return (
+      const filteredByContentType = classSubjects.filter((subject) => 
+        !subject.content_type || subject.content_type === contentType
+      );
+      
+      const matchesSearch =
+        !term ||
         cls.name.toLowerCase().includes(term) ||
-        classSubjects.some((subject) =>
+        filteredByContentType.some((subject) =>
           subject.name?.toLowerCase().includes(term) ||
           subject.code?.toLowerCase().includes(term),
-        )
-      );
+        );
+
+      return matchesSearch;
     });
-  }, [classes, subjects, searchQuery]);
+  }, [classes, subjects, searchQuery, contentType]);
 
   const uniqueSubjectsCount = useMemo(() => {
+    const filteredByContentType = subjects.filter((subject) => 
+      !subject.content_type || subject.content_type === contentType
+    );
     const uniqueNames = new Set(
-      subjects
+      filteredByContentType
         .map((subject) => subject.name?.trim().toLowerCase())
         .filter(Boolean),
     );
     return uniqueNames.size;
-  }, [subjects]);
+  }, [subjects, contentType]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const [classRes, subjectRes] = await Promise.all([
         api.get('/academic/classes'),
-        api.get('/subjects', { params: { page: 1, limit: 500 } }),
+        api.get('/subjects', { params: { page: 1, limit: 500, contentType } }),
       ]);
 
       const classPayload = classRes.data?.data ?? classRes.data;
@@ -146,7 +158,10 @@ export default function Subjects() {
   };
 
   function subjectsForClass(classId: string) {
-    return subjects.filter((subject) => String(subject.class_id) === String(classId));
+    return subjects.filter((subject) => 
+      String(subject.class_id) === String(classId) &&
+      (!subject.content_type || subject.content_type === contentType)
+    );
   }
 
 
@@ -165,10 +180,11 @@ export default function Subjects() {
         type: subject.type || 'Theory',
         classId: subject.class_id || classId,
         sectionId: subject.section_id || '',
+        contentType: subject.content_type || 'school',
       });
     } else {
       setEditingSubject(null);
-      setFormData({ ...emptyForm, classId });
+      setFormData({ ...emptyForm, classId, contentType });
     }
     setIsModalOpen(true);
   };
@@ -194,6 +210,7 @@ export default function Subjects() {
         type: formData.type,
         classId: formData.classId,
         sectionId: formData.sectionId,
+        contentType: formData.contentType,
       };
 
       if (editingSubject) {
@@ -262,6 +279,40 @@ export default function Subjects() {
         <SummaryCard icon={Layers} tone="emerald" label="Total Classes" value={classes.length} helper="Available classes" />
       </div>
 
+      {/* Content Type Mode Selector */}
+      <div className="flex gap-3">
+        <button
+          onClick={() => setContentType('school')}
+          className={cn(
+            "flex-1 flex flex-col items-center gap-2 rounded-2xl border-2 p-4 transition-all",
+            contentType === 'school'
+              ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20"
+              : "border-slate-200 bg-white hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-indigo-500"
+          )}
+        >
+          <GraduationCap className={cn("w-8 h-8", contentType === 'school' ? "text-indigo-600" : "text-slate-400")} />
+          <span className={cn("text-sm font-bold", contentType === 'school' ? "text-indigo-900 dark:text-indigo-100" : "text-slate-600 dark:text-slate-300")}>
+            School Curriculum
+          </span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">CBSE, ICSE, State Board</span>
+        </button>
+        <button
+          onClick={() => setContentType('competitive')}
+          className={cn(
+            "flex-1 flex flex-col items-center gap-2 rounded-2xl border-2 p-4 transition-all",
+            contentType === 'competitive'
+              ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20"
+              : "border-slate-200 bg-white hover:border-emerald-300 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-emerald-500"
+          )}
+        >
+          <Target className={cn("w-8 h-8", contentType === 'competitive' ? "text-emerald-600" : "text-slate-400")} />
+          <span className={cn("text-sm font-bold", contentType === 'competitive' ? "text-emerald-900 dark:text-emerald-100" : "text-slate-600 dark:text-slate-300")}>
+            Competitive Preparation
+          </span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">JEE, NEET, etc.</span>
+        </button>
+      </div>
+
       <section className="mt-5 overflow-hidden rounded-xl border border-surface-200 bg-white shadow-sm dark:border-surface-800 dark:bg-surface-900">
         <div className="flex flex-row items-center justify-between gap-2 border-b border-surface-200 p-3 sm:p-4 dark:border-surface-800">
           <div className="relative flex-1 max-w-[280px] sm:max-w-xs">
@@ -306,7 +357,9 @@ export default function Subjects() {
               ) : (
                 filteredClasses.map((cls) => {
                   const classSubjects = subjectsForClass(cls.id);
-                  const sampleSubjects = classSubjects.slice(0, 3).map((subject) => subject.name).join(', ') || '-';
+                  const sampleSubjects = classSubjects.slice(0, 3).map((subject) => 
+                    `${subject.name}${subject.content_type === 'competitive' ? ' (Competitive)' : ''}`
+                  ).join(', ') || '-';
 
                   return (
                     <tr key={cls.id} className="bg-white hover:bg-surface-50/80 dark:bg-surface-900 dark:hover:bg-surface-800/40">
@@ -345,7 +398,9 @@ export default function Subjects() {
           ) : (
             filteredClasses.map((cls) => {
               const classSubjects = subjectsForClass(cls.id);
-              const sampleSubjects = classSubjects.slice(0, 3).map((subject) => subject.name).join(', ') || '-';
+              const sampleSubjects = classSubjects.slice(0, 3).map((subject) => 
+                `${subject.name}${subject.exam_target ? ' (Competitive)' : ''}`
+              ).join(', ') || '-';
 
               return (
                 <div key={cls.id} className="p-4 space-y-3 hover:bg-surface-50/80 transition-colors">
@@ -458,6 +513,10 @@ function SubjectEditor({
     }));
   };
 
+  const updateContentType = (value: string) => {
+    setFormData((prev) => ({ ...prev, contentType: value as 'school' | 'competitive' }));
+  };
+
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
@@ -491,18 +550,30 @@ function SubjectEditor({
             className="w-full"
           />
         </FormField>
-        <FormField label="Class">
+        <FormField label="Curriculum Type">
           <CustomSelect
-            onChange={(val) => updateField('classId', val)}
-            value={formData.classId}
+            onChange={updateContentType}
+            value={formData.contentType}
             options={[
-              { value: "", label: "Select Class" },
-              ...classes.map((cls) => ({ value: cls.id, label: cls.name })),
+              { value: "school", label: "School Curriculum" },
+              { value: "competitive", label: "Competitive Preparation" },
             ]}
             className="w-full"
           />
         </FormField>
       </div>
+
+      <FormField label="Class">
+        <CustomSelect
+          onChange={(val) => updateField('classId', val)}
+          value={formData.classId}
+          options={[
+            { value: "", label: "Select Class" },
+            ...classes.map((cls) => ({ value: cls.id, label: cls.name })),
+          ]}
+          className="w-full"
+        />
+      </FormField>
 
       <FormField label="Section">
         <CustomSelect
