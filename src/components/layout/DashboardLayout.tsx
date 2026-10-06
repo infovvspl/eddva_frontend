@@ -23,6 +23,7 @@ import { AeroBackground } from "@/components/shared/AeroBackground";
 import { motion, AnimatePresence } from "framer-motion";
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useStudentMe, useUpdateStudentProfile, useMyCourses } from "@/hooks/use-student";
 import { useInstituteProfile, useUpdateInstituteProfile } from "@/hooks/use-admin";
 import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
@@ -1842,23 +1843,15 @@ const DashboardLayout = () => {
       </div>
 
       {/* â”€â”€ Preference Modal (students only, shown once on first login) â”€â”€ */}
-      {showPrefModal && (
-        <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 relative">
-            <button
-              onClick={handleDismissPref}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
+      <Dialog open={showPrefModal} onOpenChange={(o) => { if (!o) handleDismissPref(); }}>
+        <DialogContent className="max-w-md p-8">
             <div className="text-center mb-6">
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
                 <GraduationCap className="w-7 h-7 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-slate-900">
+              <DialogTitle className="text-2xl font-bold text-slate-900">
                 Welcome, {me?.fullName?.split(" ")[0] || user.name.split(" ")[0]}!
-              </h2>
+              </DialogTitle>
               <p className="text-slate-500 text-sm mt-1">What are you preparing for?</p>
             </div>
 
@@ -1896,29 +1889,20 @@ const DashboardLayout = () => {
             >
               Skip for now
             </button>
-          </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {/* â”€â”€ Welcome Walkthrough (shown once per user, before other first-login modals) â”€â”€ */}
       {!walkthroughDone && <WelcomeWalkthrough onDone={handleWalkthroughDone} />}
 
       {/* â”€â”€ Admin Profile Setup Modal (shown once on first login) â”€â”€ */}
-      {showAdminProfileModal && (
-        <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 relative">
-            <button
-              onClick={handleSkipAdminProfile}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
+      <Dialog open={showAdminProfileModal} onOpenChange={(o) => { if (!o) handleSkipAdminProfile(); }}>
+        <DialogContent className="max-w-md p-8">
             <div className="text-center mb-6">
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
                 <Building2 className="w-7 h-7 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-slate-900">Set up your profile</h2>
+              <DialogTitle className="text-2xl font-bold text-slate-900">Set up your profile</DialogTitle>
               <p className="text-slate-500 text-sm mt-1">Tell students a bit about your institute</p>
             </div>
 
@@ -1968,9 +1952,8 @@ const DashboardLayout = () => {
             >
               Skip for now â€” complete later in Settings
             </button>
-          </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {/* â”€â”€ Nav Tour: point at sidebar item â†’ click to navigate â”€â”€ */}
       {tourActive && tourStep && tourPhase === "nav" && (

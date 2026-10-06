@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, ShieldCheck, X } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../../../lib/api/school-client';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { useConfirm } from '@/context/ConfirmContext';
 
 const ERP_PERMISSIONS = {
   Sales: ['erp.sales.view', 'erp.sales.create', 'erp.sales.edit', 'erp.sales.delete'],
@@ -9,6 +12,7 @@ const ERP_PERMISSIONS = {
 };
 
 export default function Roles() {
+  const confirm = useConfirm();
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -74,7 +78,8 @@ export default function Roles() {
   }
 
   async function handleDeleteRole(id) {
-    if (!window.confirm('Are you sure you want to delete this role?')) return;
+    const ok = await confirm({ title: 'Delete Role', message: 'Are you sure you want to delete this role?' });
+    if (!ok) return;
     try {
       await api.delete(`/roles/${id}`);
       toast.success('Role deleted');
@@ -116,7 +121,7 @@ export default function Roles() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-black text-surface-950 flex items-center gap-2">
-            <ShieldCheck className="h-6 w-6 text-brand-600" />
+            <ShieldCheck className="size-6 text-brand-600" />
             Roles & Permissions
           </h1>
           <p className="text-sm text-surface-500 mt-1">
@@ -127,55 +132,55 @@ export default function Roles() {
           onClick={() => handleOpenModal()}
           className="inline-flex items-center gap-2 bg-brand-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-brand-700 transition"
         >
-          <Plus className="h-4 w-4" /> Create Role
+          <Plus className="size-4" /> Create Role
         </button>
       </div>
 
       <div className="bg-white rounded-xl border border-surface-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-surface-600">
-            <thead className="bg-surface-50 text-xs uppercase font-bold text-surface-500 border-b border-surface-200">
-              <tr>
-                <th className="px-6 py-4">Role Name</th>
-                <th className="px-6 py-4">Description</th>
-                <th className="px-6 py-4">Permissions</th>
-                <th className="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-surface-100">
+          <Table className="w-full text-left text-sm text-surface-600">
+            <TableHeader className="bg-surface-50 text-xs uppercase font-bold text-surface-500 border-b border-surface-200">
+              <TableRow className="hover:bg-transparent border-b-0">
+                <TableHead className="h-auto px-6 py-4 text-surface-500">Role Name</TableHead>
+                <TableHead className="h-auto px-6 py-4 text-surface-500">Description</TableHead>
+                <TableHead className="h-auto px-6 py-4 text-surface-500">Permissions</TableHead>
+                <TableHead className="h-auto px-6 py-4 text-right text-surface-500">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-surface-100 [&_tr]:border-b-0">
               {loading ? (
-                <tr>
-                  <td colSpan="4" className="px-6 py-8 text-center text-surface-500">Loading roles...</td>
-                </tr>
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan="4" className="px-6 py-8 text-center text-surface-500">Loading roles...</TableCell>
+                </TableRow>
               ) : roles.length === 0 ? (
-                <tr>
-                  <td colSpan="4" className="px-6 py-8 text-center text-surface-500">No custom roles found. Click 'Create Role' to add one.</td>
-                </tr>
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan="4" className="px-6 py-8 text-center text-surface-500">No custom roles found. Click 'Create Role' to add one.</TableCell>
+                </TableRow>
               ) : (
                 roles.map(role => (
-                  <tr key={role.id} className="hover:bg-surface-50/50 transition">
-                    <td className="px-6 py-4 font-bold text-surface-900">{role.name}</td>
-                    <td className="px-6 py-4">{role.description || '-'}</td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center justify-center bg-surface-100 text-surface-700 rounded-full px-2.5 py-0.5 text-xs font-bold">
+                  <TableRow key={role.id} className="hover:bg-surface-50/50 transition">
+                    <TableCell className="p-4 px-6 py-4 font-bold text-surface-900">{role.name}</TableCell>
+                    <TableCell className="p-4 px-6 py-4">{role.description || '-'}</TableCell>
+                    <TableCell className="p-4 px-6 py-4">
+                      <Badge variant="secondary" className="justify-center rounded-full border-transparent bg-surface-100 text-xs font-bold text-surface-700 hover:bg-surface-100">
                         {Array.isArray(role.permissions) ? role.permissions.length : 0} Perms
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="p-4 px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button onClick={() => handleOpenModal(role)} className="p-1.5 text-surface-400 hover:text-brand-600 rounded-lg hover:bg-surface-100 transition">
-                          <Edit2 className="h-4 w-4" />
+                          <Edit2 className="size-4" />
                         </button>
                         <button onClick={() => handleDeleteRole(role.id)} className="p-1.5 text-surface-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition">
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="size-4" />
                         </button>
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
 
@@ -185,7 +190,7 @@ export default function Roles() {
             <div className="flex items-center justify-between px-6 py-4 border-b border-surface-100">
               <h2 className="text-lg font-bold text-surface-950">{editingRole ? 'Edit Role' : 'Create Custom Role'}</h2>
               <button onClick={() => setIsModalOpen(false)} className="p-2 text-surface-400 hover:bg-surface-100 rounded-lg transition">
-                <X className="h-5 w-5" />
+                <X className="size-5" />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
@@ -230,7 +235,7 @@ export default function Roles() {
                                 type="checkbox"
                                 checked={formData.permissions.includes(perm)}
                                 onChange={() => togglePermission(perm)}
-                                className="rounded border-surface-300 text-brand-600 focus:ring-brand-500 h-4 w-4"
+                                className="rounded border-surface-300 text-brand-600 focus:ring-brand-500 size-4"
                               />
                               {perm}
                             </label>

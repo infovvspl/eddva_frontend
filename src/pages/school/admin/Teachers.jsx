@@ -13,6 +13,9 @@ import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import { useConfirm } from '@/context/ConfirmContext';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 function formatNumber(value) {
   return Number(value || 0).toLocaleString();
@@ -419,14 +422,14 @@ export default function Teachers() {
             }}
             className="inline-flex items-center justify-center gap-1.5 rounded-xl sm:rounded-2xl border border-[rgba(37,99,235,0.14)] bg-white px-3 py-2 sm:px-5 sm:py-3 text-xs sm:text-sm font-bold text-slate-700 shadow-sm sm:shadow-md transition hover:bg-slate-50 active:scale-[0.99] dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
           >
-            <Download className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+            <Download className="size-4 sm:size-5 text-blue-600" />
             <span>Bulk Import</span>
           </button>
           <button
             onClick={handleAddClick}
             className="inline-flex items-center justify-center gap-1.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2 sm:px-5 sm:py-3 text-xs sm:text-sm font-bold text-white shadow-md sm:shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]"
           >
-            <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
+            <Plus className="size-4 sm:size-5" />
             <span>Add Teacher</span>
           </button>
         </div>
@@ -486,8 +489,8 @@ export default function Teachers() {
                 </p>
                 <p className="mt-0.5 sm:mt-1 text-[9px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 truncate">{card.subtitle}</p>
               </div>
-              <div className={`flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl ${card.iconBg}`}>
-                <card.Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${card.iconColor}`} />
+              <div className={`flex size-9 sm:size-11 shrink-0 items-center justify-center rounded-2xl ${card.iconBg}`}>
+                <card.Icon className={`size-4 sm:size-5 ${card.iconColor}`} />
               </div>
             </div>
           </motion.div>
@@ -504,7 +507,7 @@ export default function Teachers() {
               {/* Search & Filter Toggle Group */}
               <div className="flex items-center gap-2 flex-1 max-w-lg">
                 <div className="relative flex-1 min-w-[180px]">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                  <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
                   <input
                     value={searchQuery}
                     onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
@@ -523,10 +526,10 @@ export default function Teachers() {
                       : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
                   )}
                 >
-                  <Filter className="h-3.5 w-3.5" />
+                  <Filter className="size-3.5" />
                   <span>Filter</span>
                   {(statusFilter !== 'ALL' || selectedClassId !== 'ALL' || selectedSectionId !== 'ALL' || selectedYear !== 'ALL' || (isPlatformSuperAdmin && selectedInstituteId !== 'ALL')) && (
-                    <span className="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-400" />
+                    <span className="size-2 rounded-full bg-blue-600 dark:bg-blue-400" />
                   )}
                 </button>
               </div>
@@ -534,7 +537,7 @@ export default function Teachers() {
               {/* Right Action Badges & Buttons */}
               <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
                 <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/60 bg-slate-50/80 px-2.5 py-1.5 text-xs font-bold text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-                  <Users className="h-3.5 w-3.5 text-blue-500" />
+                  <Users className="size-3.5 text-blue-500" />
                   <span>{formatNumber(filtered.length)} results</span>
                 </div>
 
@@ -544,7 +547,7 @@ export default function Teachers() {
                     onClick={clearTeacherFilters}
                     className="inline-flex items-center gap-1 rounded-xl border border-rose-200/80 bg-rose-50/50 px-2.5 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-100/60 transition dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-400"
                   >
-                    <X className="h-3.5 w-3.5" />
+                    <X className="size-3.5" />
                     <span>Clear</span>
                   </button>
                 )}
@@ -554,7 +557,7 @@ export default function Teachers() {
                   onClick={exportCsv}
                   className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
                 >
-                  <Download className="h-3.5 w-3.5 text-slate-500" />
+                  <Download className="size-3.5 text-slate-500" />
                   <span>Export</span>
                 </button>
               </div>
@@ -572,7 +575,7 @@ export default function Teachers() {
                     { value: "INACTIVE", label: "Inactive" },
                   ]}
                   className="w-full sm:w-40"
-                  triggerClassName="flex h-full w-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+                  triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
                 />
 
                 {isPlatformSuperAdmin && (
@@ -584,7 +587,7 @@ export default function Teachers() {
                       ...institutes.map((institute) => ({ value: institute.id, label: institute.name })),
                     ]}
                     className="w-full sm:w-44"
-                    triggerClassName="flex h-full w-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+                    triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
                   />
                 )}
 
@@ -597,7 +600,7 @@ export default function Teachers() {
                   ]}
                   disabled={isPlatformSuperAdmin && selectedInstituteId === 'ALL'}
                   className="w-full sm:w-40"
-                  triggerClassName="flex h-full w-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+                  triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
                 />
 
                 <CustomSelect
@@ -609,17 +612,17 @@ export default function Teachers() {
                   ]}
                   disabled={selectedClassId === 'ALL' || (isPlatformSuperAdmin && selectedInstituteId === 'ALL')}
                   className="w-full sm:w-40"
-                  triggerClassName="flex h-full w-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+                  triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
                 />
 
                 <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
-                  <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                  <Calendar className="size-3.5 text-slate-400" />
                   <CustomSelect
                     value={selectedYear}
                     onChange={setSelectedYear}
                     options={years.map((y) => ({ value: y, label: y }))}
                     className="w-24"
-                    triggerClassName="flex h-full w-full items-center justify-between gap-1 px-1.5 py-1 text-xs font-semibold text-slate-700 border-none bg-transparent"
+                    triggerClassName="flex size-full items-center justify-between gap-1 px-1.5 py-1 text-xs font-semibold text-slate-700 border-none bg-transparent"
                   />
                 </div>
               </div>
@@ -629,68 +632,65 @@ export default function Teachers() {
 
         {/* Desktop View */}
         <div className="hidden md:block overflow-x-auto rounded-b-2xl overflow-hidden">
-          <table className="min-w-[980px] w-full text-left text-sm">
-            <thead className="bg-slate-50/50 text-slate-500 dark:bg-slate-800/40 dark:text-slate-400">
-              <tr>
-                <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider sticky left-0 z-20 bg-slate-50 dark:bg-slate-850 shadow-sm">Teacher Name</th>
-                <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">School</th>
-                <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Email</th>
-                <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Class</th>
-                <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Section</th>
-                <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Status</th>
-                <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          <Table className="min-w-[980px] w-full text-left text-sm">
+            <TableHeader className="bg-slate-50/50 text-slate-500 dark:bg-slate-800/40 dark:text-slate-400">
+              <TableRow className="hover:bg-transparent border-b-0">
+                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider sticky left-0 z-20 bg-slate-50 dark:bg-slate-850 shadow-sm text-slate-500 dark:text-slate-400">Teacher Name</TableHead>
+                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">School</TableHead>
+                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Email</TableHead>
+                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Class</TableHead>
+                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Section</TableHead>
+                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</TableHead>
+                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-slate-100 dark:divide-slate-800 [&_tr]:border-b-0">
               {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan="7" className="px-5 py-12 text-center text-slate-400">
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan="7" className="px-5 py-12 text-center text-slate-400">
                     No teachers found.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : (
                 filtered.map((teacher) => (
-                  <tr key={teacher.id} className="transition hover:bg-blue-50/40 dark:hover:bg-slate-800/40">
-                    <td className="px-5 py-4 sticky left-0 z-20 bg-white dark:bg-slate-900">
+                  <TableRow key={teacher.id} className="transition hover:bg-blue-50/40 dark:hover:bg-slate-800/40">
+                    <TableCell className="p-4 px-5 py-4 sticky left-0 z-20 bg-white dark:bg-slate-900">
                       <div className="flex items-center gap-4">
-                        <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-2xl border-2 border-white bg-slate-100 shadow-sm dark:border-slate-800 dark:bg-slate-800">
-                          {teacher.profileImage ? (
-                            <img src={teacher.profileImage} alt={teacher.name} className="h-full w-full object-cover" />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center bg-blue-600/10 text-[13px] font-bold tracking-tight text-blue-700 dark:bg-blue-500/20 dark:text-sky-200">
-                              {(teacher.name || 'T').slice(0, 1).toUpperCase()}
-                            </div>
-                          )}
-                        </div>
+                        <Avatar className="size-11 shrink-0 rounded-2xl border-2 border-white bg-slate-100 shadow-sm dark:border-slate-800 dark:bg-slate-800">
+                          <AvatarImage src={teacher.profileImage} alt={teacher.name} className="object-cover" />
+                          <AvatarFallback className="rounded-2xl bg-blue-600/10 text-[13px] font-bold tracking-tight text-blue-700 dark:bg-blue-500/20 dark:text-sky-200">
+                            {(teacher.name || 'T').slice(0, 1).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
                         <div className="min-w-0">
                           <p className="truncate text-sm font-bold tracking-tight text-slate-900 dark:text-white">{teacher.name}</p>
                           <p className="truncate text-[11px] font-bold text-slate-400 dark:text-slate-500">{teacher.teacherProfile?.designation || '—'}</p>
                         </div>
                       </div>
-                    </td>
-                    <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{teacher.instituteName || '-'}</td>
-                    <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{teacher.email || '-'}</td>
-                    <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">
+                    </TableCell>
+                    <TableCell className="p-4 px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{teacher.instituteName || '-'}</TableCell>
+                    <TableCell className="p-4 px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{teacher.email || '-'}</TableCell>
+                    <TableCell className="p-4 px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">
                       <div className="flex flex-wrap gap-1">
                         {(teacher.classes || []).map(c => (
-                          <span key={c.id} className="inline-flex rounded-full bg-blue-50 dark:bg-blue-950/30 px-2 py-0.5 text-xs font-bold text-blue-700 dark:text-blue-400">
+                          <Badge key={c.id} variant="secondary" className="rounded-full px-2 bg-blue-50 dark:bg-blue-950/30 text-xs font-bold text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30">
                             {c.name}
-                          </span>
+                          </Badge>
                         ))}
                         {(!teacher.classes || teacher.classes.length === 0) && <span className="text-slate-400">—</span>}
                       </div>
-                    </td>
-                    <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">
+                    </TableCell>
+                    <TableCell className="p-4 px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">
                       <div className="flex flex-wrap gap-1">
                         {(teacher.sections || []).map(s => (
-                          <span key={s.id} className="inline-flex rounded-full bg-indigo-50 dark:bg-indigo-950/30 px-2 py-0.5 text-xs font-bold text-indigo-700 dark:text-indigo-400">
+                          <Badge key={s.id} variant="secondary" className="rounded-full px-2 bg-indigo-50 dark:bg-indigo-950/30 text-xs font-bold text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30">
                             {s.name}
-                          </span>
+                          </Badge>
                         ))}
                         {(!teacher.sections || teacher.sections.length === 0) && <span className="text-slate-400">—</span>}
                       </div>
-                    </td>
-                    <td className="px-5 py-4">
+                    </TableCell>
+                    <TableCell className="p-4 px-5 py-4">
                       <button
                         onClick={async () => {
                           try {
@@ -712,7 +712,7 @@ export default function Teachers() {
                             : "bg-slate-200 border-slate-300 dark:bg-slate-800 dark:border-slate-700"
                         )}>
                           <div className={cn(
-                            "w-3.5 h-3.5 rounded-full bg-white transition-transform duration-200 shadow-sm",
+                            "size-3.5 rounded-full bg-white transition-transform duration-200 shadow-sm",
                             teacher.isActive ? "translate-x-4" : "translate-x-0"
                           )} />
                         </div>
@@ -723,39 +723,39 @@ export default function Teachers() {
                           {teacher.isActive ? 'Active' : 'Inactive'}
                         </span>
                       </button>
-                    </td>
-                    <td className="px-5 py-4">
+                    </TableCell>
+                    <TableCell className="p-4 px-5 py-4">
                       <div className="flex items-center gap-2">
                         <Link
                           to={`/school/admin/teachers/${teacher.id}`}
-                          className="group relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                          className="group relative flex size-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
                         >
-                          <Eye className="h-4 w-4" />
+                          <Eye className="size-4" />
                           <span className="absolute -top-10 left-1/2 -translate-x-1/2 scale-0 rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">View</span>
                         </Link>
                         <button
                           onClick={() => handleEdit(teacher)}
-                          className="group relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                          className="group relative flex size-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
                           aria-label="Edit teacher"
                         >
-                          <Edit2 className="h-4 w-4" />
+                          <Edit2 className="size-4" />
                           <span className="absolute -top-10 left-1/2 -translate-x-1/2 scale-0 rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">Edit</span>
                         </button>
                         <button
                           onClick={() => handleDelete(teacher.id)}
-                          className="group relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 transition-all hover:border-red-400 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                          className="group relative flex size-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 transition-all hover:border-red-400 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
                           aria-label="Delete teacher"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="size-4" />
                           <span className="absolute -top-10 left-1/2 -translate-x-1/2 scale-0 rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">Delete</span>
                         </button>
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
 
         {/* Mobile View */}
@@ -768,15 +768,12 @@ export default function Teachers() {
             filtered.map((teacher) => (
               <div key={teacher.id} className="p-4 space-y-3 hover:bg-blue-50/40 dark:hover:bg-slate-800/40 transition">
                 <div className="flex items-center gap-4">
-                  <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-2xl border-2 border-white bg-slate-100 shadow-sm dark:border-slate-800 dark:bg-slate-800">
-                    {teacher.profileImage ? (
-                      <img src={teacher.profileImage} alt={teacher.name} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-blue-600/10 text-[13px] font-bold tracking-tight text-blue-700 dark:bg-blue-500/20 dark:text-sky-200">
-                        {(teacher.name || 'T').slice(0, 1).toUpperCase()}
-                      </div>
-                    )}
-                  </div>
+                  <Avatar className="size-11 shrink-0 rounded-2xl border-2 border-white bg-slate-100 shadow-sm dark:border-slate-800 dark:bg-slate-800">
+                    <AvatarImage src={teacher.profileImage} alt={teacher.name} className="object-cover" />
+                    <AvatarFallback className="rounded-2xl bg-blue-600/10 text-[13px] font-bold tracking-tight text-blue-700 dark:bg-blue-500/20 dark:text-sky-200">
+                      {(teacher.name || 'T').slice(0, 1).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-bold tracking-tight text-slate-900 dark:text-white">{teacher.name}</p>
                     <p className="truncate text-[11px] font-bold text-slate-400 dark:text-slate-500">{teacher.teacherProfile?.designation || '—'}</p>
@@ -796,9 +793,9 @@ export default function Teachers() {
                     <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-black">Classes</span>
                     <div className="flex flex-wrap gap-1 mt-0.5">
                       {(teacher.classes || []).map(c => (
-                        <span key={c.id} className="inline-flex rounded-full bg-blue-50 dark:bg-blue-950/30 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:text-blue-400">
+                        <Badge key={c.id} variant="secondary" className="rounded-full px-2 bg-blue-50 dark:bg-blue-950/30 text-[10px] font-bold text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30">
                           {c.name}
-                        </span>
+                        </Badge>
                       ))}
                       {(!teacher.classes || teacher.classes.length === 0) && <span className="text-slate-400">—</span>}
                     </div>
@@ -807,9 +804,9 @@ export default function Teachers() {
                     <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-black">Sections</span>
                     <div className="flex flex-wrap gap-1 mt-0.5">
                       {(teacher.sections || []).map(s => (
-                        <span key={s.id} className="inline-flex rounded-full bg-indigo-50 dark:bg-indigo-950/30 px-2 py-0.5 text-[10px] font-bold text-indigo-700 dark:text-indigo-400">
+                        <Badge key={s.id} variant="secondary" className="rounded-full px-2 bg-indigo-50 dark:bg-indigo-950/30 text-[10px] font-bold text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30">
                           {s.name}
-                        </span>
+                        </Badge>
                       ))}
                       {(!teacher.sections || teacher.sections.length === 0) && <span className="text-slate-400">—</span>}
                     </div>
@@ -837,7 +834,7 @@ export default function Teachers() {
                           : "bg-slate-200 border-slate-300 dark:bg-slate-800 dark:border-slate-700"
                       )}>
                         <div className={cn(
-                          "w-3.5 h-3.5 rounded-full bg-white transition-transform duration-200 shadow-sm",
+                          "size-3.5 rounded-full bg-white transition-transform duration-200 shadow-sm",
                           teacher.isActive ? "translate-x-4" : "translate-x-0"
                         )} />
                       </div>
@@ -856,21 +853,21 @@ export default function Teachers() {
                     to={`/school/admin/teachers/${teacher.id}`}
                     className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-100 bg-white px-3 text-slate-500 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 text-xs font-bold"
                   >
-                    <Eye className="h-3.5 w-3.5" />
+                    <Eye className="size-3.5" />
                     <span>View</span>
                   </Link>
                   <button
                     onClick={() => handleEdit(teacher)}
                     className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-100 bg-white px-3 text-slate-500 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 text-xs font-bold"
                   >
-                    <Edit2 className="h-3.5 w-3.5" />
+                    <Edit2 className="size-3.5" />
                     <span>Edit</span>
                   </button>
                   <button
                     onClick={() => handleDelete(teacher.id)}
                     className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-100 bg-white px-3 text-slate-500 hover:border-red-400 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 text-xs font-bold"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 className="size-3.5" />
                     <span>Delete</span>
                   </button>
                 </div>
@@ -914,7 +911,7 @@ export default function Teachers() {
               onClick={handleDownloadTemplate}
               className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700"
             >
-              <Download className="h-3.5 w-3.5" />
+              <Download className="size-3.5" />
               Download CSV Template
             </button>
           </div>
@@ -927,11 +924,11 @@ export default function Teachers() {
                   type="file"
                   accept=".csv"
                   onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  className="absolute inset-0 size-full opacity-0 cursor-pointer"
                 />
                 <div className="space-y-2">
-                  <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-sky-400">
-                    <Download className="h-5 w-5" />
+                  <div className="mx-auto flex size-10 items-center justify-center rounded-full bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-sky-400">
+                    <Download className="size-5" />
                   </div>
                   <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">
                     {importFile ? importFile.name : 'Drag & drop your CSV file here, or click to browse'}
@@ -976,7 +973,7 @@ export default function Teachers() {
                 disabled={importing || !importFile}
                 className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50"
               >
-                {importing && <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />}
+                {importing && <div className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />}
                 Import Teachers
               </button>
               <button

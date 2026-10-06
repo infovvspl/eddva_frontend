@@ -114,8 +114,8 @@ const Students: React.FC = () => {
   return (
     <div className="p-4 sm:p-6 flex flex-col gap-6">
       <div className="flex items-center gap-3">
-        <div className="grid h-11 w-11 place-items-center rounded-2xl bg-indigo-500/10 text-indigo-500">
-          <User className="h-6 w-6" />
+        <div className="grid size-11 place-items-center rounded-2xl bg-indigo-500/10 text-indigo-500">
+          <User className="size-6" />
         </div>
         <div>
           <h1 className="text-xl font-black text-slate-900 dark:text-white">Assigned Students</h1>
@@ -126,7 +126,7 @@ const Students: React.FC = () => {
       <GlassCard className="p-6 flex flex-col gap-4">
         <div className="flex flex-col md:flex-row gap-3 items-center">
           <div className="relative flex-1 w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
             <Input
               placeholder="Search by name, roll no, class..."
               value={searchQuery}
@@ -163,7 +163,7 @@ const Students: React.FC = () => {
 
             {(searchQuery || selectedClass !== 'All' || selectedSection !== 'All' || statusFilter !== 'All') && (
               <Button variant="ghost" onClick={resetFilters} className="px-2 text-slate-500 hover:text-slate-800 shrink-0">
-                <X className="h-4 w-4 mr-1" /> Clear
+                <X className="size-4 mr-1" /> Clear
               </Button>
             )}
           </div>
@@ -171,12 +171,12 @@ const Students: React.FC = () => {
 
         <div className="overflow-x-auto rounded-lg border border-slate-100 dark:border-slate-800">
           {loading ? (
-            <div className="h-full w-full flex items-center justify-center min-h-[300px]">
-              <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
+            <div className="size-full flex items-center justify-center min-h-[300px]">
+              <Loader2 className="size-8 animate-spin text-brand-600" />
             </div>
           ) : paginatedStudents.length === 0 ? (
-            <div className="h-full w-full flex flex-col items-center justify-center min-h-[300px] text-slate-500 gap-3">
-              <Filter className="h-12 w-12 text-slate-300 dark:text-slate-700" />
+            <div className="size-full flex flex-col items-center justify-center min-h-[300px] text-slate-500 gap-3">
+              <Filter className="size-12 text-slate-300 dark:text-slate-700" />
               <p>No students found matching your criteria</p>
               <Button variant="outline" onClick={resetFilters}>Clear Filters</Button>
             </div>
@@ -200,9 +200,9 @@ const Students: React.FC = () => {
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400 flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden">
+                        <div className="size-8 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400 flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden">
                           {student.profileImage ? (
-                            <img src={student.profileImage} alt={student.name} className="h-full w-full object-cover" />
+                            <img src={student.profileImage} alt={student.name} className="size-full object-cover" />
                           ) : (
                             student.name?.charAt(0).toUpperCase()
                           )}

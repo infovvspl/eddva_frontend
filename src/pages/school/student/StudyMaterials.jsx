@@ -651,7 +651,7 @@ export default function StudyMaterials() {
           <div className="flex flex-wrap items-center gap-3">
             {/* Search */}
             <div className="relative flex-1 min-w-[180px] max-w-xs">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
               <input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -799,7 +799,7 @@ export default function StudyMaterials() {
   if (loading) {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <div className="size-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
         <p className="text-sm font-semibold text-slate-400">Loading your resources…</p>
       </div>
     );
@@ -850,7 +850,7 @@ export default function StudyMaterials() {
           <div className="flex flex-wrap items-center gap-3">
             {/* Search */}
             <div className="relative w-full sm:w-72 md:w-80">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
               <input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -1003,7 +1003,7 @@ export default function StudyMaterials() {
               </div>
               <button
                 onClick={() => setAnimationUrl(null)}
-                className="grid h-8 w-8 place-items-center rounded-lg bg-white/10 text-white transition hover:bg-white/20"
+                className="grid size-8 place-items-center rounded-lg bg-white/10 text-white transition hover:bg-white/20"
               >
                 <X size={16} />
               </button>
@@ -1037,10 +1037,10 @@ function SubjectCard({ name, stats, color, onClick }) {
 
       <div className="flex items-start justify-between gap-2 sm:gap-3">
         <div
-          className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl shadow-sm"
+          className="flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl shadow-sm"
           style={{ background: `linear-gradient(135deg, ${color.from}, ${color.to})` }}
         >
-          <BookMarked size={18} className="text-white sm:h-5 sm:w-5" />
+          <BookMarked size={18} className="text-white sm:size-5" />
         </div>
         <span
           className="hidden sm:inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-black transition group-hover:opacity-80"
@@ -1079,7 +1079,7 @@ function ChapterCard({ chapterName, topicCount, materialCount, color, onClick, i
       <div className="pl-1.5 sm:pl-3 flex flex-col h-full justify-between gap-3 sm:gap-4">
         <div>
           <span
-            className="inline-flex items-center justify-center h-7 w-7 sm:h-8 sm:w-8 rounded-lg text-[10px] sm:text-xs font-black mb-2 sm:mb-3"
+            className="inline-flex items-center justify-center size-7 sm:size-8 rounded-lg text-[10px] sm:text-xs font-black mb-2 sm:mb-3"
             style={{ backgroundColor: color.light, color: color.text }}
           >
             {index + 1}
@@ -1120,8 +1120,8 @@ function TopicCard({ topicName, materialCount, hasVideo, hasMaterial, hasPractic
       <div className="flex flex-col h-full justify-between gap-3 sm:gap-4">
         <div>
           <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
-            <div className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-              <Tag size={12} className="sm:h-3.5 sm:w-3.5" />
+            <div className="flex size-6 sm:size-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+              <Tag size={12} className="sm:size-3.5" />
             </div>
             <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400">
               Topic
@@ -1137,9 +1137,9 @@ function TopicCard({ topicName, materialCount, hasVideo, hasMaterial, hasPractic
             {materialCount} file{materialCount !== 1 ? 's' : ''}
           </span>
           <div className="flex items-center gap-1.5 text-slate-400">
-            {hasVideo && <PlayCircle size={13} className="text-rose-500 sm:h-3.5 sm:w-3.5" title="Includes Videos" />}
-            {hasMaterial && <FileText size={13} className="text-blue-500 sm:h-3.5 sm:w-3.5" title="Includes Notes" />}
-            {hasPractice && <ClipboardList size={13} className="text-violet-500 sm:h-3.5 sm:w-3.5" title="Includes Practice Tasks" />}
+            {hasVideo && <PlayCircle size={13} className="text-rose-500 sm:size-3.5" title="Includes Videos" />}
+            {hasMaterial && <FileText size={13} className="text-blue-500 sm:size-3.5" title="Includes Notes" />}
+            {hasPractice && <ClipboardList size={13} className="text-violet-500 sm:size-3.5" title="Includes Practice Tasks" />}
           </div>
         </div>
       </div>
@@ -1158,7 +1158,7 @@ function Pill({ label, color }) {
 function StatChip({ icon, label, value }) {
   return (
     <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400">{icon}</div>
+      <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400">{icon}</div>
       <div>
         <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">{label}</p>
         <p className="truncate text-sm font-black text-slate-900 dark:text-white">{value}</p>
@@ -1196,8 +1196,8 @@ function MaterialCard({ m, onView }) {
 
       <div>
         <div className="flex items-center justify-between gap-2 mb-2.5 sm:mb-3">
-          <div className={`flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl ${meta.bg} ${meta.color}`}>
-            <TypeIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+          <div className={`flex size-8 sm:size-9 shrink-0 items-center justify-center rounded-xl ${meta.bg} ${meta.color}`}>
+            <TypeIcon className="size-4 sm:size-5" />
           </div>
 
           <div className="flex flex-wrap justify-end gap-1">
@@ -1229,7 +1229,7 @@ function MaterialCard({ m, onView }) {
               onClick={() => onView(m)}
               className={`inline-flex items-center gap-1 rounded-xl bg-gradient-to-br px-2.5 py-1 text-[9px] sm:text-[10px] font-black text-white shadow-sm transition hover:opacity-90 ${meta.grad} sm:px-3 sm:py-1.5 sm:gap-1.5`}
             >
-              <PlayCircle size={10} className="sm:h-3 sm:w-3" /> Watch
+              <PlayCircle size={10} className="sm:size-3" /> Watch
             </button>
           ) : isAnimation ? (
             <button
@@ -1237,7 +1237,7 @@ function MaterialCard({ m, onView }) {
               onClick={() => onView(m)}
               className="inline-flex items-center gap-1 rounded-xl bg-gradient-to-br from-purple-500 to-fuchsia-500 px-2.5 py-1 text-[9px] sm:text-[10px] font-black text-white shadow-sm transition hover:opacity-90 sm:px-3 sm:py-1.5 sm:gap-1.5"
             >
-              <PlayCircle size={10} className="sm:h-3 sm:w-3" /> Play
+              <PlayCircle size={10} className="sm:size-3" /> Play
             </button>
           ) : (
             <>
@@ -1247,7 +1247,7 @@ function MaterialCard({ m, onView }) {
                   onClick={() => onView(m, 'view')}
                   className={`inline-flex items-center gap-1 rounded-xl bg-gradient-to-br px-2.5 py-1 text-[9px] sm:text-[10px] font-black text-white shadow-sm transition hover:opacity-90 ${meta.grad} sm:px-3 sm:py-1.5 sm:gap-1.5`}
                 >
-                  <Eye size={10} className="sm:h-3 sm:w-3" /> View
+                  <Eye size={10} className="sm:size-3" /> View
                 </button>
               )}
               {canOpen && (
@@ -1256,7 +1256,7 @@ function MaterialCard({ m, onView }) {
                   onClick={() => onView(m, 'open')}
                   className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-[9px] sm:text-[10px] font-black text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 sm:px-3 sm:py-1.5 sm:gap-1.5"
                 >
-                  <ExternalLink size={10} className="sm:h-3 sm:w-3" /> Open
+                  <ExternalLink size={10} className="sm:size-3" /> Open
                 </button>
               )}
               {!canView && !canOpen && (
@@ -1277,7 +1277,7 @@ function MaterialCard({ m, onView }) {
 function EmptyMaterials({ schoolClassName }) {
   return (
     <div className="rounded-[2rem] border border-dashed border-slate-200 bg-white py-20 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800">
+      <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800">
         <BookOpen size={28} className="text-slate-300" />
       </div>
       <h3 className="mt-5 text-base font-black text-slate-900 dark:text-white">No materials found</h3>
@@ -1347,7 +1347,7 @@ function RevisionChecklistViewer({ content, materialId }) {
               <button
                 type="button"
                 onClick={() => updateMark(itemKey, 'done')}
-                className={`grid h-7 w-7 place-items-center rounded-lg border transition ${
+                className={`grid size-7 place-items-center rounded-lg border transition ${
                   mark === 'done' ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-200 bg-white text-slate-400 hover:text-emerald-600'
                 }`}
                 title="Tick"
@@ -1357,7 +1357,7 @@ function RevisionChecklistViewer({ content, materialId }) {
               <button
                 type="button"
                 onClick={() => updateMark(itemKey, 'skip')}
-                className={`grid h-7 w-7 place-items-center rounded-lg border transition ${
+                className={`grid size-7 place-items-center rounded-lg border transition ${
                   mark === 'skip' ? 'border-rose-500 bg-rose-500 text-white' : 'border-slate-200 bg-white text-slate-400 hover:text-rose-600'
                 }`}
                 title="Cross"
@@ -1397,7 +1397,7 @@ function MaterialViewer({ material, onClose }) {
       <div className={`flex max-h-[88vh] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ${canShowMindmap && viewMode === 'mindmap' ? 'max-w-5xl' : 'max-w-3xl'}`}>
         {/* Modal header — gradient stripe */}
         <div className={`flex items-center gap-4 px-6 py-4 bg-gradient-to-r ${meta.grad} bg-opacity-10`}>
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/30 backdrop-blur-sm shadow-sm">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white/30 backdrop-blur-sm shadow-sm">
             <TypeIcon size={20} className="text-white drop-shadow" />
           </div>
           <div className="min-w-0 flex-1">
@@ -1428,7 +1428,7 @@ function MaterialViewer({ material, onClose }) {
                 ))}
               </div>
             )}
-            <button type="button" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20 text-white backdrop-blur-sm transition hover:bg-white/30">
+            <button type="button" onClick={onClose} className="flex size-9 items-center justify-center rounded-xl bg-white/20 text-white backdrop-blur-sm transition hover:bg-white/30">
               <X size={16} />
             </button>
           </div>

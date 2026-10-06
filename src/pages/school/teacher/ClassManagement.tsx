@@ -108,7 +108,7 @@ const TranscriptStatusBadge: React.FC<{ rec: any; onView: () => void; onRetry: (
         <button
           onClick={onRetry}
           title="Transcript incorrect? Regenerate it"
-          className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-slate-100 text-slate-400 transition hover:bg-rose-50 hover:text-rose-500"
+          className="inline-flex size-5 items-center justify-center rounded-md bg-slate-100 text-slate-400 transition hover:bg-rose-50 hover:text-rose-500"
         >
           <RefreshCw size={9} />
         </button>
@@ -1360,10 +1360,10 @@ const ClassManagement: React.FC = () => {
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 min-w-0 flex-1">
             <div className={cn(
-              'mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl',
+              'mt-0.5 grid size-9 shrink-0 place-items-center rounded-xl',
               isLive ? 'bg-red-100 text-red-500' : isEnded ? 'bg-slate-100 text-slate-400' : 'bg-violet-50 text-violet-500',
             )}>
-              <Radio className="h-4 w-4" />
+              <Radio className="size-4" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-black text-slate-900" title={lec.title}>{lec.title}</p>
@@ -1400,9 +1400,9 @@ const ClassManagement: React.FC = () => {
           {/* Status badge */}
           {isLive ? (
             <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-black text-red-600">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+              <span className="relative flex size-2">
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex size-2 rounded-full bg-red-500" />
               </span>
               Live Now
             </span>
@@ -1430,7 +1430,7 @@ const ClassManagement: React.FC = () => {
         {/* OBS tip for scheduled classes */}
         {isScheduled && (
           <div className="mt-3 flex items-start gap-2 rounded-xl border border-violet-100 bg-violet-50/60 px-3 py-2">
-            <AlarmClock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-violet-400" />
+            <AlarmClock className="mt-0.5 size-3.5 shrink-0 text-violet-400" />
             <p className="text-[11px] font-medium text-violet-700">
               When ready, click <b>Stream Info</b> to get your OBS key, then start streaming — class goes live automatically.
             </p>
@@ -1440,7 +1440,7 @@ const ClassManagement: React.FC = () => {
         {/* Processing status after a class ends — keeps the teacher informed. */}
         {isEnded && lec.status !== 'PROCESSING_FAILED' && !lec.recordingUrl && (
           <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-100 bg-amber-50/70 px-3 py-2">
-            <Loader2 className="mt-0.5 h-3.5 w-3.5 shrink-0 animate-spin text-amber-500" />
+            <Loader2 className="mt-0.5 size-3.5 shrink-0 animate-spin text-amber-500" />
             <p className="text-[11px] font-medium text-amber-700">
               Processing the recording — this usually takes a minute or two. AI notes & quiz are generated automatically once it's ready.
             </p>
@@ -1450,7 +1450,7 @@ const ClassManagement: React.FC = () => {
           ((lec as any).notesStatus === 'processing' || (lec as any).notesStatus === 'pending' ||
            (lec as any).transcriptStatus === 'processing' || (lec as any).transcriptStatus === 'pending') && (
             <div className="mt-3 flex items-start gap-2 rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2">
-              <Loader2 className="mt-0.5 h-3.5 w-3.5 shrink-0 animate-spin text-blue-500" />
+              <Loader2 className="mt-0.5 size-3.5 shrink-0 animate-spin text-blue-500" />
               <p className="text-[11px] font-medium text-blue-700">
                 Recording ready — generating AI notes & quiz from the lecture…
               </p>
@@ -1635,9 +1635,9 @@ const ClassManagement: React.FC = () => {
             )}
           >
             {tab.id === 'ongoing' && (
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-500" />
+              <span className="relative flex size-2">
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-rose-400 opacity-75" />
+                <span className="relative inline-flex size-2 rounded-full bg-rose-500" />
               </span>
             )}
             <span>{tab.label}</span>
@@ -1653,13 +1653,13 @@ const ClassManagement: React.FC = () => {
 
       {!canGoLive ? (
         <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50 py-14 text-center">
-          <Radio className="mx-auto mb-3 h-10 w-10 text-amber-300" />
+          <Radio className="mx-auto mb-3 size-10 text-amber-300" />
           <h3 className="text-base font-black text-slate-900">Live Classes Disabled</h3>
           <p className="mt-1 text-sm text-slate-500">Live streaming is not enabled for your school. Contact the super admin to enable it.</p>
         </div>
       ) : filteredObsLectures.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 py-14 text-center">
-          <Radio className="mx-auto mb-3 h-10 w-10 text-slate-300" />
+          <Radio className="mx-auto mb-3 size-10 text-slate-300" />
           <h3 className="text-base font-black text-slate-900">
             {liveStatusFilter === 'ongoing'
               ? 'No ongoing live classes'
@@ -1693,7 +1693,7 @@ const ClassManagement: React.FC = () => {
                 className="px-4 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors inline-flex items-center gap-1.5"
               >
                 <span>{showAllObsLectures ? "Show Less" : `Show ${filteredObsLectures.length - 10} more`}</span>
-                <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", showAllObsLectures ? "-rotate-90" : "rotate-90")} />
+                <ChevronRight className={cn("size-3.5 transition-transform", showAllObsLectures ? "-rotate-90" : "rotate-90")} />
               </button>
             </div>
           )}
@@ -1724,9 +1724,9 @@ const ClassManagement: React.FC = () => {
                   <button onClick={() => navigate(`/school/teacher/recorded-classes/${rec.id}`)}
                     className="group/thumb relative h-36 w-full sm:h-16 sm:w-28 shrink-0 overflow-hidden rounded-xl bg-slate-900">
                     {rec.thumbnail_url ? (
-                      <img src={rec.thumbnail_url} alt={rec.title} className="h-full w-full object-cover transition-transform duration-300 group-hover/thumb:scale-105" loading="lazy" />
+                      <img src={rec.thumbnail_url} alt={rec.title} className="size-full object-cover transition-transform duration-300 group-hover/thumb:scale-105" loading="lazy" />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-800 to-slate-950"><PlayCircle size={26} className="text-white/60" /></div>
+                      <div className="flex size-full items-center justify-center bg-gradient-to-br from-slate-800 to-slate-950"><PlayCircle size={26} className="text-white/60" /></div>
                     )}
                     {/* Play icon overlay on hover */}
                     <span className="absolute inset-0 flex items-center justify-center bg-black/10 sm:bg-black/0 opacity-100 sm:opacity-0 transition-all group-hover/thumb:bg-black/30 group-hover/thumb:opacity-100">
@@ -1823,7 +1823,7 @@ const ClassManagement: React.FC = () => {
                 className="px-4 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors inline-flex items-center gap-1.5"
               >
                 <span>{showAllRecordedLectures ? "Show Less" : `Show ${uploadedRecordings.length - 10} more`}</span>
-                <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", showAllRecordedLectures ? "-rotate-90" : "rotate-90")} />
+                <ChevronRight className={cn("size-3.5 transition-transform", showAllRecordedLectures ? "-rotate-90" : "rotate-90")} />
               </button>
             </div>
           )}
@@ -1841,7 +1841,7 @@ const ClassManagement: React.FC = () => {
             <h1 className="text-2xl font-black text-slate-900">Lectures</h1>
             {obsLectures.some((l) => l.status === 'LIVE') && (
               <span className="inline-flex items-center gap-1 rounded-full bg-red-500 px-2 py-0.5 text-[11px] font-black text-white">
-                <span className="h-1.5 w-1.5 animate-ping rounded-full bg-white opacity-75" />
+                <span className="size-1.5 animate-ping rounded-full bg-white opacity-75" />
                 LIVE
               </span>
             )}
@@ -1868,10 +1868,10 @@ const ClassManagement: React.FC = () => {
       {detailRec && (
         <div className="absolute inset-0 z-[50] overflow-y-auto bg-slate-50 lg:overflow-hidden"
           onClick={(e) => { if (e.target === e.currentTarget) setDetailRec(null); }}>
-          <div className="min-h-full w-full bg-slate-50 lg:flex lg:h-full lg:min-h-0 lg:flex-col">
+          <div className="min-size-full bg-slate-50 lg:flex lg:h-full lg:min-h-0 lg:flex-col">
             <div className="sticky top-0 z-10 border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6 lg:shrink-0">
               <div className="flex items-center justify-between gap-3">
-                <button onClick={() => setDetailRec(null)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-blue-600 hover:text-white" aria-label="Back to recorded lectures"><ArrowLeft size={17} /></button>
+                <button onClick={() => setDetailRec(null)} className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-blue-600 hover:text-white" aria-label="Back to recorded lectures"><ArrowLeft size={17} /></button>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[11px] font-bold text-blue-600">
                     {detailRec.chapter_name || detailRec.subject_name || 'Recorded Class'}
@@ -2100,7 +2100,7 @@ const ClassManagement: React.FC = () => {
                                         type="button"
                                         onMouseDown={e => e.preventDefault()}
                                         onClick={e => { e.preventDefault(); setNotesHighlightColor(color); }}
-                                        className={`h-6 w-6 rounded-full border-2 transition-transform hover:scale-110 ${notesHighlightColor === color
+                                        className={`size-6 rounded-full border-2 transition-transform hover:scale-110 ${notesHighlightColor === color
                                             ? "border-slate-700 scale-110"
                                             : "border-transparent"
                                           }`}
@@ -2315,7 +2315,7 @@ const ClassManagement: React.FC = () => {
                                 : "—";
 
                               return (
-                                <div className="flex flex-col h-full space-y-4">
+                                <div className="flex flex-col h-full gap-y-4">
                                   {quizAnalyticsError && (
                                     <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
                                       {quizAnalyticsError}
@@ -2329,8 +2329,8 @@ const ClassManagement: React.FC = () => {
                                       { label: "Avg Accuracy", value: quizAnalyticsError ? "—" : quizAvg, icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50" },
                                     ].map(m => (
                                       <div key={m.label} className="text-center">
-                                        <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center mx-auto mb-1.5", m.bg)}>
-                                          <m.icon className={cn("w-4.5 h-4.5", m.color)} />
+                                        <div className={cn("size-8 rounded-lg flex items-center justify-center mx-auto mb-1.5", m.bg)}>
+                                          <m.icon className={cn("size-4.5", m.color)} />
                                         </div>
                                         <p className="text-base font-bold text-slate-800">{m.value}</p>
                                         <p className="text-[10px] text-slate-400 font-semibold">{m.label}</p>
@@ -2399,7 +2399,7 @@ const ClassManagement: React.FC = () => {
                                                 </div>
                                               )}
                                             </div>
-                                            <ChevronRight className={cn("w-4 h-4 text-slate-400 shrink-0 mt-1 transition-transform", isExpanded && "rotate-90")} />
+                                            <ChevronRight className={cn("size-4 text-slate-400 shrink-0 mt-1 transition-transform", isExpanded && "rotate-90")} />
                                           </button>
 
                                           {isExpanded && (
@@ -2412,12 +2412,12 @@ const ClassManagement: React.FC = () => {
                                                 return (
                                                   <div key={opt.label} className={cn("rounded-xl p-3 border", isCorrect ? "bg-emerald-50 border-emerald-100 text-emerald-800" : "bg-white border-slate-100 text-slate-700")}>
                                                     <div className="flex items-center gap-2 mb-1.5">
-                                                      <span className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0",
+                                                      <span className={cn("size-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0",
                                                         isCorrect ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-500")}>{opt.label}</span>
                                                       <div className={cn("text-xs flex-1 pointer-events-none", isCorrect ? "font-bold text-emerald-800" : "text-slate-700")}>
                                                         <MarkdownRenderer content={opt.text} className={cn("prose-p:my-0 font-semibold", isCorrect ? "text-emerald-800" : "text-slate-700")} />
                                                       </div>
-                                                      {isCorrect && <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
+                                                      {isCorrect && <CheckCircle className="size-3.5 text-emerald-600 shrink-0" />}
                                                       <span className="text-xs font-bold text-slate-800 shrink-0">{count} ({pct}%)</span>
                                                     </div>
                                                     <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -2431,7 +2431,7 @@ const ClassManagement: React.FC = () => {
                                               })}
                                               {cp.explanation && (
                                                 <div className="mt-3 flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-xl p-3">
-                                                  <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                                                  <Sparkles className="size-3.5 text-amber-600 shrink-0 mt-0.5" />
                                                   <div className="text-xs text-amber-800 font-medium leading-relaxed">
                                                     <MarkdownRenderer content={cp.explanation} className="prose-p:my-0 text-amber-800 font-semibold" />
                                                   </div>
@@ -2447,7 +2447,7 @@ const ClassManagement: React.FC = () => {
                                     {quizSubTab === "students" && (
                                       analytics?.students.length === 0 ? (
                                         <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-                                          <Users className="w-10 h-10 opacity-20 mb-3" />
+                                          <Users className="size-10 opacity-20 mb-3" />
                                           <p className="text-sm font-bold">No students have attempted the quiz yet.</p>
                                         </div>
                                       ) : (
@@ -2458,7 +2458,7 @@ const ClassManagement: React.FC = () => {
                                             .map((s, idx) => (
                                               <div key={s.studentId} className="border border-slate-100 rounded-2xl overflow-hidden bg-white shadow-sm">
                                                 <div className="flex items-center gap-3 p-3">
-                                                  <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-xs font-black text-blue-600 shrink-0">
+                                                  <div className="size-8 rounded-full bg-blue-50 flex items-center justify-center text-xs font-black text-blue-600 shrink-0">
                                                     {s.studentName.charAt(0).toUpperCase()}
                                                   </div>
                                                   <div className="flex-1 min-w-0">
@@ -2488,7 +2488,7 @@ const ClassManagement: React.FC = () => {
                                                           )}>
                                                           <span>Q{qi + 1}</span>
                                                           {resp ? (
-                                                            resp.isCorrect ? <CheckCircle className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />
+                                                            resp.isCorrect ? <CheckCircle className="size-3.5" /> : <XCircle className="size-3.5" />
                                                           ) : (
                                                             <span className="text-[9px]">?</span>
                                                           )}
@@ -2613,11 +2613,11 @@ const ClassManagement: React.FC = () => {
 
                             {recDoubtsLoading ? (
                               <div className="flex items-center justify-center py-10">
-                                <Loader2 className="h-7 w-7 animate-spin text-blue-500" />
+                                <Loader2 className="size-7 animate-spin text-blue-500" />
                               </div>
                             ) : shownDoubts.length === 0 ? (
                               <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 py-10 text-center">
-                                <HelpCircle className="h-8 w-8 text-slate-300" />
+                                <HelpCircle className="size-8 text-slate-300" />
                                 <p className="mt-2 text-sm font-bold text-slate-700">
                                   {recDoubtTab === 'pending' ? 'No pending doubts' : recDoubtTab === 'answered' ? 'No answered doubts yet' : 'No doubts yet'}
                                 </p>
@@ -2647,7 +2647,7 @@ const ClassManagement: React.FC = () => {
 
                                       {/* Student info */}
                                       <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-bold text-slate-500">
-                                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[10px] font-black text-blue-600">
+                                        <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[10px] font-black text-blue-600">
                                           {(doubt.studentName || 'S').charAt(0).toUpperCase()}
                                         </div>
                                         <span className="truncate max-w-[110px]">{doubt.studentName || 'Student'}</span>
@@ -2754,8 +2754,8 @@ const ClassManagement: React.FC = () => {
             {/* Header */}
             <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-7">
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50">
-                  <Radio className="h-4 w-4 text-blue-600" />
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue-50">
+                  <Radio className="size-4 text-blue-600" />
                 </div>
                 <div>
                   <h2 className="text-base font-bold text-slate-900">Schedule Live Class</h2>
@@ -2764,9 +2764,9 @@ const ClassManagement: React.FC = () => {
               </div>
               <button
                 onClick={() => { setShowScheduleLiveModal(false); resetSchedForm(); }}
-                className="ml-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-900"
+                className="ml-2 flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-900"
               >
-                <X className="h-4 w-4" />
+                <X className="size-4" />
               </button>
             </div>
 
@@ -2865,7 +2865,7 @@ const ClassManagement: React.FC = () => {
                   <div className="flex flex-col gap-4 bg-slate-50/40 p-5 sm:p-6 md:col-span-2">
                     <div>
                       <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800">
-                        <AlarmClock className="h-4 w-4 text-blue-500" /> What happens next
+                        <AlarmClock className="size-4 text-blue-500" /> What happens next
                       </p>
                       <div className="space-y-3">
                         {[
@@ -2912,7 +2912,7 @@ const ClassManagement: React.FC = () => {
                   disabled={schedulingLive || !schedLiveForm.classId || !schedLiveForm.sectionId || !schedLiveForm.subjectId || !schedLiveForm.title || !schedLiveForm.scheduledFor}
                   className="inline-flex items-center gap-2 rounded-lg sm:rounded-xl bg-blue-600 px-4 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-bold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {schedulingLive ? <Loader2 className="h-4 w-4 animate-spin" /> : <Radio className="h-4 w-4" />}
+                  {schedulingLive ? <Loader2 className="size-4 animate-spin" /> : <Radio className="size-4" />}
                   Schedule Live Class
                 </button>
               </div>
@@ -2926,7 +2926,7 @@ const ClassManagement: React.FC = () => {
         {activeCreds && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2 text-sm font-bold text-blue-700">
-              <span className="relative flex h-2.5 w-2.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75" /><span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-600" /></span>
+              <span className="relative flex size-2.5"><span className="absolute inline-flex size-full animate-ping rounded-full bg-blue-400 opacity-75" /><span className="relative inline-flex size-2.5 rounded-full bg-blue-600" /></span>
               Paste these into OBS → Settings → Stream (Service: Custom)
             </div>
 

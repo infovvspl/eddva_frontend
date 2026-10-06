@@ -1,5 +1,7 @@
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Clock, Plus, Edit2, Trash2, MapPin, Users, Settings, AlertCircle, Search, ChevronDown } from 'lucide-react';
 import api from '@/lib/api/school-client';
@@ -817,14 +819,14 @@ export default function Timetable() {
               onClick={() => setShowPeriodsModal(true)}
               className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 dark:hover:bg-slate-800 active:scale-[0.99]"
             >
-              <Settings className="h-4 w-4" />
+              <Settings className="size-4" />
               Manage Periods
             </button>
             <button
               onClick={handleAddClick}
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]"
             >
-              <Plus className="h-5 w-5" />
+              <Plus className="size-5" />
               Add Slot
             </button>
           </div>
@@ -872,8 +874,8 @@ export default function Timetable() {
         <div className="mb-8 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 dark:bg-slate-800 text-blue-600">
-                <Clock className="h-6 w-6" />
+              <div className="flex size-12 items-center justify-center rounded-2xl bg-blue-50 dark:bg-slate-800 text-blue-600">
+                <Clock className="size-6" />
               </div>
               <div>
                 <h2 className="text-lg font-black text-slate-950 dark:text-white">Weekly Class Timetable</h2>
@@ -912,7 +914,7 @@ export default function Timetable() {
                       onClick={startBulkEdit}
                       className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 dark:bg-slate-800 text-white px-5 py-3 text-sm font-bold shadow-md hover:bg-slate-800 dark:hover:bg-slate-700 active:scale-[0.99] transition"
                     >
-                      <Edit2 className="h-4 w-4" />
+                      <Edit2 className="size-4" />
                       Bulk Edit Timetable
                     </button>
                   ) : (
@@ -952,7 +954,7 @@ export default function Timetable() {
           {bulkErrors.length > 0 && (
             <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-900/30 dark:bg-red-950/20">
               <div className="flex gap-2 text-red-800 dark:text-red-300 font-bold text-sm mb-2">
-                <AlertCircle className="h-5 w-5 text-red-650" />
+                <AlertCircle className="size-5 text-red-650" />
                 Timetable Conflict(s) Detected
               </div>
               <ul className="list-disc list-inside text-xs text-red-700 dark:text-red-400 space-y-1 pl-2">
@@ -1004,30 +1006,30 @@ export default function Timetable() {
 
               {/* Grid Table */}
               <div className="overflow-x-auto w-full max-w-full rounded-2xl border border-slate-100 dark:border-slate-800">
-                <table className="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 dark:bg-slate-850">
-                      <th className="px-4 py-4 text-xs font-black uppercase tracking-wider text-slate-500 border-r border-slate-100 dark:border-slate-800 w-[120px] sticky left-0 top-0 z-40 bg-slate-50 dark:bg-slate-850 shadow-sm">
+                <Table className="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-left border-collapse">
+                  <TableHeader>
+                    <TableRow className="bg-slate-50 dark:bg-slate-850 hover:bg-slate-50 dark:hover:bg-slate-850">
+                      <TableHead className="h-auto px-4 py-4 text-xs font-black uppercase tracking-wider text-slate-500 border-r border-slate-100 dark:border-slate-800 w-[120px] sticky left-0 top-0 z-40 bg-slate-50 dark:bg-slate-850 shadow-sm">
                         Day
-                      </th>
+                      </TableHead>
                       {sortedPeriods.map(period => (
-                        <th key={period.id} className="px-4 py-4 text-xs font-black uppercase tracking-wider text-slate-500 border-r border-slate-100 dark:border-slate-800 min-w-[200px]">
+                        <TableHead key={period.id} className="h-auto px-4 py-4 text-xs font-black uppercase tracking-wider text-slate-500 border-r border-slate-100 dark:border-slate-800 min-w-[200px]">
                           <div>{period.periodName || `Period ${period.sequenceNo}`}</div>
                           <div className="text-[10px] text-slate-400 font-semibold mt-0.5">{period.startTime} - {period.endTime}</div>
-                        </th>
+                        </TableHead>
                       ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
                     {days.map(day => (
-                      <tr key={day} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/20">
-                        <td className="px-4 py-4 text-xs font-black uppercase text-slate-700 dark:text-slate-350 border-r border-slate-100 dark:border-slate-800 sticky left-0 z-20 bg-slate-50 dark:bg-slate-900">
+                      <TableRow key={day} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/20">
+                        <TableCell className="px-4 py-4 text-xs font-black uppercase text-slate-700 dark:text-slate-350 border-r border-slate-100 dark:border-slate-800 sticky left-0 z-20 bg-slate-50 dark:bg-slate-900">
                           {day}
-                        </td>
+                        </TableCell>
                         {sortedPeriods.map(period => {
                           const slot = getSlotForGrid(day, period.id);
                           return (
-                            <td
+                            <TableCell
                               key={period.id}
                               className="px-3 py-3 border-r border-slate-100 dark:border-slate-800 align-top relative group"
                               onDragOver={(e) => { if (isBulkEditMode) e.preventDefault(); }}
@@ -1171,14 +1173,14 @@ export default function Timetable() {
                                             className="text-slate-500 hover:text-blue-600 bg-slate-100 dark:bg-slate-800 rounded p-1"
                                             title="Edit Slot"
                                           >
-                                            <Edit2 className="h-3 w-3" />
+                                            <Edit2 className="size-3" />
                                           </button>
                                           <button
                                             onClick={() => handleDeleteClick(slot.id)}
                                             className="text-red-500 hover:text-red-600 bg-red-50 dark:bg-red-950/40 rounded p-1"
                                             title="Delete Slot"
                                           >
-                                            <Trash2 className="h-3 w-3" />
+                                            <Trash2 className="size-3" />
                                           </button>
                                         </div>
                                       </div>
@@ -1222,14 +1224,14 @@ export default function Timetable() {
                                             className="text-slate-500 hover:text-blue-600 bg-slate-100 dark:bg-slate-800 rounded p-1"
                                             title="Edit Slot"
                                           >
-                                            <Edit2 className="h-3 w-3" />
+                                            <Edit2 className="size-3" />
                                           </button>
                                           <button
                                             onClick={() => handleDeleteClick(slot.id)}
                                             className="text-red-500 hover:text-red-600 bg-red-50 dark:bg-red-950/40 rounded p-1"
                                             title="Delete Slot"
                                           >
-                                            <Trash2 className="h-3 w-3" />
+                                            <Trash2 className="size-3" />
                                           </button>
                                         </div>
                                       </div>
@@ -1250,18 +1252,18 @@ export default function Timetable() {
                                   </div>
                                 )
                               )}
-                            </td>
+                            </TableCell>
                           );
                         })}
-                      </tr>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             </div>
           ) : (
             <div className="mt-6 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-12 text-center bg-slate-50 dark:bg-slate-950">
-              <Clock className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-700 animate-pulse" />
+              <Clock className="mx-auto size-12 text-slate-300 dark:text-slate-700 animate-pulse" />
               <h3 className="mt-4 text-base font-bold text-slate-700 dark:text-slate-350">Select a Class & Section</h3>
               <p className="mt-1 text-sm text-slate-400">Choose a class and section from the dropdown above to view or bulk-edit the weekly timetable.</p>
             </div>
@@ -1307,7 +1309,7 @@ export default function Timetable() {
           <div className="mt-5 grid grid-cols-2 gap-2.5 md:gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {groupedByDay[activeDay].length === 0 ? (
               <div className="col-span-full rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center dark:border-slate-800 dark:bg-slate-950">
-                <Clock className="mx-auto h-10 w-10 text-slate-300 dark:text-slate-700" />
+                <Clock className="mx-auto size-10 text-slate-300 dark:text-slate-700" />
                 <h3 className="mt-4 text-sm font-bold text-slate-700 dark:text-slate-300">No classes scheduled for {dayShortNames[activeDay] || activeDay}</h3>
                 <p className="mt-1 text-xs font-semibold text-slate-400">Your assigned timetable slots will appear here.</p>
               </div>
@@ -1337,14 +1339,14 @@ export default function Timetable() {
                             className="rounded-lg border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 p-1 sm:p-1.5 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                             title="Edit Slot"
                           >
-                            <Edit2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                            <Edit2 className="size-2.5 sm:size-3" />
                           </button>
                           <button
                             onClick={() => handleDeleteClick(slot.id)}
                             className="rounded-lg border border-red-100 dark:border-rose-950/40 bg-white dark:bg-slate-900 p-1 sm:p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition"
                             title="Delete Slot"
                           >
-                            <Trash2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                            <Trash2 className="size-2.5 sm:size-3" />
                           </button>
                         </div>
                       </div>
@@ -1367,11 +1369,11 @@ export default function Timetable() {
 
                     <div className="mt-2.5 sm:mt-4 grid gap-1 sm:gap-2 text-[9px] sm:text-xs font-semibold text-slate-600 dark:text-slate-350">
                       <span className="inline-flex items-center gap-1 sm:gap-2 truncate">
-                        <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 shrink-0" />
+                        <Clock className="size-3 sm:size-4 text-blue-600 shrink-0" />
                         {slot.startTime} - {slot.endTime}
                       </span>
                       <span className="inline-flex items-center gap-1 sm:gap-2 truncate" title={slot.room ? `Room ${slot.room}` : 'Room not assigned'}>
-                        <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 shrink-0" />
+                        <MapPin className="size-3 sm:size-4 text-blue-600 shrink-0" />
                         {slot.room ? `Room ${slot.room}` : 'Not assigned'}
                       </span>
                     </div>
@@ -1407,13 +1409,13 @@ export default function Timetable() {
                       ? schoolTeachers.find(t => String(t.id) === String(selectedLiveTeacherId))?.name || 'Select Teacher'
                       : 'All Teachers'}
                   </span>
-                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isTeacherDropdownOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`size-4 text-slate-400 transition-transform ${isTeacherDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {isTeacherDropdownOpen && (
                   <div className="absolute right-0 left-0 sm:left-auto sm:w-64 mt-2 z-50 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl p-2 max-h-60 overflow-y-auto">
                     <div className="relative mb-2">
-                      <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                      <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
                       <input
                         type="text"
                         value={teacherSearchQuery}
@@ -1496,10 +1498,10 @@ export default function Timetable() {
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-3">
-                          <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
+                          <div className={`flex size-10 items-center justify-center rounded-2xl ${
                             isEngaged ? 'bg-emerald-100 text-emerald-700' : 'bg-white text-blue-600 dark:bg-slate-900'
                           }`}>
-                            <Users className="h-5 w-5" />
+                            <Users className="size-5" />
                           </div>
                           <div>
                             <p className="text-sm font-black text-slate-950 dark:text-white">{item.teacherName}</p>
@@ -1523,14 +1525,14 @@ export default function Timetable() {
                             </p>
                             <p>{activeSlot.subject?.name || 'Subject'} ({activeSlot.startTime} to {activeSlot.endTime})</p>
                             <p className="inline-flex items-center gap-1.5 text-slate-400">
-                              <MapPin className="h-3.5 w-3.5" />
+                              <MapPin className="size-3.5" />
                               {activeSlot.room ? `Room ${activeSlot.room}` : 'Classroom'}
                             </p>
                           </>
                         ) : (
                           <>
                             <p className="inline-flex items-center gap-1">
-                              <MapPin className="h-3.5 w-3.5 text-slate-400" />
+                              <MapPin className="size-3.5 text-slate-400" />
                               Staff Room
                             </p>
                             <p className="text-slate-450 dark:text-slate-500">
@@ -1693,7 +1695,7 @@ export default function Timetable() {
                     >
                     <div className="md:col-span-2">
                       <div className="flex items-center gap-2">
-                        <span className={`flex h-8 w-8 items-center justify-center rounded-xl text-xs font-black ${
+                        <span className={`flex size-8 items-center justify-center rounded-xl text-xs font-black ${
                           period.isCurrentPeriod ? 'bg-emerald-600 text-white' : 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
                         }`}>
                           {period.periodNumber || '-'}
@@ -1749,7 +1751,7 @@ export default function Timetable() {
                                     title={`Click to assign ${teacher.name} to this period`}
                                     className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition active:scale-95 cursor-pointer dark:border-blue-950/50 dark:bg-blue-950/30 dark:text-blue-300 dark:hover:bg-blue-600 dark:hover:text-white"
                                   >
-                                    <Plus className="h-3 w-3 shrink-0" />
+                                    <Plus className="size-3 shrink-0" />
                                     {teacher.name}
                                   </button>
                                 ))}
@@ -1800,7 +1802,7 @@ export default function Timetable() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {activeDaySlots.length === 0 ? (
               <div className="col-span-full rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-10 text-center bg-slate-50 dark:bg-slate-950">
-                <Clock className="mx-auto h-10 w-10 text-slate-300 dark:text-slate-700" />
+                <Clock className="mx-auto size-10 text-slate-300 dark:text-slate-700" />
                 <h3 className="mt-4 text-sm font-bold text-slate-700 dark:text-slate-300">No classes scheduled for {activeDay}</h3>
                 <p className="mt-1 text-xs text-slate-400">Create a new slot using the button at the top.</p>
               </div>
@@ -1823,13 +1825,13 @@ export default function Timetable() {
                             onClick={() => handleEditClick(slot)}
                             className="rounded-lg border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                           >
-                            <Edit2 className="h-3.5 w-3.5" />
+                            <Edit2 className="size-3.5" />
                           </button>
                           <button
                             onClick={() => handleDeleteClick(slot.id)}
                             className="rounded-lg border border-red-100 dark:border-rose-950/40 bg-white dark:bg-slate-900 p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition"
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
+                            <Trash2 className="size-3.5" />
                           </button>
                         </div>
                       </div>
@@ -1841,14 +1843,16 @@ export default function Timetable() {
 
                     <div className="mt-4 flex items-center justify-between border-t border-slate-50 dark:border-slate-850 pt-3">
                       <div className="flex items-center gap-2">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-700 dark:text-slate-350">
-                          {initials}
-                        </div>
+                        <Avatar className="size-7 bg-slate-100 dark:bg-slate-800">
+                          <AvatarFallback className="bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-700 dark:text-slate-350">
+                            {initials}
+                          </AvatarFallback>
+                        </Avatar>
                         <span className="text-xs font-semibold text-slate-650 dark:text-slate-400">{teacherName}</span>
                       </div>
                       <div className="flex flex-col items-end gap-1 text-[10px] font-bold text-slate-500 dark:text-slate-450">
                         <span className="inline-flex items-center gap-1">
-                          <Clock className="h-3.5 w-3.5 text-blue-600" />
+                          <Clock className="size-3.5 text-blue-600" />
                           {slot.periodName || `Period ${slot.periodNumber || 1}`} • {slot.startTime} - {slot.endTime}
                         </span>
                         <div className="flex items-center gap-1">

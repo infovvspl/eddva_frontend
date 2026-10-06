@@ -8,6 +8,8 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { getSchoolLiveUsage, type LiveUsageData } from '@/lib/api/live-usage-admin';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 
 function fmtDuration(secs: number): string {
   if (!secs) return '0m';
@@ -18,17 +20,17 @@ function fmtDuration(secs: number): string {
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
-    LIVE: { label: 'Live', cls: 'bg-red-100 text-red-600' },
-    ENDED: { label: 'Ended', cls: 'bg-slate-100 text-slate-500' },
-    PROCESSED: { label: 'Processed', cls: 'bg-emerald-100 text-emerald-600' },
-    SCHEDULED: { label: 'Scheduled', cls: 'bg-blue-100 text-blue-600' },
+    LIVE: { label: 'Live', cls: 'bg-red-100 text-red-600 hover:bg-red-100' },
+    ENDED: { label: 'Ended', cls: 'bg-slate-100 text-slate-500 hover:bg-slate-100' },
+    PROCESSED: { label: 'Processed', cls: 'bg-emerald-100 text-emerald-600 hover:bg-emerald-100' },
+    SCHEDULED: { label: 'Scheduled', cls: 'bg-blue-100 text-blue-600 hover:bg-blue-100' },
   };
-  const { label, cls } = map[status] ?? { label: status, cls: 'bg-slate-100 text-slate-500' };
+  const { label, cls } = map[status] ?? { label: status, cls: 'bg-slate-100 text-slate-500 hover:bg-slate-100' };
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide ${cls}`}>
-      {status === 'LIVE' && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}
+    <Badge className={`items-center gap-1 rounded-full border-transparent text-[10px] font-semibold uppercase tracking-wide ${cls}`}>
+      {status === 'LIVE' && <span className="size-1.5 rounded-full bg-red-500 animate-pulse" />}
       {label}
-    </span>
+    </Badge>
   );
 }
 
@@ -148,16 +150,16 @@ export default function SchoolLiveUsagePage() {
               className="bg-white p-5 md:p-7 rounded-[28px] border border-slate-100 shadow-sm relative overflow-hidden group"
             >
               <div className={`p-3 rounded-[16px] ${k.bg} ${k.color} w-fit mb-4 transition-transform group-hover:scale-110`}>
-                <k.icon className="w-5 h-5" />
+                <k.icon className="size-5" />
               </div>
               <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">{k.label}</p>
               <div className="flex items-baseline gap-2 mt-1">
                 <h3 className="text-xl md:text-[28px] font-bold text-slate-900">
-                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : String(k.value)}
+                  {isLoading ? <Loader2 className="size-5 animate-spin" /> : String(k.value)}
                 </h3>
                 {k.label === 'Live Right Now' && (s?.liveNow ?? 0) > 0 && (
                   <span className="text-[10px] font-medium text-red-500 bg-red-50 px-2 py-0.5 rounded-md flex items-center gap-0.5">
-                    LIVE <ArrowUpRight className="w-3 h-3 stroke-[3]" />
+                    LIVE <ArrowUpRight className="size-3 stroke-[3]" />
                   </span>
                 )}
               </div>
@@ -177,7 +179,7 @@ export default function SchoolLiveUsagePage() {
           </div>
           {isLoading ? (
             <div className="h-64 flex items-center justify-center">
-              <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+              <Loader2 className="size-8 animate-spin text-indigo-400" />
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={260}>
@@ -205,64 +207,64 @@ export default function SchoolLiveUsagePage() {
         {/* Per-school table */}
         <div className="bg-white rounded-[28px] border border-slate-100 shadow-sm mb-8 overflow-hidden">
           <div className="p-5 md:p-8 border-b border-slate-100 flex items-center gap-3">
-            <Building2 className="w-5 h-5 text-indigo-500" />
+            <Building2 className="size-5 text-indigo-500" />
             <h3 className="text-base md:text-lg font-bold text-slate-900 tracking-tight">Per School</h3>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/60">
+            <Table className="w-full text-sm">
+              <TableHeader>
+                <TableRow className="border-b border-slate-100 bg-slate-50/60 hover:bg-slate-50/60">
                   {['School', 'Total', 'Live', 'Completed', 'Total Duration', 'Viewers', 'Last Class'].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap">
+                    <TableHead key={h} className="h-auto px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap">
                       {h}
-                    </th>
+                    </TableHead>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {isLoading ? (
-                  <tr>
-                    <td colSpan={7} className="py-12 text-center text-slate-400">
-                      <Loader2 className="w-6 h-6 animate-spin mx-auto" />
-                    </td>
-                  </tr>
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell colSpan={7} className="py-12 text-center text-slate-400">
+                      <Loader2 className="size-6 animate-spin mx-auto" />
+                    </TableCell>
+                  </TableRow>
                 ) : !data?.perInstitute?.length ? (
-                  <tr>
-                    <td colSpan={7} className="py-12 text-center text-slate-400 text-sm">No data yet</td>
-                  </tr>
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell colSpan={7} className="py-12 text-center text-slate-400 text-sm">No data yet</TableCell>
+                  </TableRow>
                 ) : (
                   data.perInstitute.map((row, i) => (
-                    <tr key={row.instituteId} className={i % 2 === 0 ? '' : 'bg-slate-50/40'}>
-                      <td className="px-4 py-3 font-medium text-slate-800 whitespace-nowrap max-w-[200px] truncate">
+                    <TableRow key={row.instituteId} className={i % 2 === 0 ? '' : 'bg-slate-50/40 hover:bg-slate-50/40'}>
+                      <TableCell className="px-4 py-3 font-medium text-slate-800 whitespace-nowrap max-w-[200px] truncate">
                         {row.instituteName}
-                      </td>
-                      <td className="px-4 py-3 text-slate-600">{row.totalLectures}</td>
-                      <td className="px-4 py-3">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-slate-600">{row.totalLectures}</TableCell>
+                      <TableCell className="px-4 py-3">
                         {row.liveNow > 0 ? (
                           <span className="inline-flex items-center gap-1 text-red-600 font-semibold">
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                            <span className="size-1.5 rounded-full bg-red-500 animate-pulse" />
                             {row.liveNow}
                           </span>
                         ) : (
                           <span className="text-slate-400">0</span>
                         )}
-                      </td>
-                      <td className="px-4 py-3 text-slate-600">{row.completed}</td>
-                      <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{fmtDuration(row.totalDurationSeconds)}</td>
-                      <td className="px-4 py-3">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-slate-600">{row.completed}</TableCell>
+                      <TableCell className="px-4 py-3 text-slate-600 whitespace-nowrap">{fmtDuration(row.totalDurationSeconds)}</TableCell>
+                      <TableCell className="px-4 py-3">
                         <span className="flex items-center gap-1 text-slate-600">
-                          <Users className="w-3.5 h-3.5 text-slate-400" />
+                          <Users className="size-3.5 text-slate-400" />
                           {row.uniqueViewers}
                         </span>
-                      </td>
-                      <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">
                         {row.lastLectureAt ? new Date(row.lastLectureAt).toLocaleDateString() : '—'}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </div>
 
@@ -270,7 +272,7 @@ export default function SchoolLiveUsagePage() {
         <div className="bg-white rounded-[28px] border border-slate-100 shadow-sm overflow-hidden">
           <div className="p-5 md:p-8 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <Radio className="w-5 h-5 text-indigo-500" />
+              <Radio className="size-5 text-indigo-500" />
               <h3 className="text-base md:text-lg font-bold text-slate-900 tracking-tight">Recent Classes</h3>
               {filteredRecentLectures.length > 0 && (
                 <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-500">
@@ -292,7 +294,7 @@ export default function SchoolLiveUsagePage() {
                     <option key={name} value={name}>{name}</option>
                   ))}
                 </select>
-                <ChevronDown className="w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <ChevronDown className="size-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
               </div>
 
               {/* Status Filter */}
@@ -307,7 +309,7 @@ export default function SchoolLiveUsagePage() {
                     <option key={st} value={st}>{st === 'LIVE' ? '🔴 Live' : st}</option>
                   ))}
                 </select>
-                <ChevronDown className="w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <ChevronDown className="size-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
               </div>
 
               {(schoolFilter || statusFilter) && (
@@ -322,52 +324,52 @@ export default function SchoolLiveUsagePage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/60">
+            <Table className="w-full text-sm">
+              <TableHeader>
+                <TableRow className="border-b border-slate-100 bg-slate-50/60 hover:bg-slate-50/60">
                   {['Title', 'School', 'Teacher', 'Status', 'Duration', 'Viewers', 'Started'].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap">
+                    <TableHead key={h} className="h-auto px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap">
                       {h}
-                    </th>
+                    </TableHead>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {isLoading ? (
-                  <tr>
-                    <td colSpan={7} className="py-12 text-center text-slate-400">
-                      <Loader2 className="w-6 h-6 animate-spin mx-auto" />
-                    </td>
-                  </tr>
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell colSpan={7} className="py-12 text-center text-slate-400">
+                      <Loader2 className="size-6 animate-spin mx-auto" />
+                    </TableCell>
+                  </TableRow>
                 ) : !currentLectures.length ? (
-                  <tr>
-                    <td colSpan={7} className="py-12 text-center text-slate-400 text-sm">
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell colSpan={7} className="py-12 text-center text-slate-400 text-sm">
                       {statusFilter || schoolFilter ? 'No classes match your filter criteria' : 'No classes yet'}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   currentLectures.map((lec, i) => (
-                    <tr key={lec.id} className={i % 2 === 0 ? '' : 'bg-slate-50/40'}>
-                      <td className="px-4 py-3 font-medium text-slate-800 max-w-[160px] truncate whitespace-nowrap">
+                    <TableRow key={lec.id} className={i % 2 === 0 ? '' : 'bg-slate-50/40 hover:bg-slate-50/40'}>
+                      <TableCell className="px-4 py-3 font-medium text-slate-800 max-w-[160px] truncate whitespace-nowrap">
                         {lec.title || 'Untitled'}
-                      </td>
-                      <td className="px-4 py-3 text-slate-600 max-w-[140px] truncate whitespace-nowrap">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-slate-600 max-w-[140px] truncate whitespace-nowrap">
                         {lec.instituteName}
-                      </td>
-                      <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{lec.teacherName ?? '—'}</td>
-                      <td className="px-4 py-3 whitespace-nowrap"><StatusBadge status={lec.status} /></td>
-                      <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-slate-500 whitespace-nowrap">{lec.teacherName ?? '—'}</TableCell>
+                      <TableCell className="px-4 py-3 whitespace-nowrap"><StatusBadge status={lec.status} /></TableCell>
+                      <TableCell className="px-4 py-3 text-slate-600 whitespace-nowrap">
                         {lec.durationSeconds ? fmtDuration(lec.durationSeconds) : '—'}
-                      </td>
-                      <td className="px-4 py-3 text-slate-600">{lec.participantCount}</td>
-                      <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-slate-600">{lec.participantCount}</TableCell>
+                      <TableCell className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">
                         {lec.startedAt ? new Date(lec.startedAt).toLocaleString() : '—'}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           {/* Pagination controls */}
@@ -395,7 +397,7 @@ export default function SchoolLiveUsagePage() {
                     <option value={20}>20 / page</option>
                     <option value={50}>50 / page</option>
                   </select>
-                  <ChevronDown className="w-3.5 h-3.5 pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <ChevronDown className="size-3.5 pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
                 </div>
               </div>
 
@@ -406,7 +408,7 @@ export default function SchoolLiveUsagePage() {
                   className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   title="Previous Page"
                 >
-                  <ChevronLeft className="w-4 h-4" />
+                  <ChevronLeft className="size-4" />
                 </button>
 
                 <div className="flex items-center gap-1 px-2">
@@ -421,7 +423,7 @@ export default function SchoolLiveUsagePage() {
                   className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   title="Next Page"
                 >
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="size-4" />
                 </button>
               </div>
             </div>

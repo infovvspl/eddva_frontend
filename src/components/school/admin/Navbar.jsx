@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
+import { Button } from '@/components/ui/button';
 import { cn } from './Skeleton';
 import api from '@/lib/api/school-client';
 import { apiClient } from '@/lib/api/client';
@@ -633,8 +634,8 @@ export default function Navbar({ onMenuClick }) {
               <img src={logoUrl} alt="EDDVA" className="h-6 w-auto object-contain dark:brightness-110" />
             ) : (
               <div className="flex items-center gap-2">
-                <div className="h-7 w-7 rounded-lg overflow-hidden flex items-center justify-center bg-slate-50 shrink-0 border border-slate-100 dark:border-slate-800">
-                  <InstituteLogo institute={institute} size="sm" className="h-7 w-7 object-contain" />
+                <div className="size-7 rounded-lg overflow-hidden flex items-center justify-center bg-slate-50 shrink-0 border border-slate-100 dark:border-slate-800">
+                  <InstituteLogo institute={institute} size="sm" className="size-7 object-contain" />
                 </div>
                 <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-white truncate max-w-[140px]">
                   {institute?.name || 'EDDVA Admin'}
@@ -644,9 +645,15 @@ export default function Navbar({ onMenuClick }) {
           ) : (
             <>
               {onMenuClick && (
-                <button onClick={onMenuClick} className="rounded-xl p-2 text-slate-650 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 md:hidden flex-shrink-0" aria-label="Open menu">
-                  <Menu className="h-6 w-6" />
-                </button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={onMenuClick}
+                  className="rounded-xl p-2 size-auto text-slate-650 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 md:hidden flex-shrink-0 [&_svg]:size-6"
+                  aria-label="Open menu"
+                >
+                  <Menu className="size-6" />
+                </Button>
               )}
               <div className="flex flex-col min-w-0">
                 <h1 className="mt-0.5 text-lg font-bold tracking-tight leading-tight text-slate-900 dark:text-white truncate">{schoolName || title}</h1>
@@ -661,21 +668,22 @@ export default function Navbar({ onMenuClick }) {
           <div className="relative flex items-center" ref={searchRef}>
             {isMobile && searchOpen ? (
               <div className="fixed inset-x-0 top-0 h-16 bg-white dark:bg-slate-905 z-50 flex items-center px-4 gap-3 border-b border-slate-100 dark:border-slate-800">
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={(e) => {
                     e.stopPropagation();
                     setSearchOpen(false);
                     setDropdownOpen(false);
                     setSearchQuery('');
                   }}
-                  className="p-1 rounded-lg text-slate-500 hover:text-slate-850 dark:hover:text-slate-200 shrink-0"
+                  className="p-1 size-auto rounded-lg text-slate-500 hover:text-slate-850 dark:hover:text-slate-200 shrink-0 [&_svg]:size-5"
                   aria-label="Back"
                 >
-                  <ArrowLeft className="h-5 w-5" />
-                </button>
+                  <ArrowLeft className="size-5" />
+                </Button>
                 <div className="flex-1 flex items-center bg-slate-100/80 dark:bg-slate-800 rounded-xl px-3 py-1.5 border border-slate-200/60 dark:border-slate-700">
-                  <Search className="h-4 w-4 text-slate-400 shrink-0 mr-2" />
+                  <Search className="size-4 text-slate-400 shrink-0 mr-2" />
                   <input
                     ref={searchInputRef}
                     type="text"
@@ -689,23 +697,24 @@ export default function Navbar({ onMenuClick }) {
                     className="bg-transparent text-xs font-bold text-slate-805 dark:text-white placeholder-slate-400 outline-none border-none w-full"
                   />
                   {searchQuery && (
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       onClick={() => {
                         setSearchQuery('');
                         searchInputRef.current?.focus();
                       }}
-                      className="p-0.5 rounded-lg text-slate-400 hover:text-slate-650"
+                      className="p-0.5 size-auto rounded-lg text-slate-400 hover:text-slate-650 [&_svg]:size-3.5"
                     >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
+                      <X className="size-3.5" />
+                    </Button>
                   )}
                 </div>
               </div>
             ) : (
               <>
                 <div className={`flex items-center rounded-xl transition-all duration-300 ease-in-out ${searchOpen ? 'w-48 sm:w-64 md:w-80 bg-slate-100/80 dark:bg-slate-800 px-3 py-1.5 border border-slate-200/60 dark:border-slate-700' : 'w-0 overflow-hidden border-transparent'}`}>
-                  <Search className="h-4 w-4 text-slate-400 shrink-0 mr-2" />
+                  <Search className="size-4 text-slate-400 shrink-0 mr-2" />
                   <input
                     ref={searchInputRef}
                     type="text"
@@ -719,21 +728,24 @@ export default function Navbar({ onMenuClick }) {
                     className="bg-transparent text-xs font-bold text-slate-805 dark:text-white placeholder-slate-400 outline-none border-none w-full"
                   />
                   {searchQuery && (
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       onClick={() => {
                         setSearchQuery('');
                         searchInputRef.current?.focus();
                       }}
-                      className="p-0.5 rounded-lg text-slate-400 hover:text-slate-605"
+                      className="p-0.5 size-auto rounded-lg text-slate-400 hover:text-slate-605 [&_svg]:size-3.5"
                     >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
+                      <X className="size-3.5" />
+                    </Button>
                   )}
                 </div>
 
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon"
                   onClick={(e) => {
                     e.stopPropagation();
                     const nextState = !searchOpen;
@@ -743,11 +755,14 @@ export default function Navbar({ onMenuClick }) {
                       setSearchQuery('');
                     }
                   }}
-                  className={`h-10 w-10 flex items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100/75 dark:hover:bg-slate-800 transition-all duration-200 ${searchOpen ? 'text-blue-600 bg-slate-100/50 dark:bg-slate-800' : ''}`}
+                  className={cn(
+                    "rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100/75 dark:hover:bg-slate-800 [&_svg]:h-[18px] [&_svg]:w-[18px]",
+                    searchOpen && "text-blue-600 bg-slate-100/50 dark:bg-slate-800"
+                  )}
                   aria-label="Search"
                 >
                   <Search className="h-[18px] w-[18px]" />
-                </button>
+                </Button>
               </>
             )}
 
@@ -788,7 +803,7 @@ export default function Navbar({ onMenuClick }) {
                               }}
                               className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                             >
-                              <Clock className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                              <Clock className="size-3.5 text-slate-400 shrink-0" />
                               <span className="truncate">{s.name}</span>
                             </button>
                           ))}
@@ -813,7 +828,7 @@ export default function Navbar({ onMenuClick }) {
                               }}
                               className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 text-left text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-blue-50/50 hover:text-blue-600 transition-colors"
                             >
-                              <Icon className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                              <Icon className="size-3.5 text-blue-500 shrink-0" />
                               <span>{sug.label}</span>
                             </button>
                           );
@@ -835,7 +850,7 @@ export default function Navbar({ onMenuClick }) {
                             }}
                             className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 text-left text-xs font-bold text-slate-750 dark:text-slate-300 hover:bg-indigo-50/50 hover:text-indigo-600 transition-colors"
                           >
-                            <TrendingUp className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
+                            <TrendingUp className="size-3.5 text-indigo-500 shrink-0" />
                             <span>{trend.label}</span>
                           </button>
                         ))}
@@ -844,12 +859,12 @@ export default function Navbar({ onMenuClick }) {
                   </div>
                 ) : isSearching ? (
                   <div className="py-12 text-center">
-                    <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-3" />
+                    <Loader2 className="size-8 animate-spin text-blue-600 mx-auto mb-3" />
                     <p className="text-xs font-bold text-slate-600 dark:text-slate-400">Searching database...</p>
                   </div>
                 ) : !hasResults ? (
                   <div className="py-10 text-center space-y-2">
-                    <Inbox className="h-10 w-10 text-slate-300 dark:text-slate-750 mx-auto mb-1" />
+                    <Inbox className="size-10 text-slate-300 dark:text-slate-750 mx-auto mb-1" />
                     <p className="text-sm font-bold text-slate-700 dark:text-slate-300">No matches found for "{searchQuery}"</p>
                     <p className="text-xs text-slate-400 dark:text-slate-500">Try a different keyword.</p>
                   </div>
@@ -873,7 +888,7 @@ export default function Navbar({ onMenuClick }) {
                               }}
                               className="w-full flex items-center gap-3.5 rounded-xl p-2.5 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 hover:text-blue-600 border border-transparent transition-all"
                             >
-                              <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 flex items-center justify-center shrink-0">
+                              <div className="size-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 flex items-center justify-center shrink-0">
                                 <page.icon size={15} />
                               </div>
                               <span className="text-xs font-bold">{page.name}</span>
@@ -901,7 +916,7 @@ export default function Navbar({ onMenuClick }) {
                               }}
                               className="w-full flex items-center gap-3.5 rounded-xl p-2.5 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 hover:text-indigo-600 border border-transparent transition-all"
                             >
-                              <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 flex items-center justify-center shrink-0">
+                              <div className="size-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 flex items-center justify-center shrink-0">
                                 <GraduationCap size={15} />
                               </div>
                               <div className="flex-1 min-w-0">
@@ -932,7 +947,7 @@ export default function Navbar({ onMenuClick }) {
                               }}
                               className="w-full flex items-center gap-3.5 rounded-xl p-2.5 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 hover:text-emerald-600 border border-transparent transition-all"
                             >
-                              <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 flex items-center justify-center shrink-0">
+                              <div className="size-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 flex items-center justify-center shrink-0">
                                 <Users size={15} />
                               </div>
                               <div className="flex-1 min-w-0">
@@ -963,7 +978,7 @@ export default function Navbar({ onMenuClick }) {
                               }}
                               className="w-full flex items-center gap-3.5 rounded-xl p-2.5 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 hover:text-amber-600 border border-transparent transition-all"
                             >
-                              <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 flex items-center justify-center shrink-0">
+                              <div className="size-8 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 flex items-center justify-center shrink-0">
                                 <GraduationCap size={15} />
                               </div>
                               <div className="flex-1 min-w-0">
@@ -994,7 +1009,7 @@ export default function Navbar({ onMenuClick }) {
                               }}
                               className="w-full flex items-center gap-3.5 rounded-xl p-2.5 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-purple-50/50 dark:hover:bg-purple-950/20 hover:text-purple-600 border border-transparent transition-all"
                             >
-                              <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-purple-600 flex items-center justify-center shrink-0">
+                              <div className="size-8 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-purple-600 flex items-center justify-center shrink-0">
                                 <Sparkles size={15} />
                               </div>
                               <div className="flex-1 min-w-0">
@@ -1025,7 +1040,7 @@ export default function Navbar({ onMenuClick }) {
                               }}
                               className="w-full flex items-center gap-3.5 rounded-xl p-2.5 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-rose-50/50 dark:hover:bg-rose-950/20 hover:text-rose-600 border border-transparent transition-all"
                             >
-                              <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/20 text-rose-600 flex items-center justify-center shrink-0">
+                              <div className="size-8 rounded-lg bg-rose-50 dark:bg-rose-900/20 text-rose-600 flex items-center justify-center shrink-0">
                                 <FileText size={15} />
                               </div>
                               <div className="flex-1 min-w-0">
@@ -1055,7 +1070,7 @@ export default function Navbar({ onMenuClick }) {
                               }}
                               className="w-full flex items-center gap-3.5 rounded-xl p-2.5 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 hover:text-cyan-600 border border-transparent transition-all"
                             >
-                              <div className="w-8 h-8 rounded-lg bg-cyan-50 dark:bg-cyan-900/20 text-cyan-600 flex items-center justify-center shrink-0">
+                              <div className="size-8 rounded-lg bg-cyan-50 dark:bg-cyan-900/20 text-cyan-600 flex items-center justify-center shrink-0">
                                 <Shield size={15} />
                               </div>
                               <div className="flex-1 min-w-0">
@@ -1074,10 +1089,12 @@ export default function Navbar({ onMenuClick }) {
 
           {/* Notifications Icon & Popover */}
           <div className="relative flex items-center" ref={notifRef}>
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               onClick={() => setNotifOpen(!notifOpen)}
-              className="relative h-10 w-10 flex items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100/75 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-all duration-200"
+              className="relative rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100/75 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-200 [&_svg]:h-[18px] [&_svg]:w-[18px]"
               aria-label="Notifications"
             >
               <Bell className="h-[18px] w-[18px]" />
@@ -1086,7 +1103,7 @@ export default function Navbar({ onMenuClick }) {
                   {unreadCount}
                 </span>
               )}
-            </button>
+            </Button>
 
             {notifOpen && (
               <div className="absolute right-[-12px] sm:right-0 top-full mt-3.5 z-50 w-[calc(100vw-2rem)] sm:w-96 max-w-[360px] sm:max-w-none overflow-hidden rounded-[2rem] border border-slate-105 dark:border-slate-800 bg-white dark:bg-slate-905 py-2 shadow-2xl">
@@ -1099,13 +1116,15 @@ export default function Navbar({ onMenuClick }) {
                     </p>
                   </div>
                   {unreadCount > 0 && (
-                    <button
+                    <Button
+                      type="button"
+                      variant="ghost"
                       onClick={handleMarkAllAsRead}
-                      className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all"
+                      className="flex items-center gap-1.5 h-auto rounded-lg px-2 py-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 [&_svg]:size-3"
                     >
                       <CheckCheck size={12} />
                       Mark all read
-                    </button>
+                    </Button>
                   )}
                 </div>
 
@@ -1113,12 +1132,12 @@ export default function Navbar({ onMenuClick }) {
                 <div className="max-h-[60vh] sm:max-h-[380px] overflow-y-auto custom-scrollbar">
                   {notifLoading ? (
                     <div className="flex flex-col items-center justify-center p-8 text-slate-400">
-                      <Loader2 className="h-6 w-6 animate-spin text-blue-500 mb-2" />
+                      <Loader2 className="size-6 animate-spin text-blue-500 mb-2" />
                       <p className="text-xs font-bold">Fetching updates...</p>
                     </div>
                   ) : notifications.length === 0 ? (
                     <div className="flex flex-col items-center justify-center p-8 text-center">
-                      <Inbox className="h-8 w-8 text-slate-305 dark:text-slate-700 mb-2" />
+                      <Inbox className="size-8 text-slate-305 dark:text-slate-700 mb-2" />
                       <p className="text-xs font-bold text-slate-400">All caught up!</p>
                       <p className="text-[10px] text-slate-400/80 mt-1">No new alerts found.</p>
                     </div>
@@ -1143,12 +1162,12 @@ export default function Navbar({ onMenuClick }) {
                       >
                         {/* Dot indicator */}
                         {!n.isRead && (
-                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-blue-500" />
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 size-1.5 rounded-full bg-blue-500" />
                         )}
 
                         {/* Icon based on type */}
                         <div className={cn(
-                          "w-8 h-8 shrink-0 rounded-xl flex items-center justify-center text-xs font-bold",
+                          "size-8 shrink-0 rounded-xl flex items-center justify-center text-xs font-bold",
                           n.type === 'ALERT' || n.type === 'CRITICAL'
                             ? "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-450"
                             : n.type === 'SUCCESS'
@@ -1182,7 +1201,9 @@ export default function Navbar({ onMenuClick }) {
 
                 {/* Footer link to open modal */}
                 <div className="border-t border-slate-100 dark:border-slate-800 p-2.5 text-center flex-shrink-0">
-                  <button
+                  <Button
+                    type="button"
+                    variant="ghost"
                     onClick={() => {
                       const target = user?.role === 'SUPER_ADMIN'
                         ? '/school/super-admin/notifications'
@@ -1192,10 +1213,10 @@ export default function Navbar({ onMenuClick }) {
                       navigate(target);
                       setNotifOpen(false);
                     }}
-                    className="w-full text-center text-[10px] font-extrabold text-blue-600 dark:text-blue-400 hover:text-blue-700 transition-colors"
+                    className="w-full h-auto p-0 text-center text-[10px] font-extrabold text-blue-600 dark:text-blue-400 hover:text-blue-700 hover:bg-transparent"
                   >
                     View All Notifications →
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -1204,22 +1225,24 @@ export default function Navbar({ onMenuClick }) {
 
           {!isMobile && (
             <div className="relative border-l border-slate-250 dark:border-slate-800 pl-3.5 ml-1.5" ref={profileRef}>
-              <button
+              <Button
+                type="button"
+                variant="ghost"
                 onClick={() => setProfileOpen((o) => !o)}
-                className="flex items-center gap-2 outline-none group"
+                className="flex items-center gap-2 size-auto p-0 outline-none hover:bg-transparent group"
                 aria-label="User Profile menu"
               >
                 <div className="relative transition-transform duration-200 group-hover:scale-105">
                   {user?.profileImage ? (
-                    <img src={user.profileImage} alt="Profile" className="h-10 w-10 rounded-xl object-cover border border-slate-200 dark:border-slate-800 shadow-sm" />
+                    <img src={user.profileImage} alt="Profile" className="size-10 rounded-xl object-cover border border-slate-200 dark:border-slate-800 shadow-sm" />
                   ) : (
-                    <div className="grid h-10 w-10 place-items-center rounded-xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-350">
+                    <div className="grid size-10 place-items-center rounded-xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-350">
                       {(user?.name || 'A').charAt(0).toUpperCase()}
                     </div>
                   )}
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-950 shadow-sm" />
+                  <div className="absolute -bottom-1 -right-1 size-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-950 shadow-sm" />
                 </div>
-              </button>
+              </Button>
 
               {profileOpen && (
                 <div className="absolute right-0 z-50 mt-4 w-64 overflow-hidden rounded-[2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 py-2 shadow-2xl">
@@ -1236,7 +1259,7 @@ export default function Navbar({ onMenuClick }) {
                       onClick={() => setProfileOpen(false)}
                       className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
                     >
-                      <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center">
+                      <div className="size-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center">
                         <UserCircle size={16} />
                       </div>
                       My Profile
@@ -1250,7 +1273,7 @@ export default function Navbar({ onMenuClick }) {
                       onClick={() => setProfileOpen(false)}
                       className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
                     >
-                      <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center">
+                      <div className="size-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center">
                         <Building2 size={16} />
                       </div>
                       Institute Profile
@@ -1264,7 +1287,7 @@ export default function Navbar({ onMenuClick }) {
                       onClick={() => setProfileOpen(false)}
                       className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
                     >
-                      <div className="w-8 h-8 rounded-xl bg-sky-50 dark:bg-sky-900/30 text-sky-600 flex items-center justify-center">
+                      <div className="size-8 rounded-xl bg-sky-50 dark:bg-sky-900/30 text-sky-600 flex items-center justify-center">
                         <UserCircle size={16} />
                       </div>
                       My Profile
@@ -1277,7 +1300,7 @@ export default function Navbar({ onMenuClick }) {
                     onClick={() => setProfileOpen(false)}
                     className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
                   >
-                    <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
+                    <div className="size-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
                       <SettingsIcon size={16} />
                     </div>
                     Settings
@@ -1290,7 +1313,7 @@ export default function Navbar({ onMenuClick }) {
                       onClick={() => setProfileOpen(false)}
                       className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
                     >
-                      <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center">
+                      <div className="size-8 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center">
                         <KeyRound size={16} />
                       </div>
                       Change Password
@@ -1303,7 +1326,7 @@ export default function Navbar({ onMenuClick }) {
                       onClick={() => setProfileOpen(false)}
                       className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
                     >
-                      <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center">
+                      <div className="size-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center">
                         <Shield size={16} />
                       </div>
                       Institute Admin
@@ -1316,7 +1339,7 @@ export default function Navbar({ onMenuClick }) {
                       onClick={() => setProfileOpen(false)}
                       className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
                     >
-                      <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center">
+                      <div className="size-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center">
                         <GraduationCap size={16} />
                       </div>
                       Teacher Portal
@@ -1326,18 +1349,20 @@ export default function Navbar({ onMenuClick }) {
                   <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 mx-4" />
 
                   {/* Logout button */}
-                  <button
+                  <Button
+                    type="button"
+                    variant="ghost"
                     onClick={() => {
                       setProfileOpen(false);
                       logout();
                     }}
-                    className="w-full flex items-center gap-3 px-5 py-3 text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-955/40 text-left"
+                    className="w-full h-auto justify-start gap-3 px-5 py-3 rounded-none text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-955/40 hover:text-rose-600 text-left"
                   >
-                    <div className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 flex items-center justify-center">
+                    <div className="size-8 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 flex items-center justify-center">
                       <LogOut size={16} />
                     </div>
                     Logout
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>

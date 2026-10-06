@@ -100,7 +100,7 @@ function DoubtCard({
       </div>
 
       <div className="mt-2.5 sm:mt-3 flex flex-wrap items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-bold text-slate-500">
-        <User className="h-3.5 w-3.5 shrink-0" />
+        <User className="size-3.5 shrink-0" />
         <span className="truncate max-w-[120px] sm:max-w-none">{doubt.studentName || 'Student'}</span>
         {(doubt.className || doubt.sectionName) && (
           <span className="rounded bg-slate-100 px-1.5 py-0.5 dark:bg-slate-800 shrink-0">
@@ -127,7 +127,7 @@ function DoubtCard({
         <div className="mt-2.5 sm:mt-3 rounded-lg sm:rounded-xl border border-indigo-100 bg-indigo-50/60 p-2.5 sm:p-3 dark:border-indigo-900/40 dark:bg-indigo-950/20">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
             <p className="flex items-center gap-1 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
-              <Sparkles size={11} className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> AI response (student may escalate)
+              <Sparkles size={11} className="size-3 sm:size-3.5 shrink-0" /> AI response (student may escalate)
             </p>
             {parsedAi && (
               <div className="flex items-center gap-1 rounded-lg bg-indigo-100/50 p-0.5 dark:bg-indigo-900/30">
@@ -229,7 +229,7 @@ function DoubtCard({
               onClick={() => onAiSuggest(doubt.id)}
               className="inline-flex w-full items-center justify-center gap-2 rounded-lg sm:rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-[11px] sm:text-xs font-black text-indigo-700 hover:bg-indigo-100 disabled:opacity-50 dark:border-indigo-900/50 dark:bg-indigo-950/30 dark:text-indigo-300"
             >
-              {aiSuggesting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              {aiSuggesting ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}
               Draft with AI (edit before sending)
             </button>
           )}
@@ -256,7 +256,7 @@ function DoubtCard({
               onClick={() => onSubmitReply(doubt.id)}
               className="inline-flex items-center gap-1.5 rounded-lg sm:rounded-xl bg-blue-600 px-3.5 py-2 text-[11px] sm:text-xs font-black text-white hover:bg-blue-700 disabled:opacity-50"
             >
-              {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+              {submitting ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5" />}
               Send to student
             </button>
             <button
@@ -284,7 +284,7 @@ function DoubtCard({
           }}
           className="mt-3 sm:mt-4 inline-flex items-center gap-1.5 rounded-lg sm:rounded-xl bg-blue-600 px-3.5 py-2 text-[11px] sm:text-xs font-black text-white hover:bg-blue-700"
         >
-          <MessageSquare className="h-3.5 w-3.5" />
+          <MessageSquare className="size-3.5" />
           Reply to student
         </button>
       ) : null}
@@ -379,7 +379,7 @@ export default function DoubtQueue() {
   if (loading && doubts.length === 0) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="size-8 animate-spin text-blue-600" />
       </div>
     );
   }
@@ -398,7 +398,7 @@ export default function DoubtQueue() {
           onClick={() => load(true)}
           className="inline-flex items-center gap-1 sm:gap-2 rounded-lg sm:rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 sm:px-4 sm:py-2.5 text-[11px] sm:text-xs font-black text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 shrink-0 shadow-sm"
         >
-          <RefreshCw className={cn('h-3.5 w-3.5 sm:h-4 sm:w-4', loading && 'animate-spin')} />
+          <RefreshCw className={cn('size-3.5 sm:size-4', loading && 'animate-spin')} />
           <span>Refresh</span>
         </button>
       </div>
@@ -435,7 +435,7 @@ export default function DoubtQueue() {
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300',
             )}
           >
-            <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+            <Icon className="size-3.5 sm:size-4 shrink-0" />
             <span>{label}</span>
             <span className="rounded bg-white/20 px-1 py-0.2 text-[9px] sm:text-[10px] font-bold">{count}</span>
           </button>
@@ -450,7 +450,7 @@ export default function DoubtQueue() {
 
       {shown.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
-          <HelpCircle className="mx-auto h-10 w-10 text-slate-300" />
+          <HelpCircle className="mx-auto size-10 text-slate-300" />
           <h3 className="mt-3 text-sm font-black text-slate-900 dark:text-white">
             {tab === 'pending' ? 'No pending doubts' : tab === 'answered' ? 'No answered doubts yet' : 'No doubts yet'}
           </h3>

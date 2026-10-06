@@ -909,10 +909,10 @@ const ChatSystem: React.FC = () => {
         <div className="p-3 space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-100/60 shadow-xs animate-pulse">
-              <div className="h-10 w-10 bg-slate-100 rounded-xl" />
+              <div className="size-10 bg-slate-100 rounded-xl" />
               <div className="flex-1 space-y-2">
                 <div className="h-3 w-1/3 bg-slate-100 rounded" />
-                <div className="h-2 w-2/3 bg-slate-50 rounded" />
+                <div className="size-2/3 bg-slate-50 rounded" />
               </div>
             </div>
           ))}
@@ -941,10 +941,10 @@ const ChatSystem: React.FC = () => {
                   : "hover:bg-slate-50/60 border border-transparent"
                 }`}
             >
-              <div className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white shadow-sm">
+              <div className="relative size-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white shadow-sm">
                 {contact.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
                 {contact.online && (
-                  <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-white bg-emerald-500" />
+                  <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border border-white bg-emerald-500" />
                 )}
               </div>
               <div className="flex-1 min-w-0">
@@ -1092,7 +1092,7 @@ const ChatSystem: React.FC = () => {
         </div>
         <div className="p-3 bg-white dark:bg-slate-900">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -1145,16 +1145,16 @@ const ChatSystem: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setActiveContact(null)}
-                  className="flex md:hidden items-center justify-center h-9 w-9 shrink-0 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white hover:bg-slate-200 transition active:scale-95 -ml-1"
+                  className="flex md:hidden items-center justify-center size-9 shrink-0 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white hover:bg-slate-200 transition active:scale-95 -ml-1"
                   aria-label="Back to conversations"
                   title="Back to conversations"
                 >
-                  <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
+                  <ArrowLeft className="size-5 stroke-[2.5]" />
                 </button>
-                <div className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white shadow-sm">
+                <div className="relative size-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white shadow-sm">
                   {activeContact.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
                   {activeContact.online && (
-                    <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-white bg-emerald-500" />
+                    <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border border-white bg-emerald-500" />
                   )}
                 </div>
                 <div className="min-w-0">
@@ -1162,7 +1162,7 @@ const ChatSystem: React.FC = () => {
                     <span className="text-xs font-bold text-slate-800 dark:text-white truncate">{activeContact.name}</span>
                     {activeContact.online ? (
                       <span className="flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400">
-                        <span className="h-1 w-1 rounded-full bg-emerald-500" />
+                        <span className="size-1 rounded-full bg-emerald-500" />
                         Online
                       </span>
                     ) : (
@@ -1396,7 +1396,7 @@ const ChatSystem: React.FC = () => {
                   <button
                     disabled={!message.trim() || uploading}
                     onClick={handleSendMessage}
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20 hover:brightness-110 disabled:opacity-40 transition"
+                    className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20 hover:brightness-110 disabled:opacity-40 transition"
                   >
                     <Send size={14} />
                   </button>
@@ -1417,7 +1417,7 @@ const ChatSystem: React.FC = () => {
       {showDetails && activeContact && (
         <aside className="hidden xl:flex w-[280px] flex-col border-l border-slate-100 bg-slate-50/10 shrink-0">
           <div className="p-6 text-center border-b border-slate-100 bg-white shrink-0">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-base font-black text-white shadow-md">
+            <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-base font-black text-white shadow-md">
               {activeContact.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
             </div>
             <h4 className="mt-3 text-xs font-bold text-slate-900">{activeContact.name}</h4>
@@ -1432,7 +1432,7 @@ const ChatSystem: React.FC = () => {
               { label: 'More', icon: <MoreVertical size={14} />, act: () => setShowMoreOptions(true) },
             ].map((btn, idx) => (
               <button key={idx} onClick={btn.act} className="flex flex-col items-center gap-1 hover:opacity-80 transition">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-50 border border-slate-100 text-slate-500 shadow-xs">
+                <div className="flex size-8 items-center justify-center rounded-full bg-slate-50 border border-slate-100 text-slate-500 shadow-xs">
                   {btn.icon}
                 </div>
                 <span className="text-[9px] font-bold text-slate-400">{btn.label}</span>
@@ -1469,7 +1469,7 @@ const ChatSystem: React.FC = () => {
           <div className="p-4 border-b border-slate-100 bg-white shrink-0">
             <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Search in Chat</label>
             <div className="relative mt-1.5">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
               <input
                 value={inChatSearch}
                 onChange={(e) => setInChatSearch(e.target.value)}
@@ -1546,7 +1546,7 @@ const ChatSystem: React.FC = () => {
                   .slice(0, 3)
                   .map((file) => (
                     <div key={file.id} className="relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-100 group cursor-pointer" onClick={() => window.open(file.attachment_url, '_blank')}>
-                      <img src={file.attachment_url} alt="media" className="h-full w-full object-cover group-hover:scale-105 transition duration-200" />
+                      <img src={file.attachment_url} alt="media" className="size-full object-cover group-hover:scale-105 transition duration-200" />
                     </div>
                   ))}
               </div>
@@ -1626,7 +1626,7 @@ const ChatSystem: React.FC = () => {
               </button>
             </div>
             <div className="flex-1 bg-slate-100">
-              <iframe src={pdfPreviewUrl} className="h-full w-full" title="pdf-viewer" />
+              <iframe src={pdfPreviewUrl} className="size-full" title="pdf-viewer" />
             </div>
           </div>
         </div>
@@ -1652,7 +1652,7 @@ const ChatSystem: React.FC = () => {
                   onClick={() => handleForwardMessage(contact)}
                   className="flex w-full items-center gap-3 rounded-2xl p-2.5 text-left hover:bg-slate-50 transition"
                 >
-                  <div className="grid h-9 w-9 place-items-center rounded-xl bg-blue-100 text-xs font-bold text-blue-700">
+                  <div className="grid size-9 place-items-center rounded-xl bg-blue-100 text-xs font-bold text-blue-700">
                     {(contact.name || 'U').slice(0, 1).toUpperCase()}
                   </div>
                   <div>
@@ -1683,7 +1683,7 @@ const ChatSystem: React.FC = () => {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 z-50 h-full w-full max-w-sm border-l border-slate-100 bg-white shadow-2xl flex flex-col"
+              className="fixed top-0 right-0 z-50 size-full max-w-sm border-l border-slate-100 bg-white shadow-2xl flex flex-col"
             >
               <div className="flex items-center justify-between border-b border-slate-100 p-4 shrink-0">
                 <h3 className="text-sm font-black text-slate-800 tracking-tight uppercase">User Profile</h3>
@@ -1697,12 +1697,12 @@ const ChatSystem: React.FC = () => {
 
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 <div className="text-center">
-                  <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-xl font-black text-white shadow-lg">
+                  <div className="mx-auto flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-xl font-black text-white shadow-lg">
                     {activeContact.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
                   </div>
                   <h4 className="mt-4 text-sm font-bold text-slate-900">{activeContact.name}</h4>
                   <div className="mt-2 flex items-center justify-center gap-1.5">
-                    <span className={`h-2 w-2 rounded-full ${activeContact.online ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
+                    <span className={`size-2 rounded-full ${activeContact.online ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
                     <span className="text-[10px] font-bold text-slate-500 uppercase">{activeContact.online ? 'Online' : 'Offline'}</span>
                   </div>
                 </div>
@@ -1797,7 +1797,7 @@ const ChatSystem: React.FC = () => {
                   onClick={() => setShowVideoMeetModal(false)}
                   className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="size-5" />
                 </button>
               </div>
 
@@ -1965,7 +1965,7 @@ const ChatSystem: React.FC = () => {
                   onClick={() => setShowMoreOptions(false)}
                   className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="size-5" />
                 </button>
               </div>
 
@@ -2032,7 +2032,7 @@ const ChatSystem: React.FC = () => {
                   onClick={() => setShowSharedFilesModal(false)}
                   className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="size-5" />
                 </button>
               </div>
 
@@ -2040,7 +2040,7 @@ const ChatSystem: React.FC = () => {
                 {sharedFiles.map((file) => (
                   <div key={file.id} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50/30 p-3 hover:bg-slate-50 transition">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="grid h-10 w-10 place-items-center rounded-xl bg-blue-50 text-blue-600">
+                      <div className="grid size-10 place-items-center rounded-xl bg-blue-50 text-blue-600">
                         <FileText size={20} />
                       </div>
                       <div className="min-w-0">
@@ -2099,7 +2099,7 @@ const ChatSystem: React.FC = () => {
                   onClick={() => setShowMediaGalleryModal(false)}
                   className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="size-5" />
                 </button>
               </div>
 
@@ -2112,7 +2112,7 @@ const ChatSystem: React.FC = () => {
                       onClick={() => setMediaLightboxUrl(file.attachment_url!)}
                       className="relative aspect-square rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 group cursor-pointer shadow-xs hover:shadow-md transition"
                     >
-                      <img src={file.attachment_url} alt="gallery" className="h-full w-full object-cover group-hover:scale-105 transition duration-300" />
+                      <img src={file.attachment_url} alt="gallery" className="size-full object-cover group-hover:scale-105 transition duration-300" />
                       <div className="absolute inset-0 bg-slate-900/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
                         <Eye size={20} className="text-white" />
                       </div>

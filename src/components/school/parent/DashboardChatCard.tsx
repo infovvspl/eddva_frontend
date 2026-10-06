@@ -34,8 +34,8 @@ export default function DashboardChatCard() {
       <div>
         <div className="flex items-center justify-between gap-4 pb-4 border-b border-slate-100 mb-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
-              <MessageSquare className="h-5 w-5" />
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+              <MessageSquare className="size-5" />
             </div>
             <div>
               <h3 className="text-base font-bold text-slate-900">Communication Center</h3>
@@ -43,7 +43,7 @@ export default function DashboardChatCard() {
             </div>
           </div>
           <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700 ring-1 ring-blue-100">
-            <Sparkles className="h-3 w-3" /> Connect
+            <Sparkles className="size-3" /> Connect
           </span>
         </div>
 
@@ -62,7 +62,7 @@ export default function DashboardChatCard() {
                 className="w-full flex items-center justify-between rounded-2xl bg-rose-50/50 p-3 hover:bg-rose-50 transition border border-rose-100/40"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-xs font-bold text-rose-700">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-xs font-bold text-rose-700">
                     {(contact.name || "S").charAt(0).toUpperCase()}
                   </div>
                   <div className="text-left min-w-0">
@@ -88,7 +88,7 @@ export default function DashboardChatCard() {
                     className="w-full flex items-center justify-between rounded-2xl bg-slate-50/50 p-2.5 hover:bg-blue-50/40 transition border border-slate-100/50"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-xs font-bold text-blue-700">
+                      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-xs font-bold text-blue-700">
                         {(contact.name || "U").charAt(0).toUpperCase()}
                       </div>
                       <div className="text-left min-w-0">
@@ -114,7 +114,7 @@ export default function DashboardChatCard() {
         className="w-full mt-4 flex items-center justify-center gap-1.5 rounded-2xl bg-blue-600 py-3 text-xs font-bold text-white shadow-md shadow-blue-500/10 hover:bg-blue-700 transition"
       >
         Open Chat Center
-        <ArrowRight className="h-4 w-4" />
+        <ArrowRight className="size-4" />
       </button>
     </motion.div>
   );

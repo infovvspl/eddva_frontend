@@ -144,7 +144,7 @@ export default function Attendance() {
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <div className="size-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
       </div>
     );
   }
@@ -191,7 +191,7 @@ export default function Attendance() {
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => setSelectedMonth(v => shiftMonth(v, -1))}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400"
+                    className="inline-flex size-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400"
                     aria-label="Previous month"
                   >
                     <ChevronLeft size={14} />
@@ -204,7 +204,7 @@ export default function Attendance() {
                   />
                   <button
                     onClick={() => setSelectedMonth(v => shiftMonth(v, 1))}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400"
+                    className="inline-flex size-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400"
                     aria-label="Next month"
                   >
                     <ChevronRight size={14} />
@@ -222,7 +222,7 @@ export default function Attendance() {
             {/* Unified Dashboard Widget Card */}
             <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm flex flex-col gap-3.5 dark:border-slate-800 dark:bg-slate-900">
               <div className="flex items-center gap-4">
-                <div className="relative h-16 w-16 shrink-0">
+                <div className="relative size-16 shrink-0">
                   <svg width={64} height={64} viewBox="0 0 80 80" className="-rotate-90">
                     <circle cx={40} cy={40} r={32} fill="none" stroke="#f1f5f9" strokeWidth={8} className="dark:stroke-slate-800" />
                     <circle
@@ -254,7 +254,7 @@ export default function Attendance() {
                         <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 truncate">{s.label}</p>
                         <p className={`text-base font-black ${s.tw.text} mt-0.5`}>{s.value}</p>
                       </div>
-                      <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${s.tw.bg}`}>
+                      <div className={`flex size-7 shrink-0 items-center justify-center rounded-lg ${s.tw.bg}`}>
                         <Icon size={12} className={s.tw.text} />
                       </div>
                     </div>
@@ -276,7 +276,7 @@ export default function Attendance() {
                       key={key}
                       className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-wider ${s.tw.bg} ${s.tw.text} ${s.tw.border}`}
                     >
-                      <span className={`h-1 w-1 rounded-full ${s.tw.dot}`} />
+                      <span className={`size-1 rounded-full ${s.tw.dot}`} />
                       {s.label.split(' ')[0]}
                     </span>
                   ))}
@@ -313,7 +313,7 @@ export default function Attendance() {
                       >
                         <span className="text-xs font-black">{day.day}</span>
                         {isMarked && (
-                          <span className={`h-1.5 w-1.5 rounded-full ${meta.tw.dot} mt-0.5`} />
+                          <span className={`size-1.5 rounded-full ${meta.tw.dot} mt-0.5`} />
                         )}
                       </div>
                     );
@@ -377,7 +377,7 @@ export default function Attendance() {
                       {!isLast && (
                         <div className="absolute left-[15px] top-8 bottom-0 w-0.5 rounded-full bg-slate-100 dark:bg-slate-800" />
                       )}
-                      <div className={`z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${meta ? `${meta.tw.bg} ${meta.tw.border}` : 'border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-900'}`}>
+                      <div className={`z-10 flex size-8 shrink-0 items-center justify-center rounded-lg border ${meta ? `${meta.tw.bg} ${meta.tw.border}` : 'border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-900'}`}>
                         {Icon
                           ? <Icon size={12} className={meta.tw.text} />
                           : <CalendarDays size={12} className="text-slate-300" />
@@ -422,7 +422,7 @@ export default function Attendance() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setSelectedMonth(v => shiftMonth(v, -1))}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-450"
+                  className="inline-flex size-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-450"
                   aria-label="Previous month"
                 >
                   <ChevronLeft size={16} />
@@ -435,7 +435,7 @@ export default function Attendance() {
                 />
                 <button
                   onClick={() => setSelectedMonth(v => shiftMonth(v, 1))}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-450"
+                  className="inline-flex size-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-450"
                   aria-label="Next month"
                 >
                   <ChevronRight size={16} />
@@ -454,7 +454,7 @@ export default function Attendance() {
 
               {/* Ring card */}
               <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                <div className="relative h-20 w-20">
+                <div className="relative size-20">
                   <svg width={80} height={80} viewBox="0 0 80 80" className="-rotate-90">
                     <circle cx={40} cy={40} r={32} fill="none" stroke="#f1f5f9" strokeWidth={8} className="dark:stroke-slate-800" />
                     <circle
@@ -482,7 +482,7 @@ export default function Attendance() {
                   >
                     <div className="flex items-center justify-between">
                       <p className={`text-[11px] font-black uppercase tracking-widest ${s.tw.text}`}>{s.label}</p>
-                      <div className={`flex h-8 w-8 items-center justify-center rounded-xl ${s.tw.bg}`}>
+                      <div className={`flex size-8 items-center justify-center rounded-xl ${s.tw.bg}`}>
                         <Icon size={15} className={s.tw.text} />
                       </div>
                     </div>
@@ -533,7 +533,7 @@ export default function Attendance() {
                     { cls: 'bg-slate-200 dark:bg-slate-800',  label: 'No classes' },
                   ].map(l => (
                     <span key={l.label} className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
-                      <span className={`inline-block h-2.5 w-2.5 rounded-sm ${l.cls}`} />
+                      <span className={`inline-block size-2.5 rounded-sm ${l.cls}`} />
                       {l.label}
                     </span>
                   ))}
@@ -566,7 +566,7 @@ export default function Attendance() {
                         {!isLast && (
                           <div className="absolute left-[18px] top-9 bottom-0 w-0.5 rounded-full bg-slate-100 dark:bg-slate-800" />
                         )}
-                        <div className={`z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${meta ? `${meta.tw.bg} ${meta.tw.border}` : 'border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-900'}`}>
+                        <div className={`z-10 flex size-9 shrink-0 items-center justify-center rounded-xl border ${meta ? `${meta.tw.bg} ${meta.tw.border}` : 'border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-900'}`}>
                           {Icon
                             ? <Icon size={15} className={meta.tw.text} />
                             : <CalendarDays size={15} className="text-slate-300" />
@@ -609,7 +609,7 @@ export default function Attendance() {
                       key={key}
                       className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${s.tw.bg} ${s.tw.text} ${s.tw.border}`}
                     >
-                      <span className={`h-1.5 w-1.5 rounded-full ${s.tw.dot}`} />
+                      <span className={`size-1.5 rounded-full ${s.tw.dot}`} />
                       {s.label}
                     </span>
                   ))}
@@ -649,7 +649,7 @@ export default function Attendance() {
                         </p>
                         {Icon
                           ? <Icon size={13} className={meta.tw.text} />
-                          : <span className="h-3.5 w-3.5" />
+                          : <span className="size-3.5" />
                         }
                         <p className={`text-[8px] font-black uppercase tracking-wider ${isMarked ? meta.tw.text : 'text-slate-200'}`}>
                           {isMarked ? meta.label : '·'}

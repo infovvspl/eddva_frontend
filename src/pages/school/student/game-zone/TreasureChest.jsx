@@ -24,12 +24,12 @@ export default function TreasureChest({ results, onClaim }) {
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:20px_32px] pointer-events-none" />
       
       {/* Radiant glow matching states */}
-      <div className={`absolute w-96 h-96 rounded-full blur-[120px] pointer-events-none opacity-40 transition-all duration-1000 ${
+      <div className={`absolute size-96 rounded-full blur-[120px] pointer-events-none opacity-40 transition-all duration-1000 ${
         chestState === 'open' ? 'bg-amber-400 scale-125' : 'bg-indigo-500 animate-pulse'
       }`} />
 
       {chestState === 'closed' && (
-        <div className="relative z-10 flex flex-col items-center text-center space-y-6 animate-fade-in">
+        <div className="relative z-10 flex flex-col items-center text-center gap-y-6 animate-fade-in">
           <div className="space-y-2">
             <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-400 border border-amber-500/20">
               Quest Stage 5 Complete
@@ -50,7 +50,7 @@ export default function TreasureChest({ results, onClaim }) {
             
             {/* SVG Illustration of Locked Ancient Chest */}
             <svg 
-              className="w-48 h-48 text-amber-500 drop-shadow-[0_10px_20px_rgba(245,158,11,0.3)]"
+              className="size-48 text-amber-500 drop-shadow-[0_10px_20px_rgba(245,158,11,0.3)]"
               fill="none" 
               viewBox="0 0 24 24" 
               stroke="currentColor" 
@@ -78,7 +78,7 @@ export default function TreasureChest({ results, onClaim }) {
       )}
 
       {chestState === 'shaking' && (
-        <div className="relative z-10 flex flex-col items-center text-center space-y-6">
+        <div className="relative z-10 flex flex-col items-center text-center gap-y-6">
           <h2 className="text-xl font-black text-amber-400 animate-pulse uppercase tracking-widest">
             Unlocking ancient seals...
           </h2>
@@ -86,7 +86,7 @@ export default function TreasureChest({ results, onClaim }) {
           <div className="my-8 animate-[bounce_0.3s_infinite]">
             {/* Locked Chest Shaking SVG */}
             <svg 
-              className="w-48 h-48 text-amber-500 drop-shadow-[0_10px_20px_rgba(245,158,11,0.4)]"
+              className="size-48 text-amber-500 drop-shadow-[0_10px_20px_rgba(245,158,11,0.4)]"
               fill="none" 
               viewBox="0 0 24 24" 
               stroke="currentColor" 
@@ -102,7 +102,7 @@ export default function TreasureChest({ results, onClaim }) {
       )}
 
       {chestState === 'open' && (
-        <div className="relative z-10 flex flex-col items-center text-center space-y-6 max-w-sm animate-[scale-up_0.5s_ease-out]">
+        <div className="relative z-10 flex flex-col items-center text-center gap-y-6 max-w-sm animate-[scale-up_0.5s_ease-out]">
           {/* Confetti / Particle effect container */}
           <div className="absolute top-0 inset-x-0 flex justify-center pointer-events-none">
             <span className="text-3xl animate-ping opacity-60">✨</span>
@@ -124,7 +124,7 @@ export default function TreasureChest({ results, onClaim }) {
           <div className="my-4 relative scale-110">
             <div className="absolute -inset-6 rounded-full bg-amber-400/20 blur-2xl animate-pulse" />
             <svg 
-              className="w-48 h-48 text-amber-400 drop-shadow-[0_15px_30px_rgba(245,158,11,0.5)]"
+              className="size-48 text-amber-400 drop-shadow-[0_15px_30px_rgba(245,158,11,0.5)]"
               fill="none" 
               viewBox="0 0 24 24" 
               stroke="currentColor" 
@@ -146,7 +146,7 @@ export default function TreasureChest({ results, onClaim }) {
             <div className="flex items-center justify-between text-sm font-black border-b border-slate-800 pb-2">
               <span className="text-slate-400">Total XP Gained</span>
               <span className="text-white flex items-center gap-1">
-                <Trophy className="h-4 w-4 text-amber-500" />
+                <Trophy className="size-4 text-amber-500" />
                 +{xpEarned} XP
               </span>
             </div>
@@ -154,15 +154,15 @@ export default function TreasureChest({ results, onClaim }) {
             <div className="flex items-center justify-between text-sm font-black border-b border-slate-800 pb-2">
               <span className="text-slate-400">Total Coins Earned</span>
               <span className="text-yellow-400 flex items-center gap-1">
-                <Coins className="h-4 w-4" />
+                <Coins className="size-4" />
                 +{coinsEarned} Coins
               </span>
             </div>
 
             {badgeUnlocked && (
               <div className="flex items-center gap-3 bg-indigo-950/30 border border-indigo-500/20 rounded-xl p-3 text-left">
-                <div className="h-10 w-10 rounded-lg bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center shrink-0">
-                  <Award className="h-5 w-5 text-indigo-400" />
+                <div className="size-10 rounded-lg bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center shrink-0">
+                  <Award className="size-5 text-indigo-400" />
                 </div>
                 <div>
                   <p className="text-[10px] font-black uppercase text-indigo-400">Badge Earned</p>
@@ -176,7 +176,7 @@ export default function TreasureChest({ results, onClaim }) {
             onClick={onClaim}
             className="w-full flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-6 py-4 text-sm font-black text-white hover:bg-indigo-500 shadow-xl shadow-indigo-500/20 transition"
           >
-            Claim Loot & Exit <ChevronRight className="h-4 w-4" />
+            Claim Loot & Exit <ChevronRight className="size-4" />
           </button>
         </div>
       )}

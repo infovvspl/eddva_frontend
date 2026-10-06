@@ -113,7 +113,7 @@ export default function Feedback() {
           ) : (
             <div className="flex-1 rounded-2xl border border-blue-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
               <div className="mb-4 flex items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                <div className="flex size-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
                   <Lightbulb size={20} />
                 </div>
                 <div>

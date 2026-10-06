@@ -5,6 +5,7 @@ import {
   Layout, Calendar, Mail, Phone, Clock, CheckCircle, AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { useTeacherDetail } from "@/hooks/use-admin";
 
 const statusColors: Record<string, string> = {
@@ -144,39 +145,39 @@ const TeacherDetailPage = () => {
             <p className="text-sm">No batches assigned yet.</p>
           </div>
         ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border bg-secondary/50">
-                <th className="text-left p-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Batch Name</th>
-                <th className="text-left p-4 text-xs font-bold uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Exam</th>
-                <th className="text-left p-4 text-xs font-bold uppercase tracking-wider text-muted-foreground hidden md:table-cell">Class</th>
-                <th className="text-left p-4 text-xs font-bold uppercase tracking-wider text-muted-foreground hidden lg:table-cell">Duration</th>
-                <th className="text-left p-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Status</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="w-full">
+            <TableHeader>
+              <TableRow className="border-b border-border bg-secondary/50 hover:bg-secondary/50">
+                <TableHead className="h-auto text-left p-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Batch Name</TableHead>
+                <TableHead className="h-auto text-left p-4 text-xs font-bold uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Exam</TableHead>
+                <TableHead className="h-auto text-left p-4 text-xs font-bold uppercase tracking-wider text-muted-foreground hidden md:table-cell">Class</TableHead>
+                <TableHead className="h-auto text-left p-4 text-xs font-bold uppercase tracking-wider text-muted-foreground hidden lg:table-cell">Duration</TableHead>
+                <TableHead className="h-auto text-left p-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {batches.map((b) => (
-                <tr key={b.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
-                  <td className="p-4">
+                <TableRow key={b.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
+                  <TableCell className="p-4">
                     <span className="text-sm font-medium text-foreground">{b.name}</span>
-                  </td>
-                  <td className="p-4 text-sm text-muted-foreground hidden sm:table-cell uppercase">{b.examTarget}</td>
-                  <td className="p-4 text-sm text-muted-foreground hidden md:table-cell">{b.class}</td>
-                  <td className="p-4 text-sm text-muted-foreground hidden lg:table-cell">
+                  </TableCell>
+                  <TableCell className="p-4 text-sm text-muted-foreground hidden sm:table-cell uppercase">{b.examTarget}</TableCell>
+                  <TableCell className="p-4 text-sm text-muted-foreground hidden md:table-cell">{b.class}</TableCell>
+                  <TableCell className="p-4 text-sm text-muted-foreground hidden lg:table-cell">
                     {b.startDate && b.endDate
                       ? `${new Date(b.startDate).toLocaleDateString("en-IN", { month: "short", year: "numeric" })} — ${new Date(b.endDate).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}`
                       : "—"
                     }
-                  </td>
-                  <td className="p-4">
+                  </TableCell>
+                  <TableCell className="p-4">
                     <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${batchStatusColors[b.status] || batchStatusColors.inactive}`}>
                       {b.status}
                     </span>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
       </div>
     </motion.div>

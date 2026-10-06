@@ -104,6 +104,7 @@ function parseAiAnswer(raw: string | null | undefined): AiAnswerStructured | nul
 
 import { formatMarkdown } from "@/components/shared/MarkdownRenderer";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog";
 import { isAnswerPlaceholder } from '@/lib/doubt-answer';
 
 
@@ -474,41 +475,39 @@ function DoubtDetailPanel({ doubt, onRefresh, onDelete }: { doubt: Doubt; onRefr
       </div>
 
       {/* ── Delete Confirmation Dialog ── */}
-      {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-background border border-border rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-950/40 flex items-center justify-center shrink-0">
-                <Trash2 className="w-5 h-5 text-red-600" />
-              </div>
-              <div>
-                <p className="font-semibold text-foreground">Delete this doubt?</p>
-                <p className="text-xs text-muted-foreground">This action cannot be undone.</p>
-              </div>
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent className="max-w-sm rounded-2xl p-6">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-950/40 flex items-center justify-center shrink-0">
+              <Trash2 className="w-5 h-5 text-red-600" />
             </div>
-            <p className="text-sm text-muted-foreground mb-5">
-              The doubt from <span className="font-medium text-foreground">{name}</span> will be permanently removed.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setConfirmDelete(false)}
-                disabled={deleteM.isPending}
-                className="flex-1 py-2 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteConfirmed}
-                disabled={deleteM.isPending}
-                className="flex-1 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-              >
-                {deleteM.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                {deleteM.isPending ? "Deleting…" : "Yes, Delete"}
-              </button>
+            <div>
+              <AlertDialogTitle className="font-semibold text-foreground">Delete this doubt?</AlertDialogTitle>
+              <p className="text-xs text-muted-foreground">This action cannot be undone.</p>
             </div>
           </div>
-        </div>
-      )}
+          <AlertDialogDescription className="text-sm text-muted-foreground mb-5">
+            The doubt from <span className="font-medium text-foreground">{name}</span> will be permanently removed.
+          </AlertDialogDescription>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setConfirmDelete(false)}
+              disabled={deleteM.isPending}
+              className="flex-1 py-2 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeleteConfirmed}
+              disabled={deleteM.isPending}
+              className="flex-1 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+            >
+              {deleteM.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+              {deleteM.isPending ? "Deleting…" : "Yes, Delete"}
+            </button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div className="flex-1 px-4 py-4 md:px-6 md:py-5 space-y-5">
 

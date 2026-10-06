@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useAuthStore } from "@/lib/auth-store";
 import type { UserRole } from "@/lib/types";
 import {
   Brain, Swords, Video, BarChart, MessageSquare, Sparkles,
   Users, BookOpen, GraduationCap, Trophy, CheckCircle2,
-  ArrowRight, X, Zap, Shield, Star, Rocket, Check,
+  ArrowRight, Zap, Shield, Star, Rocket, Check,
 } from "lucide-react";
 
 // ─── Tour step: welcome hero (no feature cards — those are in Features step) ──
@@ -274,21 +275,9 @@ export function WelcomeWalkthrough({ onDone }: Props) {
   const isLast = step === totalSteps - 1;
 
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <motion.div
-        initial={{ scale: 0.96, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.96, opacity: 0 }}
-        transition={{ duration: 0.2 }}
-        className="relative bg-background border border-border rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden"
-      >
-        <button
-          onClick={onDone}
-          className="absolute top-4 right-4 z-10 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-          title="Skip tour"
-        >
-          <X className="w-4 h-4" />
-        </button>
+    <Dialog open onOpenChange={(o) => { if (!o) onDone(); }}>
+      <DialogContent className="max-w-2xl p-0 overflow-hidden">
+        <DialogTitle className="sr-only">Welcome Tour</DialogTitle>
 
         {/* Step content */}
         <div className="p-8 pb-4 min-h-[420px] flex items-center justify-center overflow-hidden">
@@ -344,7 +333,7 @@ export function WelcomeWalkthrough({ onDone }: Props) {
             </button>
           </div>
         </div>
-      </motion.div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

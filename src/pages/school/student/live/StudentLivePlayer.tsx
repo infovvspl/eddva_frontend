@@ -22,11 +22,13 @@ import {
 } from '@/lib/api/school-live';
 import FloatingReactionLayer, { useFloatingReactions } from '@/components/school/live/FloatingReaction';
 import api, { unwrapSchoolData } from '@/lib/api/school-client';
+import { useConfirm } from '@/context/ConfirmContext';
 
 type Phase = 'waiting' | 'live' | 'ended';
 
 export default function StudentLivePlayer() {
   const navigate = useNavigate();
+  const confirm = useConfirm();
   const { id } = useParams<{ id: string }>();
   const { user } = useAuthStore();
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -133,8 +135,9 @@ export default function StudentLivePlayer() {
     toast.success("Notes downloaded successfully!");
   };
 
-  const clearNotes = () => {
-    if (window.confirm("Are you sure you want to clear your notes?")) {
+  const clearNotes = async () => {
+    const ok = await confirm({ title: 'Clear Notes', message: "Are you sure you want to clear your notes?" });
+    if (ok) {
       setNotes('');
       if (id) {
         localStorage.removeItem(`student_notes_${id}`);
@@ -461,9 +464,10 @@ export default function StudentLivePlayer() {
     }
   };
 
-  const handleNavClick = (path: string) => {
+  const handleNavClick = async (path: string) => {
     if (phase === 'live') {
-      if (window.confirm("Leaving this page will disconnect you from the live class. Continue?")) {
+      const ok = await confirm({ title: 'Leave Live Class', message: "Leaving this page will disconnect you from the live class. Continue?" });
+      if (ok) {
         navigate(path);
       }
     } else {
@@ -479,9 +483,9 @@ export default function StudentLivePlayer() {
           <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => handleNavClick('/school/student/live-classes')}
-              className="h-9 w-9 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center justify-center transition-colors text-slate-400 hover:text-slate-700"
+              className="size-9 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center justify-center transition-colors text-slate-400 hover:text-slate-700"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="size-4" />
             </button>
             <div className="min-w-0">
               <h2 className="text-[15px] font-black text-slate-900 truncate">{lectureTitle || 'Live Class'}</h2>
@@ -501,13 +505,13 @@ export default function StudentLivePlayer() {
               }`}
               title={isRightPanelOpen ? 'Hide Right Panel' : 'Show Right Panel'}
             >
-              <MessageSquare className="h-4 w-4" />
+              <MessageSquare className="size-4" />
               <span>{isRightPanelOpen ? 'Hide Panel' : 'Show Panel'}</span>
             </button>
 
             {phase === 'live' ? (
               <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500 text-white shadow-md shadow-emerald-500/10 text-[13px] font-black uppercase tracking-wider">
-                <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                <span className="size-2 rounded-full bg-white animate-pulse" />
                 LIVE
               </span>
             ) : (
@@ -517,7 +521,7 @@ export default function StudentLivePlayer() {
             )}
             
             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200">
-              <Users className="h-3.5 w-3.5 text-slate-400" />
+              <Users className="size-3.5 text-slate-400" />
               <span className="text-[13px] font-mono font-bold text-slate-700">{viewerCount}</span>
             </div>
 
@@ -525,7 +529,7 @@ export default function StudentLivePlayer() {
               onClick={() => handleNavClick('/school/student/live-classes')}
               className="rounded-xl border border-rose-200 hover:border-rose-300 bg-rose-50 hover:bg-rose-100/55 px-5 py-2.5 text-[13px] font-black text-rose-600 transition flex items-center gap-1.5"
             >
-              <LogOut className="h-3.5 w-3.5" /> Leave
+              <LogOut className="size-3.5" /> Leave
             </button>
           </div>
         </header>
@@ -535,9 +539,9 @@ export default function StudentLivePlayer() {
           <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
             <button
               onClick={() => handleNavClick('/school/student/live-classes')}
-              className="h-9 w-9 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center justify-center transition-colors text-slate-400 hover:text-slate-700 shrink-0"
+              className="size-9 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center justify-center transition-colors text-slate-400 hover:text-slate-700 shrink-0"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="size-4" />
             </button>
             <div className="min-w-0 flex-1">
               <h2 className="text-[14px] font-black text-slate-900 truncate">{lectureTitle || 'Live Class'}</h2>
@@ -548,7 +552,7 @@ export default function StudentLivePlayer() {
             {/* Single Status Badge */}
             {phase === 'live' ? (
               <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500 text-white text-[11px] font-black uppercase tracking-wider">
-                <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                <span className="size-1.5 rounded-full bg-white animate-pulse" />
                 LIVE
               </span>
             ) : (
@@ -566,17 +570,17 @@ export default function StudentLivePlayer() {
                   : 'bg-white border-slate-200 text-slate-600'
               }`}
             >
-              <MessageSquare className="h-4 w-4 shrink-0" />
+              <MessageSquare className="size-4 shrink-0" />
               <span>Panel</span>
             </button>
 
             {/* Leave button - icon-only on mobile */}
             <button
               onClick={() => handleNavClick('/school/student/live-classes')}
-              className="h-9 w-9 flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 transition shrink-0"
+              className="size-9 flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 transition shrink-0"
               title="Leave Class"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="size-4" />
             </button>
           </div>
         </header>
@@ -593,7 +597,7 @@ export default function StudentLivePlayer() {
               
               <video
                 ref={videoRef}
-                className="h-full w-full object-contain"
+                className="size-full object-contain"
                 playsInline
                 autoPlay
                 muted
@@ -612,7 +616,7 @@ export default function StudentLivePlayer() {
               {phase === 'live' && buffering && (
                 <div className="pointer-events-none absolute inset-0 grid place-items-center bg-slate-950/70 text-center">
                   <div className="text-white/80">
-                    <Wifi className="mx-auto mb-3 h-9 w-9 animate-pulse text-blue-400" />
+                    <Wifi className="mx-auto mb-3 size-9 animate-pulse text-blue-400" />
                     <p className="text-[13px] font-bold">Connecting to live feed…</p>
                     <p className="text-[13px] text-white/40">Buffering the teacher's stream — please wait.</p>
                   </div>
@@ -623,7 +627,7 @@ export default function StudentLivePlayer() {
                 <div className="absolute inset-0 grid place-items-center bg-slate-950 text-center">
                   {phase === 'waiting' ? (
                     <div className="text-white/85">
-                      <Wifi className="mx-auto mb-3 h-10 w-10 animate-pulse text-blue-400" />
+                      <Wifi className="mx-auto mb-3 size-10 animate-pulse text-blue-400" />
                       <p className="text-[13px] font-bold">Waiting for stream…</p>
                       <p className="text-[13px] text-white/40">The class will start automatically when the teacher goes live.</p>
                     </div>
@@ -637,11 +641,11 @@ export default function StudentLivePlayer() {
                           rel="noreferrer"
                           className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-[13px] font-black text-white shadow-lg hover:bg-blue-700 transition"
                         >
-                          <PlayCircle className="h-4 w-4" /> Watch Recording
+                          <PlayCircle className="size-4" /> Watch Recording
                         </a>
                       ) : (
                         <p className="flex items-center gap-2 text-[13px] text-white/40">
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <Loader2 className="size-3.5 animate-spin" />
                           Recording is generating…
                         </p>
                       )}
@@ -652,8 +656,8 @@ export default function StudentLivePlayer() {
 
               {phase === 'live' && (
                 <>
-                  <button onClick={fullscreen} className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-lg bg-black/40 text-white hover:bg-black/60 backdrop-blur-xs transition">
-                    <Maximize className="h-4 w-4" />
+                  <button onClick={fullscreen} className="absolute right-4 top-4 grid size-8 place-items-center rounded-lg bg-black/40 text-white hover:bg-black/60 backdrop-blur-xs transition">
+                    <Maximize className="size-4" />
                   </button>
 
                   {/* Quality selector */}
@@ -663,7 +667,7 @@ export default function StudentLivePlayer() {
                         onClick={() => setShowQualityMenu((v) => !v)}
                         className="h-8 px-2.5 rounded-lg bg-black/40 text-white text-[10px] font-black hover:bg-black/60 backdrop-blur-xs transition flex items-center gap-1"
                       >
-                        <Settings2 className="h-3 w-3" />
+                        <Settings2 className="size-3" />
                         {selectedQuality}
                       </button>
                       {showQualityMenu && (
@@ -691,7 +695,7 @@ export default function StudentLivePlayer() {
                       onClick={jumpToLive}
                       className="absolute bottom-4 right-4 inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-3.5 py-1.5 text-[13px] font-black text-white shadow-lg hover:bg-blue-700 transition animate-pulse"
                     >
-                      <Radio className="h-3 w-3" /> Jump to Live
+                      <Radio className="size-3" /> Jump to Live
                     </button>
                   )}
                 </>
@@ -709,7 +713,7 @@ export default function StudentLivePlayer() {
                       : 'bg-slate-100 hover:bg-slate-200/80 text-slate-700'
                   }`}
                 >
-                  <Hand className="h-4 w-4" />
+                  <Hand className="size-4" />
                   {handRaised ? 'Hand Raised ✋' : 'Raise Hand'}
                 </button>
 
@@ -726,7 +730,7 @@ export default function StudentLivePlayer() {
                   }`}
                   title={questionsActive ? "Ask Question" : "Q&A session is inactive"}
                 >
-                  <HelpCircle className="h-4 w-4" />
+                  <HelpCircle className="size-4" />
                   Ask Question
                 </button>
               </div>
@@ -737,7 +741,7 @@ export default function StudentLivePlayer() {
                   <button
                     key={emoji}
                     onClick={() => socketRef.current?.emit('reaction', { emoji })}
-                    className="grid h-10 w-10 place-items-center rounded-xl text-xl transition hover:scale-125 hover:bg-slate-100"
+                    className="grid size-10 place-items-center rounded-xl text-xl transition hover:scale-125 hover:bg-slate-100"
                   >
                     {emoji}
                   </button>
@@ -750,22 +754,22 @@ export default function StudentLivePlayer() {
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={toggleHand}
-                  className={`h-10 w-10 flex items-center justify-center rounded-xl transition-all ${
+                  className={`size-10 flex items-center justify-center rounded-xl transition-all ${
                     handRaised
                       ? 'bg-amber-500 text-white shadow-md shadow-amber-500/10'
                       : 'bg-slate-100 hover:bg-slate-200/80 text-slate-700'
                   }`}
                   title={handRaised ? 'Hand Raised ✋' : 'Raise Hand'}
                 >
-                  <Hand className="h-5 w-5" />
+                  <Hand className="size-5" />
                 </button>
 
                 <button
                   onClick={() => setShowAskModal(true)}
-                  className="h-10 w-10 flex items-center justify-center rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition shadow-md shadow-blue-600/10"
+                  className="size-10 flex items-center justify-center rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition shadow-md shadow-blue-600/10"
                   title="Ask Question"
                 >
-                  <HelpCircle className="h-5 w-5" />
+                  <HelpCircle className="size-5" />
                 </button>
               </div>
 
@@ -775,7 +779,7 @@ export default function StudentLivePlayer() {
                   <button
                     key={emoji}
                     onClick={() => socketRef.current?.emit('reaction', { emoji })}
-                    className="grid h-9 w-9 place-items-center rounded-lg text-lg transition active:scale-125 hover:bg-slate-100"
+                    className="grid size-9 place-items-center rounded-lg text-lg transition active:scale-125 hover:bg-slate-100"
                   >
                     {emoji}
                   </button>
@@ -818,7 +822,7 @@ export default function StudentLivePlayer() {
                >
                  Questions
                  {questions.filter((q) => !q.answer).length > 0 && (
-                   <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                   <span className="absolute top-1 right-1 size-1.5 rounded-full bg-amber-500 animate-pulse" />
                  )}
                </button>
                <button
@@ -841,17 +845,17 @@ export default function StudentLivePlayer() {
                >
                  Polls
                  {activePoll && (
-                   <span className="absolute top-1.5 right-2 h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                   <span className="absolute top-1.5 right-2 size-1.5 rounded-full bg-emerald-500 animate-pulse" />
                  )}
                </button>
  
                {/* Mobile Close Button */}
                <button
                  onClick={() => setIsRightPanelOpen(false)}
-                 className="lg:hidden h-9 w-9 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition active:scale-95 shrink-0"
+                 className="lg:hidden size-9 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition active:scale-95 shrink-0"
                  title="Close Panel"
                >
-                 <X className="h-4 w-4" />
+                 <X className="size-4" />
                </button>
              </div>
 
@@ -912,7 +916,7 @@ export default function StudentLivePlayer() {
                   <div className="flex-1 overflow-y-auto space-y-3 pr-1">
                     {questions.length === 0 ? (
                       <div className="py-12 text-center text-slate-400 bg-white border border-slate-250/20 rounded-2xl p-4">
-                        <HelpCircle className="h-8 w-8 mx-auto mb-2 text-slate-350" />
+                        <HelpCircle className="size-8 mx-auto mb-2 text-slate-350" />
                         <p className="text-[13px] font-bold text-slate-500">No questions yet</p>
                         <p className="text-[12px] text-slate-400 mt-0.5">Submitted questions and answers will appear here.</p>
                       </div>
@@ -944,7 +948,7 @@ export default function StudentLivePlayer() {
                               </div>
                             ) : (
                               <div className="text-[12px] text-slate-400 italic font-semibold flex items-center gap-1.5">
-                                <span className="h-1.5 w-1.5 rounded-full bg-slate-350 animate-pulse" />
+                                <span className="size-1.5 rounded-full bg-slate-350 animate-pulse" />
                                 Waiting for teacher's response...
                               </div>
                             )}
@@ -961,8 +965,8 @@ export default function StudentLivePlayer() {
                 <div className="flex flex-1 flex-col overflow-hidden min-h-0 bg-slate-50/50">
                   {pinnedAnnouncement && (
                     <div className="m-3 p-3 bg-blue-50/80 border border-blue-100 rounded-2xl flex items-start gap-2.5 relative shadow-xs animate-fade-in shrink-0">
-                      <div className="h-6 w-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-                        <Volume2 className="h-3.5 w-3.5" />
+                      <div className="size-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                        <Volume2 className="size-3.5" />
                       </div>
                       <div className="flex-1 min-w-0">
                          <span className="text-[13px] font-black uppercase tracking-wider text-blue-600 block">Pinned Announcement</span>
@@ -1019,9 +1023,9 @@ export default function StudentLivePlayer() {
                       <button
                         onClick={send}
                         disabled={cooldown > 0 || !draft.trim()}
-                        className="h-10 w-10 shrink-0 bg-blue-600 text-white rounded-xl flex items-center justify-center hover:bg-blue-700 transition disabled:opacity-50 active:scale-95 shadow-md"
+                        className="size-10 shrink-0 bg-blue-600 text-white rounded-xl flex items-center justify-center hover:bg-blue-700 transition disabled:opacity-50 active:scale-95 shadow-md"
                       >
-                        <Send className="h-4 w-4" />
+                        <Send className="size-4" />
                       </button>
                     </div>
                   </div>
@@ -1033,7 +1037,7 @@ export default function StudentLivePlayer() {
                 <div className="p-4 flex-1 flex flex-col min-h-0 bg-slate-50/50">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-[13px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                      <FileText className="h-3.5 w-3.5 text-blue-600" />
+                      <FileText className="size-3.5 text-blue-600" />
                       Digital Notepad
                     </h4>
                     <span className="text-[13px] font-semibold text-slate-400">Auto-saved</span>
@@ -1051,14 +1055,14 @@ export default function StudentLivePlayer() {
                       onClick={downloadNotes}
                       className="flex-1 py-2 px-3 rounded-lg bg-blue-50 hover:bg-blue-100/80 text-blue-700 text-[13px] font-bold transition flex items-center justify-center gap-1.5"
                     >
-                      <Download className="h-3.5 w-3.5" />
+                      <Download className="size-3.5" />
                       Download
                     </button>
                     <button
                       onClick={clearNotes}
                       className="py-2 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-[13px] font-bold transition flex items-center justify-center gap-1.5"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="size-3.5" />
                       Clear
                     </button>
                   </div>
@@ -1138,7 +1142,7 @@ export default function StudentLivePlayer() {
                     </div>
                   ) : (
                     <div className="py-12 text-center text-slate-400">
-                      <HelpCircle className="h-10 w-10 mx-auto mb-2 text-slate-300" />
+                      <HelpCircle className="size-10 mx-auto mb-2 text-slate-300" />
                       <p className="text-[13px] font-bold">No polls completed yet.</p>
                     </div>
                   )}
@@ -1160,7 +1164,7 @@ export default function StudentLivePlayer() {
                 onClick={() => setShowAskModal(false)}
                 className="text-slate-400 hover:bg-slate-50 p-1.5 rounded-xl transition"
               >
-                <X className="h-5 w-5" />
+                <X className="size-5" />
               </button>
             </div>
             <p className="mb-4 text-[13px] font-semibold text-slate-400">Your question will be posted directly to the live stream chat for the teacher to view.</p>
@@ -1198,13 +1202,13 @@ export default function StudentLivePlayer() {
           <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
             <div className="mb-4 flex items-center justify-between">
               <span className="inline-flex items-center gap-1.5 text-[13px] font-black uppercase tracking-wider text-emerald-600">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" /> Live Poll
+                <span className="size-2.5 rounded-full bg-emerald-500 animate-pulse" /> Live Poll
               </span>
               <button
                 onClick={() => setShowPollPopup(false)}
                 className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-50 transition"
               >
-                <X className="h-4 w-4" />
+                <X className="size-4" />
               </button>
             </div>
             

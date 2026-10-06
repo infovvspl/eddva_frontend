@@ -36,6 +36,9 @@ import { formatTenantUrl } from '@/lib/school/tenantRedirect';
 import { AI_FEATURES } from '@/lib/constants/aiFeatures';
 import { useConfirm } from '@/context/ConfirmContext';
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
 function getPaginationWindowSize() {
   if (typeof window === 'undefined') return 7;
@@ -47,15 +50,18 @@ function getPaginationWindowSize() {
 
 const BoardBadge = ({ board }) => {
   const colors = {
-    CBSE: 'bg-blue-100 text-blue-800',
-    ICSE: 'bg-green-100 text-green-800',
-    STATE: 'bg-gray-100 text-gray-800',
-    IB: 'bg-purple-100 text-purple-800',
+    CBSE: 'bg-blue-100 text-blue-800 hover:bg-blue-100',
+    ICSE: 'bg-green-100 text-green-800 hover:bg-green-100',
+    STATE: 'bg-gray-100 text-gray-800 hover:bg-gray-100',
+    IB: 'bg-purple-100 text-purple-800 hover:bg-purple-100',
   };
   return (
-    <span className={`px-2 py-0.5 rounded text-xs font-medium ${colors[board] || 'bg-gray-100 text-gray-600'}`}>
+    <Badge
+      variant="secondary"
+      className={cn('rounded text-xs font-medium border-transparent', colors[board] || 'bg-gray-100 text-gray-600 hover:bg-gray-100')}
+    >
       {board || '—'}
-    </span>
+    </Badge>
   );
 };
 
@@ -74,19 +80,19 @@ const StatusBadgeCustom = ({ status, isSuspended }) => {
 
   if (isSup) return (
     <span className="flex items-center gap-1 text-xs text-red-600">
-      <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block"/>
+      <span className="size-1.5 rounded-full bg-red-500 inline-block"/>
       Suspended
     </span>
   );
   if (isTrial) return (
     <span className="flex items-center gap-1 text-xs text-amber-600">
-      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block"/>
+      <span className="size-1.5 rounded-full bg-amber-500 inline-block"/>
       Trial
     </span>
   );
   return (
     <span className="flex items-center gap-1 text-xs text-green-600">
-      <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block"/>
+      <span className="size-1.5 rounded-full bg-green-500 inline-block"/>
       Active
     </span>
   );
@@ -115,7 +121,7 @@ const Toggle = ({ enabled, onChange, disabled, size = 'md' }) => {
       onClick={() => !disabled && onChange(!enabled)}
       className={`relative inline-flex items-center rounded-full transition-colors duration-200 focus:outline-none shrink-0 ${size === 'sm' ? 'w-8 h-4' : 'w-11 h-6'} ${enabled ? 'bg-blue-600' : 'bg-surface-200'} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
     >
-      <span className={`inline-block rounded-full bg-white shadow transform transition-transform duration-200 ${size === 'sm' ? 'w-3 h-3' : 'w-4 h-4'} ${enabled ? (size === 'sm' ? 'translate-x-4' : 'translate-x-6') : 'translate-x-1'}`} />
+      <span className={`inline-block rounded-full bg-white shadow transform transition-transform duration-200 ${size === 'sm' ? 'size-3' : 'size-4'} ${enabled ? (size === 'sm' ? 'translate-x-4' : 'translate-x-6') : 'translate-x-1'}`} />
     </button>
   );
 };
@@ -706,12 +712,12 @@ export default function Institutes() {
         <div className="shrink-0">
           {/* Desktop Add button */}
           <button onClick={() => navigate('/school/super-admin/institutes/new')} className="hidden sm:inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg hover:bg-indigo-700 transition-colors">
-            <Plus className="h-4 w-4" />
+            <Plus className="size-4" />
             Add School
           </button>
           {/* Mobile Add button: small icon button only */}
-          <button onClick={() => navigate('/school/super-admin/institutes/new')} className="inline-flex sm:hidden items-center justify-center h-10 w-10 rounded-xl bg-indigo-600 text-white shadow-md hover:bg-indigo-700 active:scale-95 transition-all">
-            <Plus className="h-5 w-5" />
+          <button onClick={() => navigate('/school/super-admin/institutes/new')} className="inline-flex sm:hidden items-center justify-center size-10 rounded-xl bg-indigo-600 text-white shadow-md hover:bg-indigo-700 active:scale-95 transition-all">
+            <Plus className="size-5" />
           </button>
         </div>
       </div>
@@ -728,7 +734,7 @@ export default function Institutes() {
 
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative min-w-0 flex-1 sm:max-w-xs">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-surface-400" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -747,7 +753,7 @@ export default function Institutes() {
             { value: "IB", label: "IB" },
           ]}
           className="w-full sm:w-48"
-          triggerClassName="flex h-full w-full items-center justify-between gap-2 px-4 py-2.5 rounded-lg border border-surface-200 bg-white text-sm font-medium outline-none hover:bg-slate-50 focus:border-brand-300 focus:ring-4 focus:ring-brand-100 transition"
+          triggerClassName="flex size-full items-center justify-between gap-2 px-4 py-2.5 rounded-lg border border-surface-200 bg-white text-sm font-medium outline-none hover:bg-slate-50 focus:border-brand-300 focus:ring-4 focus:ring-brand-100 transition"
         />
         <CustomSelect
           value={statusFilter}
@@ -759,48 +765,48 @@ export default function Institutes() {
             { value: "suspended", label: "Suspended" },
           ]}
           className="w-full sm:w-48"
-          triggerClassName="flex h-full w-full items-center justify-between gap-2 px-4 py-2.5 rounded-lg border border-surface-200 bg-white text-sm font-medium outline-none hover:bg-slate-50 focus:border-brand-300 focus:ring-4 focus:ring-brand-100 transition"
+          triggerClassName="flex size-full items-center justify-between gap-2 px-4 py-2.5 rounded-lg border border-surface-200 bg-white text-sm font-medium outline-none hover:bg-slate-50 focus:border-brand-300 focus:ring-4 focus:ring-brand-100 transition"
         />
       </div>
 
       <div className="glass-panel overflow-hidden rounded-lg shadow-soft">
         {/* Desktop View */}
         <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-surface-50 text-xs font-bold uppercase text-surface-500">
-                <th className="p-4 pl-5">School</th>
-                <th className="p-4">Board</th>
-                <th className="p-4">Contact</th>
-                <th className="p-4">Tenant</th>
-                <th className="p-4">Students</th>
-                <th className="p-4">Status</th>
-                <th className="p-4">AI</th>
-                <th className="p-4 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="w-full text-left">
+            <TableHeader>
+              <TableRow className="bg-surface-50 text-xs font-bold uppercase text-surface-500 hover:bg-surface-50 border-b-0">
+                <TableHead className="h-auto p-4 pl-5 text-surface-500">School</TableHead>
+                <TableHead className="h-auto p-4 text-surface-500">Board</TableHead>
+                <TableHead className="h-auto p-4 text-surface-500">Contact</TableHead>
+                <TableHead className="h-auto p-4 text-surface-500">Tenant</TableHead>
+                <TableHead className="h-auto p-4 text-surface-500">Students</TableHead>
+                <TableHead className="h-auto p-4 text-surface-500">Status</TableHead>
+                <TableHead className="h-auto p-4 text-surface-500">AI</TableHead>
+                <TableHead className="h-auto p-4 text-right text-surface-500">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {loading ? (
                 Array.from({ length: 5 }).map((_, index) => (
-                  <tr key={index} className="border-t border-surface-100">
-                    <td className="p-4 pl-5"><Skeleton className="h-11 w-52" /></td>
-                    <td className="p-4"><Skeleton className="h-8 w-40" /></td>
-                    <td className="p-4"><Skeleton className="h-8 w-36" /></td>
-                    <td className="p-4"><Skeleton className="h-8 w-12" /></td>
-                    <td className="p-4"><Skeleton className="h-8 w-12" /></td>
-                    <td className="p-4"><Skeleton className="ml-auto h-8 w-20" /></td>
-                  </tr>
+                  <TableRow key={index} className="border-t border-surface-100 border-b-0 hover:bg-transparent">
+                    <TableCell className="p-4 pl-5"><Skeleton className="h-11 w-52" /></TableCell>
+                    <TableCell className="p-4"><Skeleton className="h-8 w-40" /></TableCell>
+                    <TableCell className="p-4"><Skeleton className="h-8 w-36" /></TableCell>
+                    <TableCell className="p-4"><Skeleton className="h-8 w-12" /></TableCell>
+                    <TableCell className="p-4"><Skeleton className="h-8 w-12" /></TableCell>
+                    <TableCell className="p-4"><Skeleton className="ml-auto h-8 w-20" /></TableCell>
+                  </TableRow>
                 ))
               ) : filteredList.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="p-10 text-center text-sm font-semibold text-surface-500">
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan="8" className="p-10 text-center text-sm font-semibold text-surface-500">
                     No institutes match this view.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : (
                 paginatedList.map((item) => (
-                  <tr key={item.id} onClick={() => { setSelectedInstitute(item); setEditMode(false); }} className="cursor-pointer border-t border-surface-100 transition hover:bg-surface-50">
-                    <td className="p-4 pl-5">
+                  <TableRow key={item.id} onClick={() => { setSelectedInstitute(item); setEditMode(false); }} className="cursor-pointer border-t border-surface-100 border-b-0 transition hover:bg-surface-50">
+                    <TableCell className="p-4 pl-5">
                       <div className="flex items-center gap-3">
                         <SchoolLogo src={item.logo} alt={item.name} size="navbar" />
                         <div>
@@ -808,35 +814,35 @@ export default function Institutes() {
                           <p className="text-xs font-medium text-surface-500">{item.city || 'No city'}, {item.state || 'No state'}</p>
                         </div>
                       </div>
-                    </td>
-                    <td className="p-4">
+                    </TableCell>
+                    <TableCell className="p-4">
                       <BoardBadge board={item.board} />
-                    </td>
-                    <td className="p-4">
+                    </TableCell>
+                    <TableCell className="p-4">
                       <p className="text-sm font-semibold text-surface-700">{item.email}</p>
                       <p className="text-xs font-medium text-surface-500">{item.phone || 'No phone'}</p>
-                    </td>
-                    <td className="p-4 font-mono text-sm font-bold text-brand-700">{item.tenantDomain}.localhost</td>
-                    <td className="p-4 text-sm font-bold text-surface-700">
+                    </TableCell>
+                    <TableCell className="p-4 font-mono text-sm font-bold text-brand-700">{item.tenantDomain}.localhost</TableCell>
+                    <TableCell className="p-4 text-sm font-bold text-surface-700">
                       {item.studentCount ?? item.student_count ?? item._count?.users ?? 0}
                       {item.totalStudents ? (
                         <span className="ml-1 text-xs font-semibold text-surface-400">/ {item.totalStudents}</span>
                       ) : null}
-                    </td>
-                    <td className="p-4">
+                    </TableCell>
+                    <TableCell className="p-4">
                       <StatusBadgeCustom status={item.status} isSuspended={item.isSuspended} />
-                    </td>
-                    <td className="p-4">
+                    </TableCell>
+                    <TableCell className="p-4">
                       {item.aiEnabled ? (
                         <span className="flex items-center gap-1 text-xs text-blue-600 font-medium">
-                          <Sparkles className="w-3 h-3"/>
+                          <Sparkles className="size-3"/>
                           AI On
                         </span>
                       ) : (
                         <span className="text-xs text-gray-400">No AI</span>
                       )}
-                    </td>
-                    <td className="p-4 text-right">
+                    </TableCell>
+                    <TableCell className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={(event) => {
@@ -878,12 +884,12 @@ export default function Institutes() {
                           </button>
                         )}
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
 
         {/* Mobile Card View */}
@@ -917,18 +923,18 @@ export default function Institutes() {
 
                 <div className="flex flex-wrap gap-2 text-xs font-medium text-surface-500">
                   <BoardBadge board={item.board} />
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 font-mono text-brand-700 font-bold">{item.tenantDomain}.localhost</span>
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-surface-700">
+                  <Badge variant="secondary" className="rounded-full border-transparent bg-slate-100 font-mono text-brand-700 font-bold hover:bg-slate-100">{item.tenantDomain}.localhost</Badge>
+                  <Badge variant="secondary" className="rounded-full border-transparent bg-slate-100 text-surface-700 hover:bg-slate-100">
                     Students: {item.studentCount ?? item.student_count ?? item._count?.users ?? 0}
                     {item.totalStudents ? ` / ${item.totalStudents}` : ''}
-                  </span>
+                  </Badge>
                   {item.aiEnabled ? (
-                    <span className="flex items-center gap-1 text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded-full">
-                      <Sparkles className="w-3 h-3"/>
+                    <Badge variant="secondary" className="items-center gap-1 rounded-full border-transparent text-blue-600 font-medium bg-blue-50 hover:bg-blue-50">
+                      <Sparkles className="size-3"/>
                       AI On
-                    </span>
+                    </Badge>
                   ) : (
-                    <span className="bg-gray-50 px-2 py-0.5 rounded-full">No AI</span>
+                    <Badge variant="secondary" className="rounded-full border-transparent bg-gray-50 hover:bg-gray-50">No AI</Badge>
                   )}
                 </div>
 
@@ -1013,10 +1019,10 @@ export default function Institutes() {
                   type="button"
                   onClick={() => setPage((current) => Math.max(1, current - 1))}
                   disabled={page === 1}
-                  className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-surface-200 bg-white text-surface-500 transition hover:bg-surface-100 disabled:cursor-not-allowed disabled:opacity-50 sm:h-8 sm:w-8"
+                  className="grid size-7 shrink-0 place-items-center rounded-lg border border-surface-200 bg-white text-surface-500 transition hover:bg-surface-100 disabled:cursor-not-allowed disabled:opacity-50 sm:size-8"
                   aria-label="Previous schools page"
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <ChevronLeft className="size-4" />
                 </button>
                 <div className="min-w-0 max-w-full overflow-hidden">
                   <div className="flex items-center justify-center gap-1 px-1 sm:gap-1.5">
@@ -1028,7 +1034,7 @@ export default function Institutes() {
                           type="button"
                           onClick={() => setPage(pageNumber)}
                           aria-current={isActive ? 'page' : undefined}
-                          className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border text-xs font-bold transition sm:h-8 sm:w-8 ${
+                          className={`grid size-7 shrink-0 place-items-center rounded-full border text-xs font-bold transition sm:size-8 ${
                             isActive
                               ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
                               : 'border-surface-200 bg-white text-surface-600 hover:border-indigo-300 hover:text-indigo-700'
@@ -1044,10 +1050,10 @@ export default function Institutes() {
                   type="button"
                   onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
                   disabled={page === totalPages}
-                  className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-surface-200 bg-white text-surface-500 transition hover:bg-surface-100 disabled:cursor-not-allowed disabled:opacity-50 sm:h-8 sm:w-8"
+                  className="grid size-7 shrink-0 place-items-center rounded-lg border border-surface-200 bg-white text-surface-500 transition hover:bg-surface-100 disabled:cursor-not-allowed disabled:opacity-50 sm:size-8"
                   aria-label="Next schools page"
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="size-4" />
                 </button>
               </div>
             </div>
@@ -1064,7 +1070,7 @@ export default function Institutes() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', bounce: 0, duration: 0.36 }}
-              className="fixed right-0 top-0 z-50 flex h-full w-full max-w-lg flex-col border-l border-surface-200 bg-white shadow-2xl"
+              className="fixed right-0 top-0 z-50 flex size-full max-w-lg flex-col border-l border-surface-200 bg-white shadow-2xl"
             >
               <div className="flex items-center justify-between border-b border-surface-200 p-5">
                 <h2 className="font-display text-xl font-bold text-surface-950">Institute Details</h2>
@@ -1073,7 +1079,7 @@ export default function Institutes() {
                     Edit Institute
                   </button>
                   <button onClick={() => setSelectedInstitute(null)} className="rounded-lg p-2 text-surface-500 hover:bg-surface-100">
-                    <X className="h-5 w-5" />
+                    <X className="size-5" />
                   </button>
                 </div>
               </div>
@@ -1173,7 +1179,7 @@ export default function Institutes() {
                           toast.error(err.message);
                         }
                       }} />
-                      <UploadCloud className="h-5 w-5" />
+                      <UploadCloud className="size-5" />
                       Upload or replace logo
                     </label>
 
@@ -1183,7 +1189,7 @@ export default function Institutes() {
                         onClick={() => deleteInstitute(selectedInstitute.id)}
                         className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-700 hover:bg-red-100 transition-colors"
                       >
-                        <Trash2 className="h-4 w-4" /> Delete School
+                        <Trash2 className="size-4" /> Delete School
                       </button>
                       <button className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-md hover:bg-indigo-700 transition-colors disabled:opacity-60">
                         {saving ? 'Saving...' : 'Save Changes'}
@@ -1259,7 +1265,7 @@ export default function Institutes() {
                         <p className="text-xs font-bold uppercase text-surface-500">Contact</p>
                         {selectedInstitute.isSuspended || selectedInstitute.status?.toLowerCase() === 'suspended' ? (
                           <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-red-500"/>
+                            <span className="size-2 rounded-full bg-red-500"/>
                             <span className="text-sm text-red-600 font-medium">Suspended</span>
                             {selectedInstitute.suspensionReason && (
                               <span className="text-xs text-red-400">
@@ -1269,26 +1275,26 @@ export default function Institutes() {
                           </div>
                         ) : selectedInstitute.status?.toLowerCase() === 'trial' ? (
                           <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-amber-500"/>
+                            <span className="size-2 rounded-full bg-amber-500"/>
                             <span className="text-sm text-amber-600 font-medium">Trial</span>
                           </div>
                         ) : (
                           <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-green-500"/>
+                            <span className="size-2 rounded-full bg-green-500"/>
                             <span className="text-sm text-green-600 font-medium">Active</span>
                           </div>
                         )}
                       </div>
                       <div className="space-y-3 text-sm font-medium text-surface-700">
-                        <p className="flex items-center gap-3"><Mail className="h-4 w-4 text-brand-600" /> {selectedInstitute.email}</p>
-                        <p className="flex items-center gap-3"><ShieldCheck className="h-4 w-4 text-brand-600" /> {selectedInstitute.principalName || 'Principal not provided'}</p>
+                        <p className="flex items-center gap-3"><Mail className="size-4 text-brand-600" /> {selectedInstitute.email}</p>
+                        <p className="flex items-center gap-3"><ShieldCheck className="size-4 text-brand-600" /> {selectedInstitute.principalName || 'Principal not provided'}</p>
                       </div>
                     </div>
 
                     <div className="rounded-xl border border-surface-200 bg-surface-50 p-4">
                       <p className="mb-3 text-xs font-bold uppercase text-surface-500">Location</p>
                       <p className="flex gap-3 text-sm font-medium leading-6 text-surface-700">
-                        <MapPin className="mt-1 h-4 w-4 flex-shrink-0 text-brand-600" />
+                        <MapPin className="mt-1 size-4 flex-shrink-0 text-brand-600" />
                         <span>
                           {[selectedInstitute.plotNo, selectedInstitute.streetName, selectedInstitute.landMark, selectedInstitute.city, selectedInstitute.district, selectedInstitute.state, selectedInstitute.pinCode]
                             .filter(Boolean)
@@ -1322,7 +1328,7 @@ export default function Institutes() {
                               <div key={feature.key} className="flex items-center justify-between py-2">
                                 <div className="flex items-center gap-3">
                                   <div className={`p-1.5 rounded-lg ${panelAiFeatures?.[feature.key] ? 'bg-blue-100 text-blue-600' : 'bg-surface-200 text-surface-400'}`}>
-                                    <IconComp className="w-4 h-4" />
+                                    <IconComp className="size-4" />
                                   </div>
                                   <div>
                                     <p className={`text-sm font-medium ${panelAiFeatures?.[feature.key] ? 'text-surface-800' : 'text-surface-400'}`}>{feature.label}</p>
@@ -1386,7 +1392,7 @@ export default function Institutes() {
                 )}
                 <button onClick={() => openWorkspace(selectedInstitute.tenantDomain)} className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-3 font-bold text-white shadow-md hover:bg-indigo-700 transition-colors">
                   Open Workspace
-                  <ExternalLink className="h-5 w-5" />
+                  <ExternalLink className="size-5" />
                 </button>
               </div>
             </motion.aside>
@@ -1406,7 +1412,7 @@ export default function Institutes() {
                     <p className="text-sm font-medium text-surface-500">Super Admin-created schools are approved automatically.</p>
                   </div>
                   <button type="button" onClick={() => setCreateOpen(false)} className="rounded-lg p-2 text-surface-500 hover:bg-surface-100">
-                    <X className="h-5 w-5" />
+                    <X className="size-5" />
                   </button>
                 </div>
 
@@ -1416,7 +1422,7 @@ export default function Institutes() {
                       <SchoolLogo src={createForm.logo} alt={createForm.instituteName} size="dashboard" className="mx-auto" />
                       <label className="mt-4 inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-bold text-brand-700 shadow-sm">
                         <input type="file" accept="image/*" className="hidden" onChange={handleLogo} />
-                        <ImagePlus className="h-4 w-4" />
+                        <ImagePlus className="size-4" />
                         Logo
                       </label>
                     </div>
@@ -1474,7 +1480,7 @@ export default function Institutes() {
                           onClick={() => setShowPassword((v) => !v)}
                           className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors"
                         >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                         </button>
                       </div>
                       {/* Confirm Password with match indicator */}
@@ -1498,15 +1504,15 @@ export default function Institutes() {
                           onClick={() => setShowConfirmPassword((v) => !v)}
                           className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors"
                         >
-                          {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          {showConfirmPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                         </button>
                       </div>
                       {confirmPassword.length > 0 && (
                         <p className={`text-xs font-semibold flex items-center gap-1.5 col-span-2 -mt-2 ${createForm.adminPassword === confirmPassword ? 'text-emerald-600' : 'text-red-500'
                           }`}>
                           {createForm.adminPassword === confirmPassword
-                            ? <><CheckCircle className="h-3.5 w-3.5" /> Passwords match</>
-                            : <><XCircle className="h-3.5 w-3.5" /> Passwords do not match</>
+                            ? <><CheckCircle className="size-3.5" /> Passwords match</>
+                            : <><XCircle className="size-3.5" /> Passwords do not match</>
                           }
                         </p>
                       )}
@@ -1530,7 +1536,7 @@ export default function Institutes() {
 
                     <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-brand-200 bg-brand-50 p-4 text-sm font-semibold text-brand-700">
                       <input type="file" accept="image/*" className="hidden" onChange={handleLogo} />
-                      <UploadCloud className="h-5 w-5" />
+                      <UploadCloud className="size-5" />
                       Upload or replace logo
                     </label>
 
@@ -1554,7 +1560,7 @@ export default function Institutes() {
                               <div key={feature.key} className="flex items-center justify-between py-2">
                                 <div className="flex items-center gap-3">
                                   <div className={`p-1.5 rounded-lg ${createForm.aiFeatures?.[feature.key] ? 'bg-blue-100 text-blue-600' : 'bg-surface-200 text-surface-400'}`}>
-                                    <IconComp className="w-4 h-4" />
+                                    <IconComp className="size-4" />
                                   </div>
                                   <div>
                                     <p className={`text-sm font-medium ${createForm.aiFeatures?.[feature.key] ? 'text-surface-800' : 'text-surface-400'}`}>{feature.label}</p>

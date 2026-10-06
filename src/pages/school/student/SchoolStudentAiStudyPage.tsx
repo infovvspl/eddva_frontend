@@ -268,12 +268,12 @@ function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: num
         onClick={() => setOpen(v => !v)}
         className="w-full flex items-center gap-4 p-5 text-left transition-colors"
       >
-        <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200">
+        <div className="size-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200">
           <span className="text-[11px] font-semibold text-slate-500">Q{index + 1}</span>
         </div>
         <p className="text-sm sm:text-base font-semibold text-slate-900 leading-snug flex-1 truncate">{parsed.question}</p>
         <motion.div animate={{ rotate: open ? 180 : 0 }}>
-          <ChevronDown className="w-5 h-5 text-slate-400" />
+          <ChevronDown className="size-5 text-slate-400" />
         </motion.div>
       </button>
 
@@ -286,7 +286,7 @@ function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: num
             <div className="px-5 pb-6 pt-3 border-t border-slate-100 space-y-5">
               <div>
                 <p className="text-[11px] font-semibold text-indigo-700 mb-2 flex items-center gap-2">
-                  <Brain className="w-4 h-4 text-indigo-500" /> Full Question
+                  <Brain className="size-4 text-indigo-500" /> Full Question
                 </p>
                 <div className="text-sm font-semibold text-slate-800 leading-relaxed bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
                   <MarkdownRenderer content={parsed.question} />
@@ -296,7 +296,7 @@ function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: num
               {parsed.options.length > 0 && (
                 <div>
                   <p className="text-[11px] font-semibold text-blue-700 mb-2 flex items-center gap-2">
-                    <ListTodo className="w-4 h-4" /> Options
+                    <ListTodo className="size-4" /> Options
                   </p>
                   <div className="space-y-2">
                     {parsed.options.map((option, optionIndex) => (
@@ -344,7 +344,7 @@ function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: num
 
               <div>
                 <p className="text-[11px] font-semibold text-emerald-700 mb-2 flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4" /> Solution Core
+                  <CheckCircle className="size-4" /> Solution Core
                 </p>
                 <div className="text-sm font-medium text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200">
                   <MarkdownRenderer content={formatSolutionSteps(q.answer)} />
@@ -353,7 +353,7 @@ function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: num
               {q.explanation && (
                 <div>
                   <p className="text-[11px] font-semibold text-amber-600 mb-2 flex items-center gap-2">
-                    <Lightbulb className="w-4 h-4" /> Logic Synthesis
+                    <Lightbulb className="size-4" /> Logic Synthesis
                   </p>
                   <div className="text-sm font-medium text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <MarkdownRenderer content={formatSolutionSteps(q.explanation)} />
@@ -365,7 +365,7 @@ function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: num
                 onClick={(e) => { e.stopPropagation(); onAskAI(q.question); }}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-indigo-600 text-white text-xs font-semibold shadow-sm"
               >
-                <MessageSquare className="w-4 h-4" /> Ask AI for explanation
+                <MessageSquare className="size-4" /> Ask AI for explanation
               </motion.button>
             </div>
           </motion.div>
@@ -613,8 +613,8 @@ export default function SchoolStudentAiStudyPage() {
     return (
       <div className="py-20 flex flex-col items-center justify-center text-center">
         <div className="relative mb-12">
-          <div className="w-24 h-24 rounded-[2.5rem] bg-white border border-slate-100 flex items-center justify-center shadow-3xl z-10 relative">
-            <Sparkles className="w-12 h-12 text-blue-500 animate-pulse" />
+          <div className="size-24 rounded-[2.5rem] bg-white border border-slate-100 flex items-center justify-center shadow-3xl z-10 relative">
+            <Sparkles className="size-12 text-blue-500 animate-pulse" />
           </div>
           <div className="absolute inset-0 bg-blue-100 rounded-[2.5rem] animate-ping opacity-30 z-0" />
         </div>
@@ -630,8 +630,8 @@ export default function SchoolStudentAiStudyPage() {
     return (
       <div className="py-20 flex items-center justify-center text-center">
         <div className="text-center max-w-md px-10">
-          <div className="w-24 h-24 rounded-[3rem] bg-white border border-slate-100 flex items-center justify-center shadow-3xl mb-10 mx-auto">
-            <AlertTriangle className="w-10 h-10 text-red-500" />
+          <div className="size-24 rounded-[3rem] bg-white border border-slate-100 flex items-center justify-center shadow-3xl mb-10 mx-auto">
+            <AlertTriangle className="size-10 text-red-500" />
           </div>
           <h1 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter mb-4">Link Override Failure</h1>
           <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-relaxed mb-10">Neural link could not be established. Check sector connection.</p>
@@ -644,8 +644,8 @@ export default function SchoolStudentAiStudyPage() {
   if (!sessionData) return null;
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: "lesson", label: "Notes", icon: <BookOpen className="w-4 h-4" /> },
-    { id: "ask", label: "Ask AI", icon: <BrainCircuit className="w-4 h-4" /> },
+    { id: "lesson", label: "Notes", icon: <BookOpen className="size-4" /> },
+    { id: "ask", label: "Ask AI", icon: <BrainCircuit className="size-4" /> },
   ];
 
   return (
@@ -657,20 +657,20 @@ export default function SchoolStudentAiStudyPage() {
               <div className="flex items-start gap-4 sm:gap-5">
                 <button
                   onClick={() => navigate(-1)}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+                  className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
                 >
-                  <ArrowLeft className="h-5 w-5" />
+                  <ArrowLeft className="size-5" />
                 </button>
 
                 <div className="space-y-4">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-700">
-                      <Sparkles className="h-3.5 w-3.5" />
+                      <Sparkles className="size-3.5" />
                       AI Study Session
                     </span>
                     {completed && (
                       <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
-                        <CheckCircle className="h-3.5 w-3.5" />
+                        <CheckCircle className="size-3.5" />
                         Completed
                       </span>
                     )}
@@ -748,7 +748,7 @@ export default function SchoolStudentAiStudyPage() {
                       <h3 className="text-lg font-bold text-slate-900">Study toolkit</h3>
                       <p className="mt-1 text-sm text-slate-500">Keep your revision notes and highlights beside the lesson.</p>
                     </div>
-                    <Info className="h-5 w-5 text-slate-400" />
+                    <Info className="size-5 text-slate-400" />
                   </div>
 
                   <div className="mt-4 grid grid-cols-3 gap-2">
@@ -763,7 +763,7 @@ export default function SchoolStudentAiStudyPage() {
                           : "border-slate-200 bg-white text-slate-600 hover:border-amber-200 hover:bg-amber-50",
                       )}
                     >
-                      <Highlighter className="h-4 w-4" />
+                      <Highlighter className="size-4" />
                       Highlight
                     </button>
 
@@ -778,7 +778,7 @@ export default function SchoolStudentAiStudyPage() {
                           : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:bg-blue-50",
                       )}
                     >
-                      <StickyNote className="h-4 w-4" />
+                      <StickyNote className="size-4" />
                       Comment
                     </button>
 
@@ -791,7 +791,7 @@ export default function SchoolStudentAiStudyPage() {
                       }}
                       className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-xs font-semibold text-slate-600 transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
                     >
-                      <Brain className="h-4 w-4" />
+                      <Brain className="size-4" />
                       Cards
                     </button>
                   </div>
@@ -824,7 +824,7 @@ export default function SchoolStudentAiStudyPage() {
                               onMouseDown={(e) => e.preventDefault()}
                               onClick={() => setHighlightColor(color)}
                               className={cn(
-                                "h-8 w-8 rounded-full border-2 transition-transform",
+                                "size-8 rounded-full border-2 transition-transform",
                                 highlightColor === color ? "scale-110 border-slate-900" : "border-white",
                               )}
                               style={{ backgroundColor: color }}
@@ -858,7 +858,7 @@ export default function SchoolStudentAiStudyPage() {
                                   className="text-slate-600 hover:text-red-600 transition-colors p-0.5 rounded hover:bg-black/5 shrink-0"
                                   title="Delete highlight"
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <Trash2 className="size-3.5" />
                                 </button>
                               </div>
                             ))
@@ -938,7 +938,7 @@ export default function SchoolStudentAiStudyPage() {
                                   className="absolute top-2 right-2 text-slate-400 hover:text-red-500 transition-colors p-1"
                                   title="Delete comment"
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <Trash2 className="size-3.5" />
                                 </button>
                               </div>
                             ))
@@ -966,10 +966,10 @@ export default function SchoolStudentAiStudyPage() {
                       </p>
                     </div>
                     <div className={cn(
-                      "flex h-11 w-11 items-center justify-center rounded-2xl",
+                      "flex size-11 items-center justify-center rounded-2xl",
                       completed ? "bg-emerald-50 text-emerald-700" : "bg-blue-50 text-blue-700",
                     )}>
-                      {completed ? <CheckCircle className="h-5 w-5" /> : <Trophy className="h-5 w-5" />}
+                      {completed ? <CheckCircle className="size-5" /> : <Trophy className="size-5" />}
                     </div>
                   </div>
 
@@ -988,7 +988,7 @@ export default function SchoolStudentAiStudyPage() {
                         className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
                       >
                         Back to previous page
-                        <ArrowRight className="h-4 w-4" />
+                        <ArrowRight className="size-4" />
                       </button>
                     </div>
                   ) : showComplete ? (
@@ -1013,12 +1013,12 @@ export default function SchoolStudentAiStudyPage() {
                         >
                           {completeMut.isPending ? (
                             <span className="inline-flex items-center gap-2">
-                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <Loader2 className="size-4 animate-spin" />
                               Saving...
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-2">
-                              <Zap className="h-4 w-4" />
+                              <Zap className="size-4" />
                               Confirm complete
                             </span>
                           )}
@@ -1031,14 +1031,14 @@ export default function SchoolStudentAiStudyPage() {
                         onClick={() => setShowComplete(true)}
                         className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
                       >
-                        <Trophy className="h-4 w-4" />
+                        <Trophy className="size-4" />
                         Mark topic complete
                       </button>
                       <button
                         onClick={() => setActiveTab("ask")}
                         className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-200 hover:bg-blue-50"
                       >
-                        <MessageSquare className="h-4 w-4" />
+                        <MessageSquare className="size-4" />
                         Ask AI before finishing
                       </button>
                     </div>
@@ -1052,7 +1052,7 @@ export default function SchoolStudentAiStudyPage() {
                     <div className="mb-8 flex flex-col gap-5 border-b border-slate-200/80 pb-6 md:flex-row md:items-end md:justify-between">
                       <div className="space-y-3">
                         <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
-                          <BookOpen className="h-3.5 w-3.5" />
+                          <BookOpen className="size-3.5" />
                           Interactive Study Guide
                         </span>
                         <h2 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
@@ -1114,14 +1114,14 @@ export default function SchoolStudentAiStudyPage() {
                                   type="button"
                                   onClick={() => setOpenBubbleId(prev => prev === comment.id ? null : comment.id)}
                                   className={cn(
-                                    "flex h-8 w-8 items-center justify-center rounded-full border shadow-sm transition-colors",
+                                    "flex size-8 items-center justify-center rounded-full border shadow-sm transition-colors",
                                     openBubbleId === comment.id
                                       ? "border-blue-300 bg-blue-600 text-white"
                                       : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700",
                                   )}
                                   title={comment.text}
                                 >
-                                  <StickyNote className="h-4 w-4" />
+                                  <StickyNote className="size-4" />
                                 </button>
 
                                 {openBubbleId === comment.id && (
@@ -1140,7 +1140,7 @@ export default function SchoolStudentAiStudyPage() {
                                         className="text-slate-400 hover:text-red-500 transition-colors p-1"
                                         title="Delete comment"
                                       >
-                                        <Trash2 className="w-3.5 h-3.5" />
+                                        <Trash2 className="size-3.5" />
                                       </button>
                                     </div>
                                     {comment.quote && (
@@ -1173,7 +1173,7 @@ export default function SchoolStudentAiStudyPage() {
                 {sessionData.practiceQuestions.length > 0 && (
                   <div className="space-y-4">
                     <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                      <ListTodo className="w-5 h-5 text-indigo-500" /> Active Application Set
+                      <ListTodo className="size-5 text-indigo-500" /> Active Application Set
                     </h3>
                     {sessionData.practiceQuestions.map((q, idx) => (
                       <PracticeCard
@@ -1198,8 +1198,8 @@ export default function SchoolStudentAiStudyPage() {
               <CardGlass className="flex h-[600px] flex-col border-slate-200/80 bg-white/92 p-0 shadow-sm relative">
                 <div className="flex items-center justify-between border-b border-slate-200/80 px-5 py-4 shrink-0 bg-white/40">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700">
-                      <BrainCircuit className="h-5 w-5" />
+                    <div className="flex size-10 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700">
+                      <BrainCircuit className="size-5" />
                     </div>
                     <div>
                       <h3 className="text-base font-bold text-slate-900">AI Tutor</h3>
@@ -1251,7 +1251,7 @@ export default function SchoolStudentAiStudyPage() {
                   ))}
                   {askMut.isPending && (
                     <div className="mr-auto bg-slate-100 text-slate-500 rounded-2xl rounded-tl-sm px-4 py-3 text-sm font-medium flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+                      <Loader2 className="size-4 animate-spin text-slate-400" />
                       Formulating response...
                     </div>
                   )}
@@ -1292,7 +1292,7 @@ export default function SchoolStudentAiStudyPage() {
                       disabled={!chatInput.trim() || askMut.isPending}
                       className="rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white px-5 flex items-center justify-center disabled:opacity-50"
                     >
-                      <Send className="w-4 h-4" />
+                      <Send className="size-4" />
                     </motion.button>
                   </div>
                 </div>
@@ -1301,7 +1301,7 @@ export default function SchoolStudentAiStudyPage() {
               <div className="space-y-6">
                 <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
                   <h4 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
-                    <Info className="w-4 h-4 text-blue-500" /> Lesson shortcuts
+                    <Info className="size-4 text-blue-500" /> Lesson shortcuts
                   </h4>
                   <p className="text-xs text-slate-500 leading-relaxed mb-4">
                     The AI knows the full lesson context. You can click on any key concept or practice question in the toolkit below to ask for an explanation instantly.
@@ -1347,13 +1347,13 @@ export default function SchoolStudentAiStudyPage() {
                 <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
                   <div className="flex items-center justify-between gap-3 mb-4">
                     <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                      <Trophy className="w-4 h-4 text-emerald-600" /> Completion Desk
+                      <Trophy className="size-4 text-emerald-600" /> Completion Desk
                     </h4>
                   </div>
                   {completed ? (
                     <div className="space-y-3">
                       <div className="bg-emerald-50 border border-emerald-100 rounded-[1.25rem] p-3 text-xs font-semibold text-emerald-800 flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4" /> Lesson complete
+                        <CheckCircle className="size-4" /> Lesson complete
                       </div>
                       <button
                         onClick={() => navigate(-1)}
@@ -1408,12 +1408,12 @@ export default function SchoolStudentAiStudyPage() {
                     >
                       {completeMut.isPending ? (
                         <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Loader2 className="size-4 animate-spin" />
                           Saving...
                         </>
                       ) : (
                         <>
-                          <Trophy className="h-4 w-4" />
+                          <Trophy className="size-4" />
                           Mark complete
                         </>
                       )}
@@ -1452,15 +1452,15 @@ export default function SchoolStudentAiStudyPage() {
                   <button
                     type="button"
                     onClick={() => setShowFlashcards(false)}
-                    className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200"
+                    className="absolute right-4 top-4 flex size-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200"
                     title="Close"
                   >
-                    <X className="h-4 w-4" />
+                    <X className="size-4" />
                   </button>
 
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
-                      <Brain className="h-5 w-5" />
+                    <div className="flex size-10 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+                      <Brain className="size-5" />
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-slate-900">Flashcards</h3>
@@ -1518,7 +1518,7 @@ export default function SchoolStudentAiStudyPage() {
                             className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-600 disabled:opacity-40"
                           >
                             Next
-                            <ArrowRight className="h-4 w-4" />
+                            <ArrowRight className="size-4" />
                           </button>
                         </div>
 
@@ -1586,8 +1586,8 @@ export default function SchoolStudentAiStudyPage() {
               className="fixed left-1/2 top-24 z-[100] -translate-x-1/2 pointer-events-none"
             >
               <CardGlass className="flex items-center gap-6 border-amber-300 bg-amber-500 px-8 py-5 text-white shadow-[0_32px_80px_-18px_rgba(245,158,11,0.55)]">
-                <div className="flex h-14 w-14 items-center justify-center rounded-3xl border border-white/40 bg-white/20">
-                  <Trophy className="h-8 w-8" />
+                <div className="flex size-14 items-center justify-center rounded-3xl border border-white/40 bg-white/20">
+                  <Trophy className="size-8" />
                 </div>
                 <div>
                   <p className="text-3xl font-black tracking-tight">+{completeMut.data.xpEarned ?? completeMut.data.xpAwarded} XP</p>

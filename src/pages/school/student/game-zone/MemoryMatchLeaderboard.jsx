@@ -27,7 +27,7 @@ export default function MemoryMatchLeaderboard({ onBack }) {
   if (loading) {
     return (
       <div className="flex h-[40vh] flex-col items-center justify-center gap-4">
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+        <Loader2 className="size-8 animate-spin text-emerald-500" />
         <p className="text-sm font-semibold text-slate-500">Retrieving leaderboard rankings...</p>
       </div>
     );
@@ -37,8 +37,8 @@ export default function MemoryMatchLeaderboard({ onBack }) {
     <div className="space-y-6 max-w-xl mx-auto py-8">
       {/* Header */}
       <div className="text-center space-y-2">
-        <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
-          <Trophy className="h-6 w-6 animate-pulse" />
+        <div className="inline-flex size-12 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
+          <Trophy className="size-6 animate-pulse" />
         </div>
         <h1 className="text-3xl font-black text-slate-900 dark:text-white">Mind Matchers</h1>
         <p className="text-sm font-medium text-slate-500">Top scoreboard rankings for Memory Match decks.</p>
@@ -48,7 +48,7 @@ export default function MemoryMatchLeaderboard({ onBack }) {
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         {rankings.length === 0 ? (
           <div className="text-center py-10 text-slate-400">
-            <Trophy className="mx-auto h-12 w-12 opacity-30 mb-3" />
+            <Trophy className="mx-auto size-12 opacity-30 mb-3" />
             <p className="text-sm font-bold text-slate-500">No memory match scores submitted yet.</p>
             <p className="text-xs text-slate-400 mt-1">Be the first to secure a high score!</p>
           </div>
@@ -73,7 +73,7 @@ export default function MemoryMatchLeaderboard({ onBack }) {
                   className="flex items-center justify-between rounded-xl border border-slate-100 p-3.5 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-950/40 animate-fade-in"
                 >
                   <div className="flex items-center gap-3">
-                    <span className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-black shadow-sm ${
+                    <span className={`flex size-8 items-center justify-center rounded-lg text-xs font-black shadow-sm ${
                       isTop3 ? medalColors[idx] : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
                     }`}>
                       #{idx + 1}
@@ -84,7 +84,7 @@ export default function MemoryMatchLeaderboard({ onBack }) {
                         <span className="text-[10px] font-bold text-slate-400 uppercase">
                           {user.deckCategory}
                         </span>
-                        <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+                        <span className="size-1 rounded-full bg-slate-300 dark:bg-slate-700" />
                         <span className={`rounded-full px-1.5 py-0.2 text-[8px] font-black uppercase tracking-wider ${difficultyColor}`}>
                           {user.difficulty}
                         </span>
@@ -95,7 +95,7 @@ export default function MemoryMatchLeaderboard({ onBack }) {
                   <div className="flex items-center gap-4 text-right">
                     <div>
                       <p className="text-sm font-black text-slate-950 dark:text-white flex items-center gap-1 justify-end text-emerald-600 dark:text-emerald-400">
-                        <Star className="h-3.5 w-3.5 fill-current" /> {user.score} XP
+                        <Star className="size-3.5 fill-current" /> {user.score} XP
                       </p>
                       <p className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">
                         {user.turnsCount} turns • {user.mismatchesCount} misses
@@ -114,7 +114,7 @@ export default function MemoryMatchLeaderboard({ onBack }) {
           onClick={onBack}
           className="inline-flex items-center gap-1.5 text-xs font-black text-slate-505 hover:text-slate-800 dark:hover:text-white transition uppercase tracking-wider"
         >
-          <ArrowLeft className="h-3 w-3" /> Back to Game Lobby
+          <ArrowLeft className="size-3" /> Back to Game Lobby
         </button>
       </div>
     </div>

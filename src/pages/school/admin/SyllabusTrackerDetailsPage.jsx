@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 
 export default function SyllabusTrackerDetailsPage() {
   const { planId } = useParams();
@@ -44,7 +46,7 @@ export default function SyllabusTrackerDetailsPage() {
   if (loading) {
     return (
       <div className="flex h-[70vh] flex-col items-center justify-center gap-4">
-        <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+        <Loader2 className="size-10 animate-spin text-blue-600" />
         <p className="text-sm font-bold text-slate-400">Computing live dynamic syllabus metrics from DB…</p>
       </div>
     );
@@ -92,17 +94,17 @@ export default function SyllabusTrackerDetailsPage() {
   const getStatusBadge = (status) => {
     switch (status) {
       case 'Completed':
-        return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">Completed</span>;
+        return <Badge variant="secondary" className="rounded-full border-transparent text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-950">Completed</Badge>;
       case 'In Progress':
-        return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">In Progress</span>;
+        return <Badge variant="secondary" className="rounded-full border-transparent text-[10px] font-black uppercase bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-950">In Progress</Badge>;
       case 'Delayed':
-        return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300">Delayed</span>;
+        return <Badge variant="secondary" className="rounded-full border-transparent text-[10px] font-black uppercase bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-950">Delayed</Badge>;
       case 'Scheduled':
-        return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300">Scheduled</span>;
+        return <Badge variant="secondary" className="rounded-full border-transparent text-[10px] font-black uppercase bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-950">Scheduled</Badge>;
       case 'Skipped/Carried Forward':
-        return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">Skipped/Carried Forward</span>;
+        return <Badge variant="secondary" className="rounded-full border-transparent text-[10px] font-black uppercase bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-950">Skipped/Carried Forward</Badge>;
       default:
-        return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">{status}</span>;
+        return <Badge variant="secondary" className="rounded-full border-transparent text-[10px] font-black uppercase bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">{status}</Badge>;
     }
   };
 
@@ -282,70 +284,70 @@ export default function SyllabusTrackerDetailsPage() {
         {/* DYNAMIC CHAPTER / TOPIC CALCULATIONS TABLE */}
         <div className="rounded-3xl border border-slate-200 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-slate-500 font-extrabold uppercase">
-                <tr>
-                  <th className="p-4">Chapter & Topic</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4">Planned Dates</th>
-                  <th className="p-4">Actual Dates</th>
-                  <th className="p-4 text-center">Periods (Plan vs Act)</th>
-                  <th className="p-4 text-center">Progress (Plan vs Act)</th>
-                  <th className="p-4 text-center">Delay (Days / Periods)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-semibold text-slate-800 dark:text-slate-200">
+            <Table className="w-full text-left text-xs">
+              <TableHeader className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-slate-500 font-extrabold uppercase">
+                <TableRow className="hover:bg-transparent border-b-0">
+                  <TableHead className="h-auto p-4 text-slate-500">Chapter & Topic</TableHead>
+                  <TableHead className="h-auto p-4 text-slate-500">Status</TableHead>
+                  <TableHead className="h-auto p-4 text-slate-500">Planned Dates</TableHead>
+                  <TableHead className="h-auto p-4 text-slate-500">Actual Dates</TableHead>
+                  <TableHead className="h-auto p-4 text-center text-slate-500">Periods (Plan vs Act)</TableHead>
+                  <TableHead className="h-auto p-4 text-center text-slate-500">Progress (Plan vs Act)</TableHead>
+                  <TableHead className="h-auto p-4 text-center text-slate-500">Delay (Days / Periods)</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y divide-slate-100 dark:divide-slate-800 font-semibold text-slate-800 dark:text-slate-200">
                 {displayTopics.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="p-8 text-center text-xs text-slate-400 italic">
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell colSpan={7} className="p-8 text-center text-xs text-slate-400 italic">
                       No matching topics found for this filter tab.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   displayTopics.map((t, idx) => (
-                    <tr key={t.id || idx} className="hover:bg-slate-50/80 dark:hover:bg-slate-850/50 transition-colors">
-                      <td className="p-4">
+                    <TableRow key={t.id || idx} className="hover:bg-slate-50/80 dark:hover:bg-slate-850/50 transition-colors">
+                      <TableCell className="p-4">
                         <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase block">{t.chapterName} ({t.chapterTerm})</span>
                         <span className="text-xs font-bold text-slate-900 dark:text-white">{t.topicName}</span>
-                      </td>
-                      <td className="p-4">{getStatusBadge(t.status)}</td>
-                      <td className="p-4 text-slate-600 dark:text-slate-400 text-[11px]">
+                      </TableCell>
+                      <TableCell className="p-4">{getStatusBadge(t.status)}</TableCell>
+                      <TableCell className="p-4 text-slate-600 dark:text-slate-400 text-[11px]">
                         <div>Start: <span className="font-bold text-slate-800 dark:text-slate-200">{t.plannedStartDate}</span></div>
                         <div>End: <span className="font-bold text-slate-800 dark:text-slate-200">{t.plannedEndDate}</span></div>
-                      </td>
-                      <td className="p-4 text-slate-600 dark:text-slate-400 text-[11px]">
+                      </TableCell>
+                      <TableCell className="p-4 text-slate-600 dark:text-slate-400 text-[11px]">
                         <div>Start: <span className="font-bold text-slate-800 dark:text-slate-200">{t.actualStartDate}</span></div>
                         <div>End: <span className="font-bold text-slate-800 dark:text-slate-200">{t.actualCompletionDate}</span></div>
-                      </td>
-                      <td className="p-4 text-center">
+                      </TableCell>
+                      <TableCell className="p-4 text-center">
                         <span className="font-black text-slate-900 dark:text-white">{t.plannedPeriods}</span>
                         <span className="text-slate-400 px-1">/</span>
                         <span className="font-black text-blue-600">{t.actualPeriods}</span>
-                      </td>
-                      <td className="p-4 text-center">
+                      </TableCell>
+                      <TableCell className="p-4 text-center">
                         <div className="flex flex-col items-center gap-1">
                           <span className="text-[11px] font-bold text-slate-500">P: {t.plannedProgress}% | A: {t.actualProgress}%</span>
                           <div className="w-24 bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
                             <div className="bg-blue-600 h-full rounded-full" style={{ width: `${t.actualProgress}%` }} />
                           </div>
                         </div>
-                      </td>
-                      <td className="p-4 text-center">
+                      </TableCell>
+                      <TableCell className="p-4 text-center">
                         {t.delayInDays > 0 ? (
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">
+                          <Badge variant="secondary" className="rounded-full border-transparent text-[10px] font-black bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-950">
                             +{t.delayInDays} Days ({t.delayInPeriods} Periods)
-                          </span>
+                          </Badge>
                         ) : (
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                          <Badge variant="secondary" className="rounded-full border-transparent text-[10px] font-black bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-950">
                             On Target
-                          </span>
+                          </Badge>
                         )}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </div>
       </div>

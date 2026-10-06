@@ -3,6 +3,8 @@ import { CreditCard, Search, Plus, Trash2, Edit2 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/Modal';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 
 export default function FeeStructures() {
   const [fees, setFees] = useState<any[]>([]);
@@ -65,13 +67,13 @@ export default function FeeStructures() {
           onClick={() => setIsModalOpen(true)}
           className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
         >
-          <Plus className="w-5 h-5 mr-2" />
+          <Plus className="size-5 mr-2" />
           Assign Fee
         </button>
       </div>
 
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex items-center">
-        <Search className="w-5 h-5 text-gray-400 mr-2" />
+        <Search className="size-5 text-gray-400 mr-2" />
         <input
           type="text"
           placeholder="Search by title or student name..."
@@ -88,41 +90,41 @@ export default function FeeStructures() {
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 z-20 bg-gray-50 dark:bg-slate-850 shadow-sm">Title</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+            <Table className="min-w-full divide-y divide-gray-200">
+              <TableHeader className="bg-gray-50">
+                <TableRow className="hover:bg-transparent border-b-0">
+                  <TableHead className="h-auto px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 z-20 bg-gray-50 dark:bg-slate-850 shadow-sm">Title</TableHead>
+                  <TableHead className="h-auto px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</TableHead>
+                  <TableHead className="h-auto px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</TableHead>
+                  <TableHead className="h-auto px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid</TableHead>
+                  <TableHead className="h-auto px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</TableHead>
+                  <TableHead className="h-auto px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="bg-white divide-y divide-gray-200 [&_tr]:border-b-0">
                 {filteredFees.map(fee => (
-                  <tr key={fee.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 z-20 bg-white dark:bg-slate-900">{fee.title}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{fee.student?.user?.name || 'Unknown'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${fee.amount}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${fee.amountPaid}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        fee.status === 'paid' ? 'bg-green-100 text-green-800' :
-                        fee.status === 'partial' ? 'bg-yellow-100 text-yellow-800' :
-                        fee.status === 'overdue' ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
+                  <TableRow key={fee.id} className="hover:bg-gray-50">
+                    <TableCell className="p-4 px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 z-20 bg-white dark:bg-slate-900">{fee.title}</TableCell>
+                    <TableCell className="p-4 px-6 py-4 whitespace-nowrap text-sm text-gray-500">{fee.student?.user?.name || 'Unknown'}</TableCell>
+                    <TableCell className="p-4 px-6 py-4 whitespace-nowrap text-sm text-gray-900">${fee.amount}</TableCell>
+                    <TableCell className="p-4 px-6 py-4 whitespace-nowrap text-sm text-gray-900">${fee.amountPaid}</TableCell>
+                    <TableCell className="p-4 px-6 py-4 whitespace-nowrap">
+                      <Badge className={`px-2 py-1 rounded-full border-transparent text-xs leading-5 font-semibold ${
+                        fee.status === 'paid' ? 'bg-green-100 text-green-800 hover:bg-green-100' :
+                        fee.status === 'partial' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100' :
+                        fee.status === 'overdue' ? 'bg-red-100 text-red-800 hover:bg-red-100' :
+                        'bg-gray-100 text-gray-800 hover:bg-gray-100'
                       }`}>
                         {fee.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="p-4 px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(fee.dueDate).toLocaleDateString()}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </div>
       )}

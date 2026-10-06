@@ -386,7 +386,7 @@ const AssessmentSubmissionReview: React.FC = () => {
             )}
           </div>
           {structuredRows.length ? (
-            <div className="flex flex-col space-y-4">
+            <div className="flex flex-col gap-y-4">
               <div className="space-y-5">
                 {structuredGroups.map((group) => (
                   <section key={group.sectionTitle} className="space-y-3">
@@ -483,7 +483,7 @@ const AssessmentSubmissionReview: React.FC = () => {
                                           {c.awardedMarks >= c.maxMarks ? (
                                             <CheckCircle2 size={13} className="mt-0.5 shrink-0 text-emerald-600" />
                                           ) : (
-                                            <span className="mt-0.5 h-3 w-3 shrink-0 rounded-full border-2 border-gray-300" />
+                                            <span className="mt-0.5 size-3 shrink-0 rounded-full border-2 border-gray-300" />
                                           )}
                                           <span>
                                             <span className="font-semibold">{c.criterion}</span>
@@ -634,7 +634,7 @@ const AssessmentSubmissionReview: React.FC = () => {
                         type="button"
                         onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                         disabled={currentPage === 1}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        className="inline-flex size-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                       >
                         <ChevronLeft size={16} />
                       </button>
@@ -644,7 +644,7 @@ const AssessmentSubmissionReview: React.FC = () => {
                           key={page}
                           type="button"
                           onClick={() => setCurrentPage(page)}
-                          className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-black transition-colors ${
+                          className={`inline-flex size-8 items-center justify-center rounded-lg text-xs font-black transition-colors ${
                             currentPage === page
                               ? "bg-brand-600 text-white shadow-sm"
                               : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
@@ -658,7 +658,7 @@ const AssessmentSubmissionReview: React.FC = () => {
                         type="button"
                         onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                         disabled={currentPage === totalPages}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        className="inline-flex size-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                       >
                         <ChevronRight size={16} />
                       </button>
@@ -719,7 +719,7 @@ const AssessmentSubmissionReview: React.FC = () => {
                 type="checkbox"
                 checked={draft.isAbsent}
                 onChange={(event) => updateDraft({ isAbsent: event.target.checked })}
-                className="h-4 w-4"
+                className="size-4"
               />
               Mark absent
             </label>

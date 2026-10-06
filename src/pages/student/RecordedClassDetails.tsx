@@ -5,6 +5,7 @@ import { liveBroadcast } from '@/lib/api/live-broadcast';
 import { useAuthStore } from '@/lib/auth-store';
 import { apiClient, extractData } from '@/lib/api/client';
 import { SchoolVideoPlayer } from '@/components/school/SchoolVideoPlayer';
+import { useConfirm } from '@/context/ConfirmContext';
 import {
   ArrowLeft,
   BookOpen,
@@ -56,6 +57,7 @@ export default function RecordedClassDetails() {
   const { recordingId } = useParams<{ recordingId: string }>();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const confirm = useConfirm();
   const [lecture, setLecture] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [detailTab, setDetailTab] = useState('notes');
@@ -197,8 +199,9 @@ export default function RecordedClassDetails() {
     document.body.removeChild(element);
   };
 
-  const clearLiveNotes = () => {
-    if (!window.confirm('Are you sure you want to clear your notes?')) return;
+  const clearLiveNotes = async () => {
+    const ok = await confirm({ title: 'Clear Notes', message: 'Are you sure you want to clear your notes?' });
+    if (!ok) return;
     setLiveNotes('');
     if (!broadcastId) return;
     localStorage.removeItem(`coaching_student_notes_${broadcastId}`);

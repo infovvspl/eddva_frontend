@@ -55,7 +55,7 @@ export default function SyllabusTracker() {
   if (loading) {
     return (
       <div className="flex h-[80vh] flex-col items-center justify-center gap-3">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="size-8 animate-spin text-blue-600" />
         <p className="text-xs font-bold text-slate-400">Loading syllabus metrics & cards…</p>
       </div>
     );
@@ -352,7 +352,7 @@ export default function SyllabusTracker() {
                 <div
                   key={card.id}
                   onClick={() => navigate(`/school/admin/syllabus-analytics?type=${card.id}`)}
-                  className="group relative cursor-pointer rounded-3xl border border-slate-200 bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:border-blue-400 dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between space-y-3"
+                  className="group relative cursor-pointer rounded-3xl border border-slate-200 bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:border-blue-400 dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between gap-y-3"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
@@ -388,7 +388,7 @@ export default function SyllabusTracker() {
           <h3 className="text-sm font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">Select Class to Inspect Assigned Plans</h3>
           {classList.length === 0 ? (
             <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
-              <BookOpen className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-700" />
+              <BookOpen className="mx-auto size-12 text-slate-300 dark:text-slate-700" />
               <h3 className="mt-4 text-base font-bold text-slate-900 dark:text-white">No assigned syllabus plans</h3>
               <p className="mt-1 text-xs text-slate-500">Publish target plans in Syllabus Planner first.</p>
             </div>
@@ -534,7 +534,7 @@ export default function SyllabusTracker() {
 
           {displayPlans.length === 0 ? (
             <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
-              <BookOpen className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-700" />
+              <BookOpen className="mx-auto size-12 text-slate-300 dark:text-slate-700" />
               <h3 className="mt-4 text-base font-bold text-slate-900 dark:text-white">No assigned plans found</h3>
               <p className="mt-1 text-xs text-slate-500">No matching published target plans found for this selection.</p>
             </div>

@@ -25,6 +25,9 @@ import {
 import { apiClient } from "@/lib/api/client";
 import schoolApi from "@/lib/api/school-client";
 import { toast } from "sonner";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
+import { AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog";
 
 const TextbookCoverage = lazy(() => import("@/pages/school/teacher/TextbookCoverage"));
 
@@ -84,11 +87,11 @@ const StatusPill = ({ active }: { active: boolean }) => (
 );
 
 const EmptyRow = ({ label, colSpan }: { label: string; colSpan: number }) => (
-  <tr>
-    <td colSpan={colSpan} className="px-5 py-10 text-center text-sm font-semibold text-slate-400">
+  <TableRow>
+    <TableCell colSpan={colSpan} className="px-5 py-10 text-center text-sm font-semibold text-slate-400">
       {label}
-    </td>
-  </tr>
+    </TableCell>
+  </TableRow>
 );
 
 const SchoolDetailPage = () => {
@@ -475,37 +478,37 @@ const SchoolDetailPage = () => {
             <div className="glass-panel overflow-hidden rounded-lg shadow-soft border-t border-slate-100">
               {/* Desktop View */}
               <div className="hidden md:block overflow-x-auto">
-                <table className="w-full min-w-[820px] text-left text-sm">
-                  <thead>
-                    <tr className="bg-slate-50 text-xs font-black uppercase tracking-wide text-slate-500">
-                      <th className="px-5 py-3">Teacher</th>
-                      <th className="px-5 py-3">Employee ID</th>
-                      <th className="px-5 py-3">Department</th>
-                      <th className="px-5 py-3">Classes</th>
-                      <th className="px-5 py-3">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
+                <Table className="w-full min-w-[820px] text-left text-sm">
+                  <TableHeader>
+                    <TableRow className="bg-slate-50 text-xs font-black uppercase tracking-wide text-slate-500 hover:bg-slate-50">
+                      <TableHead className="h-auto px-5 py-3">Teacher</TableHead>
+                      <TableHead className="h-auto px-5 py-3">Employee ID</TableHead>
+                      <TableHead className="h-auto px-5 py-3">Department</TableHead>
+                      <TableHead className="h-auto px-5 py-3">Classes</TableHead>
+                      <TableHead className="h-auto px-5 py-3">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="divide-y divide-slate-100">
                     {peopleLoading ? (
                       <EmptyRow label="Loading teachers..." colSpan={5} />
                     ) : filteredTeachers.length === 0 ? (
                       <EmptyRow label="No teachers found for this school." colSpan={5} />
                     ) : (
                       filteredTeachers.map((teacher) => (
-                        <tr key={teacher.id} className="hover:bg-slate-50">
-                          <td className="px-5 py-4">
+                        <TableRow key={teacher.id} className="hover:bg-slate-50">
+                          <TableCell className="px-5 py-4">
                             <p className="font-bold text-slate-950">{teacher.name}</p>
                             <p className="text-xs font-semibold text-slate-500">{teacher.email || teacher.phone || "-"}</p>
-                          </td>
-                          <td className="px-5 py-4 font-semibold text-slate-600">{teacher.teacherProfile?.employeeId || "-"}</td>
-                          <td className="px-5 py-4 font-semibold text-slate-600">{teacher.teacherProfile?.department || teacher.teacherProfile?.role || "-"}</td>
-                          <td className="px-5 py-4 font-semibold text-slate-600">{(teacher.classes || []).map((item: any) => item.name).join(", ") || "-"}</td>
-                          <td className="px-5 py-4"><StatusPill active={!!teacher.isActive} /></td>
-                        </tr>
+                          </TableCell>
+                          <TableCell className="px-5 py-4 font-semibold text-slate-600">{teacher.teacherProfile?.employeeId || "-"}</TableCell>
+                          <TableCell className="px-5 py-4 font-semibold text-slate-600">{teacher.teacherProfile?.department || teacher.teacherProfile?.role || "-"}</TableCell>
+                          <TableCell className="px-5 py-4 font-semibold text-slate-600">{(teacher.classes || []).map((item: any) => item.name).join(", ") || "-"}</TableCell>
+                          <TableCell className="px-5 py-4"><StatusPill active={!!teacher.isActive} /></TableCell>
+                        </TableRow>
                       ))
                     )}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
 
               {/* Mobile View */}
@@ -542,43 +545,43 @@ const SchoolDetailPage = () => {
             <div className="glass-panel overflow-hidden rounded-lg shadow-soft border-t border-slate-100">
               {/* Desktop View */}
               <div className="hidden md:block overflow-x-auto">
-                <table className="w-full min-w-[820px] text-left text-sm">
-                  <thead>
-                    <tr className="bg-slate-50 text-xs font-black uppercase tracking-wide text-slate-500">
-                      <th className="px-5 py-3">Student</th>
-                      <th className="px-5 py-3">Enrollment</th>
-                      <th className="px-5 py-3">Class / Section</th>
-                      <th className="px-5 py-3">Parent Contact</th>
-                      <th className="px-5 py-3">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
+                <Table className="w-full min-w-[820px] text-left text-sm">
+                  <TableHeader>
+                    <TableRow className="bg-slate-50 text-xs font-black uppercase tracking-wide text-slate-500 hover:bg-slate-50">
+                      <TableHead className="h-auto px-5 py-3">Student</TableHead>
+                      <TableHead className="h-auto px-5 py-3">Enrollment</TableHead>
+                      <TableHead className="h-auto px-5 py-3">Class / Section</TableHead>
+                      <TableHead className="h-auto px-5 py-3">Parent Contact</TableHead>
+                      <TableHead className="h-auto px-5 py-3">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="divide-y divide-slate-100">
                     {peopleLoading ? (
                       <EmptyRow label="Loading students..." colSpan={5} />
                     ) : filteredStudents.length === 0 ? (
                       <EmptyRow label="No students found for this school." colSpan={5} />
                     ) : (
                       filteredStudents.map((student) => (
-                        <tr key={student.id} className="hover:bg-slate-50">
-                          <td className="px-5 py-4">
+                        <TableRow key={student.id} className="hover:bg-slate-50">
+                          <TableCell className="px-5 py-4">
                             <p className="font-bold text-slate-950">{student.name}</p>
                             <p className="text-xs font-semibold text-slate-500">{student.email || student.phone || "-"}</p>
-                          </td>
-                          <td className="px-5 py-4 font-semibold text-slate-600">{student.studentProfile?.enrollmentNo || "-"}</td>
-                          <td className="px-5 py-4 font-semibold text-slate-600">
+                          </TableCell>
+                          <TableCell className="px-5 py-4 font-semibold text-slate-600">{student.studentProfile?.enrollmentNo || "-"}</TableCell>
+                          <TableCell className="px-5 py-4 font-semibold text-slate-600">
                             {student.studentProfile?.section
                               ? `${student.studentProfile.section.class?.name || "-"} / ${student.studentProfile.section.name || "-"}`
                               : "-"}
-                          </td>
-                          <td className="px-5 py-4 font-semibold text-slate-600">
+                          </TableCell>
+                          <TableCell className="px-5 py-4 font-semibold text-slate-600">
                             {student.studentProfile?.parentPhone || student.studentProfile?.parentEmail || "-"}
-                          </td>
-                          <td className="px-5 py-4"><StatusPill active={!!student.isActive} /></td>
-                        </tr>
+                          </TableCell>
+                          <TableCell className="px-5 py-4"><StatusPill active={!!student.isActive} /></TableCell>
+                        </TableRow>
                       ))
                     )}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
 
               {/* Mobile View */}
@@ -621,38 +624,38 @@ const SchoolDetailPage = () => {
             <div className="glass-panel overflow-hidden rounded-lg shadow-soft border-t border-slate-100">
               {/* Desktop View */}
               <div className="hidden md:block overflow-x-auto">
-                <table className="w-full min-w-[760px] text-left text-sm">
-                  <thead>
-                    <tr className="bg-slate-50 text-xs font-black uppercase tracking-wide text-slate-500">
-                      <th className="px-5 py-3">Parent</th>
-                      <th className="px-5 py-3">Contact</th>
-                      <th className="px-5 py-3">Registered</th>
-                      <th className="px-5 py-3">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
+                <Table className="w-full min-w-[760px] text-left text-sm">
+                  <TableHeader>
+                    <TableRow className="bg-slate-50 text-xs font-black uppercase tracking-wide text-slate-500 hover:bg-slate-50">
+                      <TableHead className="h-auto px-5 py-3">Parent</TableHead>
+                      <TableHead className="h-auto px-5 py-3">Contact</TableHead>
+                      <TableHead className="h-auto px-5 py-3">Registered</TableHead>
+                      <TableHead className="h-auto px-5 py-3">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="divide-y divide-slate-100">
                     {peopleLoading ? (
                       <EmptyRow label="Loading parents..." colSpan={4} />
                     ) : filteredParents.length === 0 ? (
                       <EmptyRow label="No parents found for this school." colSpan={4} />
                     ) : (
                       filteredParents.map((parent) => (
-                        <tr key={parent.id} className="hover:bg-slate-50">
-                          <td className="px-5 py-4">
+                        <TableRow key={parent.id} className="hover:bg-slate-50">
+                          <TableCell className="px-5 py-4">
                             <p className="font-bold text-slate-950">{parent.name}</p>
                             <p className="text-xs font-semibold text-slate-500">{parent.role || "PARENT"}</p>
-                          </td>
-                          <td className="px-5 py-4">
+                          </TableCell>
+                          <TableCell className="px-5 py-4">
                             <p className="font-semibold text-slate-700">{parent.email || "-"}</p>
                             <p className="text-xs font-semibold text-slate-500">{parent.phone || "-"}</p>
-                          </td>
-                          <td className="px-5 py-4 font-semibold text-slate-600">{displayDate(parent.createdAt || parent.created_at)}</td>
-                          <td className="px-5 py-4"><StatusPill active={parent.is_active !== false && parent.isActive !== false} /></td>
-                        </tr>
+                          </TableCell>
+                          <TableCell className="px-5 py-4 font-semibold text-slate-600">{displayDate(parent.createdAt || parent.created_at)}</TableCell>
+                          <TableCell className="px-5 py-4"><StatusPill active={parent.is_active !== false && parent.isActive !== false} /></TableCell>
+                        </TableRow>
                       ))
                     )}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
 
               {/* Mobile View */}
@@ -706,14 +709,10 @@ const SchoolDetailPage = () => {
         </div>
       </div>
       {/* ── Delete confirmation modal ── */}
-      {deleteModalOpen && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
-          {/* backdrop */}
-          <div
-            className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
-            onClick={closeDeleteModal}
-          />
-          <div className="relative w-full max-w-md rounded-[2rem] bg-white shadow-2xl border border-slate-100 p-8 flex flex-col gap-6">
+      <AlertDialogPrimitive.Root open={deleteModalOpen} onOpenChange={(o) => { if (!o) closeDeleteModal(); }}>
+        <AlertDialogPrimitive.Portal>
+          <AlertDialogPrimitive.Overlay className="fixed inset-0 z-[9999] bg-slate-950/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+          <AlertDialogPrimitive.Content className="fixed left-1/2 top-1/2 z-[10000] w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-[2rem] bg-white shadow-2xl border border-slate-100 p-8 flex flex-col gap-6 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
             {/* Icon */}
             <div className="flex justify-center">
               <div className="w-16 h-16 rounded-3xl bg-rose-50 text-rose-500 flex items-center justify-center">
@@ -724,11 +723,11 @@ const SchoolDetailPage = () => {
             {/* Text */}
             <div className="text-center space-y-1">
               <p className="text-[10px] font-bold uppercase tracking-widest text-rose-500">Permanent Action</p>
-              <h3 className="text-xl font-black text-slate-900">Delete School</h3>
-              <p className="text-sm font-semibold text-slate-500 leading-relaxed">
+              <AlertDialogTitle className="text-xl font-black text-slate-900">Delete School</AlertDialogTitle>
+              <AlertDialogDescription className="text-sm font-semibold text-slate-500 leading-relaxed">
                 This will permanently delete <span className="font-black text-slate-800">{institute?.name}</span> and all
                 associated data. This action <span className="font-black text-rose-600">cannot be undone</span>.
-              </p>
+              </AlertDialogDescription>
             </div>
 
             {/* Input */}
@@ -777,9 +776,9 @@ const SchoolDetailPage = () => {
                 {deleting ? "Deleting..." : "Delete School"}
               </button>
             </div>
-          </div>
-        </div>
-      )}
+          </AlertDialogPrimitive.Content>
+        </AlertDialogPrimitive.Portal>
+      </AlertDialogPrimitive.Root>
     </div>
   );
 };

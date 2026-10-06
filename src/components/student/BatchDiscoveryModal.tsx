@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { DialogTitle } from "@/components/ui/dialog";
 import {
   X, Sparkles, GraduationCap, Users, BookOpen,
   ChevronRight, CheckCircle2, Loader2, ArrowRight,
@@ -143,23 +145,28 @@ export function BatchDiscoveryModal({ onClose }: BatchDiscoveryModalProps) {
   };
 
   return (
-    <AnimatePresence>
-      <motion.div
-        key="backdrop"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-        style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}
-        onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      >
+    <DialogPrimitive.Root open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay asChild>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+            style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}
+          />
+        </DialogPrimitive.Overlay>
+        <DialogPrimitive.Content
+          className="fixed left-1/2 top-1/2 z-[200] w-full max-w-3xl -translate-x-1/2 -translate-y-1/2 outline-none"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
         <motion.div
           key="modal"
           initial={{ opacity: 0, scale: 0.94, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 10 }}
           transition={{ type: "spring", damping: 24, stiffness: 300 }}
-          className="relative w-full max-w-3xl max-h-[90vh] flex flex-col rounded-3xl border border-white/10 overflow-hidden"
+          className="relative w-full max-h-[90vh] flex flex-col rounded-3xl border border-white/10 overflow-hidden"
           style={{ background: "linear-gradient(160deg, #0f0f23 0%, #1a1040 50%, #0d1f3c 100%)" }}
         >
           {/* Ambient orbs */}
@@ -177,9 +184,9 @@ export function BatchDiscoveryModal({ onClose }: BatchDiscoveryModalProps) {
                   {isFirst ? "Welcome to EDVA!" : "Available Courses"}
                 </span>
               </div>
-              <h2 className="text-xl font-black text-white">
+              <DialogTitle className="text-xl font-black text-white">
                 {isFirst ? "Start your learning journey" : "Discover your courses"}
-              </h2>
+              </DialogTitle>
               {prefs && (
                 <p className="text-sm text-white/40 mt-1">
                   Showing batches for <span className="text-indigo-300 font-semibold">{prefs.examTarget}</span>
@@ -241,7 +248,8 @@ export function BatchDiscoveryModal({ onClose }: BatchDiscoveryModalProps) {
             </motion.button>
           </div>
         </motion.div>
-      </motion.div>
-    </AnimatePresence>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }

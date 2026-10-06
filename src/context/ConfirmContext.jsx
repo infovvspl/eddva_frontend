@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { AlertTriangle, CheckCircle2, XCircle, Loader2, HelpCircle } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog';
+import { AlertDialogTitle, AlertDialogDescription } from '@/components/ui/alert-dialog';
+import { cn } from '@/lib/utils';
 
 // Sanitize error messages to prevent showing database/API endpoints/tokens/localhost details
 export function sanitizeErrorMessage(err) {
@@ -174,16 +176,14 @@ export function ConfirmProvider({ children }) {
     resolveRef.current?.(true);
   };
 
-  // Keyboard navigation support
+  // Keyboard navigation support (Enter to confirm; Escape is handled by AlertDialog itself)
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e) => {
       if (modalType === 'loading') return;
 
-      if (e.key === 'Escape') {
-        handleCancel();
-      } else if (e.key === 'Enter') {
+      if (e.key === 'Enter') {
         if (modalType === 'error' && !options.onConfirm) {
           handleCancel();
         } else {
@@ -240,112 +240,112 @@ export function ConfirmProvider({ children }) {
   return (
     <ModalContext.Provider value={{ confirm, showSuccess, showError, showLoading, hideModal }}>
       {children}
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            {/* Backdrop overlay */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={modalType !== 'loading' ? handleCancel : undefined}
-              className="fixed inset-0 z-[9999] bg-slate-950/60 backdrop-blur-sm"
-            />
-            {/* Centered Modal Container */}
-            <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 15 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 15 }}
-                transition={{ type: 'spring', duration: 0.4 }}
-                className="w-full max-w-md bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800 p-8 space-y-6 flex flex-col items-center text-center"
-              >
-                {/* Modal Header Icon */}
-                <div className="flex justify-center">
-                  {modalType === 'success' && (
-                    <div className="w-16 h-16 rounded-3xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-                      <CheckCircle2 size={32} className="animate-scale-in" />
-                    </div>
-                  )}
-                  {modalType === 'error' && (
-                    <div className="w-16 h-16 rounded-3xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
-                      <XCircle size={32} className="animate-shake" />
-                    </div>
-                  )}
-                  {modalType === 'confirm' && (
-                    <div className={`w-16 h-16 rounded-3xl flex items-center justify-center ${options.variant === 'destructive' ? 'bg-rose-500/10 text-rose-500' : 'bg-primary/10 text-primary'}`}>
-                      {options.variant === 'destructive' ? <AlertTriangle size={32} /> : <HelpCircle size={32} />}
-                    </div>
-                  )}
-                  {modalType === 'loading' && (
-                    <div className="w-16 h-16 rounded-3xl bg-primary/10 text-primary flex items-center justify-center">
-                      <Loader2 size={32} className="animate-spin" />
-                    </div>
-                  )}
-                </div>
+      <AlertDialogPrimitive.Root
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) handleCancel();
+        }}
+      >
+        <AlertDialogPrimitive.Portal>
+          <AlertDialogPrimitive.Overlay className="fixed inset-0 z-[9999] bg-slate-950/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+          <AlertDialogPrimitive.Content
+            onEscapeKeyDown={(e) => {
+              if (modalType === 'loading') e.preventDefault();
+            }}
+            onPointerDownOutside={(e) => {
+              e.preventDefault();
+              if (modalType !== 'loading') handleCancel();
+            }}
+            className={cn(
+              "fixed left-1/2 top-1/2 z-[10000] w-full max-w-md -translate-x-1/2 -translate-y-1/2",
+              "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+              "rounded-[2.5rem] border border-slate-100 bg-white p-8 shadow-2xl dark:border-slate-800 dark:bg-slate-900 flex flex-col items-center text-center gap-6",
+            )}
+          >
+          {/* Modal Header Icon */}
+          <div className="flex justify-center">
+            {modalType === 'success' && (
+              <div className="h-16 w-16 rounded-3xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                <CheckCircle2 size={32} className="animate-scale-in" />
+              </div>
+            )}
+            {modalType === 'error' && (
+              <div className="h-16 w-16 rounded-3xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
+                <XCircle size={32} className="animate-shake" />
+              </div>
+            )}
+            {modalType === 'confirm' && (
+              <div className={`h-16 w-16 rounded-3xl flex items-center justify-center ${options.variant === 'destructive' ? 'bg-rose-500/10 text-rose-500' : 'bg-primary/10 text-primary'}`}>
+                {options.variant === 'destructive' ? <AlertTriangle size={32} /> : <HelpCircle size={32} />}
+              </div>
+            )}
+            {modalType === 'loading' && (
+              <div className="h-16 w-16 rounded-3xl bg-primary/10 text-primary flex items-center justify-center">
+                <Loader2 size={32} className="animate-spin" />
+              </div>
+            )}
+          </div>
 
-                {/* Modal Content */}
-                <div className="space-y-2 w-full">
-                  {options.title && (
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">
-                      {options.title}
-                    </h3>
-                  )}
-                  {options.subtitle && (
-                    <p className={`text-[10px] font-bold uppercase tracking-widest ${options.variant === 'destructive' ? 'text-rose-500' : 'text-primary'}`}>
-                      {options.subtitle}
-                    </p>
-                  )}
-                  <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 leading-relaxed px-2 break-words">
-                    {options.message}
-                  </p>
-                </div>
+          {/* Modal Content */}
+          <div className="gap-y-2 flex flex-col w-full">
+            <AlertDialogTitle
+              className={options.title ? "text-xl font-bold text-slate-900 dark:text-white leading-tight" : "sr-only"}
+            >
+              {options.title || 'Please wait'}
+            </AlertDialogTitle>
+            {options.subtitle && (
+              <p className={`text-[10px] font-bold uppercase tracking-widest ${options.variant === 'destructive' ? 'text-rose-500' : 'text-primary'}`}>
+                {options.subtitle}
+              </p>
+            )}
+            <AlertDialogDescription className="text-sm font-semibold text-slate-500 dark:text-slate-400 leading-relaxed px-2 break-words">
+              {options.message}
+            </AlertDialogDescription>
+          </div>
 
-                {/* Modal Actions */}
-                {modalType !== 'loading' && (
-                  <div className="flex gap-3 pt-2 w-full">
-                    {/* Confirm cancel or Error close buttons */}
-                    {(modalType === 'confirm' || (modalType === 'error' && options.onConfirm)) && (
-                      <button
-                        type="button"
-                        onClick={handleCancel}
-                        className="flex-1 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-800 transition-all active:scale-[0.98]"
-                      >
-                        {options.cancelLabel || 'Cancel'}
-                      </button>
-                    )}
+          {/* Modal Actions */}
+          {modalType !== 'loading' && (
+            <div className="flex gap-3 pt-2 w-full">
+              {/* Confirm cancel or Error close buttons */}
+              {(modalType === 'confirm' || (modalType === 'error' && options.onConfirm)) && (
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="flex-1 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-800 transition-all active:scale-[0.98]"
+                >
+                  {options.cancelLabel || 'Cancel'}
+                </button>
+              )}
 
-                    {/* Primary Confirmation Action */}
-                    {modalType === 'confirm' && (
-                      <button
-                        type="button"
-                        onClick={handleConfirm}
-                        className={`flex-1 py-3.5 rounded-2xl text-white font-bold text-xs shadow-lg transition-all active:scale-[0.98] ${options.variant === 'destructive'
-                            ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/20'
-                            : 'bg-primary hover:bg-primary-dark shadow-primary/20'
-                          }`}
-                      >
-                        {options.confirmLabel || 'OK'}
-                      </button>
-                    )}
+              {/* Primary Confirmation Action */}
+              {modalType === 'confirm' && (
+                <button
+                  type="button"
+                  onClick={handleConfirm}
+                  className={`flex-1 py-3.5 rounded-2xl text-white font-bold text-xs shadow-lg transition-all active:scale-[0.98] ${options.variant === 'destructive'
+                      ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/20'
+                      : 'bg-primary hover:bg-primary-dark shadow-primary/20'
+                    }`}
+                >
+                  {options.confirmLabel || 'OK'}
+                </button>
+              )}
 
-                    {/* Success or Error OK/Try Again Actions */}
-                    {(modalType === 'success' || modalType === 'error') && (
-                      <button
-                        type="button"
-                        onClick={modalType === 'error' && !options.onConfirm ? handleCancel : handleConfirm}
-                        className="flex-1 py-3.5 rounded-2xl bg-primary hover:bg-primary-dark text-white font-bold text-xs shadow-lg shadow-primary/20 transition-all active:scale-[0.98]"
-                      >
-                        {options.confirmLabel || 'OK'}
-                      </button>
-                    )}
-                  </div>
-                )}
-              </motion.div>
+              {/* Success or Error OK/Try Again Actions */}
+              {(modalType === 'success' || modalType === 'error') && (
+                <button
+                  type="button"
+                  onClick={modalType === 'error' && !options.onConfirm ? handleCancel : handleConfirm}
+                  className="flex-1 py-3.5 rounded-2xl bg-primary hover:bg-primary-dark text-white font-bold text-xs shadow-lg shadow-primary/20 transition-all active:scale-[0.98]"
+                >
+                  {options.confirmLabel || 'OK'}
+                </button>
+              )}
             </div>
-          </>
-        )}
-      </AnimatePresence>
+          )}
+          </AlertDialogPrimitive.Content>
+        </AlertDialogPrimitive.Portal>
+      </AlertDialogPrimitive.Root>
     </ModalContext.Provider>
   );
 }

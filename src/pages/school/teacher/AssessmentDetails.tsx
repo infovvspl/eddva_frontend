@@ -592,7 +592,7 @@ const AssessmentDetails: React.FC = () => {
           type="checkbox"
           checked={Boolean(drafts[student.id]?.isAbsent)}
           onChange={(event) => updateDraft(student.id, { isAbsent: event.target.checked })}
-          className="h-4 w-4"
+          className="size-4"
         />
       ),
     },
@@ -656,7 +656,7 @@ const AssessmentDetails: React.FC = () => {
           {students.length > 0 && (
             <>
               <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
                   value={marksSearch}
@@ -698,7 +698,7 @@ const AssessmentDetails: React.FC = () => {
                   <button
                     onClick={() => setMarksPage((p) => Math.max(1, p - 1))}
                     disabled={marksPage === 1}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white transition"
+                    className="flex size-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white transition"
                   >
                     <ChevronLeft size={16} />
                   </button>
@@ -708,7 +708,7 @@ const AssessmentDetails: React.FC = () => {
                   <button
                     onClick={() => setMarksPage((p) => Math.min(totalMarksPages, p + 1))}
                     disabled={marksPage === totalMarksPages}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white transition"
+                    className="flex size-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white transition"
                   >
                     <ChevronRight size={16} />
                   </button>
@@ -836,7 +836,7 @@ const AssessmentDetails: React.FC = () => {
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-amber-100 pb-4">
           <div>
             <h3 className="text-lg font-bold text-amber-950 flex items-center gap-2">
-              <Key className="h-5 w-5 text-amber-600" />
+              <Key className="size-5 text-amber-600" />
               Answer Key & Marking Scheme
             </h3>
             <p className="text-xs text-amber-700/80 mt-0.5">Reference solutions & evaluation guide for teachers only</p>
@@ -877,7 +877,7 @@ const AssessmentDetails: React.FC = () => {
         {submissions.length > 0 && (
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
             <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 value={submissionsSearch}
@@ -968,7 +968,7 @@ const AssessmentDetails: React.FC = () => {
                   <button
                     onClick={() => setSubmissionsPage((p) => Math.max(1, p - 1))}
                     disabled={submissionsPage === 1}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white transition"
+                    className="flex size-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white transition"
                   >
                     <ChevronLeft size={16} />
                   </button>
@@ -978,7 +978,7 @@ const AssessmentDetails: React.FC = () => {
                   <button
                     onClick={() => setSubmissionsPage((p) => Math.min(totalSubmissionsPages, p + 1))}
                     disabled={submissionsPage === totalSubmissionsPages}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white transition"
+                    className="flex size-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white transition"
                   >
                     <ChevronRight size={16} />
                   </button>
@@ -1119,7 +1119,7 @@ const AssessmentDetails: React.FC = () => {
                     type="checkbox"
                     checked={Boolean(reviewDraft?.isAbsent)}
                     onChange={(event) => updateDraft(reviewStudent.id, { isAbsent: event.target.checked })}
-                    className="h-4 w-4"
+                    className="size-4"
                   />
                   Mark absent
                 </label>

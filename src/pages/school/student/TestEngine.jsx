@@ -295,7 +295,7 @@ export default function TestEngine() {
                 )}
               >
                 <span className={cn(
-                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-black uppercase',
+                  'flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-black uppercase',
                   selected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'
                 )}>
                   {option.id || option.value || ''}
@@ -408,7 +408,7 @@ export default function TestEngine() {
           />
           {isOcrLoading && (
             <div className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-white/70">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              <Loader2 className="size-8 animate-spin text-blue-600" />
               <p className="mt-2 text-xs font-black text-slate-600">Extracting text...</p>
             </div>
           )}
@@ -456,7 +456,7 @@ export default function TestEngine() {
   if (loading) {
     return (
       <div className="flex h-[70vh] flex-col items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+        <Loader2 className="size-10 animate-spin text-blue-600" />
         <p className="mt-4 text-sm font-bold text-slate-500">Preparing your assessment...</p>
       </div>
     );
@@ -465,7 +465,7 @@ export default function TestEngine() {
   if (!assessment || !attempt) {
     return (
       <div className="flex h-[70vh] flex-col items-center justify-center text-center">
-        <AlertTriangle className="mb-4 h-14 w-14 text-rose-500" />
+        <AlertTriangle className="mb-4 size-14 text-rose-500" />
         <h2 className="text-xl font-black text-slate-900">Could not open assessment</h2>
         <button onClick={goBackToPreviousPage} className="mt-6 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white">
           Back to Assessments
@@ -492,7 +492,7 @@ export default function TestEngine() {
   }, []);
 
   return (
-    <div className="min-h-full w-full bg-white pb-16">
+    <div className="min-size-full bg-white pb-16">
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-4 py-4 backdrop-blur xl:px-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
@@ -621,7 +621,7 @@ export default function TestEngine() {
         <div className="p-4 xl:p-8">
           <main className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:p-8">
             <div className="mb-6 flex items-center gap-3">
-              <FileText className="h-6 w-6 text-blue-600" />
+              <FileText className="size-6 text-blue-600" />
               <div>
                 <h2 className="text-lg font-black text-slate-950">Question Paper</h2>
                 <p className="text-sm font-semibold text-slate-500">Write your answer below or upload an answer file.</p>

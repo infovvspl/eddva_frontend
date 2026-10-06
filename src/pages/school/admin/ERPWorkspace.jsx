@@ -31,7 +31,7 @@ export default function ERPWorkspace() {
 
       {loading ? (
         <div className="flex justify-center p-12">
-          <LucideIcons.Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+          <LucideIcons.Loader2 className="size-8 animate-spin text-blue-500" />
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -43,7 +43,7 @@ export default function ERPWorkspace() {
               <>
                 <div className="absolute inset-0 bg-slate-50 dark:bg-slate-800 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <div className={`p-4 rounded-full bg-${colorClass}-50 text-${colorClass}-600 dark:bg-${colorClass}-950/30 dark:text-${colorClass}-400 mb-4 relative z-10`}>
-                  <Icon className="h-8 w-8" />
+                  <Icon className="size-8" />
                 </div>
                 <h3 className="font-bold text-slate-900 dark:text-white text-lg relative z-10">{mod.name}</h3>
                 {!mod.path && (
@@ -89,7 +89,7 @@ export default function ERPWorkspace() {
           
           {modules.length === 0 && (
             <div className="col-span-full py-12 text-center text-slate-500 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 border-dashed">
-              <LucideIcons.PackageOpen className="mx-auto h-12 w-12 text-slate-300 mb-3" />
+              <LucideIcons.PackageOpen className="mx-auto size-12 text-slate-300 mb-3" />
               <p className="font-bold">No ERP Modules Active</p>
               <p className="text-sm mt-1">Please contact your administrator to enable modules for your school.</p>
             </div>

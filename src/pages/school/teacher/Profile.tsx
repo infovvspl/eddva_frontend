@@ -128,7 +128,7 @@ const Profile: React.FC = () => {
           <ProfileAvatar
             src={avatarUrl || user?.profileImage || null}
             name={profile.name || user?.name}
-            className="w-full h-full rounded-full"
+            className="size-full rounded-full"
             fallbackClassName="text-inherit"
           />
           <button

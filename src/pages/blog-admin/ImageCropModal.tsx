@@ -6,6 +6,7 @@
 // what's visible in the viewport onto an output-sized canvas.
 
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 
 interface Props {
   file: File;
@@ -91,9 +92,9 @@ export default function ImageCropModal({ file, aspect = 16 / 9, outputWidth = 12
   };
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-5 dark:bg-slate-900">
-        <h3 className="mb-3 text-sm font-black text-slate-900 dark:text-white">Adjust cover image</h3>
+    <Dialog open onOpenChange={(o) => { if (!o) onCancel(); }}>
+      <DialogContent className="max-w-md rounded-2xl bg-white p-5 dark:bg-slate-900">
+        <DialogTitle className="mb-3 text-sm font-black text-slate-900 dark:text-white">Adjust cover image</DialogTitle>
 
         <div
           className="relative mx-auto touch-none select-none overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800"
@@ -150,7 +151,7 @@ export default function ImageCropModal({ file, aspect = 16 / 9, outputWidth = 12
             Use this crop
           </button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

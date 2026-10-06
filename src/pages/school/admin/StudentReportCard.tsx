@@ -4,6 +4,8 @@ import { ArrowLeft, Printer, FileText, Loader2, GraduationCap, Settings, Eye, Ch
 import { toast } from 'sonner';
 import html2canvas from 'html2canvas';
 import api from '@/lib/api/school-client';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 
 type ReportType = 'pre_primary' | 'primary' | 'middle' | 'high_school' | 'board_class';
 
@@ -473,7 +475,7 @@ export default function StudentReportCard() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="size-8 animate-spin text-blue-600" />
         <p className="text-sm font-bold text-slate-500">Generating configurable report card...</p>
       </div>
     );
@@ -549,7 +551,7 @@ export default function StudentReportCard() {
             className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 transition-colors active:scale-95"
             title={isViewerOnly ? "Back" : "Back to Student Profile"}
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="size-4" />
           </button>
           <div>
             <h1 className="text-xl font-black text-slate-800 dark:text-white">
@@ -563,7 +565,7 @@ export default function StudentReportCard() {
           disabled={printing}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md shadow-blue-500/10 active:scale-98 transition-all disabled:opacity-50"
         >
-          {printing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
+          {printing ? <Loader2 className="size-4 animate-spin" /> : <Printer className="size-4" />}
           {printing ? 'Preparing Print...' : 'Print Report Card'}
         </button>
       </div>
@@ -574,7 +576,7 @@ export default function StudentReportCard() {
           <div className="lg:col-span-4 space-y-6 no-print">
             <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl space-y-5">
               <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                <Settings className="w-4 h-4 text-blue-500" />
+                <Settings className="size-4 text-blue-500" />
                 Template Configurator
               </h3>
 
@@ -617,7 +619,7 @@ export default function StudentReportCard() {
                   <span className="text-[10px] font-semibold text-slate-500 block">School Logo Override</span>
                   <label className="flex items-center justify-between p-2 border border-dashed rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-[11px] font-bold">
                     <span className="flex items-center gap-1.5 text-slate-400">
-                      <Upload className="w-3.5 h-3.5" /> {customLogo ? 'Logo Uploaded' : 'Upload Logo image'}
+                      <Upload className="size-3.5" /> {customLogo ? 'Logo Uploaded' : 'Upload Logo image'}
                     </span>
                     <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, setCustomLogo)} className="hidden" />
                   </label>
@@ -628,7 +630,7 @@ export default function StudentReportCard() {
                   <span className="text-[10px] font-semibold text-slate-500 block">Official Seal Stamp</span>
                   <label className="flex items-center justify-between p-2 border border-dashed rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-[11px] font-bold">
                     <span className="flex items-center gap-1.5 text-slate-400">
-                      <Upload className="w-3.5 h-3.5" /> {customSeal ? 'Seal Uploaded' : 'Upload Seal stamp'}
+                      <Upload className="size-3.5" /> {customSeal ? 'Seal Uploaded' : 'Upload Seal stamp'}
                     </span>
                     <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, setCustomSeal)} className="hidden" />
                   </label>
@@ -639,12 +641,12 @@ export default function StudentReportCard() {
                   <span className="text-[10px] font-semibold text-slate-500 block">Authorized Signatures</span>
                   <div className="grid grid-cols-2 gap-2">
                     <label className="flex flex-col items-center justify-center p-2 border border-dashed rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-[10px] font-bold text-center gap-1">
-                      <Upload className="w-3.5 h-3.5 text-slate-400" />
+                      <Upload className="size-3.5 text-slate-400" />
                       <span>Teacher Sig</span>
                       <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, setCustomTeacherSig)} className="hidden" />
                     </label>
                     <label className="flex flex-col items-center justify-center p-2 border border-dashed rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-[10px] font-bold text-center gap-1">
-                      <Upload className="w-3.5 h-3.5 text-slate-400" />
+                      <Upload className="size-3.5 text-slate-400" />
                       <span>Principal Sig</span>
                       <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, setCustomPrincipalSig)} className="hidden" />
                     </label>
@@ -782,10 +784,10 @@ export default function StudentReportCard() {
                 {showLogo && (
                   <div className="flex items-center gap-3">
                     {customLogo || defaultSchoolLogo ? (
-                      <img src={customLogo || defaultSchoolLogo} alt="School Logo" className="w-14 h-14 object-contain rounded-xl" />
+                      <img src={customLogo || defaultSchoolLogo} alt="School Logo" className="size-14 object-contain rounded-xl" />
                     ) : (
-                      <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white">
-                        <GraduationCap className="w-7 h-7" />
+                      <div className="size-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white">
+                        <GraduationCap className="size-7" />
                       </div>
                     )}
                   </div>
@@ -808,9 +810,9 @@ export default function StudentReportCard() {
                 {showSeal && (
                   <div>
                     {customSeal ? (
-                      <img src={customSeal} alt="Seal Stamp" className="w-14 h-14 object-contain rounded-full" />
+                      <img src={customSeal} alt="Seal Stamp" className="size-14 object-contain rounded-full" />
                     ) : (
-                      <div className="w-14 h-14 rounded-full border-4 border-double border-slate-400 flex items-center justify-center text-[7px] font-black text-slate-400 text-center uppercase tracking-tighter">
+                      <div className="size-14 rounded-full border-4 border-double border-slate-400 flex items-center justify-center text-[7px] font-black text-slate-400 text-center uppercase tracking-tighter">
                         OFFICIAL<br />SEAL
                       </div>
                     )}
@@ -872,7 +874,7 @@ export default function StudentReportCard() {
                   {(() => {
                     const studentPhoto = student?.profileImage || student?.avatar || student?.studentProfile?.profileImage || student?.studentProfile?.avatar || student?.user?.profileImage || student?.user?.avatar;
                     return studentPhoto ? (
-                      <img src={studentPhoto} alt={student?.name} className="w-full h-full object-cover" />
+                      <img src={studentPhoto} alt={student?.name} className="size-full object-cover" />
                     ) : (
                       <div className="flex flex-col items-center justify-center text-slate-300 gap-0.5">
                         <User size={24} />
@@ -915,123 +917,123 @@ export default function StudentReportCard() {
                       <div className="space-y-2">
                         {standardResults.length > 0 && (
                           <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                            <table className="w-full text-left text-xs font-semibold text-slate-600">
-                              <thead className="bg-slate-50 border-b border-slate-200 text-[9px] uppercase text-slate-400 tracking-wider">
-                                <tr>
-                                  <th className="py-1.5 px-2.5">Subject</th>
-                                  <th className="py-1.5 px-2.5 text-center">T1 Internal</th>
-                                  <th className="py-1.5 px-2.5 text-center">Half-Yearly</th>
-                                  <th className="py-1.5 px-2.5 text-center">T1 Total</th>
-                                  <th className="py-1.5 px-2.5 text-center">T2 Internal</th>
-                                  <th className="py-1.5 px-2.5 text-center">Annual</th>
-                                  <th className="py-1.5 px-2.5 text-center">T2 Total</th>
-                                  <th className="py-1.5 px-2.5 text-center">Internals</th>
-                                  <th className="py-1.5 px-2.5 text-center">Final</th>
-                                  <th className="py-1.5 px-2.5 text-center">Grade</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-100 text-slate-700">
+                            <Table className="w-full text-left text-xs font-semibold text-slate-600">
+                              <TableHeader className="bg-slate-50 border-b border-slate-200 text-[9px] uppercase text-slate-400 tracking-wider">
+                                <TableRow className="hover:bg-transparent border-b-0">
+                                  <TableHead className="h-auto py-1.5 px-2.5 text-slate-400">Subject</TableHead>
+                                  <TableHead className="h-auto py-1.5 px-2.5 text-center text-slate-400">T1 Internal</TableHead>
+                                  <TableHead className="h-auto py-1.5 px-2.5 text-center text-slate-400">Half-Yearly</TableHead>
+                                  <TableHead className="h-auto py-1.5 px-2.5 text-center text-slate-400">T1 Total</TableHead>
+                                  <TableHead className="h-auto py-1.5 px-2.5 text-center text-slate-400">T2 Internal</TableHead>
+                                  <TableHead className="h-auto py-1.5 px-2.5 text-center text-slate-400">Annual</TableHead>
+                                  <TableHead className="h-auto py-1.5 px-2.5 text-center text-slate-400">T2 Total</TableHead>
+                                  <TableHead className="h-auto py-1.5 px-2.5 text-center text-slate-400">Internals</TableHead>
+                                  <TableHead className="h-auto py-1.5 px-2.5 text-center text-slate-400">Final</TableHead>
+                                  <TableHead className="h-auto py-1.5 px-2.5 text-center text-slate-400">Grade</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody className="divide-y divide-slate-100 text-slate-700">
                                 {standardResults.map(res => (
-                                  <tr key={res.subject} className="hover:bg-slate-50/50 transition-colors font-bold">
-                                    <td className="py-1.5 px-2.5 text-slate-900 font-extrabold">{res.subject}</td>
-                                    <td className="py-1.5 px-2.5 text-center text-slate-500">{res.t1Internal ?? ""}</td>
-                                    <td className="py-1.5 px-2.5 text-center text-slate-500">{res.halfYearly ?? ""}</td>
-                                    <td className="py-1.5 px-2.5 text-center text-slate-800">{res.t1Total ?? ""}</td>
-                                    <td className="py-1.5 px-2.5 text-center text-slate-500">{res.t2Internal ?? ""}</td>
-                                    <td className="py-1.5 px-2.5 text-center text-slate-500">{res.annual ?? ""}</td>
-                                    <td className="py-1.5 px-2.5 text-center text-slate-800">{res.t2Total ?? ""}</td>
-                                    <td className="py-1.5 px-2.5 text-center text-slate-500">{(res.t1Internal !== null || res.t2Internal !== null) ? (Number(res.t1Internal || 0) + Number(res.t2Internal || 0)) : ""}</td>
-                                    <td className="py-1.5 px-2.5 text-center font-black text-blue-600">{res.final}</td>
-                                    <td className="py-1.5 px-2.5 text-center">
+                                  <TableRow key={res.subject} className="hover:bg-slate-50/50 transition-colors font-bold">
+                                    <TableCell className="py-1.5 px-2.5 text-slate-900 font-extrabold">{res.subject}</TableCell>
+                                    <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{res.t1Internal ?? ""}</TableCell>
+                                    <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{res.halfYearly ?? ""}</TableCell>
+                                    <TableCell className="py-1.5 px-2.5 text-center text-slate-800">{res.t1Total ?? ""}</TableCell>
+                                    <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{res.t2Internal ?? ""}</TableCell>
+                                    <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{res.annual ?? ""}</TableCell>
+                                    <TableCell className="py-1.5 px-2.5 text-center text-slate-800">{res.t2Total ?? ""}</TableCell>
+                                    <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{(res.t1Internal !== null || res.t2Internal !== null) ? (Number(res.t1Internal || 0) + Number(res.t2Internal || 0)) : ""}</TableCell>
+                                    <TableCell className="py-1.5 px-2.5 text-center font-black text-blue-600">{res.final}</TableCell>
+                                    <TableCell className="py-1.5 px-2.5 text-center">
                                       {res.grade !== "—" && (
-                                        <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 font-extrabold uppercase text-[10px] inline-flex items-center justify-center min-w-[20px] h-[20px] leading-none">
+                                        <Badge variant="secondary" className="rounded-md border-transparent bg-blue-50 text-blue-600 font-extrabold uppercase text-[10px] min-w-[20px] h-[20px] leading-none hover:bg-blue-50">
                                           {res.grade}
-                                        </span>
+                                        </Badge>
                                       )}
-                                    </td>
-                                  </tr>
+                                    </TableCell>
+                                  </TableRow>
                                 ))}
-                              </tbody>
-                            </table>
+                              </TableBody>
+                            </Table>
                           </div>
                         )}
 
                         {itResults.length > 0 && (
                           <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                            <table className="w-full text-left text-xs font-semibold text-slate-600">
-                              <thead className="bg-slate-50 border-b border-slate-200 text-[9px] uppercase text-slate-400 tracking-wider">
-                                <tr>
-                                  <th className="py-1.5 px-2.5">Subject</th>
-                                  <th className="py-1.5 px-2.5 text-center">Half-Yearly Theory</th>
-                                  <th className="py-1.5 px-2.5 text-center">Half-Yearly Practical</th>
-                                  <th className="py-1.5 px-2.5 text-center">Half-Yearly Total</th>
-                                  <th className="py-1.5 px-2.5 text-center">Annual Theory</th>
-                                  <th className="py-1.5 px-2.5 text-center">Annual Practical</th>
-                                  <th className="py-1.5 px-2.5 text-center">Annual Total</th>
-                                  <th className="py-1.5 px-2.5 text-center">Final</th>
-                                  <th className="py-1.5 px-2.5 text-center">Grade</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-100 text-slate-700">
+                            <Table className="w-full text-left text-xs font-semibold text-slate-600">
+                              <TableHeader className="bg-slate-50 border-b border-slate-200 text-[9px] uppercase text-slate-400 tracking-wider">
+                                <TableRow className="hover:bg-transparent border-b-0">
+                                  <TableHead className="h-auto py-1.5 px-2.5 text-slate-400">Subject</TableHead>
+                                  <TableHead className="h-auto py-1.5 px-2.5 text-center text-slate-400">Half-Yearly Theory</TableHead>
+                                  <TableHead className="h-auto py-1.5 px-2.5 text-center text-slate-400">Half-Yearly Practical</TableHead>
+                                  <TableHead className="h-auto py-1.5 px-2.5 text-center text-slate-400">Half-Yearly Total</TableHead>
+                                  <TableHead className="h-auto py-1.5 px-2.5 text-center text-slate-400">Annual Theory</TableHead>
+                                  <TableHead className="h-auto py-1.5 px-2.5 text-center text-slate-400">Annual Practical</TableHead>
+                                  <TableHead className="h-auto py-1.5 px-2.5 text-center text-slate-400">Annual Total</TableHead>
+                                  <TableHead className="h-auto py-1.5 px-2.5 text-center text-slate-400">Final</TableHead>
+                                  <TableHead className="h-auto py-1.5 px-2.5 text-center text-slate-400">Grade</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody className="divide-y divide-slate-100 text-slate-700">
                                 {itResults.map(res => (
-                                  <tr key={res.subject} className="hover:bg-slate-50/50 transition-colors font-bold">
-                                    <td className="py-1.5 px-2.5 text-slate-900 font-extrabold">{res.subject}</td>
-                                    <td className="py-1.5 px-2.5 text-center text-slate-500">{res.halfYearlyTheory}</td>
-                                    <td className="py-1.5 px-2.5 text-center text-slate-500">{res.halfYearlyPractical}</td>
-                                    <td className="py-1.5 px-2.5 text-center text-slate-800">{res.halfYearly}</td>
-                                    <td className="py-1.5 px-2.5 text-center text-slate-500">{res.annualTheory}</td>
-                                    <td className="py-1.5 px-2.5 text-center text-slate-500">{res.annualPractical}</td>
-                                    <td className="py-1.5 px-2.5 text-center text-slate-800">{res.annual}</td>
-                                    <td className="py-1.5 px-2.5 text-center font-black text-blue-600">{res.final}</td>
-                                    <td className="py-1.5 px-2.5 text-center">
-                                      <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 font-extrabold uppercase text-[10px] inline-flex items-center justify-center min-w-[20px] h-[20px] leading-none">
+                                  <TableRow key={res.subject} className="hover:bg-slate-50/50 transition-colors font-bold">
+                                    <TableCell className="py-1.5 px-2.5 text-slate-900 font-extrabold">{res.subject}</TableCell>
+                                    <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{res.halfYearlyTheory}</TableCell>
+                                    <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{res.halfYearlyPractical}</TableCell>
+                                    <TableCell className="py-1.5 px-2.5 text-center text-slate-800">{res.halfYearly}</TableCell>
+                                    <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{res.annualTheory}</TableCell>
+                                    <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{res.annualPractical}</TableCell>
+                                    <TableCell className="py-1.5 px-2.5 text-center text-slate-800">{res.annual}</TableCell>
+                                    <TableCell className="py-1.5 px-2.5 text-center font-black text-blue-600">{res.final}</TableCell>
+                                    <TableCell className="py-1.5 px-2.5 text-center">
+                                      <Badge variant="secondary" className="rounded-md border-transparent bg-blue-50 text-blue-600 font-extrabold uppercase text-[10px] min-w-[20px] h-[20px] leading-none hover:bg-blue-50">
                                         {res.grade}
-                                      </span>
-                                    </td>
-                                  </tr>
+                                      </Badge>
+                                    </TableCell>
+                                  </TableRow>
                                 ))}
-                              </tbody>
-                            </table>
+                              </TableBody>
+                            </Table>
                           </div>
                         )}
                       </div>
                     );
                   })() : (
                     <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                      <table className="w-full text-left text-xs font-semibold text-slate-600">
-                        <thead className="bg-slate-50 border-b border-slate-200 text-[9px] uppercase text-slate-400 tracking-wider">
-                          <tr>
-                            <th className="py-1.5 px-2.5">Subject</th>
-                            <th className="py-1.5 px-2.5 text-center">Theory</th>
-                            <th className="py-1.5 px-2.5 text-center">Practical</th>
-                            <th className="py-1.5 px-2.5 text-center">Internal</th>
-                            <th className="py-1.5 px-2.5 text-center">Total</th>
-                            <th className="py-1.5 px-2.5 text-center">Grade</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 text-slate-700">
+                      <Table className="w-full text-left text-xs font-semibold text-slate-600">
+                        <TableHeader className="bg-slate-50 border-b border-slate-200 text-[9px] uppercase text-slate-400 tracking-wider">
+                          <TableRow className="hover:bg-transparent border-b-0">
+                            <TableHead className="h-auto py-1.5 px-2.5 text-slate-400">Subject</TableHead>
+                            <TableHead className="h-auto py-1.5 px-2.5 text-center text-slate-400">Theory</TableHead>
+                            <TableHead className="h-auto py-1.5 px-2.5 text-center text-slate-400">Practical</TableHead>
+                            <TableHead className="h-auto py-1.5 px-2.5 text-center text-slate-400">Internal</TableHead>
+                            <TableHead className="h-auto py-1.5 px-2.5 text-center text-slate-400">Total</TableHead>
+                            <TableHead className="h-auto py-1.5 px-2.5 text-center text-slate-400">Grade</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody className="divide-y divide-slate-100 text-slate-700">
                           {scholasticResults.map(res => (
-                            <tr key={res.subject} className="hover:bg-slate-50/50 transition-colors font-bold">
-                              <td className="py-1.5 px-2.5 text-slate-900 font-extrabold">{res.subject}</td>
-                              <td className="py-1.5 px-2.5 text-center text-slate-500">{Math.round(res.final * 0.7)}</td>
-                              <td className="py-1.5 px-2.5 text-center text-slate-500">{Math.round(res.final * 0.2)}</td>
-                              <td className="py-1.5 px-2.5 text-center text-slate-500">{Math.round(res.final * 0.1)}</td>
-                              <td className="py-1.5 px-2.5 text-center font-black text-blue-600">{Math.round(res.final)}</td>
-                              <td className="py-1.5 px-2.5 text-center">
-                                <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 font-extrabold uppercase text-[10px] inline-flex items-center justify-center min-w-[20px] h-[20px] leading-none">
+                            <TableRow key={res.subject} className="hover:bg-slate-50/50 transition-colors font-bold">
+                              <TableCell className="py-1.5 px-2.5 text-slate-900 font-extrabold">{res.subject}</TableCell>
+                              <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{Math.round(res.final * 0.7)}</TableCell>
+                              <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{Math.round(res.final * 0.2)}</TableCell>
+                              <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{Math.round(res.final * 0.1)}</TableCell>
+                              <TableCell className="py-1.5 px-2.5 text-center font-black text-blue-600">{Math.round(res.final)}</TableCell>
+                              <TableCell className="py-1.5 px-2.5 text-center">
+                                <Badge variant="secondary" className="rounded-md border-transparent bg-blue-50 text-blue-600 font-extrabold uppercase text-[10px] min-w-[20px] h-[20px] leading-none hover:bg-blue-50">
                                   {res.grade}
-                                </span>
-                              </td>
-                            </tr>
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
                           ))}
-                        </tbody>
-                      </table>
+                        </TableBody>
+                      </Table>
                     </div>
                   )}
                 </div>
               ) : (
                 <div className="text-center py-8 border border-dashed border-slate-200 rounded-2xl">
-                  <FileText className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                  <FileText className="size-8 text-slate-300 mx-auto mb-2" />
                   <p className="text-xs font-bold text-slate-400">No scholastic records found in database.</p>
                 </div>
               )}

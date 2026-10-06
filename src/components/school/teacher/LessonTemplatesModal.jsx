@@ -79,7 +79,7 @@ export default function LessonTemplatesModal({ open, isOpen, onClose, onSelectTe
 
         {loading ? (
           <div className="flex h-40 items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+            <Loader2 className="size-6 animate-spin text-blue-600" />
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">

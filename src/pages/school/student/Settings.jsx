@@ -33,7 +33,7 @@ export default function Settings() {
         <section className="space-y-6">
           <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center gap-3">
-              {theme === 'dark' ? <Moon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" /> : <Sun className="h-5 w-5 sm:h-6 sm:w-6 text-amber-500" />}
+              {theme === 'dark' ? <Moon className="size-5 sm:size-6 text-blue-600" /> : <Sun className="size-5 sm:size-6 text-amber-500" />}
               <div>
                 <h2 className="text-sm sm:text-base font-black text-slate-950 dark:text-white">Appearance</h2>
                 <p className="mt-0.5 text-xs sm:text-sm font-medium text-slate-500">Switch between dark and light theme.</p>
@@ -52,7 +52,7 @@ export default function Settings() {
                   }`}
                 >
                   <span className="text-xs sm:text-sm font-black capitalize text-slate-900 dark:text-white">{option}</span>
-                  {theme === option && <CheckCircle2 className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-blue-600 shrink-0" />}
+                  {theme === option && <CheckCircle2 className="size-4.5 sm:size-5 text-blue-600 shrink-0" />}
                 </button>
               ))}
             </div>
@@ -60,7 +60,7 @@ export default function Settings() {
 
           <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center gap-3">
-              <Bell className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+              <Bell className="size-5 sm:size-6 text-blue-600" />
               <div>
                 <h2 className="text-sm sm:text-base font-black text-slate-950 dark:text-white">Notification Preferences</h2>
                 <p className="mt-0.5 text-xs sm:text-sm font-medium text-slate-500">Control mobile and portal alerts.</p>
@@ -84,7 +84,7 @@ export default function Settings() {
                     <span className="mt-0.5 block text-[10px] sm:text-xs font-medium text-slate-500">{description}</span>
                   </span>
                   <span className={`flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 transition ${preferences[key] ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'}`}>
-                    <span className={`h-4 w-4 rounded-full bg-white transition ${preferences[key] ? 'translate-x-4' : 'translate-x-0'}`} />
+                    <span className={`size-4 rounded-full bg-white transition ${preferences[key] ? 'translate-x-4' : 'translate-x-0'}`} />
                   </span>
                 </button>
               ))}
@@ -95,7 +95,7 @@ export default function Settings() {
         <aside className="space-y-6">
           <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center gap-3">
-              <ShieldCheck className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" />
+              <ShieldCheck className="size-5 sm:size-6 text-emerald-600" />
               <div>
                 <h2 className="text-sm sm:text-base font-black text-slate-950 dark:text-white">Security</h2>
                 <p className="mt-0.5 text-xs sm:text-sm font-medium text-slate-500">Password and account protection.</p>
@@ -107,7 +107,7 @@ export default function Settings() {
                 onClick={() => toast.success("Password reset link sent to your registered email.")}
                 className="flex w-full items-center gap-2.5 sm:gap-3 rounded-xl border border-slate-200 p-3 text-left hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800"
               >
-                <KeyRound className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-blue-600 shrink-0" />
+                <KeyRound className="size-4.5 sm:size-5 text-blue-600 shrink-0" />
                 <span className="text-xs sm:text-sm font-black text-slate-950 dark:text-white">Change Password</span>
               </button>
               <button 
@@ -115,7 +115,7 @@ export default function Settings() {
                 onClick={() => toast.info("Privacy settings are managed by your school administrator.")}
                 className="flex w-full items-center gap-2.5 sm:gap-3 rounded-xl border border-slate-200 p-3 text-left hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800"
               >
-                <Lock className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-rose-600 shrink-0" />
+                <Lock className="size-4.5 sm:size-5 text-rose-600 shrink-0" />
                 <span className="text-xs sm:text-sm font-black text-slate-950 dark:text-white">Review Privacy</span>
               </button>
             </div>
@@ -123,7 +123,7 @@ export default function Settings() {
 
           <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center gap-3">
-              <Monitor className="h-5 w-5 sm:h-6 sm:w-6 text-violet-600" />
+              <Monitor className="size-5 sm:size-6 text-violet-600" />
               <div>
                 <h2 className="text-sm sm:text-base font-black text-slate-950 dark:text-white">Device Sessions</h2>
                 <p className="mt-0.5 text-xs sm:text-sm font-medium text-slate-500">Current browser and mobile app sessions.</p>
@@ -132,7 +132,7 @@ export default function Settings() {
             <div className="mt-4 sm:mt-5 space-y-2.5 sm:space-y-3">
               <div className="rounded-xl border border-slate-200 p-3 dark:border-slate-800">
                 <div className="flex items-center gap-2.5 sm:gap-3">
-                  <Monitor className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-blue-600 shrink-0" />
+                  <Monitor className="size-4.5 sm:size-5 text-blue-600 shrink-0" />
                   <div>
                     <p className="text-xs sm:text-sm font-black text-slate-950 dark:text-white">Current Browser</p>
                     <p className="text-[10px] sm:text-xs font-medium text-slate-500">Active now</p>
@@ -141,7 +141,7 @@ export default function Settings() {
               </div>
               <div className="rounded-xl border border-slate-200 p-3 dark:border-slate-800">
                 <div className="flex items-center gap-2.5 sm:gap-3">
-                  <Smartphone className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-emerald-600 shrink-0" />
+                  <Smartphone className="size-4.5 sm:size-5 text-emerald-600 shrink-0" />
                   <div>
                     <p className="text-xs sm:text-sm font-black text-slate-950 dark:text-white">Student App</p>
                     <p className="text-[10px] sm:text-xs font-medium text-slate-500">Push notifications enabled</p>

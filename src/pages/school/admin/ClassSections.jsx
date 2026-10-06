@@ -7,6 +7,8 @@ import SectionForm from '@/components/school/admin/forms/SectionForm';
 import { useConfirm } from '@/context/ConfirmContext';
 import { handleApiError } from '@/lib/school/errorHandler';
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
 const academicYears = ['2024-2025', '2025-2026', '2026-2027'];
 
@@ -122,7 +124,7 @@ export default function ClassSections() {
           onClick={() => navigate('/school/admin/academics')}
           className="mb-5 inline-flex items-center gap-2 rounded-lg border border-surface-200 bg-white px-4 py-2.5 text-sm font-bold text-surface-700 hover:bg-surface-50 dark:border-surface-800 dark:bg-surface-900 dark:text-white"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="size-4" />
           Back to Academics
         </button>
         <div className="rounded-xl border border-surface-200 bg-white p-10 text-center shadow-sm dark:border-surface-800 dark:bg-surface-900">
@@ -141,7 +143,7 @@ export default function ClassSections() {
             onClick={() => navigate('/school/admin/academics')}
             className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="size-4" />
             Back to Classes
           </button>
           <h1 className="font-display text-3xl font-bold text-surface-950 dark:text-white">{selectedClass.name} Sections</h1>
@@ -162,7 +164,7 @@ export default function ClassSections() {
               onClick={handleAddSection}
               className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-blue-700"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="size-4" />
               <span>Add Section</span>
             </button>
           </div>
@@ -177,7 +179,7 @@ export default function ClassSections() {
       <section className="mt-5 overflow-hidden rounded-xl border border-surface-200 bg-white shadow-sm dark:border-surface-800 dark:bg-surface-900">
         <div className="flex flex-row items-center justify-between gap-2 border-b border-surface-200 p-3 sm:p-4 dark:border-surface-800">
           <div className="relative flex-1 max-w-[280px] sm:max-w-xs">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-surface-400" />
             <input
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
@@ -189,58 +191,58 @@ export default function ClassSections() {
             onClick={handleAddSection}
             className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-blue-500 bg-white px-3 text-xs font-bold text-blue-600 hover:bg-blue-50 dark:bg-surface-900 dark:hover:bg-blue-950/20 shrink-0"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="size-4" />
             <span>Add Section</span>
           </button>
         </div>
 
         {/* Desktop View */}
         <div className="hidden md:block overflow-x-auto">
-          <table className="w-full min-w-[760px] text-left">
-            <thead className="bg-surface-50 text-xs font-bold text-surface-600 dark:bg-surface-950/50 dark:text-surface-300">
-              <tr>
-                <th className="px-5 py-4">Section Name</th>
-                <th className="px-3 py-4 text-center">Students</th>
-                <th className="px-3 py-4">Class Teacher</th>
-                <th className="px-3 py-4">Room No.</th>
-                <th className="px-3 py-4">Status</th>
-                <th className="px-3 py-4 text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-surface-200 text-sm dark:divide-surface-800">
+          <Table className="w-full min-w-[760px] text-left">
+            <TableHeader className="bg-surface-50 text-xs font-bold text-surface-600 dark:bg-surface-950/50 dark:text-surface-300">
+              <TableRow className="hover:bg-transparent border-b-0">
+                <TableHead className="h-auto px-5 py-4 text-surface-600 dark:text-surface-300">Section Name</TableHead>
+                <TableHead className="h-auto px-3 py-4 text-center text-surface-600 dark:text-surface-300">Students</TableHead>
+                <TableHead className="h-auto px-3 py-4 text-surface-600 dark:text-surface-300">Class Teacher</TableHead>
+                <TableHead className="h-auto px-3 py-4 text-surface-600 dark:text-surface-300">Room No.</TableHead>
+                <TableHead className="h-auto px-3 py-4 text-surface-600 dark:text-surface-300">Status</TableHead>
+                <TableHead className="h-auto px-3 py-4 text-center text-surface-600 dark:text-surface-300">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-surface-200 text-sm dark:divide-surface-800 [&_tr]:border-b-0">
               {filteredSections.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center">
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={6} className="px-5 py-12 text-center">
                     <p className="font-bold text-surface-900 dark:text-white">No sections found</p>
                     <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">Add a section to start organizing students in {selectedClass.name}.</p>
                     <button
                       onClick={handleAddSection}
                       className="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
                     >
-                      <Plus className="h-4 w-4" />
+                      <Plus className="size-4" />
                       Add Section
                     </button>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : (
                 filteredSections.map((section) => (
-                  <tr key={section.id} className="bg-white hover:bg-surface-50/80 dark:bg-surface-900 dark:hover:bg-surface-800/40">
-                    <td className="px-5 py-4 font-bold text-surface-950 dark:text-white">Section {section.name}</td>
-                    <td className="px-3 py-4 text-center text-surface-700 dark:text-surface-200">{sectionStudents(section)}</td>
-                    <td className="px-3 py-4 text-surface-700 dark:text-surface-200">{sectionTeacher(section)}</td>
-                    <td className="px-3 py-4 text-surface-700 dark:text-surface-200">{valueOrDash(section.room, section.roomNo, section.room_no)}</td>
-                    <td className="px-3 py-4"><StatusPill /></td>
-                    <td className="px-3 py-4">
+                  <TableRow key={section.id} className="bg-white hover:bg-surface-50/80 dark:bg-surface-900 dark:hover:bg-surface-800/40">
+                    <TableCell className="p-4 px-5 py-4 font-bold text-surface-950 dark:text-white">Section {section.name}</TableCell>
+                    <TableCell className="p-4 px-3 py-4 text-center text-surface-700 dark:text-surface-200">{sectionStudents(section)}</TableCell>
+                    <TableCell className="p-4 px-3 py-4 text-surface-700 dark:text-surface-200">{sectionTeacher(section)}</TableCell>
+                    <TableCell className="p-4 px-3 py-4 text-surface-700 dark:text-surface-200">{valueOrDash(section.room, section.roomNo, section.room_no)}</TableCell>
+                    <TableCell className="p-4 px-3 py-4"><StatusPill /></TableCell>
+                    <TableCell className="p-4 px-3 py-4">
                       <div className="flex justify-center gap-2">
                         <IconButton title={`Edit Section ${section.name}`} onClick={() => handleEditSection(section)} icon={Edit2} />
                         <IconButton title={`Delete Section ${section.name}`} onClick={() => handleDeleteSection(section.id)} icon={Trash2} danger />
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
 
         {/* Mobile View */}
@@ -253,7 +255,7 @@ export default function ClassSections() {
                 onClick={handleAddSection}
                 className="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="size-4" />
                 Add Section
               </button>
             </div>
@@ -285,14 +287,14 @@ export default function ClassSections() {
                     onClick={() => handleEditSection(section)}
                     className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-surface-200 bg-white px-3 text-surface-600 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 text-xs font-bold dark:bg-surface-900 dark:border-surface-800 dark:text-surface-300"
                   >
-                    <Edit2 className="h-3.5 w-3.5" />
+                    <Edit2 className="size-3.5" />
                     <span>Edit</span>
                   </button>
                   <button
                     onClick={() => handleDeleteSection(section.id)}
                     className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-white px-3 text-red-650 hover:border-red-400 hover:bg-red-50 hover:text-red-600 text-xs font-bold dark:bg-surface-900 dark:border-red-950/20 dark:text-red-400"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 className="size-3.5" />
                     <span>Delete</span>
                   </button>
                 </div>
@@ -348,8 +350,8 @@ function SummaryCard({ icon: Icon, tone, label, value, helper }) {
   return (
     <div className="rounded-xl border border-surface-200 bg-white p-3 sm:p-6 shadow-sm dark:border-surface-800 dark:bg-surface-900">
       <div className="flex items-center gap-3 sm:gap-5">
-        <span className={`grid h-10 w-10 sm:h-16 sm:w-16 place-items-center rounded-full shrink-0 ${tones[tone]}`}>
-          <Icon className="h-5 w-5 sm:h-7 sm:w-7" />
+        <span className={`grid size-10 sm:size-16 place-items-center rounded-full shrink-0 ${tones[tone]}`}>
+          <Icon className="size-5 sm:size-7" />
         </span>
         <div className="min-w-0">
           <p className="text-xs sm:text-sm font-medium text-surface-600 dark:text-surface-300 truncate">{label}</p>
@@ -363,9 +365,12 @@ function SummaryCard({ icon: Icon, tone, label, value, helper }) {
 
 function StatusPill() {
   return (
-    <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-300 dark:ring-emerald-900/60">
+    <Badge
+      variant="secondary"
+      className="rounded-full border-transparent bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-300 dark:ring-emerald-900/60 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+    >
       Active
-    </span>
+    </Badge>
   );
 }
 
@@ -377,10 +382,10 @@ function IconButton({ icon: Icon, title, onClick, danger = false }) {
   return (
     <button
       onClick={onClick}
-      className={`grid h-9 w-9 place-items-center rounded-lg border ${colors}`}
+      className={`grid size-9 place-items-center rounded-lg border ${colors}`}
       title={title}
     >
-      <Icon className="h-4 w-4" />
+      <Icon className="size-4" />
     </button>
   );
 }

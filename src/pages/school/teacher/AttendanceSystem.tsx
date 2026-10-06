@@ -749,7 +749,7 @@ const AttendanceSystem: React.FC = () => {
       <div className="attendance-header flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-            Teacher Attendance Dashboard <Sparkles className="h-5 w-5 text-indigo-500 animate-pulse" />
+            Teacher Attendance Dashboard <Sparkles className="size-5 text-indigo-500 animate-pulse" />
           </h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5 font-medium">
             Manage daily roll calls, track student presence, and review logs instantly.
@@ -763,7 +763,7 @@ const AttendanceSystem: React.FC = () => {
           }}
           className="flex items-center gap-2 self-start md:self-auto px-4 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all duration-300 shadow-sm"
         >
-          <RefreshCw className="h-3.5 w-3.5" />
+          <RefreshCw className="size-3.5" />
           Refresh Stats
         </button>
       </div>
@@ -780,7 +780,7 @@ const AttendanceSystem: React.FC = () => {
               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-950'
           }`}
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="size-4" />
           Offline Attendance Entry
         </button>
         <button
@@ -791,7 +791,7 @@ const AttendanceSystem: React.FC = () => {
               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-950'
           }`}
         >
-          <Calendar className="h-4 w-4" />
+          <Calendar className="size-4" />
           Attendance History
         </button>
       </div>
@@ -811,7 +811,7 @@ const AttendanceSystem: React.FC = () => {
             {/* Header Control Form */}
             <GlassCard className="p-6 attendance-filters-card">
               <div className="flex items-center gap-2 mb-4 text-indigo-600 dark:text-indigo-400">
-                <Filter className="h-4 w-4" />
+                <Filter className="size-4" />
                 <h3 className="text-xs font-bold uppercase tracking-wider">Attendance Selector</h3>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
@@ -875,7 +875,7 @@ const AttendanceSystem: React.FC = () => {
               <div className="mt-5 flex items-center justify-between flex-wrap gap-3">
                 {editingSessionId && (
                   <Badge variant="purple" className="flex items-center gap-1.5 py-1.5 px-3">
-                    <Info className="h-3.5 w-3.5" /> Editing Session: Class {currentClassName} - {currentSectionName}
+                    <Info className="size-3.5" /> Editing Session: Class {currentClassName} - {currentSectionName}
                   </Badge>
                 )}
                 <Button 
@@ -892,8 +892,8 @@ const AttendanceSystem: React.FC = () => {
             {duplicateSessionId ? (
               <GlassCard className="p-8 border-2 border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-900/10 attendance-results-card">
                 <div className="flex flex-col items-center justify-center text-center">
-                  <div className="h-16 w-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mb-4">
-                    <AlertCircle className="h-8 w-8 text-amber-600 dark:text-amber-500" />
+                  <div className="size-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mb-4">
+                    <AlertCircle className="size-8 text-amber-600 dark:text-amber-500" />
                   </div>
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
                     Attendance Already Submitted
@@ -906,7 +906,7 @@ const AttendanceSystem: React.FC = () => {
                       onClick={() => handleViewDetails(duplicateSessionId)}
                       className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-700"
                     >
-                      <Eye className="h-4 w-4 mr-2" />
+                      <Eye className="size-4 mr-2" />
                       View Attendance
                     </Button>
                     <Button 
@@ -916,7 +916,7 @@ const AttendanceSystem: React.FC = () => {
                       }}
                       className="bg-indigo-600 hover:bg-indigo-700 font-bold"
                     >
-                      <Edit2 className="h-4 w-4 mr-2" />
+                      <Edit2 className="size-4 mr-2" />
                       Edit Attendance
                     </Button>
                   </div>
@@ -935,7 +935,7 @@ const AttendanceSystem: React.FC = () => {
                       
                       {/* Live Student Search */}
                       <div className="relative min-w-[200px]">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                         <input
                           type="text"
                           placeholder="Search student..."
@@ -974,7 +974,7 @@ const AttendanceSystem: React.FC = () => {
                         onClick={handleResetAttendance}
                         className="px-3 py-1.5 text-[10px] font-black rounded-lg bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-600 transition-all flex items-center gap-1.5 ml-auto"
                       >
-                        <RotateCcw className="h-3 w-3" />
+                        <RotateCcw className="size-3" />
                         Reset
                       </button>
                     </div>
@@ -1187,15 +1187,15 @@ const AttendanceSystem: React.FC = () => {
                   {/* Live Summary Card */}
                   <GlassCard className="p-6 shadow-sm border border-slate-100 dark:border-slate-800">
                     <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
-                      <TrendingUp className="h-4.5 w-4.5 text-indigo-600" />
+                      <TrendingUp className="size-4.5 text-indigo-600" />
                       <h3 className="text-sm font-bold text-slate-800 dark:text-white">Attendance Summary</h3>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                       {/* Circular Progress Gauge */}
                       <div className="flex flex-col items-center justify-center py-2">
-                        <div className="relative h-28 w-28 flex items-center justify-center">
-                          <svg className="absolute w-full h-full transform -rotate-90">
+                        <div className="relative size-28 flex items-center justify-center">
+                          <svg className="absolute size-full transform -rotate-90">
                             <circle 
                               cx="56" cy="56" r="46" 
                               className="stroke-slate-100 dark:stroke-slate-800" 
@@ -1281,8 +1281,8 @@ const AttendanceSystem: React.FC = () => {
             ) : (
               // Empty State before loading students
               <GlassCard className="p-12 text-center flex flex-col items-center justify-center">
-                <div className="h-28 w-28 bg-indigo-50 dark:bg-indigo-950/30 rounded-full flex items-center justify-center mb-5 border border-indigo-100 dark:border-indigo-900/30 shadow-inner">
-                  <Calendar className="h-12 w-12 text-indigo-600 dark:text-indigo-400" />
+                <div className="size-28 bg-indigo-50 dark:bg-indigo-950/30 rounded-full flex items-center justify-center mb-5 border border-indigo-100 dark:border-indigo-900/30 shadow-inner">
+                  <Calendar className="size-12 text-indigo-600 dark:text-indigo-400" />
                 </div>
                 <h3 className="text-base font-bold text-slate-800 dark:text-white">Load Student Attendance Sheet</h3>
                 <p className="text-slate-400 dark:text-slate-500 text-xs max-w-sm mt-2 leading-relaxed">
@@ -1304,7 +1304,7 @@ const AttendanceSystem: React.FC = () => {
             {/* Filters Row */}
             <GlassCard className="p-5 attendance-filters-card">
               <div className="flex items-center gap-2 mb-3 text-indigo-600 dark:text-indigo-400">
-                <Filter className="h-4 w-4" />
+                <Filter className="size-4" />
                 <h3 className="text-xs font-bold uppercase tracking-wider">Filter History Logs</h3>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1414,7 +1414,7 @@ const AttendanceSystem: React.FC = () => {
                                 className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 text-slate-600 hover:text-indigo-600 transition-all hover:-translate-y-0.5"
                                 title="View Attendance"
                               >
-                                <Eye className="h-4 w-4" />
+                                <Eye className="size-4" />
                               </button>
                               
                               {/* Edit Button */}
@@ -1423,7 +1423,7 @@ const AttendanceSystem: React.FC = () => {
                                 className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 text-slate-600 hover:text-amber-500 transition-all hover:-translate-y-0.5"
                                 title="Edit Attendance"
                               >
-                                <Edit2 className="h-4 w-4" />
+                                <Edit2 className="size-4" />
                               </button>
                               
                               {/* Export PDF Button */}
@@ -1432,7 +1432,7 @@ const AttendanceSystem: React.FC = () => {
                                 className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 text-slate-600 hover:text-emerald-500 transition-all hover:-translate-y-0.5"
                                 title="Export PDF"
                               >
-                                <Download className="h-4 w-4" />
+                                <Download className="size-4" />
                               </button>
                             </div>
                           </td>
@@ -1444,8 +1444,8 @@ const AttendanceSystem: React.FC = () => {
               ) : (
                 /* Empty state when no sessions found */
                 <div className="py-12 text-center flex flex-col items-center justify-center">
-                  <div className="h-20 w-20 bg-slate-50 dark:bg-slate-950 rounded-full flex items-center justify-center mb-4 text-slate-400">
-                    <Info className="h-10 w-10" />
+                  <div className="size-20 bg-slate-50 dark:bg-slate-950 rounded-full flex items-center justify-center mb-4 text-slate-400">
+                    <Info className="size-10" />
                   </div>
                   <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">No attendance sessions found</h3>
                   <p className="text-slate-400 text-xs mt-1 max-w-sm mx-auto leading-relaxed">
@@ -1489,9 +1489,9 @@ const AttendanceSystem: React.FC = () => {
                 </div>
                 <button 
                   onClick={() => setViewingSession(null)}
-                  className="h-8 w-8 rounded-xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors"
+                  className="size-8 rounded-xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors"
                 >
-                  <X className="h-4.5 w-4.5" />
+                  <X className="size-4.5" />
                 </button>
               </div>
 

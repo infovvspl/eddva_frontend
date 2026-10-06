@@ -34,8 +34,8 @@ export default function TreasureMap({ questData, onSelectStage, onBackToLobby })
     <div className={`relative rounded-2xl border border-sky-200/90 bg-gradient-to-b ${bgGradient} p-4 md:p-5 shadow-lg shadow-sky-500/5 overflow-hidden`}>
       {/* Background Glows */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#0284c712_1px,transparent_1px),linear-gradient(to_bottom,#0284c712_1px,transparent_1px)] bg-[size:16px_28px] pointer-events-none" />
-      <div className="absolute -top-32 -left-32 w-80 h-80 rounded-full blur-[100px] pointer-events-none opacity-20 bg-sky-400" />
-      <div className="absolute -bottom-32 -right-32 w-80 h-80 rounded-full blur-[100px] pointer-events-none opacity-15 bg-cyan-300" />
+      <div className="absolute -top-32 -left-32 size-80 rounded-full blur-[100px] pointer-events-none opacity-20 bg-sky-400" />
+      <div className="absolute -bottom-32 -right-32 size-80 rounded-full blur-[100px] pointer-events-none opacity-15 bg-cyan-300" />
 
       {/* Header Bar */}
       <div className="relative z-10 flex items-center justify-between border-b border-sky-200/80 pb-3 mb-4">
@@ -43,13 +43,13 @@ export default function TreasureMap({ questData, onSelectStage, onBackToLobby })
           onClick={onBackToLobby}
           className="flex items-center gap-1.5 text-xs font-bold text-sky-700 hover:text-sky-900 transition group"
         >
-          <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-1" />
+          <ArrowLeft className="size-3.5 transition-transform group-hover:-translate-x-1" />
           Back to Gamification Lobby
         </button>
 
         <div className="flex items-center gap-2">
           <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/90 border border-sky-300/80 shadow-sm ${accentColor}`}>
-            <Sparkles className="h-3 w-3 text-sky-500" />
+            <Sparkles className="size-3 text-sky-500" />
             {quest?.difficulty || 'Medium'} Quest Map
           </span>
         </div>
@@ -70,8 +70,8 @@ export default function TreasureMap({ questData, onSelectStage, onBackToLobby })
               <h3 className="text-[10px] font-bold uppercase tracking-wider text-sky-700">Quest Milestones</h3>
               
               <div className="flex items-center gap-2.5 bg-sky-50/80 p-2.5 rounded-lg border border-sky-200/80">
-                <div className="h-8 w-8 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-center shrink-0">
-                  <Trophy className="h-4 w-4 text-amber-600" />
+                <div className="size-8 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-center shrink-0">
+                  <Trophy className="size-4 text-amber-600" />
                 </div>
                 <div>
                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Grand Prize</p>
@@ -80,8 +80,8 @@ export default function TreasureMap({ questData, onSelectStage, onBackToLobby })
               </div>
 
               <div className="flex items-center gap-2.5 bg-sky-50/80 p-2.5 rounded-lg border border-sky-200/80">
-                <div className="h-8 w-8 rounded-lg bg-sky-100 border border-sky-300 flex items-center justify-center shrink-0">
-                  <Gift className="h-4 w-4 text-sky-600" />
+                <div className="size-8 rounded-lg bg-sky-100 border border-sky-300 flex items-center justify-center shrink-0">
+                  <Gift className="size-4 text-sky-600" />
                 </div>
                 <div>
                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Active Stage Loot</p>
@@ -116,7 +116,7 @@ export default function TreasureMap({ questData, onSelectStage, onBackToLobby })
         {/* Right Column: Interactive Quest Map Route */}
         <div className="lg:col-span-8 space-y-3">
           <div className="text-xs font-bold uppercase tracking-wider text-sky-800 mb-1 flex items-center gap-1.5">
-            <Sparkles className="h-3.5 w-3.5 text-sky-600" />
+            <Sparkles className="size-3.5 text-sky-600" />
             Adventure Checkpoints Path
           </div>
 
@@ -140,7 +140,7 @@ export default function TreasureMap({ questData, onSelectStage, onBackToLobby })
                   <div className="flex items-center gap-3">
                     {/* Stage Status Icon Badge */}
                     <div
-                      className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 border font-bold transition-all ${
+                      className={`size-9 rounded-lg flex items-center justify-center shrink-0 border font-bold transition-all ${
                         isCompleted
                           ? 'bg-sky-100 border-sky-300 text-sky-600'
                           : isActive
@@ -149,11 +149,11 @@ export default function TreasureMap({ questData, onSelectStage, onBackToLobby })
                       }`}
                     >
                       {isCompleted ? (
-                        <CheckCircle2 className="h-4.5 w-4.5 stroke-[2.5]" />
+                        <CheckCircle2 className="size-4.5 stroke-[2.5]" />
                       ) : isActive ? (
-                        <Play className="h-4 w-4 fill-current ml-0.5" />
+                        <Play className="size-4 fill-current ml-0.5" />
                       ) : (
-                        <Lock className="h-4 w-4" />
+                        <Lock className="size-4" />
                       )}
                     </div>
 
@@ -193,7 +193,7 @@ export default function TreasureMap({ questData, onSelectStage, onBackToLobby })
                       }`}
                     >
                       {isActive ? (
-                        <>Start Checkpoint <ChevronRight className="h-3.5 w-3.5" /></>
+                        <>Start Checkpoint <ChevronRight className="size-3.5" /></>
                       ) : isCompleted ? (
                         <>Replay Stage</>
                       ) : (

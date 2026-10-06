@@ -150,7 +150,7 @@ export default function Assignments() {
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <div className="size-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
       </div>
     );
   }
@@ -218,8 +218,8 @@ export default function Assignments() {
               )}
             >
               <div className="flex items-center justify-between gap-3">
-                <div className="grid h-8 w-8 sm:h-10 sm:w-10 place-items-center rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                  <Icon className="h-4 sm:h-5 sm:w-5" />
+                <div className="grid size-8 sm:size-10 place-items-center rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                  <Icon className="h-4 sm:size-5" />
                 </div>
                 <p className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-white">{counts[stat.id]}</p>
               </div>
@@ -273,7 +273,7 @@ export default function Assignments() {
 
       {filteredAssignments.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-[2rem] border border-slate-100 border-dashed bg-white p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <FileText className="mb-4 h-12 w-12 text-slate-300 dark:text-slate-700" />
+          <FileText className="mb-4 size-12 text-slate-300 dark:text-slate-700" />
           <h3 className="text-lg font-bold text-slate-900 dark:text-white">No assignments</h3>
           <p className="mt-1 text-sm text-slate-500">
             Your teacher has not posted homework for your class yet, or nothing matches this filter.

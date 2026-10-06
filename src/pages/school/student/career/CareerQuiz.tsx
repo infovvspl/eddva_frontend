@@ -77,8 +77,8 @@ export default function CareerQuiz() {
     return (
       <div className="mx-auto max-w-2xl p-1">
         <div className="rounded-2xl border border-slate-100 bg-white p-8 text-center shadow-sm">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
-            <Lock className="h-7 w-7 text-slate-400" />
+          <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-slate-100">
+            <Lock className="size-7 text-slate-400" />
           </div>
           <h2 className="mt-4 text-lg font-bold text-slate-900">You have already completed the quiz</h2>
           <p className="mt-1 text-sm text-slate-500">You can retake it once the cooldown ends.</p>
@@ -88,7 +88,7 @@ export default function CareerQuiz() {
             </div>
           )}
           <button onClick={() => navigate('/school/student/career/report')} className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700">
-            View Career Report <ChevronRight className="h-4 w-4" />
+            View Career Report <ChevronRight className="size-4" />
           </button>
         </div>
       </div>
@@ -104,7 +104,7 @@ export default function CareerQuiz() {
     <div className="mx-auto max-w-2xl space-y-5 p-1">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <button onClick={() => navigate('/school/student/career')} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><ArrowLeft className="h-5 w-5" /></button>
+        <button onClick={() => navigate('/school/student/career')} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><ArrowLeft className="size-5" /></button>
         <div className="flex-1">
           <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
             <div className="h-full rounded-full bg-blue-600 transition-all" style={{ width: `${progress}%` }} />
@@ -125,7 +125,7 @@ export default function CareerQuiz() {
                   className={`flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left text-sm font-semibold transition
                     ${selected ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-200 bg-white text-slate-700 hover:bg-blue-50'}`}>
                   <span>{opt.label}</span>
-                  {selected && <Check className="h-4 w-4 shrink-0" />}
+                  {selected && <Check className="size-4 shrink-0" />}
                 </button>
               );
             })}
@@ -139,17 +139,17 @@ export default function CareerQuiz() {
       <div className="flex items-center justify-between">
         <button onClick={() => setCurrent((c) => Math.max(0, c - 1))} disabled={current === 0}
           className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 disabled:opacity-40 hover:bg-slate-50">
-          <ChevronLeft className="h-4 w-4" /> Previous
+          <ChevronLeft className="size-4" /> Previous
         </button>
         <span className="text-xs text-slate-400">{answeredCount}/{questions.length} answered</span>
         {isLast ? (
           <button onClick={handleSubmit} className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2 text-sm font-bold text-white hover:bg-emerald-700">
-            Submit Quiz <Check className="h-4 w-4" />
+            Submit Quiz <Check className="size-4" />
           </button>
         ) : (
           <button onClick={() => setCurrent((c) => Math.min(questions.length - 1, c + 1))}
             className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-5 py-2 text-sm font-bold text-white hover:bg-blue-700">
-            Next <ChevronRight className="h-4 w-4" />
+            Next <ChevronRight className="size-4" />
           </button>
         )}
       </div>
@@ -158,7 +158,7 @@ export default function CareerQuiz() {
       {submitting && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-white/80 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-3 text-slate-700">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <Loader2 className="size-8 animate-spin text-blue-600" />
             <p className="text-sm font-bold">Analysing your responses…</p>
           </div>
         </div>

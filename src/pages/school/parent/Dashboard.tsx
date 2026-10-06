@@ -119,14 +119,14 @@ export default function ParentDashboard() {
           {/* Glowing Ambient Radial Overlays */}
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.2),transparent_50%)] pointer-events-none" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(56,189,248,0.25),transparent_50%)] pointer-events-none" />
-          <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-white/10 blur-3xl pointer-events-none" />
+          <div className="absolute -right-16 -top-16 size-48 rounded-full bg-white/10 blur-3xl pointer-events-none" />
 
           <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-5">
             {/* Left Info Column */}
             <div className="flex-1 space-y-2.5 min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-white/20 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white border border-white/30 backdrop-blur-md shadow-xs">
-                  <ShieldCheck className="h-3.5 w-3.5 text-blue-200 shrink-0" /> Parent Oversight Hub
+                  <ShieldCheck className="size-3.5 text-blue-200 shrink-0" /> Parent Oversight Hub
                 </span>
                 <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-emerald-400/25 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-100 border border-emerald-300/30 backdrop-blur-md shadow-xs">
                   Academic Year 2025–26
@@ -145,7 +145,7 @@ export default function ParentDashboard() {
               {/* Quick Status Chips */}
               <div className="pt-1 flex flex-wrap items-center gap-2 text-xs">
                 <div className="inline-flex items-center gap-2 whitespace-nowrap rounded-xl bg-white/20 px-3 py-1.5 border border-white/25 text-white backdrop-blur-md shadow-xs">
-                  <span className="h-2 w-2 rounded-full bg-emerald-300 animate-pulse shrink-0" />
+                  <span className="size-2 rounded-full bg-emerald-300 animate-pulse shrink-0" />
                   <span className="font-semibold text-xs text-white">Student: {activeChild?.name || "Selected"}</span>
                 </div>
                 {analytics.attendancePct !== null && (
@@ -310,8 +310,8 @@ function MetricCard({
       className="rounded-2xl sm:rounded-3xl border border-slate-100 bg-white p-3 sm:p-5 shadow-sm"
     >
       <div className="flex items-start gap-2.5 sm:gap-4">
-        <span className={`flex h-9 w-9 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl ${style.icon}`}>
-          <Icon className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
+        <span className={`flex size-9 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl ${style.icon}`}>
+          <Icon className="size-4.5 sm:size-5" />
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-slate-400 truncate">{title}</p>
@@ -375,7 +375,7 @@ function ChildSwitcher({
 
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-white/20 bg-white px-4 py-3 text-slate-900 shadow-sm">
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-teal-50 text-sm font-black text-teal-700">
+      <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-teal-50 text-sm font-black text-teal-700">
         {getInitial(activeChild?.name)}
       </div>
       <div className="min-w-0">

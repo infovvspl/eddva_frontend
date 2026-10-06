@@ -193,17 +193,17 @@ export default function SmartCalendar() {
   };
 
   return (
-    <div className="flex flex-col h-full w-full py-0.5 overflow-hidden">
+    <div className="flex flex-col size-full py-0.5 overflow-hidden">
       <div className="flex items-center justify-between mb-3 shrink-0 bg-blue-50/80 dark:bg-blue-900/20 p-1.5 rounded-xl border border-blue-100/50 dark:border-blue-900/30">
         <h4 className="text-[11px] sm:text-xs font-black text-blue-900 dark:text-blue-100 uppercase tracking-widest pl-2">
           {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
         </h4>
         <div className="flex items-center gap-1">
           <button onClick={prevMonth} className="p-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-blue-900 text-blue-600 dark:text-blue-400 shadow-[0_2px_10px_rgb(0,0,0,0.05)] transition-all hover:scale-105" aria-label="Previous month">
-            <ChevronLeft className="h-3.5 w-3.5" />
+            <ChevronLeft className="size-3.5" />
           </button>
           <button onClick={nextMonth} className="p-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-blue-900 text-blue-600 dark:text-blue-400 shadow-[0_2px_10px_rgb(0,0,0,0.05)] transition-all hover:scale-105" aria-label="Next month">
-            <ChevronRight className="h-3.5 w-3.5" />
+            <ChevronRight className="size-3.5" />
           </button>
         </div>
       </div>
@@ -243,12 +243,12 @@ export default function SmartCalendar() {
               
               {hasEmergency ? (
                 <div className="mt-0.5 flex justify-center">
-                  <div className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" title="Emergency Notice" />
+                  <div className="size-1.5 rounded-full bg-rose-600 animate-pulse" title="Emergency Notice" />
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-0.5 mt-0.5 min-h-[6px]">
                   {isToday && (
-                    <div className="w-1 h-1 rounded-full bg-white animate-pulse shadow-[0_0_8px_rgba(255,255,255,0.8)]" title="Today" />
+                    <div className="size-1 rounded-full bg-white animate-pulse shadow-[0_0_8px_rgba(255,255,255,0.8)]" title="Today" />
                   )}
                   {uniqueCategories.length > 0 && (
                     <div className="flex flex-wrap items-center justify-center gap-0.5 px-0.5">
@@ -257,7 +257,7 @@ export default function SmartCalendar() {
                         return (
                           <div 
                             key={cat} 
-                            className={`w-1 h-1 rounded-full ${ind.color}`}
+                            className={`size-1 rounded-full ${ind.color}`}
                             title={ind.name}
                           />
                         );
@@ -308,7 +308,7 @@ export default function SmartCalendar() {
                   onClick={() => setIsPopupOpen(false)}
                   className="p-1.5 bg-white dark:bg-slate-800 rounded-full hover:bg-slate-100 transition-colors shadow-sm"
                 >
-                  <X className="h-4 w-4 text-slate-500" />
+                  <X className="size-4 text-slate-500" />
                 </button>
               </div>
               <div className="p-5 max-h-[60vh] overflow-y-auto space-y-3">
@@ -320,7 +320,7 @@ export default function SmartCalendar() {
                       onClick={(e) => handleEventClick(ev, e)}
                       className="w-full text-left flex gap-3 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all hover:scale-[1.01] hover:underline cursor-pointer group"
                     >
-                      <div className={`mt-1.5 w-2 h-2 shrink-0 rounded-full ${ind.color}`} />
+                      <div className={`mt-1.5 size-2 shrink-0 rounded-full ${ind.color}`} />
                       <div>
                         <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight mb-0.5">{ev.title}</p>
                         <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{ind.name}</p>
@@ -353,7 +353,7 @@ export default function SmartCalendar() {
                   onClick={() => setInfoModalOpen(false)}
                   className="p-1.5 bg-white dark:bg-slate-800 rounded-full hover:bg-slate-100 transition-colors shadow-sm"
                 >
-                  <X className="h-4 w-4 text-slate-500" />
+                  <X className="size-4 text-slate-500" />
                 </button>
               </div>
               <div className="p-6 space-y-4">

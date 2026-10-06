@@ -612,7 +612,7 @@ export default function StudentReportClasses() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="size-8 animate-spin text-blue-600" />
         <p className="text-sm font-bold text-slate-500">Loading student performance classes...</p>
       </div>
     );
@@ -787,12 +787,12 @@ export default function StudentReportClasses() {
                           e.stopPropagation();
                           openEditPrevModal(classNameVal, academicYearVal, results);
                         }}
-                        className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors"
+                        className="size-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors"
                         title="Edit marks"
                       >
                         <Edit2 size={14} />
                       </button>
-                      <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-blue-500 group-hover:bg-blue-50 dark:group-hover:bg-blue-950/30 transition-colors">
+                      <div className="size-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-blue-500 group-hover:bg-blue-50 dark:group-hover:bg-blue-950/30 transition-colors">
                         <FileText size={16} />
                       </div>
                     </div>
@@ -932,7 +932,7 @@ export default function StudentReportClasses() {
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6 shrink-0">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                  <div className="size-10 rounded-xl bg-white/20 flex items-center justify-center">
                     <GraduationCap size={20} className="text-white" />
                   </div>
                   <div>
@@ -940,7 +940,7 @@ export default function StudentReportClasses() {
                     <p className="text-xs text-blue-200 font-bold">Record historical academic achievements</p>
                   </div>
                 </div>
-                <button onClick={() => setIsAddPrevOpen(false)} className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-all">
+                <button onClick={() => setIsAddPrevOpen(false)} className="size-8 rounded-xl bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-all">
                   <X size={16} />
                 </button>
               </div>

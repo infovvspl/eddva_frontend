@@ -3,6 +3,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { ChevronLeft, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 /* ─────────────────────────────── Types ─────────────────────────────── */
@@ -108,14 +109,15 @@ function SidebarItem({
   if (item.action) {
     return (
       <div className="relative" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
-        <button
+        <Button
           type="button"
+          variant="ghost"
           onClick={() => onAction?.(item.action!)}
           className={cn(
-            "group relative flex w-full items-center rounded-xl text-[13px] font-bold tracking-tight transition-all duration-200 hover:translate-x-0.5",
+            "group relative flex w-full h-auto items-center rounded-xl text-[13px] font-bold tracking-tight hover:translate-x-0.5 [&_svg]:w-full [&_svg]:h-full",
             collapsed
               ? "h-[46px] w-[46px] mx-auto justify-center"
-              : "h-[50px] gap-3.5 px-3.5",
+              : "h-[50px] justify-start gap-3.5 px-3.5",
             "text-slate-500 hover:text-slate-800 hover:bg-slate-50/80 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/40"
           )}
         >
@@ -128,7 +130,7 @@ function SidebarItem({
           {!collapsed && (
             <span className="truncate transition-[opacity,width] duration-200">{item.label}</span>
           )}
-        </button>
+        </Button>
         {collapsed && <SidebarTooltip label={item.label} show={hovered} />}
       </div>
     );
@@ -241,29 +243,31 @@ function SidebarInner({
 
         {/* Collapse toggle — desktop only */}
         {!isMobileDrawer && showCollapseToggle && (
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={onToggleCollapse}
             className={cn(
-              "hidden lg:flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-300 transition-colors shrink-0",
+              "hidden lg:flex h-auto w-auto items-center justify-center rounded-lg p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-300 shrink-0",
               collapsed && "mx-auto"
             )}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             <ChevronLeft className={cn("h-4 w-4 transition-transform duration-200", collapsed && "rotate-180")} />
-          </button>
+          </Button>
         )}
 
         {/* Close button — mobile drawer */}
         {isMobileDrawer && (
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={onMobileClose}
-            className="flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
+            className="flex h-auto w-auto items-center justify-center rounded-lg p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0"
             aria-label="Close menu"
           >
             <ChevronLeft className="h-4 w-4" />
-          </button>
+          </Button>
         )}
       </div>
 
@@ -463,14 +467,15 @@ export function SidebarProfileCard({
 
       {/* Logout button — expanded only */}
       {!collapsed && onLogout && (
-        <button
+        <Button
           type="button"
+          variant="ghost"
           onClick={onLogout}
-          className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all"
+          className="shrink-0 w-8 h-8 p-0 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 [&_svg]:size-3.5"
           aria-label="Logout"
         >
           <LogOut className="w-3.5 h-3.5" />
-        </button>
+        </Button>
       )}
     </div>
   );

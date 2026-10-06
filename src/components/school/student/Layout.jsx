@@ -106,7 +106,7 @@ export default function Layout() {
         <main className={`flex-1 min-h-0 ${layoutConfig.type === 'immersive' && !layoutConfig.isScrollable ? 'p-0 overflow-y-hidden' : 'p-0 overflow-y-auto'} scrollbar-none`}>
           <AnimatePresence initial={false} mode="wait">
             <PageTransition key={location.pathname} duration={0.2}>
-              <div className="h-full w-full">
+              <div className="size-full">
                 <Outlet />
               </div>
             </PageTransition>
@@ -128,7 +128,7 @@ export default function Layout() {
                 <span className={`text-[9px] font-black uppercase mt-1 tracking-wider ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'}`}>
                   {item.label}
                 </span>
-                {isActive && <span className="absolute bottom-1 h-1 w-1 rounded-full bg-blue-600 dark:bg-blue-400" />}
+                {isActive && <span className="absolute bottom-1 size-1 rounded-full bg-blue-600 dark:bg-blue-400" />}
               </Link>
             );
           })}
@@ -181,7 +181,7 @@ export default function Layout() {
                           : 'border-slate-100 bg-white hover:bg-slate-50 dark:border-slate-850 dark:bg-slate-900/60'
                         }`}
                     >
-                      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${item.color}`}>
+                      <div className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${item.color}`}>
                         <Icon size={16} />
                       </div>
                       <span className="text-[11px] font-black tracking-tight text-slate-700 dark:text-slate-300">
@@ -228,7 +228,7 @@ export default function Layout() {
               <div className={layoutConfig.containerClass}>
                 <Suspense fallback={
                   <div className="flex h-[50vh] w-full items-center justify-center">
-                    <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                    <Loader2 className="size-8 animate-spin text-blue-500" />
                   </div>
                 }>
                   <Outlet />

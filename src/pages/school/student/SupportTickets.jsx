@@ -65,7 +65,7 @@ export default function SupportTickets() {
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <div className="size-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
       </div>
     );
   }
@@ -79,17 +79,17 @@ export default function SupportTickets() {
 
       <div className="grid gap-2.5 grid-cols-3 sm:gap-4">
         <div className="rounded-2xl border border-amber-100 bg-amber-50 p-3 sm:p-5 dark:border-amber-900/40 dark:bg-amber-950/20">
-          <Ticket className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
+          <Ticket className="size-5 sm:size-6 text-amber-600" />
           <p className="mt-3 sm:mt-4 text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-300">Open</p>
           <p className="mt-0.5 sm:mt-1 text-base sm:text-3xl font-black text-slate-950 dark:text-white">{counts.open}</p>
         </div>
         <div className="rounded-2xl border border-blue-100 bg-blue-50 p-3 sm:p-5 dark:border-blue-900/40 dark:bg-blue-950/20">
-          <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+          <Clock className="size-5 sm:size-6 text-blue-600" />
           <p className="mt-3 sm:mt-4 text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">In Progress</p>
           <p className="mt-0.5 sm:mt-1 text-base sm:text-3xl font-black text-slate-950 dark:text-white">{counts.inProgress}</p>
         </div>
         <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-3 sm:p-5 dark:border-emerald-900/40 dark:bg-emerald-950/20">
-          <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" />
+          <CheckCircle2 className="size-5 sm:size-6 text-emerald-600" />
           <p className="mt-3 sm:mt-4 text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-300">Resolved</p>
           <p className="mt-0.5 sm:mt-1 text-base sm:text-3xl font-black text-slate-950 dark:text-white">{counts.resolved}</p>
         </div>
@@ -98,7 +98,7 @@ export default function SupportTickets() {
       <div className="grid gap-6 lg:grid-cols-[420px_minmax(0,1fr)]">
         <form onSubmit={handleSubmit} className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center gap-2.5 sm:gap-3">
-            <LifeBuoy className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+            <LifeBuoy className="size-5 sm:size-6 text-blue-600" />
             <div>
               <h2 className="text-sm sm:text-base font-black text-slate-950 dark:text-white">Raise Ticket</h2>
               <p className="text-xs sm:text-sm font-medium text-slate-500">Send your concern to the school support team.</p>
@@ -140,7 +140,7 @@ export default function SupportTickets() {
             disabled={submitting || !form.title.trim() || !form.description.trim()}
             className="mt-4 sm:mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-black text-white transition hover:bg-blue-700 disabled:opacity-50"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="size-4" />
             {submitting ? 'Creating Ticket...' : 'Create Ticket'}
           </button>
           {success && <p className="mt-3 text-center text-xs sm:text-sm font-bold text-emerald-600">Ticket created successfully.</p>}
@@ -152,12 +152,12 @@ export default function SupportTickets() {
               <h2 className="text-sm sm:text-base font-black text-slate-950 dark:text-white">Ticket Status</h2>
               <p className="mt-0.5 text-xs sm:text-sm font-medium text-slate-500">Track every request you have raised.</p>
             </div>
-            <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+            <MessageSquare className="size-5 sm:size-6 text-blue-600" />
           </div>
           <div className="mt-4 sm:mt-5 space-y-3">
             {tickets.length === 0 ? (
               <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 sm:p-10 text-center dark:border-slate-800 dark:bg-slate-950/50">
-                <LifeBuoy className="mx-auto h-8 w-8 sm:h-10 sm:w-10 text-slate-300" />
+                <LifeBuoy className="mx-auto size-8 sm:size-10 text-slate-300" />
                 <h3 className="mt-2.5 sm:mt-3 text-xs sm:text-sm font-black text-slate-900 dark:text-white">No support tickets</h3>
                 <p className="mt-1 text-xs sm:text-sm text-slate-500">Create a ticket when you need help.</p>
               </div>

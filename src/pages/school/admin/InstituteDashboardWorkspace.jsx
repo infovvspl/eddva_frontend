@@ -26,13 +26,28 @@ import { AttentionRequiredWidget, FeeOverviewWidget, RecentActivityWidget } from
 import {
   AreaChart,
   Area,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
   CartesianGrid,
 } from 'recharts';
+import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
+import { Badge } from '@/components/ui/badge';
 import SmartCalendar from '@/components/school/SmartCalendar';
+
+const attendanceChartConfig = {
+  present: {
+    label: 'Present',
+    color: '#2563EB',
+  },
+  absent: {
+    label: 'Absent',
+    color: '#F43F5E',
+  },
+};
 
 function useAnimatedNumber(target, duration = 800) {
   const [val, setVal] = useState(0);
@@ -73,20 +88,6 @@ function relativeTime(dateStr) {
   if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
   return `${Math.floor(diffSec / 86400)}d ago`;
 }
-
-const ChartTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 p-2.5 shadow-xl backdrop-blur-md">
-        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{label}</p>
-        <p className="text-xs font-black text-blue-600 dark:text-blue-400 mt-0.5">
-          {payload[0].value}% <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Attendance</span>
-        </p>
-      </div>
-    );
-  }
-  return null;
-};
 
 function KpiCard({ title, value, suffix, sub, icon: Icon, color, delay, sparklineData }) {
   let strokeColor = '#2563EB'; // default blue
@@ -223,6 +224,14 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
     }));
   }, [attendancePct, stats?.attendanceHistory]);
 
+  const attendancePresentAbsentSeries = useMemo(() => {
+    return attendanceSeries.map((s) => ({
+      name: s.name,
+      present: s.att,
+      absent: Math.max(0, 100 - s.att),
+    }));
+  }, [attendanceSeries]);
+
   const sparkStudents = useMemo(() => {
     const base = students || 500;
     return [0.85, 0.88, 0.92, 0.9, 0.95, 0.98, 1].map((f) => ({ v: Math.round(base * f) }));
@@ -261,13 +270,13 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
             <img
               src={adminBanner}
               alt="Admin Banner"
-              className="w-full h-full object-cover object-[center_35%]"
+              className="size-full object-cover object-[center_35%]"
             />
           </div>
           
           {/* Gradient removed as requested */}
 
-          <div className="relative z-10 flex flex-col justify-between h-full w-full py-1">
+          <div className="relative z-10 flex flex-col justify-between size-full py-1">
             <div className="flex flex-col items-start gap-1.5 min-w-0 w-full md:max-w-[85%] lg:max-w-[90%]">
               <h1 className="font-display text-xl sm:text-2xl md:text-3xl lg:text-[2rem] font-black tracking-tight text-slate-900 leading-snug break-words">
                 Welcome, {institute?.name || 'Army Public School'}!
@@ -287,7 +296,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
 
             <div className="mt-4 sm:mt-5">
               <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/80 px-4 py-1.5 sm:px-5 sm:py-2 backdrop-blur-md shadow-sm">
-                <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600 shrink-0" />
+                <Sparkles className="size-3.5 sm:size-4 text-blue-600 shrink-0" />
                 <span className="text-[11px] sm:text-xs font-bold tracking-wide text-slate-800">Manage Smarter. Educate Better.</span>
               </div>
             </div>
@@ -298,7 +307,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
       {/* Row 2: Remaining Dashboard Content */}
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 items-stretch px-4 md:px-6">
         {/* Left Column: Quick Actions, KPIs, Charts */}
-        <div className="lg:col-span-2 xl:col-span-3 flex flex-col space-y-6 min-w-0">
+        <div className="lg:col-span-2 xl:col-span-3 flex flex-col gap-y-6 min-w-0">
           {/* Quick Actions Card */}
           <div
             className="bg-white dark:bg-slate-900 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-200/60 dark:border-slate-800/60"
@@ -344,7 +353,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
                       height: 'clamp(2.5rem, 3.5vw, 3rem)'
                     }}
                   >
-                    <action.icon className="w-1/2 h-1/2" />
+                    <action.icon className="size-1/2" />
                   </div>
                   <span
                     className="text-center font-black tracking-wide text-slate-700 dark:text-slate-200 transition-colors group-hover:text-slate-900 dark:group-hover:text-white truncate w-full"
@@ -440,8 +449,9 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
                     Smoothed weekly trend · updates every refresh
                   </p>
                 </div>
-                <span
-                  className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-500/20 font-bold"
+                <Badge
+                  variant="secondary"
+                  className="items-center gap-1.5 border-transparent bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-500/20 font-bold hover:bg-emerald-500/10"
                   style={{
                     padding: 'clamp(0.2rem, 0.4vw, 0.35rem) clamp(0.6rem, 0.8vw, 0.75rem)',
                     fontSize: 'clamp(9px, 0.65vw, 10px)'
@@ -449,24 +459,19 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
                 >
                   <TrendingUp style={{ width: 'clamp(10px, 0.75vw, 12px)', height: 'clamp(10px, 0.75vw, 12px)' }} />
                   Live
-                </span>
+                </Badge>
               </div>
               <div className="flex-1 min-h-[160px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={attendanceSeries} margin={{ top: 8, right: 12, left: -24, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="attFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#2563EB" stopOpacity={0.2} />
-                        <stop offset="100%" stopColor="#2563EB" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
+                <ChartContainer config={attendanceChartConfig} className="aspect-auto size-full">
+                  <LineChart data={attendancePresentAbsentSeries} margin={{ top: 8, right: 12, left: -24, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(37,99,235,0.05)" vertical={false} />
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} dy={8} />
                     <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} domain={[0, 100]} />
-                    <RechartsTooltip content={<ChartTooltip />} />
-                    <Area type="monotone" dataKey="att" name="Attendance %" stroke="#2563EB" strokeWidth={3} fill="url(#attFill)" />
-                  </AreaChart>
-                </ResponsiveContainer>
+                    <RechartsTooltip content={<ChartTooltipContent />} />
+                    <Line type="monotone" dataKey="present" stroke="var(--color-present)" strokeWidth={3} dot={false} />
+                    <Line type="monotone" dataKey="absent" stroke="var(--color-absent)" strokeWidth={3} dot={false} />
+                  </LineChart>
+                </ChartContainer>
               </div>
             </motion.div>
             
@@ -475,7 +480,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
         </div>
 
         {/* Right Column: Communications, Support & Security */}
-        <div className="space-y-6 w-full lg:col-span-1 flex flex-col justify-start">
+        <div className="gap-y-6 w-full lg:col-span-1 flex flex-col justify-start">
           {/* Smart Calendar (Moved down) */}
           <motion.div
             initial={{ opacity: 0, y: 14 }}

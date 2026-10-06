@@ -126,15 +126,15 @@ export default function Whiteboard({ width = 1280, height = 720, active, onReady
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerLeave={onPointerUp}
-        className="absolute inset-0 h-full w-full"
+        className="absolute inset-0 size-full"
         style={{ touchAction: 'none', cursor: active ? 'crosshair' : 'default', pointerEvents: active ? 'auto' : 'none' }}
       />
 
       {active && (
         <div className="absolute left-1/2 top-3 z-10 flex -translate-x-1/2 items-center gap-1 rounded-2xl border border-slate-200/70 bg-white/95 px-2 py-1.5 shadow-lg backdrop-blur dark:border-slate-700 dark:bg-slate-900/95">
-          <TbButton active={tool === 'pen'} onClick={() => { setTool('pen'); force((n) => n + 1); }} title="Pen"><Pen className="h-4 w-4" /></TbButton>
-          <TbButton active={tool === 'highlighter'} onClick={() => { setTool('highlighter'); force((n) => n + 1); }} title="Highlighter"><Highlighter className="h-4 w-4" /></TbButton>
-          <TbButton active={tool === 'eraser'} onClick={() => { setTool('eraser'); force((n) => n + 1); }} title="Eraser"><Eraser className="h-4 w-4" /></TbButton>
+          <TbButton active={tool === 'pen'} onClick={() => { setTool('pen'); force((n) => n + 1); }} title="Pen"><Pen className="size-4" /></TbButton>
+          <TbButton active={tool === 'highlighter'} onClick={() => { setTool('highlighter'); force((n) => n + 1); }} title="Highlighter"><Highlighter className="size-4" /></TbButton>
+          <TbButton active={tool === 'eraser'} onClick={() => { setTool('eraser'); force((n) => n + 1); }} title="Eraser"><Eraser className="size-4" /></TbButton>
 
           <span className="mx-1 h-5 w-px bg-slate-200 dark:bg-slate-700" />
 
@@ -142,7 +142,7 @@ export default function Whiteboard({ width = 1280, height = 720, active, onReady
             <button
               key={c}
               onClick={() => { setColor(c); setTool((t) => (t === 'eraser' ? 'pen' : t)); force((n) => n + 1); }}
-              className={`h-5 w-5 rounded-full border transition ${color === c ? 'ring-2 ring-blue-500 ring-offset-1 dark:ring-offset-slate-900' : 'border-slate-300 dark:border-slate-600'}`}
+              className={`size-5 rounded-full border transition ${color === c ? 'ring-2 ring-blue-500 ring-offset-1 dark:ring-offset-slate-900' : 'border-slate-300 dark:border-slate-600'}`}
               style={{ background: c }}
               title="Color"
             />
@@ -154,7 +154,7 @@ export default function Whiteboard({ width = 1280, height = 720, active, onReady
             <button
               key={w}
               onClick={() => { setWidth(w); force((n) => n + 1); }}
-              className={`grid h-7 w-7 place-items-center rounded-lg transition ${width_ === w ? 'bg-blue-100 dark:bg-blue-900/40' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+              className={`grid size-7 place-items-center rounded-lg transition ${width_ === w ? 'bg-blue-100 dark:bg-blue-900/40' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}
               title={`${w}px`}
             >
               <span className="rounded-full bg-slate-700 dark:bg-slate-200" style={{ width: w, height: w }} />
@@ -163,8 +163,8 @@ export default function Whiteboard({ width = 1280, height = 720, active, onReady
 
           <span className="mx-1 h-5 w-px bg-slate-200 dark:bg-slate-700" />
 
-          <TbButton onClick={undo} title="Undo"><Undo2 className="h-4 w-4" /></TbButton>
-          <TbButton onClick={clear} title="Clear all"><Trash2 className="h-4 w-4" /></TbButton>
+          <TbButton onClick={undo} title="Undo"><Undo2 className="size-4" /></TbButton>
+          <TbButton onClick={clear} title="Clear all"><Trash2 className="size-4" /></TbButton>
         </div>
       )}
     </div>
@@ -176,7 +176,7 @@ function TbButton({ children, active, onClick, title }: { children: React.ReactN
     <button
       onClick={onClick}
       title={title}
-      className={`grid h-7 w-7 place-items-center rounded-lg transition ${active ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}`}
+      className={`grid size-7 place-items-center rounded-lg transition ${active ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}`}
     >
       {children}
     </button>

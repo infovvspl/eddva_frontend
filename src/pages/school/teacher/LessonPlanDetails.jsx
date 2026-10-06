@@ -37,7 +37,7 @@ export default function LessonPlanDetails() {
   if (loading) {
     return (
       <div className="flex h-[80vh] flex-col items-center justify-center gap-3">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="size-8 animate-spin text-blue-600" />
         <p className="text-xs font-bold text-slate-400">Loading lesson plan…</p>
       </div>
     );

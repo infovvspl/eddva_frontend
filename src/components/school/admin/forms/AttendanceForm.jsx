@@ -56,7 +56,7 @@ export default function AttendanceForm({ attendance, onSubmit, onCancel, isLoadi
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <div className="flex gap-3 rounded-lg border border-red-200 bg-red-50 p-3">
-          <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
+          <AlertCircle className="size-5 flex-shrink-0 text-red-600" />
           <p className="text-sm font-semibold text-red-700">{error}</p>
         </div>
       )}
@@ -124,7 +124,7 @@ export default function AttendanceForm({ attendance, onSubmit, onCancel, isLoadi
           disabled={isLoading}
           className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 font-bold text-white shadow-sm hover:bg-brand-700 disabled:opacity-50"
         >
-          {isLoading && <Loader className="h-4 w-4 animate-spin" />}
+          {isLoading && <Loader className="size-4 animate-spin" />}
           {attendance ? 'Update Attendance' : 'Mark Attendance'}
         </button>
         <button

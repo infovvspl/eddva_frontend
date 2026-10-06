@@ -21,11 +21,11 @@ export function AttentionRequiredWidget({ className }) {
     >
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
-          <AlertCircle className="w-5 h-5 text-rose-500" />
+          <AlertCircle className="size-5 text-rose-500" />
           <h3 className="font-display font-bold text-slate-800 text-base">Attention Required</h3>
         </div>
         <button className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1">
-          View All <ChevronRight className="w-3.5 h-3.5" />
+          View All <ChevronRight className="size-3.5" />
         </button>
       </div>
 
@@ -33,8 +33,8 @@ export function AttentionRequiredWidget({ className }) {
         {tasks.map((task, i) => (
           <div key={i} className="flex items-center justify-between gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors">
             <div className="flex items-center gap-3 min-w-0 flex-1">
-              <div className={cn("w-9 h-9 rounded-full flex items-center justify-center shrink-0", task.bg, task.color)}>
-                <task.icon className="w-4 h-4" />
+              <div className={cn("size-9 rounded-full flex items-center justify-center shrink-0", task.bg, task.color)}>
+                <task.icon className="size-4" />
               </div>
               <span className="text-sm font-semibold text-slate-700 leading-snug">{task.label}</span>
             </div>
@@ -62,7 +62,7 @@ export function FeeOverviewWidget({ className }) {
       <div className="flex items-center justify-between mb-5">
         <h3 className="font-display font-bold text-slate-800 text-base">Fee Overview</h3>
         <button className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1">
-          View Reports <ChevronRight className="w-3.5 h-3.5" />
+          View Reports <ChevronRight className="size-3.5" />
         </button>
       </div>
 
@@ -84,21 +84,21 @@ export function FeeOverviewWidget({ className }) {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+            <div className="size-2 rounded-full bg-emerald-500"></div>
             <span className="text-sm font-semibold text-slate-600">Collected</span>
           </div>
           <span className="text-sm font-bold text-slate-900">₹18.4L</span>
         </div>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+            <div className="size-2 rounded-full bg-amber-500"></div>
             <span className="text-sm font-semibold text-slate-600">Pending</span>
           </div>
           <span className="text-sm font-bold text-slate-900">₹4.2L</span>
         </div>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-rose-500"></div>
+            <div className="size-2 rounded-full bg-rose-500"></div>
             <span className="text-sm font-semibold text-slate-600">Overdue</span>
           </div>
           <span className="text-sm font-bold text-slate-900">₹1.1L</span>
@@ -134,19 +134,19 @@ export function RecentActivityWidget({ className }) {
     >
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
-          <Clock className="w-5 h-5 text-blue-500" />
+          <Clock className="size-5 text-blue-500" />
           <h3 className="font-display font-bold text-slate-800 text-base">Recent Activity</h3>
         </div>
         <button className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1">
-          View All <ChevronRight className="w-3.5 h-3.5" />
+          View All <ChevronRight className="size-3.5" />
         </button>
       </div>
 
       <div className="flex flex-col gap-4">
         {activities.map((act, i) => (
           <div key={i} className="flex gap-3">
-            <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0 mt-0.5", act.bg, act.color)}>
-              <act.icon className="w-4.5 h-4.5" />
+            <div className={cn("size-10 rounded-full flex items-center justify-center shrink-0 mt-0.5", act.bg, act.color)}>
+              <act.icon className="size-4.5" />
             </div>
             <div>
               <p className="text-sm font-semibold text-slate-800">{act.title}</p>

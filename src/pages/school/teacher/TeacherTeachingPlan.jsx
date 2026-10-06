@@ -66,7 +66,7 @@ function LessonPlanCard({ lesson, onMarkComplete }) {
   const navigate = useNavigate();
   const isDone = lesson.status === 'COMPLETED';
   return (
-    <div id={`lesson-${lesson.id}`} className="rounded-2xl border border-slate-200 p-5 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900 space-y-3 flex flex-col justify-between scroll-mt-24">
+    <div id={`lesson-${lesson.id}`} className="rounded-2xl border border-slate-200 p-5 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900 gap-y-3 flex flex-col justify-between scroll-mt-24">
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider">
@@ -184,7 +184,7 @@ export default function TeacherTeachingPlan() {
   if (loading) {
     return (
       <div className="flex h-[80vh] flex-col items-center justify-center gap-3">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="size-8 animate-spin text-blue-600" />
         <p className="text-xs font-bold text-slate-400">Loading your teaching plan dashboard…</p>
       </div>
     );
@@ -764,7 +764,7 @@ export default function TeacherTeachingPlan() {
               return (
                 <div
                   key={topic.topicId || idx}
-                  className="rounded-2xl border border-slate-200 p-5 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900 space-y-3 flex flex-col justify-between"
+                  className="rounded-2xl border border-slate-200 p-5 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900 gap-y-3 flex flex-col justify-between"
                 >
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">

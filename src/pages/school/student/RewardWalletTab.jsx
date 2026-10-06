@@ -79,7 +79,7 @@ export default function RewardWalletTab({ profile, onRefresh }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-3">
         <div>
           <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-950/50 px-2.5 py-0.5 text-[10px] font-black uppercase text-emerald-800 dark:text-emerald-300">
-            <Sparkles className="h-3 w-3 text-emerald-500" />
+            <Sparkles className="size-3 text-emerald-500" />
             10 Coins = ₹1 Reward Rate
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1">Reward Wallet</h2>
@@ -93,7 +93,7 @@ export default function RewardWalletTab({ profile, onRefresh }) {
           </div>
           <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 px-3.5 py-2 text-center shadow-sm">
             <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center justify-center gap-1">
-              <Coins className="h-3 w-3 text-amber-500" /> EDDVA Coins
+              <Coins className="size-3 text-amber-500" /> EDDVA Coins
             </p>
             <p className="text-base font-black text-amber-500">{currentCoins}</p>
           </div>
@@ -106,7 +106,7 @@ export default function RewardWalletTab({ profile, onRefresh }) {
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center gap-3 mb-4">
             <div className="rounded-xl bg-emerald-100 p-3 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
-              <CreditCard className="h-6 w-6" />
+              <CreditCard className="size-6" />
             </div>
             <div>
               <h3 className="text-lg font-black text-slate-900 dark:text-white">Receive Demo Payout</h3>
@@ -116,14 +116,14 @@ export default function RewardWalletTab({ profile, onRefresh }) {
 
           {successMsg && (
             <div className="mb-4 flex items-center gap-2 rounded-xl bg-emerald-50 p-3 text-xs font-bold text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-              <CheckCircle className="h-4 w-4 shrink-0" />
+              <CheckCircle className="size-4 shrink-0" />
               <span>{successMsg}</span>
             </div>
           )}
 
           {errorMsg && (
             <div className="mb-4 flex items-center gap-2 rounded-xl bg-rose-50 p-3 text-xs font-bold text-rose-800 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
-              <AlertCircle className="h-4 w-4 shrink-0" />
+              <AlertCircle className="size-4 shrink-0" />
               <span>{errorMsg}</span>
             </div>
           )}
@@ -165,10 +165,10 @@ export default function RewardWalletTab({ profile, onRefresh }) {
               className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-black text-white shadow-md transition hover:bg-emerald-700 disabled:opacity-50"
             >
               {isSubmitting ? (
-                <RefreshCw className="h-4 w-4 animate-spin" />
+                <RefreshCw className="size-4 animate-spin" />
               ) : (
                 <>
-                  <ArrowUpRight className="h-4 w-4" />
+                  <ArrowUpRight className="size-4" />
                   Receive Demo Payment (₹{redeemAmount || 0})
                 </>
               )}
@@ -215,13 +215,13 @@ export default function RewardWalletTab({ profile, onRefresh }) {
       {/* Transaction & Redemption History */}
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="flex items-center gap-2 mb-4">
-          <History className="h-5 w-5 text-slate-500" />
+          <History className="size-5 text-slate-500" />
           <h3 className="text-lg font-black text-slate-900 dark:text-white">Transaction Ledger</h3>
         </div>
 
         {loading ? (
           <div className="py-8 text-center">
-            <RefreshCw className="mx-auto h-6 w-6 animate-spin text-emerald-500" />
+            <RefreshCw className="mx-auto size-6 animate-spin text-emerald-500" />
           </div>
         ) : history.transactions.length === 0 && history.redemptions.length === 0 ? (
           <p className="text-center py-8 text-xs font-medium text-slate-400">No transaction history found yet. Play games & quizzes to earn Coins!</p>

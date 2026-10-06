@@ -563,7 +563,7 @@ const Reports: React.FC = () => {
             ]}
             id="class-filter"
             className="w-full"
-            triggerClassName="flex h-full w-full items-center justify-between gap-1 px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-lg border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 shadow-sm"
+            triggerClassName="flex size-full items-center justify-between gap-1 px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-lg border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 shadow-sm"
           />
         </div>
 
@@ -579,7 +579,7 @@ const Reports: React.FC = () => {
             id="section-filter"
             disabled={selectedClass === 'all' && sections.length === 0}
             className="w-full"
-            triggerClassName="flex h-full w-full items-center justify-between gap-1 px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-lg border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 shadow-sm"
+            triggerClassName="flex size-full items-center justify-between gap-1 px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-lg border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 shadow-sm"
           />
         </div>
 
@@ -633,7 +633,7 @@ const Reports: React.FC = () => {
                 { value: 50, label: "50" },
               ]}
               className="w-full"
-              triggerClassName="flex h-full w-full items-center justify-between gap-1 px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-xs font-semibold outline-none text-slate-700 shadow-sm"
+              triggerClassName="flex size-full items-center justify-between gap-1 px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-xs font-semibold outline-none text-slate-700 shadow-sm"
             />
           </div>
           
@@ -643,7 +643,7 @@ const Reports: React.FC = () => {
                 type="button"
                 onClick={() => setStudentPage((p) => Math.max(1, p - 1))}
                 disabled={studentPage === 1}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
+                className="inline-flex size-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
               >
                 <ChevronLeft size={16} />
               </button>
@@ -655,7 +655,7 @@ const Reports: React.FC = () => {
                     key={page}
                     type="button"
                     onClick={() => setStudentPage(page)}
-                    className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-black transition-colors ${
+                    className={`inline-flex size-8 items-center justify-center rounded-lg text-xs font-black transition-colors ${
                       studentPage === page
                         ? "bg-brand-600 text-white shadow-sm"
                         : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
@@ -675,7 +675,7 @@ const Reports: React.FC = () => {
                 type="button"
                 onClick={() => setStudentPage((p) => Math.min(totalStudentPages, p + 1))}
                 disabled={studentPage === totalStudentPages}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
+                className="inline-flex size-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
               >
                 <ChevronRight size={16} />
               </button>
@@ -969,7 +969,7 @@ const Reports: React.FC = () => {
               { value: 'class', label: 'Class Analytics' },
             ]}
             className="w-full mb-4"
-            triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold outline-none text-slate-700 shadow-sm"
+            triggerClassName="flex size-full items-center justify-between gap-1 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold outline-none text-slate-700 shadow-sm"
           />
           <div className="mt-2">
             {activeTab === 'students' && studentContent}

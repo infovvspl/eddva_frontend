@@ -58,7 +58,7 @@ export default function ParentCommunication() {
   }, [activeTab, searchParams]);
 
   return (
-    <div className="space-y-6 md:space-y-8 h-[calc(100dvh-140px)] max-h-[calc(100dvh-140px)] min-h-0 flex flex-col">
+    <div className="gap-y-6 md:gap-y-8 h-[calc(100dvh-140px)] max-h-[calc(100dvh-140px)] min-h-0 flex flex-col">
       <div>
         <h2 className="text-2xl font-black text-slate-900 tracking-tight">Communication</h2>
         <p className="text-sm font-semibold text-slate-500">Connect with teachers and school administration</p>
@@ -717,7 +717,7 @@ function MessagesTab() {
         <div className="p-4 border-b border-slate-100 bg-white">
           <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Teachers & Admin</label>
           <div className="relative mt-2">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -743,9 +743,9 @@ function MessagesTab() {
                   className={`w-full flex items-center gap-3 rounded-2xl p-3 text-left transition ${active ? "bg-blue-50/80 border border-blue-100/50 shadow-xs" : "hover:bg-slate-50/60 border border-transparent"
                     }`}
                 >
-                  <div className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-sm font-bold text-white shadow-xs">
+                  <div className="relative size-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-sm font-bold text-white shadow-xs">
                     {(c.name || '?').charAt(0).toUpperCase()}
-                    {c.online && <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-white bg-emerald-500" />}
+                    {c.online && <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border border-white bg-emerald-500" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
@@ -765,7 +765,7 @@ function MessagesTab() {
             })
           ) : (
             <div className="flex flex-col items-center justify-center p-8 text-center opacity-60">
-              <Users className="h-8 w-8 text-slate-350 mb-2" />
+              <Users className="size-8 text-slate-350 mb-2" />
               <p className="text-xs font-bold text-slate-500">No staff found</p>
             </div>
           )}
@@ -782,16 +782,16 @@ function MessagesTab() {
                 <button className="md:hidden p-1.5 -ml-1 rounded-xl hover:bg-slate-100 text-slate-500" onClick={() => setActiveContact(null)}>
                   <ChevronRight size={18} className="rotate-180" />
                 </button>
-                <div className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white shadow-sm">
+                <div className="relative size-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white shadow-sm">
                   {(activeContact.name || '?').charAt(0).toUpperCase()}
-                  {activeContact.online && <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-white bg-emerald-500" />}
+                  {activeContact.online && <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border border-white bg-emerald-500" />}
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-slate-800 truncate">{activeContact.name}</span>
                     {activeContact.online && (
                       <span className="flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600">
-                        <span className="h-1 w-1 rounded-full bg-emerald-500" />
+                        <span className="size-1 rounded-full bg-emerald-500" />
                         Online
                       </span>
                     )}
@@ -851,7 +851,7 @@ function MessagesTab() {
                       >
                         {msg.is_forwarded && (
                           <p className={`mb-1 flex items-center gap-1 text-[9px] font-bold uppercase ${mine ? 'text-blue-600' : 'text-slate-400'}`}>
-                            <Forward className="h-3 w-3" /> Forwarded
+                            <Forward className="size-3" /> Forwarded
                           </p>
                         )}
 
@@ -873,7 +873,7 @@ function MessagesTab() {
                               />
                             ) : (
                               <div className="flex items-center gap-2">
-                                <FileText className="h-6 w-6 text-blue-500 shrink-0" />
+                                <FileText className="size-6 text-blue-500 shrink-0" />
                                 <div className="min-w-0 flex-1">
                                   <p className="truncate text-[11px] font-bold text-slate-900">{msg.attachment_name}</p>
                                   <span className="text-[9px] text-slate-400">Document</span>
@@ -912,9 +912,9 @@ function MessagesTab() {
                           {mine && (
                             <span>
                               {msg.is_read ? (
-                                <CheckCheck className="h-3.5 w-3.5 text-blue-600" />
+                                <CheckCheck className="size-3.5 text-blue-600" />
                               ) : (
-                                <Check className="h-3.5 w-3.5 text-slate-400" />
+                                <Check className="size-3.5 text-slate-400" />
                               )}
                             </span>
                           )}
@@ -925,7 +925,7 @@ function MessagesTab() {
                 })
               ) : (
                 <div className="flex h-full flex-col items-center justify-center opacity-50">
-                  <MessageCircle className="h-10 w-10 text-slate-400 mb-2" />
+                  <MessageCircle className="size-10 text-slate-400 mb-2" />
                   <p className="text-xs font-bold text-slate-500">No messages yet. Send a message to start.</p>
                 </div>
               )}
@@ -943,11 +943,11 @@ function MessagesTab() {
             {replyingTo && (
               <div className="flex items-center justify-between border-t border-blue-50 bg-slate-50 px-4 py-2 text-xs">
                 <div className="flex items-center gap-2 text-slate-600">
-                  <ReplyIcon className="h-3.5 w-3.5" />
+                  <ReplyIcon className="size-3.5" />
                   <span>Replying to: <strong>{replyingTo.text}</strong></span>
                 </div>
                 <button onClick={() => setReplyingTo(null)} className="text-slate-400 hover:text-slate-600">
-                  <X className="h-4 w-4" />
+                  <X className="size-4" />
                 </button>
               </div>
             )}
@@ -1020,7 +1020,7 @@ function MessagesTab() {
                       className="flex-1 border-none bg-transparent py-1 text-xs font-semibold outline-none text-slate-800 placeholder-slate-400"
                     />
                     <label className="text-slate-400 hover:text-slate-600 pl-2 cursor-pointer transition">
-                      <Paperclip className="h-5 w-5" />
+                      <Paperclip className="size-5" />
                       <input
                         type="file"
                         className="hidden"
@@ -1032,9 +1032,9 @@ function MessagesTab() {
                   <button
                     onClick={() => void sendMessage()}
                     disabled={!messageText.trim() || uploading}
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-600/20 hover:brightness-110 disabled:opacity-40 transition"
+                    className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-600/20 hover:brightness-110 disabled:opacity-40 transition"
                   >
-                    <Send className="h-4.5 w-4.5" />
+                    <Send className="size-4.5" />
                   </button>
                 </div>
               )}
@@ -1042,7 +1042,7 @@ function MessagesTab() {
           </>
         ) : (
           <div className="flex h-full flex-col items-center justify-center text-center opacity-50 bg-slate-50/50">
-            <MessageCircle className="h-12 w-12 text-slate-400 mb-3" />
+            <MessageCircle className="size-12 text-slate-400 mb-3" />
             <p className="text-sm font-bold text-slate-600">Select a teacher or admin to view messages</p>
           </div>
         )}
@@ -1052,7 +1052,7 @@ function MessagesTab() {
       {showDetails && activeContact && (
         <div className="hidden xl:flex w-[280px] shrink-0 flex-col border-l border-slate-100 bg-slate-50/10">
           <div className="p-6 text-center border-b border-slate-100 bg-white">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-base font-bold text-white shadow-sm">
+            <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-base font-bold text-white shadow-sm">
               {(activeContact.name || 'U').slice(0, 1).toUpperCase()}
             </div>
             <h4 className="mt-3 text-xs font-bold text-slate-900">{activeContact.name}</h4>
@@ -1068,7 +1068,7 @@ function MessagesTab() {
               { label: 'More', icon: <MoreVertical size={14} />, act: () => setShowMoreOptions(true) },
             ].map((btn, idx) => (
               <button key={idx} onClick={btn.act} className="flex flex-col items-center gap-1 hover:opacity-85 transition">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-50 border border-slate-100 text-slate-500 shadow-xs">
+                <div className="flex size-8 items-center justify-center rounded-full bg-slate-50 border border-slate-100 text-slate-500 shadow-xs">
                   {btn.icon}
                 </div>
                 <span className="text-[9px] font-bold text-slate-400">{btn.label}</span>
@@ -1079,7 +1079,7 @@ function MessagesTab() {
           <div className="p-4 border-b border-slate-100 bg-white shrink-0">
             <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Search in Chat</label>
             <div className="relative mt-2">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
               <input
                 value={inChatSearch}
                 onChange={(e) => setInChatSearch(e.target.value)}
@@ -1156,7 +1156,7 @@ function MessagesTab() {
                   .slice(0, 3)
                   .map((file) => (
                     <div key={file.id} className="relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-100 group cursor-pointer" onClick={() => window.open(file.attachment_url, '_blank')}>
-                      <img src={file.attachment_url} alt="media" className="h-full w-full object-cover group-hover:scale-105 transition duration-200" />
+                      <img src={file.attachment_url} alt="media" className="size-full object-cover group-hover:scale-105 transition duration-200" />
                     </div>
                   ))}
               </div>
@@ -1215,7 +1215,7 @@ function MessagesTab() {
               onClick={action.act}
               className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-bold text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition"
             >
-              <action.icon className="h-4 w-4" />
+              <action.icon className="size-4" />
               {action.label}
             </button>
           ))}
@@ -1232,11 +1232,11 @@ function MessagesTab() {
                 onClick={() => setPdfPreviewUrl(null)}
                 className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
               >
-                <X className="h-5 w-5" />
+                <X className="size-5" />
               </button>
             </div>
             <div className="flex-1 bg-slate-100">
-              <iframe src={pdfPreviewUrl} className="h-full w-full border-none" title="pdf-viewer" />
+              <iframe src={pdfPreviewUrl} className="size-full border-none" title="pdf-viewer" />
             </div>
           </div>
         </div>
@@ -1252,7 +1252,7 @@ function MessagesTab() {
                 onClick={() => setForwardMessage(null)}
                 className="rounded-full p-1.5 hover:bg-slate-100 transition"
               >
-                <X className="h-5 w-5" />
+                <X className="size-5" />
               </button>
             </div>
             <div className="mt-4 max-h-[300px] overflow-y-auto space-y-2">
@@ -1262,7 +1262,7 @@ function MessagesTab() {
                   onClick={() => handleForwardMessage(contact)}
                   className="flex w-full items-center gap-3 rounded-2xl p-2.5 text-left hover:bg-slate-50 transition"
                 >
-                  <div className="grid h-9 w-9 place-items-center rounded-xl bg-blue-100 text-xs font-bold text-blue-700">
+                  <div className="grid size-9 place-items-center rounded-xl bg-blue-100 text-xs font-bold text-blue-700">
                     {(contact.name || 'U').slice(0, 1).toUpperCase()}
                   </div>
                   <div>
@@ -1294,7 +1294,7 @@ function MessagesTab() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 z-50 h-full w-full max-w-sm border-l border-slate-100 bg-white shadow-2xl flex flex-col"
+              className="fixed top-0 right-0 z-50 size-full max-w-sm border-l border-slate-100 bg-white shadow-2xl flex flex-col"
             >
               <div className="flex items-center justify-between border-b border-slate-100 p-4 shrink-0">
                 <h3 className="text-sm font-black text-slate-800 tracking-tight uppercase">User Profile</h3>
@@ -1369,7 +1369,7 @@ function MessagesTab() {
                   onClick={() => setShowVideoMeetModal(false)}
                   className="rounded-full p-1.5 hover:bg-slate-100 transition"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="size-5" />
                 </button>
               </div>
               <div className="mt-4 space-y-4 text-xs font-semibold text-slate-700">
@@ -1496,7 +1496,7 @@ function MessagesTab() {
                   onClick={() => setShowMoreOptions(false)}
                   className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="size-5" />
                 </button>
               </div>
 
@@ -1616,7 +1616,7 @@ function MessagesTab() {
                   onClick={() => setShowSharedFilesModal(false)}
                   className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="size-5" />
                 </button>
               </div>
 
@@ -1624,7 +1624,7 @@ function MessagesTab() {
                 {sharedFiles.map((file) => (
                   <div key={file.id} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50/30 p-3 hover:bg-slate-50 transition">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="grid h-10 w-10 place-items-center rounded-xl bg-blue-50 text-blue-600">
+                      <div className="grid size-10 place-items-center rounded-xl bg-blue-50 text-blue-600">
                         <FileText size={20} />
                       </div>
                       <div className="min-w-0">
@@ -1683,7 +1683,7 @@ function MessagesTab() {
                   onClick={() => setShowMediaGalleryModal(false)}
                   className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="size-5" />
                 </button>
               </div>
 
@@ -1696,7 +1696,7 @@ function MessagesTab() {
                       onClick={() => setMediaLightboxUrl(file.attachment_url!)}
                       className="relative aspect-square rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 group cursor-pointer shadow-xs hover:shadow-md transition"
                     >
-                      <img src={file.attachment_url} alt="gallery" className="h-full w-full object-cover group-hover:scale-105 transition duration-300" />
+                      <img src={file.attachment_url} alt="gallery" className="size-full object-cover group-hover:scale-105 transition duration-300" />
                       <div className="absolute inset-0 bg-slate-900/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
                         <Eye size={20} className="text-white" />
                       </div>
@@ -1837,7 +1837,7 @@ function MeetingsTab() {
         </div>
       ) : isError ? (
         <div className="flex flex-col items-center justify-center text-center py-12 rounded-2xl border border-rose-200 bg-rose-50 text-rose-600">
-          <Calendar className="mb-3 h-12 w-12" />
+          <Calendar className="mb-3 size-12" />
           <p className="text-sm font-bold">Unable to load meeting requests right now</p>
         </div>
       ) : meetingList.length > 0 ? (
@@ -1845,8 +1845,8 @@ function MeetingsTab() {
           {meetingList.map((m: any) => (
             <div key={m.id} className="flex flex-col sm:flex-row sm:items-center justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-purple-50 text-purple-600">
-                  <Calendar className="h-6 w-6" />
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-purple-50 text-purple-600">
+                  <Calendar className="size-6" />
                 </div>
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -1887,9 +1887,9 @@ function MeetingsTab() {
                     ['Rejected', 'Cancelled'].includes(prettyStatus(m.status)) ? 'bg-red-100 text-red-700' :
                       'bg-slate-100 text-slate-600'
                   }`}>
-                  {['Accepted', 'Scheduled', 'Completed'].includes(prettyStatus(m.status)) && <CheckCircle2 className="h-3 w-3" />}
-                  {prettyStatus(m.status) === 'Pending' && <Clock className="h-3 w-3" />}
-                  {['Rejected', 'Cancelled'].includes(prettyStatus(m.status)) && <X className="h-3 w-3" />}
+                  {['Accepted', 'Scheduled', 'Completed'].includes(prettyStatus(m.status)) && <CheckCircle2 className="size-3" />}
+                  {prettyStatus(m.status) === 'Pending' && <Clock className="size-3" />}
+                  {['Rejected', 'Cancelled'].includes(prettyStatus(m.status)) && <X className="size-3" />}
                   {prettyStatus(m.status)}
                 </span>
                 {prettyStatus(m.status) === 'Pending' && (
@@ -1935,7 +1935,7 @@ function MeetingsTab() {
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center text-center opacity-50 py-12 rounded-2xl border-2 border-dashed border-slate-200 bg-white">
-          <Calendar className="h-12 w-12 text-slate-400 mb-3" />
+          <Calendar className="size-12 text-slate-400 mb-3" />
           <p className="text-sm font-bold text-slate-600">No meeting requests found</p>
         </div>
       )}
@@ -1956,7 +1956,7 @@ function MeetingsTab() {
                 }}
                 className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
               >
-                <X className="h-5 w-5" />
+                <X className="size-5" />
               </button>
             </div>
 
@@ -2272,7 +2272,7 @@ function GrievancesTab() {
                   onChange={(event) => {
                     if (event.target.checked && g.id) reopenMutation.mutate(g.id);
                   }}
-                  className="h-5 w-10 cursor-pointer appearance-none rounded-full bg-slate-300 transition before:block before:h-5 before:w-5 before:rounded-full before:bg-white before:shadow before:transition checked:bg-blue-600 checked:before:translate-x-5 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="h-5 w-10 cursor-pointer appearance-none rounded-full bg-slate-300 transition before:block before:size-5 before:rounded-full before:bg-white before:shadow before:transition checked:bg-blue-600 checked:before:translate-x-5 disabled:cursor-not-allowed disabled:opacity-70"
                 />
               </label>
 
@@ -2282,7 +2282,7 @@ function GrievancesTab() {
                   onClick={() => setSelectedGrievance(g)}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-slate-700 transition hover:bg-slate-50"
                 >
-                  <MessageCircle className="h-4 w-4" />
+                  <MessageCircle className="size-4" />
                   View Replies
                 </button>
                 <button
@@ -2290,7 +2290,7 @@ function GrievancesTab() {
                   onClick={() => void openInstituteChat(g)}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-black uppercase tracking-wider text-blue-700 transition hover:bg-blue-100"
                 >
-                  <MessageCircle className="h-4 w-4" />
+                  <MessageCircle className="size-4" />
                   Open Chat
                 </button>
               </div>
@@ -2306,7 +2306,7 @@ function GrievancesTab() {
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center text-center opacity-50 py-12 rounded-2xl border-2 border-dashed border-slate-200 bg-white">
-          <AlertTriangle className="h-12 w-12 text-slate-400 mb-3" />
+          <AlertTriangle className="size-12 text-slate-400 mb-3" />
           <p className="text-sm font-bold text-slate-600">No grievances reported</p>
         </div>
       )}
@@ -2326,7 +2326,7 @@ function GrievancesTab() {
                 onClick={closeTicketModal}
                 className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
               >
-                <X className="h-5 w-5" />
+                <X className="size-5" />
               </button>
             </div>
 
@@ -2356,7 +2356,7 @@ function GrievancesTab() {
                 <div className="rounded-2xl border border-slate-100 p-4">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Created At</h4>
                   <p className="mt-2 flex items-center gap-2 text-sm font-bold text-slate-800">
-                    <Calendar className="h-4 w-4 text-slate-400" />
+                    <Calendar className="size-4 text-slate-400" />
                     {selectedGrievance.date || 'Unknown Date'}
                   </p>
                 </div>
@@ -2368,7 +2368,7 @@ function GrievancesTab() {
 
                 <div className="col-span-full rounded-2xl border border-slate-100 bg-slate-50/50 p-4">
                   <h4 className="mb-3 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">
-                    <MessageCircle className="h-3.5 w-3.5 text-slate-400" />
+                    <MessageCircle className="size-3.5 text-slate-400" />
                     Institute Admin Replies
                   </h4>
                   {loadingSelectedMessages ? (
@@ -2409,7 +2409,7 @@ function GrievancesTab() {
                   onChange={(event) => {
                     if (event.target.checked && selectedGrievance.id) reopenMutation.mutate(selectedGrievance.id);
                   }}
-                  className="h-5 w-10 cursor-pointer appearance-none rounded-full bg-slate-300 transition before:block before:h-5 before:w-5 before:rounded-full before:bg-white before:shadow before:transition checked:bg-blue-600 checked:before:translate-x-5 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="h-5 w-10 cursor-pointer appearance-none rounded-full bg-slate-300 transition before:block before:size-5 before:rounded-full before:bg-white before:shadow before:transition checked:bg-blue-600 checked:before:translate-x-5 disabled:cursor-not-allowed disabled:opacity-70"
                 />
               </label>
               <div className="flex items-center gap-2">
@@ -2418,7 +2418,7 @@ function GrievancesTab() {
                   onClick={() => void openInstituteChat(selectedGrievance)}
                   className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-xs font-bold text-blue-700 transition hover:bg-blue-100"
                 >
-                  <MessageCircle className="h-4 w-4" />
+                  <MessageCircle className="size-4" />
                   Open Chat
                 </button>
                 <button
@@ -2440,7 +2440,7 @@ function GrievancesTab() {
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-black text-slate-900">Submit Grievance</h3>
               <button onClick={() => setShowForm(false)} className="rounded-full p-2 hover:bg-slate-100">
-                <X className="h-5 w-5 text-slate-500" />
+                <X className="size-5 text-slate-500" />
               </button>
             </div>
             <form className="space-y-4" onSubmit={(e) => {

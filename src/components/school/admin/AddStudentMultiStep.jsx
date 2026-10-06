@@ -186,9 +186,9 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
             <SectionHeader title="Basic Information" description="Enter the student's personal details." badge="Personal" />
             <div className="flex flex-col md:flex-row gap-8 mb-8">
               <div className="shrink-0 flex flex-col items-center gap-4">
-                <div className="w-40 h-40 rounded-3xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer hover:border-blue-500 transition-all">
+                <div className="size-40 rounded-3xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer hover:border-blue-500 transition-all">
                   {formData.profileImage ? (
-                    <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} alt="Preview" className="w-full h-full object-cover" />
+                    <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} alt="Preview" className="size-full object-cover" />
                   ) : (
                     <Camera className="text-slate-400 group-hover:text-blue-500" size={32} />
                   )}
@@ -385,8 +385,8 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
             <SectionHeader title="Review & Submit" description="Verify all student information." badge="Review" />
             <div className="p-8 rounded-[40px] bg-gradient-to-br from-indigo-600 to-blue-700 text-white mb-8 shadow-2xl">
               <div className="flex items-center gap-8">
-                <div className="w-32 h-32 rounded-[2rem] border-4 border-white/20 overflow-hidden bg-white/10 flex items-center justify-center">
-                  {formData.profileImage ? <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} className="w-full h-full object-cover" /> : <User size={48} className="opacity-40" />}
+                <div className="size-32 rounded-[2rem] border-4 border-white/20 overflow-hidden bg-white/10 flex items-center justify-center">
+                  {formData.profileImage ? <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} className="size-full object-cover" /> : <User size={48} className="opacity-40" />}
                 </div>
                 <div>
                   <h3 className="text-3xl font-bold tracking-tight mb-2">{formData.name || 'New Student'}</h3>
@@ -418,7 +418,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
             const isCompleted = currentStep > step.id;
             return (
               <button key={step.id} onClick={() => setCurrentStep(step.id)} className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${isActive ? 'bg-white dark:bg-slate-800 shadow-xl shadow-slate-200/50' : 'hover:bg-slate-200/50'}`}>
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isActive ? 'bg-blue-600 text-white' : isCompleted ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
+                <div className={`size-10 rounded-xl flex items-center justify-center ${isActive ? 'bg-blue-600 text-white' : isCompleted ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
                   {isCompleted ? <Check size={20} strokeWidth={3} /> : <Icon size={20} />}
                 </div>
                 <div className="text-left">
@@ -677,9 +677,9 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
 
       <div className="flex flex-col md:flex-row gap-8 mb-8">
         <div className="shrink-0 flex flex-col items-center gap-4">
-          <div className="w-40 h-40 rounded-3xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/5 transition-all">
+          <div className="size-40 rounded-3xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/5 transition-all">
             {formData.profileImage ? (
-              <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} alt="Preview" className="w-full h-full object-cover" />
+              <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} alt="Preview" className="size-full object-cover" />
             ) : (
               <>
                 <Camera className="text-slate-400 group-hover:text-blue-500 transition-colors" size={32} />
@@ -852,7 +852,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
           {classes.map(cls => (
             <div key={cls.id} className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/50">
               <h6 className="text-xs font-bold tracking-tight text-slate-900 dark:text-white mb-3 flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                <div className="size-1.5 rounded-full bg-blue-500" />
                 {cls.name}
               </h6>
               <div className="flex flex-wrap gap-2">
@@ -924,8 +924,8 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
           <div className="space-y-3">
             {['Morning Shift (8 AM - 2 PM)', 'Regular Shift (9 AM - 4 PM)'].map(shift => (
               <label key={shift} className="flex items-center gap-3 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-all">
-                <div className="w-5 h-5 rounded-full border-2 border-blue-500 flex items-center justify-center">
-                  <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                <div className="size-5 rounded-full border-2 border-blue-500 flex items-center justify-center">
+                  <div className="size-2.5 rounded-full bg-blue-500" />
                 </div>
                 <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{shift}</span>
               </label>
@@ -988,7 +988,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
           { label: 'Joining Documents', type: 'joining' }
         ].map(doc => (
           <div key={doc.type} className="p-8 rounded-3xl border-2 border-dashed border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col items-center justify-center text-center group hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer">
-            <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <div className="size-14 rounded-2xl bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <Upload className="text-blue-500" size={24} />
             </div>
             <h6 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white mb-1">{doc.label}</h6>
@@ -1009,10 +1009,10 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
 
       <div className="p-8 rounded-[40px] bg-gradient-to-br from-blue-600 to-indigo-700 text-white mb-8 relative overflow-hidden shadow-2xl shadow-blue-600/30">
         <div className="relative z-10 flex items-center gap-8">
-          <div className="w-32 h-32 rounded-[2rem] border-4 border-white/20 overflow-hidden shrink-0 shadow-xl">
-            <div className="w-full h-full bg-white/10 flex items-center justify-center">
+          <div className="size-32 rounded-[2rem] border-4 border-white/20 overflow-hidden shrink-0 shadow-xl">
+            <div className="size-full bg-white/10 flex items-center justify-center">
               {formData.profileImage ? (
-                <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} alt="Preview" className="w-full h-full object-cover" />
+                <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} alt="Preview" className="size-full object-cover" />
               ) : (
                 <User size={48} className="opacity-40" />
               )}
@@ -1076,7 +1076,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
       <div className="w-64 xl:w-80 shrink-0 bg-slate-50 dark:bg-slate-900/40 border-r border-slate-100 dark:border-slate-800 p-6 xl:p-8 hidden lg:flex flex-col">
         <div className="mb-10">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tighter flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+            <div className="size-8 rounded-lg bg-blue-600 flex items-center justify-center">
               <Sparkles className="text-white" size={16} />
             </div>
             EDDVA <span className="text-blue-600">PRO</span>
@@ -1099,7 +1099,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
                 `}
               >
                 <div className={`
-                  w-10 h-10 rounded-xl flex items-center justify-center transition-all
+                  size-10 rounded-xl flex items-center justify-center transition-all
                   ${isActive ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 rotate-3' : isCompleted ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-400'}
                 `}>
                   {isCompleted ? <Check size={20} strokeWidth={3} /> : <Icon size={20} />}
@@ -1116,7 +1116,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
         <div className="mt-8 p-6 rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 text-white">
           <p className="text-[10px] font-bold tracking-tight uppercase tracking-[0.2em] text-slate-500 mb-2">System Status</p>
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <div className="size-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-xs font-bold tracking-tight">AI CORE ACTIVE</span>
           </div>
         </div>
@@ -1249,7 +1249,7 @@ export default function AttendanceForm({ attendance, onSubmit, onCancel, isLoadi
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <div className="flex gap-3 rounded-lg border border-red-200 bg-red-50 p-3">
-          <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
+          <AlertCircle className="size-5 flex-shrink-0 text-red-600" />
           <p className="text-sm font-semibold text-red-700">{error}</p>
         </div>
       )}
@@ -1315,7 +1315,7 @@ export default function AttendanceForm({ attendance, onSubmit, onCancel, isLoadi
           disabled={isLoading}
           className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 font-bold text-white shadow-sm hover:bg-brand-700 disabled:opacity-50"
         >
-          {isLoading && <Loader className="h-4 w-4 animate-spin" />}
+          {isLoading && <Loader className="size-4 animate-spin" />}
           {attendance ? 'Update Attendance' : 'Mark Attendance'}
         </button>
         <button
@@ -1336,9 +1336,9 @@ import { cn } from './Skeleton';
 export function EddvaLogo({ compact = false, className }) {
   return (
     <div className={cn('flex items-center gap-3', className)}>
-      <div className="relative grid h-11 w-11 place-items-center rounded-lg bg-gradient-to-br from-brand-600 via-primary to-sky-400 text-white shadow-blue">
-        <GraduationCap className="h-6 w-6" />
-        <BrainCircuit className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-white p-0.5 text-primary" />
+      <div className="relative grid size-11 place-items-center rounded-lg bg-gradient-to-br from-brand-600 via-primary to-sky-400 text-white shadow-blue">
+        <GraduationCap className="size-6" />
+        <BrainCircuit className="absolute -bottom-1 -right-1 size-4 rounded-full bg-white p-0.5 text-primary" />
       </div>
       {!compact && (
         <div className="leading-none">
@@ -1352,9 +1352,9 @@ export function EddvaLogo({ compact = false, className }) {
 
 export function InstituteLogo({ institute, size = 'md', className }) {
   const sizes = {
-    sm: 'h-9 w-9 text-sm',
-    md: 'h-11 w-11 text-base',
-    lg: 'h-16 w-16 text-2xl',
+    sm: 'size-9 text-sm',
+    md: 'size-11 text-base',
+    lg: 'size-16 text-2xl',
   };
 
   if (institute?.logo) {
@@ -1442,7 +1442,7 @@ export default function ClassForm({ classData, onSubmit, onCancel, isLoading }) 
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <div className="flex gap-3 rounded-lg border border-red-200 bg-red-50 p-3">
-          <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
+          <AlertCircle className="size-5 flex-shrink-0 text-red-600" />
           <p className="text-sm font-semibold text-red-700">{error}</p>
         </div>
       )}
@@ -1506,7 +1506,7 @@ export default function ClassForm({ classData, onSubmit, onCancel, isLoading }) 
           disabled={isLoading}
           className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 font-bold text-white shadow-sm hover:bg-brand-700 disabled:opacity-50"
         >
-          {isLoading && <Loader className="h-4 w-4 animate-spin" />}
+          {isLoading && <Loader className="size-4 animate-spin" />}
           {classData ? 'Update Class' : 'Add Class'}
         </button>
         <button
@@ -1543,7 +1543,7 @@ export default function Layout() {
         <main className="flex-1 overflow-x-hidden overflow-y-auto p-3 sm:p-5 lg:p-6">
           <AnimatePresence mode="wait">
             <PageTransition key={location.pathname}>
-              <div className="h-full w-full">
+              <div className="size-full">
                 <Outlet />
               </div>
             </PageTransition>
@@ -1591,7 +1591,7 @@ export default function Modal({ isOpen, title, onClose, children, size = 'md' })
                   onClick={onClose}
                   className="rounded-lg p-1 text-surface-400 hover:bg-surface-100 hover:text-surface-600"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="size-5" />
                 </button>
               </div>
               <div className={size === 'full' ? '' : 'p-6'}>
@@ -1745,7 +1745,7 @@ export default function Navbar({ onMenuClick }) {
       <div className="flex items-center justify-between gap-8">
         <div className="flex items-center gap-3">
           <button onClick={onMenuClick} className="rounded-xl p-2 text-surface-600 hover:bg-slate-50 md:hidden dark:text-slate-300 dark:hover:bg-slate-900" aria-label="Open menu">
-            <Menu className="h-6 w-6" />
+            <Menu className="size-6" />
           </button>
           <div className="flex flex-col">
             <p className="text-[11px] font-bold tracking-tight text-blue-600 dark:text-blue-400 uppercase tracking-tighter">
@@ -1759,7 +1759,7 @@ export default function Navbar({ onMenuClick }) {
 
         <div className="hidden flex-1 justify-center lg:flex" ref={searchRef}>
           <div className="relative w-full max-w-xl">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
             <input
               className="w-full rounded-2xl border border-slate-100 bg-slate-50 py-3 pl-12 pr-12 text-sm font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:bg-white dark:border-slate-800 dark:bg-slate-900 dark:text-white"
               placeholder={searchPlaceholder}
@@ -1788,7 +1788,7 @@ export default function Navbar({ onMenuClick }) {
                       <p className="px-4 py-2 text-[10px] font-bold tracking-tight uppercase tracking-widest text-slate-400">Navigation</p>
                       {searchResults.pages.map(page => (
                         <Link key={page.path} to={page.path} onClick={() => setSearchOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 group">
-                          <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
+                          <div className="size-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
                             <page.icon size={16} />
                           </div>
                           <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{page.name}</span>
@@ -1803,8 +1803,8 @@ export default function Navbar({ onMenuClick }) {
                       <p className="px-4 py-2 text-[10px] font-bold tracking-tight uppercase tracking-widest text-slate-400">Students</p>
                       {searchResults.students.map(s => (
                         <Link key={s.id} to={`/students/${s.id}`} onClick={() => setSearchOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 group">
-                          <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-bold tracking-tight">
-                            {s.profileImage ? <img src={s.profileImage} className="w-full h-full object-cover rounded-xl" /> : s.name[0]}
+                          <div className="size-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-bold tracking-tight">
+                            {s.profileImage ? <img src={s.profileImage} className="size-full object-cover rounded-xl" /> : s.name[0]}
                           </div>
                           <div className="flex flex-col">
                             <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{s.name}</span>
@@ -1817,7 +1817,7 @@ export default function Navbar({ onMenuClick }) {
 
                   {!isSearching && searchResults.pages.length === 0 && searchResults.students.length === 0 && searchResults.teachers.length === 0 && (
                     <div className="p-8 text-center">
-                      <Search className="mx-auto h-8 w-8 text-slate-200 mb-3" />
+                      <Search className="mx-auto size-8 text-slate-200 mb-3" />
                       <p className="text-sm font-bold text-slate-400 italic">No matching records found for "{searchQuery}"</p>
                     </div>
                   )}
@@ -1832,28 +1832,28 @@ export default function Navbar({ onMenuClick }) {
             <button
               type="button"
               onClick={() => setQuickOpen((o) => !o)}
-              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20 transition hover:scale-105 active:scale-95"
+              className="flex size-10 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20 transition hover:scale-105 active:scale-95"
               aria-label="Quick create"
             >
-              <Plus className={cn('h-6 w-6 transition-transform duration-300', quickOpen && 'rotate-45')} />
+              <Plus className={cn('size-6 transition-transform duration-300', quickOpen && 'rotate-45')} />
             </button>
             {quickOpen && (
               <div className="absolute right-0 z-50 mt-4 w-56 overflow-hidden rounded-[2rem] border border-slate-100 bg-white py-2 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
                 <Link to="/students" className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800" onClick={() => setQuickOpen(false)}>
-                  <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
+                  <div className="size-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
                     <GraduationCap size={16} />
                   </div>
                   Add student
                 </Link>
                 <Link to="/teachers" className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800" onClick={() => setQuickOpen(false)}>
-                  <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center">
+                  <div className="size-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center">
                     <Users size={16} />
                   </div>
                   Add teacher
                 </Link>
                 <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 mx-4" />
                 <Link to="/notices" className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800" onClick={() => setQuickOpen(false)}>
-                  <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center">
+                  <div className="size-8 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center">
                     <MessageCircle size={16} />
                   </div>
                   Publish notice
@@ -1866,27 +1866,27 @@ export default function Navbar({ onMenuClick }) {
             <button
               type="button"
               onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
-              className="h-10 w-10 flex items-center justify-center rounded-2xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
+              className="size-10 flex items-center justify-center rounded-2xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
               aria-label="Toggle theme"
             >
-              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              {theme === 'dark' ? <Sun className="size-5" /> : <Moon className="size-5" />}
             </button>
             <button
               type="button"
               onClick={() => navigate('/communications')}
-              className="relative h-10 w-10 flex items-center justify-center rounded-2xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
+              className="relative size-10 flex items-center justify-center rounded-2xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
               aria-label="Messages"
             >
-              <MessageCircle className="h-5 w-5" />
+              <MessageCircle className="size-5" />
             </button>
             <div className="relative" ref={notifRef}>
               <button
                 type="button"
                 onClick={() => setNotifOpen((o) => !o)}
-                className="relative h-10 w-10 flex items-center justify-center rounded-2xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
+                className="relative size-10 flex items-center justify-center rounded-2xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
                 aria-label="Notifications"
               >
-                <Bell className="h-5 w-5" />
+                <Bell className="size-5" />
                 <span className="absolute right-2.5 top-2.5 h-4 min-w-[16px] flex items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold tracking-tight text-white border-2 border-white dark:border-slate-950">
                   5
                 </span>
@@ -1919,10 +1919,10 @@ export default function Navbar({ onMenuClick }) {
 
           <div className="flex items-center gap-3 border-l border-slate-100 pl-4 dark:border-slate-800">
             <div className="relative">
-              <div className="grid h-10 w-10 place-items-center rounded-2xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+              <div className="grid size-10 place-items-center rounded-2xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">
                 {(user?.name || 'A').charAt(0).toUpperCase()}
               </div>
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-950" />
+              <div className="absolute -bottom-1 -right-1 size-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-950" />
             </div>
             <div className="hidden min-w-0 sm:block">
               <p className="truncate text-xs font-bold tracking-tight text-slate-950 dark:text-white leading-tight">{user?.name || 'Admin'}</p>
@@ -1932,7 +1932,7 @@ export default function Navbar({ onMenuClick }) {
             </div>
           </div>
           <button onClick={logout} className="ml-2 rounded-2xl p-2.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 transition-colors" aria-label="Logout">
-            <LogOut className="h-5 w-5" />
+            <LogOut className="size-5" />
           </button>
         </div>
       </div>
@@ -2014,7 +2014,7 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <div className="flex gap-3 rounded-lg border border-red-200 bg-red-50 p-3">
-          <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
+          <AlertCircle className="size-5 flex-shrink-0 text-red-600" />
           <p className="text-sm font-semibold text-red-700">{error}</p>
         </div>
       )}
@@ -2146,7 +2146,7 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
           disabled={isLoading}
           className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 font-bold text-white shadow-sm hover:bg-brand-700 disabled:opacity-50"
         >
-          {isLoading && <Loader className="h-4 w-4 animate-spin" />}
+          {isLoading && <Loader className="size-4 animate-spin" />}
           {notice ? 'Update Notice' : 'Publish Notice'}
         </button>
         <button
@@ -2170,7 +2170,7 @@ export function PageTransition({ children }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -15 }}
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      className="w-full h-full"
+      className="size-full"
     >
       {children}
     </motion.div>
@@ -2228,7 +2228,7 @@ export default function SectionForm({ sectionData, classes = [], onSubmit, onCan
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <div className="flex gap-3 rounded-lg border border-red-200 bg-red-50 p-3">
-          <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
+          <AlertCircle className="size-5 flex-shrink-0 text-red-600" />
           <p className="text-sm font-semibold text-red-700">{error}</p>
         </div>
       )}
@@ -2279,7 +2279,7 @@ export default function SectionForm({ sectionData, classes = [], onSubmit, onCan
           disabled={isLoading}
           className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 font-bold text-white shadow-sm hover:bg-brand-700 disabled:opacity-50"
         >
-          {isLoading && <Loader className="h-4 w-4 animate-spin" />}
+          {isLoading && <Loader className="size-4 animate-spin" />}
           {sectionData ? 'Update Section' : 'Add Section'}
         </button>
         <button
@@ -2388,7 +2388,7 @@ export default function Sidebar({ open, onClose }) {
             </div>
             <div className="flex items-center gap-1">
               <button onClick={onClose} className="rounded-xl p-2 text-surface-500 hover:bg-surface-100 md:hidden" aria-label="Close menu">
-                <X className="h-5 w-5" />
+                <X className="size-5" />
               </button>
             </div>
           </div>
@@ -2423,9 +2423,9 @@ export default function Sidebar({ open, onClose }) {
 
                 <div className="mt-6 rounded-3xl border border-[rgba(37,99,235,0.10)] bg-gradient-to-br from-white/95 to-blue-50/40 p-4 shadow-sm dark:border-slate-700 dark:from-slate-900/90 dark:to-slate-900/40">
                   <div className="flex items-center gap-3">
-                    <div className="relative grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/25">
-                      <Sparkles className="h-6 w-6" />
-                      <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.9)]" />
+                    <div className="relative grid size-12 place-items-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/25">
+                      <Sparkles className="size-6" />
+                      <span className="absolute -right-1 -top-1 size-3 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.9)]" />
                     </div>
                     <div className="min-w-0">
                       <p className="font-display text-base font-bold text-slate-950 dark:text-white">EDDVA AI Assistant</p>
@@ -2439,7 +2439,7 @@ export default function Sidebar({ open, onClose }) {
                     className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110"
                   >
                     Ask EDDVA AI
-                    <ArrowRight className="h-5 w-5" />
+                    <ArrowRight className="size-5" />
                   </button>
                 </div>
               </>
@@ -2494,7 +2494,7 @@ export default function Sidebar({ open, onClose }) {
                 <div className={cn('min-w-0 flex-1', collapsed && 'md:hidden')}>
                   <p className="truncate text-xs font-bold text-slate-950 dark:text-white">{institute?.name || 'Institute'}</p>
                   <div className="mt-1 flex items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    <span className="size-1.5 rounded-full bg-emerald-500" />
                     <span className="text-[10px] font-bold text-emerald-600">Online</span>
                   </div>
                 </div>
@@ -2617,7 +2617,7 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }) 
       <div className="overflow-y-auto pr-2 space-y-4">
         {error && (
           <div className="flex gap-3 rounded-lg border border-red-200 bg-red-50 p-3">
-            <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
+            <AlertCircle className="size-5 flex-shrink-0 text-red-600" />
             <p className="text-sm font-semibold text-red-700">{error}</p>
           </div>
         )}
@@ -2797,7 +2797,7 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }) 
           disabled={isLoading}
           className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 font-bold text-white shadow-sm hover:bg-brand-700 disabled:opacity-50"
         >
-          {isLoading && <Loader className="h-4 w-4 animate-spin" />}
+          {isLoading && <Loader className="size-4 animate-spin" />}
           {student ? 'Update Student' : 'Add Student'}
         </button>
         <button
@@ -2874,7 +2874,7 @@ export default function SubjectForm({ subject, onSubmit, onCancel, isLoading }) 
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <div className="flex gap-3 rounded-lg border border-red-200 bg-red-50 p-3">
-          <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
+          <AlertCircle className="size-5 flex-shrink-0 text-red-600" />
           <p className="text-sm font-semibold text-red-700">{error}</p>
         </div>
       )}
@@ -2915,7 +2915,7 @@ export default function SubjectForm({ subject, onSubmit, onCancel, isLoading }) 
                   type="checkbox"
                   checked={formData.classIds.includes(cls.id)}
                   onChange={() => handleClassToggle(cls.id)}
-                  className="h-4 w-4 rounded border-surface-300 accent-brand-600"
+                  className="size-4 rounded border-surface-300 accent-brand-600"
                 />
                 <span className="text-sm text-surface-700">{cls.name}</span>
               </label>
@@ -2930,7 +2930,7 @@ export default function SubjectForm({ subject, onSubmit, onCancel, isLoading }) 
           disabled={isLoading}
           className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 font-bold text-white shadow-sm hover:bg-brand-700 disabled:opacity-50"
         >
-          {isLoading && <Loader className="h-4 w-4 animate-spin" />}
+          {isLoading && <Loader className="size-4 animate-spin" />}
           {subject ? 'Update Subject' : 'Add Subject'}
         </button>
         <button
@@ -3053,7 +3053,7 @@ export default function TeacherForm({ teacher, onSubmit, onCancel, isLoading }) 
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <div className="flex gap-3 rounded-lg border border-red-200 bg-red-50 p-3">
-          <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
+          <AlertCircle className="size-5 flex-shrink-0 text-red-600" />
           <p className="text-sm font-semibold text-red-700">{error}</p>
         </div>
       )}
@@ -3153,7 +3153,7 @@ export default function TeacherForm({ teacher, onSubmit, onCancel, isLoading }) 
                   type="checkbox"
                   checked={formData.subjectIds.includes(subject.id)}
                   onChange={() => handleSubjectToggle(subject.id)}
-                  className="h-4 w-4 rounded border-surface-300 accent-brand-600"
+                  className="size-4 rounded border-surface-300 accent-brand-600"
                 />
                 <span className="text-sm text-surface-700">{subject.name}</span>
               </label>
@@ -3170,7 +3170,7 @@ export default function TeacherForm({ teacher, onSubmit, onCancel, isLoading }) 
                   type="checkbox"
                   checked={formData.sectionIds.includes(section.id)}
                   onChange={() => handleSectionToggle(section.id)}
-                  className="h-4 w-4 rounded border-surface-300 accent-brand-600"
+                  className="size-4 rounded border-surface-300 accent-brand-600"
                 />
                 <span className="text-sm text-surface-700">{section.className} - {section.name}</span>
               </label>
@@ -3185,7 +3185,7 @@ export default function TeacherForm({ teacher, onSubmit, onCancel, isLoading }) 
           disabled={isLoading}
           className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 font-bold text-white shadow-sm hover:bg-brand-700 disabled:opacity-50"
         >
-          {isLoading && <Loader className="h-4 w-4 animate-spin" />}
+          {isLoading && <Loader className="size-4 animate-spin" />}
           {teacher ? 'Update Teacher' : 'Add Teacher'}
         </button>
         <button
@@ -3282,7 +3282,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <div className="flex gap-3 rounded-lg border border-red-200 bg-red-50 p-3">
-          <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
+          <AlertCircle className="size-5 flex-shrink-0 text-red-600" />
           <p className="text-sm font-semibold text-red-700">{error}</p>
         </div>
       )}
@@ -3387,7 +3387,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
           disabled={isLoading}
           className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 font-bold text-white shadow-sm hover:bg-brand-700 disabled:opacity-50"
         >
-          {isLoading && <Loader className="h-4 w-4 animate-spin" />}
+          {isLoading && <Loader className="size-4 animate-spin" />}
           {timetable ? 'Update Timetable' : 'Add Timetable'}
         </button>
         <button
