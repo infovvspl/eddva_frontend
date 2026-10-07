@@ -16,7 +16,6 @@ import {
   type BlogPost, type BlogPostStatus, type BlogSection, type BlogAdmin, type BlogDocumentSettings,
 } from '@/lib/api/blogAdmin';
 import { blogAdminToken } from '@/lib/api/blogAdminClient';
-import ImageCropModal from './ImageCropModal';
 import BlogBodyEditor from './BlogBodyEditor';
 
 const STATUSES: BlogPostStatus[] = ['DRAFT', 'PUBLISHED'];
@@ -81,7 +80,6 @@ export default function BlogAdminDashboardPage() {
   const [form, setForm] = useState<FormState>(emptyForm());
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [cropFile, setCropFile] = useState<File | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // ── Session check ──────────────────────────────────────────────────────
@@ -166,11 +164,14 @@ export default function BlogAdminDashboardPage() {
   const removeSection = (index: number) =>
     setForm((f) => ({ ...f, sections: f.sections.filter((_, i) => i !== index) }));
 
-  const handleCropConfirm = async (blob: Blob) => {
-    setCropFile(null);
+  const handleCoverFile = async (file: File) => {
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be 5 MB or smaller');
+      return;
+    }
     setUploading(true);
     try {
-      const { url } = await uploadBlogCoverImage(blob);
+      const { url } = await uploadBlogCoverImage(file);
       setForm((f) => ({ ...f, coverImage: url }));
     } catch (e: any) {
       toast.error(e?.response?.data?.message || 'Cover image upload failed');
@@ -398,7 +399,7 @@ export default function BlogAdminDashboardPage() {
                         accept="image/jpeg,image/png,image/webp"
                         className="hidden"
                         disabled={uploading}
-                        onChange={(e) => { const f = e.target.files?.[0]; if (f) setCropFile(f); e.target.value = ''; }}
+                        onChange={(e) => { const file = e.target.files?.[0]; if (file) void handleCoverFile(file); e.target.value = ''; }}
                       />
                     </label>
                     {form.coverImage && (
@@ -406,7 +407,7 @@ export default function BlogAdminDashboardPage() {
                         Remove
                       </button>
                     )}
-                    <span className="text-[11px] font-normal text-slate-400">Shown at 16:9 on the site — this preview matches that crop.</span>
+                    <span className="text-[11px] font-normal text-slate-400">Original image uploaded unchanged. Maximum size: 5 MB.</span>
                   </div>
                 </div>
               </div>
@@ -553,13 +554,6 @@ export default function BlogAdminDashboardPage() {
         )}
       </div>
 
-      {cropFile && (
-        <ImageCropModal
-          file={cropFile}
-          onCancel={() => setCropFile(null)}
-          onConfirm={handleCropConfirm}
-        />
-      )}
     </div>
   );
 }

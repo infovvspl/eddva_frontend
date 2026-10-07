@@ -184,6 +184,10 @@ export default function BlogBodyEditor({
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be 5 MB or smaller');
+      return;
+    }
     setUploadingImage(true);
     try {
       const { url } = await uploadBlogCoverImage(file);
