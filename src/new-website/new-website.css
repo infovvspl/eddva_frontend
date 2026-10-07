@@ -4989,6 +4989,34 @@ a.nw-abouthero__crumb:hover { color: var(--nw-blue); }
   background: var(--nw-bp-accent, var(--nw-blue));
 }
 
+/* ── Rich-text body (sections written with the Tiptap editor) ── */
+.nw-bpost__html { font-size: 1rem; color: #334155; line-height: 1.85; }
+.nw-bpost__html > * + * { margin-top: 14px; }
+.nw-bpost__html p { margin: 0; }
+.nw-bpost__html strong { font-weight: 700; color: var(--nw-ink); }
+.nw-bpost__html em { font-style: italic; }
+.nw-bpost__html u { text-decoration: underline; }
+.nw-bpost__html ul {
+  display: flex; flex-direction: column; gap: 8px; margin: 0; padding-left: 0; list-style: none;
+}
+.nw-bpost__html ul li { position: relative; padding-left: 20px; }
+.nw-bpost__html ul li::before {
+  content: ""; position: absolute; left: 4px; top: 0.75em;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--nw-bp-accent, var(--nw-blue));
+}
+.nw-bpost__html ol { display: flex; flex-direction: column; gap: 8px; margin: 0; padding-left: 22px; }
+.nw-bpost__html blockquote {
+  border-left: 3px solid var(--nw-bp-accent, var(--nw-blue));
+  padding-left: 16px; color: var(--nw-body); font-style: italic;
+}
+.nw-bpost__html h2 { font-size: 1.1rem; font-weight: 700; color: var(--nw-ink); }
+.nw-bpost__html h3 { font-size: 1.02rem; font-weight: 700; color: var(--nw-ink); }
+.nw-bpost__html h4 { font-size: 0.95rem; font-weight: 700; color: var(--nw-ink); }
+.nw-bpost__html a { color: var(--nw-bp-accent, var(--nw-blue)); text-decoration: underline; text-underline-offset: 2px; }
+.nw-bpost__html a:hover { text-decoration: none; }
+.nw-bpost__html img { max-width: 100%; height: auto; border-radius: 12px; display: block; }
+
 .nw-bpost__cta-card {
   display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;
   margin-top: 48px; padding: 26px 30px; border-radius: 16px;
@@ -5075,4 +5103,30 @@ a.nw-abouthero__crumb:hover { color: var(--nw-blue); }
 }
 @media (prefers-reduced-motion: reduce) {
   .nw-blogsec__grid .nw-bgrid__card { opacity: 1 !important; transform: none !important; }
+}
+
+/* ── Floating WhatsApp button (WhatsAppButton) ── */
+.nw-whatsapp-fab {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #25d366;
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.nw-whatsapp-fab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.25);
+}
+@media (max-width: 640px) {
+  .nw-whatsapp-fab { right: 16px; bottom: 16px; width: 48px; height: 48px; }
+  .nw-whatsapp-fab svg { width: 24px; height: 24px; }
 }

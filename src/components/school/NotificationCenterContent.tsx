@@ -21,8 +21,13 @@ import {
   CreditCard,
   BarChart3,
   Megaphone,
+<<<<<<< HEAD
   AlertTriangle,
   BookMarked
+=======
+  BookMarked,
+  Flag
+>>>>>>> 18ce213b (bhagyasree changes)
 } from "lucide-react";
 import api from "@/lib/api/school-client";
 import { createNotificationSocket } from "@/lib/notification-socket";
@@ -42,6 +47,7 @@ interface NotificationItem {
   category: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   isRead: boolean;
+  isFlag?: boolean;
   createdAt: string;
   actionUrl?: string;
 }
@@ -49,6 +55,7 @@ interface NotificationItem {
 const CATEGORIES = [
   { key: "all", label: "All" },
   { key: "unread", label: "Unread" },
+  { key: "flag", label: "Flags" },
   { key: "announcement", label: "Announcements" },
   { key: "assignment", label: "Assignments" },
   { key: "assessment", label: "Assessments" },
@@ -247,13 +254,20 @@ export default function NotificationCenterContent({
           category: newNotif.category || newNotif.type || 'general',
           priority: newNotif.priority || 'medium',
           isRead: newNotif.isRead || false,
+          isFlag: newNotif.isFlag || false,
           createdAt: newNotif.createdAt || newNotif.created_at || new Date().toISOString(),
           actionUrl: newNotif.actionUrl
         };
         // Check filtering
+<<<<<<< HEAD
         const matchesCategory = activeTab === "all" || activeTab === "unread" || activeTab === item.category;
         const matchesSearch = !debouncedSearch || 
           item.title.toLowerCase().includes(debouncedSearch.toLowerCase()) || 
+=======
+        const matchesCategory = activeTab === "all" || activeTab === "unread" || activeTab === item.category || (activeTab === "flag" && item.isFlag);
+        const matchesSearch = !debouncedSearch ||
+          item.title.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+>>>>>>> 18ce213b (bhagyasree changes)
           item.message.toLowerCase().includes(debouncedSearch.toLowerCase());
         
         if (matchesCategory && matchesSearch) {
@@ -587,6 +601,7 @@ export default function NotificationCenterContent({
               </div>
             )}
 
+<<<<<<< HEAD
             <div className="notif-pref-footer">
               <button onClick={() => setShowPreferences(false)} className="notif-back-btn">
                 Back to Notifications
@@ -691,6 +706,18 @@ export default function NotificationCenterContent({
                           onClick={(e) => toggleSelect(notif.id, e)}
                         >
                           {isSelected && <Check size={10} strokeWidth={4} />}
+=======
+                      {/* Text Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 m-0 tracking-tight">{notif.title}</h4>
+                          {notif.isFlag && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 text-[0.625rem] font-extrabold uppercase tracking-wide shrink-0">
+                              <Flag size={10} /> Flagged
+                            </span>
+                          )}
+                          {!notif.isRead && <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />}
+>>>>>>> 18ce213b (bhagyasree changes)
                         </div>
 
                         {/* Category Icon */}

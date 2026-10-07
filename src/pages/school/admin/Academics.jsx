@@ -18,7 +18,6 @@ import { cn } from '@/lib/utils';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/admin/Modal';
 import ClassForm from '@/components/school/admin/forms/ClassForm';
-import SectionForm from '@/components/school/admin/forms/SectionForm';
 import { useConfirm } from '@/context/ConfirmContext';
 import { handleApiError } from '@/lib/school/errorHandler';
 import { CustomSelect } from "@/components/ui/CustomSelect";
@@ -30,10 +29,7 @@ export default function Academics() {
   const [loading, setLoading] = useState(true);
   const [academicYear, setAcademicYear] = useState('2025-2026');
   const [isClassModalOpen, setIsClassModalOpen] = useState(false);
-  const [isSectionModalOpen, setIsSectionModalOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState(null);
-  const [selectedSection, setSelectedSection] = useState(null);
-  const [initialSectionClassId, setInitialSectionClassId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -147,33 +143,6 @@ export default function Academics() {
     }
   };
 
-  const handleAddSection = () => {
-    setSelectedSection(null);
-    setInitialSectionClassId('');
-    setIsSectionModalOpen(true);
-  };
-
-  const handleSectionSubmit = async (formData) => {
-    setIsSubmitting(true);
-    try {
-      const { classId, classTeacherId, ...data } = formData;
-      const payload = { ...data, classId, teacherId: classTeacherId };
-      if (selectedSection) {
-        await api.put(`/academic/sections/${selectedSection.id}`, payload);
-      } else {
-        await api.post('/academic/sections', payload);
-      }
-      setIsSectionModalOpen(false);
-      setSelectedSection(null);
-      setInitialSectionClassId('');
-      await fetchData();
-    } catch (error) {
-      handleApiError(error, 'Failed to save section');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const valueOrDash = (...values) => {
     const value = values.find((item) => item !== undefined && item !== null && item !== '');
     return value ?? '-';
@@ -191,11 +160,6 @@ export default function Academics() {
       .find((teacher) => teacher !== '-');
 
     return firstSectionTeacher || '-';
-  };
-
-  const closeSectionModal = () => {
-    setIsSectionModalOpen(false);
-    setInitialSectionClassId('');
   };
 
   const openSectionsPage = (classId) => {
@@ -284,6 +248,7 @@ export default function Academics() {
                   ]}
                   className="w-full"
                 />
+<<<<<<< HEAD
                 <button
                   onClick={handleAddSection}
                   className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-blue-500 bg-white px-4 text-sm font-bold text-blue-600 hover:bg-blue-50 dark:bg-surface-900 dark:hover:bg-blue-950/20"
@@ -291,6 +256,8 @@ export default function Academics() {
                   <Plus className="h-4 w-4" />
                   Add Section
                 </button>
+=======
+>>>>>>> 18ce213b (bhagyasree changes)
               </div>
             )}
           </div>
@@ -318,6 +285,7 @@ export default function Academics() {
                 className="w-full"
               />
             </div>
+<<<<<<< HEAD
             <button
               onClick={handleAddSection}
               className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-blue-50 bg-white px-4 text-sm font-bold text-blue-600 hover:bg-blue-50 dark:bg-surface-900 dark:hover:bg-blue-950/20"
@@ -325,6 +293,8 @@ export default function Academics() {
               <Plus className="h-4 w-4" />
               Add Section
             </button>
+=======
+>>>>>>> 18ce213b (bhagyasree changes)
           </div>
         </div>
 
@@ -463,23 +433,6 @@ export default function Academics() {
           onCancel={() => setIsClassModalOpen(false)}
           isLoading={isSubmitting}
           defaultAcademicYear={academicYear}
-        />
-      </Modal>
-
-      <Modal
-        isOpen={isSectionModalOpen}
-        title={selectedSection ? 'Edit Section' : 'Add New Section'}
-        onClose={closeSectionModal}
-        size="md"
-      >
-        <SectionForm
-          sectionData={selectedSection}
-          classes={classes}
-          onSubmit={handleSectionSubmit}
-          onCancel={closeSectionModal}
-          isLoading={isSubmitting}
-          defaultAcademicYear={academicYear}
-          initialClassId={initialSectionClassId}
         />
       </Modal>
     </div>

@@ -74,6 +74,9 @@ export default function StudentProfile() {
   const [isAddPrevOpen, setIsAddPrevOpen] = useState(false);
   const [isSavingPrev, setIsSavingPrev] = useState(false);
 
+  const [minAttendanceOverride, setMinAttendanceOverride] = useState('');
+  const [savingAttendanceThreshold, setSavingAttendanceThreshold] = useState(false);
+
   const getClassNumberFromName = (className = '') => {
     const cls = String(className || '').toLowerCase();
     const numeric = cls.match(/\b(?:class|grade|standard|std)?\s*(\d{1,2})\b/);
@@ -631,12 +634,30 @@ export default function StudentProfile() {
     try {
       const res = await api.get(`/students/${id}`);
       const raw = res.data?.data ?? res.data;
-      setStudent(normalizeStudent(raw));
+      const normalized = normalizeStudent(raw);
+      setStudent(normalized);
+      const override = normalized?.studentProfile?.minAttendancePercentage;
+      setMinAttendanceOverride(override != null ? String(override) : '');
     } catch (err) {
       console.error(err);
       setStudent({ error: err.response?.data?.error || "Student not found." });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const saveAttendanceThreshold = async () => {
+    setSavingAttendanceThreshold(true);
+    try {
+      await api.put(`/students/${student.id}`, {
+        minAttendancePercentage: minAttendanceOverride === '' ? '' : Number(minAttendanceOverride),
+      });
+      toast.success('Attendance threshold updated');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to update attendance threshold');
+    } finally {
+      setSavingAttendanceThreshold(false);
     }
   };
 
@@ -1628,6 +1649,35 @@ export default function StudentProfile() {
                         onChange={(e) => setAttendanceMonth(e.target.value)}
                         className="rounded-xl border-2 border-slate-100 dark:border-slate-700 px-3 py-2 text-sm font-bold text-slate-700 dark:text-white bg-white dark:bg-slate-900 outline-none focus:border-blue-500"
                       />
+                    </div>
+                  </div>
+
+                  {/* Minimum attendance threshold override */}
+                  <div className="flex items-center justify-between flex-wrap gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Minimum Attendance % Override</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">Leave blank to use the institute default.</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.5"
+                        value={minAttendanceOverride}
+                        onChange={(e) => setMinAttendanceOverride(e.target.value)}
+                        placeholder="Institute default"
+                        className="w-32 rounded-xl border-2 border-slate-100 dark:border-slate-700 px-3 py-2 text-sm font-bold text-slate-700 dark:text-white bg-white dark:bg-slate-900 outline-none focus:border-blue-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={saveAttendanceThreshold}
+                        disabled={savingAttendanceThreshold}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 text-white px-3 py-2 text-xs font-bold disabled:opacity-60"
+                      >
+                        {savingAttendanceThreshold ? <Loader2 size={14} className="animate-spin" /> : null}
+                        Save
+                      </button>
                     </div>
                   </div>
 

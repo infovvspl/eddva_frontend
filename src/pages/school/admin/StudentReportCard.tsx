@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Printer, FileText, Loader2, GraduationCap, Settings, Eye, CheckCircle, Info, QrCode, Upload, Image as ImageIcon, Trash2, Plus, User } from 'lucide-react';
+import { ArrowLeft, Printer, FileText, Loader2, GraduationCap, Settings, Eye, CheckCircle, Info, QrCode, Upload, Image as ImageIcon, Trash2, Plus, User, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import html2canvas from 'html2canvas';
 import api from '@/lib/api/school-client';
@@ -33,7 +33,10 @@ export default function StudentReportCard() {
   const [weightingFormula, setWeightingFormula] = useState<'equal_term' | 'annual_only' | 'custom_cbse'>('equal_term');
   const [isPortrait, setIsPortrait] = useState(true);
   const [affiliationText, setAffiliationText] = useState('Affiliated to Central Board of Secondary Education (CBSE)');
-  const [teacherRemarks, setTeacherRemarks] = useState('Student has demonstrated outstanding progress, maintaining high academic standards and displaying excellent civic values.');
+  const [teacherRemarks, setTeacherRemarks] = useState('');
+  const [remarkSource, setRemarkSource] = useState<'TEACHER' | 'AI' | null>(null);
+  const [remarksLoading, setRemarksLoading] = useState(false);
+  const [savingRemarks, setSavingRemarks] = useState(false);
   const [coScholasticItems, setCoScholasticItems] = useState([
     { title: 'Work Education', grade: 'A' },
     { title: 'Art Education', grade: 'A' },
@@ -90,6 +93,58 @@ export default function StudentReportCard() {
       toast.error('Failed to load student details');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Teacher remarks always win; when none exist yet, the backend lazily
+  // generates (and persists) an AI remark from this student's performance
+  // analytics so the report card is never blank.
+  useEffect(() => {
+    if (!student) return;
+    const studentUserId = student?.id || student?.userId || id || searchParams.get('studentId');
+    const profileForRemarks = student?.studentProfile || {};
+    const academicYear = profileForRemarks.section?.class?.academicYear || student?.academicYear || targetYear || '2025-2026';
+    const className = profileForRemarks.section?.class?.name || student?.className || targetClass || undefined;
+    if (!studentUserId || !academicYear) return;
+
+    (async () => {
+      try {
+        setRemarksLoading(true);
+        const res = await api.get('/reports/report-card-remarks', { params: { studentId: studentUserId, academicYear, className } });
+        const data = res.data?.data || res.data;
+        setTeacherRemarks(data?.effectiveRemark || '');
+        setRemarkSource(data?.remarkSource || null);
+      } catch (err) {
+        console.error('Failed to load report card remarks', err);
+      } finally {
+        setRemarksLoading(false);
+      }
+    })();
+  }, [student, id, targetYear, targetClass]);
+
+  const saveTeacherRemarks = async () => {
+    const studentUserId = student?.id || student?.userId || id || searchParams.get('studentId');
+    const profileForRemarks = student?.studentProfile || {};
+    const academicYear = profileForRemarks.section?.class?.academicYear || student?.academicYear || targetYear || '2025-2026';
+    const className = profileForRemarks.section?.class?.name || student?.className || targetClass || undefined;
+    if (!studentUserId || !academicYear) return;
+
+    try {
+      setSavingRemarks(true);
+      const res = await api.put('/reports/report-card-remarks', {
+        studentId: studentUserId,
+        academicYear,
+        className,
+        teacherRemark: teacherRemarks,
+      });
+      const data = res.data?.data || res.data;
+      setTeacherRemarks(data?.effectiveRemark || '');
+      setRemarkSource(data?.remarkSource || null);
+      toast.success('Remarks saved');
+    } catch (err) {
+      toast.error('Failed to save remarks');
+    } finally {
+      setSavingRemarks(false);
     }
   };
 
@@ -759,14 +814,33 @@ export default function StudentReportCard() {
 
               {/* Editable Teacher Remarks */}
               <div className="space-y-1.5 border-t pt-4">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Class Teacher's Remarks</label>
-                <textarea 
-                  value={teacherRemarks} 
+                <div className="flex items-center justify-between gap-2">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Class Teacher's Remarks</label>
+                  {remarkSource === 'AI' && (
+                    <span className="text-[10px] text-violet-500 font-black uppercase tracking-wider flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" /> AI Generated
+                    </span>
+                  )}
+                </div>
+                <textarea
+                  value={teacherRemarks}
                   onChange={(e) => setTeacherRemarks(e.target.value)}
                   rows={3}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold"
-                  placeholder="Enter remarks..."
+                  disabled={remarksLoading}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold disabled:opacity-60"
+                  placeholder={remarksLoading ? 'Loading remarks...' : 'Enter remarks...'}
                 />
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={saveTeacherRemarks}
+                    disabled={savingRemarks || remarksLoading}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 dark:bg-white dark:text-slate-900 text-white px-3 py-1.5 text-xs font-bold disabled:opacity-60"
+                  >
+                    {savingRemarks ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                    Save Remarks
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -1052,7 +1126,14 @@ export default function StudentReportCard() {
               )}
               {/* Class Teacher's Remarks */}
               <div className="space-y-1 pt-1.5 border-t border-slate-200 avoid-break">
-                <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Class Teacher's Remarks</h4>
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Class Teacher's Remarks</h4>
+                  {remarkSource === 'AI' && (
+                    <span className="text-[9px] text-violet-500 font-black uppercase tracking-wider flex items-center gap-1 print:hidden">
+                      <Sparkles className="w-2.5 h-2.5" /> AI Generated
+                    </span>
+                  )}
+                </div>
                 <div className="p-2.5 bg-slate-50/80 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 italic">
                   "{teacherRemarks || 'No remarks provided.'}"
                 </div>

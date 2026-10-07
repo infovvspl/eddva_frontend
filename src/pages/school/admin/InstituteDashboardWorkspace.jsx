@@ -264,7 +264,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
               className="w-full h-full object-cover object-[center_35%]"
             />
           </div>
-          
+
           {/* Gradient removed as requested */}
 
           <div className="relative z-10 flex flex-col justify-between h-full w-full py-1">
@@ -381,7 +381,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
             <KpiCard
               title="Attendance Today"
               value={`${attendancePct}%`}
-              sub={`↑ ${Math.floor(students * (attendancePct/100))} / ${students} present`}
+              sub={`↑ ${Math.floor(students * (attendancePct / 100))} / ${students} present`}
               icon={ClipboardList}
               color="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-md shadow-emerald-500/20"
               delay={0.06}
@@ -469,7 +469,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
                 </ResponsiveContainer>
               </div>
             </motion.div>
-            
+
             <AttentionRequiredWidget className="h-full xl:col-span-1" />
           </div>
         </div>
@@ -646,7 +646,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
       </div>
 
       {/* Footer */}
-      <footer className="w-full flex justify-end items-center py-4 mt-8 select-none">
+      {/* <footer className="w-full flex justify-end items-center py-4 mt-8 select-none">
         <div className="flex items-center gap-3 text-[10px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase">
           <span>Powered by</span>
           <a href="https://eddva.in" target="_blank" rel="noopener noreferrer" className="flex items-center hover:opacity-80 transition-opacity">
@@ -657,7 +657,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
             <img src={vvsplLogo} alt="VVSPL" className="h-[30px] sm:h-[36px] w-auto object-contain bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-100 dark:border-slate-700 shadow-sm" />
           </a>
         </div>
-      </footer>
+      </footer> */}
     </motion.div>
   );
 }
