@@ -560,24 +560,9 @@ export default function Attendance() {
                 </tr>
               ) : (
                 attendance.map(record => (
-<<<<<<< HEAD
                   <tr key={record.id} className="hover:bg-surface-50 transition-colors">
                     <td className="px-6 py-4 font-semibold text-surface-950 sticky left-0 z-20 bg-white dark:bg-slate-900">{record.user?.name || '-'}</td>
                     <td className="px-6 py-4">
-=======
-                  <TableRow key={record.id} className="hover:bg-surface-50 transition-colors">
-                    <TableCell className="p-4 px-6 py-4 font-semibold text-surface-950 sticky left-0 z-20 bg-white dark:bg-slate-900">
-                      <span className="inline-flex items-center gap-1.5">
-                        {record.user?.name || '-'}
-                        {record.user?.id && flaggedUserIds.has(record.user.id) && (
-                          <span title={`Below minimum attendance threshold`} className="inline-flex items-center justify-center rounded-full bg-amber-100 p-1 text-amber-600">
-                            <Flag className="size-3" />
-                          </span>
-                        )}
-                      </span>
-                    </TableCell>
-                    <TableCell className="p-4 px-6 py-4">
->>>>>>> 18ce213b (bhagyasree changes)
                       {hasRole(record.user?.role, 'STUDENT') ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">
                           <GraduationCap className="h-3 w-3" /> Student
@@ -655,20 +640,8 @@ export default function Attendance() {
           attendance.map(record => (
             <div key={record.id} className="rounded-lg border border-surface-200 bg-white p-4 shadow-sm space-y-3">
               <div className="flex items-center justify-between">
-<<<<<<< HEAD
                 <span className="font-bold text-surface-950 text-sm">{record.user?.name || '-'}</span>
                 <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold ${statusColors[record.status?.toUpperCase()] || statusColors.PRESENT}`}>
-=======
-                <span className="inline-flex items-center gap-1.5 font-bold text-surface-950 text-sm">
-                  {record.user?.name || '-'}
-                  {record.user?.id && flaggedUserIds.has(record.user.id) && (
-                    <span title="Below minimum attendance threshold" className="inline-flex items-center justify-center rounded-full bg-amber-100 p-1 text-amber-600">
-                      <Flag className="size-3" />
-                    </span>
-                  )}
-                </span>
-                <Badge className={`rounded-full border-transparent text-[10px] font-bold ${statusColors[record.status?.toUpperCase()] || statusColors.PRESENT}`}>
->>>>>>> 18ce213b (bhagyasree changes)
                   {record.status?.toUpperCase()}
                 </span>
               </div>
