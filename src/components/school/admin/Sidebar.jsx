@@ -152,7 +152,7 @@ function buildTeacherGroups(mods, aiFeats) {
       items: [
         { path: '/school/teacher', label: 'Dashboard', icon: LayoutDashboard, end: true },
         teachingPlanEnabled && { path: '/school/teacher/teaching-plan', label: 'My Teaching Plan', icon: ClipboardList },
-        liveEnabled && { path: '/school/teacher/classes', label: 'My Schedule', icon: Video },
+        liveEnabled && { path: '/school/teacher/classes', label: 'Live & Recorded Video', icon: Video },
         { path: '/school/teacher/course-content', label: 'Course Content', icon: BookOpen },
         { path: '/school/teacher/students', label: 'Students', icon: GraduationCap },
         { path: '/school/teacher/attendance', label: 'Attendance', icon: ClipboardCheck },
@@ -205,11 +205,11 @@ export default function Sidebar({ open, onClose }) {
   const isTeacher = !isInstitute && (user?.role === 'TEACHER' || (isTeacherPath && hasTeacherRole));
   const isSuperAdmin = user?.role === 'SUPER_ADMIN' || hasSuperAdminRole;
   const useTeacherFallback = !isSuperAdmin && !isInstitute;
-  
+
   const aiFeats = institute?.aiEnabled ? institute.aiFeatures : { ai_doubt_solver: false };
   const teacherGroups = isTeacher || useTeacherFallback ? buildTeacherGroups(institute?.modulesPermissions, aiFeats) : null;
   const adminGroups = isInstitute ? buildInstituteGroups(institute?.modulesPermissions) : null;
-  
+
   const groups = isSuperAdmin ? superAdminGroups : isInstitute ? adminGroups : teacherGroups;
   const [collapsed, setCollapsed] = useState(false);
 

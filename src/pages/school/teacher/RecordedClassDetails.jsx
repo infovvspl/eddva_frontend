@@ -1120,7 +1120,7 @@ export default function TeacherRecordedClassDetails() {
       </div>
 
       <div className="w-full px-4 py-5 sm:px-6 lg:px-8 lg:min-h-0 lg:flex-1">
-        <div className="grid gap-6 lg:h-full lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_400px] lg:grid-rows-[minmax(0,1fr)]">
+        <div className="grid gap-6 lg:h-full lg:min-h-0 lg:grid-cols-2">
           <main className="min-w-0 space-y-4 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:pb-5 scrollbar-hide">
             {renderVideoPlayer()}
 
