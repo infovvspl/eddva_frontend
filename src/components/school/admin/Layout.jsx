@@ -163,7 +163,7 @@ export default function Layout() {
       { label: 'Profile', path: '/school/teacher/profile', icon: User, color: 'text-sky-500 bg-sky-50 dark:bg-sky-950/20' },
       { label: 'Settings', path: '/school/teacher/settings', icon: SettingsIcon, color: 'text-slate-500 bg-slate-50 dark:bg-slate-800' },
     ].filter(Boolean) : [
-      { label: 'Curriculum', path: '/school/admin/academics', icon: Building2, color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/20' },
+      { label: 'Class & Sections', path: '/school/admin/academics', icon: Building2, color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/20' },
       { label: 'Subjects', path: '/school/admin/subjects', icon: BookOpen, color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20' },
       { label: 'Attendance', path: '/school/admin/attendance', icon: BarChart3, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20' },
       { label: 'Notices', path: '/school/admin/notices', icon: AlertCircle, color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/20' },

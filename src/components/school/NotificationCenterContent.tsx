@@ -20,6 +20,9 @@ import {
   BarChart3,
   Megaphone,
   BookMarked
+  AlertTriangle,
+  BookMarked,
+  Flag
 } from "lucide-react";
 import api from "@/lib/api/school-client";
 import { createNotificationSocket } from "@/lib/notification-socket";
@@ -50,6 +53,7 @@ interface NotificationItem {
   category: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   isRead: boolean;
+  isFlag?: boolean;
   createdAt: string;
   actionUrl?: string;
 }
@@ -57,6 +61,7 @@ interface NotificationItem {
 const CATEGORIES = [
   { key: "all", label: "All" },
   { key: "unread", label: "Unread" },
+  { key: "flag", label: "Flags" },
   { key: "announcement", label: "Announcements" },
   { key: "assignment", label: "Assignments" },
   { key: "assessment", label: "Assessments" },
@@ -259,13 +264,14 @@ export default function NotificationCenterContent({
           category: newNotif.category || newNotif.type || 'general',
           priority: newNotif.priority || 'medium',
           isRead: newNotif.isRead || false,
+          isFlag: newNotif.isFlag || false,
           createdAt: newNotif.createdAt || newNotif.created_at || new Date().toISOString(),
           actionUrl: newNotif.actionUrl
         };
         // Check filtering
-        const matchesCategory = activeTab === "all" || activeTab === "unread" || activeTab === item.category;
-        const matchesSearch = !debouncedSearch ||
-          item.title.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        const matchesCategory = activeTab === "all" || activeTab === "unread" || activeTab === item.category || (activeTab === "flag" && item.isFlag);
+        const matchesSearch = !debouncedSearch || 
+          item.title.toLowerCase().includes(debouncedSearch.toLowerCase()) || 
           item.message.toLowerCase().includes(debouncedSearch.toLowerCase());
 
         if (matchesCategory && matchesSearch) {

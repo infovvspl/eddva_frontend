@@ -6,9 +6,31 @@ import { blogAdminClient, blogAdminToken, extractData } from './blogAdminClient'
 
 export type BlogPostStatus = 'DRAFT' | 'PUBLISHED';
 
+export interface BlogDocumentSettings {
+  pageSize?: 'A4' | 'LETTER';
+  marginTop?: number;
+  marginRight?: number;
+  marginBottom?: number;
+  marginLeft?: number;
+  header?: string;
+  footer?: string;
+  showPageNumbers?: boolean;
+  showTotalPages?: boolean;
+  fontFamily?: string;
+  fontSize?: number;
+}
+
+export interface BlogReference {
+  id: string;
+  kind: 'footnote' | 'endnote';
+  text: string;
+}
+
 export interface BlogSection {
   heading: string;
   body: string;
+  contentJson?: Record<string, unknown>;
+  references?: BlogReference[];
 }
 
 export interface BlogPostPayload {
@@ -20,6 +42,7 @@ export interface BlogPostPayload {
   coverImage?: string;
   readTime?: number;
   sections?: BlogSection[];
+  documentSettings?: BlogDocumentSettings;
   status?: BlogPostStatus;
 }
 
@@ -103,7 +126,9 @@ export function deleteBlogPost(id: string) {
 // here (the backend derives the extension from it).
 export function uploadBlogCoverImage(file: File | Blob) {
   const form = new FormData();
-  form.append('file', file, (file as File).name || 'cover.jpg');
+  const mime = file.type || 'image/jpeg';
+  const extension = mime.split('/')[1] || 'jpg';
+  form.append('file', file, (file as File).name || `blog-image.${extension}`);
   return blogAdminClient
     .post('/blog-admin/posts/upload-cover', form, {
       transformRequest: [(data, headers) => {

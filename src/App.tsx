@@ -110,6 +110,7 @@ const SuperAdminLeadsPage = lazy(() => import("./pages/super-admin/LeadsPage"));
 // pages/blog-admin and modules/blog-admin-auth on the backend.
 const BlogAdminLoginPage = lazy(() => import("./pages/blog-admin/BlogAdminLoginPage"));
 const BlogAdminDashboardPage = lazy(() => import("./pages/blog-admin/BlogAdminDashboardPage"));
+const __DevTestEditor = lazy(() => import("./pages/blog-admin/__devtest_editor"));
 const CoachingTicketDetailPage = lazy(() => import("./pages/shared/CoachingTicketDetailPage"));
 const AdminCalendarPage = lazy(() => import("./pages/admin/AdminCalendarPage"));
 const TeacherCalendarPage = lazy(() => import("./pages/teacher/TeacherCalendarPage"));
@@ -824,6 +825,7 @@ const PlatformRoutes = () => (
     <Route path="/login" element={<LoginPage />} />
     <Route path="/blog-admin/login" element={<BlogAdminLoginPage />} />
     <Route path="/blog-admin" element={<BlogAdminDashboardPage />} />
+    <Route path="/__devtest-editor" element={<__DevTestEditor />} />
     <Route path="/suspended" element={<SuspendedPage />} />
     <Route path="/register" element={<StudentRegisterPage />} />
     <Route path="/register-admin" element={<RegisterWithOtpPage />} />

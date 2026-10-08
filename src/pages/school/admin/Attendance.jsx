@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, Users, GraduationCap, UserCheck, Filter, Search } from 'lucide-react';
+import { Eye, Users, GraduationCap, UserCheck, Filter, Search, Flag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import api from '@/lib/api/school-client';
 import { getResponseList } from '@/lib/school/apiData';
@@ -9,22 +9,33 @@ import { CustomSelect } from "@/components/ui/CustomSelect";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
+const TYPE_OPTIONS = [
+  { value: 'daily', label: 'By Date' },
+  { value: 'monthly', label: 'By Month' },
+  { value: 'weekly', label: 'By Week' },
+];
+
 export default function Attendance() {
   const [attendance, setAttendance] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]);
+  const [filterMonth, setFilterMonth] = useState(new Date().toISOString().slice(0, 7));
   const [filterType, setFilterType] = useState('daily');
   const [searchQuery, setSearchQuery] = useState('');
+  const [rollNoQuery, setRollNoQuery] = useState('');
   const [selectedClassId, setSelectedClassId] = useState('');
   const [selectedSectionId, setSelectedSectionId] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedTeacherId, setSelectedTeacherId] = useState('');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // Independent class/section data from API
   const [allClasses, setAllClasses] = useState([]);
   const [sections, setSections] = useState([]);
-  
+  const [allTeachers, setAllTeachers] = useState([]);
+  const [flaggedUserIds, setFlaggedUserIds] = useState(new Set());
+
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
@@ -43,6 +54,37 @@ export default function Attendance() {
     };
     fetchClasses();
   }, []);
+
+  // Fetch teachers once, used for the "Teacher Name" filter when Role = Teacher
+  useEffect(() => {
+    const fetchTeachers = async () => {
+      try {
+        const res = await api.get('/teachers', { params: { limit: 500 } });
+        setAllTeachers(getResponseList(res));
+      } catch (err) {
+        console.error('Failed to fetch teachers:', err);
+      }
+    };
+    fetchTeachers();
+  }, []);
+
+  // Students/teachers below their attendance threshold, for the Flagged indicator
+  useEffect(() => {
+    const fetchFlagged = async () => {
+      try {
+        const role = selectedRole === 'TEACHER' ? 'TEACHER' : 'STUDENT';
+        const params = { role };
+        if (role === 'STUDENT' && selectedClassId) params.classId = selectedClassId;
+        if (role === 'STUDENT' && selectedSectionId) params.sectionId = selectedSectionId;
+        const res = await api.get('/attendance/below-threshold', { params });
+        const list = getResponseList(res);
+        setFlaggedUserIds(new Set(list.map((r) => r.user_id || r.userId)));
+      } catch (err) {
+        console.error('Failed to fetch flagged attendance:', err);
+      }
+    };
+    fetchFlagged();
+  }, [selectedRole, selectedClassId, selectedSectionId]);
 
   // Derive sections from selected class data
   useEffect(() => {
@@ -63,7 +105,7 @@ export default function Attendance() {
       fetchAttendance();
     }, 300);
     return () => clearTimeout(delayDebounceFn);
-  }, [filterDate, filterType, page, limit, searchQuery, selectedClassId, selectedSectionId, selectedRole, selectedStatus]);
+  }, [filterDate, filterMonth, filterType, page, limit, searchQuery, rollNoQuery, selectedClassId, selectedSectionId, selectedRole, selectedStatus, selectedTeacherId]);
 
   const fetchAttendance = async () => {
     try {
@@ -79,14 +121,19 @@ export default function Attendance() {
         params.startDate = startDate.toISOString().split('T')[0];
         params.endDate = filterDate;
       } else if (filterType === 'monthly') {
-        const date = new Date(filterDate);
-        params.startDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`;
-        params.endDate = filterDate;
+        const [year, month] = filterMonth.split('-').map(Number);
+        const lastDay = new Date(year, month, 0).getDate();
+        params.startDate = `${filterMonth}-01`;
+        params.endDate = `${filterMonth}-${String(lastDay).padStart(2, '0')}`;
       }
-      
+
       if (searchQuery.trim()) params.search = searchQuery.trim();
-      if (selectedClassId) params.classId = selectedClassId;
-      if (selectedSectionId) params.sectionId = selectedSectionId;
+      if (selectedRole === 'STUDENT') {
+        if (selectedClassId) params.classId = selectedClassId;
+        if (selectedSectionId) params.sectionId = selectedSectionId;
+        if (rollNoQuery.trim()) params.rollNo = rollNoQuery.trim();
+      }
+      if (selectedRole === 'TEACHER' && selectedTeacherId) params.userId = selectedTeacherId;
       if (selectedRole) params.role = selectedRole;
       if (selectedStatus) params.status = selectedStatus;
 
@@ -126,10 +173,12 @@ export default function Attendance() {
 
   const handleClearFilters = () => {
     setSearchQuery('');
+    setRollNoQuery('');
     setSelectedClassId('');
     setSelectedSectionId('');
     setSelectedRole('');
     setSelectedStatus('');
+    setSelectedTeacherId('');
     setFilterType('daily');
     setPage(1);
   };
@@ -141,6 +190,15 @@ export default function Attendance() {
 
   const handleSectionFilterChange = (value) => {
     setSelectedSectionId(value);
+    setPage(1);
+  };
+
+  const handleRoleFilterChange = (value) => {
+    setSelectedRole(value);
+    setSelectedClassId('');
+    setSelectedSectionId('');
+    setRollNoQuery('');
+    setSelectedTeacherId('');
     setPage(1);
   };
 
@@ -190,40 +248,44 @@ export default function Attendance() {
           {showMobileFilters && (
             <div className="flex flex-col gap-3 pt-3 border-t border-surface-100">
               {/* Type filter */}
-              <div>
-                <label className="mb-1 block text-xs font-semibold text-surface-700">Type</label>
-                <div className="flex items-center gap-2">
-                  {[{ value: 'daily', label: 'Daily' }, { value: 'weekly', label: 'Weekly' }, { value: 'monthly', label: 'Monthly' }].map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setFilterType(option.value)}
-                      className={`rounded-full px-3 py-1 text-sm font-semibold transition ${
-                        filterType === option.value ? 'bg-brand-600 text-white' : 'border border-surface-200 text-surface-700 hover:bg-surface-50'
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Date filter */}
               <div className="w-full">
-                <label className="mb-1 block text-xs font-semibold text-surface-700">Date</label>
-                <input
-                  type="date"
-                  value={filterDate}
-                  onChange={(e) => setFilterDate(e.target.value)}
-                  className="w-full rounded-lg border border-surface-200 px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                <label className="mb-1 block text-xs font-semibold text-surface-700">Type</label>
+                <CustomSelect
+                  onChange={setFilterType}
+                  value={filterType}
+                  options={TYPE_OPTIONS}
+                  className="w-full"
                 />
               </div>
+
+              {/* Date / Month picker, depending on Type */}
+              {filterType === 'monthly' ? (
+                <div className="w-full">
+                  <label className="mb-1 block text-xs font-semibold text-surface-700">Month</label>
+                  <input
+                    type="month"
+                    value={filterMonth}
+                    onChange={(e) => setFilterMonth(e.target.value)}
+                    className="w-full rounded-lg border border-surface-200 px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                  />
+                </div>
+              ) : (
+                <div className="w-full">
+                  <label className="mb-1 block text-xs font-semibold text-surface-700">{filterType === 'weekly' ? 'Week of' : 'Date'}</label>
+                  <input
+                    type="date"
+                    value={filterDate}
+                    onChange={(e) => setFilterDate(e.target.value)}
+                    className="w-full rounded-lg border border-surface-200 px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                  />
+                </div>
+              )}
 
               {/* Role filter (Teacher/Student) */}
               <div className="w-full">
                 <label className="mb-1 block text-xs font-semibold text-surface-700">Role</label>
                 <CustomSelect
-                  onChange={setSelectedRole}
+                  onChange={handleRoleFilterChange}
                   value={selectedRole}
                   options={[
                     { value: "", label: "All Roles" },
@@ -235,30 +297,60 @@ export default function Attendance() {
                 />
               </div>
 
-              {/* Class filter */}
-              <div className="w-full">
-                <label className="mb-1 block text-xs font-semibold text-surface-700">Class</label>
-                <CustomSelect
-                  onChange={handleClassFilterChange}
-                  value={selectedClassId}
-                  options={[
-                    { value: "", label: "All Classes" },
-                    ...allClasses.map((classItem) => ({ value: classItem.id, label: classItem.name })),
-                  ]}
-                  className="w-full"
-                />
-              </div>
+              {/* Class/Section filters — only when Role = Student */}
+              {selectedRole === 'STUDENT' && (
+                <>
+                  <div className="w-full">
+                    <label className="mb-1 block text-xs font-semibold text-surface-700">Class</label>
+                    <CustomSelect
+                      onChange={handleClassFilterChange}
+                      value={selectedClassId}
+                      options={[
+                        { value: "", label: "All Classes" },
+                        ...allClasses.map((classItem) => ({ value: classItem.id, label: classItem.name })),
+                      ]}
+                      className="w-full"
+                    />
+                  </div>
 
-              {/* Section filter */}
-              {selectedClassId && sections.length > 0 && (
+                  {selectedClassId && sections.length > 0 && (
+                    <div className="w-full">
+                      <label className="mb-1 block text-xs font-semibold text-surface-700">Section</label>
+                      <CustomSelect
+                        onChange={handleSectionFilterChange}
+                        value={selectedSectionId}
+                        options={[
+                          { value: "", label: "All Sections" },
+                          ...sections.map((sec) => ({ value: sec.id, label: sec.name })),
+                        ]}
+                        className="w-full"
+                      />
+                    </div>
+                  )}
+
+                  <div className="w-full">
+                    <label className="mb-1 block text-xs font-semibold text-surface-700">Roll Number</label>
+                    <input
+                      type="text"
+                      value={rollNoQuery}
+                      onChange={(e) => { setRollNoQuery(e.target.value); setPage(1); }}
+                      placeholder="Search roll number..."
+                      className="w-full rounded-lg border border-surface-200 px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Teacher Name filter — only when Role = Teacher */}
+              {selectedRole === 'TEACHER' && (
                 <div className="w-full">
-                  <label className="mb-1 block text-xs font-semibold text-surface-700">Section</label>
+                  <label className="mb-1 block text-xs font-semibold text-surface-700">Teacher Name</label>
                   <CustomSelect
-                    onChange={handleSectionFilterChange}
-                    value={selectedSectionId}
+                    onChange={setSelectedTeacherId}
+                    value={selectedTeacherId}
                     options={[
-                      { value: "", label: "All Sections" },
-                      ...sections.map((sec) => ({ value: sec.id, label: sec.name })),
+                      { value: "", label: "All Teachers" },
+                      ...allTeachers.map((t) => ({ value: t.id, label: t.name })),
                     ]}
                     className="w-full"
                   />
@@ -297,34 +389,38 @@ export default function Attendance() {
         {/* ── Desktop Layout Filters ── */}
         <div className="hidden md:flex flex-wrap items-center gap-3">
           {/* Type filter */}
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-surface-700">Type</label>
-            <div className="flex items-center gap-2">
-              {[{ value: 'daily', label: 'Daily' }, { value: 'weekly', label: 'Weekly' }, { value: 'monthly', label: 'Monthly' }].map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setFilterType(option.value)}
-                  className={`rounded-full px-3 py-1 text-sm font-semibold transition ${
-                    filterType === option.value ? 'bg-brand-600 text-white' : 'border border-surface-200 text-surface-700 hover:bg-surface-50'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Date filter */}
           <div className="w-36">
-            <label className="mb-1 block text-xs font-semibold text-surface-700">Date</label>
-            <input
-              type="date"
-              value={filterDate}
-              onChange={(e) => setFilterDate(e.target.value)}
-              className="w-full rounded-lg border border-surface-200 px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+            <label className="mb-1 block text-xs font-semibold text-surface-700">Type</label>
+            <CustomSelect
+              onChange={setFilterType}
+              value={filterType}
+              options={TYPE_OPTIONS}
+              className="w-full"
             />
           </div>
+
+          {/* Date / Month picker, depending on Type */}
+          {filterType === 'monthly' ? (
+            <div className="w-36">
+              <label className="mb-1 block text-xs font-semibold text-surface-700">Month</label>
+              <input
+                type="month"
+                value={filterMonth}
+                onChange={(e) => setFilterMonth(e.target.value)}
+                className="w-full rounded-lg border border-surface-200 px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+              />
+            </div>
+          ) : (
+            <div className="w-36">
+              <label className="mb-1 block text-xs font-semibold text-surface-700">{filterType === 'weekly' ? 'Week of' : 'Date'}</label>
+              <input
+                type="date"
+                value={filterDate}
+                onChange={(e) => setFilterDate(e.target.value)}
+                className="w-full rounded-lg border border-surface-200 px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+              />
+            </div>
+          )}
 
           {/* Search filter */}
           <div className="w-44">
@@ -342,7 +438,7 @@ export default function Attendance() {
           <div className="w-36">
             <label className="mb-1 block text-xs font-semibold text-surface-700">Role</label>
             <CustomSelect
-              onChange={setSelectedRole}
+              onChange={handleRoleFilterChange}
               value={selectedRole}
               options={[
                 { value: "", label: "All Roles" },
@@ -354,30 +450,60 @@ export default function Attendance() {
             />
           </div>
 
-          {/* Class filter - fetched from API */}
-          <div className="w-40">
-            <label className="mb-1 block text-xs font-semibold text-surface-700">Class</label>
-            <CustomSelect
-              onChange={handleClassFilterChange}
-              value={selectedClassId}
-              options={[
-                { value: "", label: "All Classes" },
-                ...allClasses.map((classItem) => ({ value: classItem.id, label: classItem.name })),
-              ]}
-              className="w-full"
-            />
-          </div>
+          {/* Class/Section/Roll Number - only when Role = Student */}
+          {selectedRole === 'STUDENT' && (
+            <>
+              <div className="w-40">
+                <label className="mb-1 block text-xs font-semibold text-surface-700">Class</label>
+                <CustomSelect
+                  onChange={handleClassFilterChange}
+                  value={selectedClassId}
+                  options={[
+                    { value: "", label: "All Classes" },
+                    ...allClasses.map((classItem) => ({ value: classItem.id, label: classItem.name })),
+                  ]}
+                  className="w-full"
+                />
+              </div>
 
-          {/* Section filter - based on selected class */}
-          {selectedClassId && sections.length > 0 && (
-            <div className="w-40">
-              <label className="mb-1 block text-xs font-semibold text-surface-700">Section</label>
+              {selectedClassId && sections.length > 0 && (
+                <div className="w-40">
+                  <label className="mb-1 block text-xs font-semibold text-surface-700">Section</label>
+                  <CustomSelect
+                    onChange={handleSectionFilterChange}
+                    value={selectedSectionId}
+                    options={[
+                      { value: "", label: "All Sections" },
+                      ...sections.map((sec) => ({ value: sec.id, label: sec.name })),
+                    ]}
+                    className="w-full"
+                  />
+                </div>
+              )}
+
+              <div className="w-36">
+                <label className="mb-1 block text-xs font-semibold text-surface-700">Roll Number</label>
+                <input
+                  type="text"
+                  value={rollNoQuery}
+                  onChange={(e) => { setRollNoQuery(e.target.value); setPage(1); }}
+                  placeholder="Roll no..."
+                  className="w-full rounded-lg border border-surface-200 px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                />
+              </div>
+            </>
+          )}
+
+          {/* Teacher Name - only when Role = Teacher */}
+          {selectedRole === 'TEACHER' && (
+            <div className="w-44">
+              <label className="mb-1 block text-xs font-semibold text-surface-700">Teacher Name</label>
               <CustomSelect
-                onChange={handleSectionFilterChange}
-                value={selectedSectionId}
+                onChange={setSelectedTeacherId}
+                value={selectedTeacherId}
                 options={[
-                  { value: "", label: "All Sections" },
-                  ...sections.map((sec) => ({ value: sec.id, label: sec.name })),
+                  { value: "", label: "All Teachers" },
+                  ...allTeachers.map((t) => ({ value: t.id, label: t.name })),
                 ]}
                 className="w-full"
               />

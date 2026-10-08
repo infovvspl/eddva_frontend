@@ -70,6 +70,7 @@ export default function InstituteProfile() {
     code: authInstitute?.code || `SCH-${(authInstitute?.id || '001').slice(0, 6).toUpperCase()}`,
     website: authInstitute?.website || `https://${authInstitute?.tenantDomain || 'eddva'}.eddva.com`,
     tagline: authInstitute?.tagline || 'Excellence in Education & Holistic Development',
+    minAttendancePercentage: authInstitute?.minAttendancePercentage ?? authInstitute?.min_attendance_percentage ?? 80,
   });
 
   const instituteId = user?.instituteId || authInstitute?.id;
@@ -95,6 +96,7 @@ export default function InstituteProfile() {
           code: data.code || `SCH-${(data.id || instituteId || '001').slice(0, 6).toUpperCase()}`,
           website: data.website || `https://${data.tenantDomain || authInstitute?.tenantDomain || 'eddva'}.eddva.com`,
           tagline: data.tagline || 'Excellence in Education & Holistic Development',
+          minAttendancePercentage: data.minAttendancePercentage ?? data.min_attendance_percentage ?? 80,
         });
       }
     } catch (err) {
@@ -477,6 +479,12 @@ export default function InstituteProfile() {
                   <p className="text-lg font-bold text-slate-900">2026 - 2027</p>
                   <p className="text-xs text-emerald-600 font-semibold">Active Session</p>
                 </div>
+
+                <div className="p-5 rounded-2xl border border-slate-100 bg-slate-50/50 space-y-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Minimum Attendance %</span>
+                  <p className="text-lg font-bold text-slate-900">{formData.minAttendancePercentage}%</p>
+                  <p className="text-xs text-slate-500">Students/teachers below this are flagged. Edit Profile to change.</p>
+                </div>
               </div>
             </div>
           )}
@@ -621,6 +629,21 @@ export default function InstituteProfile() {
                     className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20"
                     placeholder="e.g. Empowering Young Minds"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Minimum Attendance % (default)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.5"
+                    value={formData.minAttendancePercentage}
+                    onChange={(e) => setFormData({ ...formData, minAttendancePercentage: e.target.value })}
+                    className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20"
+                    placeholder="80"
+                  />
+                  <p className="mt-1 text-[11px] text-slate-500">Students/teachers whose overall attendance falls below this are flagged. Can be overridden per teacher/student on their profile.</p>
                 </div>
 
                 <div>

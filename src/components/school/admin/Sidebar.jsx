@@ -89,7 +89,7 @@ function buildInstituteGroups(mods) {
         { path: '/school/admin/students', label: 'Students', icon: GraduationCap },
         { path: '/school/admin/teachers', label: 'Teachers', icon: Users },
         { path: '/school/admin/admins', label: 'Administrators', icon: Shield },
-        { path: '/school/admin/academics', label: 'Classes & Curriculum', icon: Building2 },
+        { path: '/school/admin/academics', label: 'Class & Sections', icon: Building2 },
         { path: '/school/admin/subjects', label: 'Subjects', icon: BookOpen },
         syllabusPlannerEnabled && { path: '/school/admin/syllabus-planner', label: 'Syllabus Planner', icon: FileText },
         syllabusTrackerEnabled && { path: '/school/admin/syllabus-tracker', label: 'Syllabus Tracker', icon: BarChart3 },

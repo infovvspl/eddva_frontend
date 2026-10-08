@@ -3,21 +3,22 @@
 // DashboardLayout/sidebar. Guarded by presence of a valid blog-admin session
 // (checked against the backend on mount), not by any LMS role.
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   Loader2, Search, RefreshCw, Plus, Pencil, Trash2, X, Image as ImageIcon,
-  Eye, EyeOff, GripVertical, Newspaper, LogOut, Bold, List,
+  Eye, EyeOff, GripVertical, Newspaper, LogOut,
 } from 'lucide-react';
 import {
   getCurrentBlogAdmin, logoutBlogAdmin,
   getBlogPosts, createBlogPost, updateBlogPost, deleteBlogPost, uploadBlogCoverImage,
-  type BlogPost, type BlogPostStatus, type BlogSection, type BlogAdmin,
+  type BlogPost, type BlogPostStatus, type BlogSection, type BlogAdmin, type BlogDocumentSettings,
 } from '@/lib/api/blogAdmin';
 import { blogAdminToken } from '@/lib/api/blogAdminClient';
 import { useConfirm } from '@/context/ConfirmContext';
 import ImageCropModal from './ImageCropModal';
+import BlogBodyEditor from './BlogBodyEditor';
 
 const STATUSES: BlogPostStatus[] = ['DRAFT', 'PUBLISHED'];
 
@@ -28,7 +29,16 @@ const statusStyle: Record<BlogPostStatus, string> = {
 
 const CATEGORY_SUGGESTIONS = ['AI in Education', 'Exam Prep', 'School Management', 'Product Updates'];
 
-const emptySection = (): BlogSection => ({ heading: '', body: '' });
+// Sections need a React key that survives add/remove/reorder without being
+// tied to array index — the index shifts when a section is removed, which
+// would make BlogBodyEditor reuse another section's Tiptap instance instead
+// of remounting with the new section's content.
+let sectionKeySeq = 0;
+const nextSectionKey = () => `s${++sectionKeySeq}`;
+
+type FormSection = BlogSection & { _key: string };
+
+const emptySection = (): FormSection => ({ heading: '', body: '', _key: nextSectionKey() });
 
 interface FormState {
   id: string | null;
@@ -38,7 +48,8 @@ interface FormState {
   author: string;
   coverImage: string;
   readTime: string;
-  sections: BlogSection[];
+  sections: FormSection[];
+  documentSettings: BlogDocumentSettings;
   status: BlogPostStatus;
 }
 
@@ -51,6 +62,7 @@ const emptyForm = (): FormState => ({
   coverImage: '',
   readTime: '',
   sections: [emptySection()],
+  documentSettings: { pageSize: 'A4', marginTop: 25, marginRight: 22, marginBottom: 25, marginLeft: 22, showPageNumbers: true, showTotalPages: true, fontFamily: 'Arial', fontSize: 11 },
   status: 'DRAFT',
 });
 
@@ -62,6 +74,7 @@ export default function BlogAdminDashboardPage() {
 
   const [items, setItems] = useState<BlogPost[]>([]);
   const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<BlogPostStatus | ''>('');
   const [search, setSearch] = useState('');
@@ -70,7 +83,6 @@ export default function BlogAdminDashboardPage() {
   const [form, setForm] = useState<FormState>(emptyForm());
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [cropFile, setCropFile] = useState<File | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // ── Session check ──────────────────────────────────────────────────────
@@ -97,7 +109,8 @@ export default function BlogAdminDashboardPage() {
       const res = await getBlogPosts({
         status: statusFilter || undefined,
         search: search.trim() || undefined,
-        limit: 100,
+        page,
+        limit: 20,
       });
       setItems(res.items);
       setTotal(res.total);
@@ -106,11 +119,13 @@ export default function BlogAdminDashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, search]);
+  }, [statusFilter, search, page]);
 
   useEffect(() => {
     if (!checkingSession && admin) load();
-  }, [checkingSession, admin, statusFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [checkingSession, admin, load]);
+
+  useEffect(() => { setPage(1); }, [statusFilter, search]);
 
   const openCreate = () => {
     setForm(emptyForm());
@@ -126,7 +141,10 @@ export default function BlogAdminDashboardPage() {
       author: post.author || '',
       coverImage: post.coverImage || '',
       readTime: post.readTime ? String(post.readTime) : '',
-      sections: post.sections && post.sections.length > 0 ? post.sections : [emptySection()],
+      sections: post.sections && post.sections.length > 0
+        ? post.sections.map((s) => ({ ...s, _key: nextSectionKey() }))
+        : [emptySection()],
+      documentSettings: post.documentSettings || emptyForm().documentSettings,
       status: post.status,
     });
     setFormOpen(true);
@@ -149,55 +167,14 @@ export default function BlogAdminDashboardPage() {
   const removeSection = (index: number) =>
     setForm((f) => ({ ...f, sections: f.sections.filter((_, i) => i !== index) }));
 
-  // ── Formatting toolbar ────────────────────────────────────────────────
-  // A section's body is plain text following the small convention
-  // renderBlogText.jsx parses (blank line = new paragraph, "- " = bullet,
-  // **text** = bold) — these buttons apply that syntax to the current
-  // selection instead of requiring it be typed by hand, so anyone can bold
-  // text without knowing the markdown-ish syntax exists.
-  const bodyRefs = useRef<Record<number, HTMLTextAreaElement | null>>({});
-
-  const applyBold = (index: number) => {
-    const el = bodyRefs.current[index];
-    if (!el) return;
-    const { selectionStart, selectionEnd, value } = el;
-    const selected = value.slice(selectionStart, selectionEnd);
-    const inserted = selected ? `**${selected}**` : '**bold text**';
-    const newValue = value.slice(0, selectionStart) + inserted + value.slice(selectionEnd);
-    updateSection(index, { body: newValue });
-    requestAnimationFrame(() => {
-      el.focus();
-      el.setSelectionRange(selectionStart + 2, selectionStart + inserted.length - 2);
-    });
-  };
-
-  const applyBullet = (index: number) => {
-    const el = bodyRefs.current[index];
-    if (!el) return;
-    const { selectionStart, selectionEnd, value } = el;
-    const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1;
-    const nextBreak = value.indexOf('\n', selectionEnd);
-    const lineEnd = nextBreak === -1 ? value.length : nextBreak;
-    const lines = value.slice(lineStart, lineEnd).split('\n');
-    const alreadyBulleted = lines.every((l) => l.trim() === '' || /^[-*]\s/.test(l));
-    const newLines = lines.map((l) => {
-      if (l.trim() === '') return l;
-      return alreadyBulleted ? l.replace(/^[-*]\s+/, '') : `- ${l}`;
-    });
-    const newBlock = newLines.join('\n');
-    const newValue = value.slice(0, lineStart) + newBlock + value.slice(lineEnd);
-    updateSection(index, { body: newValue });
-    requestAnimationFrame(() => {
-      el.focus();
-      el.setSelectionRange(lineStart, lineStart + newBlock.length);
-    });
-  };
-
-  const handleCropConfirm = async (blob: Blob) => {
-    setCropFile(null);
+  const handleCoverFile = async (file: File) => {
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be 5 MB or smaller');
+      return;
+    }
     setUploading(true);
     try {
-      const { url } = await uploadBlogCoverImage(blob);
+      const { url } = await uploadBlogCoverImage(file);
       setForm((f) => ({ ...f, coverImage: url }));
     } catch (e: any) {
       toast.error(e?.response?.data?.message || 'Cover image upload failed');
@@ -212,7 +189,7 @@ export default function BlogAdminDashboardPage() {
       return;
     }
     const sections = form.sections
-      .map((s) => ({ heading: s.heading.trim(), body: s.body.trim() }))
+      .map((s) => ({ heading: s.heading.trim(), body: s.body.trim(), references: s.references }))
       .filter((s) => s.heading || s.body);
 
     const payload = {
@@ -429,7 +406,7 @@ export default function BlogAdminDashboardPage() {
                         accept="image/jpeg,image/png,image/webp"
                         className="hidden"
                         disabled={uploading}
-                        onChange={(e) => { const f = e.target.files?.[0]; if (f) setCropFile(f); e.target.value = ''; }}
+                        onChange={(e) => { const file = e.target.files?.[0]; if (file) void handleCoverFile(file); e.target.value = ''; }}
                       />
                     </label>
                     {form.coverImage && (
@@ -437,7 +414,7 @@ export default function BlogAdminDashboardPage() {
                         Remove
                       </button>
                     )}
-                    <span className="text-[11px] font-normal text-slate-400">Shown at 16:9 on the site — this preview matches that crop.</span>
+                    <span className="text-[11px] font-normal text-slate-400">Original image uploaded unchanged. Maximum size: 5 MB.</span>
                   </div>
                 </div>
               </div>
@@ -453,7 +430,7 @@ export default function BlogAdminDashboardPage() {
               </div>
               <div className="space-y-2">
                 {form.sections.map((section, i) => (
-                  <div key={i} className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+                  <div key={section._key} className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
                     <div className="mb-2 flex items-center gap-2">
                       <GripVertical className="h-4 w-4 flex-shrink-0 text-slate-300" />
                       <input
@@ -468,38 +445,20 @@ export default function BlogAdminDashboardPage() {
                         </button>
                       )}
                     </div>
-                    <div className="mb-1.5 flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => applyBold(i)}
-                        title="Bold (wrap selected text in **bold**)"
-                        className="inline-flex items-center justify-center rounded-md border border-slate-200 p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
-                      >
-                        <Bold className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => applyBullet(i)}
-                        title="Bullet list"
-                        className="inline-flex items-center justify-center rounded-md border border-slate-200 p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
-                      >
-                        <List className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                    <textarea
-                      ref={(el) => { bodyRefs.current[i] = el; }}
+                    <BlogBodyEditor
                       value={section.body}
-                      onChange={(e) => updateSection(i, { body: e.target.value })}
-                      rows={6}
-                      placeholder={'Section body text\n\nLeave a blank line between paragraphs.\n- Start a line with "- " for a bullet point\nUse **word** for bold text'}
-                      className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                      onChange={(html) => updateSection(i, { body: html })}
+                      onContentJsonChange={(contentJson) => updateSection(i, { contentJson })}
+                      settings={form.documentSettings}
+                      onSettingsChange={(documentSettings) => setForm((f) => ({ ...f, documentSettings }))}
+                      references={section.references || []}
+                      onReferencesChange={(references) => updateSection(i, { references })}
+                      placeholder="Write the section body…"
+                      docxFilename={[form.title, section.heading].filter(Boolean).join(' - ') || 'section'}
                     />
                   </div>
                 ))}
               </div>
-              <p className="mt-2 text-[11px] text-slate-400">
-                Formatting: leave a blank line between paragraphs, start a line with <code className="rounded bg-slate-100 px-1 dark:bg-slate-800">- </code> for a bullet, wrap text in <code className="rounded bg-slate-100 px-1 dark:bg-slate-800">**bold**</code> for bold.
-              </p>
             </div>
 
             <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
@@ -590,15 +549,18 @@ export default function BlogAdminDashboardPage() {
             ))}
           </div>
         )}
+
+        {!loading && items.length > 0 && (
+          <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
+            <span>Showing {(page - 1) * 20 + 1}-{Math.min(page * 20, total)} of {total}</span>
+            <div className="flex gap-2">
+              <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="rounded border px-2 py-1 disabled:opacity-40">Previous</button>
+              <button type="button" disabled={page * 20 >= total} onClick={() => setPage((p) => p + 1)} className="rounded border px-2 py-1 disabled:opacity-40">Next</button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {cropFile && (
-        <ImageCropModal
-          file={cropFile}
-          onCancel={() => setCropFile(null)}
-          onConfirm={handleCropConfirm}
-        />
-      )}
     </div>
   );
 }
