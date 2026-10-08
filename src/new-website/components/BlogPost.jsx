@@ -15,7 +15,7 @@ const formatDate = iso =>
   new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
 
 const BlogPost = ({ post, allPosts = [] }) => {
-  const { id, slug, title, category, author, date, readTime, sections, coverImage } = post;
+  const { id, slug, title, category, author, date, readTime, sections, coverImage, coverImageAlt } = post;
   const { Icon, color, bg } = getCategoryStyle(category);
 
   const sameCategory = allPosts.filter(p => p.id !== id && p.category === category);
@@ -53,8 +53,8 @@ const BlogPost = ({ post, allPosts = [] }) => {
           </div>
 
           {coverImage ? (
-            <span className="nw-bpost__cover" aria-hidden="true">
-              <img src={coverImage} alt="" />
+            <span className="nw-bpost__cover">
+              <img src={coverImage} alt={coverImageAlt || title} />
             </span>
           ) : (
             <span className="nw-bpost__art" aria-hidden="true">
@@ -116,7 +116,7 @@ const BlogPost = ({ post, allPosts = [] }) => {
                   >
                     <span className="nw-bpost__related-thumb">
                       {item.coverImage ? (
-                        <img src={item.coverImage} alt="" loading="lazy" />
+                        <img src={item.coverImage} alt={item.coverImageAlt || item.title} loading="lazy" />
                       ) : (
                         <itemStyle.Icon size={22} strokeWidth={1.6} />
                       )}

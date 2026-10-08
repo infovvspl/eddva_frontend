@@ -4837,13 +4837,13 @@ a.nw-abouthero__crumb:hover { color: var(--nw-blue); }
 }
 .nw-bpost__hero-inner { max-width: 820px; margin: 0 auto; text-align: center; }
 .nw-bpost__back {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: 0.85rem; font-weight: 600; color: var(--nw-body); margin-bottom: 20px;
+  display: flex; width: fit-content; align-items: center; gap: 6px; margin: 0 auto 20px;
+  font-size: 0.85rem; font-weight: 600; color: var(--nw-body);
   transition: color 0.2s;
 }
 .nw-bpost__back:hover { color: var(--nw-blue); }
 .nw-bpost__category {
-  display: inline-block; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em;
+  display: block; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em;
   text-transform: uppercase; color: var(--nw-bp-accent, var(--nw-blue)); margin-bottom: 10px;
 }
 .nw-bpost__title {
@@ -4929,9 +4929,9 @@ a.nw-abouthero__crumb:hover { color: var(--nw-blue); }
 .nw-bpost__related { padding: 0 var(--nw-sec-pad-x) 64px; }
 .nw-bpost__related-inner { max-width: 980px; margin: 0 auto; }
 .nw-bpost__related-inner .nw-bpost__h2 { text-align: center; margin-bottom: 24px; }
-.nw-bpost__related-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.nw-bpost__related-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
 .nw-bpost__related-card {
-  display: flex; align-items: center; gap: 12px;
+  display: flex; align-items: center; gap: 12px; min-width: 0;
   padding: 16px; border: 1px solid var(--nw-line); border-radius: 14px;
   text-decoration: none; color: inherit; transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
 }

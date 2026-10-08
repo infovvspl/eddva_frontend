@@ -191,7 +191,8 @@ export default function BlogBodyEditor({
     setUploadingImage(true);
     try {
       const { url } = await uploadBlogCoverImage(file);
-      editor.chain().focus().setImage({ src: url, alt: '' }).run();
+      const alt = window.prompt('Alt text (describes the image for screen readers and SEO)', '') || '';
+      editor.chain().focus().setImage({ src: url, alt }).run();
     } catch (err) {
       console.error(err);
       toast.error('Image upload failed');

@@ -13,7 +13,7 @@ const formatDate = iso =>
   new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
 const BlogCard = ({ post, index }) => {
-  const { id, slug, title, category, excerpt, date, readTime, coverImage } = post;
+  const { id, slug, title, category, excerpt, date, readTime, coverImage, coverImageAlt } = post;
   const { Icon, color, bg } = getCategoryStyle(category);
   const [ref, inView] = useInView({ threshold: 0.12 });
 
@@ -26,8 +26,8 @@ const BlogCard = ({ post, index }) => {
       style={{ "--i": index, "--nw-bg-accent": color, "--nw-bg-tint": bg }}
     >
       {coverImage ? (
-        <span className="nw-bgrid__cover" aria-hidden="true">
-          <img src={coverImage} alt="" loading="lazy" />
+        <span className="nw-bgrid__cover">
+          <img src={coverImage} alt={coverImageAlt || title} loading="lazy" />
         </span>
       ) : (
         <span className="nw-bgrid__art" aria-hidden="true">

@@ -16,6 +16,7 @@ export const normalizeApiPost = post => ({
   date: post.publishedAt || post.createdAt,
   readTime: post.readTime || null,
   coverImage: post.coverImage || null,
+  coverImageAlt: post.coverImageAlt || "",
   sections: post.sections || [],
 });
 
@@ -29,5 +30,6 @@ export const normalizeStaticPost = post => ({
   date: post.date,
   readTime: post.readTime,
   coverImage: null,
+  coverImageAlt: "",
   sections: post.sections,
 });

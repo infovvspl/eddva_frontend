@@ -20,6 +20,7 @@ export interface BlogPost {
   excerpt?: string;
   author?: string;
   coverImage?: string;
+  coverImageAlt?: string;
   readTime?: number;
   sections?: BlogSection[];
   status: BlogPostStatus;

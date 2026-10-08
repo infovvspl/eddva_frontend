@@ -40,6 +40,7 @@ export interface BlogPostPayload {
   excerpt?: string;
   author?: string;
   coverImage?: string;
+  coverImageAlt?: string;
   readTime?: number;
   sections?: BlogSection[];
   documentSettings?: BlogDocumentSettings;

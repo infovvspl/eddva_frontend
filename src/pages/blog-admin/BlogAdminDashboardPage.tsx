@@ -45,6 +45,7 @@ interface FormState {
   excerpt: string;
   author: string;
   coverImage: string;
+  coverImageAlt: string;
   readTime: string;
   sections: FormSection[];
   documentSettings: BlogDocumentSettings;
@@ -58,6 +59,7 @@ const emptyForm = (): FormState => ({
   excerpt: '',
   author: 'EDDVA Team',
   coverImage: '',
+  coverImageAlt: '',
   readTime: '',
   sections: [emptySection()],
   documentSettings: { pageSize: 'A4', marginTop: 25, marginRight: 22, marginBottom: 25, marginLeft: 22, showPageNumbers: true, showTotalPages: true, fontFamily: 'Arial', fontSize: 11 },
@@ -137,6 +139,7 @@ export default function BlogAdminDashboardPage() {
       excerpt: post.excerpt || '',
       author: post.author || '',
       coverImage: post.coverImage || '',
+      coverImageAlt: post.coverImageAlt || '',
       readTime: post.readTime ? String(post.readTime) : '',
       sections: post.sections && post.sections.length > 0
         ? post.sections.map((s) => ({ ...s, _key: nextSectionKey() }))
@@ -195,6 +198,7 @@ export default function BlogAdminDashboardPage() {
       excerpt: form.excerpt.trim() || undefined,
       author: form.author.trim() || undefined,
       coverImage: form.coverImage.trim() || undefined,
+      coverImageAlt: form.coverImageAlt.trim() || undefined,
       readTime: form.readTime ? Number(form.readTime) : undefined,
       sections,
       status: statusOverride || form.status,
@@ -383,7 +387,7 @@ export default function BlogAdminDashboardPage() {
                 <div className="mt-1 flex items-start gap-3">
                   {form.coverImage ? (
                     <a href={form.coverImage} target="_blank" rel="noreferrer" className="block flex-shrink-0">
-                      <img src={form.coverImage} alt="" className="h-24 w-40 rounded-lg border border-slate-200 object-cover dark:border-slate-700" />
+                      <img src={form.coverImage} alt={form.coverImageAlt} className="h-24 w-40 rounded-lg border border-slate-200 object-cover dark:border-slate-700" />
                     </a>
                   ) : (
                     <span className="flex h-24 w-40 flex-shrink-0 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 text-slate-400 dark:border-slate-700 dark:bg-slate-800">
@@ -410,6 +414,18 @@ export default function BlogAdminDashboardPage() {
                     <span className="text-[11px] font-normal text-slate-400">Original image uploaded unchanged. Maximum size: 5 MB.</span>
                   </div>
                 </div>
+                {form.coverImage && (
+                  <label className="mt-2 block">
+                    <span className="text-[11px] font-normal text-slate-400">Alt text (describes the image for screen readers and SEO)</span>
+                    <input
+                      type="text"
+                      value={form.coverImageAlt}
+                      onChange={(e) => setForm((f) => ({ ...f, coverImageAlt: e.target.value }))}
+                      placeholder="e.g. Students collaborating in a classroom"
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-normal outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                    />
+                  </label>
+                )}
               </div>
             </div>
 
@@ -492,7 +508,7 @@ export default function BlogAdminDashboardPage() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="flex min-w-0 gap-3">
                     {post.coverImage ? (
-                      <img src={post.coverImage} alt="" className="h-12 w-12 flex-shrink-0 rounded-lg object-cover" />
+                      <img src={post.coverImage} alt={post.coverImageAlt || ''} className="h-12 w-12 flex-shrink-0 rounded-lg object-cover" />
                     ) : (
                       <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400 dark:bg-slate-800">
                         <ImageIcon className="h-5 w-5" />

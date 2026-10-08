@@ -46,8 +46,8 @@ const BlogSection = () => {
                 style={{ "--i": i, "--nw-bg-accent": color, "--nw-bg-tint": bg }}
               >
                 {post.coverImage ? (
-                  <span className="nw-bgrid__cover" aria-hidden="true">
-                    <img src={post.coverImage} alt="" loading="lazy" />
+                  <span className="nw-bgrid__cover">
+                    <img src={post.coverImage} alt={post.coverImageAlt || post.title} loading="lazy" />
                   </span>
                 ) : (
                   <span className="nw-bgrid__art" aria-hidden="true">
