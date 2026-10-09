@@ -5,6 +5,7 @@
 
 import { useEffect } from "react";
 import "../new-website.css";
+import Seo from "../components/Seo";
 import TopBar from "../components/TopBar";
 import Navbar from "../components/Navbar";
 import PageHead from "../components/PageHead";
@@ -20,6 +21,11 @@ const BlogPage = () => {
 
   return (
     <div className="nw-root" id="nw-root">
+      <Seo
+        title="AI in Education & EdTech Insights | EDDVA Blog"
+        description="Explore insights on AI in education, school digital transformation, EdTech, teaching technology, student learning and the future of education from EDDVA."
+        path="/blog"
+      />
       <TopBar />
       <Navbar />
       <main>

@@ -9,6 +9,7 @@
 
 import { useEffect } from "react";
 import "../new-website.css";
+import Seo from "../components/Seo";
 import TopBar from "../components/TopBar";
 import Navbar from "../components/Navbar";
 import ContactHero from "../components/ContactHero";
@@ -22,6 +23,11 @@ const ContactPage = () => {
 
   return (
     <div className="nw-root" id="nw-root">
+      <Seo
+        title="Contact EDDVA | AI Education Platform for Schools"
+        description="Contact EDDVA to discuss AI-powered learning, school management, digital transformation and education technology solutions for your institution."
+        path="/contact"
+      />
       <TopBar />
       <Navbar />
       <main>

@@ -9,6 +9,7 @@
 import { useEffect } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import "../new-website.css";
+import Seo from "../components/Seo";
 import TopBar from "../components/TopBar";
 import Navbar from "../components/Navbar";
 import ProductDetail from "../components/ProductDetail";
@@ -26,6 +27,11 @@ const ProductDetailPage = () => {
 
   return (
     <div className="nw-root" id="nw-root">
+      <Seo
+        title={product.metaTitle || product.title}
+        description={product.metaDescription || product.desc}
+        path={`/products/${product.slug}`}
+      />
       <TopBar />
       <Navbar />
       <main>

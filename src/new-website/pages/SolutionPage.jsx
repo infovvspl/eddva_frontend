@@ -6,6 +6,7 @@
 // PartnersStrip.
 
 import "../new-website.css";
+import Seo from "../components/Seo";
 import TopBar from "../components/TopBar";
 import Navbar from "../components/Navbar";
 import PageHead from "../components/PageHead";
@@ -23,6 +24,11 @@ const SolutionPage = () => {
 
   return (
     <div className="nw-root" id="nw-root">
+      <Seo
+        title="AI Education Solutions for Schools & Institutions | EDDVA"
+        description="Explore EDDVA's AI-powered education solutions for learning, teaching, assessments, school management, student insights and parent engagement."
+        path="/solution"
+      />
       <TopBar />
       <Navbar />
       <main>

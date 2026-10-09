@@ -10,6 +10,7 @@
 import { useEffect } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import "../new-website.css";
+import Seo from "../components/Seo";
 import TopBar from "../components/TopBar";
 import Navbar from "../components/Navbar";
 import FeatureDetail from "../components/FeatureDetail";
@@ -27,6 +28,11 @@ const FeatureDetailPage = () => {
 
   return (
     <div className="nw-root" id="nw-root">
+      <Seo
+        title={feature.metaTitle || feature.title}
+        description={feature.metaDescription || feature.tagline}
+        path={`/features/${feature.slug}`}
+      />
       <TopBar />
       <Navbar />
       <main>

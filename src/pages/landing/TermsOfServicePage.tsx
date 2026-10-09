@@ -1,11 +1,17 @@
 import { LandingLayout } from "@/components/landing/LandingLayout";
 import { Link } from "react-router-dom";
+import Seo from "@/new-website/components/Seo";
 
 const CONTACT_EMAIL = "hello@eddva.com";
 
 export default function TermsOfServicePage() {
   return (
     <LandingLayout>
+      <Seo
+        title="Terms & Conditions | EDDVA"
+        description="Read the Terms & Conditions governing the use of EDDVA's AI-powered education platform, website, services and related offerings."
+        path="/terms"
+      />
       <article className="landing-shell max-w-3xl py-14 sm:py-20">
         <p className="text-xs font-semibold uppercase tracking-widest text-blue-600">Legal</p>
         <h1 className="mt-2 text-3xl font-black text-gray-900 sm:text-4xl">Terms of Service</h1>

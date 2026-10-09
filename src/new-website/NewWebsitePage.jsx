@@ -9,6 +9,7 @@
 // intentionally not mounted; their files are kept for easy reinstatement.
 
 import "./new-website.css";
+import Seo from "./components/Seo";
 import TopBar from "./components/TopBar";
 import Navbar from "./components/Navbar";
 import HeroSection from "./components/HeroSection";
@@ -28,6 +29,11 @@ import WhatsAppButton from "./components/WhatsAppButton";
 const NewWebsitePage = () => {
   return (
     <div className="nw-root" id="nw-root">
+      <Seo
+        title="AI-Powered Education Platform for Schools | EDDVA"
+        description="EDDVA is an AI-powered digital transformation platform for schools and educational institutions. Connect teaching, learning, management and engagement in one ecosystem."
+        path="/"
+      />
       <TopBar />
       <Navbar />
       <main>

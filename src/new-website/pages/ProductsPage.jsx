@@ -18,6 +18,7 @@
 
 import { useEffect } from "react";
 import "../new-website.css";
+import Seo from "../components/Seo";
 import TopBar from "../components/TopBar";
 import Navbar from "../components/Navbar";
 import ProductsHero from "../components/ProductsHero";
@@ -31,6 +32,11 @@ const ProductsPage = () => {
 
   return (
     <div className="nw-root" id="nw-root">
+      <Seo
+        title="EDDVA Products | AI-Powered Education Solutions for Schools"
+        description="Explore EDDVA's education products for AI-powered learning, school management, LMS, ERP and smarter digital education. Find the right solution for your institution."
+        path="/products"
+      />
       <TopBar />
       <Navbar />
       <main>

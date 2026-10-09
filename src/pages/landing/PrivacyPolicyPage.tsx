@@ -1,11 +1,17 @@
 import { LandingLayout } from "@/components/landing/LandingLayout";
 import { Link } from "react-router-dom";
+import Seo from "@/new-website/components/Seo";
 
 const CONTACT_EMAIL = "hello@eddva.com";
 
 export default function PrivacyPolicyPage() {
   return (
     <LandingLayout>
+      <Seo
+        title="Privacy Policy | EDDVA"
+        description="Read EDDVA's Privacy Policy to understand how information is collected, used and handled when you use our website and services."
+        path="/privacy-policy"
+      />
       <article className="landing-shell max-w-3xl py-14 sm:py-20">
         <p className="text-xs font-semibold uppercase tracking-widest text-blue-600">Legal</p>
         <h1 className="mt-2 text-3xl font-black text-gray-900 sm:text-4xl">Privacy Policy</h1>

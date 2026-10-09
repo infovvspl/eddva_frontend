@@ -9,6 +9,7 @@
 // StudentSolutionPage / ParentSolutionPage exactly.
 import { useEffect } from "react";
 import "../new-website.css";
+import Seo from "../components/Seo";
 import TopBar from "../components/TopBar";
 import Navbar from "../components/Navbar";
 import PageHead from "../components/PageHead";
@@ -28,6 +29,11 @@ const InstitutionSolutionPage = () => {
 
   return (
     <div className="nw-root" id="nw-root">
+      <Seo
+        title="School Management Platform for Administrators | EDDVA"
+        description="Simplify academic and administrative operations with EDDVA's AI-powered school management platform, designed for connected, efficient institutions."
+        path="/solution/institutions"
+      />
       <TopBar />
       <Navbar />
       <main>

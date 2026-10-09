@@ -1,6 +1,7 @@
 // TeacherSolutionPage.jsx — route: /solution/teachers
 import { useEffect } from "react";
 import "../new-website.css";
+import Seo from "../components/Seo";
 import TopBar from "../components/TopBar";
 import Navbar from "../components/Navbar";
 import PageHead from "../components/PageHead";
@@ -20,6 +21,11 @@ const TeacherSolutionPage = () => {
 
   return (
     <div className="nw-root" id="nw-root">
+      <Seo
+        title="AI Tools for Teachers | Teaching & Assessment Support | EDDVA"
+        description="Help teachers save preparation time with AI-powered teaching resources, PPTs, assessments, study materials and student performance insights with EDDVA"
+        path="/solution/teachers"
+      />
       <TopBar />
       <Navbar />
       <main>

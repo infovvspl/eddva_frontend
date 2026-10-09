@@ -1,6 +1,7 @@
 // StudentSolutionPage.jsx — route: /solution/students
 import { useEffect } from "react";
 import "../new-website.css";
+import Seo from "../components/Seo";
 import TopBar from "../components/TopBar";
 import Navbar from "../components/Navbar";
 import PageHead from "../components/PageHead";
@@ -20,6 +21,11 @@ const StudentSolutionPage = () => {
 
   return (
     <div className="nw-root" id="nw-root">
+      <Seo
+        title="AI Learning Platform for Students | Personalised Learning | EDDVA"
+        description="Help students learn with AI-powered resources, personalised learning support, assessments and progress insights through EDDVA's intelligent education platform."
+        path="/solution/students"
+      />
       <TopBar />
       <Navbar />
       <main>

@@ -4,6 +4,7 @@
 
 import { useEffect } from "react";
 import "../new-website.css";
+import Seo from "../components/Seo";
 import TopBar from "../components/TopBar";
 import Navbar from "../components/Navbar";
 import PageHead from "../components/PageHead";
@@ -20,6 +21,11 @@ const FaqPage = () => {
 
   return (
     <div className="nw-root" id="nw-root">
+      <Seo
+        title="EDDVA FAQs | AI Education & School Management Platform"
+        description="Find answers about EDDVA's AI-powered education platform, school management features, teacher tools, student learning, parent engagement and implementation."
+        path="/faq"
+      />
       <TopBar />
       <Navbar />
       <main>

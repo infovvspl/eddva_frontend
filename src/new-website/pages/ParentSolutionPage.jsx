@@ -1,6 +1,7 @@
 // ParentSolutionPage.jsx — route: /solution/parents
 import { useEffect } from "react";
 import "../new-website.css";
+import Seo from "../components/Seo";
 import TopBar from "../components/TopBar";
 import Navbar from "../components/Navbar";
 import PageHead from "../components/PageHead";
@@ -20,6 +21,11 @@ const ParentSolutionPage = () => {
 
   return (
     <div className="nw-root" id="nw-root">
+      <Seo
+        title="Parent Engagement & School Communication Platform | EDDVA"
+        description="Keep parents connected with school updates, academic progress, attendance, assessments and communication through EDDVA's connected education ecosystem."
+        path="/solution/parents"
+      />
       <TopBar />
       <Navbar />
       <main>

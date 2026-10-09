@@ -18,6 +18,7 @@
 // the page now ends on ValuesSection.
 import { useEffect } from "react";
 import "../new-website.css";
+import Seo from "../components/Seo";
 import TopBar from "../components/TopBar";
 import Navbar from "../components/Navbar";
 import AboutHero from "../components/AboutHero";
@@ -32,6 +33,11 @@ const AboutPage = () => {
 
   return (
     <div className="nw-root" id="nw-root">
+      <Seo
+        title="About EDDVA | AI-Powered Education Technology Platform"
+        description="Learn about EDDVA, an AI-powered digital transformation platform designed to help schools and educational institutions build a more connected education ecosystem."
+        path="/about"
+      />
       <TopBar />
       <Navbar />
       <main>

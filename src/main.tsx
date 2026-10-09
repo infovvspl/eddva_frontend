@@ -1,4 +1,5 @@
 import { createRoot } from "react-dom/client";
+import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
 import { ThemeProvider } from "./components/theme-provider.tsx";
 import { PageErrorBoundary } from "./components/shared/PageErrorBoundary.tsx";
@@ -12,9 +13,11 @@ import "./index.css";
 // guarantees the next one shows a recoverable error screen instead of blank.
 createRoot(document.getElementById("root")!).render(
   <PageErrorBoundary>
-    <ThemeProvider attribute="class" defaultTheme="light" forcedTheme="light" enableSystem={false}>
-      <App />
-    </ThemeProvider>
+    <HelmetProvider>
+      <ThemeProvider attribute="class" defaultTheme="light" forcedTheme="light" enableSystem={false}>
+        <App />
+      </ThemeProvider>
+    </HelmetProvider>
   </PageErrorBoundary>,
 );
 

@@ -5,7 +5,11 @@
     <!-- viewport-fit=cover lets content extend under iOS notch/home-bar safely -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>EDDVA — ज्ञानं परमं बलम् - LEARN WITH AI </title>
-    <meta name="description" content="AI-powered battle learning platform for JEE &amp; NEET aspirants.">
+    <!-- No static description here on purpose — every route sets its own via
+         the <Seo> component (react-helmet-async). A static tag here would sit
+         alongside Helmet's instead of being replaced by it (Helmet only
+         manages tags it rendered), so the static one would always win since
+         it's first in document order. -->
     <meta name="author" content="EDVA" />
 
     <!-- Google tag (gtag.js) -->
