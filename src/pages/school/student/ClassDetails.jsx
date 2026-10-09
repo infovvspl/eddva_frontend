@@ -32,7 +32,7 @@ export default function ClassDetails() {
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <div className="size-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
       </div>
     );
   }
@@ -40,7 +40,7 @@ export default function ClassDetails() {
   if (!course) {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center text-center">
-        <BookOpen className="mb-4 h-12 w-12 text-slate-300 dark:text-slate-700" />
+        <BookOpen className="mb-4 size-12 text-slate-300 dark:text-slate-700" />
         <h2 className="text-xl font-bold text-slate-900 dark:text-white">Course not found</h2>
         <Link to="/school/student/classes" className="mt-4 text-sm font-bold text-blue-600 hover:underline">Back to Classes</Link>
       </div>
@@ -90,7 +90,7 @@ export default function ClassDetails() {
         
         {(!curriculum || curriculum.length === 0) ? (
           <div className="rounded-[2rem] border border-dashed border-slate-200 bg-white p-10 text-center dark:border-slate-800 dark:bg-slate-900">
-            <BookOpen className="mx-auto h-10 w-10 text-slate-300" />
+            <BookOpen className="mx-auto size-10 text-slate-300" />
             <p className="mt-3 text-sm font-bold text-slate-600 dark:text-slate-300">No curriculum published for your subjects yet.</p>
             <p className="mt-1 text-xs text-slate-500">When your teachers add chapters and topics under Course Content, they will appear here.</p>
           </div>
@@ -101,7 +101,7 @@ export default function ClassDetails() {
               className="flex w-full items-center justify-between p-6 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/50"
             >
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+                <div className="flex size-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
                   <BookOpen size={24} />
                 </div>
                 <div>

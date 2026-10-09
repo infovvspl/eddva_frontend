@@ -28,7 +28,7 @@ export default function Settings() {
         <section className="space-y-6">
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center gap-3">
-              {theme === 'dark' ? <Moon className="h-6 w-6 text-blue-600" /> : <Sun className="h-6 w-6 text-amber-500" />}
+              {theme === 'dark' ? <Moon className="size-6 text-blue-600" /> : <Sun className="size-6 text-amber-500" />}
               <div>
                 <h2 className="text-sm sm:text-base font-black text-slate-950 dark:text-white">Appearance</h2>
                 <p className="mt-1 text-xs sm:text-sm font-medium text-slate-500">Switch between dark and light theme.</p>
@@ -47,7 +47,7 @@ export default function Settings() {
                   }`}
                 >
                   <span className="text-xs sm:text-sm font-black capitalize text-slate-900 dark:text-white">{option}</span>
-                  {theme === option && <CheckCircle2 className="h-5 w-5 text-blue-600" />}
+                  {theme === option && <CheckCircle2 className="size-5 text-blue-600" />}
                 </button>
               ))}
             </div>
@@ -55,7 +55,7 @@ export default function Settings() {
 
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center gap-3">
-              <Bell className="h-6 w-6 text-blue-600" />
+              <Bell className="size-6 text-blue-600" />
               <div>
                 <h2 className="text-sm sm:text-base font-black text-slate-950 dark:text-white">Notification Preferences</h2>
                 <p className="mt-1 text-xs sm:text-sm font-medium text-slate-500">Control browser, email, and desktop alerts.</p>
@@ -82,7 +82,7 @@ export default function Settings() {
                     <span className="mt-1 block text-[10px] sm:text-xs font-medium text-slate-500">{description}</span>
                   </span>
                   <span className={`flex h-6 w-11 items-center rounded-full p-1 transition ${settings[key as keyof typeof settings] ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'}`}>
-                    <span className={`h-4 w-4 rounded-full bg-white transition ${settings[key as keyof typeof settings] ? 'translate-x-5' : 'translate-x-0'}`} />
+                    <span className={`size-4 rounded-full bg-white transition ${settings[key as keyof typeof settings] ? 'translate-x-5' : 'translate-x-0'}`} />
                   </span>
                 </button>
               ))}
@@ -93,7 +93,7 @@ export default function Settings() {
         <aside className="space-y-6">
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center gap-3">
-              <ShieldCheck className="h-6 w-6 text-emerald-600" />
+              <ShieldCheck className="size-6 text-emerald-600" />
               <div>
                 <h2 className="text-sm sm:text-base font-black text-slate-950 dark:text-white">Security</h2>
                 <p className="mt-1 text-xs sm:text-sm font-medium text-slate-500">Password and account protection.</p>
@@ -105,7 +105,7 @@ export default function Settings() {
                 onClick={() => toast.success('Password reset instructions sent to your registered email.')}
                 className="flex w-full items-center gap-3 rounded-lg border border-slate-200 p-3 text-left hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800 transition"
               >
-                <KeyRound className="h-5 w-5 text-blue-600" />
+                <KeyRound className="size-5 text-blue-600" />
                 <span className="text-xs sm:text-sm font-black text-slate-950 dark:text-white">Change Password</span>
               </button>
               <button
@@ -113,7 +113,7 @@ export default function Settings() {
                 onClick={() => toast.info('Two-Factor Authentication is managed by your Institute Administrator.')}
                 className="flex w-full items-center gap-3 rounded-lg border border-slate-200 p-3 text-left hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800 transition"
               >
-                <Lock className="h-5 w-5 text-rose-600" />
+                <Lock className="size-5 text-rose-600" />
                 <span className="text-xs sm:text-sm font-black text-slate-950 dark:text-white">Two-Factor Authentication</span>
               </button>
             </div>
@@ -121,7 +121,7 @@ export default function Settings() {
 
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center gap-3">
-              <Monitor className="h-6 w-6 text-violet-600" />
+              <Monitor className="size-6 text-violet-600" />
               <div>
                 <h2 className="text-sm sm:text-base font-black text-slate-950 dark:text-white">Device Sessions</h2>
                 <p className="mt-1 text-xs sm:text-sm font-medium text-slate-500">Current browser and active sessions.</p>
@@ -130,7 +130,7 @@ export default function Settings() {
             <div className="mt-5 space-y-3">
               <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
                 <div className="flex items-center gap-3">
-                  <Monitor className="h-5 w-5 text-blue-600" />
+                  <Monitor className="size-5 text-blue-600" />
                   <div>
                     <p className="text-xs sm:text-sm font-black text-slate-950 dark:text-white">Current Browser</p>
                     <p className="text-[10px] sm:text-xs font-medium text-slate-500">Active now</p>

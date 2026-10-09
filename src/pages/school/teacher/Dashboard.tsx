@@ -63,7 +63,7 @@ const scheduleItems = [
   { time: '09:00 AM', timeColor: '#1E293B', subject: 'Mathematics', meta: 'Class 10 - Section A', dot: '#10B981',
     badge: (
       <span className="flex items-center gap-1 text-[9px] sm:text-[10px] font-bold text-[#059669] bg-[#ECFDF5] px-2 py-1 rounded-full border border-[#D1FAE5]">
-        <div className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" /> Live
+        <div className="size-1.5 rounded-full bg-[#10B981] animate-pulse" /> Live
       </span>
     ) },
   { time: '11:00 AM', timeColor: '#64748B', subject: 'Science', meta: 'Class 9 - Section A', dot: '#3B82F6',
@@ -85,7 +85,7 @@ const ScheduleTimeline = () => (
     <div className="absolute left-1 top-2 bottom-2 w-0.5 bg-slate-100" />
     {scheduleItems.map((item) => (
       <div className="relative" key={item.subject}>
-        <div className="absolute -left-[27px] top-1 w-3 h-3 rounded-full ring-4 ring-white" style={{ background: item.dot }} />
+        <div className="absolute -left-[27px] top-1 size-3 rounded-full ring-4 ring-white" style={{ background: item.dot }} />
         <div className="flex justify-between items-start">
           <div>
             <p className="text-[11px] font-bold mb-1" style={{ color: item.timeColor }}>{item.time}</p>
@@ -284,14 +284,14 @@ const Dashboard: React.FC = () => {
           {/* Students Card */}
           <div className="bg-[#F0F7FF] rounded-[1.5rem] p-5 border border-[#E0F0FE]/60 flex flex-col hover:-translate-y-1 transition-transform cursor-pointer" onClick={() => navigate('/school/teacher/students')}>
             <div className="flex items-start gap-4">
-              <div className="bg-[#E0F0FE] text-[#2563EB] w-14 h-14 flex items-center justify-center rounded-full shrink-0 shadow-sm"><Users size={24} /></div>
+              <div className="bg-[#E0F0FE] text-[#2563EB] size-14 flex items-center justify-center rounded-full shrink-0 shadow-sm"><Users size={24} /></div>
               <div className="flex flex-col min-w-0">
                 <p className="text-3xl font-black text-[#1E293B] leading-none">{stats?.totalStudents ?? 0}</p>
                 <p className="text-sm font-semibold text-[#64748B] mt-1 break-words">Students</p>
               </div>
             </div>
             <div className="mt-5 flex items-center gap-1.5 text-[12px] font-bold text-[#059669]">
-              <div className="w-2 h-2 rounded-full bg-[#10B981]"></div>
+              <div className="size-2 rounded-full bg-[#10B981]"></div>
               Total Assigned
             </div>
           </div>
@@ -299,14 +299,14 @@ const Dashboard: React.FC = () => {
           {/* Classes Today Card */}
           <div className="bg-[#FFF7ED] rounded-[1.5rem] p-5 border border-[#FFEDD5]/60 flex flex-col hover:-translate-y-1 transition-transform cursor-pointer" onClick={() => navigate('/school/teacher/timetable')}>
             <div className="flex items-start gap-4">
-              <div className="bg-[#FFEDD5] text-[#EA580C] w-14 h-14 flex items-center justify-center rounded-full shrink-0 shadow-sm"><Presentation size={24} /></div>
+              <div className="bg-[#FFEDD5] text-[#EA580C] size-14 flex items-center justify-center rounded-full shrink-0 shadow-sm"><Presentation size={24} /></div>
               <div className="flex flex-col min-w-0">
                 <p className="text-3xl font-black text-[#1E293B] leading-none">{upcomingClasses.length}</p>
                 <p className="text-sm font-semibold text-[#64748B] mt-1 break-words">Classes Today</p>
               </div>
             </div>
             <div className="mt-5 flex items-center gap-1.5 text-[12px] font-bold text-[#EA580C]">
-              <div className="w-2 h-2 rounded-full bg-[#F97316]"></div>
+              <div className="size-2 rounded-full bg-[#F97316]"></div>
               Remaining
             </div>
           </div>
@@ -314,14 +314,14 @@ const Dashboard: React.FC = () => {
           {/* Assignments Card */}
           <div className="bg-[#F5F3FF] rounded-[1.5rem] p-5 border border-[#EDE9FE]/60 flex flex-col hover:-translate-y-1 transition-transform cursor-pointer" onClick={() => navigate('/school/teacher/assignments')}>
             <div className="flex items-start gap-4">
-              <div className="bg-[#EDE9FE] text-[#7C3AED] w-14 h-14 flex items-center justify-center rounded-full shrink-0 shadow-sm"><FileText size={24} /></div>
+              <div className="bg-[#EDE9FE] text-[#7C3AED] size-14 flex items-center justify-center rounded-full shrink-0 shadow-sm"><FileText size={24} /></div>
               <div className="flex flex-col min-w-0">
                 <p className="text-3xl font-black text-[#1E293B] leading-none">{stats?.assignments ?? 0}</p>
                 <p className="text-sm font-semibold text-[#64748B] mt-1 break-words">Assignments</p>
               </div>
             </div>
             <div className="mt-5 flex items-center gap-1.5 text-[12px] font-bold text-[#7C3AED]">
-              <div className="w-2 h-2 rounded-full bg-[#8B5CF6]"></div>
+              <div className="size-2 rounded-full bg-[#8B5CF6]"></div>
               Active
             </div>
           </div>
@@ -329,14 +329,14 @@ const Dashboard: React.FC = () => {
           {/* Assessments Card */}
           <div className="bg-[#FEF2F2] rounded-[1.5rem] p-5 border border-[#FEE2E2]/60 flex flex-col hover:-translate-y-1 transition-transform cursor-pointer" onClick={() => navigate('/school/teacher/assessments')}>
             <div className="flex items-start gap-4">
-              <div className="bg-[#FEE2E2] text-[#DC2626] w-14 h-14 flex items-center justify-center rounded-full shrink-0 shadow-sm"><CheckSquare size={24} /></div>
+              <div className="bg-[#FEE2E2] text-[#DC2626] size-14 flex items-center justify-center rounded-full shrink-0 shadow-sm"><CheckSquare size={24} /></div>
               <div className="flex flex-col min-w-0">
                 <p className="text-3xl font-black text-[#1E293B] leading-none">{stats?.assessments ?? 0}</p>
                 <p className="text-sm font-semibold text-[#64748B] mt-1 break-words">Assessments</p>
               </div>
             </div>
             <div className="mt-5 flex items-center gap-1.5 text-[12px] font-bold text-[#2563EB]">
-              <div className="w-2 h-2 rounded-full bg-[#3B82F6]"></div>
+              <div className="size-2 rounded-full bg-[#3B82F6]"></div>
               Scheduled
             </div>
           </div>
@@ -364,7 +364,7 @@ const Dashboard: React.FC = () => {
               className={`relative overflow-hidden flex items-center justify-between p-5 rounded-2xl ${bg} shadow-sm transition-transform hover:-translate-y-1 group border-0 min-h-[100px]`}
             >
               <div className="flex items-center gap-3 z-10 w-full pr-[60px]">
-                <div className={`w-10 h-10 rounded-full ${iconBg} flex items-center justify-center transition-colors ${text} shrink-0`}>
+                <div className={`size-10 rounded-full ${iconBg} flex items-center justify-center transition-colors ${text} shrink-0`}>
                   {icon}
                 </div>
                 <div className="flex flex-col items-start text-left min-w-0">
@@ -425,7 +425,7 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 <div className="flex items-center justify-center gap-6 border-t sm:border-t-0 sm:border-l border-slate-100 pt-6 sm:pt-0 sm:pl-6 w-full sm:w-auto h-full">
-                  <div className="relative w-28 h-28 shrink-0">
+                  <div className="relative size-28 shrink-0">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie data={donutData} innerRadius={35} outerRadius={50} paddingAngle={2} dataKey="value" stroke="none">
@@ -443,7 +443,7 @@ const Dashboard: React.FC = () => {
                   <div className="flex flex-col gap-2.5">
                     {donutData.map((item, idx) => (
                       <div key={idx} className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                        <div className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
                         <div>
                           <p className="text-xs font-bold text-slate-900 leading-none">{item.value}</p>
                           <p className="text-[10px] font-semibold text-slate-500 mt-0.5 leading-none">{item.name}</p>
@@ -467,7 +467,7 @@ const Dashboard: React.FC = () => {
                 <div className="bg-[#F8FAFC] rounded-[1.5rem] p-3 border border-slate-100 flex gap-4 hover:shadow-sm transition-shadow cursor-pointer items-stretch" onClick={() => navigate('/school/teacher/classes')}>
                   {/* Left Image Placeholder */}
                   <div className="w-[110px] bg-[#E8F4FD] rounded-xl flex items-center justify-center shrink-0 relative overflow-hidden">
-                    <img src={ImgChalkboard} alt="Classroom" className="absolute inset-0 w-full h-full object-cover scale-110" />
+                    <img src={ImgChalkboard} alt="Classroom" className="absolute inset-0 size-full object-cover scale-110" />
                   </div>
                   
                   {/* Right Content */}
@@ -499,7 +499,7 @@ const Dashboard: React.FC = () => {
                 <div className="bg-[#F8FAFC] rounded-[1.5rem] p-3 border border-slate-100 flex gap-4 hover:shadow-sm transition-shadow cursor-pointer items-stretch" onClick={() => navigate('/school/teacher/classes')}>
                   {/* Left Image Placeholder */}
                   <div className="w-[110px] bg-[#F3E8FF] rounded-xl flex items-center justify-center shrink-0 relative overflow-hidden">
-                    <img src={ImgGlobe} alt="Globe" className="absolute inset-0 w-full h-full object-cover scale-110" />
+                    <img src={ImgGlobe} alt="Globe" className="absolute inset-0 size-full object-cover scale-110" />
                   </div>
                   
                   {/* Right Content */}
@@ -544,7 +544,7 @@ const Dashboard: React.FC = () => {
               ].map((item, idx) => (
                 <div key={idx} className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm flex flex-col gap-3 hover:shadow-md transition-shadow">
                   <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-xl ${item.bg} ${item.color} flex items-center justify-center shrink-0`}>
+                    <div className={`size-9 rounded-xl ${item.bg} ${item.color} flex items-center justify-center shrink-0`}>
                       {item.icon}
                     </div>
                     <div>
@@ -579,7 +579,7 @@ const Dashboard: React.FC = () => {
               ].map((item, idx) => (
                 <div key={idx} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer group">
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full ${item.bg} ${item.color} flex items-center justify-center shrink-0`}>
+                    <div className={`size-10 rounded-full ${item.bg} ${item.color} flex items-center justify-center shrink-0`}>
                         {item.icon}
                     </div>
                     <div>
@@ -595,7 +595,7 @@ const Dashboard: React.FC = () => {
 
           {/* Quote Card */}
           <div className="mt-4 bg-gradient-to-br from-[#E8F4FD] to-[#F1F8FE] rounded-2xl p-6 border border-[#D1E9FA] shadow-sm relative overflow-hidden">
-            <div className="absolute right-2 bottom-0 w-24 h-24 opacity-60">
+            <div className="absolute right-2 bottom-0 size-24 opacity-60">
               {/* Stack of books illustration placeholder */}
               <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M10 80 L90 80 L90 90 L10 90 Z" fill="#1C4ED8" />

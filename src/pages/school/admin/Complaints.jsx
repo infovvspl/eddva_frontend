@@ -9,6 +9,9 @@ import { Skeleton } from '@/components/school/admin/Skeleton';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+
+const MotionTableRow = motion(TableRow);
 
 
 const statusIcon = {
@@ -434,7 +437,7 @@ export default function Complaints() {
             />
           </div>
           <div className="relative w-full lg:w-80">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
             <input
               value={query}
               onChange={(e) => { setQuery(e.target.value); setPage(1); }}
@@ -510,7 +513,7 @@ export default function Complaints() {
               placeholder="Describe the issue"
             />
             <button className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]">
-              <Plus className="h-4 w-4" />
+              <Plus className="size-4" />
               Create
             </button>
           </div>
@@ -523,33 +526,33 @@ export default function Complaints() {
         <div className="hidden md:block overflow-x-auto">
           {activeTab === 'user-support' ? (
             /* USER SUPPORT TABLE (GRIEVANCES) */
-            <table className="min-w-[700px] w-full text-left">
-              <thead>
-                <tr className="bg-surface-50 text-xs font-bold uppercase text-surface-500">
-                  <th className="p-4 pl-5">Ticket / Concern</th>
-                  <th className="p-4">Raised By</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4">Created</th>
-                  <th className="p-4 text-right">Update Status</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="min-w-[700px] w-full text-left">
+              <TableHeader>
+                <TableRow className="bg-surface-50 text-xs font-bold uppercase text-surface-500 hover:bg-surface-50 border-b-0">
+                  <TableHead className="h-auto p-4 pl-5 text-surface-500">Ticket / Concern</TableHead>
+                  <TableHead className="h-auto p-4 text-surface-500">Raised By</TableHead>
+                  <TableHead className="h-auto p-4 text-surface-500">Status</TableHead>
+                  <TableHead className="h-auto p-4 text-surface-500">Created</TableHead>
+                  <TableHead className="h-auto p-4 text-right text-surface-500">Update Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, index) => (
-                    <tr key={index} className="border-t border-surface-100">
-                      <td className="p-4 pl-5"><Skeleton className="h-12 w-72" /></td>
-                      <td className="p-4"><Skeleton className="h-10 w-44" /></td>
-                      <td className="p-4"><Skeleton className="h-8 w-28" /></td>
-                      <td className="p-4"><Skeleton className="h-8 w-28" /></td>
-                      <td className="p-4"><Skeleton className="ml-auto h-8 w-24" /></td>
-                    </tr>
+                    <TableRow key={index} className="border-t border-surface-100 border-b-0 hover:bg-transparent">
+                      <TableCell className="p-4 pl-5"><Skeleton className="h-12 w-72" /></TableCell>
+                      <TableCell className="p-4"><Skeleton className="h-10 w-44" /></TableCell>
+                      <TableCell className="p-4"><Skeleton className="h-8 w-28" /></TableCell>
+                      <TableCell className="p-4"><Skeleton className="h-8 w-28" /></TableCell>
+                      <TableCell className="p-4"><Skeleton className="ml-auto h-8 w-24" /></TableCell>
+                    </TableRow>
                   ))
                 ) : filteredGrievances.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="p-10 text-center text-sm font-semibold text-surface-500">
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell colSpan={5} className="p-10 text-center text-sm font-semibold text-surface-500">
                       No parent or teacher support tickets found.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   filteredGrievances.map((item) => {
                     const statusUpper = String(item.status || 'OPEN').toUpperCase();
@@ -557,36 +560,36 @@ export default function Complaints() {
                     const roleLabel = String(item.raised_by_role || '').toUpperCase() === 'TEACHER' ? 'Teacher' : 'Parent';
                     const categoryLabel = item.category ? `${item.category}` : 'General';
                     return (
-                      <motion.tr
+                      <MotionTableRow
                         key={item.id}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="border-t border-surface-100 transition hover:bg-surface-50 cursor-pointer"
+                        className="border-t border-surface-100 border-b-0 transition hover:bg-surface-50 cursor-pointer"
                         onClick={() => { setSelectedItem(item); setSelectedType('grievance'); }}
                       >
-                        <td className="p-4 pl-5">
+                        <TableCell className="p-4 pl-5">
                           <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-blue-600">
                             #{item.ticketNumber || item.ticket_number || `USR-${String(item.id || '').replace(/-/g, '').slice(0, 8).toUpperCase()}`}
                           </p>
                           <p className="font-bold text-surface-950">{item.title}</p>
                           <p className="mt-1 max-w-xl text-xs font-medium text-surface-500">{item.description}</p>
-                        </td>
-                        <td className="p-4">
+                        </TableCell>
+                        <TableCell className="p-4">
                           <p className="text-sm font-bold text-surface-800">{item.raised_by_name || 'Anonymous'}</p>
                           <span className={`mt-0.5 inline-block text-[10px] font-bold uppercase ${roleLabel === 'Teacher' ? 'text-violet-600' : 'text-blue-600'}`}>
                             {roleLabel} · {categoryLabel}
                           </span>
-                        </td>
-                        <td className="p-4">
+                        </TableCell>
+                        <TableCell className="p-4">
                           <span className="inline-flex items-center gap-2">
-                            <Icon className="h-4 w-4 text-brand-600" />
+                            <Icon className="size-4 text-brand-600" />
                             <StatusBadge status={statusUpper} />
                           </span>
-                        </td>
-                        <td className="p-4 text-sm font-medium text-surface-500">
+                        </TableCell>
+                        <TableCell className="p-4 text-sm font-medium text-surface-500">
                           {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'N/A'}
-                        </td>
-                        <td className="p-4 text-right">
+                        </TableCell>
+                        <TableCell className="p-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <CustomSelect
                               value={statusUpper}
@@ -600,78 +603,78 @@ export default function Complaints() {
                               className="w-full"
                             />
                           </div>
-                        </td>
-                      </motion.tr>
+                        </TableCell>
+                      </MotionTableRow>
                     );
                   })
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           ) : (
             /* PLATFORM SUPPORT TABLE (COMPLAINTS) */
-            <table className="min-w-[700px] w-full text-left">
-              <thead>
-                <tr className="bg-surface-50 text-xs font-bold uppercase text-surface-500">
-                  <th className="p-4 pl-5">Ticket</th>
-                  {user?.role === 'SUPER_ADMIN' && <th className="p-4">Institute</th>}
-                  <th className="p-4">Status</th>
-                  <th className="p-4">Created</th>
-                  <th className="p-4 text-right">Move</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="min-w-[700px] w-full text-left">
+              <TableHeader>
+                <TableRow className="bg-surface-50 text-xs font-bold uppercase text-surface-500 hover:bg-surface-50 border-b-0">
+                  <TableHead className="h-auto p-4 pl-5 text-surface-500">Ticket</TableHead>
+                  {user?.role === 'SUPER_ADMIN' && <TableHead className="h-auto p-4 text-surface-500">Institute</TableHead>}
+                  <TableHead className="h-auto p-4 text-surface-500">Status</TableHead>
+                  <TableHead className="h-auto p-4 text-surface-500">Created</TableHead>
+                  <TableHead className="h-auto p-4 text-right text-surface-500">Move</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, index) => (
-                    <tr key={index} className="border-t border-surface-100">
-                      <td className="p-4 pl-5"><Skeleton className="h-12 w-72" /></td>
-                      {user?.role === 'SUPER_ADMIN' && <td className="p-4"><Skeleton className="h-10 w-44" /></td>}
-                      <td className="p-4"><Skeleton className="h-8 w-28" /></td>
-                      <td className="p-4"><Skeleton className="h-8 w-28" /></td>
-                      <td className="p-4"><Skeleton className="ml-auto h-8 w-24" /></td>
-                    </tr>
+                    <TableRow key={index} className="border-t border-surface-100 border-b-0 hover:bg-transparent">
+                      <TableCell className="p-4 pl-5"><Skeleton className="h-12 w-72" /></TableCell>
+                      {user?.role === 'SUPER_ADMIN' && <TableCell className="p-4"><Skeleton className="h-10 w-44" /></TableCell>}
+                      <TableCell className="p-4"><Skeleton className="h-8 w-28" /></TableCell>
+                      <TableCell className="p-4"><Skeleton className="h-8 w-28" /></TableCell>
+                      <TableCell className="p-4"><Skeleton className="ml-auto h-8 w-24" /></TableCell>
+                    </TableRow>
                   ))
                 ) : filteredComplaints.length === 0 ? (
-                  <tr>
-                    <td colSpan={user?.role === 'SUPER_ADMIN' ? 5 : 4} className="p-10 text-center text-sm font-semibold text-surface-500">
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell colSpan={user?.role === 'SUPER_ADMIN' ? 5 : 4} className="p-10 text-center text-sm font-semibold text-surface-500">
                       No support tickets found.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   filteredComplaints.map((item) => {
                     const Icon = statusIcon[item.status] || AlertCircle;
                     return (
-                      <motion.tr
+                      <MotionTableRow
                         key={item.id}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="border-t border-surface-100 transition hover:bg-surface-50 cursor-pointer"
+                        className="border-t border-surface-100 border-b-0 transition hover:bg-surface-50 cursor-pointer"
                         onClick={() => { setSelectedItem(item); setSelectedType('complaint'); }}
                       >
-                        <td className="p-4 pl-5">
+                        <TableCell className="p-4 pl-5">
                           <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-blue-600">
                             #{item.ticketNumber || `PLT-${String(item.id || '').replace(/-/g, '').slice(0, 8).toUpperCase()}`}
                           </p>
                           <p className="font-bold text-surface-950">{item.title}</p>
                           <p className="mt-1 max-w-xl text-xs font-medium text-surface-500">{item.description}</p>
-                        </td>
+                        </TableCell>
                         {user?.role === 'SUPER_ADMIN' && (
-                          <td className="p-4">
+                          <TableCell className="p-4">
                             <div className="flex items-center gap-3">
                               <SchoolLogo src={item.institute?.logo} alt={item.institute?.name} size="navbar" />
                               <p className="text-sm font-bold text-surface-700">{item.institute?.name || 'Unknown'}</p>
                             </div>
-                          </td>
+                          </TableCell>
                         )}
-                        <td className="p-4">
+                        <TableCell className="p-4">
                           <span className="inline-flex items-center gap-2">
-                            <Icon className="h-4 w-4 text-brand-600" />
+                            <Icon className="size-4 text-brand-600" />
                             <StatusBadge status={item.status} />
                           </span>
-                        </td>
-                        <td className="p-4 text-sm font-medium text-surface-500">
+                        </TableCell>
+                        <TableCell className="p-4 text-sm font-medium text-surface-500">
                           {new Date(item.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="p-4 text-right">
+                        </TableCell>
+                        <TableCell className="p-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             {user?.role === 'SUPER_ADMIN' ? (
                               <CustomSelect
@@ -694,18 +697,18 @@ export default function Complaints() {
                                 }}
                                 className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100"
                               >
-                                <MessageSquare className="h-3.5 w-3.5" />
+                                <MessageSquare className="size-3.5" />
                                 Open Chat
                               </button>
                             )}
                           </div>
-                        </td>
-                      </motion.tr>
+                        </TableCell>
+                      </MotionTableRow>
                     );
                   })
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
         </div>
 
@@ -741,7 +744,7 @@ export default function Complaints() {
                         #{item.ticketNumber || item.ticket_number || `USR-${String(item.id || '').replace(/-/g, '').slice(0, 8).toUpperCase()}`}
                       </p>
                       <span className="inline-flex items-center gap-1 text-xs">
-                        <Icon className="h-3.5 w-3.5 text-brand-600" />
+                        <Icon className="size-3.5 text-brand-600" />
                         <StatusBadge status={statusUpper} />
                       </span>
                     </div>
@@ -807,7 +810,7 @@ export default function Complaints() {
                         #{item.ticketNumber || `PLT-${String(item.id || '').replace(/-/g, '').slice(0, 8).toUpperCase()}`}
                       </p>
                       <span className="inline-flex items-center gap-1 text-xs">
-                        <Icon className="h-3.5 w-3.5 text-brand-600" />
+                        <Icon className="size-3.5 text-brand-600" />
                         <StatusBadge status={item.status} />
                       </span>
                     </div>
@@ -850,7 +853,7 @@ export default function Complaints() {
                             }}
                             className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 transition hover:bg-blue-100"
                           >
-                            <MessageSquare className="h-3.5 w-3.5" />
+                            <MessageSquare className="size-3.5" />
                             Open Chat
                           </button>
                         )}
@@ -908,7 +911,7 @@ export default function Complaints() {
                 onClick={closeTicketModal}
                 className="rounded-full p-2 hover:bg-slate-100 dark:hover:bg-slate-900 transition text-slate-500 hover:text-slate-700"
               >
-                <X className="h-5 w-5" />
+                <X className="size-5" />
               </button>
             </div>
 
@@ -936,7 +939,7 @@ export default function Complaints() {
                 <div className="rounded-2xl border border-slate-100 p-4 dark:border-slate-800">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Created At</h4>
                   <p className="mt-2 flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-200">
-                    <Calendar className="h-4 w-4 text-slate-400" />
+                    <Calendar className="size-4 text-slate-400" />
                     {new Date(selectedItem.createdAt || selectedItem.created_at).toLocaleString()}
                   </p>
                 </div>
@@ -963,7 +966,7 @@ export default function Complaints() {
                         </p>
                         {selectedItem.institute.tenant_domain && (
                           <p className="flex items-center gap-1 text-xs text-slate-500 font-medium mt-0.5">
-                            <Globe className="h-3 w-3" />
+                            <Globe className="size-3" />
                             {selectedItem.institute.tenant_domain}
                           </p>
                         )}
@@ -976,7 +979,7 @@ export default function Complaints() {
                 {['complaint', 'grievance'].includes(selectedType) && (
                   <div className="col-span-full rounded-2xl border border-slate-100 bg-slate-50/50 p-4 dark:border-slate-800 space-y-3">
                     <h4 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">
-                      <MessageSquare className="h-3.5 w-3.5 text-slate-400" />
+                      <MessageSquare className="size-3.5 text-slate-400" />
                       {selectedType === 'complaint'
                         ? (user?.role === 'SUPER_ADMIN' ? 'Ticket Messages' : 'Super Admin Replies')
                         : (isInstituteAdmin ? 'Ticket Messages' : 'Institute Admin Replies')}
@@ -1027,7 +1030,7 @@ export default function Complaints() {
                 {((user?.role === 'SUPER_ADMIN' && selectedType === 'complaint') || (isInstituteAdmin && selectedType === 'grievance')) && (
                   <div className="col-span-full rounded-2xl border border-slate-100 p-4 dark:border-slate-800 space-y-3 bg-slate-50/50">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                      <MessageSquare className="h-3.5 w-3.5 text-slate-400" />
+                      <MessageSquare className="size-3.5 text-slate-400" />
                       {selectedType === 'complaint' ? 'Reply to Institute Admin' : 'Reply to Parent or Teacher'}
                     </h4>
 
@@ -1115,7 +1118,7 @@ export default function Complaints() {
                       onChange={(event) => {
                         if (event.target.checked) void reopenSelectedTicket();
                       }}
-                      className="h-5 w-10 cursor-pointer appearance-none rounded-full bg-slate-300 transition before:block before:h-5 before:w-5 before:rounded-full before:bg-white before:shadow before:transition checked:bg-blue-600 checked:before:translate-x-5 disabled:cursor-not-allowed disabled:opacity-70"
+                      className="h-5 w-10 cursor-pointer appearance-none rounded-full bg-slate-300 transition before:block before:size-5 before:rounded-full before:bg-white before:shadow before:transition checked:bg-blue-600 checked:before:translate-x-5 disabled:cursor-not-allowed disabled:opacity-70"
                     />
                   </label>
                 </div>
@@ -1128,7 +1131,7 @@ export default function Complaints() {
                     onClick={() => openPlatformTicketChat(selectedItem)}
                     className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-xs font-bold text-blue-700 transition hover:bg-blue-100"
                   >
-                    <MessageSquare className="h-3.5 w-3.5" />
+                    <MessageSquare className="size-3.5" />
                     Open Chat
                   </button>
                 )}

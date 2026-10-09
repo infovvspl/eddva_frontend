@@ -30,7 +30,7 @@ export default function AudioSettingsModal({ isOpen, onClose }) {
         <div className="flex items-center justify-between border-b border-sky-200/60 pb-4">
           <div className="flex items-center gap-2.5">
             <div className="rounded-xl bg-sky-500/15 p-2.5 text-sky-600 border border-sky-200">
-              <Volume2 className="h-5 w-5" />
+              <Volume2 className="size-5" />
             </div>
             <div>
               <h3 className="text-lg font-black tracking-tight text-slate-900">Audio Settings</h3>
@@ -44,7 +44,7 @@ export default function AudioSettingsModal({ isOpen, onClose }) {
             }}
             className="rounded-xl p-2 text-slate-400 hover:bg-sky-100/60 hover:text-slate-700 transition"
           >
-            <X className="h-5 w-5" />
+            <X className="size-5" />
           </button>
         </div>
 
@@ -53,7 +53,7 @@ export default function AudioSettingsModal({ isOpen, onClose }) {
           <div className="rounded-xl bg-white/85 p-4 border border-sky-100 shadow-sm backdrop-blur-xs">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-black uppercase text-slate-700 flex items-center gap-2">
-                {settings.isMuted ? <VolumeX className="h-4 w-4 text-rose-500" /> : <Volume2 className="h-4 w-4 text-emerald-600" />}
+                {settings.isMuted ? <VolumeX className="size-4 text-rose-500" /> : <Volume2 className="size-4 text-emerald-600" />}
                 Master Volume ({settings.masterVolume}%)
               </span>
               <button
@@ -82,13 +82,13 @@ export default function AudioSettingsModal({ isOpen, onClose }) {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-700 flex items-center gap-2">
-                <Music className="h-4 w-4 text-sky-600" /> Background Music ({settings.musicVolume}%)
+                <Music className="size-4 text-sky-600" /> Background Music ({settings.musicVolume}%)
               </label>
               <input
                 type="checkbox"
                 checked={settings.isBgmEnabled}
                 onChange={(e) => handleChange('isBgmEnabled', e.target.checked)}
-                className="h-4 w-4 accent-sky-500 cursor-pointer"
+                className="size-4 accent-sky-500 cursor-pointer"
               />
             </div>
             <input
@@ -106,13 +106,13 @@ export default function AudioSettingsModal({ isOpen, onClose }) {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-700 flex items-center gap-2">
-                <Bell className="h-4 w-4 text-sky-600" /> Sound Effects (SFX) ({settings.effectsVolume}%)
+                <Bell className="size-4 text-sky-600" /> Sound Effects (SFX) ({settings.effectsVolume}%)
               </label>
               <input
                 type="checkbox"
                 checked={settings.isSfxEnabled}
                 onChange={(e) => handleChange('isSfxEnabled', e.target.checked)}
-                className="h-4 w-4 accent-sky-500 cursor-pointer"
+                className="size-4 accent-sky-500 cursor-pointer"
               />
             </div>
             <input
@@ -129,13 +129,13 @@ export default function AudioSettingsModal({ isOpen, onClose }) {
           {/* Exam Mode Mute Option */}
           <div className="flex items-center justify-between rounded-xl bg-white/85 p-3 border border-sky-100 shadow-sm backdrop-blur-xs">
             <span className="text-xs font-bold text-slate-700 flex items-center gap-2">
-              <Shield className="h-4 w-4 text-purple-600" /> Mute Audio During Formal Exams
+              <Shield className="size-4 text-purple-600" /> Mute Audio During Formal Exams
             </span>
             <input
               type="checkbox"
               checked={settings.muteDuringExams}
               onChange={(e) => handleChange('muteDuringExams', e.target.checked)}
-              className="h-4 w-4 accent-purple-600 cursor-pointer"
+              className="size-4 accent-purple-600 cursor-pointer"
             />
           </div>
         </div>
@@ -147,7 +147,7 @@ export default function AudioSettingsModal({ isOpen, onClose }) {
             onClick={handleTestAudio}
             className="inline-flex items-center gap-1.5 rounded-xl border border-sky-200/80 bg-white/90 px-4 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-white hover:border-sky-300"
           >
-            <Play className="h-3.5 w-3.5 text-sky-600" /> Test Sound
+            <Play className="size-3.5 text-sky-600" /> Test Sound
           </button>
 
           <button

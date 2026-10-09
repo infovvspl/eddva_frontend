@@ -184,7 +184,7 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
   `;
 
   return (
-    <div className="space-y-4 sm:space-y-5 max-w-6xl lg:max-w-7xl w-full mx-auto py-2 flex-1 flex flex-col justify-center">
+    <div className="gap-y-4 sm:gap-y-5 max-w-6xl lg:max-w-7xl w-full mx-auto py-2 flex-1 flex flex-col justify-center">
       <style>{styles}</style>
 
       {/* Header HUD panel */}
@@ -194,7 +194,7 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
             <span className="text-xs font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
               Memory Deck: {difficulty}
             </span>
-            <span className="h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+            <span className="size-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
             <span className="text-xs font-bold text-slate-500">{cards.length} Cards ({totalPairs} Pairs)</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-950 dark:text-white mt-1">{deckName}</h2>
@@ -202,7 +202,7 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
 
         <div className="flex flex-wrap items-center gap-3.5">
           <div className="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-950 px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-850">
-            <Timer className="h-4.5 w-4.5 text-emerald-500" />
+            <Timer className="size-4.5 text-emerald-500" />
             <div className="text-right">
               <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Time</p>
               <p className="text-sm font-black font-mono text-slate-800 dark:text-slate-200">{formatTime(timeElapsed)}</p>
@@ -210,7 +210,7 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
           </div>
 
           <div className="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-950 px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-850">
-            <RefreshCw className="h-4.5 w-4.5 text-emerald-500" />
+            <RefreshCw className="size-4.5 text-emerald-500" />
             <div className="text-right">
               <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Turns</p>
               <p className="text-sm font-black font-mono text-slate-800 dark:text-slate-200">{turns}</p>
@@ -218,7 +218,7 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
           </div>
 
           <div className="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-950 px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-850">
-            <Grid className="h-4.5 w-4.5 text-emerald-500" />
+            <Grid className="size-4.5 text-emerald-500" />
             <div className="text-right">
               <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Matched</p>
               <p className="text-sm font-black font-mono text-slate-800 dark:text-slate-200">{matchedCount}/{totalPairs}</p>
@@ -241,7 +241,7 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
             }}
             className="flex items-center justify-center p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-xl transition"
           >
-            <XCircle className="h-6.5 w-6.5" />
+            <XCircle className="size-6.5" />
           </button>
         </div>
       </div>
@@ -292,7 +292,7 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
               <div className="mm-card-inner">
                 {/* Front (Facing down, logo showing) */}
                 <div className="mm-card-front shadow-md border border-slate-700/60 flex flex-col justify-center items-center gap-2 hover:border-emerald-500/50 hover:bg-slate-800 transition rounded-2xl">
-                  <Brain className="h-7 w-7 sm:h-8 sm:w-8 text-emerald-400" />
+                  <Brain className="size-7 sm:size-8 text-emerald-400" />
                   <span className="text-[10px] sm:text-xs font-black tracking-widest text-slate-400 uppercase">EDDVA</span>
                 </div>
 

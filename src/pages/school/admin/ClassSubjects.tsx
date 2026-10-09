@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useConfirm } from '@/context/ConfirmContext';
 import { handleApiError } from '@/lib/school/errorHandler';
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
 type SchoolClass = {
   id: string;
@@ -305,7 +306,7 @@ export default function ClassSubjects() {
           onClick={() => navigate('/school/admin/subjects')}
           className="mb-5 inline-flex items-center gap-2 rounded-lg border border-surface-200 bg-white px-4 py-2.5 text-sm font-bold text-surface-700 hover:bg-surface-50 dark:border-surface-800 dark:bg-surface-900 dark:text-white"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="size-4" />
           Back to Subjects
         </button>
         <div className="rounded-xl border border-surface-200 bg-white p-10 text-center shadow-sm dark:border-surface-800 dark:bg-surface-900">
@@ -328,7 +329,7 @@ export default function ClassSubjects() {
             onClick={() => navigate('/school/admin/subjects')}
             className="mb-3 inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-blue-600 hover:text-blue-700"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="size-4" />
             Back to Classes
           </button>
           <h1 className="font-display text-2xl sm:text-3xl font-bold text-surface-955 dark:text-white">{selectedClass.name} Subjects</h1>
@@ -339,7 +340,7 @@ export default function ClassSubjects() {
             onClick={() => openModal()}
             className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-blue-700"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="size-4" />
             <span>Add Subject</span>
           </button>
         </div>
@@ -359,7 +360,7 @@ export default function ClassSubjects() {
           <div className="flex flex-col md:hidden gap-3 w-full">
             <div className="flex items-center justify-between gap-2">
               <div className="inline-flex items-center gap-1.5 rounded-full border border-surface-200 bg-surface-50 px-2.5 py-1 text-xs font-semibold text-surface-700">
-                <Layers className="h-3.5 w-3.5 text-blue-600" />
+                <Layers className="size-3.5 text-blue-600" />
                 <span>Subjects List</span>
               </div>
               <button
@@ -372,13 +373,13 @@ export default function ClassSubjects() {
                     : "bg-white border-surface-200 text-surface-700"
                 )}
               >
-                <Filter className="h-3.5 w-3.5" />
+                <Filter className="size-3.5" />
                 <span>Filter</span>
               </button>
             </div>
             
             <div className="relative w-full">
-              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-surface-400" />
               <input
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
@@ -406,7 +407,7 @@ export default function ClassSubjects() {
                   onClick={() => openModal()}
                   className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-blue-500 bg-white px-4 text-sm font-bold text-blue-600 hover:bg-blue-50 dark:bg-surface-900 dark:hover:bg-blue-950/20"
                 >
-                  <Plus className="h-4 w-4" />
+                  <Plus className="size-4" />
                   Add Subject
                 </button>
               </div>
@@ -417,7 +418,7 @@ export default function ClassSubjects() {
           <div className="hidden md:flex flex-col gap-3 md:flex-row md:items-center md:justify-between w-full">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <div className="relative">
-                <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-surface-400" />
                 <input
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
@@ -443,7 +444,7 @@ export default function ClassSubjects() {
               onClick={() => openModal()}
               className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-blue-50 bg-white px-4 text-sm font-bold text-blue-600 hover:bg-blue-50 dark:bg-surface-900 dark:hover:bg-blue-950/20"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="size-4" />
               Add Subject
             </button>
           </div>
@@ -451,41 +452,41 @@ export default function ClassSubjects() {
 
         {/* Desktop View */}
         <div className="hidden md:block overflow-x-auto">
-          <table className="w-full min-w-[800px] text-left">
-            <thead className="bg-surface-50 text-xs font-bold text-surface-600 dark:bg-surface-950/50 dark:text-surface-300">
-              <tr>
-                <th className="px-5 py-4">Code</th>
-                <th className="px-3 py-4">Subject Name</th>
-                <th className="px-3 py-4">Section</th>
-                <th className="px-3 py-4">Type</th>
-                <th className="px-3 py-4">Description</th>
-                <th className="px-3 py-4 text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-surface-200 text-sm dark:divide-surface-800">
+          <Table className="w-full min-w-[800px] text-left">
+            <TableHeader className="bg-surface-50 text-xs font-bold text-surface-600 dark:bg-surface-950/50 dark:text-surface-300">
+              <TableRow className="hover:bg-transparent border-b-0">
+                <TableHead className="h-auto px-5 py-4 text-surface-600 dark:text-surface-300">Code</TableHead>
+                <TableHead className="h-auto px-3 py-4 text-surface-600 dark:text-surface-300">Subject Name</TableHead>
+                <TableHead className="h-auto px-3 py-4 text-surface-600 dark:text-surface-300">Section</TableHead>
+                <TableHead className="h-auto px-3 py-4 text-surface-600 dark:text-surface-300">Type</TableHead>
+                <TableHead className="h-auto px-3 py-4 text-surface-600 dark:text-surface-300">Description</TableHead>
+                <TableHead className="h-auto px-3 py-4 text-center text-surface-600 dark:text-surface-300">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-surface-200 text-sm dark:divide-surface-800 [&_tr]:border-b-0">
               {filteredSubjects.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center">
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={6} className="px-5 py-12 text-center">
                     <p className="font-bold text-surface-955 dark:text-white">No subjects found</p>
                     <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">Add subjects for {selectedClass.name} to complete the academic setup.</p>
                     <button
                       onClick={() => openModal()}
                       className="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
                     >
-                      <Plus className="h-4 w-4" />
+                      <Plus className="size-4" />
                       Add Subject
                     </button>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : (
                 filteredSubjects.map((subject) => (
-                  <tr key={subject.id} className="bg-white hover:bg-surface-50/80 dark:bg-surface-900 dark:hover:bg-surface-800/40">
-                    <td className="px-5 py-4 font-mono text-sm text-surface-700 dark:text-surface-200">{subject.code || '-'}</td>
-                    <td className="px-3 py-4 font-bold text-surface-950 dark:text-white">{subject.name}</td>
-                    <td className="px-3 py-4 text-surface-700 dark:text-surface-200">{subject.section_id ? `Section ${subject.section_name}` : 'All Sections'}</td>
-                    <td className="px-3 py-4 text-surface-700 dark:text-surface-200">{subject.type || 'Theory'}</td>
-                    <td className="px-3 py-4 text-surface-700 dark:text-surface-200">{subject.description || '-'}</td>
-                    <td className="px-3 py-4">
+                  <TableRow key={subject.id} className="bg-white hover:bg-surface-50/80 dark:bg-surface-900 dark:hover:bg-surface-800/40">
+                    <TableCell className="p-4 px-5 py-4 font-mono text-sm text-surface-700 dark:text-surface-200">{subject.code || '-'}</TableCell>
+                    <TableCell className="p-4 px-3 py-4 font-bold text-surface-950 dark:text-white">{subject.name}</TableCell>
+                    <TableCell className="p-4 px-3 py-4 text-surface-700 dark:text-surface-200">{subject.section_id ? `Section ${subject.section_name}` : 'All Sections'}</TableCell>
+                    <TableCell className="p-4 px-3 py-4 text-surface-700 dark:text-surface-200">{subject.type || 'Theory'}</TableCell>
+                    <TableCell className="p-4 px-3 py-4 text-surface-700 dark:text-surface-200">{subject.description || '-'}</TableCell>
+                    <TableCell className="p-4 px-3 py-4">
                       <div className="flex justify-center gap-2">
                         {subject.section_id && (
                           <IconButton title="Move to Class-wide" onClick={() => handleMakeClassWide(subject)} icon={Layers} />
@@ -493,12 +494,12 @@ export default function ClassSubjects() {
                         <IconButton title={`Edit ${subject.name}`} onClick={() => openModal(subject)} icon={Edit2} />
                         <IconButton title={`Delete ${subject.name}`} onClick={() => handleDelete(subject.id)} icon={Trash2} danger />
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
 
         {/* Mobile View */}
@@ -511,7 +512,7 @@ export default function ClassSubjects() {
                 onClick={() => openModal()}
                 className="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="size-4" />
                 Add Subject
               </button>
             </div>
@@ -544,7 +545,7 @@ export default function ClassSubjects() {
                       onClick={() => handleMakeClassWide(subject)}
                       className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-surface-200 bg-white px-3 text-surface-600 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 text-xs font-bold dark:bg-surface-900 dark:border-surface-800 dark:text-surface-300"
                     >
-                      <Layers className="h-3.5 w-3.5" />
+                      <Layers className="size-3.5" />
                       <span>Make Class-wide</span>
                     </button>
                   )}
@@ -552,14 +553,14 @@ export default function ClassSubjects() {
                     onClick={() => openModal(subject)}
                     className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-surface-200 bg-white px-3 text-surface-600 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 text-xs font-bold dark:bg-surface-900 dark:border-surface-800 dark:text-surface-300"
                   >
-                    <Edit2 className="h-3.5 w-3.5" />
+                    <Edit2 className="size-3.5" />
                     <span>Edit</span>
                   </button>
                   <button
                     onClick={() => handleDelete(subject.id)}
                     className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-white px-3 text-red-650 hover:border-red-400 hover:bg-red-50 hover:text-red-600 text-xs font-bold dark:bg-surface-900 dark:border-red-950/20 dark:text-red-400"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 className="size-3.5" />
                     <span>Delete</span>
                   </button>
                 </div>
@@ -680,8 +681,8 @@ function SummaryCard({ icon: Icon, tone, label, value, helper }: { icon: any; to
   return (
     <div className="rounded-xl border border-surface-200 bg-white p-3 sm:p-6 shadow-sm dark:border-surface-800 dark:bg-surface-900">
       <div className="flex items-center gap-3 sm:gap-5">
-        <span className={`grid h-10 w-10 sm:h-16 sm:w-16 place-items-center rounded-full shrink-0 ${tones[tone]}`}>
-          <Icon className="h-5 w-5 sm:h-7 sm:w-7" />
+        <span className={`grid size-10 sm:size-16 place-items-center rounded-full shrink-0 ${tones[tone]}`}>
+          <Icon className="size-5 sm:size-7" />
         </span>
         <div className="min-w-0">
           <p className="text-xs sm:text-sm font-medium text-surface-600 dark:text-surface-300 truncate">{label}</p>
@@ -699,8 +700,8 @@ function IconButton({ icon: Icon, title, onClick, danger = false }: { icon: any;
     : 'border-surface-200 text-surface-600 hover:border-blue-200 hover:text-blue-600 dark:border-surface-800 dark:text-surface-300';
 
   return (
-    <button onClick={onClick} className={`grid h-9 w-9 place-items-center rounded-lg border ${colors}`} title={title}>
-      <Icon className="h-4 w-4" />
+    <button onClick={onClick} className={`grid size-9 place-items-center rounded-lg border ${colors}`} title={title}>
+      <Icon className="size-4" />
     </button>
   );
 }

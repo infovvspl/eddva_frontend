@@ -31,6 +31,7 @@ import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { useConfirm } from "@/context/ConfirmContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -204,7 +205,7 @@ function Modal({ onClose, children }: { onClose: () => void; children: ReactNode
         aria-label="Close"
         className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
       >
-        <X className="h-5 w-5" />
+        <X className="size-5" />
       </button>
       <div className="w-full max-w-4xl" onClick={(e) => e.stopPropagation()}>{children}</div>
     </div>
@@ -221,7 +222,7 @@ function ImageStrip({ images }: { images: TutorImage[] }) {
   return (
     <div className="mt-3">
       <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-500">
-        <Images className="h-3 w-3" /> Images from Google
+        <Images className="size-3" /> Images from Google
       </p>
       <div className="flex gap-2 overflow-x-auto pb-1">
         {visible.map((img) => (
@@ -237,7 +238,7 @@ function ImageStrip({ images }: { images: TutorImage[] }) {
               alt={img.title}
               loading="lazy"
               referrerPolicy="no-referrer"
-              className="h-full w-full object-cover"
+              className="size-full object-cover"
               onError={() => setHidden((s) => new Set(s).add(img.imageUrl))}
             />
           </button>
@@ -261,7 +262,7 @@ function ImageStrip({ images }: { images: TutorImage[] }) {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-xs font-bold text-sky-300 hover:underline"
               >
-                View on {open.source || "source"} <ExternalLink className="h-3 w-3" />
+                View on {open.source || "source"} <ExternalLink className="size-3" />
               </a>
             )}
           </div>
@@ -278,7 +279,7 @@ function VideoRow({ videos }: { videos: TutorVideo[] }) {
   return (
     <div className="mt-3">
       <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-500">
-        <MonitorPlay className="h-3 w-3" /> Videos from YouTube
+        <MonitorPlay className="size-3" /> Videos from YouTube
       </p>
       <div className="flex gap-2 overflow-x-auto pb-1">
         {videos.map((v) => (
@@ -293,11 +294,11 @@ function VideoRow({ videos }: { videos: TutorVideo[] }) {
                 src={v.thumbnailUrl}
                 alt=""
                 loading="lazy"
-                className="h-full w-full object-cover opacity-90 transition group-hover:opacity-100"
+                className="size-full object-cover opacity-90 transition group-hover:opacity-100"
               />
               <span className="absolute inset-0 flex items-center justify-center">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-600 text-white shadow-lg">
-                  <Play className="ml-0.5 h-5 w-5 fill-current" />
+                <span className="flex size-10 items-center justify-center rounded-full bg-rose-600 text-white shadow-lg">
+                  <Play className="ml-0.5 size-5 fill-current" />
                 </span>
               </span>
               {v.duration && (
@@ -321,7 +322,7 @@ function VideoRow({ videos }: { videos: TutorVideo[] }) {
               title={playing.title}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
-              className="h-full w-full"
+              className="size-full"
             />
           </div>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-white">
@@ -332,7 +333,7 @@ function VideoRow({ videos }: { videos: TutorVideo[] }) {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-xs font-bold text-sky-300 hover:underline"
             >
-              Open on YouTube <ExternalLink className="h-3 w-3" />
+              Open on YouTube <ExternalLink className="size-3" />
             </a>
           </div>
         </Modal>
@@ -349,7 +350,7 @@ function SourceCard({ source }: { source: TutorSource }) {
   const body = (
     <>
       <div className="flex items-center gap-1.5">
-        <Icon className={cn("h-3.5 w-3.5 shrink-0", isWeb ? "text-sky-600" : "text-blue-600")} />
+        <Icon className={cn("size-3.5 shrink-0", isWeb ? "text-sky-600" : "text-blue-600")} />
         <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
           {isWeb ? "From Google" : "From your course"}
         </span>
@@ -358,7 +359,7 @@ function SourceCard({ source }: { source: TutorSource }) {
       <p className="mt-1 line-clamp-1 text-xs font-bold text-slate-800 dark:text-slate-100">{source.title}</p>
       <p className="line-clamp-1 text-[11px] text-slate-500">
         {isWeb ? source.site : source.label}
-        {isWeb && <ExternalLink className="ml-1 inline h-3 w-3" />}
+        {isWeb && <ExternalLink className="ml-1 inline size-3" />}
       </p>
     </>
   );
@@ -439,8 +440,8 @@ function QuizCard({ conversationId, messageId, questions, savedResult }: {
               <li key={i} className="rounded-xl border border-slate-100 p-3 text-sm dark:border-slate-800">
                 <div className="flex items-start gap-2">
                   {correct
-                    ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                    : <X className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />}
+                    ? <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600" />
+                    : <X className="mt-0.5 size-4 shrink-0 text-rose-600" />}
                   <div className="min-w-0 flex-1 text-slate-800 dark:text-slate-100">
                     <MarkdownRenderer content={q.question} />
                     {!correct && (
@@ -506,7 +507,7 @@ function QuizCard({ conversationId, messageId, questions, savedResult }: {
               )}
             >
               <span className={cn(
-                "flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-black",
+                "flex size-6 shrink-0 items-center justify-center rounded-lg text-xs font-black",
                 answered && isCorrect ? "bg-emerald-600 text-white"
                   : answered && isPicked ? "bg-rose-600 text-white"
                     : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
@@ -514,8 +515,8 @@ function QuizCard({ conversationId, messageId, questions, savedResult }: {
                 {OPTION_LETTERS[i]}
               </span>
               <span className="min-w-0 flex-1"><MarkdownRenderer content={option} /></span>
-              {answered && isCorrect && <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />}
-              {answered && isPicked && !isCorrect && <X className="h-4 w-4 shrink-0 text-rose-600" />}
+              {answered && isCorrect && <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />}
+              {answered && isPicked && !isCorrect && <X className="size-4 shrink-0 text-rose-600" />}
             </button>
           );
         })}
@@ -532,7 +533,7 @@ function QuizCard({ conversationId, messageId, questions, savedResult }: {
             onClick={() => (last ? finish(answers) : setIndex((i) => i + 1))}
             className="mt-3 inline-flex h-9 items-center gap-2 rounded-xl bg-blue-600 px-4 text-xs font-black text-white hover:bg-blue-700 disabled:opacity-60"
           >
-            {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {saving && <Loader2 className="size-3.5 animate-spin" />}
             {last ? "See my score" : "Next question"}
           </button>
         </div>
@@ -588,11 +589,11 @@ function ThinkingIndicator({ mode }: { mode: TutorMode }) {
   const message = useStepMessage(WAIT_MESSAGES[mode]);
   return (
     <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300" aria-live="polite">
-      <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 text-white shadow-md shadow-blue-500/25">
-        <GraduationCap className="h-4 w-4" />
+      <div className="flex size-9 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 text-white shadow-md shadow-blue-500/25">
+        <GraduationCap className="size-4" />
       </div>
       <span className="inline-flex items-center gap-2 rounded-2xl bg-white/80 px-3 py-2 font-medium shadow-sm dark:bg-slate-900/80">
-        <Loader2 className="h-4 w-4 animate-spin text-blue-600" /> {message}
+        <Loader2 className="size-4 animate-spin text-blue-600" /> {message}
       </span>
     </div>
   );
@@ -618,7 +619,7 @@ function MediaLoader({ conversationId, messageId, onLoaded }: {
   return (
     <div className="mt-3" aria-live="polite">
       <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-500">
-        <Loader2 className="h-3 w-3 animate-spin" /> {message}
+        <Loader2 className="size-3 animate-spin" /> {message}
       </p>
       <div className="flex gap-2 overflow-hidden">
         {[0, 1, 2, 3].map((i) => (
@@ -649,14 +650,14 @@ function MessageBubble({ message, conversationId, onMediaLoaded }: {
   const badge = message.syllabusStatus ? SYLLABUS_BADGE[message.syllabusStatus] : null;
   return (
     <div className="flex gap-3">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 text-white shadow-md shadow-blue-500/25">
-        <GraduationCap className="h-4 w-4" />
+      <div className="flex size-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 text-white shadow-md shadow-blue-500/25">
+        <GraduationCap className="size-4" />
       </div>
       <div className="min-w-0 max-w-[92%] flex-1">
         <div className="rounded-2xl rounded-tl-md border border-blue-100 bg-white px-4 py-3 shadow-lg shadow-blue-900/5 dark:border-slate-700 dark:bg-slate-900">
           {badge && (
             <span className={cn("mb-2 inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-black", badge.className)}>
-              {message.syllabusStatus === "beyond_syllabus" ? <TriangleAlert className="h-3 w-3" /> : <CheckCircle2 className="h-3 w-3" />}
+              {message.syllabusStatus === "beyond_syllabus" ? <TriangleAlert className="size-3" /> : <CheckCircle2 className="size-3" />}
               {badge.label}
             </span>
           )}
@@ -708,8 +709,8 @@ function NewChatPanel({ subjects, className, onStart, starting }: {
     // Gradient frame around a white card.
     <div className="mx-auto w-full max-w-xl rounded-[2.25rem] bg-gradient-to-br from-sky-300 via-blue-400 to-violet-400 p-[3px] shadow-2xl shadow-blue-500/20">
       <div className="rounded-[2.1rem] bg-white px-6 py-8 text-center dark:bg-slate-900 sm:px-10 sm:py-10">
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.75rem] bg-gradient-to-br from-sky-400 via-blue-500 to-indigo-600 text-white shadow-xl shadow-blue-500/30 ring-8 ring-blue-50 dark:ring-slate-800">
-          <GraduationCap className="h-10 w-10" />
+        <div className="mx-auto flex size-20 items-center justify-center rounded-[1.75rem] bg-gradient-to-br from-sky-400 via-blue-500 to-indigo-600 text-white shadow-xl shadow-blue-500/30 ring-8 ring-blue-50 dark:ring-slate-800">
+          <GraduationCap className="size-10" />
         </div>
         <h2 className="mt-6 bg-gradient-to-r from-blue-700 via-indigo-600 to-violet-600 bg-clip-text text-3xl font-black tracking-tight text-transparent dark:from-sky-300 dark:via-blue-300 dark:to-violet-300">
           Start a new chat
@@ -766,9 +767,9 @@ function NewChatPanel({ subjects, className, onStart, starting }: {
         })}
         className="group mt-7 inline-flex h-14 w-full items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 px-4 text-base font-black text-white shadow-xl shadow-blue-600/30 transition hover:-translate-y-0.5 hover:shadow-2xl disabled:opacity-60"
       >
-        {starting ? <Loader2 className="h-5 w-5 animate-spin" /> : <SquarePen className="h-5 w-5" />}
+        {starting ? <Loader2 className="size-5 animate-spin" /> : <SquarePen className="size-5" />}
         Start chat
-        <ArrowRight className="h-5 w-5 transition group-hover:translate-x-1" />
+        <ArrowRight className="size-5 transition group-hover:translate-x-1" />
       </button>
       </div>
     </div>
@@ -793,7 +794,7 @@ const PICKER_TINTS = [
 function PickerRow({ step, tint, children }: { step: number; tint: string; children: ReactNode }) {
   return (
     <div className="flex items-center gap-3">
-      <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-base font-black text-white shadow-lg", tint)}>
+      <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-base font-black text-white shadow-lg", tint)}>
         {step}
       </span>
       <div className="min-w-0 flex-1">{children}</div>
@@ -819,15 +820,15 @@ function HistoryPanel({ conversations, loading, activeId, onOpen, onDelete, onNe
   return (
     <div className="absolute inset-0 z-30 flex justify-end rounded-2xl bg-slate-900/30" onClick={onClose}>
       <aside
-        className="flex h-full w-full max-w-sm flex-col rounded-2xl border-l border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900"
+        className="flex size-full max-w-sm flex-col rounded-2xl border-l border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900"
         onClick={(e) => e.stopPropagation()}
         aria-label="Chat history"
       >
         <div className="flex items-center gap-2 border-b border-slate-100 p-4 dark:border-slate-800">
-          <HistoryIcon className="h-4 w-4 text-blue-600" />
+          <HistoryIcon className="size-4 text-blue-600" />
           <h2 className="flex-1 text-base font-black text-slate-900 dark:text-white">Chat history</h2>
           <button type="button" onClick={onClose} aria-label="Close history" className="rounded-lg p-1 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">
-            <X className="h-4 w-4" />
+            <X className="size-4" />
           </button>
         </div>
         <div className="p-3">
@@ -836,12 +837,12 @@ function HistoryPanel({ conversations, loading, activeId, onOpen, onDelete, onNe
             onClick={onNew}
             className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 text-sm font-black text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700"
           >
-            <SquarePen className="h-4 w-4" /> New chat
+            <SquarePen className="size-4" /> New chat
           </button>
         </div>
         <div className="flex-1 space-y-1 overflow-y-auto px-2 pb-3">
           {loading ? (
-            <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-slate-400" /></div>
+            <div className="flex justify-center py-8"><Loader2 className="size-5 animate-spin text-slate-400" /></div>
           ) : conversations.length === 0 ? (
             <p className="px-3 py-8 text-center text-xs text-slate-500">No chats yet. Your conversations will appear here.</p>
           ) : conversations.map((c) => (
@@ -864,7 +865,7 @@ function HistoryPanel({ conversations, loading, activeId, onOpen, onDelete, onNe
                 aria-label="Delete chat"
                 className="rounded-lg p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 md:opacity-0 md:group-hover:opacity-100 dark:hover:bg-rose-950/40"
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <Trash2 className="size-3.5" />
               </button>
             </div>
           ))}
@@ -877,6 +878,7 @@ function HistoryPanel({ conversations, loading, activeId, onOpen, onDelete, onNe
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function AiTutorChat({ onClose }: { onClose: () => void }) {
+  const confirm = useConfirm();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [className, setClassName] = useState("");
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
@@ -991,7 +993,8 @@ function AiTutorChat({ onClose }: { onClose: () => void }) {
   }, []);
 
   const deleteConversation = useCallback(async (id: string) => {
-    if (!window.confirm("Delete this chat? This can't be undone.")) return;
+    const ok = await confirm({ title: 'Delete Chat', message: "Delete this chat? This can't be undone." });
+    if (!ok) return;
     try {
       await api.delete(`/ai-tutor/conversations/${id}`);
       setConversations((list) => list.filter((c) => c.id !== id));
@@ -999,7 +1002,7 @@ function AiTutorChat({ onClose }: { onClose: () => void }) {
     } catch (err) {
       toast.error(errorMessage(err, "Could not delete this chat."));
     }
-  }, [active]);
+  }, [active, confirm]);
 
   const newChat = useCallback(() => {
     setActive(null);
@@ -1018,8 +1021,8 @@ function AiTutorChat({ onClose }: { onClose: () => void }) {
       />
       {/* Header */}
       <header className="flex items-center gap-2 bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 px-3 py-2.5 text-white shadow-md shadow-blue-900/10 sm:px-5">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/25">
-          <GraduationCap className="h-5 w-5" />
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/25">
+          <GraduationCap className="size-5" />
         </div>
         <div className="min-w-0 flex-1">
           <p className="line-clamp-1 text-sm font-black text-white">
@@ -1046,14 +1049,14 @@ function AiTutorChat({ onClose }: { onClose: () => void }) {
             aria-label="Exit AI Tutor"
             className="ml-1 inline-flex h-9 items-center gap-1.5 rounded-full bg-white px-3.5 text-sm font-black text-blue-700 shadow-sm hover:bg-blue-50"
           >
-            <X className="h-4 w-4" /> Exit
+            <X className="size-4" /> Exit
           </button>
         </div>
       </header>
 
       {/* Body */}
       {loadingChat ? (
-        <div className="flex flex-1 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>
+        <div className="flex flex-1 items-center justify-center"><Loader2 className="size-6 animate-spin text-slate-400" /></div>
       ) : !active ? (
         <div className="flex flex-1 items-center justify-center overflow-y-auto p-4">
           <NewChatPanel subjects={subjects} className={className} starting={starting} onStart={startConversation} />
@@ -1064,8 +1067,8 @@ function AiTutorChat({ onClose }: { onClose: () => void }) {
             <div className="mx-auto w-full max-w-3xl space-y-5">
               {active.messages.length === 0 && (
                 <div className="mx-auto max-w-2xl py-8 text-center sm:py-12">
-                  <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.75rem] bg-gradient-to-br from-sky-400 via-blue-500 to-indigo-600 text-white shadow-xl shadow-blue-500/30 ring-8 ring-white/70 dark:ring-slate-900/60">
-                    <GraduationCap className="h-10 w-10" />
+                  <div className="mx-auto flex size-20 items-center justify-center rounded-[1.75rem] bg-gradient-to-br from-sky-400 via-blue-500 to-indigo-600 text-white shadow-xl shadow-blue-500/30 ring-8 ring-white/70 dark:ring-slate-900/60">
+                    <GraduationCap className="size-10" />
                   </div>
                   <h2 className="mt-6 bg-gradient-to-r from-blue-700 via-indigo-600 to-violet-600 bg-clip-text text-3xl font-black tracking-tight text-transparent sm:text-4xl dark:from-sky-300 dark:via-blue-300 dark:to-violet-300">
                     What would you like to learn?
@@ -1087,12 +1090,12 @@ function AiTutorChat({ onClose }: { onClose: () => void }) {
                             style.card,
                           )}
                         >
-                          <span className={cn("flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-lg transition group-hover:scale-110 group-hover:rotate-3", style.badge)}>
-                            <Icon className="h-6 w-6" />
+                          <span className={cn("flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-lg transition group-hover:scale-110 group-hover:rotate-3", style.badge)}>
+                            <Icon className="size-6" />
                           </span>
                           <span className="flex w-full items-center justify-between gap-2 text-lg font-black">
                             {label}
-                            <ArrowRight className="h-5 w-5 opacity-50 transition group-hover:translate-x-1 group-hover:opacity-100" />
+                            <ArrowRight className="size-5 opacity-50 transition group-hover:translate-x-1 group-hover:opacity-100" />
                           </span>
                         </button>
                       );
@@ -1128,9 +1131,9 @@ function AiTutorChat({ onClose }: { onClose: () => void }) {
                   type="submit"
                   disabled={!input.trim() || sending}
                   aria-label="Send"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                  className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <SendHorizontal className="h-4 w-4" />}
+                  {sending ? <Loader2 className="size-4 animate-spin" /> : <SendHorizontal className="size-4" />}
                 </button>
               </div>
               <p className="mt-2 text-center text-[10px] text-slate-500 dark:text-slate-400">
@@ -1157,7 +1160,7 @@ function AiTutorChat({ onClose }: { onClose: () => void }) {
 }
 
 const HEADER_ICON_BUTTON =
-  "flex h-9 w-9 items-center justify-center rounded-full text-white/90 hover:bg-white/15 hover:text-white";
+  "flex size-9 items-center justify-center rounded-full text-white/90 hover:bg-white/15 hover:text-white";
 
 // Stars, pencils, atoms and books in brand blue, tiled at low opacity behind the chat.
 const DOODLE_PATTERN = `url("data:image/svg+xml,${encodeURIComponent(
@@ -1247,11 +1250,11 @@ export default function AiTutorWidget() {
           aria-label="Open AI Tutor"
           className={cn(
             ALL_BOLD,
-            "group fixed z-[70] flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-blue-600 text-white shadow-xl shadow-blue-600/30 ring-4 ring-white transition hover:scale-105 focus:outline-none focus-visible:ring-blue-300 dark:ring-slate-900",
+            "group fixed z-[70] flex size-16 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-blue-600 text-white shadow-xl shadow-blue-600/30 ring-4 ring-white transition hover:scale-105 focus:outline-none focus-visible:ring-blue-300 dark:ring-slate-900",
             isMobile ? "bottom-[5.25rem] right-4" : "bottom-6 right-6",
           )}
         >
-          <Bot className="h-8 w-8" strokeWidth={2.25} />
+          <Bot className="size-8" strokeWidth={2.25} />
           <span className="pointer-events-none absolute right-[4.5rem] hidden whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-bold text-white opacity-0 shadow transition group-hover:opacity-100 md:block">
             AI Tutor
           </span>

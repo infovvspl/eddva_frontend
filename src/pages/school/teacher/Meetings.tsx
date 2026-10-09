@@ -292,7 +292,7 @@ export default function TeacherMeetingsPage() {
             }}
             className="inline-flex items-center justify-center rounded-xl sm:rounded-2xl bg-white px-3 py-2 sm:px-5 sm:py-3 text-[11px] sm:text-sm font-black text-cyan-700 shadow-lg transition hover:bg-cyan-50 shrink-0"
           >
-            <CalendarDays className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4 shrink-0" />
+            <CalendarDays className="mr-1.5 size-3.5 sm:mr-2 sm:size-4 shrink-0" />
             <span>Schedule Meeting</span>
           </button>
         </div>
@@ -306,8 +306,8 @@ export default function TeacherMeetingsPage() {
           { label: 'Scheduled / Done', value: summary.scheduled, icon: CheckCircle2, tone: 'text-emerald-600 bg-emerald-50', bgMobile: 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-900/40', textTone: 'text-emerald-800 dark:text-emerald-300', valTone: 'text-emerald-900 dark:text-emerald-100' },
         ].map((item) => (
           <div key={item.label} className={`rounded-xl sm:rounded-3xl border p-2 sm:p-5 shadow-sm flex flex-col items-center sm:items-start text-center sm:text-left ${item.bgMobile} sm:bg-white sm:border-slate-200 dark:sm:bg-slate-900 dark:sm:border-slate-800`}>
-            <div className={`mb-2 sm:mb-4 flex h-7 w-7 sm:h-12 sm:w-12 items-center justify-center rounded-lg sm:rounded-2xl ${item.tone}`}>
-              <item.icon className="h-3.5 w-3.5 sm:h-5 sm:w-5" />
+            <div className={`mb-2 sm:mb-4 flex size-7 sm:size-12 items-center justify-center rounded-lg sm:rounded-2xl ${item.tone}`}>
+              <item.icon className="size-3.5 sm:size-5" />
             </div>
             <p className={`text-[8px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] leading-tight sm:leading-normal ${item.textTone} sm:text-slate-400`}>
               {item.label.split(' ')[0]} <span className="hidden sm:inline">{item.label.split(' ').slice(1).join(' ')}</span>
@@ -320,7 +320,7 @@ export default function TeacherMeetingsPage() {
       <section className="rounded-2xl sm:rounded-[28px] border border-slate-200 bg-white p-3.5 sm:p-5 shadow-sm">
         <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
           <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 sm:left-4 top-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3 sm:left-4 top-1/2 size-3.5 sm:size-4 -translate-y-1/2 text-slate-400" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -330,7 +330,7 @@ export default function TeacherMeetingsPage() {
           </div>
           <div className="flex flex-row gap-2 w-full lg:w-auto">
             <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2 flex-1 lg:flex-initial">
-              <Filter className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+              <Filter className="size-3.5 text-slate-400 shrink-0" />
               <CustomSelect
                 onChange={setScopeFilter}
                 value={scopeFilter}
@@ -340,7 +340,7 @@ export default function TeacherMeetingsPage() {
                   { value: "outgoing", label: "Outgoing" },
                 ]}
                 className="w-full sm:w-[130px]"
-                triggerClassName="flex h-full w-full items-center justify-between gap-1 py-1.5 sm:py-2.5 text-[11px] sm:text-sm font-semibold outline-none text-slate-700"
+                triggerClassName="flex size-full items-center justify-between gap-1 py-1.5 sm:py-2.5 text-[11px] sm:text-sm font-semibold outline-none text-slate-700"
               />
             </div>
             <CustomSelect
@@ -356,7 +356,7 @@ export default function TeacherMeetingsPage() {
                 { value: "cancelled", label: "Cancelled" },
               ]}
               className="flex-1 sm:w-[140px]"
-              triggerClassName="flex h-full w-full items-center justify-between gap-1 px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-xl border border-slate-200 bg-white text-[11px] sm:text-sm font-semibold outline-none text-slate-700 shadow-sm"
+              triggerClassName="flex size-full items-center justify-between gap-1 px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-xl border border-slate-200 bg-white text-[11px] sm:text-sm font-semibold outline-none text-slate-700 shadow-sm"
             />
           </div>
         </div>
@@ -369,7 +369,7 @@ export default function TeacherMeetingsPage() {
           </div>
         ) : filteredMeetings.length === 0 ? (
           <div className="rounded-[28px] border border-dashed border-slate-300 bg-white p-12 text-center shadow-sm">
-            <CalendarDays className="mx-auto h-12 w-12 text-slate-300" />
+            <CalendarDays className="mx-auto size-12 text-slate-300" />
             <h3 className="mt-4 text-lg font-black text-slate-800">No meetings found</h3>
             <p className="mt-2 text-sm font-semibold text-slate-500">
               Parent requests and your scheduled meetings will appear here.
@@ -455,14 +455,14 @@ export default function TeacherMeetingsPage() {
                         rel="noreferrer"
                         className="flex-1 inline-flex items-center justify-center rounded-xl sm:rounded-2xl bg-blue-600 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-black text-white transition hover:bg-blue-700"
                       >
-                        <Video className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
+                        <Video className="mr-1.5 size-3.5 sm:mr-2 sm:size-4" />
                         Join Link
                       </a>
                     )}
 
                     {meeting.meetingMode === 'offline' && meeting.location && (
                       <div className="flex-1 inline-flex items-center justify-center rounded-xl sm:rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-bold text-slate-700">
-                        <MapPin className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
+                        <MapPin className="mr-1.5 size-3.5 sm:mr-2 sm:size-4" />
                         {meeting.location}
                       </div>
                     )}
@@ -527,7 +527,7 @@ export default function TeacherMeetingsPage() {
                 onClick={resetCreateForm}
                 className="rounded-full p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
               >
-                <X className="h-4 w-4 sm:h-5 sm:w-5" />
+                <X className="size-4 sm:size-5" />
               </button>
             </div>
 
@@ -541,7 +541,7 @@ export default function TeacherMeetingsPage() {
                   {i > 0 && <div className={`h-0.5 flex-1 rounded-full ${step > 1 ? 'bg-cyan-500' : 'bg-slate-200'}`} />}
                   <div className="flex items-center gap-1.5 shrink-0">
                     <span
-                      className={`flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full text-[10px] sm:text-xs font-black ${
+                      className={`flex size-5 sm:size-6 items-center justify-center rounded-full text-[10px] sm:text-xs font-black ${
                         step === s.n
                           ? 'bg-cyan-600 text-white'
                           : step > s.n
@@ -549,7 +549,7 @@ export default function TeacherMeetingsPage() {
                             : 'bg-slate-100 text-slate-400'
                       }`}
                     >
-                      {step > s.n ? <Check className="h-3 w-3" /> : s.n}
+                      {step > s.n ? <Check className="size-3" /> : s.n}
                     </span>
                     <span className={`text-[10px] sm:text-xs font-black uppercase tracking-wider ${step === s.n ? 'text-slate-800' : 'text-slate-400'}`}>
                       {s.label}
@@ -561,8 +561,8 @@ export default function TeacherMeetingsPage() {
 
             {selectedParent && (
               <div className="mb-3 sm:mb-4 flex items-center gap-2.5 rounded-xl sm:rounded-2xl border border-cyan-100 bg-cyan-50/60 px-3 py-2 sm:px-4 sm:py-2.5">
-                <span className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-cyan-100 text-cyan-700">
-                  <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="flex size-7 sm:size-8 shrink-0 items-center justify-center rounded-full bg-cyan-100 text-cyan-700">
+                  <User className="size-3.5 sm:size-4" />
                 </span>
                 <div className="min-w-0">
                   <p className="truncate text-xs sm:text-sm font-black text-slate-800">{selectedParent.name}</p>
@@ -592,7 +592,7 @@ export default function TeacherMeetingsPage() {
                           placeholder="All classes"
                           options={classOptions.map((c) => ({ value: c, label: c }))}
                           className="w-full"
-                          triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 shadow-sm"
+                          triggerClassName="flex size-full items-center justify-between gap-1 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 shadow-sm"
                         />
                       </div>
                       <div className="space-y-1 sm:space-y-1.5">
@@ -604,7 +604,7 @@ export default function TeacherMeetingsPage() {
                           placeholder="All sections"
                           options={sectionOptions.map((s) => ({ value: s, label: `Section ${s}` }))}
                           className="w-full"
-                          triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 shadow-sm disabled:opacity-50"
+                          triggerClassName="flex size-full items-center justify-between gap-1 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 shadow-sm disabled:opacity-50"
                         />
                       </div>
                     </>
@@ -634,17 +634,17 @@ export default function TeacherMeetingsPage() {
                         label: `${parent.name}${parent.studentName ? ` • ${parent.studentName}` : ''}${parent.className ? ` • ${parent.className}` : ''}${parent.sectionName ? `-${parent.sectionName}` : ''}`
                       }))}
                       className="w-full"
-                      triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 shadow-sm"
+                      triggerClassName="flex size-full items-center justify-between gap-1 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 shadow-sm"
                     />
                     {!loadingParents && parents.length === 0 && (
                       <p className="flex items-start gap-1.5 pt-1 text-[11px] font-semibold text-amber-600">
-                        <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
+                        <AlertCircle className="mt-0.5 size-3 shrink-0" />
                         No parents found for your assigned classes yet. Ask your admin to check class/section assignments.
                       </p>
                     )}
                     {!loadingParents && parents.length > 0 && filteredParents.length === 0 && (
                       <p className="flex items-start gap-1.5 pt-1 text-[11px] font-semibold text-amber-600">
-                        <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
+                        <AlertCircle className="mt-0.5 size-3 shrink-0" />
                         No parents in {[classFilter, sectionFilter && `Section ${sectionFilter}`].filter(Boolean).join(' ')}. Try a different class or section.
                       </p>
                     )}
@@ -690,7 +690,7 @@ export default function TeacherMeetingsPage() {
                               : 'border-slate-200 bg-slate-50 text-slate-500'
                           }`}
                         >
-                          {mode === 'online' ? <Video className="h-3.5 w-3.5" /> : <MapPin className="h-3.5 w-3.5" />}
+                          {mode === 'online' ? <Video className="size-3.5" /> : <MapPin className="size-3.5" />}
                           {mode}
                         </button>
                       ))}
@@ -734,7 +734,7 @@ export default function TeacherMeetingsPage() {
                         { value: "60", label: "60 mins" },
                       ]}
                       className="w-full"
-                      triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 shadow-sm"
+                      triggerClassName="flex size-full items-center justify-between gap-1 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 shadow-sm"
                     />
                   </div>
 
@@ -781,7 +781,7 @@ export default function TeacherMeetingsPage() {
 
             {step2Error && (
               <p className="mt-3 flex items-start gap-1.5 rounded-xl bg-rose-50 px-3 py-2 text-[11px] sm:text-xs font-bold text-rose-700">
-                <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
                 {step2Error}
               </p>
             )}

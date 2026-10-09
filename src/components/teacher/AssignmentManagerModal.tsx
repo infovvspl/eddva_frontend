@@ -2,11 +2,12 @@ import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { Loader2, Plus, X, CheckCircle, FileText, Download } from "lucide-react";
+import { Loader2, Plus, CheckCircle, FileText, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import type { Lecture } from "@/lib/api/teacher";
 import {
@@ -162,16 +163,14 @@ export function AssignmentManagerModal({ lecture, onClose }: { lecture: Lecture;
           />
         )}
       </AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-2xl bg-card rounded-2xl border shadow-xl flex flex-col max-h-[85vh]">
-        <div className="flex items-center justify-between p-4 border-b">
-          <div>
-            <h2 className="font-semibold">{view === "list" ? "Assignments" : view === "create" ? "New Assignment" : "Submissions"}</h2>
+      <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+        <DialogContent className="max-w-2xl p-0 gap-0 flex flex-col max-h-[85vh]">
+          <DialogHeader className="p-4 border-b space-y-0">
+            <DialogTitle className="font-semibold text-base text-left">
+              {view === "list" ? "Assignments" : view === "create" ? "New Assignment" : "Submissions"}
+            </DialogTitle>
             <p className="text-xs text-muted-foreground">{lecture.title}</p>
-          </div>
-          <button onClick={onClose} className="p-1 hover:bg-secondary rounded-full transition-colors"><X className="w-5 h-5" /></button>
-        </div>
+          </DialogHeader>
 
         <div className="p-4 overflow-y-auto flex-1">
           {view === "list" && (
@@ -261,8 +260,8 @@ export function AssignmentManagerModal({ lecture, onClose }: { lecture: Lecture;
             </div>
           )}
         </div>
-      </div>
-    </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

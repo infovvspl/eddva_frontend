@@ -48,8 +48,8 @@ const DOUBT_STATUS_META = {
 function StatTile({ label, value, icon: Icon }) {
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50">
-        <Icon className="h-5 w-5 text-blue-600" />
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-50">
+        <Icon className="size-5 text-blue-600" />
       </span>
       <div className="min-w-0">
         <p className="text-xl font-black leading-none text-slate-900">{value}</p>
@@ -71,8 +71,8 @@ function StatMeter({ label, value, icon: Icon }) {
   return (
     <div className="rounded-2xl border border-slate-100 bg-white p-4">
       <div className="mb-3 flex items-center gap-2.5">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50">
-          <Icon className="h-4 w-4 text-slate-500" />
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-50">
+          <Icon className="size-4 text-slate-500" />
         </span>
         <p className="flex-1 truncate text-[11px] font-semibold text-slate-500">{label}</p>
         <p className={cn('shrink-0 text-lg font-black', toneText)}>{pct}%</p>
@@ -438,7 +438,7 @@ export default function TeacherRecordedClassDetails() {
     if (!recording.video_url) {
       return (
         <div className="flex aspect-video w-full flex-col items-center justify-center rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 px-6 text-center">
-          <PlayCircle className="h-12 w-12 text-slate-400" />
+          <PlayCircle className="size-12 text-slate-400" />
           <h3 className="mt-4 text-xl font-black text-white">Video is not available</h3>
           <p className="mt-2 max-w-md text-sm leading-6 text-slate-300">
             No playable recording has been attached to this class yet.
@@ -450,7 +450,7 @@ export default function TeacherRecordedClassDetails() {
     if (playback.loading && !playback.src) {
       return (
         <div className="flex aspect-video w-full flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-950 text-center text-white">
-          <Loader2 className="h-10 w-10 animate-spin" />
+          <Loader2 className="size-10 animate-spin" />
           <p className="mt-3 text-sm font-bold">Preparing video...</p>
         </div>
       );
@@ -459,7 +459,7 @@ export default function TeacherRecordedClassDetails() {
     if (playback.error) {
       return (
         <div className="flex aspect-video w-full flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-950 px-6 text-center text-white">
-          <PlayCircle className="h-10 w-10 text-white/60" />
+          <PlayCircle className="size-10 text-white/60" />
           <h3 className="mt-4 text-lg font-bold">Video could not start</h3>
           <p className="mt-2 max-w-md text-sm text-white/70">{playback.error}</p>
         </div>
@@ -471,7 +471,7 @@ export default function TeacherRecordedClassDetails() {
         <SchoolVideoPlayer src={playback.src} checkpoints={recording.quiz || []} />
         {playback.loading && (
           <div className="pointer-events-none absolute right-4 top-4 inline-flex items-center gap-2 rounded-full bg-slate-950/80 px-3 py-1.5 text-xs font-bold text-white z-10">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <Loader2 className="size-3.5 animate-spin" />
             Preparing secure link
           </div>
         )}
@@ -488,14 +488,14 @@ export default function TeacherRecordedClassDetails() {
             <div className="flex items-center gap-2 text-xs text-slate-500">
               {imageCount > 0 ? (
                 <>
-                  <span className="flex h-5 w-5 items-center justify-center rounded-md bg-blue-100 text-blue-600">
+                  <span className="flex size-5 items-center justify-center rounded-md bg-blue-100 text-blue-600">
                     <ImagePlus size={11} />
                   </span>
                   <span className="font-semibold text-slate-700">{imageCount} visual{imageCount !== 1 ? 's' : ''} embedded</span>
                 </>
               ) : (
                 <>
-                  <span className="flex h-5 w-5 items-center justify-center rounded-md bg-slate-200 text-slate-400">
+                  <span className="flex size-5 items-center justify-center rounded-md bg-slate-200 text-slate-400">
                     <ImagePlus size={11} />
                   </span>
                   <span>No visuals yet</span>
@@ -532,7 +532,7 @@ export default function TeacherRecordedClassDetails() {
     if (['pending', 'processing'].includes(recording.notes_status)) {
       return (
         <div className="flex min-h-[260px] flex-col items-center justify-center text-center">
-          <Loader2 className="h-10 w-10 animate-spin text-emerald-600" />
+          <Loader2 className="size-10 animate-spin text-emerald-600" />
           <h3 className="mt-4 text-lg font-bold text-slate-900">AI notes are being prepared</h3>
           <p className="mt-1 max-w-md text-sm text-slate-500">The system is still generating structured notes for this lecture.</p>
         </div>
@@ -541,7 +541,7 @@ export default function TeacherRecordedClassDetails() {
 
     return (
       <div className="flex min-h-[260px] flex-col items-center justify-center text-center">
-        <Sparkles className="h-10 w-10 text-slate-300" />
+        <Sparkles className="size-10 text-slate-300" />
         <h3 className="mt-4 text-lg font-bold text-slate-900">Notes not ready yet</h3>
         {hasNotesGen ? (
           <>
@@ -580,7 +580,7 @@ export default function TeacherRecordedClassDetails() {
     if (['pending', 'processing'].includes(recording.transcript_status)) {
       return (
         <div className="flex min-h-[260px] flex-col items-center justify-center text-center">
-          <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+          <Loader2 className="size-10 animate-spin text-blue-600" />
           <h3 className="mt-4 text-lg font-bold text-slate-900">Transcript is being generated</h3>
           <p className="mt-1 max-w-md text-sm text-slate-500">Speech-to-text is still running. Please check back shortly.</p>
         </div>
@@ -589,7 +589,7 @@ export default function TeacherRecordedClassDetails() {
 
     return (
       <div className="flex min-h-[260px] flex-col items-center justify-center text-center">
-        <FileText className="h-10 w-10 text-slate-300" />
+        <FileText className="size-10 text-slate-300" />
         <h3 className="mt-4 text-lg font-bold text-slate-900">
           {recording.transcript_status === 'failed' ? 'Transcription failed' : 'Transcript not available'}
         </h3>
@@ -640,7 +640,7 @@ export default function TeacherRecordedClassDetails() {
       : '—';
 
     return (
-      <div className="flex flex-col space-y-4">
+      <div className="flex flex-col gap-y-4">
         {quizAnalyticsError && (
           <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
             {quizAnalyticsError}
@@ -654,8 +654,8 @@ export default function TeacherRecordedClassDetails() {
             { label: 'Avg Accuracy', value: quizAnalyticsError ? '—' : quizAvg, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
           ].map((m) => (
             <div key={m.label} className="text-center">
-              <div className={cn('mx-auto mb-1.5 flex h-8 w-8 items-center justify-center rounded-lg', m.bg)}>
-                <m.icon className={cn('h-4.5 w-4.5', m.color)} />
+              <div className={cn('mx-auto mb-1.5 flex size-8 items-center justify-center rounded-lg', m.bg)}>
+                <m.icon className={cn('size-4.5', m.color)} />
               </div>
               <p className="text-base font-bold text-slate-800">{m.value}</p>
               <p className="text-[10px] font-semibold text-slate-400">{m.label}</p>
@@ -727,7 +727,7 @@ export default function TeacherRecordedClassDetails() {
                       </div>
                     )}
                   </div>
-                  <ChevronRight className={cn('mt-1 h-4 w-4 shrink-0 text-slate-400 transition-transform', isExpanded && 'rotate-90')} />
+                  <ChevronRight className={cn('mt-1 size-4 shrink-0 text-slate-400 transition-transform', isExpanded && 'rotate-90')} />
                 </button>
 
                 {isExpanded && (
@@ -740,11 +740,11 @@ export default function TeacherRecordedClassDetails() {
                       return (
                         <div key={opt.label} className={cn('rounded-xl border p-3', isCorrect ? 'border-emerald-100 bg-emerald-50 text-emerald-800' : 'border-slate-100 bg-white text-slate-700')}>
                           <div className="mb-1.5 flex items-center gap-2">
-                            <span className={cn('flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-black', isCorrect ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-500')}>{opt.label}</span>
+                            <span className={cn('flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-black', isCorrect ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-500')}>{opt.label}</span>
                             <div className={cn('flex-1 pointer-events-none text-xs', isCorrect ? 'font-bold text-emerald-800' : 'text-slate-700')}>
                               <MarkdownRenderer content={opt.text} className={cn('prose-p:my-0 font-semibold', isCorrect ? 'text-emerald-800' : 'text-slate-700')} />
                             </div>
-                            {isCorrect && <CheckCircle className="h-3.5 w-3.5 shrink-0 text-emerald-600" />}
+                            {isCorrect && <CheckCircle className="size-3.5 shrink-0 text-emerald-600" />}
                             <span className="shrink-0 text-xs font-bold text-slate-800">{count} ({pct}%)</span>
                           </div>
                           <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
@@ -755,7 +755,7 @@ export default function TeacherRecordedClassDetails() {
                     })}
                     {cp.explanation && (
                       <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-100 bg-amber-50 p-3">
-                        <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+                        <Sparkles className="mt-0.5 size-3.5 shrink-0 text-amber-600" />
                         <div className="text-xs font-medium leading-relaxed text-amber-800">
                           <MarkdownRenderer content={cp.explanation} className="prose-p:my-0 text-amber-800 font-semibold" />
                         </div>
@@ -770,7 +770,7 @@ export default function TeacherRecordedClassDetails() {
           {quizSubTab === 'students' && (
             analytics.students.filter((s) => s.answeredCount > 0).length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-                <Users className="mb-3 h-10 w-10 opacity-20" />
+                <Users className="mb-3 size-10 opacity-20" />
                 <p className="text-sm font-bold">No students have attempted the quiz yet.</p>
               </div>
             ) : (
@@ -781,7 +781,7 @@ export default function TeacherRecordedClassDetails() {
                   .map((s) => (
                     <div key={s.studentId} className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
                       <div className="flex items-center gap-3 p-3">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-black text-blue-600">
+                        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-black text-blue-600">
                           {s.studentName.charAt(0).toUpperCase()}
                         </div>
                         <div className="min-w-0 flex-1">
@@ -815,7 +815,7 @@ export default function TeacherRecordedClassDetails() {
                               )}
                             >
                               <span>Q{qi + 1}</span>
-                              {resp ? (resp.isCorrect ? <CheckCircle className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />) : <span className="text-[9px]">?</span>}
+                              {resp ? (resp.isCorrect ? <CheckCircle className="size-3.5" /> : <XCircle className="size-3.5" />) : <span className="text-[9px]">?</span>}
                             </div>
                           );
                         })}
@@ -942,11 +942,11 @@ export default function TeacherRecordedClassDetails() {
 
         {recDoubtsLoading ? (
           <div className="flex items-center justify-center py-10">
-            <Loader2 className="h-7 w-7 animate-spin text-blue-500" />
+            <Loader2 className="size-7 animate-spin text-blue-500" />
           </div>
         ) : shownDoubts.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 py-10 text-center">
-            <HelpCircle className="h-8 w-8 text-slate-300" />
+            <HelpCircle className="size-8 text-slate-300" />
             <p className="mt-2 text-sm font-bold text-slate-700">
               {recDoubtTab === 'pending' ? 'No pending doubts' : recDoubtTab === 'answered' ? 'No answered doubts yet' : 'No doubts yet'}
             </p>
@@ -974,7 +974,7 @@ export default function TeacherRecordedClassDetails() {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-bold text-slate-500">
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[10px] font-black text-blue-600">
+                    <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[10px] font-black text-blue-600">
                       {(doubt.studentName || 'S').charAt(0).toUpperCase()}
                     </div>
                     <span className="max-w-[110px] truncate">{doubt.studentName || 'Student'}</span>
@@ -1072,7 +1072,7 @@ export default function TeacherRecordedClassDetails() {
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <div className="size-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
       </div>
     );
   }
@@ -1085,7 +1085,7 @@ export default function TeacherRecordedClassDetails() {
           Back to Recorded Classes
         </Link>
         <div className="rounded-[2rem] border border-dashed border-slate-200 bg-white p-12 text-center shadow-sm">
-          <FileText className="mx-auto h-12 w-12 text-slate-300" />
+          <FileText className="mx-auto size-12 text-slate-300" />
           <h2 className="mt-4 text-xl font-bold text-slate-900">Lecture not found</h2>
           <p className="mt-1 text-sm text-slate-500">This recorded lecture is not available right now or may have been removed.</p>
         </div>
@@ -1099,7 +1099,7 @@ export default function TeacherRecordedClassDetails() {
         <div className="flex w-full items-center gap-3">
           <Link
             to="/school/teacher/classes"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-blue-600 hover:text-white"
+            className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-blue-600 hover:text-white"
             aria-label="Back to recorded classes"
           >
             <ArrowLeft size={17} />
@@ -1120,7 +1120,7 @@ export default function TeacherRecordedClassDetails() {
       </div>
 
       <div className="w-full px-4 py-5 sm:px-6 lg:px-8 lg:min-h-0 lg:flex-1">
-        <div className="grid gap-6 lg:h-full lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_400px] lg:grid-rows-[minmax(0,1fr)]">
+        <div className="grid gap-6 lg:h-full lg:min-h-0 lg:grid-cols-2">
           <main className="min-w-0 space-y-4 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:pb-5 scrollbar-hide">
             {renderVideoPlayer()}
 

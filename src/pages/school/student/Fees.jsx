@@ -59,17 +59,17 @@ export default function StudentFees() {
       {/* Grid Overview Cards */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <div className="rounded-[1.5rem] border border-blue-100 bg-blue-50/50 p-6 dark:border-blue-900/40 dark:bg-blue-950/20">
-          <CircleDollarSign className="h-6 w-6 text-blue-600 dark:text-blue-450" />
+          <CircleDollarSign className="size-6 text-blue-600 dark:text-blue-450" />
           <p className="mt-4 text-[11px] font-black uppercase tracking-[0.2em] text-blue-700 dark:text-blue-300">Total Outstanding Dues</p>
           <p className="mt-2 text-3xl font-black text-slate-900 dark:text-white">₹{summary.totalPending}</p>
         </div>
         <div className="rounded-[1.5rem] border border-emerald-100 bg-emerald-50/50 p-6 dark:border-emerald-900/40 dark:bg-emerald-950/20">
-          <CheckCircle2 className="h-6 w-6 text-emerald-600 dark:text-emerald-450" />
+          <CheckCircle2 className="size-6 text-emerald-600 dark:text-emerald-450" />
           <p className="mt-4 text-[11px] font-black uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">Total Paid Fees</p>
           <p className="mt-2 text-3xl font-black text-slate-900 dark:text-white">₹{summary.totalCollected}</p>
         </div>
         <div className="rounded-[1.5rem] border border-rose-100 bg-rose-50/50 p-6 dark:border-rose-900/40 dark:bg-rose-950/20 sm:col-span-2 lg:col-span-1">
-          <AlertCircle className="h-6 w-6 text-rose-600 dark:text-rose-455" />
+          <AlertCircle className="size-6 text-rose-600 dark:text-rose-455" />
           <p className="mt-4 text-[11px] font-black uppercase tracking-[0.2em] text-rose-700 dark:text-rose-300">Overdue Invoices</p>
           <p className="mt-2 text-3xl font-black text-slate-900 dark:text-white">{summary.overdueCount}</p>
         </div>
@@ -80,7 +80,7 @@ export default function StudentFees() {
         <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Fee Invoices</h2>
         {fees.length === 0 ? (
           <div className="text-center py-12 text-slate-400">
-            <Receipt className="h-12 w-12 mx-auto mb-3 opacity-30" />
+            <Receipt className="size-12 mx-auto mb-3 opacity-30" />
             <p className="text-sm font-bold">No invoices generated for your profile.</p>
           </div>
         ) : (

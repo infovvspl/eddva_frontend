@@ -191,7 +191,7 @@ export default function SessionResult() {
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="size-8 animate-spin text-blue-600" />
       </div>
     );
   }
@@ -200,7 +200,7 @@ export default function SessionResult() {
   if (!assessment) {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center text-center">
-        <AlertTriangle className="mb-4 h-12 w-12 text-slate-300 dark:text-slate-600" />
+        <AlertTriangle className="mb-4 size-12 text-slate-300 dark:text-slate-600" />
         <h2 className="text-xl font-bold text-slate-900 dark:text-white">Assessment not found</h2>
         <Link to="/school/student/assessments" className="mt-4 text-sm font-bold text-blue-600 hover:underline">
           ← Back to Assessments
@@ -258,18 +258,18 @@ export default function SessionResult() {
           {/* Score ring */}
           <div className="flex flex-col items-center gap-2">
             {isAbsent ? (
-              <div className="flex h-24 w-24 flex-col items-center justify-center rounded-full bg-white/10 border-4 border-white/20">
-                <UserCheck className="h-8 w-8 text-white/60" />
+              <div className="flex size-24 flex-col items-center justify-center rounded-full bg-white/10 border-4 border-white/20">
+                <UserCheck className="size-8 text-white/60" />
                 <p className="mt-1 text-xs font-black uppercase text-white/60">Absent</p>
               </div>
             ) : marks != null ? (
-              <div className={`flex h-24 w-24 flex-col items-center justify-center rounded-full bg-gradient-to-br ${ringColor} shadow-lg shadow-black/20`}>
+              <div className={`flex size-24 flex-col items-center justify-center rounded-full bg-gradient-to-br ${ringColor} shadow-lg shadow-black/20`}>
                 <p className="text-2xl font-black text-white">{marks}</p>
                 <p className="text-xs font-bold text-white/80">/{totalMarks}</p>
               </div>
             ) : (
-              <div className="flex h-24 w-24 flex-col items-center justify-center rounded-full bg-white/10 border-4 border-white/20">
-                <ClipboardList className="h-8 w-8 text-white/60" />
+              <div className="flex size-24 flex-col items-center justify-center rounded-full bg-white/10 border-4 border-white/20">
+                <ClipboardList className="size-8 text-white/60" />
                 <p className="mt-1 text-xs font-black uppercase text-white/60">Pending</p>
               </div>
             )}
@@ -285,7 +285,7 @@ export default function SessionResult() {
       {/* Result not yet entered */}
       {!myResult && (
         <div className="flex flex-col items-center gap-3 rounded-[2rem] border border-dashed border-amber-200 bg-amber-50 p-10 text-center dark:border-amber-900/30 dark:bg-amber-950/10">
-          <Clock className="h-10 w-10 text-amber-400" />
+          <Clock className="size-10 text-amber-400" />
           <h3 className="text-lg font-black text-slate-900 dark:text-white">Result Not Published Yet</h3>
           <p className="text-sm text-slate-500">
             Your teacher hasn't entered marks for this assessment yet. Check back later.
@@ -296,7 +296,7 @@ export default function SessionResult() {
       {/* Absent */}
       {myResult && isAbsent && (
         <div className="flex flex-col items-center gap-3 rounded-[2rem] border border-rose-100 bg-rose-50 p-10 text-center dark:border-rose-900/30 dark:bg-rose-950/10">
-          <UserCheck className="h-10 w-10 text-rose-400" />
+          <UserCheck className="size-10 text-rose-400" />
           <h3 className="text-lg font-black text-slate-900 dark:text-white">Marked Absent</h3>
           <p className="text-sm text-slate-500">You were marked absent for this assessment.</p>
           {remarks && (
@@ -313,8 +313,8 @@ export default function SessionResult() {
           <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
             {/* Marks */}
             <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 rounded-[1.25rem] sm:rounded-[2rem] border border-slate-100 bg-white p-3 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 text-center sm:text-left">
-              <div className="flex h-9 w-9 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-900/20">
-                <Trophy className="h-5 w-5 sm:h-6 sm:w-6" />
+              <div className="flex size-9 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-900/20">
+                <Trophy className="size-5 sm:size-6" />
               </div>
               <div>
                 <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">Marks</p>
@@ -326,8 +326,8 @@ export default function SessionResult() {
 
             {/* Percentage */}
             <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 rounded-[1.25rem] sm:rounded-[2rem] border border-slate-100 bg-white p-3 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 text-center sm:text-left">
-              <div className="flex h-9 w-9 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20">
-                <Target className="h-5 w-5 sm:h-6 sm:w-6" />
+              <div className="flex size-9 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20">
+                <Target className="size-5 sm:size-6" />
               </div>
               <div>
                 <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">Percent</p>
@@ -337,8 +337,8 @@ export default function SessionResult() {
 
             {/* Grade */}
             <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 rounded-[1.25rem] sm:rounded-[2rem] border border-slate-100 bg-white p-3 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 text-center sm:text-left">
-              <div className="flex h-9 w-9 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-900/20">
-                <Award className="h-5 w-5 sm:h-6 sm:w-6" />
+              <div className="flex size-9 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-900/20">
+                <Award className="size-5 sm:size-6" />
               </div>
               <div>
                 <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">Grade</p>
@@ -392,7 +392,7 @@ export default function SessionResult() {
           {remarks && (
             <div className="rounded-[2rem] border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white p-6 shadow-sm dark:border-indigo-900/30 dark:from-indigo-950/20 dark:to-slate-900">
               <div className="mb-3 flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                <MessageSquare className="size-5 text-indigo-600 dark:text-indigo-400" />
                 <h3 className="text-base font-black text-slate-900 dark:text-white">Teacher's Remarks</h3>
               </div>
               <p className="text-sm font-medium leading-relaxed text-slate-700 dark:text-slate-300">
@@ -408,7 +408,7 @@ export default function SessionResult() {
         <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="mb-5 flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <ClipboardList className="h-5 w-5 text-blue-600" />
+              <ClipboardList className="size-5 text-blue-600" />
               <h3 className="text-base font-black text-slate-900 dark:text-white">Review Answers</h3>
             </div>
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500 dark:bg-slate-800 dark:text-slate-300">
@@ -441,8 +441,8 @@ export default function SessionResult() {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    {row.correct === true && <CheckCircle className="h-5 w-5 text-emerald-500" />}
-                    {row.correct === false && <XCircle className="h-5 w-5 text-rose-500" />}
+                    {row.correct === true && <CheckCircle className="size-5 text-emerald-500" />}
+                    {row.correct === false && <XCircle className="size-5 text-rose-500" />}
                     <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-slate-700 shadow-sm dark:bg-slate-900 dark:text-slate-200">
                       {row.marks ?? 0}/{row.total} marks
                     </span>
@@ -509,7 +509,7 @@ export default function SessionResult() {
 
       {reviewRows.length === 0 && (
         <div className="rounded-[2rem] border border-dashed border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <ClipboardList className="mx-auto h-10 w-10 text-slate-300" />
+          <ClipboardList className="mx-auto size-10 text-slate-300" />
           <h3 className="mt-3 text-base font-black text-slate-900 dark:text-white">Detailed review is not available yet</h3>
           <p className="mt-1 text-sm text-slate-500">Your submitted answers and objective explanations will appear here after submission data is available.</p>
         </div>
@@ -519,7 +519,7 @@ export default function SessionResult() {
       {resultSaved && pct < 33 && (
         <div className="rounded-[2rem] border border-rose-100 bg-rose-50 p-5 dark:border-rose-900/30 dark:bg-rose-950/10">
           <div className="flex items-start gap-3">
-            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-rose-500" />
+            <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-rose-500" />
             <div>
               <p className="font-black text-slate-900 dark:text-white text-sm">Keep Going!</p>
               <p className="mt-1 text-xs font-medium text-slate-600 dark:text-slate-400">
@@ -533,7 +533,7 @@ export default function SessionResult() {
       {resultSaved && pct >= 75 && (
         <div className="rounded-[2rem] border border-emerald-100 bg-emerald-50 p-5 dark:border-emerald-900/30 dark:bg-emerald-950/10">
           <div className="flex items-start gap-3">
-            <Trophy className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" />
+            <Trophy className="mt-0.5 size-5 shrink-0 text-emerald-500" />
             <div>
               <p className="font-black text-slate-900 dark:text-white text-sm">Excellent Work!</p>
               <p className="mt-1 text-xs font-medium text-slate-600 dark:text-slate-400">

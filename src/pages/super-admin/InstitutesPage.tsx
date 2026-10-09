@@ -11,6 +11,9 @@ import { toast } from "sonner";
 import { useConfirm } from "@/context/ConfirmContext";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+
+const MotionTableRow = motion(TableRow);
 
 /* ─── small helpers ─────────────────────────────────────────── */
 const StatusDot = ({ status }: { status: string }) => {
@@ -473,45 +476,45 @@ const InstitutesPage = () => {
       {/* Desktop Table View (hidden on mobile) */}
       <div className="hidden sm:block rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-slate-50 text-xs font-bold uppercase text-slate-500 tracking-wider border-b border-slate-200">
-                <th className="px-5 py-4 sticky left-0 z-20 bg-slate-50 border-b border-slate-200">Coaching Institute</th>
-                <th className="px-5 py-4">Contact</th>
-                <th className="px-5 py-4">Tenant</th>
-                <th className="px-5 py-4">Students</th>
-                <th className="px-5 py-4">Status</th>
-                <th className="px-5 py-4">AI</th>
-                <th className="px-5 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+          <Table className="w-full text-left">
+            <TableHeader>
+              <TableRow className="bg-slate-50 text-xs font-bold uppercase text-slate-500 tracking-wider border-b border-slate-200 hover:bg-slate-50">
+                <TableHead className="h-auto px-5 py-4 sticky left-0 z-20 bg-slate-50 border-b border-slate-200">Coaching Institute</TableHead>
+                <TableHead className="h-auto px-5 py-4">Contact</TableHead>
+                <TableHead className="h-auto px-5 py-4">Tenant</TableHead>
+                <TableHead className="h-auto px-5 py-4">Students</TableHead>
+                <TableHead className="h-auto px-5 py-4">Status</TableHead>
+                <TableHead className="h-auto px-5 py-4">AI</TableHead>
+                <TableHead className="h-auto px-5 py-4 text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-slate-100">
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i}>
+                  <TableRow key={i}>
                     {Array.from({ length: 7 }).map((__, j) => (
-                      <td key={j} className={`px-5 py-4 ${j === 0 ? 'sticky left-0 z-20 bg-white' : ''}`}>
+                      <TableCell key={j} className={`px-5 py-4 ${j === 0 ? 'sticky left-0 z-20 bg-white' : ''}`}>
                         <div className="h-8 bg-slate-100 rounded-lg animate-pulse" />
-                      </td>
+                      </TableCell>
                     ))}
-                  </tr>
+                  </TableRow>
                 ))
               ) : error ? (
-                <tr>
-                  <td colSpan={7} className="px-5 py-16 text-center text-sm font-semibold text-slate-500">
+                <TableRow>
+                  <TableCell colSpan={7} className="px-5 py-16 text-center text-sm font-semibold text-slate-500">
                     Failed to load institutes. Please try again.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : allInstitutes.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-5 py-16 text-center">
+                <TableRow>
+                  <TableCell colSpan={7} className="px-5 py-16 text-center">
                     <div className="flex flex-col items-center gap-2 text-slate-400">
                       <Building2 className="w-10 h-10 opacity-30" />
                       <p className="text-sm font-semibold">No institutes found</p>
                       <p className="text-xs">Try adjusting your search or filters.</p>
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : (
                 <AnimatePresence mode="popLayout">
                   {allInstitutes.map((inst: any) => {
@@ -526,7 +529,7 @@ const InstitutesPage = () => {
                     const state = inst.state || "";
 
                     return (
-                      <motion.tr
+                      <MotionTableRow
                         key={inst.id}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -535,7 +538,7 @@ const InstitutesPage = () => {
                         onClick={() => navigate(`/super-admin/tenants/${inst.id}`)}
                       >
                         {/* Institute */}
-                        <td className="px-5 py-4 sticky left-0 z-20 bg-white dark:bg-slate-900 group-hover:bg-slate-50 transition-colors">
+                        <TableCell className="px-5 py-4 sticky left-0 z-20 bg-white dark:bg-slate-900 group-hover:bg-slate-50 transition-colors">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm group-hover:bg-indigo-600 group-hover:text-white transition-all shrink-0">
                               {(inst.name || "?")[0].toUpperCase()}
@@ -547,10 +550,10 @@ const InstitutesPage = () => {
                               </p>
                             </div>
                           </div>
-                        </td>
+                        </TableCell>
 
                         {/* Contact */}
-                        <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
+                        <TableCell className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
                           <div className="space-y-1">
                             <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
                               <Mail className="w-3 h-3 text-slate-400 shrink-0" />
@@ -561,10 +564,10 @@ const InstitutesPage = () => {
                               <span>{phone}</span>
                             </div>
                           </div>
-                        </td>
+                        </TableCell>
 
                         {/* Tenant */}
-                        <td className="px-5 py-4">
+                        <TableCell className="px-5 py-4">
                           <div className="flex items-center gap-1.5">
                             <span className="font-mono text-sm font-bold text-indigo-700">
                               {domain}
@@ -578,10 +581,10 @@ const InstitutesPage = () => {
                               <span className="italic">No plan</span>
                             )}
                           </p>
-                        </td>
+                        </TableCell>
 
                         {/* Students */}
-                        <td className="px-5 py-4">
+                        <TableCell className="px-5 py-4">
                           <div className="flex flex-col gap-1.5 w-32">
                             <div className="flex justify-between text-xs font-semibold text-slate-700">
                               <span>{students.toLocaleString()}</span>
@@ -596,15 +599,15 @@ const InstitutesPage = () => {
                               />
                             </div>
                           </div>
-                        </td>
+                        </TableCell>
 
                         {/* Status */}
-                        <td className="px-5 py-4">
+                        <TableCell className="px-5 py-4">
                           <StatusDot status={inst.status || "active"} />
-                        </td>
+                        </TableCell>
 
                         {/* AI */}
-                        <td className="px-5 py-4">
+                        <TableCell className="px-5 py-4">
                           {aiEnabled ? (
                             <span className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600">
                               <Sparkles className="w-3 h-3" /> AI On
@@ -612,10 +615,10 @@ const InstitutesPage = () => {
                           ) : (
                             <span className="text-xs text-slate-400 font-medium">No AI</span>
                           )}
-                        </td>
+                        </TableCell>
 
                         {/* Actions */}
-                        <td className="px-5 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                        <TableCell className="px-5 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-2">
                             <button
                               onClick={(e) => {
@@ -634,14 +637,14 @@ const InstitutesPage = () => {
                               onDelete={() => handleDelete(inst)}
                             />
                           </div>
-                        </td>
-                      </motion.tr>
+                        </TableCell>
+                      </MotionTableRow>
                     );
                   })}
                 </AnimatePresence>
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
 
         {/* Pagination */}

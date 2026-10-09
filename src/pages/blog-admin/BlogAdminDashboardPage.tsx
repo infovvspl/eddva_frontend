@@ -16,6 +16,8 @@ import {
   type BlogPost, type BlogPostStatus, type BlogSection, type BlogAdmin, type BlogDocumentSettings,
 } from '@/lib/api/blogAdmin';
 import { blogAdminToken } from '@/lib/api/blogAdminClient';
+import { useConfirm } from '@/context/ConfirmContext';
+import ImageCropModal from './ImageCropModal';
 import BlogBodyEditor from './BlogBodyEditor';
 
 const STATUSES: BlogPostStatus[] = ['DRAFT', 'PUBLISHED'];
@@ -66,6 +68,7 @@ const emptyForm = (): FormState => ({
 
 export default function BlogAdminDashboardPage() {
   const navigate = useNavigate();
+  const confirm = useConfirm();
   const [checkingSession, setCheckingSession] = useState(true);
   const [admin, setAdmin] = useState<BlogAdmin | null>(null);
 
@@ -230,7 +233,11 @@ export default function BlogAdminDashboardPage() {
   };
 
   const handleDelete = async (post: BlogPost) => {
-    if (!window.confirm(`Delete "${post.title}"? This cannot be undone.`)) return;
+    const ok = await confirm({
+      title: 'Delete Blog Post',
+      message: `Delete "${post.title}"? This cannot be undone.`,
+    });
+    if (!ok) return;
     setDeletingId(post.id);
     try {
       await deleteBlogPost(post.id);

@@ -20,6 +20,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { cn } from '@/components/school/admin/Skeleton';
 import { InstituteLogo, SchoolLogo, StatusBadge } from '@/components/school/admin/Brand';
+import { Badge } from '@/components/ui/badge';
 
 const tabs = [
   { id: 'workspace', label: 'Workspace', icon: Globe, description: 'Manage your institute domain and visibility' },
@@ -57,8 +58,8 @@ export default function Settings() {
   return (
     <div className="w-full space-y-8 pb-20 px-4 sm:px-6">
       <header className="relative py-12 px-8 rounded-[3rem] bg-gradient-to-br from-slate-900 to-slate-800 text-white overflow-hidden shadow-2xl">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/20 rounded-full blur-[100px] -mr-20 -mt-20" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-[80px] -ml-10 -mb-10" />
+        <div className="absolute top-0 right-0 size-96 bg-blue-500/20 rounded-full blur-[100px] -mr-20 -mt-20" />
+        <div className="absolute bottom-0 left-0 size-64 bg-indigo-500/10 rounded-full blur-[80px] -ml-10 -mb-10" />
         
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
           <div className="flex items-center gap-6">
@@ -72,7 +73,7 @@ export default function Settings() {
               <h1 className="text-4xl font-bold tracking-tight tracking-tight">{institute?.name || 'Eddva Institute'}</h1>
               <div className="mt-2 flex items-center gap-3">
                 <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Workspace Settings</span>
-                <div className="h-1 w-1 rounded-full bg-slate-600" />
+                <div className="size-1 rounded-full bg-slate-600" />
                 <StatusBadge status={institute?.status || 'ACTIVE'} />
               </div>
             </div>
@@ -84,7 +85,7 @@ export default function Settings() {
             className="flex items-center gap-3 px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold tracking-tight text-sm uppercase tracking-widest shadow-xl shadow-blue-600/20 transition-all active:scale-95 disabled:opacity-50"
           >
             {isSaving ? (
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              <div className="size-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
             ) : (
               <Save size={18} />
             )}
@@ -107,7 +108,7 @@ export default function Settings() {
               )}
             >
               <div className={cn(
-                "w-12 h-12 rounded-2xl flex items-center justify-center transition-colors",
+                "size-12 rounded-2xl flex items-center justify-center transition-colors",
                 activeTab === tab.id 
                   ? "bg-white/15 text-white shadow-lg shadow-black/10" 
                   : "bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-50 group-hover:text-blue-600"
@@ -169,10 +170,10 @@ function WorkspaceTab({ institute }) {
     <div className="space-y-10">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tight">Workspace Identity</h2>
-        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 text-[10px] font-bold tracking-tight uppercase tracking-widest">
+        <Badge variant="secondary" className="items-center gap-2 px-4 py-2 rounded-full border-transparent bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 text-[10px] font-bold tracking-tight uppercase tracking-widest hover:bg-blue-50 dark:hover:bg-blue-900/30">
           <Globe size={14} />
           {institute?.tenantDomain}.eddva.io
-        </div>
+        </Badge>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -187,7 +188,7 @@ function WorkspaceTab({ institute }) {
 
       <div className="p-8 rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center">
+          <div className="size-10 rounded-xl bg-blue-600 text-white flex items-center justify-center">
             <Cloud size={20} />
           </div>
           <div>
@@ -212,16 +213,16 @@ function ProfileTab({ user }) {
       <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tight">Personal Information</h2>
       <div className="flex items-center gap-8 mb-10 p-8 rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
         <div className="relative group">
-          <div className="w-24 h-24 rounded-[2rem] overflow-hidden border-4 border-white dark:border-slate-800 shadow-xl">
+          <div className="size-24 rounded-[2rem] overflow-hidden border-4 border-white dark:border-slate-800 shadow-xl">
             {user?.profileImage ? (
-              <img src={user.profileImage} alt={user.name} className="w-full h-full object-cover" />
+              <img src={user.profileImage} alt={user.name} className="size-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-blue-600 text-white text-3xl font-bold tracking-tight">
+              <div className="size-full flex items-center justify-center bg-blue-600 text-white text-3xl font-bold tracking-tight">
                 {user?.name?.[0].toUpperCase()}
               </div>
             )}
           </div>
-          <button className="absolute -bottom-2 -right-2 w-10 h-10 rounded-xl bg-white dark:bg-slate-800 shadow-lg border border-slate-100 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-blue-600 transition-colors">
+          <button className="absolute -bottom-2 -right-2 size-10 rounded-xl bg-white dark:bg-slate-800 shadow-lg border border-slate-100 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-blue-600 transition-colors">
             <Smartphone size={18} />
           </button>
         </div>
@@ -252,7 +253,7 @@ function SecurityTab() {
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 space-y-6">
-          <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+          <div className="size-12 rounded-2xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 flex items-center justify-center">
             <Lock size={24} />
           </div>
           <div>
@@ -263,7 +264,7 @@ function SecurityTab() {
         </div>
 
         <div className="p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 space-y-6">
-          <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+          <div className="size-12 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
             <Shield size={24} />
           </div>
           <div>
@@ -296,7 +297,7 @@ function AiTab() {
     <div className="space-y-10">
       <div className="flex items-center gap-4">
         <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tight">AI Intelligence Hub</h2>
-        <div className="px-3 py-1 rounded-full bg-blue-600 text-white text-[10px] font-bold tracking-tight uppercase tracking-widest animate-pulse">Enterprise</div>
+        <Badge className="px-3 py-1 rounded-full bg-blue-600 text-white text-[10px] font-bold tracking-tight uppercase tracking-widest animate-pulse hover:bg-blue-600">Enterprise</Badge>
       </div>
 
       <div className="grid grid-cols-1 gap-6">
@@ -328,7 +329,7 @@ function BillingTab() {
       <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tight">Financial & Subscription</h2>
       
       <div className="p-10 rounded-[3rem] bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32" />
+        <div className="absolute top-0 right-0 size-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32" />
         <div className="relative z-10 flex flex-col md:flex-row justify-between gap-8">
           <div>
             <p className="text-xs font-bold tracking-tight uppercase tracking-[0.2em] opacity-60">Current Plan</p>
@@ -351,7 +352,7 @@ function BillingTab() {
         ].map(inv => (
           <div key={inv.id} className="flex items-center justify-between p-6 rounded-3xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
+              <div className="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
                 <CreditCard size={18} />
               </div>
               <div>
@@ -361,7 +362,7 @@ function BillingTab() {
             </div>
             <div className="flex items-center gap-6">
               <p className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">{inv.amount}</p>
-              <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-bold tracking-tight">{inv.status}</span>
+              <Badge variant="secondary" className="px-3 py-1 rounded-full border-transparent bg-emerald-500/10 text-emerald-600 text-[10px] font-bold tracking-tight hover:bg-emerald-500/10">{inv.status}</Badge>
             </div>
           </div>
         ))}
@@ -420,7 +421,7 @@ function ToggleField({ title, description, checked }) {
         checked ? "bg-blue-600" : "bg-slate-200 dark:bg-slate-700"
       )}>
         <div className={cn(
-          "absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-300",
+          "absolute top-1 size-4 rounded-full bg-white transition-all duration-300",
           checked ? "left-7" : "left-1"
         )} />
       </button>
@@ -432,10 +433,10 @@ function AiFeatureCard({ title, description, icon: Icon, enabled }) {
   return (
     <div className="p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 flex items-start gap-6 relative overflow-hidden group">
       {enabled && (
-        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/5 rounded-full blur-3xl -mr-16 -mt-16" />
+        <div className="absolute top-0 right-0 size-32 bg-blue-600/5 rounded-full blur-3xl -mr-16 -mt-16" />
       )}
       <div className={cn(
-        "w-14 h-14 rounded-3xl flex items-center justify-center transition-all",
+        "size-14 rounded-3xl flex items-center justify-center transition-all",
         enabled ? "bg-blue-600 text-white shadow-xl shadow-blue-600/20" : "bg-slate-100 dark:bg-slate-800 text-slate-400"
       )}>
         <Icon size={28} />

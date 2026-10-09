@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import api from '@/lib/api/school-client';
 import { soundEngine } from '@/lib/audioManager';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { 
   Settings, Wallet, Shield, CheckCircle2, XCircle, RefreshCw, Sparkles, 
   TrendingUp, Users, DollarSign, Brain, Sliders, AlertCircle 
@@ -40,7 +42,7 @@ export default function AdminGamificationPanel() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/20 px-3 py-0.5 text-xs font-black uppercase tracking-wider border border-indigo-500/30 text-indigo-300">
-              <Shield className="h-3.5 w-3.5 text-indigo-400" />
+              <Shield className="size-3.5 text-indigo-400" />
               School Administration Console
             </div>
             <h1 className="text-2xl sm:text-3xl font-black mt-2">Gamification & Reward Control Panel</h1>
@@ -70,7 +72,7 @@ export default function AdminGamificationPanel() {
               : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
           }`}
         >
-          <Wallet className="h-4 w-4" />
+          <Wallet className="size-4" />
           Redemptions Log ({history.redemptions.length})
         </button>
 
@@ -82,7 +84,7 @@ export default function AdminGamificationPanel() {
               : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
           }`}
         >
-          <Sliders className="h-4 w-4" />
+          <Sliders className="size-4" />
           Economy Rules (10 Coins = ₹1)
         </button>
 
@@ -94,7 +96,7 @@ export default function AdminGamificationPanel() {
               : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
           }`}
         >
-          <Brain className="h-4 w-4" />
+          <Brain className="size-4" />
           AI Difficulty & Memory Settings
         </button>
       </div>
@@ -108,46 +110,46 @@ export default function AdminGamificationPanel() {
               onClick={fetchAdminData}
               className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300"
             >
-              <RefreshCw className="h-3.5 w-3.5" /> Refresh
+              <RefreshCw className="size-3.5" /> Refresh
             </button>
           </div>
 
           {loading ? (
             <div className="py-8 text-center">
-              <RefreshCw className="mx-auto h-6 w-6 animate-spin text-slate-400" />
+              <RefreshCw className="mx-auto size-6 animate-spin text-slate-400" />
             </div>
           ) : history.redemptions.length === 0 ? (
             <p className="text-center py-8 text-xs text-slate-400 font-medium">No redemptions logged yet.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs font-medium">
-                <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 text-[10px] uppercase tracking-wider text-slate-400 font-bold">
-                    <th className="pb-3">Student ID</th>
-                    <th className="pb-3">Amount (₹)</th>
-                    <th className="pb-3">Payout Method</th>
-                    <th className="pb-3">Ref Code</th>
-                    <th className="pb-3">Status</th>
-                    <th className="pb-3">Date</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <Table className="w-full text-left text-xs font-medium">
+                <TableHeader>
+                  <TableRow className="border-b border-slate-200 dark:border-slate-800 text-[10px] uppercase tracking-wider text-slate-400 font-bold hover:bg-transparent">
+                    <TableHead className="h-auto pb-3 text-slate-400">Student ID</TableHead>
+                    <TableHead className="h-auto pb-3 text-slate-400">Amount (₹)</TableHead>
+                    <TableHead className="h-auto pb-3 text-slate-400">Payout Method</TableHead>
+                    <TableHead className="h-auto pb-3 text-slate-400">Ref Code</TableHead>
+                    <TableHead className="h-auto pb-3 text-slate-400">Status</TableHead>
+                    <TableHead className="h-auto pb-3 text-slate-400">Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {history.redemptions.map((r) => (
-                    <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                      <td className="py-3 font-bold text-slate-900 dark:text-white">{r.user_id}</td>
-                      <td className="py-3 font-black text-emerald-600 dark:text-emerald-400">₹{r.amount_inr}</td>
-                      <td className="py-3 font-bold text-slate-600 dark:text-slate-300">{r.payout_method}</td>
-                      <td className="py-3 font-mono text-[11px] text-slate-500">{r.demo_payout_id || r.id}</td>
-                      <td className="py-3">
-                        <span className="inline-block rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-black uppercase text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                    <TableRow key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                      <TableCell className="p-0 py-3 font-bold text-slate-900 dark:text-white">{r.user_id}</TableCell>
+                      <TableCell className="p-0 py-3 font-black text-emerald-600 dark:text-emerald-400">₹{r.amount_inr}</TableCell>
+                      <TableCell className="p-0 py-3 font-bold text-slate-600 dark:text-slate-300">{r.payout_method}</TableCell>
+                      <TableCell className="p-0 py-3 font-mono text-[11px] text-slate-500">{r.demo_payout_id || r.id}</TableCell>
+                      <TableCell className="p-0 py-3">
+                        <Badge variant="secondary" className="rounded-full border-transparent bg-emerald-100 text-[10px] font-black uppercase text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-950/60">
                           {r.status || 'APPROVED'}
-                        </span>
-                      </td>
-                      <td className="py-3 text-slate-400">{new Date(r.created_at).toLocaleString()}</td>
-                    </tr>
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="p-0 py-3 text-slate-400">{new Date(r.created_at).toLocaleString()}</TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </div>

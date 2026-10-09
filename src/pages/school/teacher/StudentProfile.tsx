@@ -195,11 +195,11 @@ const StudentProfile: React.FC = () => {
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 p-6 sm:p-8 text-white relative">
           <div className="flex flex-col sm:flex-row items-center sm:items-end gap-5">
-            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl border-4 border-white/30 bg-white/10 backdrop-blur-md overflow-hidden shadow-xl shrink-0 flex items-center justify-center">
+            <div className="size-24 sm:size-28 rounded-3xl border-4 border-white/30 bg-white/10 backdrop-blur-md overflow-hidden shadow-xl shrink-0 flex items-center justify-center">
               {student.profileImage ? (
-                <img src={student.profileImage} alt={student.name} className="w-full h-full object-cover" />
+                <img src={student.profileImage} alt={student.name} className="size-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-3xl font-black text-white">
+                <div className="size-full flex items-center justify-center text-3xl font-black text-white">
                   {getInitials(student.name)}
                 </div>
               )}
@@ -304,7 +304,7 @@ const StudentProfile: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 space-y-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center"><User size={20} /></div>
+                    <div className="size-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center"><User size={20} /></div>
                     <h4 className="font-bold text-slate-900 dark:text-white">Father's Details</h4>
                   </div>
                   <DetailItem label="Name" value={fatherName} />
@@ -312,7 +312,7 @@ const StudentProfile: React.FC = () => {
                 </div>
                 <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 space-y-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center"><User size={20} /></div>
+                    <div className="size-10 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center"><User size={20} /></div>
                     <h4 className="font-bold text-slate-900 dark:text-white">Mother's Details</h4>
                   </div>
                   <DetailItem label="Name" value={motherName} />
@@ -340,7 +340,7 @@ const StudentProfile: React.FC = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {teachingMap.subjects.map((row: any) => (
                       <div key={row.subjectId || row.subjectName} className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center font-bold text-blue-600 shrink-0">
+                        <div className="size-10 rounded-xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center font-bold text-blue-600 shrink-0">
                           {(row.subjectName || '?').charAt(0)}
                         </div>
                         <div className="min-w-0">

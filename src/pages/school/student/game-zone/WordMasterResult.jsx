@@ -37,14 +37,14 @@ export default function WordMasterResult({ result, onPlayAgain, onViewLeaderboar
           to="/school/student/gamification"
           className="inline-flex items-center gap-1.5 text-xs font-black text-slate-500 hover:text-slate-800 dark:hover:text-white transition uppercase tracking-wider"
         >
-          <ArrowLeft className="h-3 w-3" /> Back to Gamification Center
+          <ArrowLeft className="size-3" /> Back to Gamification Center
         </Link>
       </div>
 
       {/* Banner */}
       <div className="text-center space-y-2">
-        <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-violet-100 text-violet-600 dark:bg-violet-950/30 dark:text-violet-400 border border-violet-500/20 shadow-xl">
-          <Medal className="h-8 w-8 animate-pulse" />
+        <div className="inline-flex size-16 items-center justify-center rounded-full bg-violet-100 text-violet-600 dark:bg-violet-950/30 dark:text-violet-400 border border-violet-500/20 shadow-xl">
+          <Medal className="size-8 animate-pulse" />
         </div>
         <h1 className="text-3xl font-black text-slate-900 dark:text-white">Deck Completed!</h1>
         <p className="text-sm font-semibold text-slate-500">You completed the unscramble challenge. Here is your scorecard:</p>
@@ -53,8 +53,8 @@ export default function WordMasterResult({ result, onPlayAgain, onViewLeaderboar
       {/* Level Up Celebration */}
       {hasLeveledUp && (
         <div className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 via-white to-amber-50/50 p-5 dark:border-amber-900/40 dark:from-amber-950/20 dark:to-slate-950 shadow-md flex items-center gap-4 animate-bounce">
-          <div className="h-14 w-14 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/30">
-            <ArrowUp className="h-7 w-7 stroke-[3] animate-pulse" />
+          <div className="size-14 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/30">
+            <ArrowUp className="size-7 stroke-[3] animate-pulse" />
           </div>
           <div>
             <span className="text-[9px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400">Level Milestone</span>
@@ -67,8 +67,8 @@ export default function WordMasterResult({ result, onPlayAgain, onViewLeaderboar
       {/* Badge Unlocked Celebration */}
       {badgeUnlocked && (
         <div className="rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50 via-white to-indigo-50/50 p-5 dark:border-indigo-900/40 dark:from-indigo-950/20 dark:to-slate-950 shadow-md flex items-center gap-4 animate-pulse">
-          <div className="h-14 w-14 rounded-2xl bg-indigo-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/30">
-            <Award className="h-7 w-7 stroke-[2.5]" />
+          <div className="size-14 rounded-2xl bg-indigo-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/30">
+            <Award className="size-7 stroke-[2.5]" />
           </div>
           <div>
             <span className="text-[9px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400">Badge Acquired</span>
@@ -82,13 +82,13 @@ export default function WordMasterResult({ result, onPlayAgain, onViewLeaderboar
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="grid grid-cols-2 gap-4">
           <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4 dark:border-slate-800 dark:bg-slate-950/50 flex flex-col items-center justify-center">
-            <Star className="h-6 w-6 text-violet-500 fill-current mb-1.5" />
+            <Star className="size-6 text-violet-500 fill-current mb-1.5" />
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">XP Gained</span>
             <span className="text-2xl font-black text-slate-900 dark:text-white mt-1">+{xpEarned} XP</span>
           </div>
 
           <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4 dark:border-slate-800 dark:bg-slate-950/50 flex flex-col items-center justify-center">
-            <Coins className="h-6 w-6 text-yellow-500 mb-1.5" />
+            <Coins className="size-6 text-yellow-500 mb-1.5" />
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Coins Gained</span>
             <span className="text-2xl font-black text-slate-900 dark:text-white mt-1">+{coinsEarned} Coins</span>
           </div>
@@ -109,7 +109,7 @@ export default function WordMasterResult({ result, onPlayAgain, onViewLeaderboar
           <div className="flex items-center justify-between text-sm font-black">
             <span className="text-slate-400">Max word streak</span>
             <span className="text-violet-600 dark:text-violet-400 font-mono flex items-center gap-1">
-              <Zap className="h-4 w-4 fill-current animate-pulse" /> {maxStreak} streak
+              <Zap className="size-4 fill-current animate-pulse" /> {maxStreak} streak
             </span>
           </div>
 
@@ -130,14 +130,14 @@ export default function WordMasterResult({ result, onPlayAgain, onViewLeaderboar
           onClick={onPlayAgain}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 py-3 text-sm font-black text-white hover:bg-violet-700 shadow-md transition"
         >
-          <RefreshCw className="h-4 w-4" /> Play Another Deck
+          <RefreshCw className="size-4" /> Play Another Deck
         </button>
 
         <button
           onClick={onViewLeaderboard}
           className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 py-3 text-sm font-black text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-400 transition"
         >
-          <Trophy className="h-4 w-4 text-amber-500" /> View Score rankings
+          <Trophy className="size-4 text-amber-500" /> View Score rankings
         </button>
       </div>
 

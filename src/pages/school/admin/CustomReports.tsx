@@ -23,7 +23,7 @@ export default function CustomReports() {
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 max-w-2xl">
         <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
-          <Settings className="w-5 h-5 mr-2 text-indigo-600" />
+          <Settings className="size-5 mr-2 text-indigo-600" />
           Report Builder
         </h2>
 
@@ -67,7 +67,7 @@ export default function CustomReports() {
               type="submit"
               className="w-full flex justify-center items-center px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-medium"
             >
-              <Download className="w-5 h-5 mr-2" />
+              <Download className="size-5 mr-2" />
               Generate & Download Excel
             </button>
           </div>

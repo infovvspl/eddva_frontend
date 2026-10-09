@@ -110,7 +110,7 @@ export default function Announcements() {
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <div className="size-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
       </div>
     );
   }
@@ -123,7 +123,7 @@ export default function Announcements() {
           <p className="mt-0.5 text-xs sm:text-sm font-medium text-slate-500">Institute notices, exam notices, holiday notices, and notifications.</p>
         </div>
         <div className="relative w-full lg:max-w-sm">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -136,22 +136,22 @@ export default function Announcements() {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <div className="rounded-xl border border-blue-100 bg-blue-50 p-3.5 sm:p-5 dark:border-blue-900/40 dark:bg-blue-950/20">
-          <Megaphone className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+          <Megaphone className="size-5 sm:size-6 text-blue-600" />
           <p className="mt-3 sm:mt-4 text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">New Notices</p>
           <p className="mt-0.5 sm:mt-1 text-2xl sm:text-3xl font-black text-slate-950 dark:text-white">{notices.length}</p>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-3.5 sm:p-5 dark:border-slate-800 dark:bg-slate-900">
-          <ClipboardList className="h-5 w-5 sm:h-6 sm:w-6 text-rose-600" />
+          <ClipboardList className="size-5 sm:size-6 text-rose-600" />
           <p className="mt-3 sm:mt-4 text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-slate-500">Exam Notices</p>
           <p className="mt-0.5 sm:mt-1 text-2xl sm:text-3xl font-black text-slate-950 dark:text-white">{notices.filter((n) => n.category === 'EXAM').length}</p>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-3.5 sm:p-5 dark:border-slate-800 dark:bg-slate-900">
-          <CalendarDays className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" />
+          <CalendarDays className="size-5 sm:size-6 text-emerald-600" />
           <p className="mt-3 sm:mt-4 text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-slate-500">Holiday Notices</p>
           <p className="mt-0.5 sm:mt-1 text-2xl sm:text-3xl font-black text-slate-950 dark:text-white">{notices.filter((n) => n.category === 'HOLIDAY').length}</p>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-3.5 sm:p-5 dark:border-slate-800 dark:bg-slate-900">
-          <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6 text-violet-600" />
+          <MessageSquare className="size-5 sm:size-6 text-violet-600" />
           <p className="mt-3 sm:mt-4 text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-slate-500">Notifications</p>
           <p className="mt-0.5 sm:mt-1 text-2xl sm:text-3xl font-black text-slate-950 dark:text-white">{notifications.length}</p>
         </div>
@@ -163,7 +163,7 @@ export default function Announcements() {
           onChange={(val) => setCategory(val)}
           options={categories.map((c) => ({ value: c, label: c === 'All' ? 'All Categories' : c }))}
           className="w-full"
-          triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold outline-none text-slate-700 shadow-sm"
+          triggerClassName="flex size-full items-center justify-between gap-1 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold outline-none text-slate-700 shadow-sm"
         />
       ) : (
         <div className="flex gap-2 overflow-x-auto pb-1">
@@ -187,7 +187,7 @@ export default function Announcements() {
         <div className="space-y-4">
           {filteredNotices.length === 0 ? (
             <div className="rounded-lg border border-dashed border-slate-200 bg-white p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <Megaphone className="mx-auto h-10 w-10 text-slate-300" />
+              <Megaphone className="mx-auto size-10 text-slate-300" />
               <h2 className="mt-3 text-sm font-black text-slate-900 dark:text-white">No notices found</h2>
               <p className="mt-1 text-sm text-slate-500">School announcements will appear here.</p>
             </div>
@@ -276,7 +276,7 @@ export default function Announcements() {
         <aside className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-black text-slate-950 dark:text-white">Recent Notifications</h2>
-            <Bell className="h-5 w-5 text-blue-600" />
+            <Bell className="size-5 text-blue-600" />
           </div>
           <div className="mt-5 space-y-3">
             {notifications.length === 0 ? (
@@ -309,7 +309,7 @@ export default function Announcements() {
               <button
                 type="button"
                 onClick={() => setPreviewImage(null)}
-                className="grid h-9 w-9 place-items-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                className="grid size-9 place-items-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
                 aria-label="Close image preview"
               >
                 <X size={18} />

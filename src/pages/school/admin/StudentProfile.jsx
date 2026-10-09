@@ -4,7 +4,7 @@ import {
   User, GraduationCap, Calendar, BarChart2, DollarSign, 
   Mail, Smartphone, MapPin, ArrowLeft, Download, Users, Phone, Shield,
   Edit2, Clock, CheckCircle, AlertCircle, TrendingUp, HeartPulse, Briefcase, FileText, Printer, Share2, Loader2, Send, Key, X, Plus, Trash2,
-  UserX, FileCheck, CheckCircle2, XCircle, UserCheck, Lock
+  UserX, FileCheck, CheckCircle2, XCircle, UserCheck
 } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/admin/Modal';
@@ -16,6 +16,9 @@ import { exportToPDF } from "@/lib/school/pdfExport";
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 const getInitials = (name) => {
   if (!name) return '??';
@@ -91,17 +94,17 @@ export default function StudentProfile() {
     return roman ? romanMap[roman] : null;
   };
 
-  const isBoardResultClass = (className = '') => {
+  const isBoardResultClass = (className='') => {
     const classNumber = getClassNumberFromName(className);
     return classNumber === 10 || classNumber === 12;
   };
 
-  const isPrePrimaryResultClass = (className = '') => {
+  const isPrePrimaryResultClass = (className='') => {
     const cls = String(className || '').toLowerCase();
     return cls.includes('lkg') || cls.includes('ukg') || cls.includes('nursery') || cls.includes('pre');
   };
 
-  const getResultColumnsForClass = (className = '') => {
+  const getResultColumnsForClass = (className='') => {
     if (isPrePrimaryResultClass(className)) {
       return [
         { key: 'readingPhonics', title: 'Reading & Phonics', defaultMax: '100' },
@@ -138,7 +141,7 @@ export default function StudentProfile() {
            subject === 'cs';
   };
 
-  const getResultColumnsForSubject = (className = '', subjectName = '') => {
+  const getResultColumnsForSubject = (className='', subjectName = '') => {
     if (!isBoardResultClass(className) && !isPrePrimaryResultClass(className) && isInformationTechnologySubject(subjectName)) {
       return [
         { key: 'halfYearlyTheory', title: 'Half-Yearly Theory', defaultMax: '50' },
@@ -150,7 +153,7 @@ export default function StudentProfile() {
     return getResultColumnsForClass(className);
   };
 
-  const getBlankAssessments = (className = '', subjectName = '') => getResultColumnsForSubject(className, subjectName).reduce((acc, item) => {
+  const getBlankAssessments = (className='', subjectName = '') => getResultColumnsForSubject(className, subjectName).reduce((acc, item) => {
     acc[item.key] = { obtained: '', max: item.defaultMax };
     return acc;
   }, {});
@@ -180,7 +183,7 @@ export default function StudentProfile() {
     return migrated;
   };
 
-  const initialSubjectRow = (className = '') => ({
+  const initialSubjectRow = (className='') => ({
     subjectName: isPrePrimaryResultClass(className) ? 'Early Learner Progress' : '',
     assessments: getBlankAssessments(className),
     remarks: ''
@@ -776,7 +779,7 @@ export default function StudentProfile() {
             <div className="bg-gradient-to-r from-indigo-600 to-blue-600 px-8 py-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                  <div className="size-10 rounded-xl bg-white/20 flex items-center justify-center">
                     <Send size={20} className="text-white" />
                   </div>
                   <div>
@@ -784,7 +787,7 @@ export default function StudentProfile() {
                     <p className="text-xs text-indigo-200 font-bold">Email login details to the parent</p>
                   </div>
                 </div>
-                <button onClick={() => setSendCredsOpen(false)} className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-all">
+                <button onClick={() => setSendCredsOpen(false)} className="size-8 rounded-xl bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-all">
                   <X size={16} />
                 </button>
               </div>
@@ -794,9 +797,11 @@ export default function StudentProfile() {
             <div className="p-8 space-y-5">
               {/* Student info card */}
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-lg font-bold">
-                  {getInitials(student.name)}
-                </div>
+                <Avatar className="size-12 rounded-xl bg-blue-100">
+                  <AvatarFallback className="rounded-xl bg-blue-100 text-lg font-bold text-blue-700">
+                    {getInitials(student.name)}
+                  </AvatarFallback>
+                </Avatar>
                 <div>
                   <div className="font-bold text-slate-900 dark:text-white">{student.name}</div>
                   <div className="text-xs font-bold text-slate-400">{student.email}</div>
@@ -816,7 +821,7 @@ export default function StudentProfile() {
                   className="w-full rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 text-sm font-bold text-slate-900 dark:text-white outline-none focus:border-blue-500 transition-colors"
                 />
                 {!sendCredsForm.parentEmail && (
-                  <p className="mt-1.5 text-[10px] font-bold text-amber-500 uppercase flex items-center gap-1"><AlertCircle className="size-3 shrink-0" /> No parent email on record — enter one above</p>
+                  <p className="mt-1.5 text-[10px] font-bold text-amber-500 uppercase">⚠ No parent email on record — enter one above</p>
                 )}
               </div>
 
@@ -837,8 +842,8 @@ export default function StudentProfile() {
 
               {/* Info box */}
               <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30">
-                <p className="text-xs font-bold text-blue-700 dark:text-blue-400 leading-relaxed flex items-start gap-1.5">
-                  <Mail className="size-3.5 shrink-0 mt-0.5" /> A beautiful welcome email will be sent to the parent with their login credentials and a link to the parent portal.
+                <p className="text-xs font-bold text-blue-700 dark:text-blue-400 leading-relaxed">
+                  📧 A beautiful welcome email will be sent to the parent with their login credentials and a link to the parent portal.
                 </p>
               </div>
 
@@ -865,12 +870,12 @@ export default function StudentProfile() {
       )}
       {isAddPrevOpen && (
         <div className="fixed left-0 right-0 top-16 bottom-16 md:left-[72px] md:top-0 md:bottom-0 lg:left-[280px] z-50 flex items-stretch justify-stretch p-3 sm:p-5 lg:p-6" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
-          <div className="w-full h-full bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+          <div className="size-full bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6 shrink-0">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                  <div className="size-10 rounded-xl bg-white/20 flex items-center justify-center">
                     <GraduationCap size={20} className="text-white" />
                   </div>
                   <div>
@@ -878,7 +883,7 @@ export default function StudentProfile() {
                     <p className="text-xs text-blue-200 font-bold">Record historical academic achievements</p>
                   </div>
                 </div>
-                <button onClick={() => setIsAddPrevOpen(false)} className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-all">
+                <button onClick={() => setIsAddPrevOpen(false)} className="size-8 rounded-xl bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-all">
                   <X size={16} />
                 </button>
               </div>
@@ -1114,15 +1119,12 @@ export default function StudentProfile() {
           <div className="px-6 sm:px-12 pb-4 -mt-14 sm:-mt-16">
             <div className="flex items-end justify-between gap-6 mb-4">
               <div className="flex items-end gap-6 min-w-0">
-                <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl border-4 sm:border-8 border-white dark:border-slate-950 overflow-hidden bg-slate-100 dark:bg-slate-900 shadow-xl shrink-0 z-10">
-                  {student.profileImage ? (
-                    <img src={student.profileImage} alt={student.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-blue-600/10 text-3xl sm:text-4xl font-bold tracking-tight text-blue-700 dark:text-sky-300">
-                      {getInitials(student.name)}
-                    </div>
-                  )}
-                </div>
+                <Avatar className="size-28 sm:size-36 rounded-3xl border-4 sm:border-8 border-white dark:border-slate-950 bg-slate-100 dark:bg-slate-900 shadow-xl shrink-0 z-10">
+                  <AvatarImage src={student.profileImage} alt={student.name} className="object-cover" />
+                  <AvatarFallback className="rounded-3xl bg-blue-600/10 text-3xl sm:text-4xl font-bold tracking-tight text-blue-700 dark:text-sky-300">
+                    {getInitials(student.name)}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="pb-2 min-w-0">
                   <div className="flex items-center gap-3 mb-2 flex-wrap">
                     <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900 dark:text-white leading-tight break-words">{student.name}</h1>
@@ -1137,7 +1139,7 @@ export default function StudentProfile() {
                         student.isActive ? "bg-emerald-500 border-emerald-600" : "bg-slate-300 border-slate-400 dark:bg-slate-800"
                       )}>
                         <div className={cn(
-                          "w-3.5 h-3.5 rounded-full bg-white transition-transform duration-300 shadow-md",
+                          "size-3.5 rounded-full bg-white transition-transform duration-300 shadow-md",
                           student.isActive ? "translate-x-4" : "translate-x-0"
                         )} />
                       </div>
@@ -1192,15 +1194,12 @@ export default function StudentProfile() {
         <div className="block lg:hidden">
           <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 p-5 sm:p-6 text-white relative">
             <div className="flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-left gap-4">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl border-2 border-white/30 bg-white/10 backdrop-blur-md overflow-hidden shadow-xl shrink-0 flex items-center justify-center">
-                {student.profileImage ? (
-                  <img src={student.profileImage} alt={student.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-white/20 text-2xl sm:text-3xl font-black text-white">
-                    {getInitials(student.name)}
-                  </div>
-                )}
-              </div>
+              <Avatar className="size-20 sm:size-24 rounded-2xl border-2 border-white/30 bg-white/10 backdrop-blur-md shadow-xl shrink-0">
+                <AvatarImage src={student.profileImage} alt={student.name} className="object-cover" />
+                <AvatarFallback className="rounded-2xl bg-white/20 text-2xl sm:text-3xl font-black text-white">
+                  {getInitials(student.name)}
+                </AvatarFallback>
+              </Avatar>
               <div className="flex-1 min-w-0 space-y-2">
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
                   <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white leading-tight break-words">{student.name}</h1>
@@ -1214,7 +1213,7 @@ export default function StudentProfile() {
                         : "bg-slate-800/90 border-slate-600 text-slate-200"
                     )}
                   >
-                    <div className={cn("w-2.5 h-2.5 rounded-full bg-white", student.isActive ? "bg-emerald-200" : "bg-slate-400")} />
+                    <div className={cn("size-2.5 rounded-full bg-white", student.isActive ? "bg-emerald-200" : "bg-slate-400")} />
                     {student.isActive ? 'ACTIVE' : 'INACTIVE'}
                   </button>
                 </div>
@@ -1309,8 +1308,8 @@ export default function StudentProfile() {
                           <span className="text-[10px] font-bold text-slate-400 uppercase">Username / Email</span>
                           <div className="text-sm font-extrabold text-slate-700 dark:text-slate-200 mt-1 select-all">{student.email}</div>
                         </div>
-                        <div className="p-3 rounded-2xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100/50 dark:border-blue-900/30 text-[10px] font-bold text-blue-600 leading-relaxed mt-2 flex items-start gap-1.5">
-                          <Lock className="size-3 shrink-0 mt-0.5" /> Password can be reset by sending a reset link or updating via user management.
+                        <div className="p-3 rounded-2xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100/50 dark:border-blue-900/30 text-[10px] font-bold text-blue-600 leading-relaxed mt-2">
+                          🔒 Password can be reset by sending a reset link or updating via user management.
                         </div>
                       </div>
                     </div>
@@ -1371,15 +1370,15 @@ export default function StudentProfile() {
                     <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
+                          <div className="size-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
                             <User size={20} />
                           </div>
                           <h4 className="font-bold text-slate-900 dark:text-white">Father's Details</h4>
                         </div>
                         {primaryContact === 'father' && (
-                          <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold uppercase tracking-wider border border-blue-200">
+                          <Badge variant="secondary" className="rounded-full border border-blue-200 bg-blue-100 text-[10px] font-bold uppercase tracking-wider text-blue-700 hover:bg-blue-100">
                             Primary Contact
-                          </span>
+                          </Badge>
                         )}
                       </div>
                       <div className="space-y-4">
@@ -1409,15 +1408,15 @@ export default function StudentProfile() {
                     <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center">
+                          <div className="size-10 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center">
                             <User size={20} />
                           </div>
                           <h4 className="font-bold text-slate-900 dark:text-white">Mother's Details</h4>
                         </div>
                         {primaryContact === 'mother' && (
-                          <span className="px-2.5 py-0.5 rounded-full bg-pink-100 text-pink-700 text-[10px] font-bold uppercase tracking-wider border border-pink-200">
+                          <Badge variant="secondary" className="rounded-full border border-pink-200 bg-pink-100 text-[10px] font-bold uppercase tracking-wider text-pink-700 hover:bg-pink-100">
                             Primary Contact
-                          </span>
+                          </Badge>
                         )}
                       </div>
                       <div className="space-y-4">
@@ -1444,15 +1443,15 @@ export default function StudentProfile() {
                       <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                            <div className="size-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
                               <Shield size={20} />
                             </div>
                             <h4 className="font-bold text-slate-900 dark:text-white">Guardian's Details</h4>
                           </div>
                           {primaryContact === 'guardian' && (
-                            <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-wider border border-emerald-200">
+                            <Badge variant="secondary" className="rounded-full border border-emerald-200 bg-emerald-100 text-[10px] font-bold uppercase tracking-wider text-emerald-700 hover:bg-emerald-100">
                               Primary Contact
-                            </span>
+                            </Badge>
                           )}
                         </div>
                         <div className="space-y-4">
@@ -1483,7 +1482,7 @@ export default function StudentProfile() {
                   
                   {parents.createLogin && (
                     <div className="p-5 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/30 flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
+                      <div className="size-12 rounded-xl bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
                         <Smartphone size={24} />
                       </div>
                       <div>
@@ -1514,7 +1513,7 @@ export default function StudentProfile() {
                         {teachingMap.subjects.map((row) => (
                           <div key={row.subjectId || row.subjectName} className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
                             <div className="flex items-center gap-3 min-w-0">
-                              <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center font-bold text-blue-600 shrink-0">
+                              <div className="size-10 rounded-xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center font-bold text-blue-600 shrink-0">
                                 {(row.subjectName || '?').charAt(0)}
                               </div>
                               <div className="min-w-0">
@@ -1596,12 +1595,12 @@ export default function StudentProfile() {
                                             e.stopPropagation();
                                             openEditPrevModal(classNameVal, academicYearVal, results);
                                           }}
-                                          className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors"
+                                          className="size-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors"
                                           title="Edit marks"
                                         >
                                           <Edit2 size={14} />
                                         </button>
-                                        <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-blue-500 group-hover:bg-blue-50 dark:group-hover:bg-blue-950/30 transition-colors">
+                                        <div className="size-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-blue-500 group-hover:bg-blue-50 dark:group-hover:bg-blue-950/30 transition-colors">
                                           <FileText size={16} />
                                         </div>
                                       </div>
@@ -1701,11 +1700,11 @@ export default function StudentProfile() {
 
                     const statusStyle = (status) => {
                       const s = (status || '').toUpperCase();
-                      if (s === 'PRESENT') return 'bg-emerald-500/10 text-emerald-600';
-                      if (s === 'ABSENT')  return 'bg-red-500/10 text-red-500';
-                      if (s === 'LATE')    return 'bg-amber-400/10 text-amber-600';
-                      if (s === 'LEAVE')   return 'bg-amber-400/10 text-amber-600';
-                      return 'bg-slate-100 text-slate-500';
+                      if (s === 'PRESENT') return 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/10';
+                      if (s === 'ABSENT')  return 'bg-red-500/10 text-red-500 hover:bg-red-500/10';
+                      if (s === 'LATE')    return 'bg-amber-400/10 text-amber-600 hover:bg-amber-400/10';
+                      if (s === 'LEAVE')   return 'bg-amber-400/10 text-amber-600 hover:bg-amber-400/10';
+                      return 'bg-slate-100 text-slate-500 hover:bg-slate-100';
                     };
 
                     return (
@@ -1736,47 +1735,47 @@ export default function StudentProfile() {
 
                         {/* Records Table */}
                         <div className="rounded-3xl border border-slate-100 dark:border-slate-800 overflow-hidden overflow-x-auto w-full">
-                          <table className="w-full text-left min-w-[600px]">
-                            <thead className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800">
-                              <tr>
-                                <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Date</th>
-                                <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Day</th>
-                                <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Status</th>
-                                <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Remarks</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50 dark:divide-slate-800 text-sm">
+                          <Table className="w-full text-left min-w-[600px]">
+                            <TableHeader className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800">
+                              <TableRow className="hover:bg-transparent border-b-0">
+                                <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Date</TableHead>
+                                <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Day</TableHead>
+                                <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Status</TableHead>
+                                <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Remarks</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody className="divide-y divide-slate-50 dark:divide-slate-800 text-sm">
                               {attendance.length === 0 ? (
-                                <tr>
-                                  <td colSpan={4} className="p-10 text-center text-slate-400 font-bold">
+                                <TableRow className="hover:bg-transparent">
+                                  <TableCell colSpan={4} className="p-10 text-center text-slate-400 font-bold">
                                     No attendance records for this month.
-                                  </td>
-                                </tr>
+                                  </TableCell>
+                                </TableRow>
                               ) : (
                                 [...attendance]
                                   .sort((a, b) => new Date(b.date) - new Date(a.date))
                                   .map((record, i) => {
                                     const d = new Date(record.date);
                                     return (
-                                      <tr key={record.id || i} className="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
-                                        <td className="p-4 font-bold text-slate-700 dark:text-slate-200">
+                                      <TableRow key={record.id || i} className="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
+                                        <TableCell className="p-4 font-bold text-slate-700 dark:text-slate-200">
                                           {d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                        </td>
-                                        <td className="p-4 font-bold text-slate-400">
+                                        </TableCell>
+                                        <TableCell className="p-4 font-bold text-slate-400">
                                           {d.toLocaleDateString('en-IN', { weekday: 'short' })}
-                                        </td>
-                                        <td className="p-4">
-                                          <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${statusStyle(record.status)}`}>
+                                        </TableCell>
+                                        <TableCell className="p-4">
+                                          <Badge className={`rounded-lg text-[10px] font-bold uppercase tracking-wider border-transparent ${statusStyle(record.status)}`}>
                                             {record.status || 'Unknown'}
-                                          </span>
-                                        </td>
-                                        <td className="p-4 text-slate-400 font-bold">{record.remarks || '—'}</td>
-                                      </tr>
+                                          </Badge>
+                                        </TableCell>
+                                        <TableCell className="p-4 text-slate-400 font-bold">{record.remarks || '—'}</TableCell>
+                                      </TableRow>
                                     );
                                   })
                               )}
-                            </tbody>
-                          </table>
+                            </TableBody>
+                          </Table>
                         </div>
                       </>
                     );
@@ -1822,55 +1821,55 @@ export default function StudentProfile() {
                         <h4 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest">Assessment History</h4>
                       </div>
                       <div className="overflow-x-auto w-full">
-                        <table className="w-full text-left min-w-[700px]">
-                        <thead className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800">
-                          <tr>
-                            <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Mock Test Name</th>
-                            <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Submitted Date</th>
-                            <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest text-center">Accuracy</th>
-                            <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest text-center">Score</th>
-                            <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest text-center">Correct/Wrong</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50 dark:divide-slate-800/40 text-sm">
+                        <Table className="w-full text-left min-w-[700px]">
+                        <TableHeader className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800">
+                          <TableRow className="hover:bg-transparent border-b-0">
+                            <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Mock Test Name</TableHead>
+                            <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Submitted Date</TableHead>
+                            <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest text-center">Accuracy</TableHead>
+                            <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest text-center">Score</TableHead>
+                            <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest text-center">Correct/Wrong</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody className="divide-y divide-slate-50 dark:divide-slate-800/40 text-sm">
                           {sessions.length === 0 ? (
-                            <tr>
-                              <td colSpan={5} className="p-10 text-center text-slate-400 font-bold">
+                            <TableRow className="hover:bg-transparent">
+                              <TableCell colSpan={5} className="p-10 text-center text-slate-400 font-bold">
                                 No test sessions completed yet.
-                              </td>
-                            </tr>
+                              </TableCell>
+                            </TableRow>
                           ) : (
                             sessions.map((s, idx) => (
-                              <tr key={s.id || idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors font-bold text-slate-700 dark:text-slate-200">
-                                <td className="p-4 text-slate-900 dark:text-white font-extrabold">{s.mockTestTitle || '—'}</td>
-                                <td className="p-4 text-slate-400">
+                              <TableRow key={s.id || idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors font-bold text-slate-700 dark:text-slate-200">
+                                <TableCell className="p-4 text-slate-900 dark:text-white font-extrabold">{s.mockTestTitle || '—'}</TableCell>
+                                <TableCell className="p-4 text-slate-400">
                                   {s.submittedAt ? new Date(s.submittedAt).toLocaleDateString(undefined, {
                                     year: 'numeric',
                                     month: 'short',
                                     day: 'numeric'
                                   }) : '—'}
-                                </td>
-                                <td className="p-4 text-center">
-                                  <span className={cn(
-                                    "px-2 py-1 rounded-lg text-xs font-extrabold",
-                                    (s.accuracy || 0) >= 80 ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400" :
-                                    (s.accuracy || 0) >= 50 ? "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400" :
-                                    "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400"
+                                </TableCell>
+                                <TableCell className="p-4 text-center">
+                                  <Badge variant="secondary" className={cn(
+                                    "rounded-lg border-transparent text-xs font-extrabold hover:opacity-100",
+                                    (s.accuracy || 0) >= 80 ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30" :
+                                    (s.accuracy || 0) >= 50 ? "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30" :
+                                    "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30"
                                   )}>
                                     {s.accuracy ? `${Math.round(s.accuracy)}%` : '0%'}
-                                  </span>
-                                </td>
-                                <td className="p-4 text-center font-extrabold text-blue-600 dark:text-blue-400">{s.score ?? 0}</td>
-                                <td className="p-4 text-center text-[11px]">
-                                  <span className="text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-0.5">{s.correctCount ?? 0} <CheckCircle2 className="size-3 shrink-0" /></span>
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="p-4 text-center font-extrabold text-blue-600 dark:text-blue-400">{s.score ?? 0}</TableCell>
+                                <TableCell className="p-4 text-center text-[11px]">
+                                  <span className="text-emerald-600 dark:text-emerald-400">{s.correctCount ?? 0} ✅</span>
                                   <span className="mx-1.5 text-slate-300">/</span>
-                                  <span className="text-rose-600 dark:text-rose-400 inline-flex items-center gap-0.5">{s.wrongCount ?? 0} <XCircle className="size-3 shrink-0" /></span>
-                                </td>
-                              </tr>
+                                  <span className="text-rose-600 dark:text-rose-400">{s.wrongCount ?? 0} ❌</span>
+                                </TableCell>
+                              </TableRow>
                             ))
                           )}
-                        </tbody>
-                      </table>
+                        </TableBody>
+                      </Table>
                     </div>
                   </div>
                       </>
@@ -1891,30 +1890,30 @@ export default function StudentProfile() {
                     </button>
                   </div>
                   <div className="rounded-3xl border border-slate-100 overflow-hidden overflow-x-auto w-full">
-                    <table className="w-full text-left min-w-[500px]">
-                      <thead className="bg-slate-50 border-b border-slate-100">
-                        <tr>
-                          <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Invoice</th>
-                          <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Due Date</th>
-                          <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Amount</th>
-                          <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-50 text-sm font-bold">
+                    <Table className="w-full text-left min-w-[500px]">
+                      <TableHeader className="bg-slate-50 border-b border-slate-100">
+                        <TableRow className="hover:bg-transparent border-b-0">
+                          <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Invoice</TableHead>
+                          <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Due Date</TableHead>
+                          <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Amount</TableHead>
+                          <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody className="divide-y divide-slate-50 text-sm font-bold">
                         {[1, 2, 3].map(i => (
-                          <tr key={i}>
-                            <td className="p-4 text-slate-900">#INV-2026-00{i}</td>
-                            <td className="p-4 text-slate-500">June 15, 2026</td>
-                            <td className="p-4 text-slate-900">₹ 4,500</td>
-                            <td className="p-4">
-                              <span className={`px-2 py-1 rounded-lg text-[10px] font-bold tracking-tight uppercase ${i === 1 ? 'bg-red-500/10 text-red-500' : 'bg-emerald-500/10 text-emerald-600'}`}>
+                          <TableRow key={i}>
+                            <TableCell className="p-4 text-slate-900">#INV-2026-00{i}</TableCell>
+                            <TableCell className="p-4 text-slate-500">June 15, 2026</TableCell>
+                            <TableCell className="p-4 text-slate-900">₹ 4,500</TableCell>
+                            <TableCell className="p-4">
+                              <Badge className={`rounded-lg text-[10px] font-bold tracking-tight uppercase border-transparent ${i === 1 ? 'bg-red-500/10 text-red-500 hover:bg-red-500/10' : 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/10'}`}>
                                 {i === 1 ? 'Pending' : 'Paid'}
-                              </span>
-                            </td>
-                          </tr>
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
+                      </TableBody>
+                    </Table>
                   </div>
                 </div>
               )}
@@ -1966,7 +1965,7 @@ export default function StudentProfile() {
                       };
 
                       return (
-                        <div key={docName} className="p-5 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm flex flex-col justify-between space-y-4">
+                        <div key={docName} className="p-5 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm flex flex-col justify-between gap-y-4">
                           <div>
                             <div className="flex items-center justify-between gap-2 mb-2">
                               <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider truncate">{docName}</h4>

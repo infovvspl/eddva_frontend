@@ -33,6 +33,7 @@ import { Switch } from '@/components/ui/switch';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { Table, TableHeader, TableBody, TableFooter, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { CustomSelect } from '@/components/ui/CustomSelect';
@@ -273,7 +274,7 @@ function KpiCard({
 function KpiSkeleton() {
   return (
     <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-      <Skeleton className="h-9 w-9 rounded-xl" />
+      <Skeleton className="size-9 rounded-xl" />
       <Skeleton className="mt-4 h-7 w-24" />
       <Skeleton className="mt-1 h-3 w-32" />
     </div>
@@ -306,7 +307,7 @@ function FilterBar({
             <SlidersHorizontal size={15} className="text-slate-400" />
             <span className="text-xs font-bold text-slate-700">Filters</span>
             {hasFilters && (
-              <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
+              <span className="size-2 rounded-full bg-blue-600 animate-pulse" />
             )}
           </div>
           <button
@@ -782,7 +783,7 @@ function SchoolDetailView({
                 <div key={f.featureId} className={`p-4 space-y-3 transition-colors ${!enabled ? 'opacity-50 bg-slate-50' : 'bg-white'}`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${enabled ? 'bg-emerald-400' : 'bg-slate-300'}`} />
+                      <span className={`size-1.5 shrink-0 rounded-full ${enabled ? 'bg-emerald-400' : 'bg-slate-300'}`} />
                       <span className="font-bold text-slate-700">{featureLabel(f.featureId)}</span>
                     </div>
                     <Switch checked={enabled} onCheckedChange={next => void handleToggle(f, next)} />
@@ -848,32 +849,32 @@ function SchoolDetailView({
 
         {/* Desktop Table view */}
         <div className="hidden sm:block overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50/80">
-              <tr className="text-left text-[10px] uppercase text-slate-400">
-                <th className="px-5 py-3 font-semibold">Feature</th>
-                <th className="px-4 py-3 text-right font-semibold">Requests</th>
-                <th className="px-4 py-3 text-right font-semibold">Tokens</th>
-                <th className="px-4 py-3 text-right font-semibold">Est. Cost</th>
-                <th className="px-4 py-3 text-right font-semibold">Avg Latency</th>
-                <th className="px-4 py-3 text-right font-semibold">Success Rate</th>
-                <th className="px-4 py-3 text-right font-semibold">Req Limit / mo</th>
-                <th className="px-4 py-3 text-right font-semibold">Budget Cap ($)</th>
-                <th className="px-5 py-3 text-right font-semibold">Access</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
+          <Table className="w-full text-sm">
+            <TableHeader className="bg-slate-50/80">
+              <TableRow className="text-left text-[10px] uppercase text-slate-400 hover:bg-transparent border-b-0">
+                <TableHead className="h-auto px-5 py-3 font-semibold text-slate-400">Feature</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-right font-semibold text-slate-400">Requests</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-right font-semibold text-slate-400">Tokens</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-right font-semibold text-slate-400">Est. Cost</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-right font-semibold text-slate-400">Avg Latency</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-right font-semibold text-slate-400">Success Rate</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-right font-semibold text-slate-400">Req Limit / mo</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-right font-semibold text-slate-400">Budget Cap ($)</TableHead>
+                <TableHead className="h-auto px-5 py-3 text-right font-semibold text-slate-400">Access</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-slate-50 [&_tr]:border-b-0">
               {(grouped[activeCategory] ?? []).length === 0 ? (
-                <tr><td colSpan={9} className="py-10 text-center text-sm text-slate-400">No features in this category.</td></tr>
+                <TableRow className="hover:bg-transparent"><TableCell colSpan={9} className="py-10 text-center text-sm text-slate-400">No features in this category.</TableCell></TableRow>
               ) : (
                 (grouped[activeCategory] ?? []).map(f => {
                   const enabled = toggles[f.featureId] ?? f.isEnabled;
                   const tokensVal = num(f.tokens);
                   return (
-                    <tr key={f.featureId} className={`transition-colors hover:bg-slate-50/50 ${!enabled ? 'opacity-50' : ''}`}>
-                      <td className="px-5 py-3">
+                    <TableRow key={f.featureId} className={`transition-colors hover:bg-slate-50/50 ${!enabled ? 'opacity-50' : ''}`}>
+                      <TableCell className="p-4 px-5 py-3">
                         <div className="flex items-center gap-2">
-                          <span className={`h-2 w-2 shrink-0 rounded-full ${enabled ? 'bg-emerald-400' : 'bg-slate-300'}`} />
+                          <span className={`size-2 shrink-0 rounded-full ${enabled ? 'bg-emerald-400' : 'bg-slate-300'}`} />
                           <span className="font-semibold text-slate-700">{featureLabel(f.featureId)}</span>
                         </div>
                         {f.monthlyLimit != null && f.monthlyLimit > 0 && (
@@ -882,46 +883,46 @@ function SchoolDetailView({
                             <span className="text-[10px] text-slate-400">{f.currentUsage}/{f.monthlyLimit}</span>
                           </div>
                         )}
-                      </td>
-                      <td className="px-4 py-3 text-right font-semibold text-slate-700">{f.requests.toLocaleString()}</td>
-                      <td className="px-4 py-3 text-right text-slate-500 text-xs">
+                      </TableCell>
+                      <TableCell className="p-4 px-4 py-3 text-right font-semibold text-slate-700">{f.requests.toLocaleString()}</TableCell>
+                      <TableCell className="p-4 px-4 py-3 text-right text-slate-500 text-xs">
                         {tokensVal >= 1_000_000
                           ? <span className="font-semibold text-violet-600">{(tokensVal / 1_000_000).toFixed(2)}M</span>
                           : tokensVal >= 1_000
                             ? <span className="font-semibold text-violet-600">{(tokensVal / 1_000).toFixed(1)}K</span>
                             : <span className={tokensVal > 0 ? 'font-semibold text-violet-600' : 'text-slate-300'}>{tokensVal > 0 ? tokensVal.toLocaleString() : '—'}</span>}
-                      </td>
-                      <td className="px-4 py-3 text-right font-semibold text-amber-600">{money(f.cost)}</td>
-                      <td className="px-4 py-3 text-right">{latencyBadge(f.avgLatencyMs)}</td>
-                      <td className="px-4 py-3 text-right">{successBadge(num(f.successRate))}</td>
-                      <td className="px-4 py-3 text-right">
+                      </TableCell>
+                      <TableCell className="p-4 px-4 py-3 text-right font-semibold text-amber-600">{money(f.cost)}</TableCell>
+                      <TableCell className="p-4 px-4 py-3 text-right">{latencyBadge(f.avgLatencyMs)}</TableCell>
+                      <TableCell className="p-4 px-4 py-3 text-right">{successBadge(num(f.successRate))}</TableCell>
+                      <TableCell className="p-4 px-4 py-3 text-right">
                         <input
                           type="number" min="0" placeholder="Unlimited"
                           value={limits[f.featureId]?.req ?? ''}
                           onChange={e => setLimits(p => ({ ...p, [f.featureId]: { ...p[f.featureId], req: e.target.value } }))}
                           className="w-28 rounded-lg border border-slate-200 px-2 py-1 text-xs text-right outline-none focus:border-brand-400"
                         />
-                      </td>
-                      <td className="px-4 py-3 text-right">
+                      </TableCell>
+                      <TableCell className="p-4 px-4 py-3 text-right">
                         <input
                           type="number" min="0" step="0.01" placeholder="No cap"
                           value={limits[f.featureId]?.cost ?? ''}
                           onChange={e => setLimits(p => ({ ...p, [f.featureId]: { ...p[f.featureId], cost: e.target.value } }))}
                           className="w-24 rounded-lg border border-slate-200 px-2 py-1 text-xs text-right outline-none focus:border-brand-400"
                         />
-                      </td>
-                      <td className="px-5 py-3 text-right">
+                      </TableCell>
+                      <TableCell className="p-4 px-5 py-3 text-right">
                         <Switch
                           checked={enabled}
                           onCheckedChange={next => void handleToggle(f, next)}
                         />
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
 
         <div className="flex items-center justify-between border-t border-slate-100 px-5 py-4">
@@ -1153,7 +1154,7 @@ function OverviewTab({
           <div className="mb-4 flex items-center gap-2">
             <Bell size={15} className="text-amber-500" />
             <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">AI Usage Alerts</h3>
-            <span className="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">{alerts.length}</span>
+            <Badge variant="secondary" className="ml-auto rounded-full border-transparent bg-amber-100 text-xs font-bold text-amber-700 hover:bg-amber-100">{alerts.length}</Badge>
           </div>
           <div className="space-y-2">
             {(showAllAlerts ? alerts : alerts.slice(0, 2)).map(a => {
@@ -1249,7 +1250,7 @@ function OverviewTab({
                 {pieData.slice(0, 8).map((d, i) => (
                   <div key={d.name} className="flex items-center justify-between text-[11px]">
                     <div className="flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full shrink-0" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                      <span className="size-2 rounded-full shrink-0" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
                       <span className="text-slate-600 truncate max-w-[110px]">{d.name}</span>
                     </div>
                     <span className="font-semibold text-slate-700">{moneyShort(d.value)}</span>
@@ -1368,9 +1369,9 @@ function OverviewTab({
                       <p className="truncate text-xs font-black text-slate-700" title={m.model}>
                         {shortModel(m.model)}
                       </p>
-                      <span className="shrink-0 rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold uppercase text-brand-600">
+                      <Badge variant="secondary" className="shrink-0 rounded-full border-transparent bg-brand-50 text-[10px] font-bold uppercase text-brand-600 hover:bg-brand-50">
                         {m.provider}
-                      </span>
+                      </Badge>
                     </div>
                     <div className="mt-3 flex items-end justify-between">
                       <div>
@@ -1398,9 +1399,9 @@ function OverviewTab({
                   <div key={`${r.feature}|${r.provider}|${r.model}`} className="p-5">
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-sm font-black text-slate-700">{featureLabel(String(r.feature))}</p>
-                      <span className="shrink-0 rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold uppercase text-brand-600">
+                      <Badge variant="secondary" className="shrink-0 rounded-full border-transparent bg-brand-50 text-[10px] font-bold uppercase text-brand-600 hover:bg-brand-50">
                         {String(r.provider)}
-                      </span>
+                      </Badge>
                     </div>
                     <p className="mt-0.5 truncate text-xs text-slate-500" title={String(r.model)}>
                       {shortModel(String(r.model))}
@@ -1429,49 +1430,49 @@ function OverviewTab({
 
               {/* Desktop table */}
               <div className="hidden overflow-x-auto sm:block">
-                <table className="w-full min-w-[860px] text-sm">
-                  <thead className="bg-slate-50/80">
-                    <tr className="text-left text-[10px] uppercase text-slate-400">
-                      <th className="px-5 py-3 font-semibold">Feature</th>
-                      <th className="px-4 py-3 font-semibold">Model</th>
-                      <th className="px-4 py-3 text-right font-semibold">Requests</th>
-                      <th className="px-4 py-3 text-right font-semibold">Input</th>
-                      <th className="px-4 py-3 text-right font-semibold">Output</th>
-                      <th className="px-4 py-3 text-right font-semibold">Total Tokens</th>
-                      <th className="px-4 py-3 text-right font-semibold">Est. Cost</th>
-                      <th className="px-4 py-3 text-right font-semibold">Avg Latency</th>
-                      <th className="px-5 py-3 text-right font-semibold">Success</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50">
+                <Table className="w-full min-w-[860px] text-sm">
+                  <TableHeader className="bg-slate-50/80">
+                    <TableRow className="text-left text-[10px] uppercase text-slate-400 hover:bg-transparent border-b-0">
+                      <TableHead className="h-auto px-5 py-3 font-semibold text-slate-400">Feature</TableHead>
+                      <TableHead className="h-auto px-4 py-3 font-semibold text-slate-400">Model</TableHead>
+                      <TableHead className="h-auto px-4 py-3 text-right font-semibold text-slate-400">Requests</TableHead>
+                      <TableHead className="h-auto px-4 py-3 text-right font-semibold text-slate-400">Input</TableHead>
+                      <TableHead className="h-auto px-4 py-3 text-right font-semibold text-slate-400">Output</TableHead>
+                      <TableHead className="h-auto px-4 py-3 text-right font-semibold text-slate-400">Total Tokens</TableHead>
+                      <TableHead className="h-auto px-4 py-3 text-right font-semibold text-slate-400">Est. Cost</TableHead>
+                      <TableHead className="h-auto px-4 py-3 text-right font-semibold text-slate-400">Avg Latency</TableHead>
+                      <TableHead className="h-auto px-5 py-3 text-right font-semibold text-slate-400">Success</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="divide-y divide-slate-50 [&_tr]:border-b-0">
                     {modelRows.map(r => {
                       const requests = num(r.requests);
                       const successRate = requests > 0 ? Math.round((num(r.success) / requests) * 100) : 100;
                       return (
-                        <tr key={`${r.feature}|${r.provider}|${r.model}`} className="transition-colors hover:bg-slate-50/50">
-                          <td className="px-5 py-3 font-semibold text-slate-700">{featureLabel(String(r.feature))}</td>
-                          <td className="px-4 py-3">
+                        <TableRow key={`${r.feature}|${r.provider}|${r.model}`} className="transition-colors hover:bg-slate-50/50">
+                          <TableCell className="p-4 px-5 py-3 font-semibold text-slate-700">{featureLabel(String(r.feature))}</TableCell>
+                          <TableCell className="p-4 px-4 py-3">
                             <div className="flex items-center gap-2">
-                              <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold uppercase text-brand-600">
+                              <Badge variant="secondary" className="rounded-full border-transparent bg-brand-50 text-[10px] font-bold uppercase text-brand-600 hover:bg-brand-50">
                                 {String(r.provider)}
-                              </span>
+                              </Badge>
                               <span className="text-slate-600" title={String(r.model)}>{shortModel(String(r.model))}</span>
                             </div>
-                          </td>
-                          <td className="px-4 py-3 text-right text-slate-600">{requests.toLocaleString()}</td>
-                          <td className="px-4 py-3 text-right text-slate-500">{num(r.prompt_tokens).toLocaleString()}</td>
-                          <td className="px-4 py-3 text-right text-slate-500">{num(r.completion_tokens).toLocaleString()}</td>
-                          <td className="px-4 py-3 text-right font-semibold text-slate-700">{num(r.tokens).toLocaleString()}</td>
-                          <td className="px-4 py-3 text-right font-semibold text-amber-600">
+                          </TableCell>
+                          <TableCell className="p-4 px-4 py-3 text-right text-slate-600">{requests.toLocaleString()}</TableCell>
+                          <TableCell className="p-4 px-4 py-3 text-right text-slate-500">{num(r.prompt_tokens).toLocaleString()}</TableCell>
+                          <TableCell className="p-4 px-4 py-3 text-right text-slate-500">{num(r.completion_tokens).toLocaleString()}</TableCell>
+                          <TableCell className="p-4 px-4 py-3 text-right font-semibold text-slate-700">{num(r.tokens).toLocaleString()}</TableCell>
+                          <TableCell className="p-4 px-4 py-3 text-right font-semibold text-amber-600">
                             {num(r.cost) > 0 ? money(r.cost) : <span className="text-slate-300">—</span>}
-                          </td>
-                          <td className="px-4 py-3 text-right">{latencyBadge(num(r.avg_latency_ms))}</td>
-                          <td className="px-5 py-3 text-right">{successBadge(successRate)}</td>
-                        </tr>
+                          </TableCell>
+                          <TableCell className="p-4 px-4 py-3 text-right">{latencyBadge(num(r.avg_latency_ms))}</TableCell>
+                          <TableCell className="p-4 px-5 py-3 text-right">{successBadge(successRate)}</TableCell>
+                        </TableRow>
                       );
                     })}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
 
               <div className="border-t border-slate-100 px-5 py-3">
@@ -1492,7 +1493,7 @@ function OverviewTab({
             <div className="flex items-center gap-2">
               <Building2 size={15} className="text-slate-400" />
               <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">{isCoaching ? "Top AI Consuming Institutes" : "Top AI Consuming Schools"}</h3>
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">{filteredSchools.length}</span>
+              <Badge variant="secondary" className="rounded-full border-transparent bg-slate-100 text-[10px] font-bold text-slate-500 hover:bg-slate-100">{filteredSchools.length}</Badge>
             </div>
           </div>
 
@@ -1507,7 +1508,7 @@ function OverviewTab({
                 <div key={s.institute_id} className="p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+                      <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
                         <Building2 size={13} />
                       </div>
                       <p className="font-semibold text-slate-700">{s.institute_name}</p>
@@ -1544,10 +1545,10 @@ function OverviewTab({
 
           {/* Desktop Table view */}
           <div className="hidden sm:block overflow-x-auto">
-            <table className="w-full min-w-[700px] text-sm">
-              <thead className="bg-slate-50/80">
-                <tr className="text-left text-[10px] uppercase text-slate-400">
-                  <th className="px-5 py-3 font-semibold">{isCoaching ? "Institute" : "School"}</th>
+            <Table className="w-full min-w-[700px] text-sm">
+              <TableHeader className="bg-slate-50/80">
+                <TableRow className="text-left text-[10px] uppercase text-slate-400 hover:bg-transparent border-b-0">
+                  <TableHead className="h-auto px-5 py-3 font-semibold text-slate-400">{isCoaching ? "Institute" : "School"}</TableHead>
                   {([
                     ['requests', 'Requests'],
                     ['tokens', 'Tokens'],
@@ -1555,48 +1556,48 @@ function OverviewTab({
                     ['successRate', 'Success'],
                     ['latency', 'Avg Latency'],
                   ] as [SortKey, string][]).map(([k, label]) => (
-                    <th key={k} className="px-4 py-3 font-semibold text-right cursor-pointer select-none hover:text-slate-600" onClick={() => onSort(k)}>
+                    <TableHead key={k} className="h-auto px-4 py-3 font-semibold text-slate-400 text-right cursor-pointer select-none hover:text-slate-600" onClick={() => onSort(k)}>
                       <span className="inline-flex items-center gap-1 justify-end">
                         {label}
                         {sortKey === k ? (sortDir === 'desc' ? <ChevronDown size={11} /> : <ChevronUp size={11} />) : <ChevronDown size={11} className="opacity-30" />}
                       </span>
-                    </th>
+                    </TableHead>
                   ))}
-                  <th className="px-5 py-3 text-right font-semibold">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
+                  <TableHead className="h-auto px-5 py-3 text-right font-semibold text-slate-400">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y divide-slate-50 [&_tr]:border-b-0">
                 {filteredSchools.length === 0 ? (
-                  <tr><td colSpan={7} className="py-10 text-center text-sm text-slate-400">{search ? (isCoaching ? 'No institutes match your search.' : 'No schools match your search.') : 'No AI usage this period.'}</td></tr>
+                  <TableRow className="hover:bg-transparent"><TableCell colSpan={7} className="py-10 text-center text-sm text-slate-400">{search ? (isCoaching ? 'No institutes match your search.' : 'No schools match your search.') : 'No AI usage this period.'}</TableCell></TableRow>
                 ) : (
                   filteredSchools.map(s => (
-                    <tr key={s.institute_id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-5 py-3">
+                    <TableRow key={s.institute_id} className="hover:bg-slate-50/50 transition-colors">
+                      <TableCell className="p-4 px-5 py-3">
                         <div className="flex items-center gap-2">
-                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+                          <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
                             <Building2 size={13} />
                           </div>
                           <p className="font-semibold text-slate-700">{s.institute_name}</p>
                         </div>
-                      </td>
-                      <td className="px-4 py-3 text-right text-slate-600">{num(s.requests).toLocaleString()}</td>
-                      <td className="px-4 py-3 text-right text-slate-500">{num(s.tokens).toLocaleString()}</td>
-                      <td className="px-4 py-3 text-right font-semibold text-amber-600">{moneyShort(s.cost)}</td>
-                      <td className="px-4 py-3 text-right">{successBadge(num(s.success_rate))}</td>
-                      <td className="px-4 py-3 text-right">{latencyBadge(num(s.avg_latency_ms))}</td>
-                      <td className="px-5 py-3 text-right">
+                      </TableCell>
+                      <TableCell className="p-4 px-4 py-3 text-right text-slate-600">{num(s.requests).toLocaleString()}</TableCell>
+                      <TableCell className="p-4 px-4 py-3 text-right text-slate-500">{num(s.tokens).toLocaleString()}</TableCell>
+                      <TableCell className="p-4 px-4 py-3 text-right font-semibold text-amber-600">{moneyShort(s.cost)}</TableCell>
+                      <TableCell className="p-4 px-4 py-3 text-right">{successBadge(num(s.success_rate))}</TableCell>
+                      <TableCell className="p-4 px-4 py-3 text-right">{latencyBadge(num(s.avg_latency_ms))}</TableCell>
+                      <TableCell className="p-4 px-5 py-3 text-right">
                         <button
                           onClick={() => onViewSchool(s.institute_id, s.institute_name)}
                           className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-brand-50 hover:border-brand-200 hover:text-brand-700 transition-colors"
                         >
                           <Eye size={12} /> View
                         </button>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
           {filteredSchools.length > 0 && (
             <div className="border-t border-slate-100 px-5 py-3">
@@ -1726,50 +1727,50 @@ function BillingTab({
 
             {/* Desktop View: Table */}
             <div className="hidden sm:block overflow-x-auto">
-              <table className="w-full min-w-[700px] text-sm">
-                <thead className="bg-slate-50/80 sticky top-0">
-                  <tr className="text-left text-[10px] uppercase text-slate-400">
-                    <th className="px-5 py-3 font-semibold">Month</th>
-                    <th className="px-4 py-3 font-semibold">{isCoaching ? "Institute" : "School"}</th>
-                    <th className="px-4 py-3 font-semibold">Feature</th>
-                    <th className="px-4 py-3 text-right font-semibold">Requests</th>
-                    <th className="px-4 py-3 text-right font-semibold">Tokens</th>
-                    <th className="px-4 py-3 text-right font-semibold">Est. Cost</th>
-                    <th className="px-5 py-3 text-right font-semibold">Cost/Req</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
+              <Table className="w-full min-w-[700px] text-sm">
+                <TableHeader className="bg-slate-50/80 sticky top-0">
+                  <TableRow className="text-left text-[10px] uppercase text-slate-400 hover:bg-transparent border-b-0">
+                    <TableHead className="h-auto px-5 py-3 font-semibold text-slate-400">Month</TableHead>
+                    <TableHead className="h-auto px-4 py-3 font-semibold text-slate-400">{isCoaching ? "Institute" : "School"}</TableHead>
+                    <TableHead className="h-auto px-4 py-3 font-semibold text-slate-400">Feature</TableHead>
+                    <TableHead className="h-auto px-4 py-3 text-right font-semibold text-slate-400">Requests</TableHead>
+                    <TableHead className="h-auto px-4 py-3 text-right font-semibold text-slate-400">Tokens</TableHead>
+                    <TableHead className="h-auto px-4 py-3 text-right font-semibold text-slate-400">Est. Cost</TableHead>
+                    <TableHead className="h-auto px-5 py-3 text-right font-semibold text-slate-400">Cost/Req</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-slate-50 [&_tr]:border-b-0">
                   {paginatedRows.length === 0 ? (
-                    <tr><td colSpan={7} className="py-12 text-center text-sm text-slate-400">No billing data for this period.</td></tr>
+                    <TableRow className="hover:bg-transparent"><TableCell colSpan={7} className="py-12 text-center text-sm text-slate-400">No billing data for this period.</TableCell></TableRow>
                   ) : (
                     paginatedRows.map((r, i) => {
                       const cpr = r.requests > 0 ? r.cost / r.requests : 0;
                       return (
-                        <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="px-5 py-3 text-slate-500 font-medium whitespace-nowrap">{r.month}</td>
-                          <td className="px-4 py-3 font-semibold text-brand-600 whitespace-nowrap">{formatSchoolName(r.institute_id, r.institute_name, isCoaching)}</td>
-                          <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{featureLabel(r.feature)}</td>
-                          <td className="px-4 py-3 text-right text-slate-600">{r.requests.toLocaleString()}</td>
-                          <td className="px-4 py-3 text-right text-slate-500">{r.tokens.toLocaleString()}</td>
-                          <td className="px-4 py-3 text-right font-black text-amber-600">{money(r.cost)}</td>
-                          <td className="px-5 py-3 text-right text-slate-400 text-xs">{money(cpr)}</td>
-                        </tr>
+                        <TableRow key={i} className="hover:bg-slate-50/50 transition-colors">
+                          <TableCell className="p-4 px-5 py-3 text-slate-500 font-medium whitespace-nowrap">{r.month}</TableCell>
+                          <TableCell className="p-4 px-4 py-3 font-semibold text-brand-600 whitespace-nowrap">{formatSchoolName(r.institute_id, r.institute_name, isCoaching)}</TableCell>
+                          <TableCell className="p-4 px-4 py-3 text-slate-600 whitespace-nowrap">{featureLabel(r.feature)}</TableCell>
+                          <TableCell className="p-4 px-4 py-3 text-right text-slate-600">{r.requests.toLocaleString()}</TableCell>
+                          <TableCell className="p-4 px-4 py-3 text-right text-slate-500">{r.tokens.toLocaleString()}</TableCell>
+                          <TableCell className="p-4 px-4 py-3 text-right font-black text-amber-600">{money(r.cost)}</TableCell>
+                          <TableCell className="p-4 px-5 py-3 text-right text-slate-400 text-xs">{money(cpr)}</TableCell>
+                        </TableRow>
                       );
                     })
                   )}
-                </tbody>
+                </TableBody>
                 {filtered.length > 0 && (
-                  <tfoot className="bg-slate-50 border-t-2 border-slate-200">
-                    <tr>
-                      <td colSpan={3} className="px-5 py-3 text-xs font-black uppercase tracking-wide text-slate-500">Grand Total</td>
-                      <td className="px-4 py-3 text-right font-black text-slate-700">{totals.requests.toLocaleString()}</td>
-                      <td className="px-4 py-3 text-right font-black text-slate-700">{totals.tokens.toLocaleString()}</td>
-                      <td className="px-4 py-3 text-right font-black text-amber-600">{moneyShort(totals.cost)}</td>
-                      <td className="px-5 py-3" />
-                    </tr>
-                  </tfoot>
+                  <TableFooter className="bg-slate-50 border-t-2 border-slate-200">
+                    <TableRow className="hover:bg-transparent">
+                      <TableCell colSpan={3} className="px-5 py-3 text-xs font-black uppercase tracking-wide text-slate-500">Grand Total</TableCell>
+                      <TableCell className="px-4 py-3 text-right font-black text-slate-700">{totals.requests.toLocaleString()}</TableCell>
+                      <TableCell className="px-4 py-3 text-right font-black text-slate-700">{totals.tokens.toLocaleString()}</TableCell>
+                      <TableCell className="px-4 py-3 text-right font-black text-amber-600">{moneyShort(totals.cost)}</TableCell>
+                      <TableCell className="px-5 py-3" />
+                    </TableRow>
+                  </TableFooter>
                 )}
-              </table>
+              </Table>
             </div>
 
             {/* Pagination Controls */}
@@ -1953,30 +1954,30 @@ function AuditLogsTab({
 
             {/* Desktop View: Table */}
             <div className="hidden sm:block overflow-x-auto">
-              <table className="w-full min-w-[850px] text-sm">
-                <thead className="bg-slate-50/80 sticky top-0">
-                  <tr className="text-left text-[10px] uppercase text-slate-400">
-                    <th className="px-5 py-3 font-semibold">Timestamp</th>
-                    {isSuper && <th className="px-4 py-3 font-semibold">{isCoaching ? "Institute" : "School"}</th>}
-                    <th className="px-4 py-3 font-semibold">Feature</th>
-                    <th className="px-4 py-3 font-semibold">Provider / Model</th>
-                    <th className="px-4 py-3 text-right font-semibold">Prompt</th>
-                    <th className="px-4 py-3 text-right font-semibold">Completion</th>
-                    <th className="px-4 py-3 text-right font-semibold">Total Tokens</th>
-                    <th className="px-4 py-3 text-right font-semibold">Est. Cost</th>
-                    <th className="px-4 py-3 text-right font-semibold">Latency</th>
-                    <th className="px-5 py-3 text-right font-semibold">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
+              <Table className="w-full min-w-[850px] text-sm">
+                <TableHeader className="bg-slate-50/80 sticky top-0">
+                  <TableRow className="text-left text-[10px] uppercase text-slate-400 hover:bg-transparent border-b-0">
+                    <TableHead className="h-auto px-5 py-3 font-semibold text-slate-400">Timestamp</TableHead>
+                    {isSuper && <TableHead className="h-auto px-4 py-3 font-semibold text-slate-400">{isCoaching ? "Institute" : "School"}</TableHead>}
+                    <TableHead className="h-auto px-4 py-3 font-semibold text-slate-400">Feature</TableHead>
+                    <TableHead className="h-auto px-4 py-3 font-semibold text-slate-400">Provider / Model</TableHead>
+                    <TableHead className="h-auto px-4 py-3 text-right font-semibold text-slate-400">Prompt</TableHead>
+                    <TableHead className="h-auto px-4 py-3 text-right font-semibold text-slate-400">Completion</TableHead>
+                    <TableHead className="h-auto px-4 py-3 text-right font-semibold text-slate-400">Total Tokens</TableHead>
+                    <TableHead className="h-auto px-4 py-3 text-right font-semibold text-slate-400">Est. Cost</TableHead>
+                    <TableHead className="h-auto px-4 py-3 text-right font-semibold text-slate-400">Latency</TableHead>
+                    <TableHead className="h-auto px-5 py-3 text-right font-semibold text-slate-400">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-slate-50 [&_tr]:border-b-0">
                   {filteredByStatus.length === 0 ? (
-                    <tr><td colSpan={isSuper ? 10 : 9} className="py-12 text-center text-sm text-slate-400">No logs found.</td></tr>
+                    <TableRow className="hover:bg-transparent"><TableCell colSpan={isSuper ? 10 : 9} className="py-12 text-center text-sm text-slate-400">No logs found.</TableCell></TableRow>
                   ) : (
                     filteredByStatus.map(log => (
-                      <tr key={log.id} onClick={() => openLog(log)} className="hover:bg-slate-50/70 transition-colors cursor-pointer">
-                        <td className="px-5 py-2.5 text-slate-500 text-xs whitespace-nowrap">{new Date(log.created_at).toLocaleString()}</td>
+                      <TableRow key={log.id} onClick={() => openLog(log)} className="hover:bg-slate-50/70 transition-colors cursor-pointer">
+                        <TableCell className="p-4 px-5 py-2.5 text-slate-500 text-xs whitespace-nowrap">{new Date(log.created_at).toLocaleString()}</TableCell>
                         {isSuper && (
-                          <td className="px-4 py-2.5 text-xs whitespace-nowrap">
+                          <TableCell className="p-4 px-4 py-2.5 text-xs whitespace-nowrap">
                             {log.institute_id ? (
                               <button
                                 onClick={e => { e.stopPropagation(); onViewSchool(log.institute_id, formatSchoolName(log.institute_id, schoolNameMap.get(log.institute_id), isCoaching)); }}
@@ -1986,28 +1987,28 @@ function AuditLogsTab({
                                 {formatSchoolName(log.institute_id, schoolNameMap.get(log.institute_id), isCoaching)}
                               </button>
                             ) : <span className="text-slate-400">—</span>}
-                          </td>
+                          </TableCell>
                         )}
-                        <td className="px-4 py-2.5 font-semibold text-slate-700 whitespace-nowrap text-xs">{featureLabel(log.feature)}</td>
-                        <td className="px-4 py-2.5 text-xs whitespace-nowrap">
+                        <TableCell className="p-4 px-4 py-2.5 font-semibold text-slate-700 whitespace-nowrap text-xs">{featureLabel(log.feature)}</TableCell>
+                        <TableCell className="p-4 px-4 py-2.5 text-xs whitespace-nowrap">
                           <span className="capitalize font-semibold text-slate-600">{log.provider || '—'}</span>
                           {log.model && <span className="ml-1 text-slate-400">({log.model})</span>}
-                        </td>
-                        <td className="px-4 py-2.5 text-right text-xs text-slate-500">{(log.prompt_tokens || 0).toLocaleString()}</td>
-                        <td className="px-4 py-2.5 text-right text-xs text-slate-500">{(log.completion_tokens || 0).toLocaleString()}</td>
-                        <td className="px-4 py-2.5 text-right text-xs font-semibold text-slate-700">{(log.total_tokens || 0).toLocaleString()}</td>
-                        <td className="px-4 py-2.5 text-right text-xs font-semibold text-amber-600">{money(log.est_cost)}</td>
-                        <td className="px-4 py-2.5 text-right text-xs">{latencyBadge(num(log.latency_ms))}</td>
-                        <td className="px-5 py-2.5 text-right">
+                        </TableCell>
+                        <TableCell className="p-4 px-4 py-2.5 text-right text-xs text-slate-500">{(log.prompt_tokens || 0).toLocaleString()}</TableCell>
+                        <TableCell className="p-4 px-4 py-2.5 text-right text-xs text-slate-500">{(log.completion_tokens || 0).toLocaleString()}</TableCell>
+                        <TableCell className="p-4 px-4 py-2.5 text-right text-xs font-semibold text-slate-700">{(log.total_tokens || 0).toLocaleString()}</TableCell>
+                        <TableCell className="p-4 px-4 py-2.5 text-right text-xs font-semibold text-amber-600">{money(log.est_cost)}</TableCell>
+                        <TableCell className="p-4 px-4 py-2.5 text-right text-xs">{latencyBadge(num(log.latency_ms))}</TableCell>
+                        <TableCell className="p-4 px-5 py-2.5 text-right">
                           {log.success
                             ? <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 text-[10px]">Success</Badge>
                             : <Badge className="bg-rose-50 text-rose-700 border-rose-100 text-[10px]">Failed {log.status_code ? `(${log.status_code})` : ''}</Badge>}
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))
                   )}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </>
         )}

@@ -18,6 +18,7 @@ import api from '@/lib/api/school-client';
 import { getResponseData } from '@/lib/school/apiData';
 import { Skeleton } from '@/components/school/admin/Skeleton';
 import { InstituteLogo, StatusBadge } from '@/components/school/admin/Brand';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/context/SchoolAuthContext';
 import InstituteDashboardWorkspace from './InstituteDashboardWorkspace';
 import SuperAdminDashboardWorkspace from './SuperAdminDashboardWorkspace';
@@ -35,7 +36,7 @@ function CustomTooltip({ active, payload, label }) {
       <p className="mb-1 text-xs font-bold uppercase text-surface-500">{label}</p>
       {payload.map((entry) => (
         <p key={entry.name} className="flex items-center gap-2 text-sm font-bold" style={{ color: entry.color }}>
-          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
+          <span className="size-2 rounded-full" style={{ backgroundColor: entry.color }} />
           {entry.name}: {entry.value}
         </p>
       ))}
@@ -53,13 +54,13 @@ function StatCard({ title, value, icon: Icon, tone, delay, onClick }) {
       className="glass-panel-hover cursor-pointer rounded-lg p-5 shadow-soft transition-transform hover:-translate-y-1"
     >
       <div className="mb-5 flex items-center justify-between gap-2">
-        <div className={`w-12 h-12 min-w-12 min-h-12 shrink-0 flex items-center justify-center rounded-xl ${tone}`}>
-          <Icon className="w-6 h-6 min-w-6 min-h-6 shrink-0 stroke-[2.5]" />
+        <div className={`size-12 min-w-12 min-h-12 shrink-0 flex items-center justify-center rounded-xl ${tone}`}>
+          <Icon className="size-6 min-w-6 min-h-6 shrink-0 stroke-[2.5]" />
         </div>
-        <div className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-1 text-xs font-bold text-brand-700">
-          <ArrowUpRight className="h-3.5 w-3.5" />
+        <Badge variant="secondary" className="items-center gap-1 rounded-full border-transparent bg-brand-50 py-1 text-xs font-bold text-brand-700 hover:bg-brand-50">
+          <ArrowUpRight className="size-3.5" />
           Live
-        </div>
+        </Badge>
       </div>
       <p className="text-sm font-bold text-surface-500">{title}</p>
       <p className="mt-1 font-display text-3xl font-bold text-surface-950">{formatNumber(value)}</p>

@@ -21,6 +21,8 @@ import ClassForm from '@/components/school/admin/forms/ClassForm';
 import { useConfirm } from '@/context/ConfirmContext';
 import { handleApiError } from '@/lib/school/errorHandler';
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
 const academicYears = ['2024-2025', '2025-2026', '2026-2027'];
 
@@ -190,7 +192,7 @@ export default function Academics() {
               onClick={handleAddClass}
               className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-blue-700"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="size-4" />
               <span>Add Class</span>
             </button>
           </div>
@@ -208,7 +210,7 @@ export default function Academics() {
           <div className="flex flex-col md:hidden gap-3 w-full">
             <div className="flex items-center justify-between gap-2">
               <div className="inline-flex items-center gap-1.5 rounded-full border border-surface-200 bg-surface-50 px-2.5 py-1 text-xs font-semibold text-surface-700">
-                <Layers className="h-3.5 w-3.5 text-blue-600" />
+                <Layers className="size-3.5 text-blue-600" />
                 <span>Academics List</span>
               </div>
               <button
@@ -221,13 +223,13 @@ export default function Academics() {
                     : "bg-white border-surface-200 text-surface-700"
                 )}
               >
-                <Filter className="h-3.5 w-3.5" />
+                <Filter className="size-3.5" />
                 <span>Filter</span>
               </button>
             </div>
             
             <div className="relative w-full">
-              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-surface-400" />
               <input
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
@@ -248,6 +250,13 @@ export default function Academics() {
                   ]}
                   className="w-full"
                 />
+                <button
+                  onClick={handleAddSection}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-blue-500 bg-white px-4 text-sm font-bold text-blue-600 hover:bg-blue-50 dark:bg-surface-900 dark:hover:bg-blue-950/20"
+                >
+                  <Plus className="size-4" />
+                  Add Section
+                </button>
               </div>
             )}
           </div>
@@ -256,7 +265,7 @@ export default function Academics() {
           <div className="hidden md:flex flex-col gap-3 md:flex-row md:items-center md:justify-between w-full">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <div className="relative">
-                <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-surface-400" />
                 <input
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
@@ -275,52 +284,59 @@ export default function Academics() {
                 className="w-full"
               />
             </div>
+            <button
+              onClick={handleAddSection}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-blue-50 bg-white px-4 text-sm font-bold text-blue-600 hover:bg-blue-50 dark:bg-surface-900 dark:hover:bg-blue-950/20"
+            >
+              <Plus className="size-4" />
+              Add Section
+            </button>
           </div>
         </div>
 
         {/* Desktop View */}
         <div className="hidden md:block overflow-x-auto">
-          <table className="w-full min-w-[900px] text-left">
-            <thead className="bg-surface-50 text-xs font-bold text-surface-600 dark:bg-surface-955/50 dark:text-surface-300">
-              <tr>
-                <th className="px-3 py-4 sticky left-0 z-20 bg-surface-50 dark:bg-slate-850 shadow-sm">Class</th>
-                <th className="px-3 py-4 text-center">Sections</th>
-                <th className="px-3 py-4 text-center">Students</th>
-                <th className="px-3 py-4">Class Teacher</th>
-                <th className="px-3 py-4">Status</th>
-                <th className="px-3 py-4 text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-surface-200 text-sm dark:divide-surface-800">
+          <Table className="w-full min-w-[900px] text-left">
+            <TableHeader className="bg-surface-50 text-xs font-bold text-surface-600 dark:bg-surface-955/50 dark:text-surface-300">
+              <TableRow className="hover:bg-transparent border-b-0">
+                <TableHead className="h-auto px-3 py-4 sticky left-0 z-20 bg-surface-50 dark:bg-slate-850 shadow-sm text-surface-600 dark:text-surface-300">Class</TableHead>
+                <TableHead className="h-auto px-3 py-4 text-center text-surface-600 dark:text-surface-300">Sections</TableHead>
+                <TableHead className="h-auto px-3 py-4 text-center text-surface-600 dark:text-surface-300">Students</TableHead>
+                <TableHead className="h-auto px-3 py-4 text-surface-600 dark:text-surface-300">Class Teacher</TableHead>
+                <TableHead className="h-auto px-3 py-4 text-surface-600 dark:text-surface-300">Status</TableHead>
+                <TableHead className="h-auto px-3 py-4 text-center text-surface-600 dark:text-surface-300">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-surface-200 text-sm dark:divide-surface-800 [&_tr]:border-b-0">
               {filteredClasses.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center">
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={6} className="px-5 py-12 text-center">
                     <p className="font-bold text-surface-900 dark:text-white">No matching classes found</p>
                     <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">Try selecting a different academic year or add a new class.</p>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : (
                 filteredClasses.map((cls) => {
                   return (
-                    <tr key={cls.id} className="bg-white align-middle hover:bg-surface-50/80 dark:bg-surface-900 dark:hover:bg-surface-800/40">
-                      <td className="px-3 py-4 font-bold text-surface-950 dark:text-white sticky left-0 z-20 bg-white dark:bg-slate-900">{cls.name}</td>
-                      <td className="px-3 py-4 text-center font-semibold text-blue-700 dark:text-blue-300">{sectionCount(cls)}</td>
-                      <td className="px-3 py-4 text-center text-surface-700 dark:text-surface-200">{classStudents(cls)}</td>
-                      <td className="px-3 py-4 text-surface-700 dark:text-surface-200">{classTeacher(cls)}</td>
-                      <td className="px-3 py-4"><StatusPill /></td>
-                      <td className="px-3 py-4">
+                    <TableRow key={cls.id} className="bg-white align-middle hover:bg-surface-50/80 dark:bg-surface-900 dark:hover:bg-surface-800/40">
+                      <TableCell className="p-4 px-3 py-4 font-bold text-surface-950 dark:text-white sticky left-0 z-20 bg-white dark:bg-slate-900">{cls.name}</TableCell>
+                      <TableCell className="p-4 px-3 py-4 text-center font-semibold text-blue-700 dark:text-blue-300">{sectionCount(cls)}</TableCell>
+                      <TableCell className="p-4 px-3 py-4 text-center text-surface-700 dark:text-surface-200">{classStudents(cls)}</TableCell>
+                      <TableCell className="p-4 px-3 py-4 text-surface-700 dark:text-surface-200">{classTeacher(cls)}</TableCell>
+                      <TableCell className="p-4 px-3 py-4"><StatusPill /></TableCell>
+                      <TableCell className="p-4 px-3 py-4">
                         <div className="flex justify-center gap-2">
                           <IconButton title="Open sections page" onClick={() => openSectionsPage(cls.id)} icon={Eye} />
                           <IconButton title="Edit class" onClick={() => handleEditClass(cls)} icon={Edit2} />
                           <IconButton title="Delete class" onClick={() => handleDeleteClass(cls.id)} icon={Trash2} danger />
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
 
         {/* Mobile View */}
@@ -359,21 +375,21 @@ export default function Academics() {
                       onClick={() => openSectionsPage(cls.id)}
                       className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-surface-200 bg-white px-3 text-surface-600 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 text-xs font-bold dark:bg-surface-900 dark:border-surface-800 dark:text-surface-300"
                     >
-                      <Eye className="h-3.5 w-3.5" />
+                      <Eye className="size-3.5" />
                       <span>Sections</span>
                     </button>
                     <button
                       onClick={() => handleEditClass(cls)}
                       className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-surface-200 bg-white px-3 text-surface-600 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 text-xs font-bold dark:bg-surface-900 dark:border-surface-800 dark:text-surface-300"
                     >
-                      <Edit2 className="h-3.5 w-3.5" />
+                      <Edit2 className="size-3.5" />
                       <span>Edit</span>
                     </button>
                     <button
                       onClick={() => handleDeleteClass(cls.id)}
                       className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-white px-3 text-red-650 hover:border-red-400 hover:bg-red-50 hover:text-red-600 text-xs font-bold dark:bg-surface-900 dark:border-red-950/20 dark:text-red-400"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="size-3.5" />
                       <span>Delete</span>
                     </button>
                   </div>
@@ -388,7 +404,7 @@ export default function Academics() {
           <div className="flex items-center gap-2">
             <DisabledPageButton icon={ChevronsLeft} />
             <DisabledPageButton icon={ChevronLeft} />
-            <span className="grid h-9 w-9 place-items-center rounded-lg bg-blue-600 text-sm font-bold text-white">1</span>
+            <span className="grid size-9 place-items-center rounded-lg bg-blue-600 text-sm font-bold text-white">1</span>
             <DisabledPageButton icon={ChevronRight} />
             <DisabledPageButton icon={ChevronsRight} />
             <CustomSelect
@@ -429,8 +445,8 @@ function SummaryCard({ icon: Icon, tone, label, value, helper }) {
   return (
     <div className="rounded-xl border border-surface-200 bg-white p-3 sm:p-6 shadow-sm dark:border-surface-800 dark:bg-surface-900">
       <div className="flex items-center gap-3 sm:gap-5">
-        <span className={`grid h-10 w-10 sm:h-16 sm:w-16 place-items-center rounded-full shrink-0 ${tones[tone]}`}>
-          <Icon className="h-5 w-5 sm:h-7 sm:w-7" />
+        <span className={`grid size-10 sm:size-16 place-items-center rounded-full shrink-0 ${tones[tone]}`}>
+          <Icon className="size-5 sm:size-7" />
         </span>
         <div className="min-w-0">
           <p className="text-xs sm:text-sm font-medium text-surface-600 dark:text-surface-300 truncate">{label}</p>
@@ -444,14 +460,17 @@ function SummaryCard({ icon: Icon, tone, label, value, helper }) {
 
 function StatusPill() {
   return (
-    <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-300 dark:ring-emerald-900/60">
+    <Badge
+      variant="secondary"
+      className="rounded-full border-transparent bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-300 dark:ring-emerald-900/60 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+    >
       Active
-    </span>
+    </Badge>
   );
 }
 
 function IconButton({ icon: Icon, title, onClick, danger = false }) {
-  const size = 'h-9 w-9';
+  const size = 'size-9';
   const colors = danger
     ? 'border-red-100 text-red-500 hover:bg-red-50 dark:border-red-900/60 dark:hover:bg-red-950/30'
     : 'border-surface-200 text-surface-600 hover:border-blue-200 hover:text-blue-600 dark:border-surface-800 dark:text-surface-300';
@@ -462,15 +481,15 @@ function IconButton({ icon: Icon, title, onClick, danger = false }) {
       className={`grid ${size} place-items-center rounded-lg border ${colors}`}
       title={title}
     >
-      <Icon className="h-4 w-4" />
+      <Icon className="size-4" />
     </button>
   );
 }
 
 function DisabledPageButton({ icon: Icon }) {
   return (
-    <button className="grid h-9 w-9 place-items-center rounded-lg border border-surface-200 text-surface-400 dark:border-surface-800" disabled>
-      <Icon className="h-4 w-4" />
+    <button className="grid size-9 place-items-center rounded-lg border border-surface-200 text-surface-400 dark:border-surface-800" disabled>
+      <Icon className="size-4" />
     </button>
   );
 }

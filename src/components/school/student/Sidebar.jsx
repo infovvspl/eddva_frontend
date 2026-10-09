@@ -136,7 +136,7 @@ export default function Sidebar({ open, onClose }) {
         <SidebarProfileCard
           collapsed={isCollapsed}
           avatar={
-            <div className="grid h-full w-full place-items-center rounded-xl border border-blue-200 bg-blue-50 text-xs font-bold tracking-tight text-blue-700 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300">
+            <div className="grid size-full place-items-center rounded-xl border border-blue-200 bg-blue-50 text-xs font-bold tracking-tight text-blue-700 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300">
               {(user?.name || 'S').charAt(0).toUpperCase()}
             </div>
           }

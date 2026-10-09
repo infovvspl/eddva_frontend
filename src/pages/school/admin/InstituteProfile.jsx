@@ -169,23 +169,23 @@ export default function InstituteProfile() {
       {/* ── Top Hero Card ────────────────────────────────────────────────────────── */}
       <div className="relative rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-5 sm:p-8 shadow-2xl overflow-hidden border border-indigo-900/30">
         {/* Decorative background radial glows */}
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-96 h-96 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 -mb-16 w-80 h-80 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 size-96 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 -mb-16 size-80 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
 
         <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           {/* Logo + Title Details */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
             <div className="relative group">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white p-2.5 shadow-xl border border-white/20 flex items-center justify-center shrink-0">
+              <div className="size-20 sm:size-24 rounded-2xl bg-white p-2.5 shadow-xl border border-white/20 flex items-center justify-center shrink-0">
                 <SchoolLogo
                   src={institute.logo}
                   alt={institute.name}
                   size="dashboard"
-                  className="w-full h-full object-contain"
+                  className="size-full object-contain"
                 />
               </div>
               <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-1 border-2 border-slate-900" title="Verified Institute">
-                <ShieldCheck className="w-4 h-4" />
+                <ShieldCheck className="size-4" />
               </div>
             </div>
 
@@ -195,7 +195,7 @@ export default function InstituteProfile() {
                   {institute.name || 'Army Public School'}
                 </h1>
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold bg-indigo-500/20 text-indigo-200 border border-indigo-400/30 backdrop-blur-md">
-                  <Sparkles className="w-3 h-3 text-indigo-300" />
+                  <Sparkles className="size-3 text-indigo-300" />
                   {formData.board || 'CBSE Affiliated'}
                 </span>
               </div>
@@ -204,15 +204,15 @@ export default function InstituteProfile() {
               </p>
               <div className="flex flex-wrap items-center gap-4 text-[10px] sm:text-xs font-semibold text-slate-300 pt-1">
                 <span className="flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-indigo-400" />
+                  <MapPin className="size-3.5 text-indigo-400" />
                   {institute.state || institute.location || 'State'}
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <School className="w-3.5 h-3.5 text-indigo-400" />
+                  <School className="size-3.5 text-indigo-400" />
                   Code: {formData.code || `SCH-${(institute.id || '001').slice(0, 6).toUpperCase()}`}
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Globe className="w-3.5 h-3.5 text-indigo-400" />
+                  <Globe className="size-3.5 text-indigo-400" />
                   {institute.tenantDomain ? `${institute.tenantDomain}.eddva.com` : 'eddva.com'}
                 </span>
               </div>
@@ -225,14 +225,14 @@ export default function InstituteProfile() {
               onClick={handleCopyUrl}
               className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-[10px] sm:text-xs font-bold backdrop-blur-md border border-white/10 transition-all"
             >
-              <Copy className="w-3.5 h-3.5" />
+              <Copy className="size-3.5" />
               {copied ? 'Copied!' : 'Share URL'}
             </button>
             <button
               onClick={() => setIsEditing(true)}
               className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[10px] sm:text-xs font-bold shadow-lg shadow-indigo-600/30 transition-all border border-indigo-400/30"
             >
-              <Edit3 className="w-3.5 h-3.5" />
+              <Edit3 className="size-3.5" />
               Edit Profile
             </button>
           </div>
@@ -244,8 +244,8 @@ export default function InstituteProfile() {
         <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500">Total Enrolled</span>
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-              <GraduationCap className="w-4 h-4 sm:w-5 sm:h-5" />
+            <div className="size-9 sm:size-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+              <GraduationCap className="size-4 sm:size-5" />
             </div>
           </div>
           <div className="mt-2.5 sm:mt-3">
@@ -257,8 +257,8 @@ export default function InstituteProfile() {
         <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500">Faculty Members</span>
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-              <Users className="w-4 h-4 sm:w-5 sm:h-5" />
+            <div className="size-9 sm:size-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+              <Users className="size-4 sm:size-5" />
             </div>
           </div>
           <div className="mt-2.5 sm:mt-3">
@@ -270,8 +270,8 @@ export default function InstituteProfile() {
         <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500">Academic Classes</span>
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-              <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
+            <div className="size-9 sm:size-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+              <BookOpen className="size-4 sm:size-5" />
             </div>
           </div>
           <div className="mt-2.5 sm:mt-3">
@@ -283,8 +283,8 @@ export default function InstituteProfile() {
         <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500">Attendance Health</span>
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-              <Zap className="w-4 h-4 sm:w-5 sm:h-5" />
+            <div className="size-9 sm:size-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+              <Zap className="size-4 sm:size-5" />
             </div>
           </div>
           <div className="mt-2.5 sm:mt-3">
@@ -329,7 +329,7 @@ export default function InstituteProfile() {
                     : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
                 }`}
               >
-                <tab.icon className="w-4 h-4" />
+                <tab.icon className="size-4" />
                 {tab.label}
               </button>
             ))}
@@ -350,7 +350,7 @@ export default function InstituteProfile() {
                   onClick={() => setIsEditing(true)}
                   className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors"
                 >
-                  <Edit3 className="w-3.5 h-3.5" /> Edit Details
+                  <Edit3 className="size-3.5" /> Edit Details
                 </button>
               </div>
 
@@ -387,7 +387,7 @@ export default function InstituteProfile() {
                     <div className="flex justify-between py-1 border-b border-slate-200/50">
                       <span className="text-slate-500 font-medium">Portal URL</span>
                       <a href={tenantUrl} target="_blank" rel="noreferrer" className="font-mono text-xs font-bold text-indigo-600 hover:underline flex items-center gap-1">
-                        {tenantUrl} <ExternalLink className="w-3 h-3" />
+                        {tenantUrl} <ExternalLink className="size-3" />
                       </a>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/50">
@@ -415,8 +415,8 @@ export default function InstituteProfile() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div className="flex items-start gap-4 p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 mt-0.5">
-                      <Mail className="w-5 h-5" />
+                    <div className="size-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 mt-0.5">
+                      <Mail className="size-5" />
                     </div>
                     <div>
                       <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Official Email</p>
@@ -426,8 +426,8 @@ export default function InstituteProfile() {
                   </div>
 
                   <div className="flex items-start gap-4 p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5">
-                      <Phone className="w-5 h-5" />
+                    <div className="size-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5">
+                      <Phone className="size-5" />
                     </div>
                     <div>
                       <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Contact Number</p>
@@ -438,8 +438,8 @@ export default function InstituteProfile() {
                 </div>
 
                 <div className="flex items-start gap-4 p-5 rounded-2xl border border-slate-100 bg-slate-50/50">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
-                    <MapPin className="w-5 h-5" />
+                  <div className="size-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+                    <MapPin className="size-5" />
                   </div>
                   <div className="space-y-1">
                     <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Campus Address</p>
@@ -521,7 +521,7 @@ export default function InstituteProfile() {
                     <div className="flex justify-between py-1">
                       <span className="text-slate-500">AI Features Status</span>
                       <span className="text-emerald-600 flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Enabled
+                        <CheckCircle2 className="size-3.5" /> Enabled
                       </span>
                     </div>
                   </div>
@@ -539,14 +539,14 @@ export default function InstituteProfile() {
             {/* Header */}
             <div className="flex justify-between items-center px-4 py-3 sm:px-6 sm:py-4 bg-slate-900 text-white">
               <div className="flex items-center gap-2">
-                <Edit3 className="w-5 h-5 text-indigo-400" />
+                <Edit3 className="size-5 text-indigo-400" />
                 <h3 className="font-bold text-sm sm:text-base">Edit Institute Profile</h3>
               </div>
               <button
                 onClick={() => setIsEditing(false)}
                 className="p-1 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="size-5" />
               </button>
             </div>
 
@@ -701,7 +701,7 @@ export default function InstituteProfile() {
                   disabled={saving}
                   className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-colors shadow-md shadow-indigo-600/20 flex items-center gap-1.5 disabled:opacity-50"
                 >
-                  <Save className="w-3.5 h-3.5" />
+                  <Save className="size-3.5" />
                   {saving ? 'Saving...' : 'Save Profile'}
                 </button>
               </div>

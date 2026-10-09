@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrainCircuit, GraduationCap } from 'lucide-react';
 import { cn } from './Skeleton';
+import { Badge } from '@/components/ui/badge';
 import logoUrl from '@/assets/eddva-logo.svg';
 import armyLogo from '@/assets/army_public_school_logo.png';
 
@@ -88,8 +89,11 @@ export function StatusBadge({ status }) {
   };
 
   return (
-    <span className={cn('inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold', styles[status] || styles.CLOSED)}>
+    <Badge
+      variant="outline"
+      className={cn('rounded-full py-1 text-xs font-bold hover:bg-transparent', styles[status] || styles.CLOSED)}
+    >
       {String(status || 'UNKNOWN').replace('_', ' ')}
-    </span>
+    </Badge>
   );
 }

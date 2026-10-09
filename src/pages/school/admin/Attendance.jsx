@@ -6,6 +6,8 @@ import api from '@/lib/api/school-client';
 import { getResponseList } from '@/lib/school/apiData';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
 const TYPE_OPTIONS = [
   { value: 'daily', label: 'By Date' },
@@ -160,10 +162,10 @@ export default function Attendance() {
   };
 
   const statusColors = {
-    PRESENT: 'bg-emerald-50 text-emerald-700',
-    ABSENT: 'bg-red-50 text-red-700',
-    LATE: 'bg-amber-50 text-amber-700',
-    LEAVE: 'bg-blue-50 text-blue-700'
+    PRESENT: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-50',
+    ABSENT: 'bg-red-50 text-red-700 hover:bg-red-50',
+    LATE: 'bg-amber-50 text-amber-700 hover:bg-amber-50',
+    LEAVE: 'bg-blue-50 text-blue-700 hover:bg-blue-50'
   };
 
   const getRoleKey = (role) => String(role || '').toUpperCase().replace(/\s+/g, '_');
@@ -214,7 +216,7 @@ export default function Attendance() {
         <div className="flex flex-col md:hidden gap-3">
           <div className="flex items-center justify-between gap-2">
             <div className="inline-flex items-center gap-1.5 rounded-full border border-surface-200 bg-surface-50 px-2.5 py-1 text-xs font-semibold text-surface-700">
-              <Users className="h-3.5 w-3.5 text-brand-600" />
+              <Users className="size-3.5 text-brand-600" />
               <span>Filters</span>
             </div>
             <button
@@ -227,13 +229,13 @@ export default function Attendance() {
                   : "bg-white border-surface-200 text-surface-700"
               )}
             >
-              <Filter className="h-3.5 w-3.5" />
+              <Filter className="size-3.5" />
               <span>{showMobileFilters ? "Hide" : "Show"}</span>
             </button>
           </div>
 
           <div className="relative w-full">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-surface-400" />
             <input
               type="text"
               value={searchQuery}
@@ -539,48 +541,48 @@ export default function Attendance() {
       {/* Desktop View */}
       <div className="hidden md:block overflow-hidden rounded-lg border border-surface-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
-          <table className="min-w-[800px] w-full text-left text-sm">
-            <thead className="bg-surface-50 text-surface-500">
-              <tr>
-                <th className="px-6 py-4 font-semibold sticky left-0 z-20 bg-surface-50 dark:bg-slate-850 shadow-sm">Name</th>
-                <th className="px-6 py-4 font-semibold">Role</th>
-                {selectedRole === 'STUDENT' && <th className="px-6 py-4 font-semibold">Class / Section</th>}
-                <th className="px-6 py-4 font-semibold">Date</th>
-                <th className="px-6 py-4 font-semibold">Status</th>
-                <th className="px-6 py-4 font-semibold">Remarks</th>
-                <th className="px-6 py-4 font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-surface-200">
+          <Table className="min-w-[800px] w-full text-left text-sm">
+            <TableHeader className="bg-surface-50 text-surface-500">
+              <TableRow className="hover:bg-transparent border-b-0">
+                <TableHead className="h-auto px-6 py-4 font-semibold sticky left-0 z-20 bg-surface-50 dark:bg-slate-850 shadow-sm text-surface-500">Name</TableHead>
+                <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Role</TableHead>
+                {selectedRole === 'STUDENT' && <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Class / Section</TableHead>}
+                <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Date</TableHead>
+                <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Status</TableHead>
+                <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Remarks</TableHead>
+                <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-surface-200 [&_tr]:border-b-0">
               {attendance.length === 0 ? (
-                <tr>
-                  <td colSpan={selectedRole === 'STUDENT' ? "7" : "6"} className="px-6 py-8 text-center text-surface-500">
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={selectedRole === 'STUDENT' ? "7" : "6"} className="px-6 py-8 text-center text-surface-500">
                     No attendance records match the current filters
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : (
                 attendance.map(record => (
-                  <tr key={record.id} className="hover:bg-surface-50 transition-colors">
-                    <td className="px-6 py-4 font-semibold text-surface-950 sticky left-0 z-20 bg-white dark:bg-slate-900">{record.user?.name || '-'}</td>
-                    <td className="px-6 py-4">
+                  <TableRow key={record.id} className="hover:bg-surface-50 transition-colors">
+                    <TableCell className="p-4 px-6 py-4 font-semibold text-surface-950 sticky left-0 z-20 bg-white dark:bg-slate-900">{record.user?.name || '-'}</TableCell>
+                    <TableCell className="p-4 px-6 py-4">
                       {hasRole(record.user?.role, 'STUDENT') ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">
-                          <GraduationCap className="h-3 w-3" /> Student
-                        </span>
+                        <Badge variant="secondary" className="items-center gap-1 rounded-full border-transparent bg-blue-50 text-xs font-bold text-blue-700 hover:bg-blue-50">
+                          <GraduationCap className="size-3" /> Student
+                        </Badge>
                       ) : hasRole(record.user?.role, 'INSTITUTE_ADMIN') ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-1 text-xs font-bold text-sky-700">
-                          <UserCheck className="h-3 w-3" /> Admin
-                        </span>
+                        <Badge variant="secondary" className="items-center gap-1 rounded-full border-transparent bg-sky-50 text-xs font-bold text-sky-700 hover:bg-sky-50">
+                          <UserCheck className="size-3" /> Admin
+                        </Badge>
                       ) : hasRole(record.user?.role, 'TEACHER') ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-1 text-xs font-bold text-purple-700">
-                          <UserCheck className="h-3 w-3" /> Teacher
-                        </span>
+                        <Badge variant="secondary" className="items-center gap-1 rounded-full border-transparent bg-purple-50 text-xs font-bold text-purple-700 hover:bg-purple-50">
+                          <UserCheck className="size-3" /> Teacher
+                        </Badge>
                       ) : (
                         <span className="text-surface-400">-</span>
                       )}
-                    </td>
+                    </TableCell>
                     {selectedRole === 'STUDENT' && (
-                      <td className="px-6 py-4 text-surface-600">
+                      <TableCell className="p-4 px-6 py-4 text-surface-600">
                         {hasRole(record.user?.role, 'STUDENT') && record.user?.studentProfile?.section?.class ? (
                           <span>
                             {record.user.studentProfile.section.class.name}
@@ -589,44 +591,44 @@ export default function Attendance() {
                         ) : (
                           <span className="text-surface-400">-</span>
                         )}
-                      </td>
+                      </TableCell>
                     )}
-                    <td className="px-6 py-4">{new Date(record.date).toLocaleDateString()}</td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${statusColors[record.status?.toUpperCase()] || statusColors.PRESENT}`}>
+                    <TableCell className="p-4 px-6 py-4">{new Date(record.date).toLocaleDateString()}</TableCell>
+                    <TableCell className="p-4 px-6 py-4">
+                      <Badge className={`rounded-full text-xs font-bold border-transparent ${statusColors[record.status?.toUpperCase()] || statusColors.PRESENT}`}>
                         {record.status?.toUpperCase()}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-surface-600">
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="p-4 px-6 py-4 text-surface-600">
                       {record.remarks || '-'}
-                    </td>
-                    <td className="px-6 py-4">
+                    </TableCell>
+                    <TableCell className="p-4 px-6 py-4">
                       <div className="flex gap-2">
                         {record.user?.id ? (
                           <Link
                             to={hasRole(record.user.role, 'STUDENT') ? `/school/admin/students/${record.user.id}` : `/school/admin/teachers/${record.user.id}`}
-                            className="group relative flex h-8 w-8 items-center justify-center rounded-lg border border-surface-200 bg-white text-surface-500 transition-all hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600"
+                            className="group relative flex size-8 items-center justify-center rounded-lg border border-surface-200 bg-white text-surface-500 transition-all hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600"
                           >
-                            <Eye className="h-4 w-4" />
+                            <Eye className="size-4" />
                             <span className="absolute -top-9 left-1/2 -translate-x-1/2 scale-0 rounded bg-surface-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">View</span>
                           </Link>
                         ) : (
                           <button
                             type="button"
                             disabled
-                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-surface-200 bg-surface-50 text-surface-300"
+                            className="flex size-8 items-center justify-center rounded-lg border border-surface-200 bg-surface-50 text-surface-300"
                             aria-label="No linked user"
                           >
-                            <Eye className="h-4 w-4" />
+                            <Eye className="size-4" />
                           </button>
                         )}
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
 
@@ -641,26 +643,26 @@ export default function Attendance() {
             <div key={record.id} className="rounded-lg border border-surface-200 bg-white p-4 shadow-sm space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-surface-950 text-sm">{record.user?.name || '-'}</span>
-                <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold ${statusColors[record.status?.toUpperCase()] || statusColors.PRESENT}`}>
+                <Badge className={`rounded-full border-transparent text-[10px] font-bold ${statusColors[record.status?.toUpperCase()] || statusColors.PRESENT}`}>
                   {record.status?.toUpperCase()}
-                </span>
+                </Badge>
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-xs text-surface-600 pt-1">
                 <div>
                   <span className="block text-[9px] uppercase tracking-wider text-surface-400 font-bold">Role</span>
                   {hasRole(record.user?.role, 'STUDENT') ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700 mt-0.5">
-                      <GraduationCap className="h-3.5 w-3.5" /> Student
-                    </span>
+                    <Badge variant="secondary" className="items-center gap-1 rounded-full border-transparent bg-blue-50 text-xs font-bold text-blue-700 mt-0.5 hover:bg-blue-50">
+                      <GraduationCap className="size-3.5" /> Student
+                    </Badge>
                   ) : hasRole(record.user?.role, 'INSTITUTE_ADMIN') ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-xs font-bold text-sky-700 mt-0.5">
-                      <UserCheck className="h-3.5 w-3.5" /> Admin
-                    </span>
+                    <Badge variant="secondary" className="items-center gap-1 rounded-full border-transparent bg-sky-50 text-xs font-bold text-sky-700 mt-0.5 hover:bg-sky-50">
+                      <UserCheck className="size-3.5" /> Admin
+                    </Badge>
                   ) : hasRole(record.user?.role, 'TEACHER') ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-0.5 text-xs font-bold text-purple-700 mt-0.5">
-                      <UserCheck className="h-3.5 w-3.5" /> Teacher
-                    </span>
+                    <Badge variant="secondary" className="items-center gap-1 rounded-full border-transparent bg-purple-50 text-xs font-bold text-purple-700 mt-0.5 hover:bg-purple-50">
+                      <UserCheck className="size-3.5" /> Teacher
+                    </Badge>
                   ) : (
                     <span className="text-surface-400">-</span>
                   )}
@@ -693,7 +695,7 @@ export default function Attendance() {
                     to={hasRole(record.user.role, 'STUDENT') ? `/school/admin/students/${record.user.id}` : `/school/admin/teachers/${record.user.id}`}
                     className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-surface-200 bg-white px-3 text-surface-600 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 text-xs font-bold"
                   >
-                    <Eye className="h-3.5 w-3.5" />
+                    <Eye className="size-3.5" />
                     <span>View Profile</span>
                   </Link>
                 ) : (

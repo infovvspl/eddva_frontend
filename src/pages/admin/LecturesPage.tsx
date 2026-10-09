@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { LectureVideoUpload } from "@/components/upload/LectureVideoUpload";
 import { isYouTubeUrl, isValidYouTubeLectureUrl, YOUTUBE_LECTURE_CAPTIONS_HINT } from "@/lib/lecture-source";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog";
 import { liveBroadcast, type BroadcastLecture, type BroadcastStats } from "@/lib/api/live-broadcast";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -1316,78 +1317,60 @@ const LecturesPage = () => {
       </AnimatePresence>
 
       {/* Unpublish confirm */}
-      <AnimatePresence>
-        {confirmUnpublish && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-gray-300/50 p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.96 }}
-              className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-2xl"
-            >
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center mb-4">
-                <EyeOff className="w-6 h-6 text-amber-500" />
-              </div>
-              <h3 className="font-bold text-foreground mb-1">Unpublish Lecture?</h3>
-              <p className="text-sm text-muted-foreground mb-5">
-                "<span className="text-foreground">{confirmUnpublish.title}</span>" will be hidden from students immediately.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setConfirmUnpublish(null)}
-                  className="flex-1 py-2.5 rounded-xl border border-border text-sm font-semibold hover:bg-secondary transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleUnpublish}
-                  disabled={unpublish.isPending}
-                  className="flex-1 py-2.5 rounded-xl bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600 transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
-                >
-                  {unpublish.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Unpublish"}
-                </button>
-              </div>
-            </motion.div>
+      <AlertDialog open={!!confirmUnpublish} onOpenChange={(o) => { if (!o) setConfirmUnpublish(null); }}>
+        <AlertDialogContent className="max-w-sm rounded-2xl p-6">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center mb-4">
+            <EyeOff className="w-6 h-6 text-amber-500" />
           </div>
-        )}
-      </AnimatePresence>
+          <AlertDialogTitle className="font-bold text-foreground mb-1">Unpublish Lecture?</AlertDialogTitle>
+          <AlertDialogDescription className="text-sm text-muted-foreground mb-5">
+            "<span className="text-foreground">{confirmUnpublish?.title}</span>" will be hidden from students immediately.
+          </AlertDialogDescription>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setConfirmUnpublish(null)}
+              className="flex-1 py-2.5 rounded-xl border border-border text-sm font-semibold hover:bg-secondary transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleUnpublish}
+              disabled={unpublish.isPending}
+              className="flex-1 py-2.5 rounded-xl bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600 transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
+            >
+              {unpublish.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Unpublish"}
+            </button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete/Cancel confirm */}
-      <AnimatePresence>
-        {confirmDelete && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-gray-300/50 p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.96 }}
-              className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-2xl"
-            >
-              <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center mb-4">
-                <AlertTriangle className="w-6 h-6 text-rose-500" />
-              </div>
-              <h3 className="font-bold text-foreground mb-1">Delete Lecture?</h3>
-              <p className="text-sm text-muted-foreground mb-5">
-                "<span className="text-foreground">{confirmDelete.title}</span>" will be deleted permanently. This action cannot be undone.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setConfirmDelete(null)}
-                  className="flex-1 py-2.5 rounded-xl border border-border text-sm font-semibold hover:bg-secondary transition-colors"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={handleDelete}
-                  disabled={deleteLectureMutation.isPending}
-                  className="flex-1 py-2.5 rounded-xl bg-rose-600 text-white text-sm font-semibold hover:bg-rose-700 transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
-                >
-                  {deleteLectureMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Delete"}
-                </button>
-              </div>
-            </motion.div>
+      <AlertDialog open={!!confirmDelete} onOpenChange={(o) => { if (!o) setConfirmDelete(null); }}>
+        <AlertDialogContent className="max-w-sm rounded-2xl p-6">
+          <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center mb-4">
+            <AlertTriangle className="w-6 h-6 text-rose-500" />
           </div>
-        )}
-      </AnimatePresence>
+          <AlertDialogTitle className="font-bold text-foreground mb-1">Delete Lecture?</AlertDialogTitle>
+          <AlertDialogDescription className="text-sm text-muted-foreground mb-5">
+            "<span className="text-foreground">{confirmDelete?.title}</span>" will be deleted permanently. This action cannot be undone.
+          </AlertDialogDescription>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setConfirmDelete(null)}
+              className="flex-1 py-2.5 rounded-xl border border-border text-sm font-semibold hover:bg-secondary transition-colors"
+            >
+              Close
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={deleteLectureMutation.isPending}
+              className="flex-1 py-2.5 rounded-xl bg-rose-600 text-white text-sm font-semibold hover:bg-rose-700 transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
+            >
+              {deleteLectureMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Delete"}
+            </button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Lecture Player Modal */}
       <AnimatePresence>

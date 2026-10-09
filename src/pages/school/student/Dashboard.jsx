@@ -61,7 +61,7 @@ function SectionHeader({ title, action, to, isDropdown }) {
 function StatCard({ icon: Icon, iconColor, bgColor, title, value, link, to, isGrayLink }) {
   return (
     <div className="bg-white rounded-[1.25rem] p-4 sm:p-5 shadow-sm border border-slate-100 flex flex-col items-start gap-3 h-full">
-      <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-[14px] flex items-center justify-center ${bgColor} ${iconColor} shadow-sm shrink-0`}>
+      <div className={`size-10 sm:size-11 rounded-[14px] flex items-center justify-center ${bgColor} ${iconColor} shadow-sm shrink-0`}>
         <Icon size={20} className="sm:hidden" />
         <Icon size={22} className="hidden sm:block" />
       </div>
@@ -86,7 +86,7 @@ function NextLiveClassCard({ schedule }) {
   return (
     <div className="bg-[#f0f4ff] rounded-[1.25rem] p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 h-full border border-[#e0e7ff]">
        <div className="flex items-start sm:items-center gap-4">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#e0e7ff] text-indigo-600 rounded-xl flex items-center justify-center shrink-0">
+          <div className="size-10 sm:size-12 bg-[#e0e7ff] text-indigo-600 rounded-xl flex items-center justify-center shrink-0">
              <Video size={20} className="sm:hidden" />
              <Video size={24} className="hidden sm:block" />
           </div>
@@ -109,7 +109,7 @@ function TimelineItem({ item, index, isLast }) {
   return (
     <div className="relative flex gap-4 pb-6 last:pb-0">
       {!isLast && <div className="absolute left-[19px] top-[30px] bottom-0 w-[2px] bg-slate-100" />}
-      <div className={`w-10 h-10 rounded-full flex items-center justify-center z-10 shrink-0 ${bg} ${color} ring-4 ring-white`}>
+      <div className={`size-10 rounded-full flex items-center justify-center z-10 shrink-0 ${bg} ${color} ring-4 ring-white`}>
         <Icon size={18} />
       </div>
       <div className="flex-1 flex flex-col justify-start pt-0.5">
@@ -229,7 +229,7 @@ function ProgressCard({ assignments, mockTests }) {
           <p className="text-[11px] font-bold text-slate-800 leading-snug italic mb-1">"The expert in anything<br/>was once a beginner."</p>
           <p className="text-[9px] font-bold text-amber-700/60">- Helen Hayes</p>
         </div>
-        <div className="relative z-10 w-12 h-12 flex items-center justify-center bg-amber-100/50 rounded-full text-emerald-600 shrink-0 ml-2">
+        <div className="relative z-10 size-12 flex items-center justify-center bg-amber-100/50 rounded-full text-emerald-600 shrink-0 ml-2">
            <Leaf size={24} />
         </div>
       </div>
@@ -276,7 +276,7 @@ function PendingAssignmentsList({ assignments }) {
         
         return (
           <div key={idx} className="flex items-center gap-3 py-3 border-b border-slate-50 last:border-0 last:pb-0">
-             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconBg} ${iconColor}`}>
+             <div className={`size-10 rounded-xl flex items-center justify-center shrink-0 ${iconBg} ${iconColor}`}>
                 <Icon size={18} />
              </div>
              <div className="flex-1 min-w-0">
@@ -311,7 +311,7 @@ function SubjectPerformance({ courses }) {
 
         return (
           <div key={idx} className="border border-slate-100 rounded-[1.25rem] p-4 flex flex-col items-center justify-center flex-1 min-w-[120px]">
-             <div className={`w-10 h-10 rounded-xl mb-3 flex items-center justify-center ${config.bg} ${config.color}`}>
+             <div className={`size-10 rounded-xl mb-3 flex items-center justify-center ${config.bg} ${config.color}`}>
                 <config.Icon size={20} />
              </div>
              <h4 className="font-bold text-slate-800 text-[11px] mb-2 text-center truncate w-full">{item.subjectName || item.name}</h4>
@@ -348,7 +348,7 @@ function Announcements({ notices }) {
           <p className="text-[10px] font-bold text-slate-500 mb-2">{new Date(notice.date || notice.createdAt || new Date()).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
           <p className="text-[11px] font-medium text-slate-600 leading-snug">{notice.content || notice.description}</p>
        </div>
-       <div className="w-20 h-20 shrink-0 flex items-center justify-center text-slate-300 relative z-10 mr-[-10px]">
+       <div className="size-20 shrink-0 flex items-center justify-center text-slate-300 relative z-10 mr-[-10px]">
           <Megaphone size={60} className="transform -rotate-12 text-indigo-200 fill-indigo-100" />
        </div>
     </div>
@@ -437,7 +437,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
+        <div className="size-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
       </div>
     );
   }

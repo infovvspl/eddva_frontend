@@ -384,7 +384,7 @@ const GrievanceHandling: React.FC = () => {
             {showSearchInput ? (
               <div className="relative flex-1 flex items-center gap-2">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
                   <input
                     type="text"
                     placeholder="Search complaints..."
@@ -449,7 +449,7 @@ const GrievanceHandling: React.FC = () => {
         ) : (
           <div className="flex flex-row items-center gap-2.5 w-full sm:w-auto">
             <div className="relative flex-1 sm:flex-initial min-w-0 sm:min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search complaints..."
@@ -565,7 +565,7 @@ const GrievanceHandling: React.FC = () => {
                 onClick={closeTicketModal}
                 className="rounded-full p-1.5 sm:p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-900"
               >
-                <X className="h-5 w-5" />
+                <X className="size-5" />
               </button>
             </div>
 
@@ -590,7 +590,7 @@ const GrievanceHandling: React.FC = () => {
                 <div className="rounded-xl sm:rounded-2xl border border-slate-100 p-3 sm:p-4 dark:border-slate-800">
                   <h4 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">Created At</h4>
                   <p className="mt-1.5 flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
-                    <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                    <Calendar className="size-3.5 text-slate-400" />
                     {selectedTicket.createdAt || selectedTicket.created_at ? new Date(selectedTicket.createdAt || selectedTicket.created_at).toLocaleString() : 'Recently'}
                   </p>
                 </div>
@@ -605,7 +605,7 @@ const GrievanceHandling: React.FC = () => {
                 {/* Ticket messages */}
                 <div className="col-span-full rounded-xl sm:rounded-2xl border border-slate-100 bg-slate-50/50 p-3 sm:p-4 dark:border-slate-800">
                   <h4 className="mb-2.5 sm:mb-3 flex items-center gap-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500">
-                    <MessageSquare className="h-3.5 w-3.5 text-slate-400" />
+                    <MessageSquare className="size-3.5 text-slate-400" />
                     Institute Admin Replies
                   </h4>
                   {loadingMessages ? (
@@ -645,7 +645,7 @@ const GrievanceHandling: React.FC = () => {
                       void reopenTicket(selectedTicket.id);
                     }
                   }}
-                  className="h-5 w-10 cursor-pointer appearance-none rounded-full bg-slate-300 transition before:block before:h-5 before:w-5 before:rounded-full before:bg-white before:shadow before:transition checked:bg-blue-600 checked:before:translate-x-5 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="h-5 w-10 cursor-pointer appearance-none rounded-full bg-slate-300 transition before:block before:size-5 before:rounded-full before:bg-white before:shadow before:transition checked:bg-blue-600 checked:before:translate-x-5 disabled:cursor-not-allowed disabled:opacity-70"
                 />
               </label>
               <div className="flex items-center justify-end gap-2.5">
@@ -654,7 +654,7 @@ const GrievanceHandling: React.FC = () => {
                   onClick={() => void openChatForTicket(selectedTicket)}
                   className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3.5 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100 dark:border-blue-900/50 dark:bg-blue-950/50 dark:text-blue-400 sm:px-4 sm:py-2.5"
                 >
-                  <MessageSquare className="h-3.5 w-3.5" />
+                  <MessageSquare className="size-3.5" />
                   Chat
                 </button>
                 <button

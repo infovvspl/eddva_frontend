@@ -20,8 +20,8 @@ export default function Chat() {
       <div className="grid gap-4 lg:grid-cols-4">
         {conversations.map((item) => (
           <div key={item.title} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${item.tone}`}>
-              <item.icon className="h-5 w-5" />
+            <div className={`flex size-10 items-center justify-center rounded-lg ${item.tone}`}>
+              <item.icon className="size-5" />
             </div>
             <h2 className="mt-4 text-sm font-black text-slate-950 dark:text-white">{item.title}</h2>
             <p className="mt-1 text-xs font-medium text-slate-500">{item.description}</p>
@@ -37,7 +37,7 @@ export default function Chat() {
           </div>
           <div className="flex flex-1 items-center justify-center p-8 text-center">
             <div>
-              <MessageSquare className="mx-auto h-10 w-10 text-slate-300" />
+              <MessageSquare className="mx-auto size-10 text-slate-300" />
               <h3 className="mt-3 text-sm font-black text-slate-900 dark:text-white">No active conversation</h3>
               <p className="mt-1 max-w-sm text-sm text-slate-500">Select a teacher or class discussion once messaging data is available.</p>
             </div>
@@ -48,8 +48,8 @@ export default function Chat() {
                 className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none focus:border-blue-400 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
                 placeholder="Type a message"
               />
-              <button className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white hover:bg-blue-700">
-                <Send className="h-5 w-5" />
+              <button className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white hover:bg-blue-700">
+                <Send className="size-5" />
               </button>
             </div>
           </div>
@@ -59,20 +59,20 @@ export default function Chat() {
           <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-black text-slate-950 dark:text-white">Announcement Links</h2>
-              <Bell className="h-5 w-5 text-blue-600" />
+              <Bell className="size-5 text-blue-600" />
             </div>
             <div className="mt-5 space-y-3">
               <Link to="/school/student/announcements" className="flex items-center justify-between rounded-lg border border-slate-200 p-3 text-sm font-black text-slate-800 hover:bg-slate-50 dark:border-slate-800 dark:text-white dark:hover:bg-slate-800">
                 Institute Notices
-                <Megaphone className="h-4 w-4 text-blue-600" />
+                <Megaphone className="size-4 text-blue-600" />
               </Link>
               <Link to="/school/student/assessments" className="flex items-center justify-between rounded-lg border border-slate-200 p-3 text-sm font-black text-slate-800 hover:bg-slate-50 dark:border-slate-800 dark:text-white dark:hover:bg-slate-800">
                 Exam Notices
-                <Bell className="h-4 w-4 text-rose-600" />
+                <Bell className="size-4 text-rose-600" />
               </Link>
               <Link to="/school/student/support-tickets" className="flex items-center justify-between rounded-lg border border-slate-200 p-3 text-sm font-black text-slate-800 hover:bg-slate-50 dark:border-slate-800 dark:text-white dark:hover:bg-slate-800">
                 Support Tickets
-                <LifeBuoy className="h-4 w-4 text-emerald-600" />
+                <LifeBuoy className="size-4 text-emerald-600" />
               </Link>
             </div>
           </section>

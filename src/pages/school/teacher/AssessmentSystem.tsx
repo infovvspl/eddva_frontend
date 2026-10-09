@@ -136,7 +136,7 @@ function NavCard({
         </div>
         <h4 className="mt-3 sm:mt-4 truncate text-sm sm:text-lg font-bold text-gray-900" title={title}>{title}</h4>
         <p className="mt-1 flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm font-medium text-gray-500">
-          <Users size={14} className="shrink-0 w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="truncate">{meta}</span>
+          <Users size={14} className="shrink-0 size-3.5 sm:size-4" /> <span className="truncate">{meta}</span>
         </p>
       </div>
       <div className="mt-3 sm:mt-4 flex items-center justify-between border-t border-gray-100 pt-2.5 sm:pt-3">
@@ -760,7 +760,12 @@ const AssessmentSystem: React.FC = () => {
     if (!contentText.trim() && !answerKey.trim()) return;
 
     const langLabel = newLang === 'hi' ? 'Hindi' : newLang === 'od' ? 'Odia' : 'English';
-    const confirmed = window.confirm(`Do you want to translate the current question paper and answer key to ${langLabel}?`);
+    const confirmed = await confirm({
+      title: 'Translate Content',
+      message: `Do you want to translate the current question paper and answer key to ${langLabel}?`,
+      confirmLabel: 'Translate',
+      variant: 'default',
+    });
     if (!confirmed) return;
 
     setGeneratingAi(true);
@@ -1068,7 +1073,7 @@ const AssessmentSystem: React.FC = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden min-h-[280px]">
         {loadingTests ? (
           <div className="min-h-[280px] flex flex-col items-center justify-center gap-3">
-            <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+            <div className="size-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
             <p className="text-sm font-semibold text-gray-500">Fetching assessments...</p>
           </div>
         ) : data.length === 0 ? (
@@ -1439,7 +1444,7 @@ const AssessmentSystem: React.FC = () => {
             {formData.scheduled_date && formData.start_time && (
               <div className="rounded-xl border border-blue-200 bg-blue-50/80 p-3 text-xs font-semibold text-blue-900 flex flex-wrap items-center justify-between gap-2 shadow-sm">
                 <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-blue-600 shrink-0" />
+                  <Clock className="size-4 text-blue-600 shrink-0" />
                   <span>Scheduled Test Window:</span>
                 </div>
                 <div className="font-bold text-blue-950 flex items-center gap-2 flex-wrap">

@@ -94,7 +94,7 @@ export default function CareerHome() {
       {/* Header */}
       <div>
         <h1 className="flex items-center gap-2 text-xl sm:text-2xl font-black text-slate-900">
-          <Compass className="text-blue-600 h-5 w-5 sm:h-6 sm:w-6" /> Career Guidance
+          <Compass className="text-blue-600 size-5 sm:size-6" /> Career Guidance
         </h1>
         <p className="mt-0.5 text-xs sm:text-sm font-medium text-slate-500">Discover your strengths and ideal career path</p>
       </div>
@@ -112,7 +112,7 @@ export default function CareerHome() {
           {careerCategories.map((c) => (
             <button key={c.label} onClick={() => navigate(`/school/student/career/explore?stream=${c.stream}`)}
               className={`flex w-32 sm:w-40 shrink-0 flex-col gap-1.5 sm:gap-2 rounded-xl bg-gradient-to-br ${c.color} p-3.5 sm:p-4 text-left text-white transition hover:opacity-90`}>
-              <c.icon className="h-5 w-5 sm:h-6 sm:w-6" />
+              <c.icon className="size-5 sm:size-6" />
               <span className="text-xs sm:text-sm font-bold leading-snug">{c.label}</span>
             </button>
           ))}
@@ -127,7 +127,7 @@ export default function CareerHome() {
             <SkeletonBlock className="h-24 w-full" />
           ) : status?.completed ? (
             <div className="flex items-start gap-3 sm:gap-4">
-              <div className="rounded-xl bg-emerald-50 p-2.5 sm:p-3 text-emerald-600"><CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6" /></div>
+              <div className="rounded-xl bg-emerald-50 p-2.5 sm:p-3 text-emerald-600"><CheckCircle2 className="size-5 sm:size-6" /></div>
               <div className="min-w-0 flex-1">
                 <h3 className="text-base sm:text-lg font-bold text-slate-900">Interest Profile Complete</h3>
                 <p className="text-xs sm:text-sm font-semibold text-blue-600 mt-0.5">Your type: {status.hollandCode ? hollandLabel(status.hollandCode) : '—'}</p>
@@ -143,12 +143,12 @@ export default function CareerHome() {
             </div>
           ) : (
             <div className="flex flex-col items-start gap-3 sm:flex-row sm:gap-4">
-              <div className="rounded-xl bg-blue-50 p-2.5 sm:p-3 text-blue-600"><BrainCircuit className="h-5 w-5 sm:h-6 sm:w-6" /></div>
+              <div className="rounded-xl bg-blue-50 p-2.5 sm:p-3 text-blue-600"><BrainCircuit className="size-5 sm:size-6" /></div>
               <div className="min-w-0 flex-1">
                 <h3 className="text-base sm:text-lg font-bold text-slate-900">Discover Your Interests</h3>
                 <p className="text-xs sm:text-sm text-slate-500 leading-relaxed mt-0.5">Take a 15-question quiz to help us understand what careers suit your personality.</p>
                 <button onClick={() => navigate('/school/student/career/quiz')} className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-xs sm:text-sm font-bold text-white hover:bg-blue-700">
-                  Start Quiz <ChevronRight className="h-4 w-4" />
+                  Start Quiz <ChevronRight className="size-4" />
                 </button>
                 <p className="mt-1.5 text-[10px] sm:text-xs text-slate-400">Takes about 5 minutes</p>
               </div>
@@ -197,7 +197,7 @@ export default function CareerHome() {
           <SkeletonBlock className="h-24 w-full" />
         ) : report ? (
           <div>
-            <div className="flex items-center gap-2"><Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" /><h3 className="text-base sm:text-lg font-bold text-slate-900">Your Career Report</h3></div>
+            <div className="flex items-center gap-2"><Sparkles className="size-4 sm:size-5 text-blue-600" /><h3 className="text-base sm:text-lg font-bold text-slate-900">Your Career Report</h3></div>
             <p className="mt-0.5 text-[10px] sm:text-xs text-slate-400">Last generated {new Date(report.generatedAt).toLocaleDateString('en-GB')}</p>
             <div className="mt-3 flex flex-wrap gap-1.5 sm:gap-2">
               {report.topCareers.slice(0, 3).map((c) => (
@@ -205,24 +205,24 @@ export default function CareerHome() {
               ))}
             </div>
             <button onClick={() => navigate('/school/student/career/report')} className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs sm:text-sm font-bold text-white hover:bg-blue-700">
-              View Full Report <ChevronRight className="h-4 w-4" />
+              View Full Report <ChevronRight className="size-4" />
             </button>
           </div>
         ) : status?.completed ? (
           <div className="flex flex-col items-start gap-3 sm:flex-row sm:gap-4">
-            <div className="rounded-xl bg-violet-50 p-2.5 sm:p-3 text-violet-600"><Sparkles className="h-5 w-5 sm:h-6 sm:w-6" /></div>
+            <div className="rounded-xl bg-violet-50 p-2.5 sm:p-3 text-violet-600"><Sparkles className="size-5 sm:size-6" /></div>
             <div className="min-w-0 flex-1">
               <h3 className="text-base sm:text-lg font-bold text-slate-900">Generate Your Career Report</h3>
               <p className="text-xs sm:text-sm text-slate-500 leading-relaxed mt-0.5">Our AI will analyse your marks, test performance, and interest profile to suggest the best career paths for you.</p>
               <button onClick={() => navigate('/school/student/career/report')} className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-xs sm:text-sm font-bold text-white hover:bg-blue-700">
-                Generate Report <ChevronRight className="h-4 w-4" />
+                Generate Report <ChevronRight className="size-4" />
               </button>
               <p className="mt-1.5 text-[10px] sm:text-xs text-slate-400">Powered by EDVA AI</p>
             </div>
           </div>
         ) : (
           <div className="flex items-start gap-3 opacity-80 sm:gap-4">
-            <div className="rounded-xl bg-slate-100 p-2.5 sm:p-3 text-slate-400"><Lock className="h-5 w-5 sm:h-6 sm:w-6" /></div>
+            <div className="rounded-xl bg-slate-100 p-2.5 sm:p-3 text-slate-400"><Lock className="size-5 sm:size-6" /></div>
             <div className="min-w-0 flex-1">
               <h3 className="text-base sm:text-lg font-bold text-slate-700">Career Report</h3>
               <p className="text-xs sm:text-sm text-slate-500 leading-relaxed mt-0.5">Complete the interest quiz first to unlock your personalised career report.</p>

@@ -10,8 +10,10 @@ import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
 
 import { unwrapSchoolList } from '@/lib/api/school-client';
+import { useConfirm } from '@/context/ConfirmContext';
 
 export default function SyllabusPlanner() {
+  const confirm = useConfirm();
   const navigate = useNavigate();
   const [classes, setClasses] = useState([]);
   const [teachers, setTeachers] = useState([]);
@@ -407,7 +409,11 @@ export default function SyllabusPlanner() {
   };
 
   const handleDeletePlan = async (id) => {
-    if (!window.confirm('Remove this syllabus plan? This also permanently deletes all recorded chapter/topic progress for it — this cannot be undone.')) return;
+    const ok = await confirm({
+      title: 'Remove Syllabus Plan',
+      message: 'Remove this syllabus plan? This also permanently deletes all recorded chapter/topic progress for it — this cannot be undone.',
+    });
+    if (!ok) return;
     try {
       await api.delete(`/syllabus/plans/${id}`);
       toast.success('Target removed successfully');
@@ -421,7 +427,7 @@ export default function SyllabusPlanner() {
   if (loading) {
     return (
       <div className="flex h-[80vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="size-8 animate-spin text-blue-600" />
       </div>
     );
   }
@@ -467,7 +473,7 @@ export default function SyllabusPlanner() {
 
           {classes.length === 0 ? (
             <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
-              <BookOpen className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-700" />
+              <BookOpen className="mx-auto size-12 text-slate-300 dark:text-slate-700" />
               <h3 className="mt-4 text-base font-bold text-slate-900 dark:text-white">No classes registered</h3>
               <p className="mt-1 text-xs text-slate-500">Configure academic classes in Academics setup first.</p>
             </div>

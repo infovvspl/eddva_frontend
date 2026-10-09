@@ -28,14 +28,14 @@ export default function MathSprintHome({ onStart, onViewLeaderboard }) {
           to="/school/student/gamification"
           className="inline-flex items-center gap-1.5 text-xs font-black text-slate-500 hover:text-slate-800 dark:hover:text-white transition uppercase tracking-wider"
         >
-          <ArrowLeft className="h-3 w-3" /> Back to Gamification Center
+          <ArrowLeft className="size-3" /> Back to Gamification Center
         </Link>
       </div>
 
       {/* Header */}
       <div className="text-center space-y-2">
-        <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400">
-          <Zap className="h-6 w-6 animate-pulse" />
+        <div className="inline-flex size-12 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400">
+          <Zap className="size-6 animate-pulse" />
         </div>
         <h1 className="text-3xl font-black text-slate-900 dark:text-white">Math Sprint</h1>
         <p className="text-sm font-medium text-slate-500">Rapid-fire arithmetic sums. Keep answering correctly to survive and increase difficulty!</p>
@@ -44,7 +44,7 @@ export default function MathSprintHome({ onStart, onViewLeaderboard }) {
       {/* Rules Board */}
       <section className="rounded-2xl border border-slate-200 bg-gradient-to-r from-rose-50/50 to-white p-5 dark:border-slate-800 dark:from-slate-900/50 dark:to-slate-950 shadow-sm">
         <h2 className="text-sm font-black uppercase tracking-wider text-rose-700 dark:text-rose-400 flex items-center gap-2">
-          <Flame className="h-4 w-4 animate-bounce" /> Sprint Mechanics & Rewards
+          <Flame className="size-4 animate-bounce" /> Sprint Mechanics & Rewards
         </h2>
         <ul className="mt-3 space-y-2.5 text-xs font-semibold text-slate-600 dark:text-slate-400">
           <li className="flex items-center gap-2">⏱️ <strong>15-Second Limit</strong>: Answer each equation before time runs out.</li>
@@ -90,7 +90,7 @@ export default function MathSprintHome({ onStart, onViewLeaderboard }) {
         {mode === 'free_play' && (
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
-              <ShieldAlert className="h-4 w-4" /> Selected Grade Difficulty
+              <ShieldAlert className="size-4" /> Selected Grade Difficulty
             </label>
             <div className="grid grid-cols-3 gap-2 mt-1">
               {[
@@ -126,13 +126,13 @@ export default function MathSprintHome({ onStart, onViewLeaderboard }) {
           >
             {starting ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Seeding sprint arena...
+                <Loader2 className="size-4 animate-spin" /> Seeding sprint arena...
               </>
             ) : !hasGameQuizzes ? (
               <>Locked (AI disabled)</>
             ) : (
               <>
-                <Play className="h-4 w-4 fill-current" /> Start Math Sprint
+                <Play className="size-4 fill-current" /> Start Math Sprint
               </>
             )}
           </button>
@@ -142,7 +142,7 @@ export default function MathSprintHome({ onStart, onViewLeaderboard }) {
             onClick={onViewLeaderboard}
             className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 py-3 text-sm font-black text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-950 transition"
           >
-            <Trophy className="h-4 w-4 text-amber-500" /> Leaderboard
+            <Trophy className="size-4 text-amber-500" /> Leaderboard
           </button>
         </div>
       </div>

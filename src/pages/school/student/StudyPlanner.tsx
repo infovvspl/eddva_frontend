@@ -11,7 +11,7 @@ import {
   RotateCcw, Map as MapIcon, ListTodo, Star, CheckCheck, Rocket,
   ArrowRight, ArrowLeft, Sparkles, Activity, Bell,
   TrendingDown, AlertTriangle, RefreshCw, FileText, ClipboardList,
-  BrainCircuit, Search, Lock, Atom, FlaskConical, Stethoscope, Tv, Leaf, Calculator, Dumbbell,
+  BrainCircuit,
 } from "lucide-react";
 import {
   useTodaysPlan, useWeeklyPlanGrouped, useGeneratePlan, useRegeneratePlan,
@@ -107,11 +107,11 @@ function GeneratingView() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-violet-50 flex items-center justify-center p-4">
       <div className="text-center max-w-md">
-        <div className="relative w-24 h-24 mx-auto mb-8">
+        <div className="relative size-24 mx-auto mb-8">
           <div className="absolute inset-0 border-4 border-indigo-100 rounded-full" />
           <div className="absolute inset-0 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
           <div className="absolute inset-0 flex items-center justify-center">
-            <Brain className="w-10 h-10 text-indigo-500 animate-pulse" />
+            <Brain className="size-10 text-indigo-500 animate-pulse" />
           </div>
         </div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Creating your study plan</h2>
@@ -120,15 +120,15 @@ function GeneratingView() {
         </p>
         <div className="space-y-3">
           {[
-            { label: "Checking your syllabus", icon: BookOpen },
-            { label: "Finding important topics", icon: Search },
-            { label: "Making daily schedule", icon: Calendar },
-            { label: "Preparing for your exam", icon: Target },
+            { label: "Checking your syllabus", icon: "📚" },
+            { label: "Finding important topics", icon: "🔍" },
+            { label: "Making daily schedule", icon: "📅" },
+            { label: "Preparing for your exam", icon: "🎯" },
           ].map((s, i) => (
             <div key={i} className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm">
-              <span className="text-lg"><s.icon className="size-5 text-indigo-500" /></span>
+              <span className="text-lg">{s.icon}</span>
               <span className="text-sm text-gray-700 font-medium">{s.label}</span>
-              <div className="ml-auto w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+              <div className="ml-auto size-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
             </div>
           ))}
         </div>
@@ -336,8 +336,8 @@ function TopicLeaf({ topic, isLast, lineColor }: { topic: any; isLast: boolean; 
       <div className={`flex-1 flex items-center gap-3 py-2 px-3 ml-1 rounded-xl transition-all border border-transparent
         ${topic.status === "in_progress" ? "bg-amber-50/50 border-amber-100" : "hover:bg-slate-50"}`}>
 
-        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${st.dot}`}>
-          {topic.status === "completed" && <CheckCheck className="size-2.5 text-white" strokeWidth={3} />}
+        <div className={`size-4 rounded-full border-2 flex items-center justify-center shrink-0 ${st.dot}`}>
+          {topic.status === "completed" && <span className="text-[9px] text-white font-black">✓</span>}
         </div>
 
         <div className="flex-1 min-w-0">
@@ -350,7 +350,7 @@ function TopicLeaf({ topic, isLast, lineColor }: { topic: any; isLast: boolean; 
 
           <div className="flex items-center gap-3 mt-1.5">
             <div className="flex items-center gap-1.5" title="Lectures">
-              <PlayCircle className={`w-3 h-3 ${lectureDone ? "text-emerald-500" : "text-slate-300"}`} />
+              <PlayCircle className={`size-3 ${lectureDone ? "text-emerald-500" : "text-slate-300"}`} />
               <div className="w-8 h-1 bg-slate-100 rounded-full overflow-hidden">
                 <div className={`h-full transition-all ${lectureDone ? "bg-emerald-500" : "bg-blue-400"}`}
                   style={{ width: `${topic.lecture?.avgWatchPct ?? 0}%` }} />
@@ -358,7 +358,7 @@ function TopicLeaf({ topic, isLast, lineColor }: { topic: any; isLast: boolean; 
             </div>
 
             <div className="flex items-center gap-1.5" title="Practice">
-              <Zap className={`w-3 h-3 ${practiceDone ? "text-emerald-500" : "text-slate-300"}`} />
+              <Zap className={`size-3 ${practiceDone ? "text-emerald-500" : "text-slate-300"}`} />
               <span className="text-[10px] font-medium text-slate-400">
                 {topic.pyq?.attempted ?? 0} solved
               </span>
@@ -366,7 +366,7 @@ function TopicLeaf({ topic, isLast, lineColor }: { topic: any; isLast: boolean; 
 
             {topic.aiSession && (
               <div className="flex items-center gap-1.5" title="AI Session">
-                <Brain className={`w-3 h-3 ${aiDone ? "text-emerald-500" : "text-slate-300"}`} />
+                <Brain className={`size-3 ${aiDone ? "text-emerald-500" : "text-slate-300"}`} />
               </div>
             )}
           </div>
@@ -414,7 +414,7 @@ function ChapterNode({ chapter, cfg, isLast, parentLineColor }: {
           className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-all
             ${open ? `${cfg.bg} ${cfg.border}` : "bg-white border-slate-200 hover:border-slate-300"}`}
         >
-          <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${allDone ? "bg-emerald-500" : cfg.dot}`} />
+          <div className={`size-2.5 rounded-full shrink-0 ${allDone ? "bg-emerald-500" : cfg.dot}`} />
           <span className="flex-1 text-sm font-semibold text-slate-800 truncate">{chapter.chapterName}</span>
           <div className="flex items-center gap-2 shrink-0">
             <span className="text-[10px] text-slate-400 font-medium">{done}/{total}</span>
@@ -424,8 +424,8 @@ function ChapterNode({ chapter, cfg, isLast, parentLineColor }: {
               </div>
             )}
             {open
-              ? <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-              : <ChevronRight className="w-3.5 h-3.5 text-slate-400" />}
+              ? <ChevronDown className="size-3.5 text-slate-400" />
+              : <ChevronRight className="size-3.5 text-slate-400" />}
           </div>
         </button>
 
@@ -451,10 +451,10 @@ function SubjectNode({ subject, index }: { subject: any; index: number }) {
   const pct = subject.topicsTotal > 0 ? Math.round((subject.topicsCompleted / subject.topicsTotal) * 100) : 0;
   const chapters: any[] = subject.chapters ?? [];
 
-  const subjectIcons: Record<string, typeof Atom> = {
-    physics: Atom, chemistry: FlaskConical, mathematics: Calculator, math: Calculator, biology: Leaf,
+  const subjectEmoji: Record<string, string> = {
+    physics: "⚛️", chemistry: "🧪", mathematics: "📐", math: "📐", biology: "🌱",
   };
-  const SubjectIcon = Object.entries(subjectIcons).find(([k]) => subject.subjectName?.toLowerCase().includes(k))?.[1] ?? BookOpen;
+  const emoji = Object.entries(subjectEmoji).find(([k]) => subject.subjectName?.toLowerCase().includes(k))?.[1] ?? "📚";
 
   return (
     <div className="mb-4">
@@ -472,7 +472,7 @@ function SubjectNode({ subject, index }: { subject: any; index: number }) {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <SubjectIcon className="size-5 shrink-0" />
+            <span className="text-lg">{emoji}</span>
             <span className={`text-base font-black ${cfg.color}`}>{subject.subjectName}</span>
           </div>
           <div className="flex items-center gap-2 mt-1">
@@ -485,10 +485,10 @@ function SubjectNode({ subject, index }: { subject: any; index: number }) {
           </div>
         </div>
 
-        <div className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center ${cfg.bg}`}>
+        <div className={`shrink-0 size-8 rounded-xl flex items-center justify-center ${cfg.bg}`}>
           {open
-            ? <ChevronDown className={`w-4 h-4 ${cfg.color}`} />
-            : <ChevronRight className={`w-4 h-4 ${cfg.color}`} />}
+            ? <ChevronDown className={`size-4 ${cfg.color}`} />
+            : <ChevronRight className={`size-4 ${cfg.color}`} />}
         </div>
       </button>
 
@@ -521,12 +521,12 @@ function CurriculumRoadmap({ reportOverride }: { reportOverride?: ProgressReport
   const report = (reportOverride?.subjects?.length ?? 0) > 0 ? reportOverride : fetchedReport;
   if (!reportOverride && isLoading) return (
     <div className="flex items-center justify-center h-48">
-      <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      <div className="size-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
     </div>
   );
   if (!report?.subjects?.length) return (
     <div className="text-center py-16 text-gray-400">
-      <MapIcon className="w-12 h-12 mx-auto mb-3 opacity-30" />
+      <MapIcon className="size-12 mx-auto mb-3 opacity-30" />
       <p className="text-sm font-medium text-gray-500">
         {isError ? "Couldn't load your curriculum." : "Syllabus data is being prepared."}
       </p>
@@ -537,7 +537,7 @@ function CurriculumRoadmap({ reportOverride }: { reportOverride?: ProgressReport
       </p>
       <button onClick={() => refetch()}
         className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-sm font-medium rounded-xl border border-indigo-200 transition-colors">
-        <RotateCcw className="w-3.5 h-3.5" /> Refresh
+        <RotateCcw className="size-3.5" /> Refresh
       </button>
     </div>
   );
@@ -592,7 +592,7 @@ function CurriculumRoadmap({ reportOverride }: { reportOverride?: ProgressReport
           { dot: "bg-slate-300", label: "Locked" },
         ].map(l => (
           <div key={l.label} className="flex items-center gap-1.5">
-            <div className={`w-2.5 h-2.5 rounded-full ${l.dot}`} />
+            <div className={`size-2.5 rounded-full ${l.dot}`} />
             {l.label}
           </div>
         ))}
@@ -610,12 +610,12 @@ function CurriculumRoadmap({ reportOverride }: { reportOverride?: ProgressReport
 // ─── Plan Item Card ────────────────────────────────────────────────────────────
 
 const TYPE_CFG: Record<string, { icon: React.ReactNode; color: string; bg: string }> = {
-  lecture: { icon: <PlayCircle className="w-4 h-4" />, color: "text-blue-600", bg: "bg-blue-50 border-blue-200" },
-  practice: { icon: <Activity className="w-4 h-4" />, color: "text-violet-600", bg: "bg-violet-50 border-violet-200" },
-  revision: { icon: <BookOpen className="w-4 h-4" />, color: "text-amber-600", bg: "bg-amber-50 border-amber-200" },
-  mock_test: { icon: <Trophy className="w-4 h-4" />, color: "text-red-600", bg: "bg-red-50 border-red-200" },
-  battle: { icon: <Zap className="w-4 h-4" />, color: "text-orange-600", bg: "bg-orange-50 border-orange-200" },
-  doubt_session: { icon: <Brain className="w-4 h-4" />, color: "text-teal-600", bg: "bg-teal-50 border-teal-200" },
+  lecture: { icon: <PlayCircle className="size-4" />, color: "text-blue-600", bg: "bg-blue-50 border-blue-200" },
+  practice: { icon: <Activity className="size-4" />, color: "text-violet-600", bg: "bg-violet-50 border-violet-200" },
+  revision: { icon: <BookOpen className="size-4" />, color: "text-amber-600", bg: "bg-amber-50 border-amber-200" },
+  mock_test: { icon: <Trophy className="size-4" />, color: "text-red-600", bg: "bg-red-50 border-red-200" },
+  battle: { icon: <Zap className="size-4" />, color: "text-orange-600", bg: "bg-orange-50 border-orange-200" },
+  doubt_session: { icon: <Brain className="size-4" />, color: "text-teal-600", bg: "bg-teal-50 border-teal-200" },
 };
 
 function PlanItemCard({ item, onComplete, onSkip, onOpen, priority, hideReviewIfDone }: {
@@ -641,9 +641,9 @@ function PlanItemCard({ item, onComplete, onSkip, onOpen, priority, hideReviewIf
       ${isDone ? "opacity-50 bg-gray-50 border-gray-200" : isSkip ? "opacity-35 bg-gray-50 border-gray-200" : "bg-white border-gray-200 hover:border-indigo-200 hover:shadow-sm"}`}
     >
       <div className="flex gap-2.5 w-full min-w-0">
-        <div className={`shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-lg border flex items-center justify-center
+        <div className={`shrink-0 size-7 sm:size-8 rounded-lg border flex items-center justify-center
           ${isDone ? "bg-emerald-50 border-emerald-200 text-emerald-600" : `${t.bg} ${t.color}`}`}>
-          {isDone ? <CheckCircle2 className="w-3.5 h-3.5" /> : t.icon}
+          {isDone ? <CheckCircle2 className="size-3.5" /> : t.icon}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-1.5 min-w-0 sm:gap-2">
@@ -662,7 +662,7 @@ function PlanItemCard({ item, onComplete, onSkip, onOpen, priority, hideReviewIf
               <span className={`text-[10px] sm:text-[11px] px-1 sm:px-1.5 py-0.5 rounded-full ${cfg.bg} ${cfg.color} font-medium border ${cfg.border}`}>{item.content.subjectName}</span>
             )}
             <span className="text-[10px] sm:text-[11px] text-gray-400 flex items-center gap-0.5 shrink-0">
-              <Clock className="w-3 h-3" />{planItemMinutes(item)}m
+              <Clock className="size-3" />{planItemMinutes(item)}m
             </span>
             {item.content?.topicName && <span className="hidden sm:inline text-[11px] text-gray-400 truncate max-w-[150px]">{item.content.topicName}</span>}
           </div>
@@ -705,8 +705,8 @@ function PracticeHistoryReviewCard({ session }: {
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden transition-all hover:border-indigo-200">
       <div className="p-3 flex items-center gap-3">
-        <div className="shrink-0 w-8 h-8 rounded-lg bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-600">
-          <Activity className="w-4 h-4" />
+        <div className="shrink-0 size-8 rounded-lg bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-600">
+          <Activity className="size-4" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="font-medium text-sm text-gray-900 truncate">{session.topicName}</div>
@@ -731,7 +731,7 @@ function PracticeHistoryReviewCard({ session }: {
             className="px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 text-xs font-bold hover:bg-indigo-100 transition-colors flex items-center gap-1"
           >
             {expanded ? "Hide Details" : "Review Questions"}
-            <ChevronDown className={`w-3 h-3 transition-transform ${expanded ? "rotate-180" : ""}`} />
+            <ChevronDown className={`size-3 transition-transform ${expanded ? "rotate-180" : ""}`} />
           </button>
         </div>
       </div>
@@ -748,7 +748,7 @@ function PracticeHistoryReviewCard({ session }: {
               return (
                 <div key={idx} className="bg-white rounded-lg border border-gray-200 p-3.5 space-y-3 shadow-sm">
                   <div className="flex items-start gap-3">
-                    <span className="shrink-0 w-6 h-6 rounded bg-indigo-50 text-indigo-600 text-[10px] font-bold flex items-center justify-center border border-indigo-100">Q{idx + 1}</span>
+                    <span className="shrink-0 size-6 rounded bg-indigo-50 text-indigo-600 text-[10px] font-bold flex items-center justify-center border border-indigo-100">Q{idx + 1}</span>
                     <p className="text-sm font-semibold text-gray-900 leading-relaxed">{q.question}</p>
                   </div>
 
@@ -803,8 +803,8 @@ function NoteHistoryReviewCard({ session, onNavigate }: {
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden transition-all hover:border-indigo-200">
       <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
-            <BrainCircuit className="w-5 h-5" />
+          <div className="size-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+            <BrainCircuit className="size-5" />
           </div>
           <div className="min-w-0">
             <p className="text-sm font-bold text-gray-800 truncate">{session.topicName}</p>
@@ -814,9 +814,9 @@ function NoteHistoryReviewCard({ session, onNavigate }: {
               </p>
               {(hlCount > 0 || cmCount > 0 || dbCount > 0) && (
                 <div className="flex items-center gap-1.5 ml-1">
-                  {hlCount > 0 && <span className="text-[9px] font-medium bg-yellow-50 text-yellow-700 px-1.5 py-0.5 rounded border border-yellow-100 flex items-center gap-0.5"><Sparkles className="w-2.5 h-2.5" /> {hlCount}</span>}
-                  {cmCount > 0 && <span className="text-[9px] font-medium bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100 flex items-center gap-0.5"><FileText className="w-2.5 h-2.5" /> {cmCount}</span>}
-                  {dbCount > 0 && <span className="text-[9px] font-medium bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded border border-purple-100 flex items-center gap-0.5"><Brain className="w-2.5 h-2.5" /> {dbCount}</span>}
+                  {hlCount > 0 && <span className="text-[9px] font-medium bg-yellow-50 text-yellow-700 px-1.5 py-0.5 rounded border border-yellow-100 flex items-center gap-0.5"><Sparkles className="size-2.5" /> {hlCount}</span>}
+                  {cmCount > 0 && <span className="text-[9px] font-medium bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100 flex items-center gap-0.5"><FileText className="size-2.5" /> {cmCount}</span>}
+                  {dbCount > 0 && <span className="text-[9px] font-medium bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded border border-purple-100 flex items-center gap-0.5"><Brain className="size-2.5" /> {dbCount}</span>}
                 </div>
               )}
             </div>
@@ -889,7 +889,7 @@ function NoteHistoryReviewCard({ session, onNavigate }: {
 
 // ─── Micro Goals Card ──────────────────────────────────────────────────────────
 
-type MicroGoal = { id: string; icon: typeof RotateCcw; text: string; sub: string; url: string };
+type MicroGoal = { id: string; icon: string; text: string; sub: string; url: string };
 
 function MicroGoalsCard({ weakTopics, revisionTopics, pendingPYQTopics, highNegativeTopics }: {
   weakTopics: Array<{ topicId: string; topicName: string; subjectName: string; accuracy: number }>;
@@ -905,16 +905,16 @@ function MicroGoalsCard({ weakTopics, revisionTopics, pendingPYQTopics, highNega
   const goals: MicroGoal[] = [];
 
   revisionTopics.filter(t => t.isOverdue).slice(0, 2).forEach(t =>
-    goals.push({ id: `rev-${t.topicId}`, icon: RotateCcw, text: `Revise ${t.topicName}`, sub: `${t.subjectName} · Overdue`, url: `/school/student/ai-study/${t.topicId}` })
+    goals.push({ id: `rev-${t.topicId}`, icon: "🔁", text: `Revise ${t.topicName}`, sub: `${t.subjectName} · Overdue`, url: `/school/student/ai-study/${t.topicId}` })
   );
   weakTopics.slice(0, 2).forEach(t =>
-    goals.push({ id: `wk-${t.topicId}`, icon: Zap, text: `Solve 10 ${t.topicName} questions`, sub: `${t.subjectName} · ${t.accuracy}% accuracy`, url: `/school/student/quiz?topicId=${t.topicId}` })
+    goals.push({ id: `wk-${t.topicId}`, icon: "⚡", text: `Solve 10 ${t.topicName} questions`, sub: `${t.subjectName} · ${t.accuracy}% accuracy`, url: `/school/student/quiz?topicId=${t.topicId}` })
   );
   highNegativeTopics.slice(0, 1).forEach(t =>
-    goals.push({ id: `neg-${t.topicId}`, icon: Target, text: `Redo ${t.topicName} PYQ`, sub: `${t.subjectName} · ${t.wrong}/${t.attempted} wrong`, url: `/school/student/quiz?topicId=${t.topicId}` })
+    goals.push({ id: `neg-${t.topicId}`, icon: "🎯", text: `Redo ${t.topicName} PYQ`, sub: `${t.subjectName} · ${t.wrong}/${t.attempted} wrong`, url: `/school/student/quiz?topicId=${t.topicId}` })
   );
   pendingPYQTopics.slice(0, 2).forEach(t =>
-    goals.push({ id: `pyq-${t.topicId}`, icon: ClipboardList, text: `Attempt ${t.topicName} PYQ`, sub: `${t.subjectName} · Not attempted`, url: `/school/student/quiz?topicId=${t.topicId}` })
+    goals.push({ id: `pyq-${t.topicId}`, icon: "📋", text: `Attempt ${t.topicName} PYQ`, sub: `${t.subjectName} · Not attempted`, url: `/school/student/quiz?topicId=${t.topicId}` })
   );
 
   const display = goals.slice(0, 5);
@@ -923,7 +923,7 @@ function MicroGoalsCard({ weakTopics, revisionTopics, pendingPYQTopics, highNega
   return (
     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-3 bg-amber-50 border-b border-amber-100">
-        <Zap className="w-4 h-4 text-amber-500" />
+        <Zap className="size-4 text-amber-500" />
         <h3 className="text-sm font-bold text-amber-700 flex-1">Micro Goals</h3>
         {display.length > 0 && (
           <div className="flex items-center gap-2">
@@ -937,7 +937,7 @@ function MicroGoalsCard({ weakTopics, revisionTopics, pendingPYQTopics, highNega
       </div>
       {display.length === 0 ? (
         <div className="px-4 py-5 text-center">
-          <Trophy className="w-7 h-7 text-amber-300 mx-auto mb-2" />
+          <Trophy className="size-7 text-amber-300 mx-auto mb-2" />
           <p className="text-xs text-gray-400">Complete more topics to unlock personalised micro goals.</p>
         </div>
       ) : (
@@ -947,14 +947,14 @@ function MicroGoalsCard({ weakTopics, revisionTopics, pendingPYQTopics, highNega
             return (
               <div key={g.id} className={`flex items-start gap-3 px-4 py-2.5 transition-colors ${done ? "bg-gray-50" : "hover:bg-amber-50/30"}`}>
                 <button onClick={() => toggle(g.id)}
-                  className={`shrink-0 mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center transition-all
+                  className={`shrink-0 mt-0.5 size-4 rounded border-2 flex items-center justify-center transition-all
                     ${done ? "bg-emerald-500 border-emerald-500" : "border-gray-300 hover:border-amber-400"}`}>
-                  {done && <CheckCheck className="w-2.5 h-2.5 text-white" />}
+                  {done && <CheckCheck className="size-2.5 text-white" />}
                 </button>
                 <div className="flex-1 min-w-0">
                   <button onClick={() => !done && navigate(g.url)}
-                    className={`text-xs font-medium text-left leading-snug inline-flex items-center gap-1.5 ${done ? "line-through text-gray-400" : "text-gray-800 hover:text-indigo-600"}`}>
-                    <g.icon className="size-3 shrink-0" /> {g.text}
+                    className={`text-xs font-medium text-left leading-snug ${done ? "line-through text-gray-400" : "text-gray-800 hover:text-indigo-600"}`}>
+                    {g.icon} {g.text}
                   </button>
                   <div className="text-[10px] text-gray-400 mt-0.5">{g.sub}</div>
                 </div>
@@ -985,46 +985,46 @@ function SmartRemindersCard({ revisionTopics, weeklyActivity, pendingMockTests, 
   const activeDays = weeklyActivity.filter(d => d.minutesStudied > 0).length;
 
   type Sev = "high" | "medium" | "info";
-  const reminders: Array<{ id: string; icon: typeof AlertTriangle; text: string; sev: Sev; action?: { label: string; fn: () => void } }> = [];
+  const reminders: Array<{ id: string; icon: string; text: string; sev: Sev; action?: { label: string; fn: () => void } }> = [];
 
   if (overdueCount > 0)
     reminders.push({
-      id: "overdue", icon: AlertTriangle, sev: "high",
+      id: "overdue", icon: "⚠️", sev: "high",
       text: `${overdueCount} topic${overdueCount > 1 ? "s" : ""} overdue for revision`,
       action: { label: "Revise now →", fn: () => onTabChange("revision") }
     });
 
   if (activeDays < 3)
     reminders.push({
-      id: "inactive", icon: TrendingDown, sev: activeDays === 0 ? "high" : "medium",
+      id: "inactive", icon: "📉", sev: activeDays === 0 ? "high" : "medium",
       text: `Only ${activeDays} active day${activeDays !== 1 ? "s" : ""} this week — streak at risk`,
       action: { label: "Study today →", fn: () => onTabChange("today") }
     });
 
   if (pendingMockTests.length > 0)
     reminders.push({
-      id: "mock", icon: FileText, sev: "info",
+      id: "mock", icon: "📝", sev: "info",
       text: `${pendingMockTests.length} mock test${pendingMockTests.length > 1 ? "s" : ""} available`,
       action: { label: "Take now →", fn: () => navigate("/school/student/assessments") }
     });
 
   if (forgottenConcepts.length > 3)
     reminders.push({
-      id: "forgotten", icon: RotateCcw, sev: "medium",
+      id: "forgotten", icon: "🔁", sev: "medium",
       text: `${forgottenConcepts.length} concepts not revisited in 14+ days`,
       action: { label: "View →", fn: () => onTabChange("revision") }
     });
 
   if (weakTopics.length > 5)
     reminders.push({
-      id: "weak", icon: Zap, sev: "medium",
+      id: "weak", icon: "⚡", sev: "medium",
       text: `${weakTopics.length} weak topics need practice`,
       action: { label: "Practice →", fn: () => onTabChange("weakness") }
     });
 
   if (pendingPYQTopics.length > 0)
     reminders.push({
-      id: "pyq", icon: ClipboardList, sev: "info",
+      id: "pyq", icon: "📋", sev: "info",
       text: `${pendingPYQTopics.length} topics with no PYQ attempts yet`,
       action: { label: "Go to Backlogs →", fn: () => { onTabChange("backlogs"); onBacklogPageChange("pyq"); } }
     });
@@ -1044,7 +1044,7 @@ function SmartRemindersCard({ revisionTopics, weeklyActivity, pendingMockTests, 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-3 bg-indigo-50 border-b border-indigo-100">
-        <Bell className="w-4 h-4 text-indigo-500" />
+        <Bell className="size-4 text-indigo-500" />
         <h3 className="text-sm font-bold text-indigo-700 flex-1">Smart Reminders</h3>
         {urgentCount > 0 && (
           <span className="text-[10px] font-bold text-red-600 bg-red-100 px-1.5 py-0.5 rounded-full border border-red-200">
@@ -1054,7 +1054,7 @@ function SmartRemindersCard({ revisionTopics, weeklyActivity, pendingMockTests, 
       </div>
       {display.length === 0 ? (
         <div className="px-4 py-5 text-center">
-          <CheckCircle2 className="w-7 h-7 text-emerald-400 mx-auto mb-2" />
+          <CheckCircle2 className="size-7 text-emerald-400 mx-auto mb-2" />
           <p className="text-xs text-gray-400">All caught up — no urgent reminders!</p>
         </div>
       ) : (
@@ -1064,7 +1064,7 @@ function SmartRemindersCard({ revisionTopics, weeklyActivity, pendingMockTests, 
               onClick={r.action ? r.action.fn : undefined}
               className={`px-4 py-2.5 ${SEV[r.sev].row} ${r.action ? "cursor-pointer hover:brightness-95 transition-all" : ""}`}>
               <div className="flex items-start gap-2">
-                <r.icon className="size-3.5 shrink-0 mt-px" />
+                <span className="text-sm shrink-0 mt-px">{r.icon}</span>
                 <div className="flex-1 min-w-0">
                   <span className={`text-xs font-medium leading-snug block ${SEV[r.sev].text}`}>{r.text}</span>
                   {r.action && (
@@ -1172,30 +1172,30 @@ function AISarthiCard({ todayItems, streak, xpPoints, progressReport, weeklyActi
 
   // ── Build personalised insights ───────────────────────────────────────────────
   type InsightSeverity = "warning" | "success" | "info";
-  const insights: { icon: typeof TrendingDown; text: string; sev: InsightSeverity }[] = [];
+  const insights: { icon: string; text: string; sev: InsightSeverity }[] = [];
 
   if (consistencyDropped)
-    insights.push({ icon: TrendingDown, text: "Your consistency dropped this week.", sev: "warning" });
+    insights.push({ icon: "📉", text: "Your consistency dropped this week.", sev: "warning" });
   if (lectureImbalance)
-    insights.push({ icon: Tv, text: "You are spending too much time watching lectures vs solving questions.", sev: "warning" });
+    insights.push({ icon: "📺", text: "You are spending too much time watching lectures vs solving questions.", sev: "warning" });
   if (overdueCount > 5 || (syllabusCompleted > 0 && overdueCount / syllabusCompleted > 0.3))
-    insights.push({ icon: RotateCcw, text: "Your revision gap is too high. Schedule revision sessions.", sev: "warning" });
+    insights.push({ icon: "🔁", text: "Your revision gap is too high. Schedule revision sessions.", sev: "warning" });
   if (testReadiness > 0 && testReadiness < 50)
-    insights.push({ icon: FileText, text: "Mock test accuracy is below 50%. Increase practice question frequency.", sev: "warning" });
+    insights.push({ icon: "📝", text: "Mock test accuracy is below 50%. Increase practice question frequency.", sev: "warning" });
   if (weakTopicsCount >= 5)
-    insights.push({ icon: AlertTriangle, text: `${weakTopicsCount} weak topics need focused practice this week.`, sev: "warning" });
+    insights.push({ icon: "⚠️", text: `${weakTopicsCount} weak topics need focused practice this week.`, sev: "warning" });
   if (bestTimeInsight)
-    insights.push({ icon: Clock, text: bestTimeInsight, sev: "info" });
+    insights.push({ icon: "⏰", text: bestTimeInsight, sev: "info" });
   if (streak >= 7)
-    insights.push({ icon: Flame, text: `${streak}-day streak! You're building an unbreakable habit.`, sev: "success" });
+    insights.push({ icon: "🔥", text: `${streak}-day streak! You're building an unbreakable habit.`, sev: "success" });
   if (syllabusPct >= 80)
-    insights.push({ icon: Rocket, text: "Syllabus almost complete — start full-length mock tests now.", sev: "success" });
+    insights.push({ icon: "🚀", text: "Syllabus almost complete — start full-length mock tests now.", sev: "success" });
   if (testReadiness >= 75)
-    insights.push({ icon: Dumbbell, text: "Excellent test accuracy — keep the momentum.", sev: "success" });
+    insights.push({ icon: "💪", text: "Excellent test accuracy — keep the momentum.", sev: "success" });
   if (insights.length === 0 && syllabusPct === 0)
-    insights.push({ icon: Sparkles, text: "Complete more study sessions to unlock personalised insights.", sev: "info" });
+    insights.push({ icon: "✨", text: "Complete more study sessions to unlock personalised insights.", sev: "info" });
   if (insights.length === 0)
-    insights.push({ icon: BookOpen, text: "You're on track. Keep completing tasks consistently.", sev: "info" });
+    insights.push({ icon: "📚", text: "You're on track. Keep completing tasks consistently.", sev: "info" });
 
   // Sort: warnings first, then info, then success
   const ORDER: Record<InsightSeverity, number> = { warning: 0, info: 1, success: 2 };
@@ -1208,19 +1208,19 @@ function AISarthiCard({ todayItems, streak, xpPoints, progressReport, weeklyActi
   };
 
   const METRICS = [
-    { label: "Syllabus", value: `${syllabusPct}%`, score: syllabusPct, icon: BookOpen },
-    { label: "Consistency", value: `${streak} day streak`, score: Math.min(100, streak * 14), icon: Flame },
-    { label: "Test Ready", value: doneSessions.length > 0 ? `${testReadiness}%` : "—", score: testReadiness, icon: FileText },
-    { label: "XP Points", value: xpPoints.toLocaleString(), score: -1, icon: Star },
-    { label: "Rev. Health", value: `${revisionHealth}%`, score: revisionHealth, icon: RotateCcw },
-    { label: "Weak Topics", value: String(weakTopicsCount), score: weakTopicsCount === 0 ? 100 : weakTopicsCount > 10 ? 10 : 50, icon: Zap },
+    { label: "Syllabus", value: `${syllabusPct}%`, score: syllabusPct, icon: "📚" },
+    { label: "Consistency", value: `${streak} day streak`, score: Math.min(100, streak * 14), icon: "🔥" },
+    { label: "Test Ready", value: doneSessions.length > 0 ? `${testReadiness}%` : "—", score: testReadiness, icon: "📝" },
+    { label: "XP Points", value: xpPoints.toLocaleString(), score: -1, icon: "⭐" },
+    { label: "Rev. Health", value: `${revisionHealth}%`, score: revisionHealth, icon: "🔁" },
+    { label: "Weak Topics", value: String(weakTopicsCount), score: weakTopicsCount === 0 ? 100 : weakTopicsCount > 10 ? 10 : 50, icon: "⚡" },
   ];
 
   return (
     <div className="bg-white border border-indigo-100 rounded-2xl overflow-hidden shadow-sm">
       {/* Header */}
       <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-3 flex items-center gap-2">
-        <Brain className="w-4 h-4 text-white" />
+        <Brain className="size-4 text-white" />
         <span className="text-sm font-bold text-white">AI Sarthi</span>
         <span className="ml-auto text-[10px] bg-white/20 text-white px-2 py-0.5 rounded-full font-semibold">
           Personalised
@@ -1231,7 +1231,7 @@ function AISarthiCard({ todayItems, streak, xpPoints, progressReport, weeklyActi
       <div className="grid grid-cols-3 divide-x divide-y divide-gray-100 border-b border-gray-100">
         {METRICS.map(m => (
           <div key={m.label} className={`px-2 py-2.5 text-center ${m.score >= 0 ? metricBg(m.score) : "bg-slate-50"}`}>
-            <div className="mb-0.5 flex items-center justify-center"><m.icon className="size-4" /></div>
+            <div className="text-base mb-0.5">{m.icon}</div>
             <div className={`text-sm font-bold leading-none ${m.score >= 0 ? metricColor(m.score) : "text-slate-600"}`}>
               {m.value}
             </div>
@@ -1245,7 +1245,7 @@ function AISarthiCard({ todayItems, streak, xpPoints, progressReport, weeklyActi
         <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Insights</p>
         {insights.slice(0, 3).map((ins, i) => (
           <div key={i} className={`flex gap-2 items-start text-xs px-2.5 py-2 rounded-lg border ${SEV_STYLE[ins.sev]} leading-snug`}>
-            <ins.icon className="size-3.5 shrink-0 mt-0.5" />
+            <span className="shrink-0 text-sm">{ins.icon}</span>
             <span className="font-medium">{ins.text}</span>
           </div>
         ))}
@@ -1257,7 +1257,7 @@ function AISarthiCard({ todayItems, streak, xpPoints, progressReport, weeklyActi
 function BacklogEmpty({ label }: { label: string }) {
   return (
     <div className="rounded-xl border border-emerald-100 bg-white p-6 text-center">
-      <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-500" />
+      <CheckCircle2 className="mx-auto size-8 text-emerald-500" />
       <p className="mt-2 text-sm font-bold text-slate-500">{label}</p>
     </div>
   );
@@ -1282,8 +1282,8 @@ function BacklogActionRow({
       onClick={onClick}
       className="flex w-full items-center gap-3 rounded-xl border border-slate-100 bg-white p-3 text-left transition hover:border-blue-200 hover:bg-blue-50"
     >
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600">
-        <Icon className="h-4 w-4" />
+      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600">
+        <Icon className="size-4" />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-black text-slate-900">{title}</span>
@@ -1331,7 +1331,7 @@ function BacklogSection({ icon, title, count, accentColor, defaultOpen = true, c
         <span className="text-gray-600">{icon}</span>
         <span className="font-bold text-sm text-gray-900 flex-1">{title}</span>
         <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${ac.badge}`}>{count}</span>
-        {open ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
+        {open ? <ChevronDown className="size-4 text-gray-400" /> : <ChevronRight className="size-4 text-gray-400" />}
       </button>
       {open && <div className="bg-white p-3 space-y-2">{children}</div>}
     </div>
@@ -1395,7 +1395,7 @@ function RevisionTopicCard({ topic, isNoteOpen, noteText, onToggleNote, onNoteCh
             <span className="text-gray-400 truncate">{topic.chapterName}</span>
           </div>
           <div className="flex items-center gap-4 mt-2 text-[11px] text-gray-500">
-            <span className="inline-flex items-center gap-1"><Calendar className="size-3 shrink-0" /> Learned <strong className="text-gray-700">{topic.learnedOn}</strong></span>
+            <span>📅 Learned <strong className="text-gray-700">{topic.learnedOn}</strong></span>
             <span className={`font-semibold ${topic.isOverdue ? "text-red-600" : "text-teal-600"}`}>
               → {topic.isOverdue ? "Overdue" : `Revise ${topic.nextRevisionLabel}`}
             </span>
@@ -1406,12 +1406,12 @@ function RevisionTopicCard({ topic, isNoteOpen, noteText, onToggleNote, onNoteCh
           <div className="flex gap-1">
             <button onClick={onRevise}
               className="px-2.5 py-1.5 bg-teal-600 text-white rounded-lg text-[11px] font-semibold hover:bg-teal-700 flex items-center gap-1">
-              <RefreshCw className="w-2.5 h-2.5" /> Revise
+              <RefreshCw className="size-2.5" /> Revise
             </button>
             <button onClick={onToggleNote}
               className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-colors
                 ${isNoteOpen ? "bg-violet-100 text-violet-700" : "bg-gray-100 text-gray-600 hover:bg-violet-50 hover:text-violet-600"}`}>
-              <FileText className="w-2.5 h-2.5" /> Notes
+              <FileText className="size-2.5" /> Notes
             </button>
           </div>
         </div>
@@ -1421,7 +1421,7 @@ function RevisionTopicCard({ topic, isNoteOpen, noteText, onToggleNote, onNoteCh
       {isNoteOpen && (
         <div className="border-t border-violet-100 bg-violet-50/60 p-3 space-y-2">
           <div className="flex items-center gap-1.5">
-            <Brain className="w-3 h-3 text-violet-600" />
+            <Brain className="size-3 text-violet-600" />
             <span className="text-[11px] font-semibold text-violet-700">Revision Notes — {topic.topicName}</span>
           </div>
           <textarea
@@ -1433,7 +1433,7 @@ function RevisionTopicCard({ topic, isNoteOpen, noteText, onToggleNote, onNoteCh
           />
           <button onClick={onFullNotes}
             className="w-full py-2 bg-violet-600 text-white rounded-lg text-xs font-semibold hover:bg-violet-700 flex items-center justify-center gap-1.5">
-            <Brain className="w-3 h-3" /> Generate Full AI Notes
+            <Brain className="size-3" /> Generate Full AI Notes
           </button>
         </div>
       )}
@@ -2133,20 +2133,20 @@ export default function SchoolStudentStudyPlanner() {
 
   if (meLoading || myCoursesLoading) return (
     <div className="flex items-center justify-center h-64">
-      <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      <div className="size-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
     </div>
   );
 
   if (myCourses.length === 0) return (
     <div className="px-4 py-16 max-w-md mx-auto text-center bg-white rounded-[2.5rem] border border-dashed border-gray-300 mt-20">
-      <BookOpen className="w-12 h-12 text-gray-200 mx-auto mb-4" />
+      <BookOpen className="size-12 text-gray-200 mx-auto mb-4" />
       <p className="text-gray-400 font-medium">No courses found in your account.</p>
     </div>
   );
 
   if (!selectedCourseId) return (
     <div className="flex items-center justify-center h-64">
-      <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      <div className="size-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
     </div>
   );
 
@@ -2181,7 +2181,7 @@ export default function SchoolStudentStudyPlanner() {
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
               <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-black uppercase tracking-widest text-blue-700">
-                <BrainCircuit className="h-3.5 w-3.5" />
+                <BrainCircuit className="size-3.5" />
                 Study Planner
               </div>
               <h1 className="mt-3 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
@@ -2236,7 +2236,7 @@ export default function SchoolStudentStudyPlanner() {
                 }`}
               >
                 <span className="flex min-w-0 items-center gap-2">
-                  <Icon className="h-4 w-4 shrink-0" />
+                  <Icon className="size-4 shrink-0" />
                   <span className="truncate text-xs font-black sm:text-sm">{item.label}</span>
                 </span>
                 {item.count > 0 && (
@@ -2292,7 +2292,7 @@ export default function SchoolStudentStudyPlanner() {
                   <div className="space-y-4">
                     {totalBacklogCount === 0 ? (
                       <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-10 text-center">
-                        <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-500" />
+                        <CheckCircle2 className="mx-auto size-10 text-emerald-500" />
                         <h3 className="mt-3 text-lg font-black text-slate-950">No backlogs</h3>
                         <p className="mt-1 text-sm font-medium text-slate-500">Everything looks clear.</p>
                       </div>
@@ -2329,9 +2329,9 @@ export default function SchoolStudentStudyPlanner() {
                                   isOpen ? "border-blue-300 shadow-sm" : "border-slate-200"
                                 }`}
                               >
-                                <span className={`absolute -right-8 -top-8 h-24 w-24 rounded-bl-full ${card.count > 0 ? colorClass?.split(" ")[1] : "bg-slate-50"}`} />
-                                <span className={`relative grid h-11 w-11 place-items-center rounded-xl border ${card.count > 0 ? colorClass : "border-slate-100 bg-slate-50 text-slate-300"}`}>
-                                  <Icon className="h-5 w-5" />
+                                <span className={`absolute -right-8 -top-8 size-24 rounded-bl-full ${card.count > 0 ? colorClass?.split(" ")[1] : "bg-slate-50"}`} />
+                                <span className={`relative grid size-11 place-items-center rounded-xl border ${card.count > 0 ? colorClass : "border-slate-100 bg-slate-50 text-slate-300"}`}>
+                                  <Icon className="size-5" />
                                 </span>
                                 <span className="relative mt-6 block text-lg font-black text-slate-950">{card.label}</span>
                                 <span className="relative mt-2 block text-sm font-semibold leading-5 text-slate-500">{card.desc}</span>
@@ -2532,9 +2532,9 @@ export default function SchoolStudentStudyPlanner() {
                                 onClick={() => openWeakPage(card.key as WeakPage)}
                                 className="relative min-h-[150px] overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 text-left transition hover:-translate-y-0.5 hover:shadow-md"
                               >
-                                <span className={`absolute -right-8 -top-8 h-24 w-24 rounded-bl-full ${colorClass?.split(" ")[1]}`} />
-                                <span className={`relative grid h-11 w-11 place-items-center rounded-xl border ${colorClass}`}>
-                                  <Icon className="h-5 w-5" />
+                                <span className={`absolute -right-8 -top-8 size-24 rounded-bl-full ${colorClass?.split(" ")[1]}`} />
+                                <span className={`relative grid size-11 place-items-center rounded-xl border ${colorClass}`}>
+                                  <Icon className="size-5" />
                                 </span>
                                 <span className="relative mt-6 block text-lg font-black text-slate-950">{card.label}</span>
                                 <span className="relative mt-2 block text-sm font-semibold leading-5 text-slate-500">{card.desc}</span>
@@ -2730,10 +2730,10 @@ export default function SchoolStudentStudyPlanner() {
                                   : "border-slate-200 opacity-55"
                               }`}
                             >
-                              <span className={`mb-6 inline-flex h-11 w-11 items-center justify-center rounded-2xl border ${colors}`}>
-                                <Icon className="h-6 w-6" />
+                              <span className={`mb-6 inline-flex size-11 items-center justify-center rounded-2xl border ${colors}`}>
+                                <Icon className="size-6" />
                               </span>
-                              <div className="pointer-events-none absolute right-0 top-0 h-20 w-20 rounded-bl-full bg-slate-50 transition group-hover:bg-blue-50" />
+                              <div className="pointer-events-none absolute right-0 top-0 size-20 rounded-bl-full bg-slate-50 transition group-hover:bg-blue-50" />
                               <h3 className="text-lg font-black text-slate-950">{card.label}</h3>
                               <p className="mt-2 max-w-sm text-sm font-medium leading-6 text-slate-500">{card.desc}</p>
                               <span className={`mt-4 inline-flex rounded-full border px-3 py-1 text-xs font-black ${colors}`}>
@@ -2851,7 +2851,7 @@ export default function SchoolStudentStudyPlanner() {
 
                     <div className="rounded-2xl border border-teal-100 bg-teal-50 p-5">
                       <div className="mb-3 flex items-center gap-2 text-sm font-black text-teal-700">
-                        <RefreshCw className="h-4 w-4" />
+                        <RefreshCw className="size-4" />
                         Spaced Repetition
                       </div>
                       <div className="grid gap-2 text-xs font-bold text-slate-600 sm:grid-cols-2">
@@ -2869,7 +2869,7 @@ export default function SchoolStudentStudyPlanner() {
                   <div className="space-y-4">
                     {(effectiveProgressReport?.subjects ?? []).length === 0 ? (
                       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-10 text-center">
-                        <MapIcon className="mx-auto h-10 w-10 text-slate-300" />
+                        <MapIcon className="mx-auto size-10 text-slate-300" />
                         <h3 className="mt-3 text-lg font-black text-slate-950">Roadmap is not ready</h3>
                         <p className="mt-1 text-sm font-medium text-slate-500">Generate a plan to build your roadmap.</p>
                       </div>
@@ -2894,7 +2894,7 @@ export default function SchoolStudentStudyPlanner() {
                                 <span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-black text-blue-700">
                                   {subjectPct}%
                                 </span>
-                                <ChevronDown className={`h-5 w-5 text-slate-400 transition ${subjectOpen ? "rotate-180" : ""}`} />
+                                <ChevronDown className={`size-5 text-slate-400 transition ${subjectOpen ? "rotate-180" : ""}`} />
                               </div>
                             </button>
 
@@ -2921,7 +2921,7 @@ export default function SchoolStudentStudyPlanner() {
                                             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
                                               {chapterPct}%
                                             </span>
-                                            <ChevronDown className={`h-4 w-4 text-slate-400 transition ${chapterOpen ? "rotate-180" : ""}`} />
+                                            <ChevronDown className={`size-4 text-slate-400 transition ${chapterOpen ? "rotate-180" : ""}`} />
                                           </div>
                                         </button>
 
@@ -2963,11 +2963,11 @@ export default function SchoolStudentStudyPlanner() {
                   </div>
                 ) : planLoading ? (
                   <div className="flex h-56 items-center justify-center">
-                    <div className="h-7 w-7 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                    <div className="size-7 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
                   </div>
                 ) : !hasPlan ? (
                   <div className="rounded-2xl border border-dashed border-blue-200 bg-blue-50/40 p-10 text-center">
-                    <Rocket className="mx-auto h-11 w-11 text-blue-500" />
+                    <Rocket className="mx-auto size-11 text-blue-500" />
                     <h3 className="mt-4 text-lg font-black text-slate-950">No study plan yet</h3>
                     <p className="mx-auto mt-2 max-w-md text-sm font-medium leading-6 text-slate-500">
                       Create a simple monthly plan from your class subjects and available topics.
@@ -2977,7 +2977,7 @@ export default function SchoolStudentStudyPlanner() {
                       onClick={handleAutoGenerate}
                       className="mx-auto mt-5 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-blue-700"
                     >
-                      <Sparkles className="h-4 w-4" />
+                      <Sparkles className="size-4" />
                       Generate Plan
                     </button>
                   </div>
@@ -2992,7 +2992,7 @@ export default function SchoolStudentStudyPlanner() {
                               <p className="text-sm font-black text-slate-900">{day.label}</p>
                               <p className="mt-1 text-xs font-bold text-slate-500">{dayDone}/{day.items.length} done</p>
                             </div>
-                            <Calendar className="h-5 w-5 text-slate-400" />
+                            <Calendar className="size-5 text-slate-400" />
                           </div>
                           <div className="mt-3 space-y-2">
                             {day.items.length === 0 ? (
@@ -3005,9 +3005,9 @@ export default function SchoolStudentStudyPlanner() {
                                   onClick={() => handleOpenPlanItem(item)}
                                   className="flex w-full items-center gap-3 rounded-xl bg-white px-3 py-3 text-left transition hover:bg-blue-50"
                                 >
-                                  <span className={`h-2.5 w-2.5 rounded-full ${item.status === "completed" ? "bg-emerald-500" : "bg-blue-500"}`} />
+                                  <span className={`size-2.5 rounded-full ${item.status === "completed" ? "bg-emerald-500" : "bg-blue-500"}`} />
                                   <span className="min-w-0 flex-1 truncate text-sm font-bold text-slate-700">{item.title}</span>
-                                  <ChevronRight className="h-4 w-4 text-slate-300" />
+                                  <ChevronRight className="size-4 text-slate-300" />
                                 </button>
                               ))
                             )}
@@ -3018,7 +3018,7 @@ export default function SchoolStudentStudyPlanner() {
                   </div>
                 ) : todayItems.length === 0 ? (
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-10 text-center">
-                    <CheckCircle2 className="mx-auto h-11 w-11 text-emerald-500" />
+                    <CheckCircle2 className="mx-auto size-11 text-emerald-500" />
                     <h3 className="mt-4 text-lg font-black text-slate-950">No tasks for today</h3>
                     <p className="mt-2 text-sm font-medium text-slate-500">You are clear for today.</p>
                   </div>
@@ -3031,7 +3031,7 @@ export default function SchoolStudentStudyPlanner() {
                         <div key={subject} className={`overflow-hidden rounded-2xl border min-w-0 ${cfg.border}`}>
                           <div className={`flex items-center justify-between gap-3 px-4 py-3 ${cfg.bg}`}>
                             <div className="flex min-w-0 items-center gap-2">
-                              <span className={`h-2.5 w-2.5 rounded-full ${cfg.dot}`} />
+                              <span className={`size-2.5 rounded-full ${cfg.dot}`} />
                               <p className={`truncate text-sm font-black ${cfg.color}`}>{subject}</p>
                             </div>
                             <p className="shrink-0 text-xs font-black text-slate-500">{subjectDone}/{items.length} done</p>
@@ -3119,12 +3119,12 @@ export default function SchoolStudentStudyPlanner() {
                       onClick={() => handleOpenPlanItem(item)}
                       className="flex w-full items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-left transition hover:border-blue-200 hover:bg-blue-50"
                     >
-                      <PlayCircle className="h-5 w-5 shrink-0 text-blue-600" />
+                      <PlayCircle className="size-5 shrink-0 text-blue-600" />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-black text-slate-800">{item.title}</p>
                         <p className="mt-0.5 text-xs font-bold text-slate-500">{planItemMinutes(item)} min</p>
                       </div>
-                      <ChevronRight className="h-4 w-4 text-slate-300" />
+                      <ChevronRight className="size-4 text-slate-300" />
                     </button>
                   ))
                 )}
@@ -3143,7 +3143,7 @@ export default function SchoolStudentStudyPlanner() {
                       onClick={() => selectPlannerTab(item.tab)}
                       className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition hover:brightness-95 ${item.tone}`}
                     >
-                      <Icon className="h-5 w-5" />
+                      <Icon className="size-5" />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-black text-slate-800">{item.label}</p>
                       </div>
@@ -3163,7 +3163,7 @@ export default function SchoolStudentStudyPlanner() {
                   disabled={regenerate.isPending}
                   className="flex w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-black text-blue-700 transition hover:bg-blue-100 disabled:opacity-60"
                 >
-                  <RotateCcw className={`h-4 w-4 ${regenerate.isPending ? "animate-spin" : ""}`} />
+                  <RotateCcw className={`size-4 ${regenerate.isPending ? "animate-spin" : ""}`} />
                   Regenerate Plan
                 </button>
               </div>

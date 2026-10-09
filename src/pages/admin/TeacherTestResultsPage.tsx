@@ -10,6 +10,9 @@ import {
 import { cn } from "@/lib/utils";
 import { getMockTest, getMockTestSessions } from "@/lib/api/admin";
 import { getBatchRoster } from "@/lib/api/admin";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+
+const MotionTableRow = motion(TableRow);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -439,29 +442,29 @@ export default function TeacherTestResultsPage() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 sticky top-0">
-                    <tr className="text-left">
-                      <th className="px-4 py-3 text-xs text-muted-foreground font-semibold w-10">#</th>
-                      <th className="px-4 py-3"><SortBtn k="name" label="Student" /></th>
-                      <th className="px-4 py-3"><SortBtn k="status" label="Status" /></th>
-                      <th className="px-4 py-3 text-right"><SortBtn k="score" label="Score" /></th>
-                      <th className="px-4 py-3 text-right text-emerald-600 font-semibold text-xs hidden sm:table-cell">✓</th>
-                      <th className="px-4 py-3 text-right text-red-500 font-semibold text-xs hidden sm:table-cell">✗</th>
-                      <th className="px-4 py-3 text-right text-muted-foreground font-semibold text-xs hidden sm:table-cell">—</th>
-                      <th className="px-4 py-3 text-right hidden md:table-cell"><SortBtn k="accuracy" label="Accuracy" /></th>
-                      <th className="px-4 py-3 text-right hidden lg:table-cell"><SortBtn k="time" label="Time" /></th>
-                      <th className="px-4 py-3 text-right text-muted-foreground text-xs hidden lg:table-cell">Submitted</th>
-                      <th className="px-4 py-3 text-center text-xs text-muted-foreground">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
+                <Table className="w-full text-sm">
+                  <TableHeader className="bg-muted/50 sticky top-0">
+                    <TableRow className="text-left hover:bg-transparent">
+                      <TableHead className="h-auto px-4 py-3 text-xs text-muted-foreground font-semibold w-10">#</TableHead>
+                      <TableHead className="h-auto px-4 py-3"><SortBtn k="name" label="Student" /></TableHead>
+                      <TableHead className="h-auto px-4 py-3"><SortBtn k="status" label="Status" /></TableHead>
+                      <TableHead className="h-auto px-4 py-3 text-right"><SortBtn k="score" label="Score" /></TableHead>
+                      <TableHead className="h-auto px-4 py-3 text-right text-emerald-600 font-semibold text-xs hidden sm:table-cell">✓</TableHead>
+                      <TableHead className="h-auto px-4 py-3 text-right text-red-500 font-semibold text-xs hidden sm:table-cell">✗</TableHead>
+                      <TableHead className="h-auto px-4 py-3 text-right text-muted-foreground font-semibold text-xs hidden sm:table-cell">—</TableHead>
+                      <TableHead className="h-auto px-4 py-3 text-right hidden md:table-cell"><SortBtn k="accuracy" label="Accuracy" /></TableHead>
+                      <TableHead className="h-auto px-4 py-3 text-right hidden lg:table-cell"><SortBtn k="time" label="Time" /></TableHead>
+                      <TableHead className="h-auto px-4 py-3 text-right text-muted-foreground text-xs hidden lg:table-cell">Submitted</TableHead>
+                      <TableHead className="h-auto px-4 py-3 text-center text-xs text-muted-foreground">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="divide-y divide-border">
                     {filtered.map((row, i) => {
                       const scorePct = pct(row.totalScore ?? 0, totalMarks);
                       const acc = accPct(row.correctCount ?? 0, row.wrongCount ?? 0);
                       const isSubmitted = row.status === "completed" || row.status === "auto_submitted";
                       return (
-                        <motion.tr
+                        <MotionTableRow
                           key={row.studentId}
                           initial={{ opacity: 0, x: -8 }}
                           animate={{ opacity: 1, x: 0 }}
@@ -471,15 +474,15 @@ export default function TeacherTestResultsPage() {
                             row.status === "not_started" && "opacity-75"
                           )}
                         >
-                          <td className="px-4 py-3 text-xs text-muted-foreground font-mono">{i + 1}</td>
-                          <td className="px-4 py-3 font-medium max-w-[180px] truncate">{row.name}</td>
-                          <td className="px-4 py-3">
+                          <TableCell className="px-4 py-3 text-xs text-muted-foreground font-mono">{i + 1}</TableCell>
+                          <TableCell className="px-4 py-3 font-medium max-w-[180px] truncate">{row.name}</TableCell>
+                          <TableCell className="px-4 py-3">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <StatusBadge status={row.status} />
                               {row.isLate && <span className="text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Late</span>}
                             </div>
-                          </td>
-                          <td className="px-4 py-3 text-right">
+                          </TableCell>
+                          <TableCell className="px-4 py-3 text-right">
                             {isSubmitted ? (
                               <div className="flex items-center justify-end gap-2">
                                 <div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden hidden sm:block">
@@ -491,30 +494,30 @@ export default function TeacherTestResultsPage() {
                                 <span className="font-semibold text-xs">{row.totalScore}/{totalMarks}</span>
                               </div>
                             ) : "—"}
-                          </td>
-                          <td className="px-4 py-3 text-right text-emerald-600 font-medium text-xs hidden sm:table-cell">
+                          </TableCell>
+                          <TableCell className="px-4 py-3 text-right text-emerald-600 font-medium text-xs hidden sm:table-cell">
                             {isSubmitted ? (row.correctCount ?? 0) : "—"}
-                          </td>
-                          <td className="px-4 py-3 text-right text-red-500 font-medium text-xs hidden sm:table-cell">
+                          </TableCell>
+                          <TableCell className="px-4 py-3 text-right text-red-500 font-medium text-xs hidden sm:table-cell">
                             {isSubmitted ? (row.wrongCount ?? 0) : "—"}
-                          </td>
-                          <td className="px-4 py-3 text-right text-muted-foreground text-xs hidden sm:table-cell">
+                          </TableCell>
+                          <TableCell className="px-4 py-3 text-right text-muted-foreground text-xs hidden sm:table-cell">
                             {isSubmitted ? (row.skippedCount ?? 0) : "—"}
-                          </td>
-                          <td className="px-4 py-3 text-right hidden md:table-cell">
+                          </TableCell>
+                          <TableCell className="px-4 py-3 text-right hidden md:table-cell">
                             {acc !== null ? (
                               <span className={cn("text-xs font-semibold",
                                 acc >= 70 ? "text-emerald-600" : acc >= 40 ? "text-amber-600" : "text-red-500"
                               )}>{acc}%</span>
                             ) : "—"}
-                          </td>
-                          <td className="px-4 py-3 text-right text-xs font-mono text-muted-foreground hidden lg:table-cell">
+                          </TableCell>
+                          <TableCell className="px-4 py-3 text-right text-xs font-mono text-muted-foreground hidden lg:table-cell">
                             {calcTimeSpent(row.startedAt, row.submittedAt)}
-                          </td>
-                          <td className="px-4 py-3 text-right text-xs text-muted-foreground hidden lg:table-cell">
+                          </TableCell>
+                          <TableCell className="px-4 py-3 text-right text-xs text-muted-foreground hidden lg:table-cell">
                             {fmtDate(row.submittedAt)}
-                          </td>
-                          <td className="px-4 py-3 text-center">
+                          </TableCell>
+                          <TableCell className="px-4 py-3 text-center">
                             {row.sessionId ? (
                               <button
                                 onClick={() => navigate(`/admin/mock-tests/${testId}/sessions/${row.sessionId}/grade`)}
@@ -526,12 +529,12 @@ export default function TeacherTestResultsPage() {
                             ) : (
                               <span className="text-xs text-muted-foreground">—</span>
                             )}
-                          </td>
-                        </motion.tr>
+                          </TableCell>
+                        </MotionTableRow>
                       );
                     })}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             )}
           </motion.div>

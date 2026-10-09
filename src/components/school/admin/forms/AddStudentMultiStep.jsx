@@ -173,7 +173,7 @@ const StepRail = ({ currentStep, onStepClick, compact = false }) => (
           onClick={() => onStepClick(step.id)}
           className={`${compact ? 'min-w-[150px] sm:min-w-0 rounded-xl p-2 gap-2' : 'w-full flex items-center gap-3 rounded-[22px] p-3'} flex items-center text-left transition-all ${isActive ? 'bg-white shadow-sm ring-1 ring-blue-100 dark:bg-slate-800 dark:ring-slate-700' : 'hover:bg-white/70 dark:hover:bg-slate-800/70'}`}
         >
-          <div className={`${compact ? 'h-7 w-7 rounded-lg' : 'h-11 w-11 rounded-2xl'} grid shrink-0 place-items-center ${isActive ? 'bg-blue-600 text-white' : isCompleted ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-400'}`}>
+          <div className={`${compact ? 'size-7 rounded-lg' : 'size-11 rounded-2xl'} grid shrink-0 place-items-center ${isActive ? 'bg-blue-600 text-white' : isCompleted ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-400'}`}>
             {isCompleted ? <Check size={compact ? 12 : 18} strokeWidth={3} /> : <Icon size={compact ? 12 : 18} />}
           </div>
           <div className="min-w-0">
@@ -495,9 +495,9 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
             <SectionHeader title="Basic Information" description="Enter the student's personal details." badge="Personal" />
             <div className="mb-5 grid gap-4 lg:grid-cols-[150px_1fr] xl:grid-cols-[160px_1fr]">
               <div className="flex flex-col items-start gap-3 sm:items-center">
-                <div className="relative flex h-32 w-32 sm:h-36 sm:w-36 flex-col items-center justify-center overflow-hidden rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50 transition-all hover:border-blue-500 dark:border-slate-700 dark:bg-slate-800/50 group cursor-pointer">
+                <div className="relative flex size-32 sm:size-36 flex-col items-center justify-center overflow-hidden rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50 transition-all hover:border-blue-500 dark:border-slate-700 dark:bg-slate-800/50 group cursor-pointer">
                   {formData.profileImage ? (
-                    <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} alt="Preview" className="w-full h-full object-cover" />
+                    <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} alt="Preview" className="size-full object-cover" />
                   ) : (
                     <Camera className="text-slate-400 group-hover:text-blue-500" size={32} />
                   )}
@@ -670,7 +670,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                 </p>
                 {teachingMapLoading ? (
                   <div className="mt-4 flex items-center gap-2 text-sm text-slate-500">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+                    <Loader2 className="size-4 animate-spin" /> Loading…
                   </div>
                 ) : teachingMap ? (
                   <div className="mt-4 space-y-3">
@@ -827,7 +827,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input type="checkbox" className="sr-only peer" checked={formData.createParentLogin} onChange={(e) => updateField('createParentLogin', e.target.checked)} />
-                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"></div>
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:size-5 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"></div>
                 </label>
               </div>
 
@@ -947,8 +947,8 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
             <SectionHeader title="Review & Submit" description="Verify all student information." badge="Review" />
             <div className="p-5 sm:p-8 rounded-3xl bg-gradient-to-br from-indigo-600 to-blue-700 text-white mb-6 sm:mb-8 shadow-2xl">
               <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-8">
-                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-3xl border-4 border-white/20 overflow-hidden bg-white/10 flex items-center justify-center">
-                  {formData.profileImage ? <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} className="w-full h-full object-cover" /> : <User size={48} className="opacity-40" />}
+                <div className="size-24 sm:size-32 rounded-3xl border-4 border-white/20 overflow-hidden bg-white/10 flex items-center justify-center">
+                  {formData.profileImage ? <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} className="size-full object-cover" /> : <User size={48} className="opacity-40" />}
                 </div>
                 <div>
                   <h3 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">{formData.name || 'New Student'}</h3>

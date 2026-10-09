@@ -248,7 +248,7 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
             <span className="text-xs font-black uppercase tracking-widest text-violet-600 dark:text-violet-400">
               Word Master: {difficulty}
             </span>
-            <span className="h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+            <span className="size-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
             <span className="text-xs font-semibold text-slate-500">Word {currentIdx + 1} of {localWords.length}</span>
           </div>
           <h2 className="text-xl font-black text-slate-950 dark:text-white mt-1">{deckName}</h2>
@@ -256,14 +256,14 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-850 text-red-500">
-            <Heart className="h-4 w-4 fill-current animate-pulse" />
+            <Heart className="size-4 fill-current animate-pulse" />
             <div className="text-left">
               <p className="text-[9px] font-black uppercase text-slate-400">Lives</p>
               <div className="flex gap-0.5">
                 {Array.from({ length: 3 }).map((_, i) => (
                   <Heart
                     key={i}
-                    className={`h-3 w-3 ${
+                    className={`size-3 ${
                       i < lives ? 'fill-red-500 text-red-500' : 'text-slate-300 dark:text-slate-750 fill-transparent'
                     }`}
                   />
@@ -273,7 +273,7 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
           </div>
 
           <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-850">
-            <Timer className="h-4 w-4 text-violet-500" />
+            <Timer className="size-4 text-violet-500" />
             <div className="text-right">
               <p className="text-[9px] font-black uppercase text-slate-400">Time</p>
               <p className="text-sm font-black font-mono text-slate-800 dark:text-slate-200">{formatTime(timeElapsed)}</p>
@@ -296,7 +296,7 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
             }}
             className="flex items-center justify-center p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-xl transition"
           >
-            <XCircle className="h-6 w-6" />
+            <XCircle className="size-6" />
           </button>
         </div>
       </div>
@@ -320,7 +320,7 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
         {/* Hint / Definition Area */}
         <div className="rounded-xl bg-slate-50 dark:bg-slate-950 p-4 sm:p-5 border border-slate-100 dark:border-slate-850 text-center space-y-1.5">
           <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-slate-400">
-            <HelpCircle className="h-3.5 w-3.5 text-violet-500" /> Clue / Definition
+            <HelpCircle className="size-3.5 text-violet-500" /> Clue / Definition
           </span>
           <p className="text-sm sm:text-base font-black text-slate-900 dark:text-slate-100 leading-relaxed">
             "{displayHint}"
@@ -342,7 +342,7 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
                 type="button"
                 onClick={() => handleTileClick(tile, idx)}
                 disabled={tile.used}
-                className={`h-11 w-11 rounded-xl border-2 text-base font-black flex items-center justify-center shadow transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 active:scale-95 ${
+                className={`size-11 rounded-xl border-2 text-base font-black flex items-center justify-center shadow transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 active:scale-95 ${
                   tile.used
                     ? 'border-slate-200 bg-slate-100 text-slate-300 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-650 cursor-not-allowed scale-90 opacity-50'
                     : 'border-violet-200 bg-violet-50/50 text-violet-800 hover:border-violet-400 dark:border-violet-900 dark:bg-violet-950/20 dark:text-violet-300'
@@ -371,7 +371,7 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
                 onClick={handleBackspace}
                 className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-rose-500 rounded-lg transition"
               >
-                <Delete className="h-5 w-5" />
+                <Delete className="size-5" />
               </button>
             )}
           </div>
@@ -383,7 +383,7 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
               disabled={inputValue.length === 0}
               className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-slate-200 text-xs font-black text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-950 transition disabled:opacity-50"
             >
-              <RefreshCw className="h-4 w-4" /> Reset
+              <RefreshCw className="size-4" /> Reset
             </button>
             
             <button
@@ -400,7 +400,7 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
               disabled={inputValue.length !== currentWordData?.length}
               className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-violet-600 text-xs font-black text-white hover:bg-violet-700 transition disabled:opacity-50 shadow-md"
             >
-              Submit <ArrowRight className="h-4 w-4" />
+              Submit <ArrowRight className="size-4" />
             </button>
           </div>
         </div>

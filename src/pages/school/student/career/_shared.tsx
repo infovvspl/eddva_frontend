@@ -35,11 +35,11 @@ export const fitTextColor = (score: number): string => {
 export function ErrorState({ message, onRetry }: { message?: string; onRetry: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-2xl border border-rose-100 bg-rose-50/40 px-6 py-12 text-center">
-      <AlertTriangle className="mb-3 h-8 w-8 text-rose-400" />
+      <AlertTriangle className="mb-3 size-8 text-rose-400" />
       <p className="text-sm font-bold text-slate-700">Something went wrong</p>
       <p className="mt-1 max-w-md text-xs text-slate-500">{message || 'We couldn’t load this right now.'}</p>
       <button onClick={onRetry} className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700">
-        <RefreshCw className="h-4 w-4" /> Try again
+        <RefreshCw className="size-4" /> Try again
       </button>
     </div>
   );

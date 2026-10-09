@@ -306,7 +306,7 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center gap-2 text-surface-500">
-        <Loader2 className="h-5 w-5 animate-spin" /> Loading coverage…
+        <Loader2 className="size-5 animate-spin" /> Loading coverage…
       </div>
     );
   }
@@ -340,7 +340,7 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
               }`}
             >
               <div className="flex items-center gap-1.5">
-                <m.Icon className="h-4 w-4" />
+                <m.Icon className="size-4" />
                 <span className="text-[11px] font-black uppercase tracking-wider">{m.label}</span>
               </div>
               <p className="mt-1 text-2xl font-black tabular-nums">{counts[k]}</p>
@@ -359,7 +359,7 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
         <div className="rounded-xl border border-brand-200 bg-brand-50 p-3 dark:border-brand-900 dark:bg-brand-950/40">
           <div className="flex items-center justify-between gap-3 text-sm">
             <span className="flex items-center gap-2 font-bold text-brand-700 dark:text-brand-300">
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="size-4 animate-spin" />
               Indexing {run.done} of {run.total}
             </span>
             <div className="flex items-center gap-3">
@@ -372,7 +372,7 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
                 disabled={busy === 'cancel'}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-2.5 py-1 text-xs font-bold text-rose-600 transition hover:bg-rose-50 disabled:opacity-60 dark:border-rose-900 dark:bg-transparent dark:text-rose-300 dark:hover:bg-rose-950/40"
               >
-                {busy === 'cancel' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
+                {busy === 'cancel' ? <Loader2 className="size-3.5 animate-spin" /> : <X className="size-3.5" />}
                 Cancel
               </button>
             </div>
@@ -388,7 +388,7 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[14rem]">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-surface-400" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -408,7 +408,7 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
               disabled={!!busy}
               className="inline-flex items-center gap-1.5 rounded-xl border border-surface-200 px-3 py-2 text-xs font-bold text-surface-700 disabled:opacity-50 dark:border-surface-700 dark:text-surface-200"
             >
-              {busy === 'audit' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+              {busy === 'audit' ? <Loader2 className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
               Check files
             </button>
             <button
@@ -417,7 +417,7 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
               title={counts.pending + counts.stale === 0 ? 'Nothing waiting to be indexed' : undefined}
               className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
             >
-              {busy === 'bulk' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PlayCircle className="h-3.5 w-3.5" />}
+              {busy === 'bulk' ? <Loader2 className="size-3.5 animate-spin" /> : <PlayCircle className="size-3.5" />}
               Index {counts.pending + counts.stale} waiting
             </button>
           </>
@@ -448,7 +448,7 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
                   aria-expanded={isOpen}
                   className="flex w-full items-center gap-2 px-4 py-3 text-left hover:bg-surface-50 dark:hover:bg-surface-800/60"
                 >
-                  {isOpen ? <ChevronDown className="h-4 w-4 text-surface-400" /> : <ChevronRight className="h-4 w-4 text-surface-400" />}
+                  {isOpen ? <ChevronDown className="size-4 text-surface-400" /> : <ChevronRight className="size-4 text-surface-400" />}
                   <span className="font-bold text-surface-900 dark:text-white">{cls}</span>
                   <span className="ml-auto text-xs tabular-nums text-surface-500">
                     {ready}/{total} ready
@@ -460,7 +460,7 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
                     {Object.entries(subjects).map(([subject, list]) => (
                       <div key={subject} className="border-b border-surface-100 last:border-0 dark:border-surface-800">
                         <div className="flex items-center gap-1.5 bg-surface-50 px-4 py-1.5 text-[11px] font-black uppercase tracking-wider text-surface-500 dark:bg-surface-800/50">
-                          <BookOpen className="h-3 w-3" /> {subject}
+                          <BookOpen className="size-3" /> {subject}
                         </div>
                         {list.map((r) => {
                           const st = stateOf(r);
@@ -480,9 +480,9 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
                             <div key={r.chapterId} className="border-b border-surface-50 last:border-0 dark:border-surface-800/60">
                               <div className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-surface-50 dark:hover:bg-surface-800/40">
                                 {isIndexingNow ? (
-                                  <Loader2 className="h-4 w-4 shrink-0 animate-spin text-brand-500" />
+                                  <Loader2 className="size-4 shrink-0 animate-spin text-brand-500" />
                                 ) : (
-                                  <m.Icon className={`h-4 w-4 shrink-0 ${st === 'ready' ? 'text-emerald-500' : st === 'stale' ? 'text-orange-500' : st === 'pending' ? 'text-amber-500' : st === 'broken' ? 'text-rose-500' : 'text-surface-400'}`} />
+                                  <m.Icon className={`size-4 shrink-0 ${st === 'ready' ? 'text-emerald-500' : st === 'stale' ? 'text-orange-500' : st === 'pending' ? 'text-amber-500' : st === 'broken' ? 'text-rose-500' : 'text-surface-400'}`} />
                                 )}
                                 <span className="flex-1 min-w-0">
                                   <span className="block truncate text-surface-800 dark:text-surface-100">{r.chapterName}</span>
@@ -496,12 +496,12 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
                                         className="mt-0.5 inline-flex max-w-full items-center gap-1 truncate text-[11px] text-surface-500 underline-offset-2 hover:text-brand-600 hover:underline"
                                         title={r.fileName}
                                       >
-                                        <FileText className="h-3 w-3 shrink-0" />
+                                        <FileText className="size-3 shrink-0" />
                                         <span className="truncate">{r.fileName}</span>
                                       </a>
                                     ) : (
                                       <span className="mt-0.5 flex items-center gap-1 text-[11px] text-surface-500">
-                                        <FileText className="h-3 w-3" /> {r.fileName}
+                                        <FileText className="size-3" /> {r.fileName}
                                       </span>
                                     )
                                   ) : null}

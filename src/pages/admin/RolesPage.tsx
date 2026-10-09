@@ -6,6 +6,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { useRoles, useCreateRole, useUpdateRole, useDeleteRole } from "@/hooks/use-roles";
+import { useConfirm } from "@/context/ConfirmContext";
 import type { CustomRole } from "@/lib/api/roles";
 
 const AVAILABLE_MODULES = [
@@ -32,6 +33,7 @@ const RolesPage = () => {
   const createRoleMutation = useCreateRole();
   const updateRoleMutation = useUpdateRole();
   const deleteRoleMutation = useDeleteRole();
+  const confirm = useConfirm();
 
   const [mode, setMode] = useState<FormMode>("list");
   const [selectedRole, setSelectedRole] = useState<CustomRole | null>(null);
@@ -107,7 +109,11 @@ const RolesPage = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this custom role? Staff members with this role will lose their custom permissions.")) {
+    const ok = await confirm({
+      title: "Delete Custom Role",
+      message: "Are you sure you want to delete this custom role? Staff members with this role will lose their custom permissions.",
+    });
+    if (!ok) {
       return;
     }
 

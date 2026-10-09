@@ -43,6 +43,8 @@ import { getUploadUrl, uploadToS3 } from '@/lib/upload';
 import { useConfirm } from '@/context/ConfirmContext';
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const EMOJIS = [
   '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇',
@@ -856,7 +858,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                 </div>
               )}
               <div className="relative flex-1 w-full">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -876,17 +878,17 @@ export default function Communications({ heightClass = 'h-full', institutes = []
               <div className="space-y-2 p-2">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-100/60 shadow-xs animate-pulse">
-                    <div className="h-10 w-10 bg-slate-100 rounded-xl" />
+                    <div className="size-10 bg-slate-100 rounded-xl" />
                     <div className="flex-1 space-y-2">
                       <div className="h-3 w-1/3 bg-slate-100 rounded" />
-                      <div className="h-2 w-2/3 bg-slate-50 rounded" />
+                      <div className="size-2/3 bg-slate-50 rounded" />
                     </div>
                   </div>
                 ))}
               </div>
             ) : mergedList.length === 0 ? (
               <div className="flex flex-col items-center justify-center p-8 text-center opacity-65">
-                <Users className="h-8 w-8 text-slate-350 mb-2" />
+                <Users className="size-8 text-slate-350 mb-2" />
                 <p className="text-xs font-bold text-slate-500">
                   {activePanel === 'SUPER_ADMIN' ? 'No super admin found.' :
                     activePanel === 'INSTITUTE_ADMIN' ? 'No institute admins found.' :
@@ -910,10 +912,14 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                         : 'hover:bg-slate-50/60 border border-transparent'
                         }`}
                     >
-                      <div className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white shadow-sm">
-                        {(item.name || 'U').slice(0, 1).toUpperCase()}
+                      <div className="relative size-10 shrink-0">
+                        <Avatar className="size-10 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-sm">
+                          <AvatarFallback className="rounded-2xl bg-transparent text-xs font-black text-white">
+                            {(item.name || 'U').slice(0, 1).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
                         {item.online && (
-                          <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-white bg-emerald-500" />
+                          <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border border-white bg-emerald-500" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -945,10 +951,10 @@ export default function Communications({ heightClass = 'h-full', institutes = []
         {/* Column 2: Active Chat — fullscreen takeover only below xl (mobile has
             no room for list + chat side by side); at xl+ it sits inline next to
             the contacts list, same breakpoint convention as Column 3. */}
-        <div className={`flex-1 flex flex-col min-w-0 min-h-0 bg-white ${!selectedUser ? 'hidden xl:flex' : 'fixed inset-0 z-[100] w-full h-full bg-white flex flex-col xl:static xl:inset-auto xl:z-auto xl:w-auto xl:h-auto'}`}>
+        <div className={`flex-1 flex flex-col min-w-0 min-h-0 bg-white ${!selectedUser ? 'hidden xl:flex' : 'fixed inset-0 z-[100] size-full bg-white flex flex-col xl:static xl:inset-auto xl:z-auto xl:size-auto'}`}>
           {!selectedUser ? (
             <div className="flex h-full flex-col items-center justify-center text-center p-6 opacity-60 bg-slate-50/10">
-              <MessageSquare className="h-10 w-10 text-slate-350 mb-2" />
+              <MessageSquare className="size-10 text-slate-350 mb-2" />
               <h3 className="text-sm font-bold text-slate-700">Select a conversation</h3>
               <p className="text-xs text-slate-400">Choose a contact to start messaging</p>
             </div>
@@ -966,20 +972,24 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                   >
                     <ArrowLeft size={18} />
                   </button>
-                  <div className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white">
-                    {(selectedUser.name || 'U').slice(0, 1).toUpperCase()}
+                  <div className="relative size-10 shrink-0">
+                    <Avatar className="size-10 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600">
+                      <AvatarFallback className="rounded-2xl bg-transparent text-xs font-black text-white">
+                        {(selectedUser.name || 'U').slice(0, 1).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
                     {selectedUser.online && (
-                      <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-white bg-emerald-500" />
+                      <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border border-white bg-emerald-500" />
                     )}
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-slate-800 truncate">{selectedUser.name}</span>
                       {selectedUser.online && (
-                        <span className="flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600">
-                          <span className="h-1 w-1 rounded-full bg-emerald-500" />
+                        <Badge variant="secondary" className="items-center gap-0.5 rounded-full border-transparent bg-emerald-50 px-1.5 text-[9px] font-bold text-emerald-600 hover:bg-emerald-50">
+                          <span className="size-1 rounded-full bg-emerald-500" />
                           Online
-                        </span>
+                        </Badge>
                       )}
                     </div>
                     <p className="text-[10px] font-semibold text-slate-400 truncate mt-0.5 uppercase tracking-wide">
@@ -1015,7 +1025,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
               {showChatSearch && (
                 <div className="flex shrink-0 items-center gap-2 border-b border-slate-100 bg-white px-4 py-2">
                   <div className="relative flex-1">
-                    <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                    <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
                     <input
                       autoFocus
                       value={inChatSearch}
@@ -1061,9 +1071,9 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                       if (item.type === 'separator') {
                         return (
                           <div key={`sep-${idx}`} className="flex justify-center my-3">
-                            <span className="rounded-full bg-slate-100/80 px-3 py-0.5 text-[9px] font-bold uppercase text-slate-400 tracking-wider">
+                            <Badge variant="secondary" className="rounded-full border-transparent bg-slate-100/80 px-3 text-[9px] font-bold uppercase text-slate-400 tracking-wider hover:bg-slate-100/80">
                               {item.label}
-                            </span>
+                            </Badge>
                           </div>
                         );
                       }
@@ -1108,7 +1118,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                                   />
                                 ) : (
                                   <div className="flex items-center gap-2">
-                                    <FileText className="h-6 w-6 text-blue-500 shrink-0" />
+                                    <FileText className="size-6 text-blue-500 shrink-0" />
                                     <div className="min-w-0 flex-1">
                                       <p className="truncate text-[11px] font-bold text-slate-900">{msg.attachment_name}</p>
                                       <span className="text-[9px] text-slate-400">Document</span>
@@ -1151,11 +1161,11 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                               {mine && (
                                 <span>
                                   {msg.is_read ? (
-                                    <CheckCheck className="h-3.5 w-3.5 text-blue-600 inline" />
+                                    <CheckCheck className="size-3.5 text-blue-600 inline" />
                                   ) : msg.is_delivered ? (
-                                    <CheckCheck className="h-3.5 w-3.5 text-slate-400 inline" />
+                                    <CheckCheck className="size-3.5 text-slate-400 inline" />
                                   ) : (
-                                    <Check className="h-3.5 w-3.5 text-slate-400 inline" />
+                                    <Check className="size-3.5 text-slate-400 inline" />
                                   )}
                                 </span>
                               )}
@@ -1180,11 +1190,11 @@ export default function Communications({ heightClass = 'h-full', institutes = []
               {replyingTo && (
                 <div className="flex items-center justify-between bg-slate-50 px-4 py-2 border-t border-blue-50 text-xs">
                   <div className="flex items-center gap-2 text-slate-600">
-                    <Reply className="h-3.5 w-3.5" />
+                    <Reply className="size-3.5" />
                     <span>Replying to: <strong>{replyingTo.content || replyingTo.text}</strong></span>
                   </div>
                   <button onClick={() => setReplyingTo(null)} className="text-slate-400 hover:text-slate-600">
-                    <X className="h-4 w-4" />
+                    <X className="size-4" />
                   </button>
                 </div>
               )}
@@ -1257,7 +1267,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                         className="flex-1 min-w-0 w-full border-none bg-transparent py-1 text-xs font-semibold outline-none text-slate-800 placeholder-slate-400"
                       />
                       <label className="text-slate-400 hover:text-slate-600 pl-2 cursor-pointer transition shrink-0">
-                        <Paperclip className="h-5 w-5" />
+                        <Paperclip className="size-5" />
                         <input
                           type="file"
                           className="hidden"
@@ -1268,9 +1278,9 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                     <button
                       onClick={() => void sendMessage()}
                       disabled={!messageText.trim() || uploading}
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20 hover:brightness-110 disabled:opacity-40 transition"
+                      className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20 hover:brightness-110 disabled:opacity-40 transition"
                     >
-                      <Send className="h-4.5 w-4.5" />
+                      <Send className="size-4.5" />
                     </button>
                   </div>
                 )}
@@ -1316,9 +1326,11 @@ export default function Communications({ heightClass = 'h-full', institutes = []
               </div>
 
               <div className="p-6 text-center border-b border-slate-100 bg-white shrink-0">
-                <div className="mx-auto flex h-20 w-20 xl:h-16 xl:w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-xl xl:text-base font-black text-white shadow-md">
-                  {(selectedUser.name || 'U').slice(0, 1).toUpperCase()}
-                </div>
+                <Avatar className="mx-auto size-20 xl:size-16 bg-gradient-to-br from-blue-600 to-indigo-600 shadow-md">
+                  <AvatarFallback className="bg-transparent text-xl xl:text-base font-black text-white">
+                    {(selectedUser.name || 'U').slice(0, 1).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
                 <h4 className="mt-3 text-sm xl:text-xs font-extrabold text-slate-900">{selectedUser.name}</h4>
                 <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider mt-0.5">{selectedUser.role}</p>
                 <p className="text-[11px] font-medium text-slate-500 truncate mt-1">{selectedUser.email}</p>
@@ -1332,7 +1344,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                   { label: 'More', icon: <MoreVertical size={14} />, act: () => setShowMoreOptions(true) },
                 ].map((btn, idx) => (
                   <button key={idx} onClick={btn.act} className="flex flex-col items-center gap-1 hover:opacity-80 transition">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-50 border border-slate-100 text-slate-500 shadow-xs">
+                    <div className="flex size-8 items-center justify-center rounded-full bg-slate-50 border border-slate-100 text-slate-500 shadow-xs">
                       {btn.icon}
                     </div>
                     <span className="text-[9px] font-bold text-slate-400">{btn.label}</span>
@@ -1343,7 +1355,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
               <div className="p-4 border-b border-slate-100 bg-white shrink-0">
                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Search in Chat</label>
                 <div className="relative mt-1.5">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                  <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
                   <input
                     value={inChatSearch}
                     onChange={(e) => setInChatSearch(e.target.value)}
@@ -1389,7 +1401,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                   <div className="space-y-2">
                     {sharedFiles.slice(0, 3).map((file) => (
                       <div key={file.id} className="flex items-center gap-2 rounded-xl bg-white p-2 border border-slate-100 shadow-xs">
-                        <FileText className="h-5 w-5 shrink-0 text-blue-500" />
+                        <FileText className="size-5 shrink-0 text-blue-500" />
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-[10px] font-bold text-slate-800">{file.attachment_name}</p>
                           <span className="text-[9px] text-slate-400">Shared recently</span>
@@ -1399,7 +1411,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                           download
                           className="rounded p-1 text-slate-400 hover:bg-slate-50 transition"
                         >
-                          <Download className="h-3.5 w-3.5" />
+                          <Download className="size-3.5" />
                         </a>
                       </div>
                     ))}
@@ -1420,7 +1432,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                       .slice(0, 3)
                       .map((file) => (
                         <div key={file.id} className="relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-100 group cursor-pointer" onClick={() => setMediaLightboxUrl(file.attachment_url)}>
-                          <img src={file.attachment_url} alt="media" className="h-full w-full object-cover group-hover:scale-105 transition duration-200" />
+                          <img src={file.attachment_url} alt="media" className="size-full object-cover group-hover:scale-105 transition duration-200" />
                         </div>
                       ))}
                   </div>
@@ -1444,11 +1456,11 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                 onClick={() => setPdfPreviewUrl(null)}
                 className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
               >
-                <X className="h-5 w-5" />
+                <X className="size-5" />
               </button>
             </div>
             <div className="flex-1 bg-slate-100">
-              <iframe src={pdfPreviewUrl} className="h-full w-full" title="pdf-viewer" />
+              <iframe src={pdfPreviewUrl} className="size-full" title="pdf-viewer" />
             </div>
           </div>
         </div>
@@ -1464,7 +1476,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                 onClick={() => setForwardMessage(null)}
                 className="rounded-full p-1.5 hover:bg-slate-100"
               >
-                <X className="h-5 w-5" />
+                <X className="size-5" />
               </button>
             </div>
             <div className="mt-4 max-h-[300px] overflow-y-auto space-y-2">
@@ -1474,7 +1486,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                   onClick={() => handleForwardMessage(contact)}
                   className="flex w-full items-center gap-3 rounded-2xl p-2.5 text-left hover:bg-slate-50 transition"
                 >
-                  <div className="grid h-9 w-9 place-items-center rounded-xl bg-blue-100 text-xs font-bold text-blue-700">
+                  <div className="grid size-9 place-items-center rounded-xl bg-blue-100 text-xs font-bold text-blue-700">
                     {(contact.name || 'U').slice(0, 1).toUpperCase()}
                   </div>
                   <div>
@@ -1534,7 +1546,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
               onClick={action.act}
               className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-bold text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition"
             >
-              <action.icon className="h-4 w-4" />
+              <action.icon className="size-4" />
               {action.label}
             </button>
           ))}
@@ -1559,7 +1571,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 z-50 h-full w-full max-w-sm border-l border-slate-100 bg-white shadow-2xl flex flex-col"
+              className="fixed top-0 right-0 z-50 size-full max-w-sm border-l border-slate-100 bg-white shadow-2xl flex flex-col"
             >
               <div className="flex items-center justify-between border-b border-slate-100 p-4 shrink-0">
                 <h3 className="text-sm font-black text-slate-800 tracking-tight uppercase">User Profile</h3>
@@ -1573,12 +1585,14 @@ export default function Communications({ heightClass = 'h-full', institutes = []
 
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 <div className="text-center">
-                  <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-xl font-black text-white shadow-lg">
-                    {(selectedUser.name || 'U').slice(0, 2).toUpperCase()}
-                  </div>
+                  <Avatar className="mx-auto size-20 bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg">
+                    <AvatarFallback className="bg-transparent text-xl font-black text-white">
+                      {(selectedUser.name || 'U').slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                   <h4 className="mt-4 text-sm font-bold text-slate-900">{selectedUser.name}</h4>
                   <div className="mt-2 flex items-center justify-center gap-1.5">
-                    <span className={`h-2 w-2 rounded-full ${selectedUser.online ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
+                    <span className={`size-2 rounded-full ${selectedUser.online ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
                     <span className="text-[10px] font-bold text-slate-500 uppercase">{selectedUser.online ? 'Online' : 'Offline'}</span>
                   </div>
                 </div>
@@ -1689,7 +1703,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                   onClick={() => setShowVideoMeetModal(false)}
                   className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="size-5" />
                 </button>
               </div>
 
@@ -1855,7 +1869,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                   onClick={() => setShowBulkMeetModal(false)}
                   className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="size-5" />
                 </button>
               </div>
 
@@ -2056,7 +2070,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                   onClick={() => setShowMoreOptions(false)}
                   className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="size-5" />
                 </button>
               </div>
 
@@ -2131,7 +2145,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                 {sharedFiles.map((file) => (
                   <div key={file.id} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50/30 p-3 hover:bg-slate-50 transition">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="grid h-10 w-10 place-items-center rounded-xl bg-blue-50 text-blue-600">
+                      <div className="grid size-10 place-items-center rounded-xl bg-blue-50 text-blue-600">
                         <FileText size={20} />
                       </div>
                       <div className="min-w-0">
@@ -2203,7 +2217,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                       onClick={() => setMediaLightboxUrl(file.attachment_url)}
                       className="relative aspect-square rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 group cursor-pointer shadow-xs hover:shadow-md transition"
                     >
-                      <img src={file.attachment_url} alt="gallery" className="h-full w-full object-cover group-hover:scale-105 transition duration-300" />
+                      <img src={file.attachment_url} alt="gallery" className="size-full object-cover group-hover:scale-105 transition duration-300" />
                       <div className="absolute inset-0 bg-slate-900/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
                         <Eye size={20} className="text-white" />
                       </div>

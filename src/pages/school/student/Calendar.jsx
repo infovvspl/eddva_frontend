@@ -370,13 +370,13 @@ export default function Calendar() {
 
           <div className="grid grid-cols-1 gap-1.5 sm:gap-2.5 mt-1 sm:mt-2">
             <div className="relative">
-              <Filter className="pointer-events-none absolute left-2.5 sm:left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 z-10" />
+              <Filter className="pointer-events-none absolute left-2.5 sm:left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400 z-10" />
               <CustomSelect
                 onChange={setSelectedCategory}
                 value={selectedCategory}
                 options={categoryOptions.map((item) => ({ value: item, label: item.replace('_', ' ') }))}
                 className="w-full"
-                triggerClassName="flex h-full w-full items-center justify-between gap-1 pl-8 sm:pl-9 pr-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 bg-white text-[10px] sm:text-xs font-semibold outline-none text-slate-700 shadow-sm"
+                triggerClassName="flex size-full items-center justify-between gap-1 pl-8 sm:pl-9 pr-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 bg-white text-[10px] sm:text-xs font-semibold outline-none text-slate-700 shadow-sm"
               />
             </div>
           </div>
@@ -439,7 +439,7 @@ export default function Calendar() {
                       >
                         <span>{day.getDate()}</span>
                         {dayEvents.length > 0 && (
-                          <span className={cn('h-1.5 w-1.5 rounded-full', isSelected ? 'bg-white' : 'bg-blue-600 dark:bg-sky-505')} />
+                          <span className={cn('size-1.5 rounded-full', isSelected ? 'bg-white' : 'bg-blue-600 dark:bg-sky-505')} />
                         )}
                       </button>
                     );
@@ -549,7 +549,7 @@ export default function Calendar() {
                             </span>
                             {dayEvents.length > 0 && (
                               <span className={cn(
-                                "h-1.5 w-1.5 rounded-full",
+                                "size-1.5 rounded-full",
                                 isSelected ? "bg-blue-600 dark:bg-sky-400" : "bg-blue-500 dark:bg-sky-505"
                               )} />
                             )}
@@ -579,7 +579,7 @@ export default function Calendar() {
                                       }}
                                       className="p-0.5 hover:scale-110 transition-transform cursor-pointer"
                                     >
-                                      <EventIcon category={details.category} className="h-8 w-8 sm:h-9 sm:w-9 filter drop-shadow-md" />
+                                      <EventIcon category={details.category} className="size-8 sm:size-9 filter drop-shadow-md" />
                                     </div>
                                   );
                                 })}
@@ -729,7 +729,7 @@ export default function Calendar() {
       <Modal isOpen={showExamsSyncModal} title="Final Exams Sync" onClose={() => setShowExamsSyncModal(false)} size="md">
         <div className="p-2">
           <div className="p-8 rounded-[2rem] bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/20 rounded-full blur-3xl -mr-16 -mt-16" />
+            <div className="absolute top-0 right-0 size-32 bg-amber-500/20 rounded-full blur-3xl -mr-16 -mt-16" />
             <div className="relative z-10">
               <div className="flex items-center gap-2 mb-4">
                 <AlertTriangle size={16} className="text-amber-500" />

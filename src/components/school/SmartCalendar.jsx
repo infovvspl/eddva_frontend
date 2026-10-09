@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, X, CalendarDays, Clock, MapPin, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
@@ -193,70 +193,77 @@ export default function SmartCalendar() {
   };
 
   return (
-    <div className="flex flex-col h-full w-full py-0.5 overflow-hidden">
-      <div className="flex items-center justify-between mb-4 shrink-0 px-1">
-        <h4 className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">
+    <div className="flex flex-col size-full py-0.5 overflow-hidden">
+      <div className="flex items-center justify-between mb-3 shrink-0 bg-blue-50/80 dark:bg-blue-900/20 p-1.5 rounded-xl border border-blue-100/50 dark:border-blue-900/30">
+        <h4 className="text-[11px] sm:text-xs font-black text-blue-900 dark:text-blue-100 uppercase tracking-widest pl-2">
           {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
         </h4>
         <div className="flex items-center gap-1">
-          <button onClick={prevMonth} className="flex size-7 items-center justify-center rounded-full text-slate-400 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/40 dark:hover:text-blue-400 transition-colors" aria-label="Previous month">
-            <ChevronLeft className="h-4 w-4" />
+          <button onClick={prevMonth} className="p-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-blue-900 text-blue-600 dark:text-blue-400 shadow-[0_2px_10px_rgb(0,0,0,0.05)] transition-all hover:scale-105" aria-label="Previous month">
+            <ChevronLeft className="size-3.5" />
           </button>
-          <button onClick={nextMonth} className="flex size-7 items-center justify-center rounded-full text-slate-400 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/40 dark:hover:text-blue-400 transition-colors" aria-label="Next month">
-            <ChevronRight className="h-4 w-4" />
+          <button onClick={nextMonth} className="p-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-blue-900 text-blue-600 dark:text-blue-400 shadow-[0_2px_10px_rgb(0,0,0,0.05)] transition-all hover:scale-105" aria-label="Next month">
+            <ChevronRight className="size-3.5" />
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 text-center text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2 shrink-0">
-        {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(d => (
-          <div key={d} className="py-1">{d}</div>
+      <div className="grid grid-cols-7 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2 shrink-0 gap-1">
+        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
+          <div key={d} className="py-1 bg-slate-50 dark:bg-slate-800/50 rounded-md border border-slate-100/50 dark:border-slate-800/50">{d}</div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-1 flex-1 content-between relative">
+      <div className="grid grid-cols-7 gap-0.5 flex-1 content-between relative">
         {calendarGrid.map((cell, idx) => {
           const dateStr = getLocalYYYYMMDD(cell.date);
           const isToday = dateStr === todayStr;
           const dayEvents = eventsByDate.get(dateStr) || [];
-
+          
           // Deduplicate events by category for the dots
           const uniqueCategories = [...new Set(dayEvents.map(e => e.category))];
           const hasEmergency = uniqueCategories.includes('EMERGENCY_NOTICE');
-
+          
           return (
-            <div
+            <div 
               key={idx}
               onClick={() => handleDateClick(dayEvents, cell.date)}
-              className={`relative flex flex-col items-center justify-center aspect-square rounded-full cursor-pointer transition-all duration-150 group select-none
-                ${isToday
-                  ? 'font-black text-white bg-blue-600 shadow-md shadow-blue-500/30 z-10'
-                  : (cell.isCurrentMonth
-                      ? 'text-slate-700 dark:text-slate-300 font-semibold hover:bg-blue-50 dark:hover:bg-slate-800/60 hover:text-blue-600 dark:hover:text-blue-400'
+              className={`relative flex flex-col items-center justify-center py-1 rounded-xl cursor-pointer transition-all duration-200 group select-none
+                ${isToday 
+                  ? 'font-black text-white bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30 scale-105 z-10 border border-blue-400/50' 
+                  : (cell.isCurrentMonth 
+                      ? 'text-slate-700 dark:text-slate-300 font-bold hover:bg-blue-50/50 dark:hover:bg-slate-800/60 hover:text-blue-600 dark:hover:text-blue-400' 
                       : 'text-slate-300 dark:text-slate-650 font-medium hover:bg-slate-50 dark:hover:bg-slate-800/40')
                 }
               `}
             >
-              <span className="text-[11px] leading-tight">
+              <span className="text-[11px] leading-tight font-bold">
                 {cell.date.getDate()}
               </span>
-
+              
               {hasEmergency ? (
-                <div className="absolute -bottom-0.5 flex justify-center">
-                  <div className="w-1 h-1 rounded-full bg-rose-500 animate-pulse" title="Emergency Notice" />
+                <div className="mt-0.5 flex justify-center">
+                  <div className="size-1.5 rounded-full bg-rose-600 animate-pulse" title="Emergency Notice" />
                 </div>
-              ) : uniqueCategories.length > 0 && (
-                <div className="absolute -bottom-0.5 flex flex-wrap items-center justify-center gap-0.5">
-                  {uniqueCategories.slice(0, 3).map(cat => {
-                    const ind = EVENT_INDICATORS[cat] || EVENT_INDICATORS.ACADEMIC;
-                    return (
-                      <div
-                        key={cat}
-                        className={`w-1 h-1 rounded-full ${isToday ? 'bg-white' : ind.color}`}
-                        title={ind.name}
-                      />
-                    );
-                  })}
+              ) : (
+                <div className="flex flex-col items-center gap-0.5 mt-0.5 min-h-[6px]">
+                  {isToday && (
+                    <div className="size-1 rounded-full bg-white animate-pulse shadow-[0_0_8px_rgba(255,255,255,0.8)]" title="Today" />
+                  )}
+                  {uniqueCategories.length > 0 && (
+                    <div className="flex flex-wrap items-center justify-center gap-0.5 px-0.5">
+                      {uniqueCategories.slice(0, 3).map(cat => {
+                        const ind = EVENT_INDICATORS[cat] || EVENT_INDICATORS.ACADEMIC;
+                        return (
+                          <div 
+                            key={cat} 
+                            className={`size-1 rounded-full ${ind.color}`}
+                            title={ind.name}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -301,7 +308,7 @@ export default function SmartCalendar() {
                   onClick={() => setIsPopupOpen(false)}
                   className="p-1.5 bg-white dark:bg-slate-800 rounded-full hover:bg-slate-100 transition-colors shadow-sm"
                 >
-                  <X className="h-4 w-4 text-slate-500" />
+                  <X className="size-4 text-slate-500" />
                 </button>
               </div>
               <div className="p-5 max-h-[60vh] overflow-y-auto space-y-3">
@@ -313,11 +320,11 @@ export default function SmartCalendar() {
                       onClick={(e) => handleEventClick(ev, e)}
                       className="w-full text-left flex gap-3 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all hover:scale-[1.01] hover:underline cursor-pointer group"
                     >
-                      <div className={`mt-1.5 w-2 h-2 shrink-0 rounded-full ${ind.color}`} />
+                      <div className={`mt-1.5 size-2 shrink-0 rounded-full ${ind.color}`} />
                       <div>
                         <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight mb-0.5">{ev.title}</p>
                         <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{ind.name}</p>
-                        {ev.location && <p className="flex items-center gap-1 text-[10px] text-slate-400 mt-1"><MapPin className="size-2.5 shrink-0" /> {ev.location}</p>}
+                        {ev.location && <p className="text-[10px] text-slate-400 mt-1">📍 {ev.location}</p>}
                       </div>
                     </button>
                   );
@@ -346,7 +353,7 @@ export default function SmartCalendar() {
                   onClick={() => setInfoModalOpen(false)}
                   className="p-1.5 bg-white dark:bg-slate-800 rounded-full hover:bg-slate-100 transition-colors shadow-sm"
                 >
-                  <X className="h-4 w-4 text-slate-500" />
+                  <X className="size-4 text-slate-500" />
                 </button>
               </div>
               <div className="p-6 space-y-4">
@@ -357,12 +364,12 @@ export default function SmartCalendar() {
                   </p>
                 )}
                 <div className="grid gap-2 text-[11px] text-slate-500 dark:text-slate-400 font-semibold pt-1">
-                  <div className="flex items-center gap-1.5"><CalendarDays className="size-3.5 shrink-0" /> Date: {new Date(selectedInfoEvent.startTime).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'long' })}</div>
+                  <div>📅 Date: {new Date(selectedInfoEvent.startTime).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'long' })}</div>
                   {!selectedInfoEvent.isAllDay && (
-                    <div className="flex items-center gap-1.5"><Clock className="size-3.5 shrink-0" /> Time: {new Date(selectedInfoEvent.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(selectedInfoEvent.endTime || selectedInfoEvent.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                    <div>⏰ Time: {new Date(selectedInfoEvent.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(selectedInfoEvent.endTime || selectedInfoEvent.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                   )}
-                  {selectedInfoEvent.location && <div className="flex items-center gap-1.5"><MapPin className="size-3.5 shrink-0" /> Location: {selectedInfoEvent.location}</div>}
-                  {selectedInfoEvent.priority && <div className="flex items-center gap-1.5"><AlertTriangle className="size-3.5 shrink-0" /> Priority: <span className="capitalize">{selectedInfoEvent.priority.toLowerCase()}</span></div>}
+                  {selectedInfoEvent.location && <div>📍 Location: {selectedInfoEvent.location}</div>}
+                  {selectedInfoEvent.priority && <div>⚠️ Priority: <span className="capitalize">{selectedInfoEvent.priority.toLowerCase()}</span></div>}
                 </div>
               </div>
               <div className="border-t border-slate-100 dark:border-slate-800 p-5 bg-slate-50/50 dark:bg-slate-900/10 flex justify-end">

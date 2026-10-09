@@ -593,7 +593,7 @@ const TopicManagement: React.FC = () => {
                     }`}
                     onClick={() => setSelectedTopic({ id: selectedSubject.id, name: `${selectedSubject.name} Materials`, chapterId: '', kind: 'subject' })}
                   >
-                    <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${selectedTopic?.kind === 'subject' ? 'bg-brand-500 text-white' : 'bg-brand-100 text-brand-600 dark:bg-brand-900/50 dark:text-brand-400'}`}>
+                    <div className={`flex size-7 shrink-0 items-center justify-center rounded-lg ${selectedTopic?.kind === 'subject' ? 'bg-brand-500 text-white' : 'bg-brand-100 text-brand-600 dark:bg-brand-900/50 dark:text-brand-400'}`}>
                       <BookOpen size={14} />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -698,7 +698,7 @@ const TopicManagement: React.FC = () => {
           {/* Floating close button */}
           <button
             onClick={() => setPptStudioOpen(false)}
-            className="absolute top-3 right-3 z-10 grid h-9 w-9 place-items-center rounded-lg bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/60"
+            className="absolute top-3 right-3 z-10 grid size-9 place-items-center rounded-lg bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/60"
             title="Close PPT Studio"
           >
             <X size={18} />
@@ -744,7 +744,7 @@ const TopicManagement: React.FC = () => {
               q.set('cb', String(Date.now()));
               return `${PPT_STUDIO_URL}?${q.toString()}`;
             })()}
-            className="w-full h-full border-0 bg-white block"
+            className="size-full border-0 bg-white block"
             allow="clipboard-write; downloads"
           />
         </div>
@@ -777,7 +777,7 @@ function NavCard({
         </div>
         <h4 className="mt-3 sm:mt-4 truncate text-sm sm:text-lg font-bold text-surface-900 dark:text-white" title={title}>{title}</h4>
         <p className="mt-1 flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm font-medium text-surface-500">
-          <Users size={14} className="shrink-0 w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="truncate">{meta}</span>
+          <Users size={14} className="shrink-0 size-3.5 sm:size-4" /> <span className="truncate">{meta}</span>
         </p>
       </div>
       <div className="mt-3 sm:mt-4 flex items-center justify-between border-t border-surface-100 pt-2.5 sm:pt-3 dark:border-surface-700">
@@ -795,7 +795,7 @@ function IconButton({ children, label, danger, onClick }: { children: React.Reac
       title={label}
       aria-label={label}
       onClick={onClick}
-      className={`grid h-8 w-8 place-items-center rounded-lg border border-transparent transition-colors ${danger
+      className={`grid size-8 place-items-center rounded-lg border border-transparent transition-colors ${danger
         ? 'text-surface-400 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-900/30'
         : 'text-surface-400 hover:border-brand-200 hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-brand-900/30'
         }`}
@@ -842,7 +842,7 @@ function CardGridSkeleton() {
       {Array.from({ length: 6 }).map((_, i) => (
         <div key={i} className="rounded-xl sm:rounded-2xl border border-surface-100 bg-white p-3.5 sm:p-5 dark:border-surface-700 dark:bg-surface-800 flex flex-col justify-between">
           <div>
-            <div className="h-9 w-9 sm:h-11 sm:w-11 animate-pulse rounded-lg sm:rounded-xl bg-surface-200 dark:bg-surface-700" />
+            <div className="size-9 sm:size-11 animate-pulse rounded-lg sm:rounded-xl bg-surface-200 dark:bg-surface-700" />
             <div className="mt-3 sm:mt-4 h-4 sm:h-5 w-2/3 animate-pulse rounded bg-surface-200 dark:bg-surface-700" />
             <div className="mt-1 sm:mt-2 h-3 sm:h-4 w-1/2 animate-pulse rounded bg-surface-100 dark:bg-surface-700/60" />
           </div>
@@ -920,7 +920,7 @@ function ChapterNode({
           className="flex min-w-0 flex-1 items-center gap-2 text-left"
         >
           {/* Chapter number badge */}
-          <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-black transition-colors ${open ? 'bg-brand-500 text-white' : 'bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-400'}`}>
+          <span className={`flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-black transition-colors ${open ? 'bg-brand-500 text-white' : 'bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-400'}`}>
             {chapterIndex + 1}
           </span>
           <ChevronDown
@@ -935,7 +935,7 @@ function ChapterNode({
               title="This chapter's textbook is trained — AI content (notes, PPT, papers) can be grounded in the book."
               className="ml-1.5 inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
             >
-              <span className="h-1 w-1 rounded-full bg-current" />
+              <span className="size-1 rounded-full bg-current" />
               Trained
             </span>
           )}
@@ -1033,7 +1033,7 @@ function TreeItem({
       {/* Horizontal branch line */}
       <div className="absolute left-2.5 top-1/2 h-px w-4 bg-surface-200 dark:bg-surface-700" />
       {/* Icon */}
-      <div className={`relative z-10 ml-8 flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors ${active ? 'bg-brand-500 text-white' : 'bg-surface-100 text-surface-400 dark:bg-surface-800 dark:text-surface-500'}`}>
+      <div className={`relative z-10 ml-8 flex size-6 shrink-0 items-center justify-center rounded-md transition-colors ${active ? 'bg-brand-500 text-white' : 'bg-surface-100 text-surface-400 dark:bg-surface-800 dark:text-surface-500'}`}>
         {icon}
       </div>
       <div className="min-w-0 flex-1">
@@ -1420,7 +1420,7 @@ function MaterialWorkspace({
               </div>
               <button
                 onClick={() => setAnimationUrl(null)}
-                className="grid h-8 w-8 place-items-center rounded-lg bg-white/10 text-white hover:bg-white/20"
+                className="grid size-8 place-items-center rounded-lg bg-white/10 text-white hover:bg-white/20"
               >
                 <X size={16} />
               </button>
@@ -1563,7 +1563,7 @@ function SlideImage({
     <div className="group relative hidden w-2/5 shrink-0 sm:block">
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
 
-      <div className="relative h-full w-full overflow-hidden rounded-xl border border-surface-200 bg-surface-100 dark:border-surface-700 dark:bg-surface-800">
+      <div className="relative size-full overflow-hidden rounded-xl border border-surface-200 bg-surface-100 dark:border-surface-700 dark:bg-surface-800">
         {resolving && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
             <Loader2 size={22} className="animate-spin text-rose-400" />
@@ -1572,7 +1572,7 @@ function SlideImage({
         )}
         {hasImage && (
           <img src={url!} alt={alt} loading="lazy" onError={() => setBroken(true)}
-            className="h-full w-full object-contain transition-opacity duration-300" />
+            className="size-full object-contain transition-opacity duration-300" />
         )}
         {!resolving && !hasImage && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4 text-center">
@@ -1597,15 +1597,15 @@ function SlideImage({
         {hasImage && !resolving && (
           <div className="absolute inset-0 flex items-end justify-end gap-1.5 bg-gradient-to-t from-black/40 to-transparent p-2.5 opacity-0 transition-opacity group-hover:opacity-100">
             <button type="button" title="Enlarge" onClick={() => setLightbox(true)}
-              className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/90 text-slate-700 shadow hover:bg-white active:scale-95 transition-all">
+              className="flex size-7 items-center justify-center rounded-lg bg-white/90 text-slate-700 shadow hover:bg-white active:scale-95 transition-all">
               <ZoomIn size={13} />
             </button>
             <button type="button" title="Regenerate image" onClick={handleRegenerate}
-              className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/90 text-slate-700 shadow hover:bg-white active:scale-95 transition-all">
+              className="flex size-7 items-center justify-center rounded-lg bg-white/90 text-slate-700 shadow hover:bg-white active:scale-95 transition-all">
               <RefreshCw size={13} />
             </button>
             <button type="button" title="Upload your own image" onClick={() => fileRef.current?.click()}
-              className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-500 text-white shadow hover:bg-rose-600 active:scale-95 transition-all">
+              className="flex size-7 items-center justify-center rounded-lg bg-rose-500 text-white shadow hover:bg-rose-600 active:scale-95 transition-all">
               <ImagePlus size={13} />
             </button>
           </div>
@@ -1618,7 +1618,7 @@ function SlideImage({
           onClick={() => setLightbox(false)}>
           <div className="relative max-h-full max-w-3xl w-full" onClick={(e) => e.stopPropagation()}>
             <button type="button" onClick={() => setLightbox(false)}
-              className="absolute -right-3 -top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-800 shadow-lg text-sm font-bold hover:bg-slate-100">
+              className="absolute -right-3 -top-3 z-10 flex size-8 items-center justify-center rounded-full bg-white text-slate-800 shadow-lg text-sm font-bold hover:bg-slate-100">
               <X size={14} />
             </button>
             <img src={url!} alt={alt} className="max-h-[85vh] w-full rounded-2xl object-contain shadow-2xl" />
@@ -1706,7 +1706,7 @@ function SlideDeck({ slides, height = 460, topic = '' }: { slides: Slide[]; heig
               <ul className="flex-1 space-y-2.5 overflow-y-auto pr-1">
                 {bullets.length ? bullets.map((b, i) => (
                   <li key={i} className="flex gap-2.5 text-sm font-medium leading-snug text-surface-700 dark:text-surface-200">
-                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400" />
+                    <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-rose-400" />
                     <span>{b}</span>
                   </li>
                 )) : (
@@ -1740,7 +1740,7 @@ function SlideDeck({ slides, height = 460, topic = '' }: { slides: Slide[]; heig
           {slides.map((s, i) => (
             <button key={i} type="button" onClick={() => setIdx(i)} title={`${i + 1}. ${s.title}`}
               aria-label={`Go to slide ${i + 1}`}
-              className={`h-2.5 w-2.5 rounded-full transition-all ${i === safeIdx ? 'scale-125 bg-rose-500' : 'bg-surface-300 hover:bg-rose-300 dark:bg-surface-600'}`} />
+              className={`size-2.5 rounded-full transition-all ${i === safeIdx ? 'scale-125 bg-rose-500' : 'bg-surface-300 hover:bg-rose-300 dark:bg-surface-600'}`} />
           ))}
         </div>
 
@@ -1761,7 +1761,7 @@ function SlideDeck({ slides, height = 460, topic = '' }: { slides: Slide[]; heig
               <p className="truncate text-[10px] font-semibold text-surface-700 dark:text-surface-200">{s.title}</p>
               {imageOverrides[i] && (
                 <div className="mt-1 h-8 w-full overflow-hidden rounded">
-                  <img src={imageOverrides[i]} alt="" className="h-full w-full object-cover" />
+                  <img src={imageOverrides[i]} alt="" className="size-full object-cover" />
                 </div>
               )}
             </button>
@@ -1946,7 +1946,7 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
                 <Download size={14} /> PDF
               </button>
             )}
-            <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><X size={18} /></button>
+            <button onClick={onClose} className="grid size-9 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><X size={18} /></button>
           </div>
         </div>
         {isBinaryPpt ? (
@@ -2002,7 +2002,7 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={(e) => { e.preventDefault(); setHighlightColor(color); }}
-                      className={`h-6 w-6 rounded-full border-2 transition-transform ${highlightColor === color ? "scale-110 border-surface-900 dark:border-white" : "border-transparent"}`}
+                      className={`size-6 rounded-full border-2 transition-transform ${highlightColor === color ? "scale-110 border-surface-900 dark:border-white" : "border-transparent"}`}
                       style={{ backgroundColor: color }}
                       title="Select color"
                     />
@@ -2103,7 +2103,7 @@ function SourceBadge({ source }: {
         title={title}
         className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
       >
-        <span className="h-1.5 w-1.5 rounded-full bg-current" />
+        <span className="size-1.5 rounded-full bg-current" />
         {label}
       </span>
     );
@@ -2148,7 +2148,7 @@ function SourceBadge({ source }: {
           : 'inline-flex items-center gap-1.5 rounded-full border border-surface-300 bg-surface-100 px-2.5 py-0.5 text-[11px] font-bold text-surface-600 dark:border-surface-600 dark:bg-surface-800 dark:text-surface-300'
       }
     >
-      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      <span className="size-1.5 rounded-full bg-current" />
       {isAiSide ? 'Textbook AI unavailable — retry' : 'General knowledge'}
     </span>
   );
@@ -2356,7 +2356,7 @@ function AiGeneratePanel({
       <div className="fixed inset-0 z-[210] flex flex-col bg-surface-50 dark:bg-surface-950">
         <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-surface-200 bg-white px-5 py-4 shadow-sm dark:border-surface-700 dark:bg-surface-900">
           <div className="flex min-w-0 items-center gap-3">
-            <button type="button" onClick={() => setContent(null)} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-surface-200 text-surface-600 transition hover:bg-surface-50 dark:border-surface-700 dark:hover:bg-surface-800" aria-label="Back to generator settings">
+            <button type="button" onClick={() => setContent(null)} className="grid size-10 shrink-0 place-items-center rounded-xl border border-surface-200 text-surface-600 transition hover:bg-surface-50 dark:border-surface-700 dark:hover:bg-surface-800" aria-label="Back to generator settings">
               <ChevronLeft size={19} />
             </button>
             <div className="min-w-0">
@@ -2371,7 +2371,7 @@ function AiGeneratePanel({
               </div>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-xl text-surface-500 transition hover:bg-surface-100 dark:hover:bg-surface-800" aria-label="Discard and close">
+          <button type="button" onClick={onClose} className="grid size-10 place-items-center rounded-xl text-surface-500 transition hover:bg-surface-100 dark:hover:bg-surface-800" aria-label="Discard and close">
             <X size={19} />
           </button>
         </header>
@@ -2405,13 +2405,13 @@ function AiGeneratePanel({
       <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900">
         <div className="flex items-start justify-between border-b border-surface-100 bg-gradient-to-r from-violet-50 to-blue-50 px-5 py-4 dark:border-surface-700 dark:from-violet-900/20 dark:to-blue-900/20">
           <div className="flex items-center gap-2">
-            <div className="grid h-7 w-7 place-items-center rounded-lg bg-violet-600 text-white"><Sparkles size={15} /></div>
+            <div className="grid size-7 place-items-center rounded-lg bg-violet-600 text-white"><Sparkles size={15} /></div>
             <div>
               <p className="text-[11px] font-black uppercase tracking-wider text-violet-600">AI Content Generator</p>
               <p className="truncate text-sm font-bold text-surface-900 dark:text-white">{topic.name}</p>
             </div>
           </div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-xl bg-white/70 text-surface-500 dark:bg-surface-800"><X size={16} /></button>
+          <button onClick={onClose} className="grid size-8 place-items-center rounded-xl bg-white/70 text-surface-500 dark:bg-surface-800"><X size={16} /></button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-5">
@@ -2631,7 +2631,7 @@ function EditFlashcardsModal({ material, onClose, onSaved }: {
       <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900">
         <div className="flex shrink-0 items-center justify-between border-b border-surface-100 px-5 py-4 dark:border-surface-700">
           <h3 className="text-sm font-bold text-surface-900 dark:text-white">Edit Flashcards</h3>
-          <button onClick={() => void requestClose()} aria-label="Close" className="grid h-8 w-8 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><X size={16} /></button>
+          <button onClick={() => void requestClose()} aria-label="Close" className="grid size-8 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><X size={16} /></button>
         </div>
         {original.length === 0 ? (
           // Never open an unreadable set as an empty editor — saving it would wipe the content.
@@ -2704,7 +2704,7 @@ function EditChecklistModal({ material, onClose, onSaved }: {
       <div className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900">
         <div className="flex shrink-0 items-center justify-between border-b border-surface-100 px-5 py-4 dark:border-surface-700">
           <h3 className="text-sm font-bold text-surface-900 dark:text-white">Edit Revision Checklist</h3>
-          <button onClick={() => void requestClose()} aria-label="Close" className="grid h-8 w-8 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><X size={16} /></button>
+          <button onClick={() => void requestClose()} aria-label="Close" className="grid size-8 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><X size={16} /></button>
         </div>
         <div className="space-y-4 overflow-y-auto p-5">
           <InputField label="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -2884,14 +2884,14 @@ function AddMaterialModal({
         <div className="flex shrink-0 items-center justify-between border-b border-surface-100 px-5 py-4 dark:border-surface-700">
           <div className="flex items-center gap-2">
             {step === 'input' && !initialType && !isSubject && (
-              <button onClick={() => setStep('type')} className="grid h-8 w-8 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><ChevronLeft size={16} /></button>
+              <button onClick={() => setStep('type')} className="grid size-8 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><ChevronLeft size={16} /></button>
             )}
             <div>
               <h3 className="text-sm font-bold text-surface-900 dark:text-white">{step === 'type' ? 'Choose material type' : `Add ${cfg.label}`}</h3>
               <p className="max-w-[240px] truncate text-xs text-surface-400">{topic.name}</p>
             </div>
           </div>
-          <button onClick={() => void requestClose()} aria-label="Close" className="grid h-8 w-8 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><X size={16} /></button>
+          <button onClick={() => void requestClose()} aria-label="Close" className="grid size-8 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><X size={16} /></button>
         </div>
 
         {step === 'type' ? (
@@ -2964,7 +2964,7 @@ function AddMaterialModal({
                     <p className="truncate text-sm font-bold text-surface-800 dark:text-surface-100">{file.name}</p>
                     <p className="text-xs text-surface-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                   </div>
-                  <button onClick={() => { setFile(null); if (fileRef.current) fileRef.current.value = ''; }} className="grid h-7 w-7 place-items-center rounded-lg bg-white/70 text-surface-400 hover:text-rose-500"><X size={14} /></button>
+                  <button onClick={() => { setFile(null); if (fileRef.current) fileRef.current.value = ''; }} className="grid size-7 place-items-center rounded-lg bg-white/70 text-surface-400 hover:text-rose-500"><X size={14} /></button>
                 </div>
                 {type === 'animation' && (
                   <video
@@ -2983,7 +2983,7 @@ function AddMaterialModal({
                 onClick={() => fileRef.current?.click()}
                 className={`cursor-pointer rounded-2xl border-2 border-dashed p-8 text-center transition-all ${dragging ? 'border-brand-400 bg-brand-50' : 'border-surface-200 hover:border-brand-300 hover:bg-surface-50 dark:border-surface-700'}`}
               >
-                <div className={`mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl ${cfg.soft}`}><Upload size={22} className={cfg.text} /></div>
+                <div className={`mx-auto mb-3 grid size-12 place-items-center rounded-2xl ${cfg.soft}`}><Upload size={22} className={cfg.text} /></div>
                 <p className="text-sm font-bold text-surface-600 dark:text-surface-300">
                   {type === 'animation' ? 'Drop video or ' : 'Drop file or '}<span className="text-brand-600">browse</span>
                 </p>

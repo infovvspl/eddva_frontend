@@ -95,8 +95,8 @@ export default function Analytics() {
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-4">
           {instituteSummary.map((item) => (
             <div key={item.label} className="glass-panel rounded-lg p-3 sm:p-5 shadow-soft">
-              <div className={`mb-2 sm:mb-4 grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-lg ${item.bg} shrink-0`}>
-                <item.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${item.color}`} />
+              <div className={`mb-2 sm:mb-4 grid size-10 sm:size-12 place-items-center rounded-lg ${item.bg} shrink-0`}>
+                <item.icon className={`size-5 sm:size-6 ${item.color}`} />
               </div>
               <p className="text-xs sm:text-sm font-bold text-surface-500">{item.label}</p>
               <p className="mt-0.5 sm:mt-1 font-display text-lg sm:text-3xl font-bold text-surface-955">{number(item.value)}</p>
@@ -111,8 +111,8 @@ export default function Analytics() {
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-4 mb-5">
           {userSummary.map((item, idx) => (
             <div key={item.label} className={cn("glass-panel rounded-lg p-3 sm:p-5 shadow-soft", idx === 4 && "col-span-2 md:col-span-1")}>
-              <div className={`mb-2 sm:mb-4 grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-lg ${item.bg} shrink-0`}>
-                <item.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${item.color}`} />
+              <div className={`mb-2 sm:mb-4 grid size-10 sm:size-12 place-items-center rounded-lg ${item.bg} shrink-0`}>
+                <item.icon className={`size-5 sm:size-6 ${item.color}`} />
               </div>
               <p className="text-xs sm:text-sm font-bold text-surface-500">{item.label}</p>
               <p className="mt-0.5 sm:mt-1 font-display text-lg sm:text-3xl font-bold text-surface-955">{number(item.value)}</p>
@@ -146,7 +146,7 @@ export default function Analytics() {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
               {ticketSummary.map((item, idx) => (
                 <div key={item.label} className={cn("rounded-lg border border-surface-200 p-3 sm:p-5", item.bg, idx === 2 && "col-span-2 sm:col-span-1")}>
-                  <div className="mb-1.5"><item.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${item.color}`} /></div>
+                  <div className="mb-1.5"><item.icon className={`size-5 sm:size-6 ${item.color}`} /></div>
                   <p className="text-xs sm:text-sm font-bold text-surface-600">{item.label}</p>
                   <p className={`mt-0.5 sm:mt-1 font-display text-xl sm:text-3xl font-bold ${item.color}`}>{number(item.value)}</p>
                 </div>
@@ -161,7 +161,7 @@ export default function Analytics() {
             </div>
             
             <div className="flex-1 flex flex-col sm:flex-row items-center justify-center gap-6 mt-4">
-              <div className="relative w-40 h-40 flex-shrink-0">
+              <div className="relative size-40 flex-shrink-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     {hasTickets && <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #D8E7FA' }} />}
@@ -204,7 +204,7 @@ export default function Analytics() {
                   return (
                     <div key={category.name} className="flex items-center justify-between p-2 rounded-lg hover:bg-surface-50 transition-colors duration-150">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                        <span className="size-3 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
                         <span className="text-sm font-semibold text-surface-700 truncate">{category.name}</span>
                       </div>
                       <div className="flex items-center gap-3 pl-2 flex-shrink-0">

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Activity, AlertTriangle, CheckCircle2, Users, Clock, Loader2, Download } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 
 function extract<T>(res: any): T {
   const d = res?.data;
@@ -108,56 +109,56 @@ export default function TenantHealthPage() {
 
       <div className="bg-white rounded-[28px] border border-slate-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/60">
+          <Table className="w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b border-slate-100 bg-slate-50/60 hover:bg-slate-50/60">
                 {['Institute', 'Plan', 'Status', 'Health', 'Risk', 'Students', 'Teachers', 'Last Active', 'Tickets'].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap">{h}</th>
+                  <TableHead key={h} className="h-auto px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap">{h}</TableHead>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {isLoading ? (
-                <tr><td colSpan={9} className="py-16 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-indigo-300" /></td></tr>
+                <TableRow><TableCell colSpan={9} className="py-16 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-indigo-300" /></TableCell></TableRow>
               ) : data.length === 0 ? (
-                <tr><td colSpan={9} className="py-16 text-center text-slate-400 text-sm">No tenants found</td></tr>
+                <TableRow><TableCell colSpan={9} className="py-16 text-center text-slate-400 text-sm">No tenants found</TableCell></TableRow>
               ) : (
                 [...data].sort((a, b) => a.healthScore - b.healthScore).map((t, i) => (
-                  <tr key={t.id} className={i % 2 === 0 ? '' : 'bg-slate-50/40'}>
-                    <td className="px-4 py-3 font-medium text-slate-800 max-w-[160px] truncate whitespace-nowrap">
+                  <TableRow key={t.id} className={i % 2 === 0 ? '' : 'bg-slate-50/40'}>
+                    <TableCell className="px-4 py-3 font-medium text-slate-800 max-w-[160px] truncate whitespace-nowrap">
                       {!t.onboardingComplete && <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5 mb-0.5" title="Onboarding incomplete" />}
                       {t.name}
-                    </td>
-                    <td className="px-4 py-3 capitalize text-slate-500 text-xs">{t.plan}</td>
-                    <td className="px-4 py-3 capitalize">
+                    </TableCell>
+                    <TableCell className="px-4 py-3 capitalize text-slate-500 text-xs">{t.plan}</TableCell>
+                    <TableCell className="px-4 py-3 capitalize">
                       <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
                         t.status === 'active' ? 'bg-emerald-100 text-emerald-700' :
                         t.status === 'trial'  ? 'bg-blue-100 text-blue-700' :
                         'bg-red-100 text-red-600'
                       }`}>{t.status}</span>
-                    </td>
-                    <td className="px-4 py-3"><ScoreBar score={t.healthScore} /></td>
-                    <td className="px-4 py-3"><RiskBadge risk={t.risk} /></td>
-                    <td className="px-4 py-3"><QuotaBar used={t.studentCount} limit={t.maxStudents} /></td>
-                    <td className="px-4 py-3"><QuotaBar used={t.teacherCount} limit={t.maxTeachers} /></td>
-                    <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">
+                    </TableCell>
+                    <TableCell className="px-4 py-3"><ScoreBar score={t.healthScore} /></TableCell>
+                    <TableCell className="px-4 py-3"><RiskBadge risk={t.risk} /></TableCell>
+                    <TableCell className="px-4 py-3"><QuotaBar used={t.studentCount} limit={t.maxStudents} /></TableCell>
+                    <TableCell className="px-4 py-3"><QuotaBar used={t.teacherCount} limit={t.maxTeachers} /></TableCell>
+                    <TableCell className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">
                       {t.lastActivity ? (
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           {t.daysSinceActivity === 0 ? 'Today' : `${t.daysSinceActivity}d ago`}
                         </span>
                       ) : <span className="text-red-400">Never</span>}
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
                       {t.openTickets > 0
                         ? <span className="text-xs font-semibold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">{t.openTickets}</span>
                         : <span className="text-slate-300">—</span>}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
     </div>

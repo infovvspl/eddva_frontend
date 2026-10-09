@@ -4,6 +4,7 @@ import { Plus, Search, Loader2, CheckCircle, XCircle, Trash2 } from "lucide-reac
 import { apiClient } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
 interface SchoolInstitute {
   id: string;
@@ -128,29 +129,29 @@ const SchoolPage = () => {
           <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-slate-400" /></div>
         ) : (
           <div className="rounded-2xl border border-slate-100 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-slate-500 text-xs font-medium uppercase tracking-wider">
-                <tr>
-                  <th className="px-4 py-3 text-left">Institute</th>
-                  <th className="px-4 py-3 text-left">Email</th>
-                  <th className="px-4 py-3 text-left">City</th>
-                  <th className="px-4 py-3 text-left">Status</th>
-                  <th className="px-4 py-3 text-left">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
+            <Table className="w-full text-sm">
+              <TableHeader className="bg-slate-50 text-slate-500 text-xs font-medium uppercase tracking-wider">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="h-auto px-4 py-3 text-left">Institute</TableHead>
+                  <TableHead className="h-auto px-4 py-3 text-left">Email</TableHead>
+                  <TableHead className="h-auto px-4 py-3 text-left">City</TableHead>
+                  <TableHead className="h-auto px-4 py-3 text-left">Status</TableHead>
+                  <TableHead className="h-auto px-4 py-3 text-left">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y divide-slate-50">
                 {institutes.map(inst => (
-                  <tr key={inst.id} className="hover:bg-slate-50 transition-colors cursor-pointer"
+                  <TableRow key={inst.id} className="hover:bg-slate-50 transition-colors cursor-pointer"
                     onClick={() => navigate(`/super-admin/school/${inst.id}`)}>
-                    <td className="px-4 py-3 font-semibold text-slate-900">{inst.name}</td>
-                    <td className="px-4 py-3 text-slate-500">{inst.email}</td>
-                    <td className="px-4 py-3 text-slate-500">{inst.city ?? "—"}</td>
-                    <td className="px-4 py-3">
+                    <TableCell className="px-4 py-3 font-semibold text-slate-900">{inst.name}</TableCell>
+                    <TableCell className="px-4 py-3 text-slate-500">{inst.email}</TableCell>
+                    <TableCell className="px-4 py-3 text-slate-500">{inst.city ?? "—"}</TableCell>
+                    <TableCell className="px-4 py-3">
                       <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold ${STATUS_STYLES[inst.status] ?? ""}`}>
                         {inst.status}
                       </span>
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
                       <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                         {inst.status !== "ACTIVE" && (
                           <button onClick={() => approve(inst.id)} title="Approve"
@@ -169,14 +170,14 @@ const SchoolPage = () => {
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
                 {institutes.length === 0 && (
-                  <tr><td colSpan={5} className="py-16 text-center text-slate-400 font-semibold">No school institutes found.</td></tr>
+                  <TableRow><TableCell colSpan={5} className="py-16 text-center text-slate-400 font-semibold">No school institutes found.</TableCell></TableRow>
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
 

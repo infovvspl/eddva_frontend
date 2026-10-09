@@ -770,7 +770,7 @@ const MindMapCanvasInner = forwardRef<MindMapCanvasHandle, MindMapCanvasProps & 
     }
   };
 
-  const btn = 'grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50';
+  const btn = 'grid size-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50';
   const canvasHeight = isFullscreen ? '100%' : height;
 
   return (
@@ -868,7 +868,7 @@ const MindMapCanvasInner = forwardRef<MindMapCanvasHandle, MindMapCanvasProps & 
                 <foreignObject width={entry.w} height={entry.h} style={{ pointerEvents: 'none' }}>
                   <div
                     xmlns="http://www.w3.org/1999/xhtml"
-                    className="flex items-center justify-center text-center text-slate-800 w-full h-full select-none"
+                    className="flex items-center justify-center text-center text-slate-800 size-full select-none"
                     style={{
                       padding: `${s.padY}px ${s.padX}px`,
                       whiteSpace: 'pre-wrap',

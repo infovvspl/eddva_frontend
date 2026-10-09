@@ -113,14 +113,14 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
     <div className="relative min-h-[80vh] rounded-3xl border border-sky-200/90 bg-gradient-to-b from-sky-50 via-sky-100/50 to-blue-50/60 text-slate-900 p-6 md:p-8 shadow-xl shadow-sky-500/10 overflow-hidden flex flex-col justify-between max-w-4xl mx-auto">
       {/* Background decoration */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#0284c712_1px,transparent_1px),linear-gradient(to_bottom,#0284c712_1px,transparent_1px)] bg-[size:16px_28px] pointer-events-none" />
-      <div className="absolute -top-32 -right-32 w-80 h-80 rounded-full blur-[100px] pointer-events-none opacity-25 bg-sky-400" />
-      <div className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full blur-[100px] pointer-events-none opacity-20 bg-cyan-300" />
+      <div className="absolute -top-32 -right-32 size-80 rounded-full blur-[100px] pointer-events-none opacity-25 bg-sky-400" />
+      <div className="absolute -bottom-32 -left-32 size-80 rounded-full blur-[100px] pointer-events-none opacity-20 bg-cyan-300" />
 
       {/* Header HUD */}
       <div className="relative z-10 flex items-center justify-between border-b border-sky-200/80 pb-4">
         <div>
           <span className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest text-sky-700 bg-sky-500/15 border border-sky-300/80 px-3 py-1 rounded-full">
-            <Compass className="h-4 w-4 animate-spin-slow text-sky-600" />
+            <Compass className="size-4 animate-spin-slow text-sky-600" />
             Checkpoint {stageOrder}
           </span>
           <h2 className="text-xl font-black text-slate-900 mt-1">{stageName}</h2>
@@ -145,7 +145,7 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
       <div className="relative z-10 my-6 flex-1 flex flex-col justify-center">
         <div className="bg-white/95 border border-sky-200 rounded-2xl p-6 sm:p-8 lg:p-10 backdrop-blur-md shadow-md shadow-sky-500/5">
           <div className="flex items-center gap-2 mb-4">
-            <HelpCircle className="h-5 w-5 text-sky-600" />
+            <HelpCircle className="size-5 text-sky-600" />
             <span className="text-xs font-black uppercase tracking-wider text-sky-700">NCERT Riddle</span>
           </div>
 
@@ -171,9 +171,9 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
                 : 'bg-rose-50 border-rose-300 text-rose-900'
             }`}>
               {isCorrectChoice ? (
-                <Check className="h-6 w-6 text-emerald-600 shrink-0 mt-0.5" />
+                <Check className="size-6 text-emerald-600 shrink-0 mt-0.5" />
               ) : (
-                <X className="h-6 w-6 text-rose-600 shrink-0 mt-0.5" />
+                <X className="size-6 text-rose-600 shrink-0 mt-0.5" />
               )}
               <div>
                 <p className="font-black text-base">
@@ -219,8 +219,8 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
               onClick={() => handleSelectOption(option.id)}
               className={`flex items-center gap-4 rounded-xl border p-5 sm:p-6 text-left text-lg sm:text-xl lg:text-2xl font-black transition-all duration-200 active:scale-[0.98] ${cardStyle}`}
             >
-              <span className={`flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl text-base sm:text-lg font-black transition-all ${badgeStyle}`}>
-                {hasAnswered && isCorrect ? <Check className="h-5 w-5" /> : hasAnswered && isSelected ? <X className="h-5 w-5" /> : badgeLabel}
+              <span className={`flex size-10 sm:size-11 shrink-0 items-center justify-center rounded-xl text-base sm:text-lg font-black transition-all ${badgeStyle}`}>
+                {hasAnswered && isCorrect ? <Check className="size-5" /> : hasAnswered && isSelected ? <X className="size-5" /> : badgeLabel}
               </span>
               <span className="leading-snug flex-1">{option.content}</span>
             </button>
@@ -248,7 +248,7 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
               'Submitting Riddle...'
             ) : currentIdx < totalQuestions - 1 ? (
               <>
-                Next Checkpoint <ArrowRight className="h-4 w-4" />
+                Next Checkpoint <ArrowRight className="size-4" />
               </>
             ) : (
               'Submit Checkpoints'

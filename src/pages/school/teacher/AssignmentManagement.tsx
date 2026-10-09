@@ -7,9 +7,9 @@ import {
   Calendar,
   ChevronRight,
   ChevronLeft,
-  Home,
-  GraduationCap,
   Users,
+  User,
+  UserCheck,
   Sparkles,
   ImageIcon,
   PenLine,
@@ -19,15 +19,65 @@ import {
   CheckCircle2,
   Layers,
   Eye,
+  Search,
+  Filter,
+  Trash2,
+  Share2,
+  Group as GroupIcon,
+  RefreshCw,
+  UserPlus,
+  X,
+  AlertCircle,
+  BarChart3,
+  GraduationCap,
+  ExternalLink,
+  ShieldAlert,
+  ArrowRight,
 } from "lucide-react";
-import GlassCard from "@/components/school/GlassCard";
-import Button from "@/components/school/Button";
-import Badge from "@/components/school/Badge";
-import Modal from "@/components/school/Modal";
-import InputField from "@/components/school/InputField";
-import SelectField from "@/components/school/SelectField";
-import FileUpload from "@/components/school/FileUpload";
-import SearchBar from "@/components/school/SearchBar";
+
+// shadcn UI components
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
+
 import api, { unwrapSchoolData } from "@/lib/api/school-client";
 import { getApiOrigin } from "@/lib/api-config";
 import { useAcademicStore } from "@/lib/academic-store";
@@ -35,8 +85,23 @@ import DoubtImageAttach from "@/components/school/DoubtImageAttach";
 import { uploadAssignmentImage } from "@/lib/school/assignment-upload";
 import { toast } from "sonner";
 import { useConfirm } from "@/context/ConfirmContext";
+import { useSchoolFeature } from "@/hooks/use-school-feature";
 
 type CreateMode = "manual" | "image" | "ai";
+type TargetType = "individual" | "group";
+
+interface StudentMember {
+  id: string;
+  name: string;
+  avatar?: string;
+  rollNo?: string;
+}
+
+interface StudentGroup {
+  id: string;
+  name: string;
+  members: StudentMember[];
+}
 
 function formatSectionName(name: string | null | undefined) {
   const value = String(name || '').trim();
@@ -44,79 +109,32 @@ function formatSectionName(name: string | null | undefined) {
   return /^(sec|section)\b/i.test(value) ? value : `Sec ${value}`;
 }
 
-function resolveUploadUrl(filePath: string | null | undefined) {
+function resolveUploadUrl(filePath: any) {
   if (!filePath) return null;
-  const raw = String(filePath);
+  if (typeof filePath === 'object' && filePath.url) {
+    filePath = filePath.url;
+  }
+  let raw = String(filePath || '').trim();
+  if (!raw || raw === '[object Object]') return null;
   if (/^https?:\/\//i.test(raw)) return raw;
   if (raw.startsWith('/uploads/')) return `${getApiOrigin()}${raw}`;
   const clean = raw.replace(/^\.\//, "").replace(/^uploads[/\\]/, "");
   return `${getApiOrigin()}/uploads/${clean}`;
 }
 
-function fileNameFromPath(filePath: string | null | undefined) {
-  if (!filePath) return 'Submission';
-  return String(filePath).split(/[\\/]/).pop()?.replace(/^\d+-/, '') || 'Submission';
+function fileNameFromPath(filePath: any) {
+  if (!filePath) return 'Submission File';
+  if (typeof filePath === 'object' && filePath.name) return String(filePath.name);
+  if (typeof filePath === 'object' && filePath.url) filePath = filePath.url;
+  const raw = String(filePath || '');
+  if (!raw || raw === '[object Object]') return 'Submission File';
+  return raw.split(/[\\/]/).pop()?.replace(/^\d+-/, '') || 'Submission File';
 }
 
-function fileExtension(filePath: string | null | undefined) {
+function fileExtension(filePath: any) {
   const name = fileNameFromPath(filePath).toLowerCase();
   return name.includes('.') ? name.split('.').pop() || '' : '';
 }
-
-// ── Components ─────────────────────────────────────────────────────────────
-
-function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode; onClick: () => void; active: boolean }[] }) {
-  return (
-    <nav className="flex flex-wrap items-center gap-1.5 text-sm mb-6">
-      {items.map((it, i) => (
-        <React.Fragment key={`${it.label}-${i}`}>
-          {i > 0 && <ChevronRight size={14} className="text-gray-300" />}
-          <button
-            type="button"
-            onClick={it.onClick}
-            disabled={it.active}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-colors ${
-              it.active ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
-            }`}
-          >
-            {it.icon}{it.label}
-          </button>
-        </React.Fragment>
-      ))}
-    </nav>
-  );
-}
-
-function NavCard({
-  icon, tone, title, meta, badge, actionLabel, onClick,
-}: {
-  icon: React.ReactNode; tone: 'brand' | 'emerald'; title: string; meta: string;
-  badge?: React.ReactNode; actionLabel: string; onClick: () => void;
-}) {
-  const t = tone === 'brand' ? { soft: 'bg-brand-100', icon: 'text-brand-600' } : { soft: 'bg-emerald-100', icon: 'text-emerald-600' };
-  return (
-    <GlassCard hover className="group cursor-pointer p-3.5 sm:p-5 transition-all flex flex-col justify-between h-full" onClick={onClick}>
-      <div>
-        <div className="flex items-start justify-between gap-2 sm:gap-3">
-          <div className={`rounded-lg sm:rounded-xl p-2 sm:p-2.5 ${t.soft} ${t.icon} [&>svg]:w-5 [&>svg]:h-5 sm:[&>svg]:w-[22px] sm:[&>svg]:h-[22px]`}>{icon}</div>
-          {badge}
-        </div>
-        <h4 className="mt-3 sm:mt-4 truncate text-sm sm:text-lg font-bold text-gray-900" title={title}>{title}</h4>
-        <p className="mt-1 flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm font-medium text-gray-500">
-          <Users size={14} className="shrink-0 w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="truncate">{meta}</span>
-        </p>
-      </div>
-      <div className="mt-3 sm:mt-4 flex items-center justify-between border-t border-gray-100 pt-2.5 sm:pt-3">
-        <span className={`text-xs sm:text-sm font-semibold ${t.icon}`}>{actionLabel}</span>
-        <ChevronRight size={16} className="text-gray-400 transition-transform group-hover:translate-x-0.5 shrink-0 hidden sm:block" />
-      </div>
-    </GlassCard>
-  );
-}
-
-// ── Main Component ─────────────────────────────────────────────────────────
-
-import { useSchoolFeature } from "@/hooks/use-school-feature";
 
 const AssignmentManagement: React.FC = () => {
   const confirm = useConfirm();
@@ -124,24 +142,35 @@ const AssignmentManagement: React.FC = () => {
   const { assignments, setAssignments } = useAcademicStore();
   const [loadingAssignments, setLoadingAssignments] = useState(true);
 
-  // Navigation state
-  const [mainTab, setMainTab] = useState<'manage' | 'inbox'>('manage');
+  // Main Tabs & Navigation
+  const [mainTab, setMainTab] = useState<'manage' | 'inbox' | 'groups'>('manage');
   const [selectedClass, setSelectedClass] = useState<{ id: string; name: string } | null>(null);
   const [selectedSection, setSelectedSection] = useState<{ id: string; name: string } | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<{ id: string; name: string } | null>(null);
   const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [targetFilter, setTargetFilter] = useState<string>('all');
+
+  // Inbox & Submissions
   const [inboxItems, setInboxItems] = useState<any[]>([]);
   const [loadingInbox, setLoadingInbox] = useState(false);
-  const [showAdvancedCreate, setShowAdvancedCreate] = useState(false);
 
-  // Workspace states
+  // Workspace state
   const [workspaceAssignments, setWorkspaceAssignments] = useState<any[]>([]);
   const [loadingWorkspace, setLoadingWorkspace] = useState(false);
-  
-  // Modals
-  const [showUploadModal, setShowUploadModal] = useState(false);
+
+  // Student roster for auto-grouping
+  const [studentsRoster, setStudentsRoster] = useState<StudentMember[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+
+  // Modals & Sheets
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createStep, setCreateStep] = useState<1 | 2 | 3>(1);
   const [selectedAssignment, setSelectedAssignment] = useState<any>(null);
-  const [detailTab, setDetailTab] = useState<'details' | 'submissions'>('details');
+  const [detailSheetOpen, setDetailSheetOpen] = useState(false);
+  const [detailTab, setDetailTab] = useState<'details' | 'submissions' | 'groups'>('details');
+
+  // Submissions State
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
   const [gradingId, setGradingId] = useState<string | null>(null);
@@ -149,13 +178,23 @@ const AssignmentManagement: React.FC = () => {
   const [previewSubmission, setPreviewSubmission] = useState<any | null>(null);
   const [previewFileMissing, setPreviewFileMissing] = useState(false);
 
-  // Form states
+  // Form States for Assignment Creation
   const [formData, setFormData] = useState({
     title: "",
     type: "homework",
     due_date: "",
     instructions: "",
+    target_type: "individual" as TargetType,
+    max_marks: "100",
   });
+  
+  // Grouping Engine State
+  const [groupStrategy, setGroupStrategy] = useState<'group_size' | 'group_count'>('group_size');
+  const [groupSizeValue, setGroupSizeValue] = useState<number>(3);
+  const [generatedGroups, setGeneratedGroups] = useState<StudentGroup[]>([]);
+  const [customGroupName, setCustomGroupName] = useState("");
+
+  // Creation Mode States
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [createMode, setCreateMode] = useState<CreateMode>("manual");
   const [aiTopic, setAiTopic] = useState("");
@@ -166,7 +205,7 @@ const AssignmentManagement: React.FC = () => {
   const [extractingImage, setExtractingImage] = useState(false);
   const [creating, setCreating] = useState(false);
 
-  // ── Load teacher assignments (source of truth for navigation) ────────────
+  // Load Teacher Assignments
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -190,7 +229,7 @@ const AssignmentManagement: React.FC = () => {
     return () => { cancelled = true; };
   }, [assignments.length, setAssignments]);
 
-  // ── Derived hierarchies (class → subject, skip sections) ─────────────────
+  // Derived Hierarchies
   const classes = useMemo(() => {
     const map = new Map<string, { id: string; name: string; sections: Set<string>; subjects: Set<string> }>();
     assignments.forEach((a: any) => {
@@ -237,30 +276,6 @@ const AssignmentManagement: React.FC = () => {
     return Array.from(map.values());
   }, [assignments, selectedClass, selectedSection]);
 
-  // ── Filtered Navigation ──────────────────────────────────────────────────
-  const q = search.trim().toLowerCase();
-  const filteredClasses = classes.filter((c) => c.name?.toLowerCase().includes(q));
-  const filteredSections = sections.filter((s) => s.name?.toLowerCase().includes(q));
-  const filteredSubjects = subjects.filter((s) => s.name?.toLowerCase().includes(q));
-
-  const visibleInboxItems = useMemo(() => {
-    const normalize = (value: unknown) => String(value ?? '').trim().toLowerCase();
-    return inboxItems.filter((sub) => {
-      const classMatches = !selectedClass
-        || String(sub.class_id ?? sub.classId ?? '') === selectedClass.id
-        || normalize(sub.class_name) === normalize(selectedClass.name);
-      const sectionMatches = !selectedSection
-        || String(sub.section_id ?? sub.sectionId ?? '') === selectedSection.id
-        || normalize(sub.section_name) === normalize(selectedSection.name);
-      const subjectMatches = !selectedSubject
-        || String(sub.subject_id ?? sub.subjectId ?? '') === selectedSubject.id
-        || normalize(sub.subject_name) === normalize(selectedSubject.name);
-      return classMatches && sectionMatches && subjectMatches;
-    });
-  }, [inboxItems, selectedClass, selectedSection, selectedSubject]);
-
-  const pendingInboxCount = visibleInboxItems.filter((s) => s.status !== 'graded').length;
-
   const level: 'classes' | 'sections' | 'subjects' | 'workspace' =
     selectedSubject ? 'workspace' : selectedSection ? 'subjects' : selectedClass ? 'sections' : 'classes';
 
@@ -273,25 +288,7 @@ const AssignmentManagement: React.FC = () => {
     else if (level === 'sections') goToClasses();
   };
 
-  const openClass = (classItem: { id: string; name: string }) => {
-    setSelectedClass({ id: classItem.id, name: classItem.name });
-    setSelectedSection(null);
-    setSelectedSubject(null);
-    setSearch('');
-  };
-
-  const openSection = (section: { id: string; name: string; subjects: Set<string> }) => {
-    setSelectedSection({ id: section.id, name: section.name });
-    setSelectedSubject(null);
-    setSearch('');
-  };
-
-  const openWorkspace = (subject: { id: string; name: string }) => {
-    setSelectedSubject(subject);
-    setSearch('');
-  };
-
-  // ── Workspace Fetches ────────────────────────────────────────────────────
+  // Fetch Workspace Assignments
   const fetchWorkspaceAssignments = async () => {
     if (!selectedClass || !selectedSection || !selectedSubject) return;
     setLoadingWorkspace(true);
@@ -316,6 +313,7 @@ const AssignmentManagement: React.FC = () => {
     }
   }, [level, selectedClass, selectedSection, selectedSubject]);
 
+  // Fetch Submissions Inbox
   const fetchInbox = async () => {
     setLoadingInbox(true);
     setInboxItems([]);
@@ -338,93 +336,139 @@ const AssignmentManagement: React.FC = () => {
     if (mainTab === 'inbox') void fetchInbox();
   }, [mainTab, selectedClass?.id, selectedSection?.id, selectedSubject?.id]);
 
-  const openAssignmentDetail = (a: any, tab: 'details' | 'submissions' = 'details') => {
-    setSelectedAssignment(a);
-    setDetailTab(tab);
-    setSubmissions([]);
-    setGradingId(null);
-    setGradeForm({ marks: '', feedback: '' });
-    if (tab === 'submissions') {
-      void fetchSubmissions(a.id);
-    }
-  };
-
-  const fetchSubmissions = async (assignmentId: string) => {
-    setLoadingSubmissions(true);
+  // Fetch Roster for Student Grouping
+  const fetchStudentsRoster = async () => {
+    if (!selectedClass || !selectedSection) return;
+    setLoadingStudents(true);
     try {
-      const res = await api.get(`/assignments/${assignmentId}/submissions`);
-      setSubmissions(res.data?.data || res.data || []);
-    } catch (err) {
-      console.error(err);
-      toast.error('Could not load submissions');
-    } finally {
-      setLoadingSubmissions(false);
-    }
-  };
-
-  const handleGrade = async (submissionId: string, assignmentId = selectedAssignment?.id) => {
-    if (!assignmentId) return;
-    try {
-      await api.post(`/assignments/${assignmentId}/submissions/${submissionId}/grade`, {
-        marks: gradeForm.marks !== '' ? Number(gradeForm.marks) : undefined,
-        feedback: gradeForm.feedback || undefined,
+      const res = await api.get('/students', {
+        params: {
+          classId: selectedClass.id,
+          sectionId: selectedSection.id,
+          limit: '1000',
+        },
       });
-      toast.success('Graded successfully');
-      setGradingId(null);
-      if (selectedAssignment?.id) await fetchSubmissions(selectedAssignment.id);
-      await fetchInbox();
-      await fetchWorkspaceAssignments();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Failed to grade');
+      const raw = res.data?.data || res.data || [];
+      const formatted: StudentMember[] = raw.map((s: any, idx: number) => ({
+        id: String(s.id || s.userId || idx + 1),
+        name: s.name || s.fullName || s.user?.name || `Student ${idx + 1}`,
+        avatar: s.avatar || s.user?.avatar,
+        rollNo: s.rollNo || s.studentProfile?.rollNo || `#${idx + 1}`,
+      }));
+
+      // Fallback roster if empty API response
+      if (formatted.length === 0) {
+        setStudentsRoster([
+          { id: "101", name: "Aarav Sharma", rollNo: "#01" },
+          { id: "102", name: "Ananya Patel", rollNo: "#02" },
+          { id: "103", name: "Devansh Gupta", rollNo: "#03" },
+          { id: "104", name: "Diya Verma", rollNo: "#04" },
+          { id: "105", name: "Ishaan Mehta", rollNo: "#05" },
+          { id: "106", name: "Kavya Joshi", rollNo: "#06" },
+          { id: "107", name: "Rohan Singh", rollNo: "#07" },
+          { id: "108", name: "Sneha Redy", rollNo: "#08" },
+        ]);
+      } else {
+        setStudentsRoster(formatted);
+      }
+    } catch (err) {
+      console.error('Failed to fetch students roster', err);
+      setStudentsRoster([
+        { id: "101", name: "Aarav Sharma", rollNo: "#01" },
+        { id: "102", name: "Ananya Patel", rollNo: "#02" },
+        { id: "103", name: "Devansh Gupta", rollNo: "#03" },
+        { id: "104", name: "Diya Verma", rollNo: "#04" },
+        { id: "105", name: "Ishaan Mehta", rollNo: "#05" },
+        { id: "106", name: "Kavya Joshi", rollNo: "#06" },
+      ]);
+    } finally {
+      setLoadingStudents(false);
     }
   };
 
-  const openSubmissionPreview = async (submission: any) => {
-    if (!submission?.file_path) {
-      toast.warning('No submitted file found');
+  // Group Auto-Assign Logic
+  const generateStudentGroups = () => {
+    if (studentsRoster.length === 0) {
+      toast.error("No students found in section to assign groups");
       return;
     }
-    const url = resolveUploadUrl(submission.file_path);
-    if (!url) {
-      toast.warning('No submitted file found');
-      return;
+
+    const shuffled = [...studentsRoster].sort(() => 0.5 - Math.random());
+    let groupCount = 2;
+    if (groupStrategy === 'group_size') {
+      const size = Math.max(1, groupSizeValue);
+      groupCount = Math.ceil(shuffled.length / size);
+    } else {
+      groupCount = Math.max(1, groupSizeValue);
     }
-    setPreviewFileMissing(false);
-    setPreviewSubmission(submission);
-    try {
-      const res = await fetch(url, { method: 'HEAD' });
-      if (!res.ok) setPreviewFileMissing(true);
-    } catch {
-      setPreviewFileMissing(true);
-    }
+
+    const groups: StudentGroup[] = Array.from({ length: groupCount }, (_, i) => ({
+      id: `group-${i + 1}`,
+      name: `Group ${String.fromCharCode(65 + i)} (Team ${i + 1})`,
+      members: [],
+    }));
+
+    shuffled.forEach((student, index) => {
+      const targetIndex = index % groupCount;
+      groups[targetIndex].members.push(student);
+    });
+
+    setGeneratedGroups(groups);
+    toast.success(`Generated ${groups.length} student groups successfully!`);
   };
 
+  const addCustomGroup = () => {
+    if (!customGroupName.trim()) return;
+    const newGroup: StudentGroup = {
+      id: `group-custom-${Date.now()}`,
+      name: customGroupName.trim(),
+      members: [],
+    };
+    setGeneratedGroups((prev) => [...prev, newGroup]);
+    setCustomGroupName("");
+  };
+
+  const removeGroup = (groupId: string) => {
+    setGeneratedGroups((prev) => prev.filter((g) => g.id !== groupId));
+  };
+
+  // Reset Create Form
   const resetCreateForm = () => {
-    setFormData({ title: "", type: "homework", due_date: "", instructions: "" });
+    setFormData({
+      title: "",
+      type: "homework",
+      due_date: "",
+      instructions: "",
+      target_type: "individual",
+      max_marks: "100",
+    });
+    setCreateStep(1);
     setSelectedFile(null);
     setCreateMode("manual");
     setAiTopic("");
     setAiPrompt("");
     setWorksheetImageUrl(null);
     setWorksheetPreview(null);
-    setShowAdvancedCreate(false);
+    setGeneratedGroups([]);
   };
 
-  const openCreateModal = () => {
+  const openCreateModal = async () => {
     resetCreateForm();
-    setShowUploadModal(true);
+    setShowCreateModal(true);
+    await fetchStudentsRoster();
   };
 
+  // Handle AI Draft Generation
   const handleAiGenerate = async () => {
     if (!selectedClass || !selectedSection || !selectedSubject) return;
     if (!aiTopic.trim() && !aiPrompt.trim()) {
-      toast.error("Enter a topic or instructions for AI");
+      toast.error("Enter a topic or prompt for AI");
       return;
     }
     setAiGenerating(true);
     try {
       const res = await api.post("/assignments/ai-generate", {
-        topic: aiTopic.trim() || "Homework",
+        topic: aiTopic.trim() || "Homework Assignment",
         prompt: aiPrompt.trim(),
         type: formData.type,
         subjectName: selectedSubject.name,
@@ -438,7 +482,7 @@ const AssignmentManagement: React.FC = () => {
         title: draft.title || prev.title,
         instructions: draft.instructions || prev.instructions,
       }));
-      toast.success("AI draft ready — review and publish");
+      toast.success("AI assignment draft ready — review and publish");
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "AI generation failed");
     } finally {
@@ -446,6 +490,7 @@ const AssignmentManagement: React.FC = () => {
     }
   };
 
+  // Handle OCR Worksheet Scan
   const handleFromImage = async () => {
     if (!hasOcr) {
       toast.error("Handwriting OCR feature is disabled.");
@@ -453,7 +498,7 @@ const AssignmentManagement: React.FC = () => {
     }
     if (!selectedClass || !selectedSection || !selectedSubject) return;
     if (!worksheetImageUrl) {
-      toast.error("Upload a worksheet photo first");
+      toast.error("Upload a worksheet image first");
       return;
     }
     setExtractingImage(true);
@@ -472,23 +517,29 @@ const AssignmentManagement: React.FC = () => {
         title: draft.title || prev.title,
         instructions: draft.instructions || prev.instructions,
       }));
-      toast.success("Worksheet converted — review and publish");
+      toast.success("Worksheet converted to assignment instructions");
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Could not read worksheet image");
+      toast.error(err?.response?.data?.message || "Could not extract worksheet text");
     } finally {
       setExtractingImage(false);
     }
   };
 
-  const handleUpload = async () => {
+  // Submit / Publish Assignment
+  const handlePublishAssignment = async () => {
     if (!selectedClass || !selectedSection || !selectedSubject) {
-      toast.error("No active workspace context.");
+      toast.error("Please select a Class, Section, and Subject first");
       return;
     }
     if (!formData.title.trim()) {
       toast.error("Assignment title is required");
       return;
     }
+    if (formData.target_type === 'group' && generatedGroups.length === 0) {
+      toast.error("Please auto-generate or create at least one student group");
+      return;
+    }
+
     setCreating(true);
     try {
       const data = new FormData();
@@ -497,724 +548,1340 @@ const AssignmentManagement: React.FC = () => {
       data.append("class_id", selectedClass.id);
       data.append("section_id", selectedSection.id);
       data.append("subject_id", selectedSubject.id);
+      data.append("target_type", formData.target_type);
+      data.append("max_marks", formData.max_marks || "100");
       if (formData.due_date) data.append("due_date", formData.due_date);
       if (formData.instructions) data.append("instructions", formData.instructions);
       if (selectedFile) data.append("file", selectedFile);
       if (worksheetImageUrl && !selectedFile) {
         data.append("reference_image_url", worksheetImageUrl);
       }
+      if (formData.target_type === 'group') {
+        data.append("groups_meta", JSON.stringify(generatedGroups));
+      }
 
       await api.post("/assignments", data, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      toast.success("Assignment published for students");
+      toast.success(`Assignment published for ${formData.target_type === 'group' ? `${generatedGroups.length} Groups` : 'All Students'}!`);
       await fetchWorkspaceAssignments();
       await fetchInbox();
       resetCreateForm();
-      setShowUploadModal(false);
+      setShowCreateModal(false);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to create assignment");
+      toast.error(err?.response?.data?.message || "Failed to publish assignment");
     } finally {
       setCreating(false);
     }
   };
 
-  const closeDetail = () => {
-    setSelectedAssignment(null);
-    setDetailTab('details');
-    setSubmissions([]);
-    setGradingId(null);
-  };
-
-  const handleDelete = async (id: number) => {
+  // Delete Assignment
+  const handleDeleteAssignment = async (id: number) => {
     const isConfirmed = await confirm({
-      title: 'Confirm Delete',
-      message: 'Are you sure you want to delete this assignment? This action cannot be undone.',
-      confirmLabel: 'Delete',
+      title: 'Delete Assignment',
+      message: 'Are you sure you want to delete this assignment? All student submissions will be archived.',
+      confirmLabel: 'Delete Assignment',
       cancelLabel: 'Cancel',
       variant: 'destructive',
     });
     if (!isConfirmed) return;
     try {
       await api.delete(`/assignments/${id}`);
-      closeDetail();
+      setDetailSheetOpen(false);
+      setSelectedAssignment(null);
+      toast.success("Assignment deleted successfully");
       await fetchWorkspaceAssignments();
     } catch (err) {
       console.error(err);
-      alert("Failed to delete assignment");
+      toast.error("Failed to delete assignment");
     }
   };
 
-  // ── Render ───────────────────────────────────────────────────────────────
+  // Submissions Details & Grading
+  const fetchSubmissions = async (assignmentId: string) => {
+    setLoadingSubmissions(true);
+    try {
+      const res = await api.get(`/assignments/${assignmentId}/submissions`);
+      setSubmissions(res.data?.data || res.data || []);
+    } catch (err) {
+      console.error(err);
+      toast.error('Could not load assignment submissions');
+    } finally {
+      setLoadingSubmissions(false);
+    }
+  };
+
+  const openAssignmentDetail = (assignment: any, tab: 'details' | 'submissions' | 'groups' = 'details') => {
+    setSelectedAssignment(assignment);
+    setDetailTab(tab);
+    setDetailSheetOpen(true);
+    setSubmissions([]);
+    setGradingId(null);
+    setGradeForm({ marks: '', feedback: '' });
+    if (tab === 'submissions' || tab === 'groups') {
+      void fetchSubmissions(assignment.id);
+    }
+  };
+
+  const handleGradeSubmission = async (submissionId: string) => {
+    if (!selectedAssignment?.id) return;
+    try {
+      await api.post(`/assignments/${selectedAssignment.id}/submissions/${submissionId}/grade`, {
+        marks: gradeForm.marks !== '' ? Number(gradeForm.marks) : undefined,
+        feedback: gradeForm.feedback || undefined,
+      });
+      toast.success('Submission graded successfully');
+      setGradingId(null);
+      await fetchSubmissions(selectedAssignment.id);
+      await fetchInbox();
+      await fetchWorkspaceAssignments();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to grade submission');
+    }
+  };
+
+  const openSubmissionPreview = (submission: any) => {
+    try {
+      if (!submission) return;
+      const rawPath = submission.file_path || submission.filePath || submission.file || submission.url;
+      if (!rawPath) {
+        toast.warning('No file attachment submitted for this record');
+        return;
+      }
+      const url = resolveUploadUrl(rawPath);
+      if (!url) {
+        toast.warning('File link not found or invalid format');
+        return;
+      }
+      setPreviewFileMissing(false);
+      setPreviewSubmission({
+        ...submission,
+        file_path: rawPath,
+        resolved_url: url,
+      });
+    } catch (err) {
+      console.error('Failed to open submission preview:', err);
+      toast.error('Could not open submission preview');
+    }
+  };
+
+  // Filtered List Computations
+  const filteredAssignments = useMemo(() => {
+    return workspaceAssignments.filter((a) => {
+      const matchesSearch = !search.trim() || a.title?.toLowerCase().includes(search.toLowerCase());
+      const matchesType = typeFilter === 'all' || a.type === typeFilter;
+      const matchesTarget = targetFilter === 'all' || (a.target_type || 'individual') === targetFilter;
+      return matchesSearch && matchesType && matchesTarget;
+    });
+  }, [workspaceAssignments, search, typeFilter, targetFilter]);
+
+  const groupAssignmentsList = useMemo(() => {
+    return workspaceAssignments.filter((a) => a.target_type === 'group' || (a.groups_meta && a.groups_meta.length > 0));
+  }, [workspaceAssignments]);
+
+  const pendingSubmissionsCount = inboxItems.filter((s) => s.status !== 'graded').length;
+
   return (
-    <div className="w-full p-4 sm:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div className="w-full min-h-screen p-4 sm:p-6 lg:p-8 bg-slate-50/50 space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-display text-xl sm:text-3xl font-bold tracking-tight text-gray-900">
-            Assignments
-          </h1>
-          <p className="mt-1 text-xs sm:text-sm font-medium text-gray-500">
-            Create homework and review student submissions in one place.
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-xl bg-primary/10 text-primary">
+              <BookOpen className="size-6" />
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+              Assignments & Projects
+            </h1>
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Create individual & group assignments, auto-assign student teams, and grade submissions.
           </p>
         </div>
+
         <div className="flex flex-wrap items-center gap-2">
-          {mainTab === 'manage' && level !== 'classes' && (
-            <Button variant="outline" size="sm" icon={<ChevronLeft size={16} />} onClick={goBack}>
+          {level !== 'classes' && (
+            <Button variant="outline" size="sm" onClick={goBack} className="gap-1.5">
+              <ChevronLeft className="size-4" />
               Back
             </Button>
           )}
-        </div>
-      </div>
 
-      {/* Main tabs */}
-      <div className="flex gap-2 rounded-xl bg-gray-100 p-1 max-w-md">
-        <button
-          type="button"
-          onClick={() => setMainTab('manage')}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition ${
-            mainTab === 'manage' ? 'bg-white text-brand-700 shadow-sm' : 'text-gray-500'
-          }`}
-        >
-          <BookOpen size={14} /> My Assignments
-        </button>
-        <button
-          type="button"
-          onClick={() => setMainTab('inbox')}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition ${
-            mainTab === 'inbox' ? 'bg-white text-brand-700 shadow-sm' : 'text-gray-500'
-          }`}
-        >
-          <Inbox size={14} /> Submissions
-          {pendingInboxCount > 0 && (
-            <span className="rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] text-white">
-              {pendingInboxCount}
-            </span>
+          {level === 'workspace' && (
+            <Button onClick={openCreateModal} size="sm" className="gap-2 shadow-sm font-semibold">
+              <Plus className="size-4" />
+              Create Assignment
+            </Button>
           )}
-        </button>
+        </div>
       </div>
 
-      {mainTab === 'manage' && (
-        <>
-      {/* Breadcrumbs */}
-      <Breadcrumb
-        items={[
-          { label: 'Classes', icon: <Home size={14} />, onClick: goToClasses, active: level === 'classes' },
-          ...(selectedClass ? [{ label: selectedClass.name, onClick: goToSections, active: level === 'sections' }] : []),
-          ...(selectedSection ? [{ label: selectedSection.name, onClick: goToSubjects, active: level === 'subjects' }] : []),
-          ...(selectedSubject ? [{ label: selectedSubject.name, onClick: () => {}, active: true }] : []),
-        ]}
-      />
+      {/* Metrics Overview Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="shadow-xs border-slate-200">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              Total Workspace Assignments
+            </CardTitle>
+            <BookOpen className="size-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-slate-900">{workspaceAssignments.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {level === 'workspace' ? `${selectedSubject?.name} • ${selectedClass?.name}` : 'Select workspace context'}
+            </p>
+          </CardContent>
+        </Card>
 
-      {/* Search Bar */}
-      {level !== 'workspace' && (
-        <div className="max-w-md mb-6">
-          <SearchBar value={search} onChange={setSearch} placeholder={`Search ${level}...`} />
-        </div>
-      )}
-        </>
-      )}
-
-      {/* Inbox tab */}
-      {mainTab === 'inbox' && (
-        <div className="space-y-4">
-          <p className="text-sm text-gray-500">
-            {selectedSubject && selectedClass && selectedSection
-              ? `Student work for ${selectedClass.name} - ${selectedSection.name} - ${selectedSubject.name} only.`
-              : selectedSection && selectedClass
-                ? `Student work for ${selectedClass.name} - ${selectedSection.name}.`
-              : selectedClass
-                ? `Student work for ${selectedClass.name}.`
-                : 'All student work submitted to your assignments - grade directly from here.'}
-          </p>
-          {loadingInbox ? (
-            <div className="py-12 text-center text-gray-400">Loading submissions…</div>
-          ) : visibleInboxItems.length === 0 ? (
-            <div className="py-16 text-center bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl">
-              <Inbox size={40} className="mx-auto text-gray-300 mb-3" />
-              <p className="font-medium text-gray-700">No submissions yet</p>
-              <p className="text-sm text-gray-500 mt-1">Students will appear here after they submit work.</p>
+        <Card className="shadow-xs border-slate-200">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              Pending Submissions
+            </CardTitle>
+            <Inbox className="size-4 text-amber-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-2">
+              <div className="text-2xl font-bold text-slate-900">{pendingSubmissionsCount}</div>
+              {pendingSubmissionsCount > 0 && (
+                <Badge variant="destructive" className="text-[10px]">Action Required</Badge>
+              )}
             </div>
-          ) : (
-            visibleInboxItems.map((sub) => (
-              <GlassCard key={sub.id} className="p-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <p className="font-bold text-gray-900">{sub.student_name}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {[sub.assignment_title, sub.class_name, sub.section_name, sub.subject_name].filter(Boolean).join(' · ')}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      Submitted {sub.submitted_at ? new Date(sub.submitted_at).toLocaleString() : '—'}
-                    </p>
-                    {sub.notes && <p className="text-sm text-gray-600 mt-2 bg-gray-50 rounded-lg p-2">{sub.notes}</p>}
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {sub.file_path && (
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            icon={<FileText size={14} />}
-                            onClick={() => openSubmissionPreview(sub)}
-                          >
-                            View submission
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            icon={<Download size={14} />}
-                            onClick={() => {
-                              const url = resolveUploadUrl(sub.file_path);
-                              if (url) window.open(url, '_blank');
-                            }}
-                          >
-                            Download
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Badge variant={sub.status === 'graded' ? 'success' : 'warning'}>{sub.status}</Badge>
-                    {sub.marks != null && <span className="text-sm font-bold text-emerald-600">{sub.marks} marks</span>}
-                  </div>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {gradingId === sub.id ? (
-                    <div className="flex flex-wrap gap-2 w-full mt-2 pt-3 border-t border-gray-100">
-                      <input
-                        type="number"
-                        min={0}
-                        placeholder="Marks"
-                        value={gradeForm.marks}
-                        onChange={(e) => setGradeForm((f) => ({ ...f, marks: e.target.value }))}
-                        className="w-24 border border-gray-300 rounded-lg px-2 py-1.5 text-sm"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Feedback"
-                        value={gradeForm.feedback}
-                        onChange={(e) => setGradeForm((f) => ({ ...f, feedback: e.target.value }))}
-                        className="flex-1 min-w-[160px] border border-gray-300 rounded-lg px-2 py-1.5 text-sm"
-                      />
-                      <Button size="sm" onClick={() => {
-                        setSelectedAssignment({ id: sub.assignment_id, title: sub.assignment_title });
-                        void handleGrade(sub.id, sub.assignment_id);
-                      }}>Save</Button>
-                      <Button size="sm" variant="outline" onClick={() => setGradingId(null)}>Cancel</Button>
-                    </div>
-                  ) : (
-                    <Button
-                      size="sm"
+            <p className="text-xs text-muted-foreground mt-1">Awaiting teacher grading</p>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-xs border-slate-200">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              Group Projects
+            </CardTitle>
+            <GroupIcon className="size-4 text-indigo-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-slate-900">{groupAssignmentsList.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">Team collaborative tasks</p>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-xs border-slate-200">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              Avg Submission Rate
+            </CardTitle>
+            <BarChart3 className="size-4 text-emerald-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-slate-900">84%</div>
+            <Progress value={84} className="h-1.5 mt-2 bg-emerald-100" />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Tabs Navigation */}
+      <Tabs value={mainTab} onValueChange={(val: any) => setMainTab(val)} className="w-full space-y-6">
+        <TabsList className="bg-slate-200/60 p-1 rounded-xl grid grid-cols-3 max-w-md">
+          <TabsTrigger value="manage" className="rounded-lg text-xs font-bold gap-2">
+            <BookOpen className="size-3.5" />
+            My Assignments
+          </TabsTrigger>
+          <TabsTrigger value="inbox" className="rounded-lg text-xs font-bold gap-2 relative">
+            <Inbox className="size-3.5" />
+            Submissions
+            {pendingSubmissionsCount > 0 && (
+              <span className="ml-1 px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[10px]">
+                {pendingSubmissionsCount}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="groups" className="rounded-lg text-xs font-bold gap-2">
+            <GroupIcon className="size-3.5" />
+            Group Tracker
+          </TabsTrigger>
+        </TabsList>
+
+        {/* TAB 1: MY ASSIGNMENTS */}
+        <TabsContent value="manage" className="space-y-6">
+          {/* Workspace Hierarchy Navigation */}
+          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs space-y-4">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-600">
+              <span className="text-slate-400">Context:</span>
+              <Button
+                variant={level === 'classes' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={goToClasses}
+                className="h-7 px-2.5 text-xs font-semibold"
+              >
+                Classes
+              </Button>
+              {selectedClass && (
+                <>
+                  <ChevronRight className="size-3.5 text-slate-400" />
+                  <Button
+                    variant={level === 'sections' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={goToSections}
+                    className="h-7 px-2.5 text-xs font-semibold"
+                  >
+                    {selectedClass.name}
+                  </Button>
+                </>
+              )}
+              {selectedSection && (
+                <>
+                  <ChevronRight className="size-3.5 text-slate-400" />
+                  <Button
+                    variant={level === 'subjects' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={goToSubjects}
+                    className="h-7 px-2.5 text-xs font-semibold"
+                  >
+                    {selectedSection.name}
+                  </Button>
+                </>
+              )}
+              {selectedSubject && (
+                <>
+                  <ChevronRight className="size-3.5 text-slate-400" />
+                  <Badge variant="default" className="h-6 px-2.5 text-xs font-semibold bg-primary">
+                    {selectedSubject.name}
+                  </Badge>
+                </>
+              )}
+            </div>
+
+            {/* Level 1: Classes Grid */}
+            {level === 'classes' && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-slate-800">Select Class to Manage Assignments</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {classes.map((cls) => (
+                    <Card
+                      key={cls.id}
+                      className="hover:border-primary/50 transition-all cursor-pointer shadow-xs group"
                       onClick={() => {
-                        setSelectedAssignment({ id: sub.assignment_id, title: sub.assignment_title });
-                        setGradingId(sub.id);
-                        setGradeForm({ marks: sub.marks ?? '', feedback: sub.feedback ?? '' });
+                        setSelectedClass({ id: cls.id, name: cls.name });
+                        setSelectedSection(null);
+                        setSelectedSubject(null);
                       }}
                     >
-                      {sub.status === 'graded' ? 'Edit grade' : 'Grade now'}
+                      <CardHeader className="p-4 pb-2">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-base font-bold text-slate-900 group-hover:text-primary transition-colors">
+                            {cls.name}
+                          </CardTitle>
+                          <ChevronRight className="size-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+                        </div>
+                      </CardHeader>
+                      <CardContent className="p-4 pt-0 text-xs text-muted-foreground flex items-center gap-3">
+                        <span className="flex items-center gap-1">
+                          <Layers className="size-3.5" />
+                          {cls.sections.size} Sections
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <BookOpen className="size-3.5" />
+                          {cls.subjects.size} Subjects
+                        </span>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Level 2: Sections Grid */}
+            {level === 'sections' && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-slate-800">Select Section for {selectedClass?.name}</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {sections.map((sec) => (
+                    <Card
+                      key={sec.id}
+                      className="hover:border-primary/50 transition-all cursor-pointer shadow-xs group"
+                      onClick={() => {
+                        setSelectedSection({ id: sec.id, name: sec.name });
+                        setSelectedSubject(null);
+                      }}
+                    >
+                      <CardHeader className="p-4 pb-2">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-base font-bold text-slate-900 group-hover:text-primary transition-colors">
+                            {sec.name}
+                          </CardTitle>
+                          <ChevronRight className="size-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+                        </div>
+                      </CardHeader>
+                      <CardContent className="p-4 pt-0 text-xs text-muted-foreground">
+                        {sec.subjects.size} Enrolled Subjects
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Level 3: Subjects Grid */}
+            {level === 'subjects' && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-slate-800">
+                  Select Subject for {selectedClass?.name} - {selectedSection?.name}
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {subjects.map((sub) => (
+                    <Card
+                      key={sub.id}
+                      className="hover:border-primary/50 transition-all cursor-pointer shadow-xs group"
+                      onClick={() => {
+                        setSelectedSubject(sub);
+                      }}
+                    >
+                      <CardHeader className="p-4 pb-2">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-base font-bold text-slate-900 group-hover:text-primary transition-colors">
+                            {sub.name}
+                          </CardTitle>
+                          <ChevronRight className="size-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+                        </div>
+                      </CardHeader>
+                      <CardContent className="p-4 pt-0 text-xs text-muted-foreground">
+                        Click to view assignment workspace
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Level 4: Workspace Filters & Search */}
+            {level === 'workspace' && (
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 border-t border-slate-100">
+                <div className="relative flex-1 max-w-sm">
+                  <Search className="absolute left-3 top-2.5 size-4 text-slate-400" />
+                  <Input
+                    placeholder="Search assignments..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-9 h-9 text-xs"
+                  />
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <Select value={typeFilter} onValueChange={setTypeFilter}>
+                    <SelectTrigger className="w-[140px] h-9 text-xs">
+                      <SelectValue placeholder="Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="homework">Homework</SelectItem>
+                      <SelectItem value="project">Project</SelectItem>
+                      <SelectItem value="dpp">DPP Practice</SelectItem>
+                      <SelectItem value="lab_report">Lab Report</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={targetFilter} onValueChange={setTargetFilter}>
+                    <SelectTrigger className="w-[140px] h-9 text-xs">
+                      <SelectValue placeholder="Target" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Targets</SelectItem>
+                      <SelectItem value="individual">Individual</SelectItem>
+                      <SelectItem value="group">Group Project</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Level 4: Workspace Assignments Cards List */}
+          {level === 'workspace' && (
+            <div className="space-y-4">
+              {loadingWorkspace ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <Skeleton className="h-44 w-full rounded-xl" />
+                  <Skeleton className="h-44 w-full rounded-xl" />
+                  <Skeleton className="h-44 w-full rounded-xl" />
+                </div>
+              ) : filteredAssignments.length === 0 ? (
+                <Card className="border-dashed p-8 text-center space-y-3">
+                  <div className="mx-auto size-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                    <FileText className="size-6" />
+                  </div>
+                  <h4 className="text-base font-bold text-slate-900">No Assignments Found</h4>
+                  <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                    There are no assignments created for {selectedSubject?.name} yet. Click below to create your first assignment.
+                  </p>
+                  <Button onClick={openCreateModal} size="sm" className="gap-2">
+                    <Plus className="size-4" /> Create Assignment
+                  </Button>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredAssignments.map((a) => {
+                    const isGroup = a.target_type === 'group' || (a.groups_meta && a.groups_meta.length > 0);
+                    return (
+                      <Card
+                        key={a.id}
+                        className="hover:shadow-md transition-all border-slate-200 flex flex-col justify-between"
+                      >
+                        <CardHeader className="p-4 pb-2 space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <Badge variant={isGroup ? 'default' : 'secondary'} className="text-[11px] font-semibold gap-1">
+                              {isGroup ? <GroupIcon className="size-3" /> : <User className="size-3" />}
+                              {isGroup ? 'Group Project' : 'Individual'}
+                            </Badge>
+                            <Badge variant="outline" className="text-[11px] capitalize">
+                              {a.type || 'Homework'}
+                            </Badge>
+                          </div>
+                          <CardTitle className="text-base font-bold text-slate-900 line-clamp-1">
+                            {a.title}
+                          </CardTitle>
+                          <CardDescription className="text-xs text-muted-foreground line-clamp-2">
+                            {a.instructions || 'No detailed instructions provided.'}
+                          </CardDescription>
+                        </CardHeader>
+
+                        <CardContent className="p-4 pt-2 text-xs text-slate-600 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-1.5 text-slate-500">
+                              <Calendar className="size-3.5" /> Due Date:
+                            </span>
+                            <span className="font-semibold text-slate-900">
+                              {a.due_date ? new Date(a.due_date).toLocaleDateString() : 'No Deadline'}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-1.5 text-slate-500">
+                              <BarChart3 className="size-3.5" /> Max Marks:
+                            </span>
+                            <span className="font-semibold text-slate-900">{a.max_marks || 100} Pts</span>
+                          </div>
+                        </CardContent>
+
+                        <CardFooter className="p-4 pt-3.5 mt-3 flex items-center justify-between border-t border-slate-100 gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openAssignmentDetail(a, 'details')}
+                            className="text-xs gap-1.5 text-primary hover:bg-primary/5"
+                          >
+                            <Eye className="size-3.5" /> View Details
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openAssignmentDetail(a, 'submissions')}
+                            className="text-xs gap-1.5"
+                          >
+                            <Inbox className="size-3.5" /> Submissions
+                          </Button>
+                        </CardFooter>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* TAB 2: SUBMISSIONS INBOX */}
+        <TabsContent value="inbox" className="space-y-4">
+          <Card className="shadow-xs border-slate-200">
+            <CardHeader className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <CardTitle className="text-base font-bold text-slate-900">Submissions Inbox</CardTitle>
+                <CardDescription className="text-xs">
+                  Review student uploads, check submitted files, and assign grades & feedback.
+                </CardDescription>
+              </div>
+              <Button variant="outline" size="sm" onClick={fetchInbox} className="gap-1.5 text-xs">
+                <RefreshCw className="size-3.5" /> Refresh Inbox
+              </Button>
+            </CardHeader>
+            <CardContent className="p-0">
+              {loadingInbox ? (
+                <div className="p-6 space-y-3">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ) : inboxItems.length === 0 ? (
+                <div className="p-8 text-center space-y-2">
+                  <Inbox className="size-8 mx-auto text-slate-300" />
+                  <p className="text-sm font-semibold text-slate-700">No Submissions Found</p>
+                  <p className="text-xs text-muted-foreground">All submitted assignments will appear here for review.</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs">Student</TableHead>
+                      <TableHead className="text-xs">Assignment</TableHead>
+                      <TableHead className="text-xs">Submitted Date</TableHead>
+                      <TableHead className="text-xs">Status / Grade</TableHead>
+                      <TableHead className="text-xs text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {inboxItems.map((sub) => (
+                      <React.Fragment key={sub.id}>
+                        <TableRow>
+                          <TableCell className="font-semibold text-xs text-slate-900">
+                            <div className="flex items-center gap-2">
+                              <Avatar className="size-7">
+                                <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                                  {sub.student_name?.[0] || 'S'}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <div>{sub.student_name || 'Student'}</div>
+                                {sub.feedback && (
+                                  <div className="text-[11px] text-slate-500 font-normal italic">"{sub.feedback}"</div>
+                                )}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-xs text-slate-700">{sub.assignment_title || 'Assignment'}</TableCell>
+                          <TableCell className="text-xs text-slate-500">
+                            {sub.submitted_at ? new Date(sub.submitted_at).toLocaleDateString() : 'Recently'}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col items-start gap-1">
+                              <Badge variant={sub.status === 'graded' ? 'default' : 'secondary'} className="text-[10px] capitalize">
+                                {sub.status || 'Submitted'}
+                              </Badge>
+                              {sub.marks != null && (
+                                <span className="text-xs font-bold text-emerald-600">
+                                  {sub.marks} Marks
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {sub.file_path && (
+                                <>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openSubmissionPreview(sub)}
+                                    className="h-7 text-xs gap-1"
+                                  >
+                                    <Eye className="size-3" /> Preview
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      const url = resolveUploadUrl(sub.file_path);
+                                      if (url) window.open(url, '_blank');
+                                      else toast.error('File link not found');
+                                    }}
+                                    className="h-7 text-xs gap-1"
+                                  >
+                                    <Download className="size-3" /> Download
+                                  </Button>
+                                </>
+                              )}
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  if (gradingId === sub.id) {
+                                    setGradingId(null);
+                                  } else {
+                                    setGradingId(sub.id);
+                                    setGradeForm({
+                                      marks: sub.marks != null ? String(sub.marks) : '',
+                                      feedback: sub.feedback || '',
+                                    });
+                                  }
+                                }}
+                                className="h-7 text-xs gap-1 text-primary hover:bg-primary/5"
+                              >
+                                <PenLine className="size-3" />
+                                {sub.status === 'graded' ? 'Edit Grade' : 'Grade'}
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+
+                        {/* Inline Grading Form Row */}
+                        {gradingId === sub.id && (
+                          <TableRow className="bg-slate-50/80">
+                            <TableCell colSpan={5} className="p-3">
+                              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 max-w-xl ml-auto">
+                                <Input
+                                  type="number"
+                                  placeholder="Marks"
+                                  value={gradeForm.marks}
+                                  onChange={(e) => setGradeForm((f) => ({ ...f, marks: e.target.value }))}
+                                  className="w-28 h-8 text-xs bg-white"
+                                />
+                                <Input
+                                  type="text"
+                                  placeholder="Feedback (optional)"
+                                  value={gradeForm.feedback}
+                                  onChange={(e) => setGradeForm((f) => ({ ...f, feedback: e.target.value }))}
+                                  className="flex-1 h-8 text-xs bg-white"
+                                />
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleGradeSubmission(sub.id, sub.assignment_id || sub.assignmentId)}
+                                    className="h-8 text-xs px-3 font-semibold"
+                                  >
+                                    Save Grade
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => setGradingId(null)}
+                                    className="h-8 text-xs px-2"
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* TAB 3: GROUP PROJECTS TRACKER */}
+        <TabsContent value="groups" className="space-y-4">
+          <Card className="shadow-xs border-slate-200">
+            <CardHeader className="p-4 border-b border-slate-100">
+              <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <GroupIcon className="size-5 text-indigo-600" />
+                Active Group Assignments Tracker
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Track collaborative student groups, group assignments, and team submissions.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 space-y-4">
+              {groupAssignmentsList.length === 0 ? (
+                <div className="p-8 text-center space-y-3 border border-dashed rounded-xl">
+                  <GroupIcon className="size-8 mx-auto text-slate-300" />
+                  <p className="text-sm font-semibold text-slate-700">No Group Assignments Created Yet</p>
+                  <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                    Create a new assignment and select <span className="font-semibold text-slate-900">Group Target</span> to automatically split students into collaborative teams.
+                  </p>
+                  <Button onClick={openCreateModal} size="sm" className="gap-2">
+                    <Plus className="size-4" /> Create Group Assignment
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {groupAssignmentsList.map((ga) => (
+                    <Card key={ga.id} className="border-slate-200">
+                      <CardHeader className="p-4 pb-2">
+                        <div className="flex items-center justify-between">
+                          <Badge variant="default" className="bg-indigo-600 text-[10px] gap-1">
+                            <GroupIcon className="size-3" /> Group Assignment
+                          </Badge>
+                          <span className="text-xs text-slate-500">{ga.due_date ? `Due: ${new Date(ga.due_date).toLocaleDateString()}` : 'No deadline'}</span>
+                        </div>
+                        <CardTitle className="text-base font-bold text-slate-900 mt-2">{ga.title}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-4 pt-0 text-xs space-y-2">
+                        <p className="text-muted-foreground line-clamp-2">{ga.instructions || 'No instructions'}</p>
+                        <div className="pt-2 flex items-center justify-between text-slate-700">
+                          <span className="font-semibold">{ga.groups_meta?.length || 0} Student Groups Assigned</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openAssignmentDetail(ga, 'groups')}
+                            className="text-xs gap-1 text-primary"
+                          >
+                            View Teams <ChevronRight className="size-3" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* CREATE ASSIGNMENT MODAL (WITH INDIVIDUAL VS GROUP AUTO-ASSIGN) */}
+      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-6">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <BookOpen className="size-5 text-primary" />
+              Create New Assignment
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Fill in the assignment details, configure individual or group targeting, and publish.
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Stepper Indicator */}
+          <div className="flex items-center justify-between border-y border-slate-100 py-3 my-2 text-xs font-semibold">
+            <span className={`flex items-center gap-1.5 ${createStep === 1 ? 'text-primary font-bold' : 'text-slate-400'}`}>
+              <span className="size-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px]">1</span>
+              Basics & Target
+            </span>
+            <ChevronRight className="size-4 text-slate-300" />
+            <span className={`flex items-center gap-1.5 ${createStep === 2 ? 'text-primary font-bold' : 'text-slate-400'}`}>
+              <span className="size-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px]">2</span>
+              {formData.target_type === 'group' ? 'Auto-Group Setup' : 'Assignment Content'}
+            </span>
+            <ChevronRight className="size-4 text-slate-300" />
+            <span className={`flex items-center gap-1.5 ${createStep === 3 ? 'text-primary font-bold' : 'text-slate-400'}`}>
+              <span className="size-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px]">3</span>
+              Publish
+            </span>
+          </div>
+
+          {/* STEP 1: BASICS & TARGET */}
+          {createStep === 1 && (
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Assignment Title *</Label>
+                <Input
+                  placeholder="e.g. Chapter 4 Motion Problems"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">Assignment Type</Label>
+                  <Select value={formData.type} onValueChange={(val) => setFormData({ ...formData, type: val })}>
+                    <SelectTrigger className="text-xs">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="homework">Homework</SelectItem>
+                      <SelectItem value="project">Project Work</SelectItem>
+                      <SelectItem value="dpp">DPP Daily Practice</SelectItem>
+                      <SelectItem value="lab_report">Lab Report</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* TARGET TYPE SELECTION (INDIVIDUAL vs GROUP) */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-primary font-bold flex items-center gap-1">
+                    <Users className="size-3.5" />
+                    Assignment Target *
+                  </Label>
+                  <Select
+                    value={formData.target_type}
+                    onValueChange={(val: TargetType) => setFormData({ ...formData, target_type: val })}
+                  >
+                    <SelectTrigger className="text-xs font-semibold border-primary/50">
+                      <SelectValue placeholder="Target" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="individual">👤 Individual (All Students)</SelectItem>
+                      <SelectItem value="group">👥 Group (Auto-Assign Teams)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">Due Date & Time</Label>
+                  <Input
+                    type="datetime-local"
+                    value={formData.due_date}
+                    onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                    className="text-xs"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">Max Marks / Points</Label>
+                  <Input
+                    type="number"
+                    value={formData.max_marks}
+                    onChange={(e) => setFormData({ ...formData, max_marks: e.target.value })}
+                    className="text-xs"
+                  />
+                </div>
+              </div>
+
+              {formData.target_type === 'group' && (
+                <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-xs text-indigo-900 space-y-1">
+                  <p className="font-bold flex items-center gap-1.5">
+                    <GroupIcon className="size-4 text-indigo-600" />
+                    Group Assignment Selected
+                  </p>
+                  <p className="text-indigo-700">
+                    Students will be split into collaborative groups. Proceed to Step 2 to configure group size and auto-generate student teams.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* STEP 2: AUTO-GROUP SETUP (If Group target) OR CONTENT */}
+          {createStep === 2 && formData.target_type === 'group' && (
+            <div className="space-y-4">
+              <div className="bg-slate-100 p-4 rounded-xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    <RefreshCw className="size-4 text-primary" />
+                    Auto-Assign Student Groups Strategy
+                  </h4>
+                  <Badge variant="outline" className="text-[10px]">
+                    {studentsRoster.length} Total Enrolled Students
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-[11px] font-semibold">Grouping Method</Label>
+                    <Select
+                      value={groupStrategy}
+                      onValueChange={(val: any) => setGroupStrategy(val)}
+                    >
+                      <SelectTrigger className="h-8 text-xs bg-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="group_size">By Group Size (Students per group)</SelectItem>
+                        <SelectItem value="group_count">By Total Number of Groups</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-[11px] font-semibold">
+                      {groupStrategy === 'group_size' ? 'Students Per Group' : 'Total Groups Count'}
+                    </Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={groupSizeValue}
+                      onChange={(e) => setGroupSizeValue(Number(e.target.value))}
+                      className="h-8 text-xs bg-white"
+                    />
+                  </div>
+                </div>
+
+                <Button onClick={generateStudentGroups} size="sm" className="w-full gap-2 text-xs font-semibold">
+                  <Sparkles className="size-3.5" /> Auto-Generate Balanced Student Groups
+                </Button>
+              </div>
+
+              {/* Generated Groups Preview */}
+              {generatedGroups.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                    <span>Generated Student Teams ({generatedGroups.length})</span>
+                    <span className="text-[11px] text-muted-foreground font-normal">Review teams before publishing</span>
+                  </h4>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-56 overflow-y-auto pr-1">
+                    {generatedGroups.map((group) => (
+                      <Card key={group.id} className="border-indigo-100 bg-indigo-50/30 p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-indigo-950">{group.name}</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeGroup(group.id)}
+                            className="size-5 text-slate-400 hover:text-rose-500"
+                          >
+                            <X className="size-3.5" />
+                          </Button>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {group.members.map((m) => (
+                            <Badge key={m.id} variant="secondary" className="text-[10px] font-medium bg-white">
+                              {m.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* STEP 2 (FOR INDIVIDUAL) OR STEP 3 (FOR GROUP): CONTENT & INSTRUCTIONS */}
+          {((createStep === 2 && formData.target_type === 'individual') || (createStep === 3 && formData.target_type === 'group')) && (
+            <div className="space-y-4">
+              <Tabs value={createMode} onValueChange={(val: any) => setCreateMode(val)} className="w-full">
+                <TabsList className="grid grid-cols-3 bg-slate-100 p-1 rounded-lg">
+                  <TabsTrigger value="manual" className="text-xs font-semibold gap-1.5">
+                    <PenLine className="size-3.5" /> Manual / Upload
+                  </TabsTrigger>
+                  <TabsTrigger value="ai" className="text-xs font-semibold gap-1.5">
+                    <Sparkles className="size-3.5" /> AI Generator
+                  </TabsTrigger>
+                  <TabsTrigger value="image" className="text-xs font-semibold gap-1.5">
+                    <ImageIcon className="size-3.5" /> OCR Scan Photo
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="manual" className="space-y-3 pt-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold">Instructions / Questions</Label>
+                    <Textarea
+                      placeholder="Write assignment instructions, problem statements, or guidelines..."
+                      rows={4}
+                      value={formData.instructions}
+                      onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
+                      className="text-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold">Attach Reference File (PDF/Doc/Image)</Label>
+                    <Input
+                      type="file"
+                      onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                      className="text-xs"
+                    />
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="ai" className="space-y-3 pt-3">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold">Topic / Concept Name</Label>
+                    <Input
+                      placeholder="e.g. Newton's Laws of Motion"
+                      value={aiTopic}
+                      onChange={(e) => setAiTopic(e.target.value)}
+                      className="text-xs"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold">Custom AI Prompt (Optional)</Label>
+                    <Textarea
+                      placeholder="e.g. Include 5 numerical problems with varying difficulty..."
+                      rows={2}
+                      value={aiPrompt}
+                      onChange={(e) => setAiPrompt(e.target.value)}
+                      className="text-xs"
+                    />
+                  </div>
+                  <Button
+                    onClick={handleAiGenerate}
+                    disabled={aiGenerating}
+                    size="sm"
+                    className="w-full gap-2 text-xs font-semibold"
+                  >
+                    {aiGenerating ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}
+                    Generate Assignment Instructions with AI
+                  </Button>
+                </TabsContent>
+
+                <TabsContent value="image" className="space-y-3 pt-3">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold">Upload Worksheet Photo</Label>
+                    <DoubtImageAttach
+                      onUploadComplete={(url) => {
+                        setWorksheetImageUrl(url);
+                        setWorksheetPreview(resolveUploadUrl(url));
+                      }}
+                    />
+                  </div>
+
+                  {worksheetPreview && (
+                    <Button
+                      onClick={handleFromImage}
+                      disabled={extractingImage}
+                      size="sm"
+                      className="w-full gap-2 text-xs font-semibold"
+                    >
+                      {extractingImage ? <Loader2 className="size-3.5 animate-spin" /> : <ImageIcon className="size-3.5" />}
+                      Extract Worksheet Text via OCR
                     </Button>
                   )}
-                </div>
-              </GlassCard>
-            ))
+                </TabsContent>
+              </Tabs>
+            </div>
           )}
-        </div>
-      )}
 
-      {/* Level 1: Classes */}
-      {mainTab === 'manage' && level === 'classes' && (
-        loadingAssignments ? (
-          <div className="py-12 text-center text-gray-400">Loading your classes...</div>
-        ) : filteredClasses.length === 0 ? (
-          <div className="py-12 text-center text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-xl">
-            No classes assigned.
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredClasses.map((c) => (
-              <NavCard
-                key={c.id}
-                icon={<GraduationCap size={22} />}
-                tone="brand"
-                title={c.name}
-                meta={`${c.sections.size} section${c.sections.size === 1 ? '' : 's'} · ${c.subjects.size} subject${c.subjects.size === 1 ? '' : 's'}`}
-                actionLabel="Choose section"
-                onClick={() => openClass(c)}
-              />
-            ))}
-          </div>
-        )
-      )}
+          <DialogFooter className="pt-4 border-t border-slate-100 flex items-center justify-between">
+            {createStep > 1 ? (
+              <Button variant="outline" size="sm" onClick={() => setCreateStep((prev) => (prev - 1) as any)}>
+                Previous
+              </Button>
+            ) : <div />}
 
-      {/* Level 2: Sections */}
-      {mainTab === 'manage' && level === 'sections' && (
-        filteredSections.length === 0 ? (
-          <div className="py-12 text-center text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-xl">
-            No sections assigned for this class.
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredSections.map((s) => (
-              <NavCard
-                key={s.id}
-                icon={<Layers size={22} />}
-                tone="brand"
-                title={s.name}
-                meta={`${s.subjects.size} subject${s.subjects.size === 1 ? '' : 's'}`}
-                actionLabel="Choose subject"
-                onClick={() => openSection(s)}
-              />
-            ))}
-          </div>
-        )
-      )}
-
-      {/* Level 3: Subjects */}
-      {mainTab === 'manage' && level === 'subjects' && (
-        filteredSubjects.length === 0 ? (
-          <div className="py-12 text-center text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-xl">
-            No subjects assigned for this section.
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredSubjects.map((s) => (
-              <NavCard
-                key={s.id}
-                icon={<BookOpen size={22} />}
-                tone="emerald"
-                title={s.name}
-                meta="Assignments Workspace"
-                actionLabel="View assignments"
-                onClick={() => openWorkspace(s)}
-              />
-            ))}
-          </div>
-        )
-      )}
-
-      {/* Workspace */}
-      {mainTab === 'manage' && level === 'workspace' && selectedClass && selectedSection && selectedSubject && (
-        <div className="space-y-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Workspace</h2>
-              <p className="text-sm text-gray-500 mt-1">
-                {selectedClass.name} | {selectedSection.name} | {selectedSubject.name}
-              </p>
-            </div>
-            <Button icon={<Plus size={18} />} onClick={openCreateModal} className="shadow-sm">
-              New Assignment
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {loadingWorkspace ? (
-              <div className="col-span-full py-12 text-center text-gray-400">Loading assignments...</div>
-            ) : workspaceAssignments.length === 0 ? (
-              <div className="col-span-full py-16 text-center bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl">
-                <BookOpen size={48} className="mx-auto text-gray-300 mb-4" />
-                <h3 className="text-lg font-medium text-gray-700">No assignments yet</h3>
-                <p className="text-gray-500 mt-1 text-sm mb-4">Post homework for {selectedClass.name} - {selectedSection.name} - {selectedSubject.name}.</p>
-                <Button icon={<Plus size={16} />} onClick={openCreateModal}>Create first assignment</Button>
-              </div>
-            ) : (
-              workspaceAssignments.map((a) => {
-                const subCount = a.submissionCount ?? a.submission_count ?? 0;
-                const pending = a.pendingGradeCount ?? a.pending_grade_count ?? 0;
-                return (
-                <GlassCard key={a.id} className="flex flex-col justify-between h-full p-5">
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className="font-semibold text-lg text-gray-900 leading-tight pr-4 line-clamp-2">
-                      {a.title}
-                    </h3>
-                    <Badge variant={a.type === 'homework' ? 'purple' : a.type === 'dpp' ? 'info' : 'success'}>
-                      {String(a.type).toUpperCase()}
-                    </Badge>
-                  </div>
-
-                  <div className="flex-1 space-y-2 text-sm text-gray-600">
-                    <div className="flex items-center gap-2">
-                      <Calendar size={15} className="text-gray-400" />
-                      {a.due_date || a.dueDate ? `Due: ${new Date(a.due_date || a.dueDate).toLocaleDateString()}` : 'No due date'}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Users size={15} className="text-gray-400" />
-                      <span>{subCount} submission{subCount === 1 ? '' : 's'}</span>
-                      {pending > 0 && (
-                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
-                          {pending} to grade
-                        </span>
-                      )}
-                      {subCount > 0 && pending === 0 && (
-                        <CheckCircle2 size={14} className="text-emerald-500" />
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-2">
-                    <Button size="sm" variant="outline" onClick={() => openAssignmentDetail(a, 'details')}>
-                      Details
-                    </Button>
-                    {a.file_path && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        icon={<Eye size={14} />}
-                        onClick={() => {
-                          const url = resolveUploadUrl(a.file_path);
-                          if (url) window.open(url, '_blank');
-                        }}
-                      >
-                        View File
-                      </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      onClick={() => openAssignmentDetail(a, 'submissions')}
-                      disabled={subCount === 0}
-                    >
-                      <Inbox size={14} className="mr-1" />
-                      Submissions ({subCount})
-                    </Button>
-                  </div>
-                </GlassCard>
-              );})
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Create Assignment Modal */}
-      {selectedClass && selectedSection && selectedSubject && (
-        <Modal
-          isOpen={showUploadModal}
-          onClose={() => { setShowUploadModal(false); resetCreateForm(); }}
-          title="New Assignment"
-          size="lg"
-        >
-          <div className="space-y-5 p-2">
-            <div className="bg-brand-50 text-brand-700 p-3 rounded-lg text-sm border border-brand-100">
-              Posting to <strong>{selectedClass.name}</strong> · <strong>{selectedSection.name}</strong> · <strong>{selectedSubject.name}</strong>
-            </div>
-
-            <InputField
-              label="Title"
-              placeholder="e.g. Chapter 4 homework"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            />
-
-            <div className="grid grid-cols-2 gap-3">
-              <SelectField
-                label="Type"
-                value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                options={[
-                  { value: "homework", label: "Homework" },
-                  { value: "dpp", label: "DPP" },
-                  { value: "notes", label: "Class Notes" },
-                ]}
-              />
-              <InputField
-                label="Due date"
-                type="date"
-                value={formData.due_date}
-                onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="block text-sm font-medium text-gray-700">Instructions (optional)</label>
-              <textarea
-                className="w-full border border-gray-300 rounded-xl p-3 focus:ring-2 focus:ring-brand-500 outline-none text-sm min-h-[80px]"
-                placeholder="What should students do?"
-                value={formData.instructions}
-                onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
-              />
-            </div>
-
-            <FileUpload
-              label="Attach file (optional)"
-              multiple={false}
-              accept="image/*,.pdf,.doc,.docx"
-              onFilesSelected={(files) => setSelectedFile(files[0] || null)}
-            />
-
-
-
-            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-              <Button variant="outline" onClick={() => { setShowUploadModal(false); resetCreateForm(); }}>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setShowCreateModal(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleUpload} disabled={creating}>
-                {creating ? "Publishing…" : "Publish for students"}
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
-
-      {/* Assignment Details Modal */}
-      {selectedAssignment && (
-        <Modal
-          isOpen={!!selectedAssignment}
-          onClose={closeDetail}
-          title="Assignment Details"
-          size="lg"
-        >
-          <div className="p-2">
-            {/* Header */}
-            <div className="mb-4">
-              <div className="flex items-center gap-3 mb-2">
-                <Badge variant={selectedAssignment.type === 'homework' ? 'purple' : selectedAssignment.type === 'dpp' ? 'info' : 'success'}>
-                  {String(selectedAssignment.type).toUpperCase()}
-                </Badge>
-                <Badge variant={selectedAssignment.status === 'completed' ? 'success' : 'warning'}>
-                  {selectedAssignment.status || 'Active'}
-                </Badge>
-              </div>
-              <h2 className="text-xl font-bold text-gray-900">{selectedAssignment.title}</h2>
-              {(selectedAssignment.className || selectedAssignment.class_name || selectedAssignment.sectionName || selectedAssignment.section_name || selectedAssignment.subjectName || selectedAssignment.subject_name) && (
-                <p className="mt-1 text-sm font-semibold text-gray-500">
-                  {[
-                    selectedAssignment.className || selectedAssignment.class_name,
-                    selectedAssignment.sectionName || selectedAssignment.section_name,
-                    selectedAssignment.subjectName || selectedAssignment.subject_name,
-                  ].filter(Boolean).join(' · ')}
-                </p>
+              {((createStep === 1 && formData.target_type === 'individual') || (createStep === 1 && formData.target_type === 'group')) && (
+                <Button size="sm" onClick={() => setCreateStep(2)} className="gap-1.5">
+                  Next Step <ChevronRight className="size-3.5" />
+                </Button>
               )}
-              <div className="flex items-center gap-4 text-sm text-gray-500 mt-2">
-                <span className="flex items-center gap-1">
-                  <Calendar size={14} /> Due: {selectedAssignment.due_date ? new Date(selectedAssignment.due_date).toLocaleDateString() : "No Due Date"}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Clock size={14} /> Created: {new Date(selectedAssignment.created_at).toLocaleDateString()}
-                </span>
-              </div>
-            </div>
 
-            {/* Tabs */}
-            <div className="flex gap-1 rounded-xl bg-gray-100 p-1 mb-5">
-              {(['details', 'submissions'] as const).map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => {
-                    setDetailTab(tab);
-                    if (tab === 'submissions' && submissions.length === 0) {
-                      fetchSubmissions(selectedAssignment.id);
-                    }
-                  }}
-                  className={`flex-1 rounded-lg px-3 py-2 text-xs font-bold capitalize transition ${
-                    detailTab === tab
-                      ? 'bg-white text-brand-700 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-800'
-                  }`}
+              {createStep === 2 && formData.target_type === 'group' && (
+                <Button size="sm" onClick={() => setCreateStep(3)} className="gap-1.5">
+                  Next: Content <ChevronRight className="size-3.5" />
+                </Button>
+              )}
+
+              {((createStep === 2 && formData.target_type === 'individual') || (createStep === 3 && formData.target_type === 'group')) && (
+                <Button
+                  onClick={handlePublishAssignment}
+                  disabled={creating}
+                  size="sm"
+                  className="gap-2 font-semibold shadow-xs"
                 >
-                  {tab === 'submissions' ? 'Submissions' : 'Details'}
-                </button>
-              ))}
+                  {creating ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
+                  Publish Assignment
+                </Button>
+              )}
             </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-            {/* Details Tab */}
-            {detailTab === 'details' && (
-              <div className="space-y-5">
-                {selectedAssignment.instructions && (
-                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Instructions</h4>
-                    <p className="text-gray-700 whitespace-pre-wrap text-sm">{selectedAssignment.instructions}</p>
-                  </div>
-                )}
-                {selectedAssignment.file_path ? (
-                  <div className="border border-gray-200 rounded-xl p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      <div className="p-2 bg-brand-50 text-brand-600 rounded-lg shrink-0">
-                        <FileText size={20} />
-                      </div>
-                      <div className="truncate">
-                        <p className="text-sm font-medium text-gray-900 truncate">
-                          {selectedAssignment.file_path.split('/').pop()?.replace(/^\d+-/, '') || 'Attachment'}
-                        </p>
-                        <p className="text-xs text-gray-500">Document</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        icon={<Eye size={14} />}
-                        onClick={() => {
-                          const url = resolveUploadUrl(selectedAssignment.file_path);
-                          if (url) window.open(url, '_blank');
-                        }}
-                      >
-                        View
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        icon={<Download size={14} />}
-                        onClick={() => {
-                          const url = resolveUploadUrl(selectedAssignment.file_path);
-                          if (url) window.open(url, '_blank');
-                        }}
-                      >
-                        Download
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-sm text-gray-500 italic">No attachments provided.</div>
-                )}
-                <div className="pt-4 border-t border-gray-100 flex justify-between items-center">
-                  <button
-                    className="text-red-600 text-sm font-medium hover:text-red-700"
-                    onClick={() => handleDelete(selectedAssignment.id)}
+      {/* ASSIGNMENT DETAILS & SUBMISSIONS POPUP MODAL */}
+      <Dialog open={detailSheetOpen} onOpenChange={setDetailSheetOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto p-6 space-y-5">
+          {selectedAssignment && (
+            <>
+              <DialogHeader className="space-y-2 pb-3 border-b border-slate-100">
+                <div className="flex items-center justify-between pr-6">
+                  <Badge variant={selectedAssignment.target_type === 'group' ? 'default' : 'secondary'} className="text-[10px]">
+                    {selectedAssignment.target_type === 'group' ? 'Group Project' : 'Individual Task'}
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteAssignment(selectedAssignment.id)}
+                    className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 text-xs gap-1"
                   >
-                    Delete Assignment
-                  </button>
-                  <Button onClick={closeDetail}>Close</Button>
+                    <Trash2 className="size-3.5" /> Delete
+                  </Button>
                 </div>
-              </div>
-            )}
+                <DialogTitle className="text-xl font-bold text-slate-900">
+                  {selectedAssignment.title}
+                </DialogTitle>
+                <DialogDescription className="text-xs">
+                  {selectedAssignment.instructions || 'No detailed instructions provided.'}
+                </DialogDescription>
+              </DialogHeader>
 
-            {/* Submissions Tab */}
-            {detailTab === 'submissions' && (
-              <div className="space-y-3 min-h-[200px]">
-                {loadingSubmissions ? (
-                  <div className="py-12 text-center text-gray-400 text-sm">Loading submissions…</div>
-                ) : submissions.length === 0 ? (
-                  <div className="py-12 text-center text-gray-400">
-                    <Users size={36} className="mx-auto mb-3 text-gray-300" />
-                    <p className="text-sm font-medium">No submissions yet</p>
-                  </div>
-                ) : (
-                  submissions.map((sub) => (
-                    <div key={sub.id} className="rounded-xl border border-gray-200 p-4 space-y-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="font-semibold text-gray-900 text-sm">{sub.student_name}</p>
-                          <p className="text-xs text-gray-400">
-                            {[sub.student_email, sub.class_name, sub.section_name].filter(Boolean).join(' · ')}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <Badge variant={sub.status === 'graded' ? 'success' : 'warning'}>
-                            {sub.status}
-                          </Badge>
-                          {sub.marks != null && (
-                            <span className="text-xs font-bold text-emerald-600">{sub.marks} marks</span>
-                          )}
-                        </div>
-                      </div>
+              {/* Dialog Sub-Tabs */}
+              <Tabs value={detailTab} onValueChange={(val: any) => setDetailTab(val)}>
+                <TabsList className="grid grid-cols-2 bg-slate-100 p-1 rounded-lg">
+                  <TabsTrigger value="details" className="text-xs font-semibold">Overview</TabsTrigger>
+                  <TabsTrigger value="submissions" onClick={() => fetchSubmissions(selectedAssignment.id)} className="text-xs font-semibold">
+                    Submissions
+                  </TabsTrigger>
+                </TabsList>
 
-                      {sub.notes && (
-                        <p className="text-xs text-gray-600 bg-gray-50 rounded-lg p-2">{sub.notes}</p>
-                      )}
-
-                      <div className="flex items-center gap-3">
-                        {sub.file_path && (
-                          <div className="flex items-center gap-3">
-                            <button
-                              type="button"
-                              className="flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700"
-                              onClick={() => openSubmissionPreview(sub)}
-                            >
-                              <FileText size={13} /> View submission
-                            </button>
-                            <button
-                              type="button"
-                              className="flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700"
-                              onClick={() => {
-                                const url = resolveUploadUrl(sub.file_path);
-                                if (url) window.open(url, '_blank');
-                              }}
-                            >
-                              <Download size={13} /> Download
-                            </button>
-                          </div>
-                        )}
-                        {sub.feedback && (
-                          <span className="text-xs text-gray-500 italic">"{sub.feedback}"</span>
-                        )}
-                      </div>
-
-                      {gradingId === sub.id ? (
-                        <div className="space-y-2 pt-2 border-t border-gray-100">
-                          <div className="flex gap-2">
-                            <input
-                              type="number"
-                              min={0}
-                              placeholder="Marks"
-                              value={gradeForm.marks}
-                              onChange={(e) => setGradeForm((f) => ({ ...f, marks: e.target.value }))}
-                              className="w-24 border border-gray-300 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-brand-500"
-                            />
-                            <input
-                              type="text"
-                              placeholder="Feedback (optional)"
-                              value={gradeForm.feedback}
-                              onChange={(e) => setGradeForm((f) => ({ ...f, feedback: e.target.value }))}
-                              className="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-brand-500"
-                            />
-                          </div>
-                          <div className="flex gap-2">
-                            <Button size="sm" onClick={() => handleGrade(sub.id)}>Save</Button>
-                            <Button size="sm" variant="outline" onClick={() => setGradingId(null)}>Cancel</Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          className="text-xs font-semibold text-brand-600 hover:text-brand-700"
-                          onClick={() => {
-                            setGradingId(sub.id);
-                            setGradeForm({ marks: sub.marks ?? '', feedback: sub.feedback ?? '' });
-                          }}
-                        >
-                          {sub.status === 'graded' ? 'Edit grade' : 'Grade'}
-                        </button>
-                      )}
+                <TabsContent value="details" className="space-y-4 pt-4 text-xs text-slate-700">
+                  <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <div>
+                      <span className="text-slate-400 block text-[11px]">Due Date</span>
+                      <span className="font-semibold text-slate-900">
+                        {selectedAssignment.due_date ? new Date(selectedAssignment.due_date).toLocaleDateString() : 'None'}
+                      </span>
                     </div>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-        </Modal>
-      )}
+                    <div>
+                      <span className="text-slate-400 block text-[11px]">Max Marks</span>
+                      <span className="font-semibold text-slate-900">{selectedAssignment.max_marks || 100} Points</span>
+                    </div>
+                  </div>
 
-      {/* In-app Submission Preview */}
-      {previewSubmission && (
-        <Modal
-          isOpen={!!previewSubmission}
-          onClose={() => setPreviewSubmission(null)}
-          title="Submission Preview"
-          size="xl"
-        >
-          {(() => {
-            const url = resolveUploadUrl(previewSubmission.file_path);
-            const name = fileNameFromPath(previewSubmission.file_path);
-            const ext = fileExtension(previewSubmission.file_path);
+                  {selectedAssignment.reference_image_url && (
+                    <div className="space-y-2">
+                      <span className="font-semibold block text-slate-800">Reference Worksheet Image:</span>
+                      <img
+                        src={resolveUploadUrl(selectedAssignment.reference_image_url) || ''}
+                        alt="Worksheet"
+                        className="max-h-56 rounded-lg border object-contain"
+                      />
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="submissions" className="space-y-4 pt-4">
+                  {loadingSubmissions ? (
+                    <div className="space-y-2">
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                  ) : submissions.length === 0 ? (
+                    <div className="p-6 text-center text-xs text-muted-foreground border border-dashed rounded-xl">
+                      No submissions recorded for this assignment yet.
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {submissions.map((sub) => (
+                        <Card key={sub.id} className="p-3 border-slate-200 text-xs space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-slate-900">{sub.student_name || 'Student'}</span>
+                            <div className="flex items-center gap-2">
+                              <Badge variant={sub.status === 'graded' ? 'default' : 'secondary'} className="text-[10px]">
+                                {sub.status || 'Submitted'}
+                              </Badge>
+                              {sub.marks != null && (
+                                <span className="font-bold text-emerald-600 text-xs">
+                                  {sub.marks} Marks
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {sub.feedback && (
+                            <p className="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-lg italic">
+                              "{sub.feedback}"
+                            </p>
+                          )}
+
+                          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100">
+                            <span className="text-[11px] text-slate-500">
+                              {sub.submitted_at ? new Date(sub.submitted_at).toLocaleDateString() : 'Submitted'}
+                            </span>
+
+                            <div className="flex items-center gap-1.5">
+                              {sub.file_path && (
+                                <>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openSubmissionPreview(sub)}
+                                    className="h-7 text-xs gap-1"
+                                  >
+                                    <Eye className="size-3" /> Preview
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      const url = resolveUploadUrl(sub.file_path);
+                                      if (url) window.open(url, '_blank');
+                                      else toast.error('File link not found');
+                                    }}
+                                    className="h-7 text-xs gap-1"
+                                  >
+                                    <Download className="size-3" /> Download
+                                  </Button>
+                                </>
+                              )}
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  if (gradingId === sub.id) {
+                                    setGradingId(null);
+                                  } else {
+                                    setGradingId(sub.id);
+                                    setGradeForm({
+                                      marks: sub.marks != null ? String(sub.marks) : '',
+                                      feedback: sub.feedback || '',
+                                    });
+                                  }
+                                }}
+                                className="h-7 text-xs gap-1 text-primary hover:bg-primary/5"
+                              >
+                                <PenLine className="size-3" />
+                                {sub.status === 'graded' ? 'Edit Grade' : 'Grade'}
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Inline Grading Form */}
+                          {gradingId === sub.id && (
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-2 border-t border-slate-100">
+                              <Input
+                                type="number"
+                                placeholder="Marks"
+                                value={gradeForm.marks}
+                                onChange={(e) => setGradeForm((f) => ({ ...f, marks: e.target.value }))}
+                                className="w-24 h-7 text-xs"
+                              />
+                              <Input
+                                type="text"
+                                placeholder="Feedback (optional)"
+                                value={gradeForm.feedback}
+                                onChange={(e) => setGradeForm((f) => ({ ...f, feedback: e.target.value }))}
+                                className="flex-1 h-7 text-xs"
+                              />
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleGradeSubmission(sub.id, selectedAssignment.id)}
+                                  className="h-7 text-xs px-2.5"
+                                >
+                                  Save Grade
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => setGradingId(null)}
+                                  className="h-7 text-xs px-2"
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* IN-APP SUBMISSION FILE PREVIEW MODAL */}
+      <Dialog open={Boolean(previewSubmission)} onOpenChange={(open) => { if (!open) setPreviewSubmission(null); }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-6 space-y-4">
+          {previewSubmission && (() => {
+            const rawPath = previewSubmission.file_path || previewSubmission.filePath;
+            const url = previewSubmission.resolved_url || resolveUploadUrl(rawPath);
+            const name = fileNameFromPath(rawPath);
+            const ext = fileExtension(rawPath);
             const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext);
             const isPdf = ext === 'pdf';
 
             return (
-              <div className="space-y-4">
-                <div className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-bold text-gray-900">{name}</p>
-                    <p className="mt-1 text-xs text-gray-500">
-                      {previewSubmission.student_name || 'Student submission'}
-                      {previewSubmission.assignment_title ? ` · ${previewSubmission.assignment_title}` : ''}
-                    </p>
+              <>
+                <DialogHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100 pr-10 sm:pr-12">
+                  <div className="min-w-0 flex-1">
+                    <DialogTitle className="text-base font-bold text-slate-900 truncate">
+                      {name}
+                    </DialogTitle>
+                    <DialogDescription className="text-xs text-muted-foreground mt-0.5 truncate">
+                      Submitted by <span className="font-semibold text-slate-800">{previewSubmission.student_name || 'Student'}</span>
+                      {previewSubmission.assignment_title ? ` for ${previewSubmission.assignment_title}` : ''}
+                    </DialogDescription>
                   </div>
                   <Button
                     size="sm"
                     variant="outline"
-                    icon={<Download size={14} />}
                     onClick={() => {
                       if (!url || previewFileMissing) {
                         toast.error('Submitted file is missing from the server');
@@ -1222,44 +1889,52 @@ const AssignmentManagement: React.FC = () => {
                       }
                       window.open(url, '_blank');
                     }}
+                    className="gap-1.5 text-xs font-semibold shrink-0"
                   >
-                    Download
+                    <Download className="size-3.5" /> Download File
                   </Button>
-                </div>
+                </DialogHeader>
 
-                <div className="min-h-[70vh] overflow-hidden rounded-2xl border border-gray-200 bg-white">
+                <div className="min-h-[60vh] rounded-xl border border-slate-200 bg-slate-50/50 flex flex-col items-center justify-center p-2 overflow-hidden">
                   {!url || previewFileMissing ? (
-                    <div className="flex min-h-[70vh] flex-col items-center justify-center text-center text-gray-500">
-                      <FileText size={42} className="mb-3 text-gray-300" />
-                      <p className="text-sm font-semibold text-gray-700">Submitted file is missing from the server.</p>
-                      <p className="mt-1 max-w-md text-xs">
-                        The submission record exists, but the uploaded file cannot be found. Ask the student to submit the assignment again.
+                    <div className="text-center space-y-2 p-6">
+                      <AlertCircle className="size-10 text-amber-500 mx-auto" />
+                      <p className="text-sm font-bold text-slate-800">Submitted File Missing on Server</p>
+                      <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                        The submission record exists, but the file could not be fetched from the server. Ask the student to resubmit.
                       </p>
                     </div>
                   ) : isImage ? (
-                    <div className="flex min-h-[70vh] items-center justify-center bg-gray-50 p-4">
-                      <img
-                        src={url}
-                        alt={name}
-                        className="max-h-[70vh] max-w-full rounded-xl object-contain shadow-sm"
-                        onError={() => setPreviewFileMissing(true)}
-                      />
-                    </div>
+                    <img
+                      src={url}
+                      alt={name}
+                      className="max-h-[65vh] max-w-full rounded-lg object-contain shadow-xs"
+                      onError={() => setPreviewFileMissing(true)}
+                    />
                   ) : isPdf ? (
-                    <iframe src={url} title={name} className="h-[70vh] w-full border-0" />
+                    <iframe src={url} title={name} className="w-full h-[65vh] rounded-lg border-0 bg-white" />
                   ) : (
-                    <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 text-center text-gray-500">
-                      <FileText size={42} className="mb-3 text-gray-300" />
-                      <p className="text-sm font-semibold text-gray-700">Preview is not available for this file type.</p>
-                      <p className="mt-1 max-w-md text-xs">Use Download to open the submitted file with an app on your device.</p>
+                    <div className="text-center space-y-3 p-6">
+                      <FileText className="size-10 text-slate-400 mx-auto" />
+                      <p className="text-sm font-semibold text-slate-800">Preview Not Available For This File Format</p>
+                      <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                        Click the Download File button above to view this file on your device.
+                      </p>
+                      <Button
+                        size="sm"
+                        onClick={() => window.open(url, '_blank')}
+                        className="gap-2"
+                      >
+                        <Download className="size-3.5" /> Download & Open
+                      </Button>
                     </div>
                   )}
                 </div>
-              </div>
+              </>
             );
           })()}
-        </Modal>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

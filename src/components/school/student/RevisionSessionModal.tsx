@@ -98,9 +98,9 @@ function RecallPhase({
                 ? "border-teal-300 bg-teal-50"
                 : "border-gray-200 bg-white hover:border-gray-300"}`}
           >
-            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5
+            <div className={`size-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5
               ${checked.has(i) ? "border-teal-500 bg-teal-500" : "border-gray-300"}`}>
-              {checked.has(i) && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+              {checked.has(i) && <CheckCircle2 className="size-3.5 text-white" />}
             </div>
             <span className="text-sm text-gray-800 leading-snug">{prompt}</span>
           </button>
@@ -117,7 +117,7 @@ function RecallPhase({
         onClick={onDone}
         className="w-full py-3 bg-teal-600 text-white rounded-xl text-sm font-semibold hover:bg-teal-700 flex items-center justify-center gap-2 transition-colors"
       >
-        Continue <ArrowRight className="w-4 h-4" />
+        Continue <ArrowRight className="size-4" />
       </button>
     </div>
   );
@@ -165,7 +165,7 @@ function ConceptPhase({
                 onClick={() => setRevealed(prev => new Set([...prev, i]))}
                 className="w-full px-3.5 py-2.5 border-t border-gray-100 bg-gray-50 hover:bg-indigo-50 text-xs font-semibold text-gray-500 hover:text-indigo-600 flex items-center gap-1.5 transition-colors"
               >
-                <ChevronDown className="w-3.5 h-3.5" /> Reveal Answer
+                <ChevronDown className="size-3.5" /> Reveal Answer
               </button>
             )}
           </div>
@@ -177,7 +177,7 @@ function ConceptPhase({
         disabled={revealed.size < session.conceptQuestions.length}
         className="w-full py-3 bg-teal-600 text-white rounded-xl text-sm font-semibold hover:bg-teal-700 flex items-center justify-center gap-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        Start Practice Drill <ArrowRight className="w-4 h-4" />
+        Start Practice Drill <ArrowRight className="size-4" />
       </button>
       {revealed.size < session.conceptQuestions.length && (
         <p className="text-xs text-center text-gray-400">Reveal all answers to continue</p>
@@ -278,12 +278,12 @@ function DrillPhase({
               disabled={confirmed}
               className={`w-full text-left p-3 rounded-xl border-2 text-sm transition-all flex items-start gap-2.5 ${cls}`}
             >
-              <span className="shrink-0 w-5 h-5 rounded-full bg-gray-100 text-gray-500 text-[10px] font-bold flex items-center justify-center mt-0.5">
+              <span className="shrink-0 size-5 rounded-full bg-gray-100 text-gray-500 text-[10px] font-bold flex items-center justify-center mt-0.5">
                 {String.fromCharCode(65 + oi)}
               </span>
               <span className="leading-snug">{opt}</span>
-              {confirmed && isCorrect && <CheckCircle2 className="w-4 h-4 text-green-500 ml-auto shrink-0 mt-0.5" />}
-              {confirmed && isSelected && !isCorrect && <XCircle className="w-4 h-4 text-red-500 ml-auto shrink-0 mt-0.5" />}
+              {confirmed && isCorrect && <CheckCircle2 className="size-4 text-green-500 ml-auto shrink-0 mt-0.5" />}
+              {confirmed && isSelected && !isCorrect && <XCircle className="size-4 text-red-500 ml-auto shrink-0 mt-0.5" />}
             </button>
           );
         })}
@@ -300,7 +300,7 @@ function DrillPhase({
           onClick={handleNext}
           className="w-full py-3 bg-teal-600 text-white rounded-xl text-sm font-semibold hover:bg-teal-700 flex items-center justify-center gap-2 transition-colors"
         >
-          {isLast ? "See Results" : "Next Question"} <ArrowRight className="w-4 h-4" />
+          {isLast ? "See Results" : "Next Question"} <ArrowRight className="size-4" />
         </button>
       )}
     </div>
@@ -337,11 +337,11 @@ function ResultsPhase({
     <div className="space-y-4">
       <div className="text-center py-2">
         {newAccuracy >= 75 ? (
-          <Trophy className="w-12 h-12 text-yellow-500 mx-auto mb-2" />
+          <Trophy className="size-12 text-yellow-500 mx-auto mb-2" />
         ) : improved ? (
-          <Zap className="w-12 h-12 text-indigo-500 mx-auto mb-2" />
+          <Zap className="size-12 text-indigo-500 mx-auto mb-2" />
         ) : (
-          <Target className="w-12 h-12 text-teal-500 mx-auto mb-2" />
+          <Target className="size-12 text-teal-500 mx-auto mb-2" />
         )}
         <h3 className="text-lg font-bold text-gray-900">Session Complete</h3>
         <p className="text-xs text-gray-500 mt-0.5">{session.topicName} — {session.subjectName}</p>
@@ -354,12 +354,12 @@ function ResultsPhase({
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Previous</p>
             <p className="text-2xl font-black text-gray-400">{session.previousAccuracy}%</p>
           </div>
-          <ArrowRight className="w-5 h-5 text-gray-300 shrink-0" />
+          <ArrowRight className="size-5 text-gray-300 shrink-0" />
           <div className="text-center flex-1">
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">This Session</p>
             <p className={`text-2xl font-black ${resultColor}`}>{newAccuracy}%</p>
           </div>
-          <ArrowRight className="w-5 h-5 text-gray-300 shrink-0" />
+          <ArrowRight className="size-5 text-gray-300 shrink-0" />
           <div className="text-center flex-1">
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Target</p>
             <p className="text-2xl font-black text-gray-400">{session.targetAccuracy}%</p>
@@ -377,10 +377,10 @@ function ResultsPhase({
         ${improved ? "border-teal-300 bg-teal-50" : dropped ? "border-red-300 bg-red-50" : "border-amber-200 bg-amber-50"}`}>
         <div className="flex items-center gap-2">
           {improved
-            ? <CheckCircle2 className="w-4 h-4 text-teal-600" />
+            ? <CheckCircle2 className="size-4 text-teal-600" />
             : dropped
-            ? <AlertTriangle className="w-4 h-4 text-red-600" />
-            : <RefreshCw className="w-4 h-4 text-amber-600" />}
+            ? <AlertTriangle className="size-4 text-red-600" />
+            : <RefreshCw className="size-4 text-amber-600" />}
           <span className="text-sm font-bold text-gray-900">
             {improved ? "Extended to next interval" : dropped ? "Reset to 1-Day review" : "Repeat same interval"}
           </span>
@@ -408,7 +408,7 @@ function ResultsPhase({
         disabled={isSaving}
         className="w-full py-3 bg-teal-600 text-white rounded-xl text-sm font-semibold hover:bg-teal-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
-        {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+        {isSaving && <Loader2 className="size-4 animate-spin" />}
         Done
       </button>
     </div>
@@ -470,7 +470,7 @@ export default function RevisionSessionModal({ topic, onClose }: Props) {
         <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 shrink-0">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <Brain className="w-4 h-4 text-teal-600 shrink-0" />
+              <Brain className="size-4 text-teal-600 shrink-0" />
               <span className="font-bold text-sm text-gray-900 truncate">{topic.topicName}</span>
               {meta && (
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${meta.bg} ${meta.color} ${meta.border}`}>
@@ -480,15 +480,15 @@ export default function RevisionSessionModal({ topic, onClose }: Props) {
             </div>
             {meta && (
               <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
-                <Clock className="w-3 h-3" /> {meta.desc}
+                <Clock className="size-3" /> {meta.desc}
               </p>
             )}
           </div>
           <button
             onClick={onClose}
-            className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+            className="shrink-0 size-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
           >
-            <X className="w-4 h-4 text-gray-500" />
+            <X className="size-4 text-gray-500" />
           </button>
         </div>
 
@@ -501,7 +501,7 @@ export default function RevisionSessionModal({ topic, onClose }: Props) {
         <div className="flex-1 overflow-y-auto px-5 pb-6 pt-2">
           {phase === "loading" && (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
-              <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
+              <Loader2 className="size-8 text-teal-500 animate-spin" />
               <p className="text-sm text-gray-500">Building your revision session…</p>
               <p className="text-xs text-gray-400">Generating fresh practice questions</p>
             </div>

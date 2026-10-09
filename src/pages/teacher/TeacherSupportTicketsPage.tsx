@@ -26,6 +26,7 @@ import {
 } from '@/constants/ticket-categories';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 
 export default function TeacherSupportTicketsPage() {
@@ -274,35 +275,35 @@ export default function TeacherSupportTicketsPage() {
 
               {/* Desktop View: Full Table */}
               <div className="hidden sm:block overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                      <th className="px-5 py-3.5">Ticket ID</th>
-                      <th className="px-5 py-3.5">Subject</th>
-                      <th className="px-5 py-3.5">Category</th>
-                      <th className="px-5 py-3.5">Priority</th>
-                      <th className="px-5 py-3.5">Status</th>
-                      <th className="px-5 py-3.5">Last Activity</th>
-                      <th className="px-5 py-3.5 text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
+                <Table className="w-full text-left border-collapse">
+                  <TableHeader>
+                    <TableRow className="border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold uppercase tracking-wider text-slate-400 hover:bg-slate-50/50">
+                      <TableHead className="h-auto px-5 py-3.5">Ticket ID</TableHead>
+                      <TableHead className="h-auto px-5 py-3.5">Subject</TableHead>
+                      <TableHead className="h-auto px-5 py-3.5">Category</TableHead>
+                      <TableHead className="h-auto px-5 py-3.5">Priority</TableHead>
+                      <TableHead className="h-auto px-5 py-3.5">Status</TableHead>
+                      <TableHead className="h-auto px-5 py-3.5">Last Activity</TableHead>
+                      <TableHead className="h-auto px-5 py-3.5 text-right">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
                     {tickets.map((t) => {
                       const prio = PRIORITY_CONFIG[t.priority] || PRIORITY_CONFIG.MEDIUM;
                       const stat = STATUS_CONFIG[t.status] || STATUS_CONFIG.OPEN;
 
                       return (
-                        <tr
+                        <TableRow
                           key={t.id}
                           onClick={() => navigate(`/teacher/support-tickets/${t.id}`)}
                           className="hover:bg-slate-50/80 cursor-pointer transition-colors"
                         >
-                          <td className="px-5 py-4 font-bold text-indigo-600">{t.ticketNumber}</td>
-                          <td className="px-5 py-4 font-bold text-slate-900 max-w-xs truncate">
+                          <TableCell className="px-5 py-4 font-bold text-indigo-600">{t.ticketNumber}</TableCell>
+                          <TableCell className="px-5 py-4 font-bold text-slate-900 max-w-xs truncate">
                             {t.subject}
-                          </td>
-                          <td className="px-5 py-4 text-slate-600">{t.category}</td>
-                          <td className="px-5 py-4">
+                          </TableCell>
+                          <TableCell className="px-5 py-4 text-slate-600">{t.category}</TableCell>
+                          <TableCell className="px-5 py-4">
                             <span
                               className={cn(
                                 'rounded-md px-2 py-0.5 text-[11px] font-bold border',
@@ -313,8 +314,8 @@ export default function TeacherSupportTicketsPage() {
                             >
                               {prio.label}
                             </span>
-                          </td>
-                          <td className="px-5 py-4">
+                          </TableCell>
+                          <TableCell className="px-5 py-4">
                             <span
                               className={cn(
                                 'rounded-md px-2 py-0.5 text-[11px] font-bold border',
@@ -325,20 +326,20 @@ export default function TeacherSupportTicketsPage() {
                             >
                               {stat.label}
                             </span>
-                          </td>
-                          <td className="px-5 py-4 text-slate-500 font-normal">
+                          </TableCell>
+                          <TableCell className="px-5 py-4 text-slate-500 font-normal">
                             {new Date(t.updatedAt).toLocaleDateString()}
-                          </td>
-                          <td className="px-5 py-4 text-right">
+                          </TableCell>
+                          <TableCell className="px-5 py-4 text-right">
                             <span className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 group-hover:translate-x-1 transition-transform">
                               View <ChevronRight className="h-3.5 w-3.5" />
                             </span>
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       );
                     })}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             </>
           )}

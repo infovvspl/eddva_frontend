@@ -102,13 +102,13 @@ export default function Exams() {
           onClick={() => openModal()}
           className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
         >
-          <Plus className="w-5 h-5 mr-2" />
+          <Plus className="size-5 mr-2" />
           Create Exam
         </button>
       </div>
 
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex items-center">
-        <Search className="w-5 h-5 text-gray-400 mr-2" />
+        <Search className="size-5 text-gray-400 mr-2" />
         <input
           type="text"
           placeholder="Search exams..."
@@ -128,14 +128,14 @@ export default function Exams() {
             <div key={exam.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-sm ring-1 ring-slate-100 transition-shadow h-full flex flex-col justify-between">
               <div className="flex justify-between items-start mb-4">
                 <div className="p-3 bg-indigo-50 rounded-lg">
-                  <FileText className="w-6 h-6 text-indigo-600" />
+                  <FileText className="size-6 text-indigo-600" />
                 </div>
-                <div className="flex space-x-2">
+                <div className="flex gap-x-2">
                   <button onClick={() => openModal(exam)} className="p-1 text-gray-400 hover:text-indigo-600 transition-colors">
-                    <Edit2 className="w-4 h-4" />
+                    <Edit2 className="size-4" />
                   </button>
                   <button onClick={() => handleDelete(exam.id)} className="p-1 text-gray-400 hover:text-red-600 transition-colors">
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="size-4" />
                   </button>
                 </div>
               </div>

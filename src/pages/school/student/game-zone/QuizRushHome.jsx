@@ -117,7 +117,7 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
             QUIZ RUSH
           </div>
           <div className="flex items-center gap-2.5 text-cyan-200/70">
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader2 className="size-4 animate-spin" />
             <span className="qr-display text-[11px] font-bold uppercase tracking-[0.25em]">
               Booting arena
             </span>
@@ -136,7 +136,7 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
           to="/school/student/gamification"
           className="qr-display inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 transition hover:text-cyan-300"
         >
-          <ArrowLeft className="h-3 w-3" /> Gamification Center
+          <ArrowLeft className="size-3" /> Gamification Center
         </Link>
 
         {/* ── Title ───────────────────────────────────────────────────── */}
@@ -192,7 +192,7 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <label className="qr-display flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-300/70">
-                <BookOpen className="h-3.5 w-3.5" /> Subject
+                <BookOpen className="size-3.5" /> Subject
               </label>
               <CustomSelect
                 onChange={setSelectedSubjectId}
@@ -206,7 +206,7 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
 
             <div className="space-y-2">
               <label className="qr-display flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-300/70">
-                <Layers className="h-3.5 w-3.5" /> Chapter
+                <Layers className="size-3.5" /> Chapter
               </label>
               <CustomSelect
                 onChange={setSelectedChapterId}
@@ -267,7 +267,7 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
           {mode === 'free_play' && (
             <div className="qr-rise space-y-2">
               <label className="qr-display flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-300/70">
-                <Star className="h-3.5 w-3.5" /> Difficulty
+                <Star className="size-3.5" /> Difficulty
               </label>
               <div className="grid grid-cols-4 gap-2">
                 {[
@@ -308,22 +308,22 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
           >
             {starting ? (
               <>
-                <Loader2 className="h-5 w-5 animate-spin" /> Entering Arena
+                <Loader2 className="size-5 animate-spin" /> Entering Arena
               </>
             ) : !hasGameQuizzes ? (
               <>
-                <Lock className="h-4 w-4" /> Locked — AI disabled
+                <Lock className="size-4" /> Locked — AI disabled
               </>
             ) : (
               <>
-                <Play className="h-5 w-5 fill-current" />
+                <Play className="size-5 fill-current" />
                 <span className="qr-blink">Insert Coin — Start</span>
               </>
             )}
           </ArenaButton>
 
           <ArenaButton type="button" onClick={onViewLeaderboard} tone="ghost" className="w-full">
-            <Trophy className="h-4 w-4 text-amber-300" /> Hall of Fame
+            <Trophy className="size-4 text-amber-300" /> Hall of Fame
           </ArenaButton>
         </div>
       </div>

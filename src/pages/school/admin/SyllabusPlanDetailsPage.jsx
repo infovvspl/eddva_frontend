@@ -78,7 +78,7 @@ export default function SyllabusPlanDetailsPage() {
   if (loading) {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <div className="size-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
         <p className="text-sm font-bold text-slate-400">Loading syllabus plan & topics…</p>
       </div>
     );
@@ -214,7 +214,7 @@ export default function SyllabusPlanDetailsPage() {
       <div key={c.chapterId || i} className="p-5 rounded-3xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 space-y-3 shadow-xs">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className={`w-2.5 h-2.5 rounded-full ${accentColor}`} />
+            <span className={`size-2.5 rounded-full ${accentColor}`} />
             <h4 className="text-sm font-black text-slate-900 dark:text-white">
               Chapter {i + 1}: {c.chapterName}
             </h4>
@@ -420,7 +420,7 @@ export default function SyllabusPlanDetailsPage() {
         <div className="rounded-3xl border border-blue-200 bg-white p-6 dark:border-blue-950 dark:bg-slate-900 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-blue-100 dark:border-slate-800">
             <div className="flex items-center gap-3">
-              <div className="w-3.5 h-3.5 rounded-full bg-blue-600" />
+              <div className="size-3.5 rounded-full bg-blue-600" />
               <h2 className="text-base font-black uppercase text-blue-900 dark:text-blue-100">
                 Unit 1 (Periodic Test 1)
               </h2>
@@ -443,7 +443,7 @@ export default function SyllabusPlanDetailsPage() {
         <div className="rounded-3xl border border-indigo-200 bg-white p-6 dark:border-indigo-950 dark:bg-slate-900 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-indigo-100 dark:border-slate-800">
             <div className="flex items-center gap-3">
-              <div className="w-3.5 h-3.5 rounded-full bg-indigo-600" />
+              <div className="size-3.5 rounded-full bg-indigo-600" />
               <h2 className="text-base font-black uppercase text-indigo-900 dark:text-indigo-100">
                 Term 1 (Half Yearly / Mid Term)
               </h2>
@@ -466,7 +466,7 @@ export default function SyllabusPlanDetailsPage() {
         <div className="rounded-3xl border border-purple-200 bg-white p-6 dark:border-purple-950 dark:bg-slate-900 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-purple-100 dark:border-slate-800">
             <div className="flex items-center gap-3">
-              <div className="w-3.5 h-3.5 rounded-full bg-purple-600" />
+              <div className="size-3.5 rounded-full bg-purple-600" />
               <h2 className="text-base font-black uppercase text-purple-900 dark:text-purple-100">
                 Unit 2 (Periodic Test 2)
               </h2>
@@ -489,7 +489,7 @@ export default function SyllabusPlanDetailsPage() {
         <div className="rounded-3xl border border-emerald-200 bg-white p-6 dark:border-emerald-950 dark:bg-slate-900 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-emerald-100 dark:border-slate-800">
             <div className="flex items-center gap-3">
-              <div className="w-3.5 h-3.5 rounded-full bg-emerald-600" />
+              <div className="size-3.5 rounded-full bg-emerald-600" />
               <h2 className="text-base font-black uppercase text-emerald-900 dark:text-emerald-100">
                 Term 2 (Final Examination)
               </h2>
@@ -516,7 +516,7 @@ export default function SyllabusPlanDetailsPage() {
           <div className="rounded-3xl border border-amber-200 bg-white p-6 dark:border-amber-950 dark:bg-slate-900 shadow-xs space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-amber-100 dark:border-slate-800">
               <div className="flex items-center gap-3">
-                <div className="w-3.5 h-3.5 rounded-full bg-amber-600" />
+                <div className="size-3.5 rounded-full bg-amber-600" />
                 <h2 className="text-base font-black uppercase text-amber-900 dark:text-amber-100">
                   Other / Unassigned Term
                 </h2>

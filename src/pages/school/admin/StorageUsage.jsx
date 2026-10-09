@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { HardDrive, FileText, Presentation, Video, RefreshCw, Building2, ChevronDown } from 'lucide-react';
 import api from '@/lib/api/school-client';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 
 function fmtStorage(kb) {
   if (kb >= 1024 * 1024) return (kb / 1024 / 1024).toFixed(2) + ' GB';
@@ -136,9 +137,9 @@ export default function StorageUsage() {
 
       {/* Legend */}
       <div className="flex items-center gap-5 text-xs text-gray-500 dark:text-gray-400">
-        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-blue-500 inline-block" />Documents / PDFs</span>
-        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-purple-500 inline-block" />Presentations (PPT)</span>
-        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-orange-500 inline-block" />Videos</span>
+        <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-blue-500 inline-block" />Documents / PDFs</span>
+        <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-purple-500 inline-block" />Presentations (PPT)</span>
+        <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-orange-500 inline-block" />Videos</span>
       </div>
 
       {/* Table */}
@@ -156,48 +157,48 @@ export default function StorageUsage() {
       ) : (
         <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           {/* Desktop table */}
-          <table className="hidden sm:table w-full text-sm">
-            <thead className="bg-gray-50 dark:bg-gray-800/60 text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-              <tr>
-                <th className="px-4 py-3 text-left">School</th>
-                <th className="px-4 py-3 text-right">Storage</th>
-                <th className="px-4 py-3 text-right">Files</th>
-                <th className="px-4 py-3 text-right">
+          <Table className="hidden sm:table w-full text-sm">
+            <TableHeader className="bg-gray-50 dark:bg-gray-800/60 text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+              <TableRow className="hover:bg-transparent border-b-0">
+                <TableHead className="h-auto px-4 py-3 text-left text-gray-500 dark:text-gray-400">School</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-right text-gray-500 dark:text-gray-400">Storage</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-right text-gray-500 dark:text-gray-400">Files</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-right text-gray-500 dark:text-gray-400">
                   <FileText size={12} className="inline mr-1 text-blue-500" />Docs
-                </th>
-                <th className="px-4 py-3 text-right">
-                  <span className="inline-block w-2 h-2 rounded-sm bg-purple-500 mr-1" />PPTs
-                </th>
-                <th className="px-4 py-3 text-right">
+                </TableHead>
+                <TableHead className="h-auto px-4 py-3 text-right text-gray-500 dark:text-gray-400">
+                  <span className="inline-block size-2 rounded-sm bg-purple-500 mr-1" />PPTs
+                </TableHead>
+                <TableHead className="h-auto px-4 py-3 text-right text-gray-500 dark:text-gray-400">
                   <Video size={12} className="inline mr-1 text-orange-500" />Videos
-                </th>
-                <th className="px-4 py-3 text-left w-40">Usage</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                </TableHead>
+                <TableHead className="h-auto px-4 py-3 text-left w-40 text-gray-500 dark:text-gray-400">Usage</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-gray-100 dark:divide-gray-700/50">
               {filteredInstitutes.map((inst) => (
-                <tr key={inst.id} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
-                  <td className="px-4 py-3">
+                <TableRow key={inst.id} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                  <TableCell className="p-4 px-4 py-3">
                     <div className="font-medium text-gray-900 dark:text-white">{inst.name}</div>
                     <div className="text-xs text-gray-400 capitalize">{inst.status?.toLowerCase()}</div>
-                  </td>
-                  <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white">
+                  </TableCell>
+                  <TableCell className="p-4 px-4 py-3 text-right font-semibold text-gray-900 dark:text-white">
                     {fmtStorage(inst.totalKb)}
-                  </td>
-                  <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-300">{inst.fileCount}</td>
-                  <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-300">
+                  </TableCell>
+                  <TableCell className="p-4 px-4 py-3 text-right text-gray-600 dark:text-gray-300">{inst.fileCount}</TableCell>
+                  <TableCell className="p-4 px-4 py-3 text-right text-gray-600 dark:text-gray-300">
                     {inst.breakdown?.documents?.count ?? 0}
                     <span className="text-xs text-gray-400 ml-1">({fmtStorage(inst.breakdown?.documents?.storageKb ?? 0)})</span>
-                  </td>
-                  <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-300">
+                  </TableCell>
+                  <TableCell className="p-4 px-4 py-3 text-right text-gray-600 dark:text-gray-300">
                     {inst.breakdown?.presentations?.count ?? 0}
                     <span className="text-xs text-gray-400 ml-1">({fmtStorage(inst.breakdown?.presentations?.storageKb ?? 0)})</span>
-                  </td>
-                  <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-300">
+                  </TableCell>
+                  <TableCell className="p-4 px-4 py-3 text-right text-gray-600 dark:text-gray-300">
                     {inst.breakdown?.videos?.count ?? 0}
                     <span className="text-xs text-gray-400 ml-1">({fmtStorage(inst.breakdown?.videos?.storageKb ?? 0)})</span>
-                  </td>
-                  <td className="px-4 py-3 w-40">
+                  </TableCell>
+                  <TableCell className="p-4 px-4 py-3 w-40">
                     <div className="mb-1">
                       <StorageBar
                         pptKb={inst.breakdown?.presentations?.storageKb ?? 0}
@@ -209,11 +210,11 @@ export default function StorageUsage() {
                     <div className="text-xs text-gray-400 text-right">
                       {maxKb ? Math.round((inst.totalKb / maxKb) * 100) : 0}% of largest
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
 
           {/* Mobile cards */}
           <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-700/50">

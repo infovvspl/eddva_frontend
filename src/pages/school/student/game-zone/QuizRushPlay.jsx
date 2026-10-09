@@ -337,7 +337,7 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
               title="Quit game"
               className="qr-chip border border-rose-400/30 bg-rose-500/10 p-2.5 text-rose-300 transition hover:bg-rose-500/25 hover:text-rose-100"
             >
-              <LogOut className="h-4.5 w-4.5" />
+              <LogOut className="size-4.5" />
             </button>
             <div className="leading-none">
               <ArenaLabel tone="cyan" className="block text-xs">Quiz Rush</ArenaLabel>
@@ -357,7 +357,7 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
                   {Array.from({ length: 3 }).map((_, i) => (
                     <Heart
                       key={i}
-                      className={`h-4 w-4 transition-all duration-300 ${
+                      className={`size-4 transition-all duration-300 ${
                         i < lives
                           ? 'fill-rose-500 text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.95)]'
                           : 'fill-transparent text-slate-700'
@@ -376,7 +376,7 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
         {/* Tab-switch warning */}
         {tabSwitchesCount > 0 && (
           <div className="qr-chip qr-rise mt-3 flex items-center gap-3 border border-amber-400/40 bg-amber-500/15 px-5 py-2.5 shadow-lg">
-            <ShieldAlert className="h-4.5 w-4.5 shrink-0 text-amber-300" />
+            <ShieldAlert className="size-4.5 shrink-0 text-amber-300" />
             <span className="qr-display text-xs sm:text-sm font-extrabold uppercase tracking-wider text-amber-200">
               Tab switch {tabSwitchesCount} / 3 — game ends on the third
             </span>
@@ -426,7 +426,7 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
             >
               {isCorrectChoice ? (
                 <>
-                  <Check className="h-7 w-7 shrink-0 text-lime-300" />
+                  <Check className="size-7 shrink-0 text-lime-300" />
                   <div>
                     <p className="qr-display text-sm font-extrabold uppercase tracking-wider text-lime-300">
                       Correct · +10 XP
@@ -438,7 +438,7 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
                 </>
               ) : (
                 <>
-                  <X className="h-7 w-7 shrink-0 text-rose-300" />
+                  <X className="size-7 shrink-0 text-rose-300" />
                   <div>
                     <p className="qr-display text-sm font-extrabold uppercase tracking-wider text-rose-300">
                       {selectedOptionId === '' ? "Time's up" : 'Incorrect'}
@@ -488,7 +488,7 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
                 }`}
               >
                 <span
-                  className="qr-display flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center bg-black/25 text-lg sm:text-xl font-black leading-none"
+                  className="qr-display flex size-10 sm:size-11 shrink-0 items-center justify-center bg-black/25 text-lg sm:text-xl font-black leading-none"
                   style={{ clipPath: 'polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px)' }}
                 >
                   {style.shape}
@@ -497,7 +497,7 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
                   {option.content}
                 </span>
                 {/* Keyboard hint — hidden on touch */}
-                <kbd className="qr-display hidden h-7.5 w-7.5 shrink-0 items-center justify-center rounded-lg border border-white/30 bg-black/30 text-xs font-black shadow-inner sm:inline-flex">
+                <kbd className="qr-display hidden size-7.5 shrink-0 items-center justify-center rounded-lg border border-white/30 bg-black/30 text-xs font-black shadow-inner sm:inline-flex">
                   {style.key}
                 </kbd>
               </button>
@@ -520,13 +520,13 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
             >
               {submitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="size-4 animate-spin" />
                   {isCorrectChoice ? 'Loading' : 'Submitting'}
                 </>
               ) : (
                 <>
                   {isCorrectChoice ? 'Next Question' : 'View Results'}
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="size-4" />
                 </>
               )}
             </ArenaButton>

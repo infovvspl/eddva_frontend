@@ -93,7 +93,7 @@ export function ArenaStat({ icon: Icon, label, value, tone = 'cyan', pulse = fal
   const t = tones[tone] ?? tones.cyan;
   return (
     <div className="qr-chip flex items-center gap-2.5 border border-white/10 bg-white/[0.03] px-3 py-2">
-      {Icon && <Icon className={`h-4 w-4 ${t.text} ${pulse ? 'animate-pulse' : ''}`} />}
+      {Icon && <Icon className={`size-4 ${t.text} ${pulse ? 'animate-pulse' : ''}`} />}
       <div className="leading-none">
         <ArenaLabel tone="muted" className="block">{label}</ArenaLabel>
         <span className={`qr-display mt-1 block text-base font-bold tabular-nums ${t.text} ${t.glow}`}>

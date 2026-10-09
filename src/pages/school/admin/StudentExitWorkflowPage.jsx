@@ -141,7 +141,7 @@ export default function StudentExitWorkflowPage() {
     return (
       <div className="flex h-[80vh] items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <Loader2 className="size-8 animate-spin text-blue-600" />
           <p className="text-sm font-bold text-slate-500">Loading Student Exit Workflow…</p>
         </div>
       </div>
@@ -203,7 +203,7 @@ export default function StudentExitWorkflowPage() {
           <div className="rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white to-slate-50 p-6 shadow-sm dark:border-slate-800 dark:from-slate-900 dark:to-slate-950">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-extrabold text-xl shadow-md shadow-blue-600/20">
+                <div className="grid size-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-extrabold text-xl shadow-md shadow-blue-600/20">
                   {student?.name?.charAt(0) || 'S'}
                 </div>
                 <div>
@@ -428,7 +428,7 @@ export default function StudentExitWorkflowPage() {
                     onClick={() => handleDocumentToggle(doc)}
                     className={`flex items-center gap-3 rounded-2xl border p-3 text-xs font-bold text-left transition-all ${isChecked ? 'border-blue-600 bg-blue-50/50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' : 'border-slate-200 dark:border-slate-800 text-slate-600 hover:bg-slate-50'}`}
                   >
-                    <div className={`grid h-5 w-5 place-items-center rounded-lg ${isChecked ? 'bg-blue-600 text-white' : 'border border-slate-300 dark:border-slate-700'}`}>
+                    <div className={`grid size-5 place-items-center rounded-lg ${isChecked ? 'bg-blue-600 text-white' : 'border border-slate-300 dark:border-slate-700'}`}>
                       {isChecked && <CheckCircle2 size={12} />}
                     </div>
                     <span>{doc}</span>

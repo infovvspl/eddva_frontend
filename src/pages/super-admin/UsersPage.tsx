@@ -9,6 +9,9 @@ import { useUsers, useSuspendUser, useActivateUser, useDeleteUser } from "@/hook
 
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+
+const MotionTableRow = motion(TableRow);
 
 const roleConfig: Record<string, { icon: any; color: string; label: string }> = {
   super_admin: { icon: Shield, color: "text-slate-900 bg-slate-100 border-slate-200 shadow-sm", label: "Core Admin" },
@@ -115,18 +118,18 @@ const UsersPage = () => {
             ) : allUsers.length === 0 ? (
               <div className="flex items-center justify-center py-20 text-muted-foreground text-sm">No users found.</div>
             ) : (
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-secondary/50 border-b border-border">
-                    <th className="text-left px-5 md:px-7 py-4 text-[11px] font-medium uppercase tracking-wider text-muted-foreground sticky left-0 z-20 bg-slate-50 border-b border-slate-200">User Details</th>
-                    <th className="text-left px-5 md:px-7 py-4 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Access Role</th>
-                    <th className="text-left px-5 md:px-7 py-4 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Organization</th>
-                    <th className="text-left px-5 md:px-7 py-4 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Status</th>
-                    <th className="text-left px-5 md:px-7 py-4 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Last Active</th>
-                    <th className="px-5 md:px-7 py-4"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
+              <Table className="w-full">
+                <TableHeader>
+                  <TableRow className="bg-secondary/50 border-b border-border hover:bg-secondary/50">
+                    <TableHead className="h-auto text-left px-5 md:px-7 py-4 text-[11px] font-medium uppercase tracking-wider text-muted-foreground sticky left-0 z-20 bg-slate-50 border-b border-slate-200">User Details</TableHead>
+                    <TableHead className="h-auto text-left px-5 md:px-7 py-4 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Access Role</TableHead>
+                    <TableHead className="h-auto text-left px-5 md:px-7 py-4 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Organization</TableHead>
+                    <TableHead className="h-auto text-left px-5 md:px-7 py-4 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Status</TableHead>
+                    <TableHead className="h-auto text-left px-5 md:px-7 py-4 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Last Active</TableHead>
+                    <TableHead className="h-auto px-5 md:px-7 py-4"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-border">
                   <AnimatePresence>
                     {allUsers.map((user: any, i: number) => {
                       const role = (user.role || "").toLowerCase();
@@ -136,8 +139,8 @@ const UsersPage = () => {
                       const phone = user.phoneNumber || "No Data";
                       const userStatus = (user.status || "active").toLowerCase();
                       return (
-                        <motion.tr key={user.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }} className="group hover:bg-slate-50 transition-colors">
-                          <td className="px-5 md:px-7 py-4 sticky left-0 z-20 bg-white dark:bg-slate-900 group-hover:bg-slate-50 transition-colors">
+                        <MotionTableRow key={user.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }} className="group hover:bg-slate-50 transition-colors">
+                          <TableCell className="px-5 md:px-7 py-4 sticky left-0 z-20 bg-white dark:bg-slate-900 group-hover:bg-slate-50 transition-colors">
                             <div className="flex items-center gap-3 md:gap-4">
                               <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-xs font-medium text-slate-400 border border-slate-50 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm shrink-0">
                                 {name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
@@ -147,28 +150,28 @@ const UsersPage = () => {
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{phone}</p>
                               </div>
                             </div>
-                          </td>
-                          <td className="px-5 md:px-7 py-4">
+                          </TableCell>
+                          <TableCell className="px-5 md:px-7 py-4">
                             <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] border text-[10px] font-medium uppercase tracking-[0.1em] shadow-sm ${config.color}`}>
                               <Icon className="w-3 h-3" /> {config.label}
                             </span>
-                          </td>
-                          <td className="px-5 md:px-7 py-4">
+                          </TableCell>
+                          <TableCell className="px-5 md:px-7 py-4">
                             <p className="text-sm font-medium text-slate-700 leading-tight">{user.tenant?.name || "Global Core"}</p>
                             <p className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-tight">{user.tenant?.subdomain ? `${user.tenant.subdomain}.edva.in` : "PLATFORM_WIDE"}</p>
-                          </td>
-                          <td className="px-5 md:px-7 py-4">
+                          </TableCell>
+                          <TableCell className="px-5 md:px-7 py-4">
                             <div className="flex items-center gap-2">
                               <div className={`w-1.5 h-1.5 rounded-full ${userStatus === "active" ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "bg-rose-500 shadow-[0_0_8px_rgba(225,29,72,0.4)]"}`} />
                               <span className={`text-[10px] font-medium uppercase tracking-wider ${userStatus === "active" ? "text-emerald-600" : "text-rose-600"}`}>
                                 {userStatus === 'active' ? 'Verified' : 'Suspended'}
                               </span>
                             </div>
-                          </td>
-                          <td className="px-5 md:px-7 py-4 text-[11px] font-medium text-slate-400 tracking-tight">
+                          </TableCell>
+                          <TableCell className="px-5 md:px-7 py-4 text-[11px] font-medium text-slate-400 tracking-tight">
                             {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' }) : "Never Accessed"}
-                          </td>
-                          <td className="px-5 md:px-7 py-4 text-right">
+                          </TableCell>
+                          <TableCell className="px-5 md:px-7 py-4 text-right">
                             <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
                               <button className="p-2.5 bg-white border border-slate-100 text-gray-600 hover:text-indigo-600 hover:shadow-lg rounded-[12px] transition-all" title="View Audit Logs">
                                 <Eye className="w-4 h-4" />
@@ -188,13 +191,13 @@ const UsersPage = () => {
                                 <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
-                          </td>
-                        </motion.tr>
+                          </TableCell>
+                        </MotionTableRow>
                       );
                     })}
                   </AnimatePresence>
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             )}
           </div>
 

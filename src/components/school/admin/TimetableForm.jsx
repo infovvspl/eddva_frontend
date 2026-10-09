@@ -196,7 +196,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <div className="flex gap-3 rounded-xl border border-red-200 bg-red-50 p-3">
-          <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
+          <AlertCircle className="size-5 flex-shrink-0 text-red-600" />
           <p className="text-sm font-semibold text-red-700">{error}</p>
         </div>
       )}
@@ -349,7 +349,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
 
       {!isTeacher && formData.sectionId && formData.subjectId && filteredTeachers.length === 0 && (
         <div className="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/30 dark:bg-amber-950/20">
-          <AlertCircle className="h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+          <AlertCircle className="size-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
           <div className="text-sm font-semibold text-amber-800 dark:text-amber-300">
             No teacher assigned for this subject.
             <p className="text-xs font-normal text-amber-700/80 dark:text-amber-400/80 mt-1">
@@ -365,7 +365,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
           disabled={isSubmitDisabled}
           className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 active:scale-[0.98] px-4 py-2.5 font-bold text-white shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 transition-all duration-200"
         >
-          {isLoading && <Loader className="h-4 w-4 animate-spin" />}
+          {isLoading && <Loader className="size-4 animate-spin" />}
           {timetable ? 'Update Timetable' : 'Add Timetable'}
         </button>
         <button

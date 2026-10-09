@@ -268,7 +268,7 @@ export default function ParentLayout() {
           <SidebarProfileCard
             collapsed={isCollapsed}
             avatar={
-              <div className="grid h-full w-full place-items-center rounded-xl bg-blue-100 text-xs font-bold text-blue-700">
+              <div className="grid size-full place-items-center rounded-xl bg-blue-100 text-xs font-bold text-blue-700">
                 {(user?.name || 'P').charAt(0).toUpperCase()}
               </div>
             }
@@ -291,13 +291,13 @@ export default function ParentLayout() {
                   className="rounded-xl p-2 text-slate-600 hover:bg-slate-50 md:hidden"
                   aria-label="Open menu"
                 >
-                  <Menu className="h-6 w-6" />
+                  <Menu className="size-6" />
                 </button>
               )}
               {isMobile ? (
                 <div className="flex items-center gap-2">
-                  <div className="h-7 w-7 rounded-lg overflow-hidden flex items-center justify-center bg-slate-50 shrink-0 border border-slate-100 dark:border-slate-800">
-                    <InstituteLogo institute={institute} size="sm" className="h-7 w-7 object-contain" />
+                  <div className="size-7 rounded-lg overflow-hidden flex items-center justify-center bg-slate-50 shrink-0 border border-slate-100 dark:border-slate-800">
+                    <InstituteLogo institute={institute} size="sm" className="size-7 object-contain" />
                   </div>
                   <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-white truncate max-w-[145px]">
                     {user?.tenantName || institute?.name || 'EDDVA Parent'}
@@ -327,10 +327,10 @@ export default function ParentLayout() {
                       className="p-1 rounded-lg text-slate-505 hover:text-slate-800 shrink-0"
                       aria-label="Back"
                     >
-                      <ArrowLeft className="h-5 w-5" />
+                      <ArrowLeft className="size-5" />
                     </button>
                     <div className="flex-1 flex items-center bg-slate-100/80 rounded-xl px-3 py-1.5 border border-slate-200/60">
-                      <Search className="h-4 w-4 text-slate-400 shrink-0 mr-2" />
+                      <Search className="size-4 text-slate-400 shrink-0 mr-2" />
                       <input
                         ref={searchInputRef}
                         type="text"
@@ -352,7 +352,7 @@ export default function ParentLayout() {
                           }}
                           className="p-0.5 rounded-lg text-slate-400 hover:text-slate-650"
                         >
-                          <X className="h-3.5 w-3.5" />
+                          <X className="size-3.5" />
                         </button>
                       )}
                     </div>
@@ -360,7 +360,7 @@ export default function ParentLayout() {
                 ) : (
                   <>
                     <div className={`flex items-center rounded-xl transition-all duration-300 ease-in-out ${searchOpen ? 'w-48 sm:w-64 md:w-80 bg-slate-100/80 px-3 py-1.5 border border-slate-200/60' : 'w-0 overflow-hidden border-transparent'}`}>
-                      <Search className="h-4 w-4 text-slate-400 shrink-0 mr-2" />
+                      <Search className="size-4 text-slate-400 shrink-0 mr-2" />
                       <input
                         ref={searchInputRef}
                         type="text"
@@ -382,7 +382,7 @@ export default function ParentLayout() {
                           }}
                           className="p-0.5 rounded-lg text-slate-400 hover:text-slate-605"
                         >
-                          <X className="h-3.5 w-3.5" />
+                          <X className="size-3.5" />
                         </button>
                       )}
                     </div>
@@ -398,7 +398,7 @@ export default function ParentLayout() {
                           setSearchQuery('');
                         }
                       }}
-                      className={`h-10 w-10 flex items-center justify-center rounded-xl text-slate-500 hover:bg-slate-50 transition-all duration-200 ${searchOpen ? 'text-blue-600 bg-slate-100/50' : ''}`}
+                      className={`size-10 flex items-center justify-center rounded-xl text-slate-500 hover:bg-slate-50 transition-all duration-200 ${searchOpen ? 'text-blue-600 bg-slate-100/50' : ''}`}
                       aria-label="Search"
                     >
                       <Search className="h-[18px] w-[18px]" />
@@ -443,7 +443,7 @@ export default function ParentLayout() {
                                   }}
                                   className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
                                 >
-                                  <Clock className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                                  <Clock className="size-3.5 text-slate-400 shrink-0" />
                                   <span className="truncate">{s.name}</span>
                                 </button>
                               ))}
@@ -468,7 +468,7 @@ export default function ParentLayout() {
                                   }}
                                   className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-100 bg-slate-50/50 text-left text-xs font-bold text-slate-700 hover:bg-blue-50/50 hover:text-blue-600 transition-colors"
                                 >
-                                  <Icon className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                                  <Icon className="size-3.5 text-blue-500 shrink-0" />
                                   <span>{sug.label}</span>
                                 </button>
                               );
@@ -490,7 +490,7 @@ export default function ParentLayout() {
                                 }}
                                 className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-100 bg-slate-50/50 text-left text-xs font-bold text-slate-750 hover:bg-indigo-50/50 hover:text-indigo-600 transition-colors"
                               >
-                                <TrendingUp className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
+                                <TrendingUp className="size-3.5 text-indigo-500 shrink-0" />
                                 <span>{trend.label}</span>
                               </button>
                             ))}
@@ -512,7 +512,7 @@ export default function ParentLayout() {
                               }}
                               className="flex items-center gap-3.5 rounded-xl p-2.5 text-left text-xs font-bold text-slate-800 hover:bg-blue-50/50 hover:text-blue-600 border border-transparent transition-all group"
                             >
-                              <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                              <div className="size-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
                                 <page.icon size={15} />
                               </div>
                               <span className="text-xs font-bold">{page.name}</span>
@@ -522,7 +522,7 @@ export default function ParentLayout() {
                       </div>
                     ) : (
                       <div className="py-10 text-center space-y-2">
-                        <Inbox className="h-10 w-10 text-slate-300 mx-auto mb-1" />
+                        <Inbox className="size-10 text-slate-300 mx-auto mb-1" />
                         <p className="text-xs font-bold text-slate-700">No results for "{searchQuery}"</p>
                       </div>
                     )}
@@ -533,10 +533,10 @@ export default function ParentLayout() {
                 <button
                   type="button"
                   onClick={() => setNotifOpen(!notifOpen)}
-                  className="relative h-10 w-10 flex items-center justify-center rounded-2xl text-slate-500 hover:bg-slate-50 transition-colors"
+                  className="relative size-10 flex items-center justify-center rounded-2xl text-slate-500 hover:bg-slate-50 transition-colors"
                   aria-label="Notifications"
                 >
-                  <Bell className="h-5 w-5" />
+                  <Bell className="size-5" />
                   {unreadCount > 0 && (
                     <span className="absolute right-2 top-2 h-4 min-w-[16px] flex items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white border border-white">
                       {unreadCount}
@@ -569,12 +569,12 @@ export default function ParentLayout() {
                     <div className="max-h-[360px] overflow-y-auto custom-scrollbar">
                       {notifLoading ? (
                         <div className="flex flex-col items-center justify-center p-8 text-slate-400">
-                          <Loader2 className="h-6 w-6 animate-spin text-blue-500 mb-2" />
+                          <Loader2 className="size-6 animate-spin text-blue-500 mb-2" />
                           <p className="text-xs font-bold">Fetching updates...</p>
                         </div>
                       ) : notifications.length === 0 ? (
                         <div className="flex flex-col items-center justify-center p-8 text-center">
-                          <Inbox className="h-8 w-8 text-slate-300 mb-2" />
+                          <Inbox className="size-8 text-slate-300 mb-2" />
                           <p className="text-xs font-bold text-slate-400">All caught up!</p>
                           <p className="text-[10px] text-slate-400/80 mt-1">No new alerts found.</p>
                         </div>
@@ -596,10 +596,10 @@ export default function ParentLayout() {
                               }`}
                           >
                             {!n.isRead && (
-                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-blue-500" />
+                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 size-1.5 rounded-full bg-blue-500" />
                             )}
 
-                            <div className={`w-8 h-8 shrink-0 rounded-xl flex items-center justify-center text-xs font-bold ${n.priority === 'urgent'
+                            <div className={`size-8 shrink-0 rounded-xl flex items-center justify-center text-xs font-bold ${n.priority === 'urgent'
                               ? "bg-rose-50 text-rose-600 dark:bg-rose-950/30"
                               : n.priority === 'high'
                                 ? "bg-orange-50 text-orange-600"
@@ -663,16 +663,16 @@ export default function ParentLayout() {
                           alt={user?.name || 'Parent'}
                           onError={(e: any) => {
                             e.target.style.display = 'none';
-                            e.target.parentNode.innerHTML = `<div class="grid h-10 w-10 place-items-center rounded-2xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">${(user?.name || 'P').charAt(0).toUpperCase()}</div>`;
+                            e.target.parentNode.innerHTML = `<div class="grid size-10 place-items-center rounded-2xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">${(user?.name || 'P').charAt(0).toUpperCase()}</div>`;
                           }}
-                          className="h-10 w-10 rounded-2xl border border-slate-200 object-cover"
+                          className="size-10 rounded-2xl border border-slate-200 object-cover"
                         />
                       ) : (
-                        <div className="grid h-10 w-10 place-items-center rounded-2xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                        <div className="grid size-10 place-items-center rounded-2xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">
                           {(user?.name || 'P').charAt(0).toUpperCase()}
                         </div>
                       )}
-                      <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-950" />
+                      <div className="absolute -bottom-1 -right-1 size-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-950" />
                     </div>
                   </button>
 
@@ -690,7 +690,7 @@ export default function ParentLayout() {
                         onClick={() => setProfileOpen(false)}
                         className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
                       >
-                        <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
+                        <div className="size-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
                           <UserCircle size={16} />
                         </div>
                         My Profile
@@ -704,7 +704,7 @@ export default function ParentLayout() {
                         }}
                         className="flex w-full items-center gap-3 px-5 py-3 text-left text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
                       >
-                        <div className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 flex items-center justify-center">
+                        <div className="size-8 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 flex items-center justify-center">
                           <LogOut size={16} />
                         </div>
                         Log Out
@@ -720,10 +720,10 @@ export default function ParentLayout() {
         <MaintenanceNotice />
 
         <main className="flex-1 overflow-x-hidden overflow-y-auto px-3 sm:px-6 lg:px-8 py-4 lg:py-6">
-          <div className="h-full w-full">
+          <div className="size-full">
             <Suspense fallback={
               <div className="flex h-[50vh] w-full items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                <Loader2 className="size-8 animate-spin text-blue-500" />
               </div>
             }>
               <Outlet />
@@ -753,7 +753,7 @@ export default function ParentLayout() {
                 <span className={`text-[9px] font-black uppercase mt-1 tracking-wider ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'}`}>
                   {item.label}
                 </span>
-                {isActive && <span className="absolute bottom-1 h-1 w-1 rounded-full bg-blue-600 dark:bg-blue-400" />}
+                {isActive && <span className="absolute bottom-1 size-1 rounded-full bg-blue-600 dark:bg-blue-400" />}
               </Link>
             );
           })}

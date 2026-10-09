@@ -4,13 +4,11 @@ import {
   Trash2,
   CheckCircle,
   CheckCheck,
-  X,
   Search,
   MoreVertical,
   RefreshCw,
   Settings,
   SlidersHorizontal,
-  Inbox,
   Check,
   Loader2,
   BookOpen,
@@ -29,8 +27,19 @@ import api from "@/lib/api/school-client";
 import { createNotificationSocket } from "@/lib/notification-socket";
 import { toast } from "sonner";
 import { useSchoolNotification } from "@/context/SchoolNotificationContext";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import "./NotificationCenterContent.css";
+import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 interface NotificationCenterContentProps {
   currentUser: { id: string; role: string; name: string };
@@ -76,12 +85,25 @@ const categoryIcons: Record<string, React.ReactNode> = {
   general: <Bell size={16} />
 };
 
+const PRIORITY_BORDER: Record<NotificationItem['priority'], string> = {
+  urgent: 'border-l-4 border-l-red-500',
+  high: 'border-l-4 border-l-orange-500',
+  medium: 'border-l-4 border-l-blue-500',
+  low: 'border-l-4 border-l-slate-400',
+};
+
+const PRIORITY_BADGE: Record<NotificationItem['priority'], string> = {
+  urgent: 'bg-red-100 text-red-500 dark:bg-red-500/15',
+  high: 'bg-orange-100 text-orange-500 dark:bg-orange-500/15',
+  medium: 'bg-blue-100 text-blue-500 dark:bg-blue-500/15',
+  low: 'bg-slate-100 text-slate-500 dark:bg-slate-400/15',
+};
+
 export default function NotificationCenterContent({
   currentUser
 }: NotificationCenterContentProps) {
   const { fetchUnreadCount: updateGlobalBadge } = useSchoolNotification();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -90,17 +112,13 @@ export default function NotificationCenterContent({
   const [totalUnread, setTotalUnread] = useState(0);
 
   // Filters
-  const [activeTab, setActiveTab] = useState(() => {
-    const requestedTab = searchParams.get("tab");
-    return requestedTab && CATEGORIES.some((c) => c.key === requestedTab) ? requestedTab : "all";
-  });
+  const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
   // UI state
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showPreferences, setShowPreferences] = useState(false);
-  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
   // Preferences state
   const [prefsLoading, setPrefsLoading] = useState(false);
@@ -228,15 +246,6 @@ export default function NotificationCenterContent({
     setSelectedIds([]);
   }, [activeTab, debouncedSearch]);
 
-  // Handle click outside menu to close
-  useEffect(() => {
-    const handleOutsideClick = () => {
-      setActiveMenuId(null);
-    };
-    window.addEventListener("click", handleOutsideClick);
-    return () => window.removeEventListener("click", handleOutsideClick);
-  }, []);
-
   // Real-Time Socket Connection inside component
   useEffect(() => {
     if (!currentUser?.id) return;
@@ -263,7 +272,7 @@ export default function NotificationCenterContent({
         const matchesSearch = !debouncedSearch || 
           item.title.toLowerCase().includes(debouncedSearch.toLowerCase()) || 
           item.message.toLowerCase().includes(debouncedSearch.toLowerCase());
-        
+
         if (matchesCategory && matchesSearch) {
           return [item, ...prev];
         }
@@ -280,7 +289,7 @@ export default function NotificationCenterContent({
 
   // Intersection Observer for infinite scroll on native page
   const loadMoreRef = useRef<HTMLDivElement>(null);
-  
+
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
@@ -341,8 +350,7 @@ export default function NotificationCenterContent({
   };
 
   // Bulk Actions
-  const toggleSelect = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const toggleSelect = (id: string) => {
     setSelectedIds(prev =>
       prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
     );
@@ -452,325 +460,289 @@ export default function NotificationCenterContent({
     }
   };
 
-  return (
-    <div 
-      className={`notif-page-container ${showPreferences ? "notif-page-container--pref" : ""}`} 
-    >
-      {/* Header */}
-        <div className="notif-modal-header">
-          <div className="notif-header-title-wrapper">
-            <h2 className="notif-header-title">Notifications Center</h2>
-            <span className="notif-header-subtitle">{totalUnread} Unread Alerts</span>
-          </div>
+  const PREF_ROWS: { key: keyof typeof preferences; label: string }[][] = [
+    [
+      { key: 'enableInApp', label: 'In-App Notifications' },
+      { key: 'enableEmail', label: 'Email Alerts' },
+      { key: 'enablePush', label: 'Push Notifications' },
+    ],
+    [
+      { key: 'assignmentAlerts', label: 'Assignment Toggles' },
+      { key: 'assessmentAlerts', label: 'Assessment & Exam Updates' },
+      { key: 'attendanceAlerts', label: 'Attendance Disruption Alerts' },
+      { key: 'announcementAlerts', label: 'General Announcements' },
+      { key: 'liveClassAlerts', label: 'Live Classes Timetables' },
+      { key: 'feeAlerts', label: 'Fee Due Dates & Receipts' },
+    ],
+  ];
 
-          <div className="notif-header-actions">
-            <button 
-              onClick={() => {
-                setShowPreferences(!showPreferences);
-                if (!showPreferences) loadPreferences();
-              }} 
-              className={`notif-action-btn ${showPreferences ? "notif-action-btn--active" : ""}`}
-              title="Notification Preferences"
-            >
-              <Settings size={18} />
-            </button>
-            <button onClick={() => fetchNotifications(1, true)} className="notif-action-btn" title="Refresh">
-              <RefreshCw size={18} />
-            </button>
-          </div>
+  return (
+    <div className="w-full flex flex-col relative">
+      {/* Header */}
+      <div className="pb-6 max-md:px-4 max-md:pt-3 border-b border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between shrink-0">
+        <div>
+          <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight m-0">Notifications Center</h2>
+          <span className="text-xs font-bold text-indigo-500 uppercase tracking-wide block mt-1">{totalUnread} Unread Alerts</span>
         </div>
 
-        {showPreferences ? (
-          /* Preferences Panel */
-          <div className="notif-pref-panel">
-            <div className="notif-pref-header">
-              <SlidersHorizontal size={18} className="text-indigo-600" />
-              <h3>Preferences Settings</h3>
-            </div>
-
-            {prefsLoading ? (
-              <div className="notif-loading-wrapper">
-                <Loader2 size={32} className="animate-spin text-indigo-600" />
-                <p>Loading your preferences...</p>
-              </div>
-            ) : (
-              <div className="notif-pref-content">
-                <div className="notif-pref-section">
-                  <h4>Delivery Channels</h4>
-                  <div className="notif-pref-row">
-                    <label>
-                      <span>In-App Notifications</span>
-                      <input 
-                        type="checkbox" 
-                        checked={preferences.enableInApp} 
-                        onChange={e => savePreferences({ ...preferences, enableInApp: e.target.checked })}
-                      />
-                    </label>
-                  </div>
-                  <div className="notif-pref-row">
-                    <label>
-                      <span>Email Alerts</span>
-                      <input 
-                        type="checkbox" 
-                        checked={preferences.enableEmail} 
-                        onChange={e => savePreferences({ ...preferences, enableEmail: e.target.checked })}
-                      />
-                    </label>
-                  </div>
-                  <div className="notif-pref-row">
-                    <label>
-                      <span>Push Notifications</span>
-                      <input 
-                        type="checkbox" 
-                        checked={preferences.enablePush} 
-                        onChange={e => savePreferences({ ...preferences, enablePush: e.target.checked })}
-                      />
-                    </label>
-                  </div>
-                </div>
-
-                <div className="notif-pref-section">
-                  <h4>Alert Categories</h4>
-                  <div className="notif-pref-row">
-                    <label>
-                      <span>Assignment Toggles</span>
-                      <input 
-                        type="checkbox" 
-                        checked={preferences.assignmentAlerts} 
-                        onChange={e => savePreferences({ ...preferences, assignmentAlerts: e.target.checked })}
-                      />
-                    </label>
-                  </div>
-                  <div className="notif-pref-row">
-                    <label>
-                      <span>Assessment & Exam Updates</span>
-                      <input 
-                        type="checkbox" 
-                        checked={preferences.assessmentAlerts} 
-                        onChange={e => savePreferences({ ...preferences, assessmentAlerts: e.target.checked })}
-                      />
-                    </label>
-                  </div>
-                  <div className="notif-pref-row">
-                    <label>
-                      <span>Attendance Disruption Alerts</span>
-                      <input 
-                        type="checkbox" 
-                        checked={preferences.attendanceAlerts} 
-                        onChange={e => savePreferences({ ...preferences, attendanceAlerts: e.target.checked })}
-                      />
-                    </label>
-                  </div>
-                  <div className="notif-pref-row">
-                    <label>
-                      <span>General Announcements</span>
-                      <input 
-                        type="checkbox" 
-                        checked={preferences.announcementAlerts} 
-                        onChange={e => savePreferences({ ...preferences, announcementAlerts: e.target.checked })}
-                      />
-                    </label>
-                  </div>
-                  <div className="notif-pref-row">
-                    <label>
-                      <span>Live Classes Timetables</span>
-                      <input 
-                        type="checkbox" 
-                        checked={preferences.liveClassAlerts} 
-                        onChange={e => savePreferences({ ...preferences, liveClassAlerts: e.target.checked })}
-                      />
-                    </label>
-                  </div>
-                  <div className="notif-pref-row">
-                    <label>
-                      <span>Fee Due Dates & Receipts</span>
-                      <input 
-                        type="checkbox" 
-                        checked={preferences.feeAlerts} 
-                        onChange={e => savePreferences({ ...preferences, feeAlerts: e.target.checked })}
-                      />
-                    </label>
-                  </div>
-                </div>
-              </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              setShowPreferences(!showPreferences);
+              if (!showPreferences) loadPreferences();
+            }}
+            className={cn(
+              "bg-transparent border-0 h-9 w-9 rounded-xl flex items-center justify-center text-slate-500 cursor-pointer transition-all duration-200 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white",
+              showPreferences && "!bg-indigo-100 !text-indigo-600 dark:!bg-indigo-500/20 dark:!text-indigo-400",
             )}
+            title="Notification Preferences"
+          >
+            <Settings size={18} />
+          </button>
+          <button
+            onClick={() => fetchNotifications(1, true)}
+            className="bg-transparent border-0 h-9 w-9 rounded-xl flex items-center justify-center text-slate-500 cursor-pointer transition-all duration-200 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
+            title="Refresh"
+          >
+            <RefreshCw size={18} />
+          </button>
+        </div>
+      </div>
 
-            <div className="notif-pref-footer">
-              <button onClick={() => setShowPreferences(false)} className="notif-back-btn">
-                Back to Notifications
-              </button>
-            </div>
+      {showPreferences ? (
+        /* Preferences Panel */
+        <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-slate-950">
+          <div className="flex items-center gap-2 pt-6 px-8 pb-2 max-md:px-4 max-md:pt-6">
+            <SlidersHorizontal size={18} className="text-indigo-600" />
+            <h3 className="text-base font-bold m-0 text-slate-800 dark:text-slate-100">Preferences Settings</h3>
           </div>
-        ) : (
-          /* Main Notifications Panel */
-          <>
-            {/* Filter bar & Search */}
-            <div className="notif-control-bar">
-              <div className="notif-search-wrapper">
-                <Search className="notif-search-icon" size={16} />
-                <input 
-                  type="text" 
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="Search notifications..."
-                  className="notif-search-input"
-                />
-              </div>
 
-              <div className="notif-tabs-scroll">
-                <div className="notif-tabs">
-                  {CATEGORIES.map(cat => (
-                    <button
-                      key={cat.key}
-                      onClick={() => setActiveTab(cat.key)}
-                      className={`notif-tab ${activeTab === cat.key ? "notif-tab--active" : ""}`}
+          {prefsLoading ? (
+            <div className="flex flex-col items-center justify-center p-12 gap-2 text-slate-500 text-sm font-semibold">
+              <Loader2 size={32} className="animate-spin text-indigo-600" />
+              <p>Loading your preferences...</p>
+            </div>
+          ) : (
+            <div className="flex-1 overflow-y-auto px-8 py-4 max-md:px-4 flex flex-col gap-6">
+              {PREF_ROWS.map((section, i) => (
+                <div key={i} className="flex flex-col gap-3">
+                  {i === 0 && (
+                    <h4 className="text-[0.813rem] font-bold text-slate-500 uppercase tracking-wide m-0 mb-1">Delivery Channels</h4>
+                  )}
+                  {i === 1 && (
+                    <h4 className="text-[0.813rem] font-bold text-slate-500 uppercase tracking-wide m-0 mb-1">Alert Categories</h4>
+                  )}
+                  {section.map(({ key, label }) => (
+                    <label
+                      key={key}
+                      className="flex items-center justify-between cursor-pointer w-full border-b border-slate-100 dark:border-slate-900 pb-3"
                     >
-                      {cat.label}
-                    </button>
+                      <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{label}</span>
+                      <Switch
+                        checked={preferences[key]}
+                        onCheckedChange={(checked) => savePreferences({ ...preferences, [key]: checked })}
+                      />
+                    </label>
                   ))}
                 </div>
-              </div>
+              ))}
             </div>
+          )}
 
-            {/* Bulk Toolbar */}
-            <div className="notif-bulk-toolbar">
-              <div className="notif-bulk-left">
-                <button onClick={handleSelectAll} className="notif-select-all-btn">
-                  <CheckCheck size={14} />
-                  {selectedIds.length === notifications.length ? "Deselect All" : "Select All"}
-                </button>
-                {selectedIds.length > 0 && (
-                  <span className="notif-bulk-selected-count">{selectedIds.length} Selected</span>
-                )}
-              </div>
-
-              <div className="notif-bulk-right">
-                {selectedIds.length > 0 ? (
-                  <>
-                    <button onClick={handleBulkMarkRead} className="notif-bulk-action notif-bulk-action--read">
-                      <CheckCircle size={14} />
-                      Mark Read
-                    </button>
-                    <button onClick={handleBulkDelete} className="notif-bulk-action notif-bulk-action--delete">
-                      <Trash2 size={14} />
-                      Delete Selected
-                    </button>
-                  </>
-                ) : (
-                  totalUnread > 0 && (
-                    <button onClick={handleMarkAllRead} className="notif-bulk-action notif-bulk-action--all">
-                      <CheckCircle size={14} />
-                      Mark All Read
-                    </button>
-                  )
-                )}
-              </div>
-            </div>
-
-            {/* List */}
-            <div 
-              className="notif-list-container" 
-              ref={scrollContainerRef}
+          <div className="p-6 px-8 max-md:px-4 border-t border-slate-100 dark:border-slate-900 shrink-0">
+            <Button
+              onClick={() => setShowPreferences(false)}
+              variant="secondary"
+              className="w-full h-auto py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-900 dark:text-slate-100 font-bold text-sm"
             >
-              {loading && page === 1 ? (
-                <div className="notif-loading-wrapper">
-                  <Loader2 size={36} className="animate-spin text-indigo-600" />
-                  <p>Syncing alerts...</p>
-                </div>
-              ) : notifications.length === 0 ? (
-                <div className="notif-empty-state">
-                  <Bell size={48} className="notif-empty-icon" />
-                  <h4>No Notifications Yet</h4>
-                  <p>You are all caught up!</p>
-                </div>
+              Back to Notifications
+            </Button>
+          </div>
+        </div>
+      ) : (
+        /* Main Notifications Panel */
+        <>
+          {/* Filter bar & Search */}
+          <div className="pt-6 pb-4 max-md:px-4 flex flex-col gap-5">
+            <div className="relative w-full">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+              <Input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search notifications..."
+                className="w-full h-auto rounded-2xl pl-11 pr-4 py-3 text-sm font-medium"
+              />
+            </div>
+
+            <div className="w-full overflow-x-auto overflow-y-hidden whitespace-nowrap pb-2">
+              <ToggleGroup
+                type="single"
+                value={activeTab}
+                onValueChange={(v) => { if (v) setActiveTab(v); }}
+                className="justify-start gap-2 w-max"
+              >
+                {CATEGORIES.map(cat => (
+                  <ToggleGroupItem
+                    key={cat.key}
+                    value={cat.key}
+                    className="h-auto px-4 py-2 rounded-xl text-[0.813rem] font-semibold text-slate-500 bg-transparent data-[state=on]:bg-indigo-600 data-[state=on]:text-white data-[state=on]:shadow-[0_4px_10px_rgba(79,70,229,0.25)] hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
+                  >
+                    {cat.label}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </div>
+          </div>
+
+          {/* Bulk Toolbar */}
+          <div className="py-2 pb-4 max-md:px-4 flex items-center justify-between border-b border-slate-200/80 dark:border-slate-700/80 shrink-0">
+            <div className="flex items-center">
+              <button
+                onClick={handleSelectAll}
+                className="flex items-center gap-2 bg-transparent border-0 text-slate-500 text-[0.813rem] font-semibold cursor-pointer px-2 py-1 rounded-lg transition-all duration-150 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
+              >
+                <CheckCheck size={14} />
+                {selectedIds.length === notifications.length ? "Deselect All" : "Select All"}
+              </button>
+              {selectedIds.length > 0 && (
+                <span className="text-xs font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-500/15 dark:text-indigo-400 px-2 py-0.5 rounded-md ml-3">{selectedIds.length} Selected</span>
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              {selectedIds.length > 0 ? (
+                <>
+                  <button onClick={handleBulkMarkRead} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border-0 cursor-pointer transition-all duration-150 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-800/20 dark:text-emerald-400">
+                    <CheckCircle size={14} />
+                    Mark Read
+                  </button>
+                  <button onClick={handleBulkDelete} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border-0 cursor-pointer transition-all duration-150 bg-red-50 text-red-800 hover:bg-red-100 dark:bg-red-800/20 dark:text-red-400">
+                    <Trash2 size={14} />
+                    Delete Selected
+                  </button>
+                </>
               ) : (
-                <div className="notif-cards-grid">
-                  {notifications.map(notif => {
-                    const isSelected = selectedIds.includes(notif.id);
-                    return (
-                      <div 
-                        key={notif.id} 
-                        onClick={() => handleOpenNotification(notif)}
-                        className={`notif-card notif-card--${notif.priority} ${!notif.isRead ? "notif-card--unread" : ""} ${isSelected ? "notif-card--selected" : ""}`}
-                      >
-                        {/* Checkbox */}
-                        <div 
-                          className={`notif-checkbox ${isSelected ? "notif-checkbox--checked" : ""}`}
-                          onClick={(e) => toggleSelect(notif.id, e)}
-                        >
-                          {isSelected && <Check size={10} strokeWidth={4} />}
+                totalUnread > 0 && (
+                  <button onClick={handleMarkAllRead} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border-0 cursor-pointer transition-all duration-150 bg-violet-50 text-violet-800 hover:bg-violet-100 dark:bg-violet-800/20 dark:text-violet-400">
+                    <CheckCircle size={14} />
+                    Mark All Read
+                  </button>
+                )
+              )}
+            </div>
+          </div>
+
+          {/* List */}
+          <div className="py-6 max-md:px-4 max-md:py-4" ref={scrollContainerRef}>
+            {loading && page === 1 ? (
+              <div className="flex flex-col items-center justify-center p-12 gap-2 text-slate-500 text-sm font-semibold">
+                <Loader2 size={36} className="animate-spin text-indigo-600" />
+                <p>Syncing alerts...</p>
+              </div>
+            ) : notifications.length === 0 ? (
+              <div className="flex flex-col items-center justify-center min-h-[300px] text-slate-500 text-center">
+                <Bell size={48} className="text-slate-300 dark:text-slate-600 mb-4" />
+                <h4 className="text-base font-bold text-slate-700 dark:text-slate-300 m-0 mb-1">No Notifications Yet</h4>
+                <p className="text-[0.813rem] m-0">You are all caught up!</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3 pb-8">
+                {notifications.map(notif => {
+                  const isSelected = selectedIds.includes(notif.id);
+                  return (
+                    <div
+                      key={notif.id}
+                      onClick={() => handleOpenNotification(notif)}
+                      className={cn(
+                        "flex items-center max-md:items-start gap-4 max-md:gap-3 p-4 max-md:p-3 rounded-[1.25rem] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-pointer relative transition-all duration-200 hover:-translate-y-px hover:shadow-[0_4px_12px_rgba(15,23,42,0.05)] hover:border-slate-300 dark:hover:border-slate-600",
+                        PRIORITY_BORDER[notif.priority],
+                        !notif.isRead && "bg-slate-50 dark:bg-slate-800/50",
+                        isSelected && "!border-indigo-500 bg-indigo-500/[0.02] dark:bg-indigo-500/5",
+                      )}
+                    >
+                      {/* Checkbox */}
+                      <Checkbox
+                        checked={isSelected}
+                        onClick={(e) => e.stopPropagation()}
+                        onCheckedChange={() => toggleSelect(notif.id)}
+                        className="shrink-0 rounded-sm data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+                      />
+
+                      {/* Category Icon */}
+                      <div className="h-9 w-9 rounded-xl bg-slate-100 dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                        {categoryIcons[notif.category] || categoryIcons.general}
+                      </div>
+
+                      {/* Text Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 m-0 tracking-tight">{notif.title}</h4>
+                          {!notif.isRead && <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />}
                         </div>
+                        <p className="text-[0.813rem] text-slate-500 dark:text-slate-400 mt-1 mb-1.5 leading-[1.4] overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical]">
+                          {notif.message}
+                        </p>
+                        <span className="text-[0.688rem] font-semibold text-slate-400 uppercase">
+                          {new Date(notif.createdAt).toLocaleDateString(undefined, {
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit"
+                          })}
+                        </span>
+                      </div>
 
-                        {/* Category Icon */}
-                        <div className="notif-card-icon-wrapper">
-                          {categoryIcons[notif.category] || categoryIcons.general}
-                        </div>
+                      {/* Priority & Operations */}
+                      <div className="flex items-center max-md:flex-col max-md:items-end max-md:justify-between max-md:self-stretch gap-3 max-md:gap-2 shrink-0">
+                        <span className={cn("text-[0.625rem] max-md:text-[0.55rem] font-extrabold px-2 max-md:px-1.5 py-0.5 max-md:py-[0.1rem] rounded-full uppercase tracking-wide", PRIORITY_BADGE[notif.priority])}>
+                          {notif.priority}
+                        </span>
 
-                        {/* Text Content */}
-                        <div className="notif-card-content">
-                          <div className="notif-card-title-row">
-                            <h4 className="notif-card-title">{notif.title}</h4>
-                            {!notif.isRead && <span className="notif-unread-dot" />}
-                          </div>
-                          <p className="notif-card-msg">{notif.message}</p>
-                          <span className="notif-card-time">
-                            {new Date(notif.createdAt).toLocaleDateString(undefined, {
-                              month: "short",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit"
-                            })}
-                          </span>
-                        </div>
-
-                        {/* Priority & Operations */}
-                        <div className="notif-card-right">
-                          <span className={`notif-priority-badge notif-priority-badge--${notif.priority}`}>
-                            {notif.priority}
-                          </span>
-
-                          <div className="notif-card-menu-wrapper" onClick={e => e.stopPropagation()}>
-                            <button 
-                              onClick={() => setActiveMenuId(activeMenuId === notif.id ? null : notif.id)}
-                              className="notif-menu-trigger"
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              onClick={(e) => e.stopPropagation()}
+                              className="bg-transparent border-0 h-7 w-7 rounded-lg flex items-center justify-center text-slate-400 cursor-pointer transition-all duration-150 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
                             >
                               <MoreVertical size={16} />
                             </button>
-
-                            {activeMenuId === notif.id && (
-                              <div className="notif-dropdown-menu">
-                                <button onClick={() => { handleOpenNotification(notif); setActiveMenuId(null); }}>
-                                  Open Link
-                                </button>
-                                {!notif.isRead && (
-                                  <button onClick={() => { handleMarkAsRead(notif.id); setActiveMenuId(null); }}>
-                                    Mark as Read
-                                  </button>
-                                )}
-                                <button onClick={() => { handleDelete(notif.id); setActiveMenuId(null); }} className="notif-delete-option">
-                                  Delete Alert
-                                </button>
-                              </div>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenuItem onClick={() => handleOpenNotification(notif)}>
+                              Open Link
+                            </DropdownMenuItem>
+                            {!notif.isRead && (
+                              <DropdownMenuItem onClick={() => handleMarkAsRead(notif.id)}>
+                                Mark as Read
+                              </DropdownMenuItem>
                             )}
-                          </div>
-                        </div>
+                            <DropdownMenuItem
+                              onClick={() => handleDelete(notif.id)}
+                              className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-500/10"
+                            >
+                              Delete Alert
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
-                    );
-                  })}
-
-                  {loadingMore && (
-                    <div className="notif-scroll-loader">
-                      <Loader2 size={20} className="animate-spin text-indigo-600" />
-                      <span>Loading more alerts...</span>
                     </div>
-                  )}
-                  {/* Invisible div for IntersectionObserver to trigger infinite scroll */}
-                  <div ref={loadMoreRef} style={{ height: '1px' }} />
-                </div>
-              )}
-            </div>
-          </>
-        )}
+                  );
+                })}
+
+                {loadingMore && (
+                  <div className="flex items-center justify-center gap-2 p-4 text-slate-500 text-xs font-semibold">
+                    <Loader2 size={20} className="animate-spin text-indigo-600" />
+                    <span>Loading more alerts...</span>
+                  </div>
+                )}
+                {/* Invisible div for IntersectionObserver to trigger infinite scroll */}
+                <div ref={loadMoreRef} style={{ height: '1px' }} />
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

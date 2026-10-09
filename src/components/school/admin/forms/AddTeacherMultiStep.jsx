@@ -202,7 +202,7 @@ const StepRail = React.memo(function StepRail({ currentStep, onStepClick, compac
             onClick={() => onStepClick(step.id)}
             className={`${compact ? 'min-w-[150px] sm:min-w-0 rounded-xl p-2 gap-2' : 'w-full flex items-center gap-3 rounded-[22px] p-3'} flex items-center text-left transition-all ${isActive ? 'bg-white shadow-sm ring-1 ring-blue-100 dark:bg-slate-800 dark:ring-slate-700' : 'hover:bg-white/70 dark:hover:bg-slate-800/70'}`}
           >
-            <div className={`${compact ? 'h-7 w-7 rounded-lg' : 'h-11 w-11 rounded-2xl'} grid shrink-0 place-items-center ${isActive ? 'bg-blue-600 text-white' : isCompleted ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400 dark:bg-slate-800'}`}>
+            <div className={`${compact ? 'size-7 rounded-lg' : 'size-11 rounded-2xl'} grid shrink-0 place-items-center ${isActive ? 'bg-blue-600 text-white' : isCompleted ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400 dark:bg-slate-800'}`}>
               {isCompleted ? <Check size={compact ? 12 : 18} strokeWidth={3} /> : <Icon size={compact ? 12 : 18} />}
             </div>
             <div className="min-w-0">
@@ -594,9 +594,9 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
 
       <div className="flex flex-col md:flex-row gap-8 mb-8">
         <div className="shrink-0 flex flex-col items-center gap-4">
-          <div className="w-40 h-40 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-white/30 dark:bg-slate-900/30 flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer hover:border-blue-500 hover:bg-blue-500/5 transition-all">
+          <div className="size-40 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-white/30 dark:bg-slate-900/30 flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer hover:border-blue-500 hover:bg-blue-500/5 transition-all">
             {formData.profileImage ? (
-              <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} alt="Preview" className="w-full h-full object-cover" />
+              <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} alt="Preview" className="size-full object-cover" />
             ) : (
               <>
                 <Camera className="text-slate-400 group-hover:text-blue-500 transition-colors" size={32} />
@@ -893,7 +893,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
                         }}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-slate-200 dark:bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-350 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-650 peer-checked:bg-blue-600"></div>
+                      <div className="w-11 h-6 bg-slate-200 dark:bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-350 after:border after:rounded-full after:size-5 after:transition-all dark:border-slate-650 peer-checked:bg-blue-600"></div>
                     </label>
                   </div>
                 )}
@@ -1062,7 +1062,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
                         : [...formData.weekdays, day];
                       setFormData(prev => ({ ...prev, weekdays: next }));
                     }}
-                    className="h-4 w-4 rounded text-blue-600 focus:ring-blue-500 border-slate-350 dark:border-slate-650"
+                    className="size-4 rounded text-blue-600 focus:ring-blue-500 border-slate-350 dark:border-slate-650"
                   />
                   <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{day}</span>
                 </label>
@@ -1099,7 +1099,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
             name="sameAsPermanent"
             checked={formData.sameAsPermanent}
             onChange={handleChange}
-            className="h-4 w-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-slate-800"
+            className="size-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-slate-800"
           />
           <label htmlFor="sameAsPermanent" className="text-xs font-bold text-slate-500 dark:text-slate-400 select-none cursor-pointer">
             Permanent Address is same as Current Address
@@ -1169,7 +1169,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
               key={doc.type}
               className={`p-8 rounded-3xl border-2 border-dashed ${isUploaded ? 'border-emerald-500 bg-emerald-500/5' : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50'} flex flex-col items-center justify-center text-center group hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-500/5 transition-all cursor-pointer relative`}
             >
-              <div className={`w-14 h-14 rounded-2xl ${isUploaded ? 'bg-emerald-500 text-white' : 'bg-white dark:bg-slate-800 text-blue-500'} shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+              <div className={`size-14 rounded-2xl ${isUploaded ? 'bg-emerald-500 text-white' : 'bg-white dark:bg-slate-800 text-blue-500'} shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
                 {isUploaded ? <Check size={24} strokeWidth={3} /> : <Upload size={24} />}
               </div>
               <h6 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white mb-1">{doc.label}</h6>
@@ -1225,9 +1225,9 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
         {/* Welcome Card Summary */}
         <div className="p-8 rounded-[30px] bg-gradient-to-br from-blue-600 to-indigo-700 text-white relative overflow-hidden shadow-2xl shadow-blue-600/30">
           <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
-            <div className="w-28 h-28 rounded-2xl border-4 border-white/20 overflow-hidden shrink-0 shadow-xl bg-white/10 flex items-center justify-center">
+            <div className="size-28 rounded-2xl border-4 border-white/20 overflow-hidden shrink-0 shadow-xl bg-white/10 flex items-center justify-center">
               {formData.profileImage ? (
-                <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} alt="Preview" className="w-full h-full object-cover" />
+                <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} alt="Preview" className="size-full object-cover" />
               ) : (
                 <User size={48} className="opacity-40" />
               )}
