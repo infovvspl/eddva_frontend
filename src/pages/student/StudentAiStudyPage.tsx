@@ -1373,7 +1373,7 @@ export default function StudentAiStudyPage() {
                             : "bg-white text-slate-500 border-slate-200 hover:border-blue-300 hover:text-blue-600",
                         )}
                       >
-                        ⚡ Brief
+                        <Zap className="inline size-3.5 mr-1 -mt-0.5" /> Brief
                       </button>
                       <button
                         type="button"
@@ -1385,7 +1385,7 @@ export default function StudentAiStudyPage() {
                             : "bg-white text-slate-500 border-slate-200 hover:border-blue-300 hover:text-blue-600",
                         )}
                       >
-                        📖 Detailed
+                        <BookOpen className="inline size-3.5 mr-1 -mt-0.5" /> Detailed
                       </button>
                     </div>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-end">

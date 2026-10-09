@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { SchoolVideoPlayer } from '@/components/school/SchoolVideoPlayer';
-import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Edit, Upload, Youtube, Image as ImageIcon, FileText, Loader2, BarChart3, Download, ChevronRight, X, Sparkles, TrendingUp, XCircle, CheckCircle, ListChecks, Trophy, Copy, Eye, EyeOff, ArrowLeft, ArrowRight, ImagePlus, RefreshCw, CalendarClock, AlarmClock, PanelRightClose, PanelRightOpen, CalendarDays, Clock3, Tag, BookOpen, MessageCircle, Send, MessagesSquare, HelpCircle, User, Monitor } from 'lucide-react';
+import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Edit, Upload, Youtube, Image as ImageIcon, FileText, Loader2, BarChart3, Download, ChevronRight, X, Sparkles, TrendingUp, XCircle, CheckCircle, ListChecks, Trophy, Copy, Eye, EyeOff, ArrowLeft, ArrowRight, ImagePlus, RefreshCw, CalendarClock, AlarmClock, PanelRightClose, PanelRightOpen, CalendarDays, Clock3, Tag, BookOpen, MessageCircle, Send, MessagesSquare, HelpCircle, User, Monitor, Save, Bell, Check } from 'lucide-react';
 import { schoolLive, type CreatedLecture, type LiveLecture } from '@/lib/api/school-live';
 import { Highlight } from '@/types/highlight';
 import { HighlightRenderer } from '@/lib/highlight-renderer';
@@ -2072,7 +2072,7 @@ const ClassManagement: React.FC = () => {
                                     className="flex items-center gap-1 px-3 py-1 rounded-xl text-xs font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
                                     onClick={handleDeleteHighlight}
                                   >
-                                    🗑 Delete
+                                    <Trash2 className="size-3.5" /> Delete
                                   </button>
                                   <button
                                     className="flex items-center gap-1 px-3 py-1 rounded-xl text-xs font-medium bg-slate-50 text-slate-500 hover:bg-slate-100 transition-colors"
@@ -2117,7 +2117,7 @@ const ClassManagement: React.FC = () => {
                                     onClick={e => { e.preventDefault(); handleSaveNotesHighlight(); }}
                                     className="rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-violet-700 transition-colors flex items-center gap-1.5"
                                   >
-                                    ✦ Save
+                                    <Save className="size-3.5" /> Save
                                   </button>
                                   {/* Clear all button — only shows when highlights exist */}
                                   {notesHighlights.length > 0 && (
@@ -2869,14 +2869,14 @@ const ClassManagement: React.FC = () => {
                       </p>
                       <div className="space-y-3">
                         {[
-                          { icon: '🔔', title: 'Instant notification', desc: 'All enrolled students are notified immediately' },
-                          { icon: '📅', title: 'Calendar saved', desc: "Added to every student's schedule" },
-                          { icon: '⏰', title: '30-min reminder', desc: 'Automatic reminder before class starts' },
-                          { icon: '🔴', title: 'LIVE badge via OBS', desc: 'Stream your OBS — class goes live automatically' },
-                          { icon: '✅', title: 'Auto attendance', desc: 'Students are marked attended after class ends' },
+                          { icon: Bell, title: 'Instant notification', desc: 'All enrolled students are notified immediately' },
+                          { icon: CalendarDays, title: 'Calendar saved', desc: "Added to every student's schedule" },
+                          { icon: Clock, title: '30-min reminder', desc: 'Automatic reminder before class starts' },
+                          { icon: Radio, title: 'LIVE badge via OBS', desc: 'Stream your OBS — class goes live automatically' },
+                          { icon: CheckCircle, title: 'Auto attendance', desc: 'Students are marked attended after class ends' },
                         ].map((s, i) => (
                           <div key={i} className="flex items-start gap-3">
-                            <span className="mt-0.5 text-base">{s.icon}</span>
+                            <s.icon className="mt-0.5 size-4 shrink-0 text-slate-500" />
                             <div>
                               <p className="text-xs font-semibold text-slate-800">{s.title}</p>
                               <p className="text-xs text-slate-500">{s.desc}</p>

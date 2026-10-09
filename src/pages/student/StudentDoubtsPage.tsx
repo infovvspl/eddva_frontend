@@ -9,6 +9,7 @@ import {
   MessageSquare, Plus, ThumbsUp, ThumbsDown, ChevronDown,
   Loader2, CheckCircle, Clock, X, Sparkles, User,
   Brain, BookOpen, Send, Upload, Image as ImageIcon, ArrowUpDown,
+  Zap, Check, Lightbulb,
 } from "lucide-react";
 import {
   useMyDoubts, useCreateDoubt, useMarkDoubtHelpful,
@@ -244,7 +245,7 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
                             viewMode === "brief" ? "bg-white text-blue-700 shadow-sm" : "text-blue-400 hover:text-blue-600"
                           )}
                         >
-                          ⚡ Brief
+                          <Zap className="inline size-3 mr-0.5 -mt-0.5" /> Brief
                         </button>
                         <button
                           onClick={() => setViewMode("detailed")}
@@ -253,7 +254,7 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
                             viewMode === "detailed" ? "bg-white text-blue-700 shadow-sm" : "text-blue-400 hover:text-blue-600"
                           )}
                         >
-                          📖 Detailed
+                          <BookOpen className="inline size-3 mr-0.5 -mt-0.5" /> Detailed
                         </button>
                       </div>
                     )}
@@ -275,7 +276,7 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
                             <div>
                               {!isTheory && isNumerical && (
                                 <div className="flex items-center gap-1.5 mb-2">
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-600 uppercase tracking-wide">⚡ Quick Steps</span>
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-600 uppercase tracking-wide inline-flex items-center gap-1"><Zap className="size-2.5 shrink-0" /> Quick Steps</span>
                                 </div>
                               )}
                               <div className="text-sm text-blue-900 leading-relaxed prose prose-sm prose-blue max-w-none prose-p:mb-2 prose-ul:my-2">
@@ -306,7 +307,7 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
                             {/* Final Answer box — prominent for numericals */}
                             {!isTheory && isNumerical && parsedAi.detailed?.final_answer && (
                               <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                                <p className="text-[10px] font-bold text-green-700 uppercase tracking-wide mb-1">✅ Final Answer</p>
+                                <p className="text-[10px] font-bold text-green-700 uppercase tracking-wide mb-1 flex items-center gap-1"><CheckCircle className="size-3 shrink-0" /> Final Answer</p>
                                 <div className="text-sm font-bold text-green-800 prose-sm prose-green max-w-none">
                                   <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
                                     {formatMarkdown(parsedAi.detailed.final_answer)}
@@ -318,8 +319,8 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
                             {/* Verification */}
                             {!isTheory && parsedAi.detailed?.verification && !isAnswerPlaceholder(parsedAi.detailed.verification) && (
                               <div className="p-3 bg-blue-100/60 rounded-lg border border-blue-200/50">
-                                <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wide mb-1">
-                                  {isNumerical ? "✓ Verification" : "✓ Academic Reasoning"}
+                                <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wide mb-1 flex items-center gap-1">
+                                  <Check className="size-3 shrink-0" /> {isNumerical ? "Verification" : "Academic Reasoning"}
                                 </p>
                                 <div className="text-xs text-blue-800 leading-relaxed prose prose-xs prose-blue max-w-none">
                                   <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
@@ -332,7 +333,7 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
                             {/* Key Concept */}
                             {!isTheory && parsedAi.detailed?.key_concept && !isAnswerPlaceholder(parsedAi.detailed.key_concept) && (
                               <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
-                                <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wide mb-1">💡 Key Concept</p>
+                                <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wide mb-1 flex items-center gap-1"><Lightbulb className="size-3 shrink-0" /> Key Concept</p>
                                 <div className="text-xs text-indigo-800 leading-relaxed prose prose-xs prose-indigo max-w-none">
                                   <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
                                     {formatMarkdown(parsedAi.detailed.key_concept)}
@@ -387,7 +388,7 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
                           askAiMode === "short" ? "bg-white text-indigo-700 shadow-sm" : "text-indigo-400 hover:text-indigo-600"
                         )}
                       >
-                        ⚡ Brief
+                        <Zap className="inline size-3.5 mr-1 -mt-0.5" /> Brief
                       </button>
                       <button
                         onClick={() => setAskAiMode("detailed")}
@@ -396,7 +397,7 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
                           askAiMode === "detailed" ? "bg-white text-indigo-700 shadow-sm" : "text-indigo-400 hover:text-indigo-600"
                         )}
                       >
-                        📖 Detailed
+                        <BookOpen className="inline size-3.5 mr-1 -mt-0.5" /> Detailed
                       </button>
                     </div>
 
@@ -762,7 +763,7 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
                     : "bg-white text-slate-500 border-slate-200 hover:border-indigo-300 hover:text-indigo-600",
                 )}
               >
-                ⚡ Brief
+                <Zap className="inline size-4 mr-1 -mt-0.5" /> Brief
               </button>
               <button
                 type="button"
@@ -774,7 +775,7 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
                     : "bg-white text-slate-500 border-slate-200 hover:border-indigo-300 hover:text-indigo-600",
                 )}
               >
-                📖 Detailed
+                <BookOpen className="inline size-4 mr-1 -mt-0.5" /> Detailed
               </button>
             </div>
             <p className="text-[10px] text-slate-400 leading-relaxed">

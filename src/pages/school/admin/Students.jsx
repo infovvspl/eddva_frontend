@@ -13,6 +13,7 @@ import { cn } from '@/components/school/admin/Skeleton';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { VoiceSearchButton } from "@/components/ui/VoiceSearchButton";
 
 function formatNumber(value) {
   return Number(value || 0).toLocaleString();
@@ -534,7 +535,11 @@ export default function Students() {
                     value={searchQuery}
                     onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
                     placeholder="Search students…"
-                    className="w-full rounded-xl border border-slate-200/80 bg-white/90 py-1.5 pl-8 pr-3 text-xs font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                    className="w-full rounded-xl border border-slate-200/80 bg-white/90 py-1.5 pl-8 pr-9 text-xs font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                  />
+                  <VoiceSearchButton
+                    className="absolute right-1 top-1/2 -translate-y-1/2"
+                    onResult={(transcript) => { setSearchQuery(transcript); setPage(1); }}
                   />
                 </div>
 

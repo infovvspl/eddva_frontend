@@ -4,7 +4,7 @@ import { useAuth } from '@/context/SchoolAuthContext';
 import { useAuthStore } from '@/lib/auth-store';
 import { useLocation } from 'react-router-dom';
 import { CustomSelect } from '@/components/ui/CustomSelect';
-import { Filter, Search } from 'lucide-react';
+import { Filter, Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const formatDescription = (desc, action) => {
@@ -500,7 +500,7 @@ export default function AuditLogsPage() {
                     onClick={() => setSearch('')}
                     className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-sm font-semibold px-1"
                   >
-                    ✕
+                    <X className="size-3.5" />
                   </button>
                 )}
               </div>

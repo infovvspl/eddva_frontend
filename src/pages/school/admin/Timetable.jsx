@@ -36,6 +36,9 @@ export default function Timetable() {
   const [selectedTimetable, setSelectedTimetable] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPeriodsModal, setShowPeriodsModal] = useState(false);
+  // Admin view switcher: 'timetable' = scheduling (weekly grid + daily slot
+  // list), 'roster' = who's-teaching-what-when (live status + period map).
+  const [activeView, setActiveView] = useState('timetable');
   const [filterTeacher, setFilterTeacher] = useState('');
   const [filterClass, setFilterClass] = useState('');
   const [filterPeriod, setFilterPeriod] = useState('');
@@ -806,12 +809,12 @@ export default function Timetable() {
 
   return (
     <div className="w-full px-3 sm:px-5 lg:px-8 xl:px-10 dark:bg-slate-950 min-h-screen">
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl sm:text-3xl font-bold text-slate-950 dark:text-white">Timetable</h1>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Manage class schedules and teacher assignments.</p>
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-slate-950 dark:text-white">Timetable and Roster</h1>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Schedule classes and manage the teacher roster.</p>
         </div>
-        {!isTeacher && (
+        {!isTeacher && activeView === 'timetable' && (
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowPeriodsModal(true)}
@@ -830,6 +833,28 @@ export default function Timetable() {
           </div>
         )}
       </div>
+
+      {!isTeacher && (
+        <div className="mb-6 inline-flex items-center gap-1.5 rounded-2xl border border-slate-100 bg-white p-1.5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          {[
+            { key: 'timetable', label: 'Timetable' },
+            { key: 'roster', label: 'Roster' },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveView(tab.key)}
+              className={`rounded-xl px-4 py-2 text-sm font-bold transition ${
+                activeView === tab.key
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="grid grid-cols-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-2 sm:gap-4 mb-6">
         <div className="rounded-xl sm:rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm flex flex-col justify-center items-center text-center">
@@ -868,7 +893,7 @@ export default function Timetable() {
       </div>
 
       {/* Class & Section Selection Grid Card */}
-      {!isTeacher && (
+      {!isTeacher && activeView === 'timetable' && (
         <div className="mb-8 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -1383,7 +1408,7 @@ export default function Timetable() {
         </section>
       )}
 
-      {!isTeacher && (
+      {!isTeacher && activeView === 'roster' && (
         <div className="mb-6 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
@@ -1557,7 +1582,7 @@ export default function Timetable() {
         </div>
       )}
 
-      {!isTeacher && (
+      {!isTeacher && activeView === 'roster' && (
         <div className="mb-6 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
@@ -1768,7 +1793,7 @@ export default function Timetable() {
         </div>
       )}
 
-      {!isTeacher && (
+      {!isTeacher && activeView === 'timetable' && (
         <section className="mb-6 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-end sm:justify-between">
             <div className="flex flex-col gap-1">

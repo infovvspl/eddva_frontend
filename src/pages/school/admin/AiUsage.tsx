@@ -956,7 +956,7 @@ function AuditLogSheet({ log, open, onClose }: { log: RawAiLog | null; open: boo
               { label: 'Feature', value: featureLabel(log.feature) },
               { label: 'Provider', value: log.provider || 'unknown' },
               { label: 'Model', value: log.model || '—' },
-              { label: 'Status', value: log.success ? '✓ Success' : `✗ Failed (${log.status_code})` },
+              { label: 'Status', value: log.success ? 'Success' : `Failed (${log.status_code})` },
               { label: 'Prompt Tokens', value: num(log.prompt_tokens).toLocaleString() },
               { label: 'Completion Tokens', value: num(log.completion_tokens).toLocaleString() },
               { label: 'Total Tokens', value: num(log.total_tokens).toLocaleString() },

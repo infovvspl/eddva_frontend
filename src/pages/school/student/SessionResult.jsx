@@ -521,7 +521,7 @@ export default function SessionResult() {
           <div className="flex items-start gap-3">
             <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-rose-500" />
             <div>
-              <p className="font-black text-slate-900 dark:text-white text-sm">Keep Going! 💪</p>
+              <p className="font-black text-slate-900 dark:text-white text-sm">Keep Going!</p>
               <p className="mt-1 text-xs font-medium text-slate-600 dark:text-slate-400">
                 Your score is below passing. Review your notes and practice more questions.
                 Ask your teacher if you'd like extra help.
@@ -535,7 +535,7 @@ export default function SessionResult() {
           <div className="flex items-start gap-3">
             <Trophy className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" />
             <div>
-              <p className="font-black text-slate-900 dark:text-white text-sm">Excellent Work! 🎉</p>
+              <p className="font-black text-slate-900 dark:text-white text-sm">Excellent Work!</p>
               <p className="mt-1 text-xs font-medium text-slate-600 dark:text-slate-400">
                 You scored a distinction. Keep up the great work!
               </p>

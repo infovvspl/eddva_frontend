@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import schoolApi from '@/lib/api/school-client';
-import { Loader2, Download, Plus, CheckCircle2, XCircle, FileWarning, UploadCloud, AlertTriangle } from 'lucide-react';
+import { Loader2, Download, Plus, CheckCircle2, XCircle, FileWarning, UploadCloud, AlertTriangle, Search } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import { CustomSelect } from "@/components/ui/CustomSelect";
@@ -44,8 +44,10 @@ export default function DocumentGenerator() {
   const [historyTypeFilter, setHistoryTypeFilter] = useState('all');
   const [historyStatusFilter, setHistoryStatusFilter] = useState('all');
   const [historyDateFilter, setHistoryDateFilter] = useState('');
+  const [historySearch, setHistorySearch] = useState('');
 
   const filteredHistoryLogs = useMemo(() => {
+    const search = historySearch.trim().toLowerCase();
     return historyLogs.filter((log: any) => {
       if (historyTypeFilter !== 'all' && log?.targetType !== historyTypeFilter) return false;
       if (historyStatusFilter !== 'all' && log?.status !== historyStatusFilter) return false;
@@ -53,13 +55,17 @@ export default function DocumentGenerator() {
         const issuedDate = log?.issuedAt ? new Date(log.issuedAt).toISOString().slice(0, 10) : null;
         if (issuedDate !== historyDateFilter) return false;
       }
+      if (search) {
+        const haystack = `${log?.targetName || ''} ${log?.targetEmail || ''}`.toLowerCase();
+        if (!haystack.includes(search)) return false;
+      }
       return true;
     });
-  }, [historyLogs, historyTypeFilter, historyStatusFilter, historyDateFilter]);
+  }, [historyLogs, historyTypeFilter, historyStatusFilter, historyDateFilter, historySearch]);
 
   useEffect(() => {
     setHistoryPage(1);
-  }, [historyTypeFilter, historyStatusFilter, historyDateFilter]);
+  }, [historyTypeFilter, historyStatusFilter, historyDateFilter, historySearch]);
 
   // Preview State
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -1024,6 +1030,18 @@ export default function DocumentGenerator() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap items-end gap-3 mb-4">
+                <div className="w-56">
+                  <Label className="text-xs text-muted-foreground">Search</Label>
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      value={historySearch}
+                      onChange={(e) => setHistorySearch(e.target.value)}
+                      placeholder="Search by name or email..."
+                      className="pl-8"
+                    />
+                  </div>
+                </div>
                 <div className="w-40">
                   <Label className="text-xs text-muted-foreground">Type</Label>
                   <Select value={historyTypeFilter} onValueChange={setHistoryTypeFilter}>
@@ -1059,7 +1077,7 @@ export default function DocumentGenerator() {
                     onChange={(e) => setHistoryDateFilter(e.target.value)}
                   />
                 </div>
-                {(historyTypeFilter !== 'all' || historyStatusFilter !== 'all' || historyDateFilter) && (
+                {(historyTypeFilter !== 'all' || historyStatusFilter !== 'all' || historyDateFilter || historySearch) && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -1067,6 +1085,7 @@ export default function DocumentGenerator() {
                       setHistoryTypeFilter('all');
                       setHistoryStatusFilter('all');
                       setHistoryDateFilter('');
+                      setHistorySearch('');
                     }}
                   >
                     Clear Filters
@@ -1077,7 +1096,7 @@ export default function DocumentGenerator() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Type</TableHead>
-                    <TableHead>Target ID</TableHead>
+                    <TableHead>Name</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Issued At</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -1094,8 +1113,8 @@ export default function DocumentGenerator() {
                   {filteredHistoryLogs.slice((historyPage - 1) * historyLimit, historyPage * historyLimit).map(log => (
                     <TableRow key={log?.id}>
                       <TableCell className="font-medium">{log?.targetType}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground" title={log?.targetId}>
-                        {log?.targetId?.substring(0,8)}...
+                      <TableCell className="text-sm">
+                        {log?.targetName || <span className="text-xs text-muted-foreground" title={log?.targetId}>{log?.targetId?.substring(0,8)}...</span>}
                       </TableCell>
                       <TableCell>
                         {log?.status === 'ACTIVE' && <span className="inline-flex items-center text-green-600 bg-green-50 px-2 py-1 rounded-full text-xs font-semibold"><CheckCircle2 className="w-3 h-3 mr-1"/> Active</span>}

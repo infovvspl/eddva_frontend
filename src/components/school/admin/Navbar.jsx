@@ -648,6 +648,13 @@ export default function Navbar({ onMenuClick }) {
                   <Menu className="h-6 w-6" />
                 </button>
               )}
+              {isSuperAdmin ? (
+                <img src={logoUrl} alt="EDDVA" className="h-9 w-auto object-contain shrink-0 dark:brightness-110" />
+              ) : (
+                <div className="h-10 w-10 rounded-lg overflow-hidden flex items-center justify-center bg-slate-50 shrink-0 border border-slate-100 dark:border-slate-800 dark:bg-slate-900">
+                  <InstituteLogo institute={institute} size="sm" className="h-10 w-10 object-contain" />
+                </div>
+              )}
               <div className="flex flex-col min-w-0">
                 <h1 className="mt-0.5 text-lg font-bold tracking-tight leading-tight text-slate-900 dark:text-white truncate">{schoolName || title}</h1>
               </div>

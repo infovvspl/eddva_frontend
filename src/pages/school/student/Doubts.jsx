@@ -5,10 +5,13 @@ import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client
 import {
   ArrowLeft,
   Bot,
+  BookOpen,
+  Check,
   CheckCircle2,
   ChevronDown,
   Clock,
   HelpCircle,
+  Lightbulb,
   Loader2,
   Plus,
   Send,
@@ -17,6 +20,7 @@ import {
   ThumbsUp,
   User,
   X,
+  Zap,
 } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
 import DoubtImageAttach, { DoubtImagePreview } from '@/components/school/DoubtImageAttach';
@@ -119,7 +123,7 @@ function DoubtCard({ doubt, onHelpful, escalating }) {
                       : 'text-indigo-600 hover:bg-white/50 dark:text-indigo-300 dark:hover:bg-indigo-800/50',
                   )}
                 >
-                  ⚡ Brief
+                  <Zap className="inline size-3 mr-1 -mt-0.5" /> Brief
                 </button>
                 <button
                   type="button"
@@ -131,7 +135,7 @@ function DoubtCard({ doubt, onHelpful, escalating }) {
                       : 'text-indigo-600 hover:bg-white/50 dark:text-indigo-300 dark:hover:bg-indigo-800/50',
                   )}
                 >
-                  📖 Detailed
+                  <BookOpen className="inline size-3 mr-1 -mt-0.5" /> Detailed
                 </button>
               </div>
             )}
@@ -154,19 +158,19 @@ function DoubtCard({ doubt, onHelpful, escalating }) {
                     />
                     {parsedAi.detailed?.final_answer && (
                       <div className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50/80 p-4 dark:border-indigo-800 dark:bg-indigo-900/40">
-                        <h4 className="text-xs font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 mb-2">✅ Final Answer</h4>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 mb-2 flex items-center gap-1.5"><CheckCircle2 className="size-3.5 shrink-0" /> Final Answer</h4>
                         <MarkdownRenderer content={parsedAi.detailed.final_answer} className="prose-slate max-w-none prose-sm" />
                       </div>
                     )}
                     {parsedAi.detailed?.verification && !isAnswerPlaceholder(parsedAi.detailed.verification) && (
                       <div className="mt-3 rounded-xl border border-slate-200 bg-white/60 p-4 dark:border-slate-700 dark:bg-slate-800/60">
-                        <h4 className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2">✓ Verification</h4>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5"><Check className="size-3.5 shrink-0" /> Verification</h4>
                         <MarkdownRenderer content={parsedAi.detailed.verification} className="prose-slate max-w-none prose-sm" />
                       </div>
                     )}
                     {parsedAi.detailed?.key_concept && !isAnswerPlaceholder(parsedAi.detailed.key_concept) && (
                       <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900/30 dark:bg-amber-950/20">
-                        <h4 className="text-xs font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-2">💡 Key Concept</h4>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-2 flex items-center gap-1.5"><Lightbulb className="size-3.5 shrink-0" /> Key Concept</h4>
                         <MarkdownRenderer content={parsedAi.detailed.key_concept} className="prose-slate max-w-none prose-sm" />
                       </div>
                     )}

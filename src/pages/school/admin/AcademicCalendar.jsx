@@ -20,6 +20,15 @@ import {
   BellRing,
   Users,
   X,
+  BookOpen,
+  ClipboardList,
+  Palmtree,
+  Plane,
+  FileText,
+  GraduationCap,
+  Volleyball,
+  Drama,
+  Check,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
@@ -48,16 +57,16 @@ const categories = [
 ];
 
 const categoryIcons = {
-  ACADEMIC: '📚',
-  EXAM: '📝',
-  HOLIDAY: '🏖️',
-  VACATION: '✈️',
-  ASSIGNMENT: '📄',
-  PARENT_MEETING: '👨‍👩‍👧',
-  TEACHER_MEETING: '👩‍🏫',
-  LIVE_CLASS: '🎥',
-  SPORTS_EVENT: '⚽',
-  CULTURAL_PROGRAM: '🎭',
+  ACADEMIC: BookOpen,
+  EXAM: ClipboardList,
+  HOLIDAY: Palmtree,
+  VACATION: Plane,
+  ASSIGNMENT: FileText,
+  PARENT_MEETING: Users,
+  TEACHER_MEETING: GraduationCap,
+  LIVE_CLASS: Video,
+  SPORTS_EVENT: Volleyball,
+  CULTURAL_PROGRAM: Drama,
 };
 
 
@@ -1163,7 +1172,10 @@ export default function AcademicCalendar({
                   <div className="grid grid-cols-2 gap-2">
                     {categories.filter((item) => item !== 'All').map((item) => (
                       <div key={item} className="flex flex-col items-center justify-center rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-2 sm:py-3 px-1 text-center transition hover:border-slate-200 dark:hover:border-slate-700">
-                        <span className="text-base sm:text-xl mb-0.5 sm:mb-1">{categoryIcons[item] || '📅'}</span>
+                        {(() => {
+                          const CatIcon = categoryIcons[item] || CalendarDays;
+                          return <CatIcon className="size-4 sm:size-5 mb-0.5 sm:mb-1" />;
+                        })()}
                         <p className="text-sm sm:text-lg font-black text-slate-950 dark:text-white leading-none">{summary[item] || 0}</p>
                         <p className="mt-1 w-full truncate text-[7px] sm:text-[8px] font-bold tracking-tight uppercase text-slate-400 dark:text-slate-500">{item.replace('_', ' ')}</p>
                       </div>
@@ -1180,11 +1192,14 @@ export default function AcademicCalendar({
                     {upcomingEvents.map((event) => (
                       <button key={event.id} onClick={(e) => { setSummaryModalOpen(false); handleEventClick(event, e); }} className="w-full flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-2.5 py-2 text-left transition hover:bg-white dark:hover:bg-slate-800 group hover:scale-[1.01] hover:underline cursor-pointer">
                         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                          <span className="shrink-0 text-lg sm:text-[22px] opacity-90 transition-opacity group-hover:opacity-100">{categoryIcons[event.category] || '📅'}</span>
+                          {(() => {
+                            const CatIcon = categoryIcons[event.category] || CalendarDays;
+                            return <CatIcon className="size-4 sm:size-5 shrink-0 opacity-90 transition-opacity group-hover:opacity-100" />;
+                          })()}
                           <div className="min-w-0">
                             <p className="truncate text-xs sm:text-sm font-bold text-slate-950 dark:text-white">{event.title}</p>
-                            <p className="truncate text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400">
-                              📅 {new Date(event.startTime).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            <p className="truncate text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                              <CalendarDays className="size-2.5 shrink-0" /> {new Date(event.startTime).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
                         </div>
@@ -1524,8 +1539,8 @@ export default function AcademicCalendar({
                           alt="Preview"
                           className="h-12 w-12 object-contain rounded-lg bg-slate-200/50 dark:bg-slate-900 border"
                         />
-                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                          ✓ Image selected / loaded
+                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1">
+                          <Check className="size-3 shrink-0" /> Image selected / loaded
                         </span>
                       </div>
                     )}

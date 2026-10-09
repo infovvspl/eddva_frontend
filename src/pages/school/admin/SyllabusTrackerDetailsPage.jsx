@@ -136,8 +136,8 @@ export default function SyllabusTrackerDetailsPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <span className={`px-4 py-2 rounded-2xl text-xs font-black uppercase ${overallActualProgress >= overallPlannedProgress ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200'}`}>
-            {overallActualProgress >= overallPlannedProgress ? '✨ On Track' : '⚠️ Delayed Schedule'}
+          <span className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-black uppercase ${overallActualProgress >= overallPlannedProgress ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200'}`}>
+            {overallActualProgress >= overallPlannedProgress ? <><Sparkles className="size-3.5" /> On Track</> : <><AlertTriangle className="size-3.5" /> Delayed Schedule</>}
           </span>
         </div>
       </div>

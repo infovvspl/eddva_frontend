@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  BookOpen, Calendar, Plus, Save, Layers, CheckCircle2, 
+  BookOpen, Calendar, Plus, Save, Layers, CheckCircle2,
   Sparkles, Loader2, Filter, AlertCircle, Users, ArrowRight, Eye, ChevronRight,
-  CalendarDays, Hourglass, TrendingUp, AlertTriangle
+  CalendarDays, Hourglass, TrendingUp, AlertTriangle, X
 } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
@@ -955,7 +955,7 @@ export default function SyllabusPlanner() {
                 onClick={() => setEditingPlan(null)}
                 className="p-1 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
               >
-                ✕
+                <X className="size-4" />
               </button>
             </div>
 

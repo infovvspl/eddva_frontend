@@ -134,8 +134,8 @@ export default function ParentDashboard() {
               </div>
 
               <div>
-                <h1 className="font-display text-lg sm:text-2xl font-bold text-white tracking-tight leading-snug">
-                  Welcome, {user?.name || "Parent"} 👋
+                <h1 className="font-display text-lg sm:text-2xl font-bold text-white tracking-tight leading-snug flex items-center gap-2">
+                  Welcome, {user?.name || "Parent"} <Sparkles className="size-5 shrink-0 text-white/80" />
                 </h1>
                 <p className="mt-0.5 text-white/90 font-medium text-xs sm:text-sm max-w-xl leading-relaxed">
                   Weekly academic progress, attendance logs, homework tasks, and school notices for your children.

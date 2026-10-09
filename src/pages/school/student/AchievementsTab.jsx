@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import api from '@/lib/api/school-client';
 import { soundEngine } from '@/lib/audioManager';
-import { Trophy, Award, Lock, CheckCircle2, Sparkles, Filter, RefreshCw, Star, Coins, Gamepad2, Zap, Rocket, Brain, BookOpen, Compass, Info, X } from 'lucide-react';
+import { Trophy, Award, Lock, CheckCircle2, Sparkles, Filter, RefreshCw, Star, Coins, Gamepad2, Zap, Rocket, Brain, BookOpen, Compass, Info, X, Type } from 'lucide-react';
 
 export default function AchievementsTab() {
   const [achievements, setAchievements] = useState([]);
@@ -14,13 +14,13 @@ export default function AchievementsTab() {
   const [lockedTabNotice, setLockedTabNotice] = useState(null);
 
   const categories = [
-    { key: 'ALL', label: '🎮 All Game Badges' },
-    { key: 'QUIZ_RUSH', label: '⚡ Quiz Rush' },
-    { key: 'MATH_SPRINT', label: '🚀 Math Sprint' },
-    { key: 'MEMORY_MATCH', label: '🧠 Memory Match' },
-    { key: 'WORD_MASTER', label: '🔤 Word Master' },
-    { key: 'TREASURE_HUNT', label: '🗺️ Treasure Hunt' },
-    { key: 'ARCADE_OVERALL', label: '🏆 Arcade Overall' },
+    { key: 'ALL', label: 'All Game Badges', icon: Gamepad2 },
+    { key: 'QUIZ_RUSH', label: 'Quiz Rush', icon: Zap },
+    { key: 'MATH_SPRINT', label: 'Math Sprint', icon: Rocket },
+    { key: 'MEMORY_MATCH', label: 'Memory Match', icon: Brain },
+    { key: 'WORD_MASTER', label: 'Word Master', icon: Type },
+    { key: 'TREASURE_HUNT', label: 'Treasure Hunt', icon: Compass },
+    { key: 'ARCADE_OVERALL', label: 'Arcade Overall', icon: Trophy },
   ];
 
   const tiers = ['ALL', 'BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'DIAMOND', 'MYTHIC'];
@@ -105,24 +105,24 @@ export default function AchievementsTab() {
 
   const getTierBadgeInfo = (tier) => {
     switch (tier) {
-      case 'MYTHIC': return { label: '🟣 MYTHIC', style: 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/60 dark:text-purple-300' };
-      case 'DIAMOND': return { label: '🔷 DIAMOND', style: 'bg-cyan-100 text-cyan-800 border-cyan-300 dark:bg-cyan-950/60 dark:text-cyan-300' };
-      case 'PLATINUM': return { label: '💎 PLATINUM', style: 'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-950/60 dark:text-indigo-300' };
-      case 'GOLD': return { label: '🟡 GOLD', style: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300' };
-      case 'SILVER': return { label: '⚪ SILVER', style: 'bg-slate-200 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200' };
-      default: return { label: '🟤 BRONZE', style: 'bg-amber-900/10 text-amber-900 border-amber-300 dark:bg-amber-950/60 dark:text-amber-400' };
+      case 'MYTHIC': return { label: 'MYTHIC', dot: 'bg-purple-500', style: 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/60 dark:text-purple-300' };
+      case 'DIAMOND': return { label: 'DIAMOND', dot: 'bg-cyan-500', style: 'bg-cyan-100 text-cyan-800 border-cyan-300 dark:bg-cyan-950/60 dark:text-cyan-300' };
+      case 'PLATINUM': return { label: 'PLATINUM', dot: 'bg-indigo-400', style: 'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-950/60 dark:text-indigo-300' };
+      case 'GOLD': return { label: 'GOLD', dot: 'bg-amber-400', style: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300' };
+      case 'SILVER': return { label: 'SILVER', dot: 'bg-slate-400', style: 'bg-slate-200 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200' };
+      default: return { label: 'BRONZE', dot: 'bg-amber-700', style: 'bg-amber-900/10 text-amber-900 border-amber-300 dark:bg-amber-950/60 dark:text-amber-400' };
     }
   };
 
   const getGameCategoryIcon = (cat) => {
     switch (cat) {
-      case 'QUIZ_RUSH': return '⚡';
-      case 'MATH_SPRINT': return '🚀';
-      case 'MEMORY_MATCH': return '🧠';
-      case 'WORD_MASTER': return '🔤';
-      case 'TREASURE_HUNT': return '🗺️';
-      case 'ARCADE_OVERALL': return '🏆';
-      default: return '🎮';
+      case 'QUIZ_RUSH': return Zap;
+      case 'MATH_SPRINT': return Rocket;
+      case 'MEMORY_MATCH': return Brain;
+      case 'WORD_MASTER': return Type;
+      case 'TREASURE_HUNT': return Compass;
+      case 'ARCADE_OVERALL': return Trophy;
+      default: return Gamepad2;
     }
   };
 
@@ -275,12 +275,13 @@ export default function AchievementsTab() {
                 }
               }
             }}
-            className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
               activeCategory === c.key
                 ? 'bg-white text-amber-600 shadow dark:bg-slate-700 dark:text-white'
                 : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
             }`}
           >
+            <c.icon className="size-3.5 shrink-0" />
             {c.label}
           </button>
         ))}
@@ -331,7 +332,7 @@ export default function AchievementsTab() {
             const displayVal = !isTierUnlocked ? 0 : currentVal;
 
             const tierInfo = getTierBadgeInfo(a.tier);
-            const gameCategoryIcon = getGameCategoryIcon(a.category);
+            const GameCategoryIcon = getGameCategoryIcon(a.category);
             const colorStyle = getCardColorStyle(a.category, a.tier);
             const prevTierName = prevTierNameMap[a.tier] || 'previous tier';
 
@@ -348,8 +349,8 @@ export default function AchievementsTab() {
                 }`}
               >
                 {/* Top game icon tag */}
-                <div className="absolute top-2 left-2.5 text-xs opacity-85" title={gameNameMap[a.category] || a.category}>
-                  {gameCategoryIcon}
+                <div className="absolute top-2 left-2.5 opacity-85" title={gameNameMap[a.category] || a.category}>
+                  <GameCategoryIcon className="size-3.5" />
                 </div>
 
                 {/* Lock Overlay Badge if Tier is Locked */}
@@ -361,7 +362,7 @@ export default function AchievementsTab() {
 
                 {/* Achievement main icon */}
                 <div className={`text-3.5xl my-1.5 transition-transform duration-300 group-hover:scale-110 ${!isTierUnlocked ? 'grayscale opacity-40' : !isUnlocked ? 'grayscale opacity-75' : ''}`}>
-                  {a.icon || '🎮'}
+                  {a.icon || <Gamepad2 className="size-8 mx-auto" />}
                 </div>
 
                 <h3 className="text-xs font-black text-white line-clamp-1">{a.title}</h3>
@@ -420,9 +421,12 @@ export default function AchievementsTab() {
       {selectedAch && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
           <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900 text-center animate-in fade-in zoom-in-95">
-            <div className="text-5xl mb-2">{selectedAch.icon || '🎮'}</div>
+            <div className="text-5xl mb-2 flex items-center justify-center">{selectedAch.icon || <Gamepad2 className="size-10" />}</div>
             <div className="flex items-center justify-center gap-2 mb-2">
-              <span className="text-sm">{getGameCategoryIcon(selectedAch.category)}</span>
+              {(() => {
+                const SelectedCategoryIcon = getGameCategoryIcon(selectedAch.category);
+                return <SelectedCategoryIcon className="size-4" />;
+              })()}
               <span className={`inline-block rounded-full px-3 py-0.5 text-xs font-black uppercase border ${getTierBadgeInfo(selectedAch.tier).style}`}>
                 {getTierBadgeInfo(selectedAch.tier).label}
               </span>

@@ -11,7 +11,7 @@ import {
   RotateCcw, Map as MapIcon, ListTodo, Star, CheckCheck, Rocket,
   ArrowRight, ArrowLeft, Sparkles, Activity, Bell,
   TrendingDown, AlertTriangle, RefreshCw, FileText, ClipboardList,
-  BrainCircuit,
+  BrainCircuit, Search, Lock, Atom, FlaskConical, Stethoscope, Tv, Leaf, Calculator, Dumbbell,
 } from "lucide-react";
 import {
   useTodaysPlan, useWeeklyPlanGrouped, useGeneratePlan, useRegeneratePlan,
@@ -120,13 +120,13 @@ function GeneratingView() {
         </p>
         <div className="space-y-3">
           {[
-            { label: "Checking your syllabus", icon: "📚" },
-            { label: "Finding important topics", icon: "🔍" },
-            { label: "Making daily schedule", icon: "📅" },
-            { label: "Preparing for your exam", icon: "🎯" },
+            { label: "Checking your syllabus", icon: BookOpen },
+            { label: "Finding important topics", icon: Search },
+            { label: "Making daily schedule", icon: Calendar },
+            { label: "Preparing for your exam", icon: Target },
           ].map((s, i) => (
             <div key={i} className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm">
-              <span className="text-lg">{s.icon}</span>
+              <span className="text-lg"><s.icon className="size-5 text-indigo-500" /></span>
               <span className="text-sm text-gray-700 font-medium">{s.label}</span>
               <div className="ml-auto w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
             </div>
@@ -337,7 +337,7 @@ function TopicLeaf({ topic, isLast, lineColor }: { topic: any; isLast: boolean; 
         ${topic.status === "in_progress" ? "bg-amber-50/50 border-amber-100" : "hover:bg-slate-50"}`}>
 
         <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${st.dot}`}>
-          {topic.status === "completed" && <span className="text-[9px] text-white font-black">✓</span>}
+          {topic.status === "completed" && <CheckCheck className="size-2.5 text-white" strokeWidth={3} />}
         </div>
 
         <div className="flex-1 min-w-0">
@@ -451,10 +451,10 @@ function SubjectNode({ subject, index }: { subject: any; index: number }) {
   const pct = subject.topicsTotal > 0 ? Math.round((subject.topicsCompleted / subject.topicsTotal) * 100) : 0;
   const chapters: any[] = subject.chapters ?? [];
 
-  const subjectEmoji: Record<string, string> = {
-    physics: "⚛️", chemistry: "🧪", mathematics: "📐", math: "📐", biology: "🌱",
+  const subjectIcons: Record<string, typeof Atom> = {
+    physics: Atom, chemistry: FlaskConical, mathematics: Calculator, math: Calculator, biology: Leaf,
   };
-  const emoji = Object.entries(subjectEmoji).find(([k]) => subject.subjectName?.toLowerCase().includes(k))?.[1] ?? "📚";
+  const SubjectIcon = Object.entries(subjectIcons).find(([k]) => subject.subjectName?.toLowerCase().includes(k))?.[1] ?? BookOpen;
 
   return (
     <div className="mb-4">
@@ -472,7 +472,7 @@ function SubjectNode({ subject, index }: { subject: any; index: number }) {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-lg">{emoji}</span>
+            <SubjectIcon className="size-5 shrink-0" />
             <span className={`text-base font-black ${cfg.color}`}>{subject.subjectName}</span>
           </div>
           <div className="flex items-center gap-2 mt-1">
@@ -889,7 +889,7 @@ function NoteHistoryReviewCard({ session, onNavigate }: {
 
 // ─── Micro Goals Card ──────────────────────────────────────────────────────────
 
-type MicroGoal = { id: string; icon: string; text: string; sub: string; url: string };
+type MicroGoal = { id: string; icon: typeof RotateCcw; text: string; sub: string; url: string };
 
 function MicroGoalsCard({ weakTopics, revisionTopics, pendingPYQTopics, highNegativeTopics }: {
   weakTopics: Array<{ topicId: string; topicName: string; subjectName: string; accuracy: number }>;
@@ -905,16 +905,16 @@ function MicroGoalsCard({ weakTopics, revisionTopics, pendingPYQTopics, highNega
   const goals: MicroGoal[] = [];
 
   revisionTopics.filter(t => t.isOverdue).slice(0, 2).forEach(t =>
-    goals.push({ id: `rev-${t.topicId}`, icon: "🔁", text: `Revise ${t.topicName}`, sub: `${t.subjectName} · Overdue`, url: `/school/student/ai-study/${t.topicId}` })
+    goals.push({ id: `rev-${t.topicId}`, icon: RotateCcw, text: `Revise ${t.topicName}`, sub: `${t.subjectName} · Overdue`, url: `/school/student/ai-study/${t.topicId}` })
   );
   weakTopics.slice(0, 2).forEach(t =>
-    goals.push({ id: `wk-${t.topicId}`, icon: "⚡", text: `Solve 10 ${t.topicName} questions`, sub: `${t.subjectName} · ${t.accuracy}% accuracy`, url: `/school/student/quiz?topicId=${t.topicId}` })
+    goals.push({ id: `wk-${t.topicId}`, icon: Zap, text: `Solve 10 ${t.topicName} questions`, sub: `${t.subjectName} · ${t.accuracy}% accuracy`, url: `/school/student/quiz?topicId=${t.topicId}` })
   );
   highNegativeTopics.slice(0, 1).forEach(t =>
-    goals.push({ id: `neg-${t.topicId}`, icon: "🎯", text: `Redo ${t.topicName} PYQ`, sub: `${t.subjectName} · ${t.wrong}/${t.attempted} wrong`, url: `/school/student/quiz?topicId=${t.topicId}` })
+    goals.push({ id: `neg-${t.topicId}`, icon: Target, text: `Redo ${t.topicName} PYQ`, sub: `${t.subjectName} · ${t.wrong}/${t.attempted} wrong`, url: `/school/student/quiz?topicId=${t.topicId}` })
   );
   pendingPYQTopics.slice(0, 2).forEach(t =>
-    goals.push({ id: `pyq-${t.topicId}`, icon: "📋", text: `Attempt ${t.topicName} PYQ`, sub: `${t.subjectName} · Not attempted`, url: `/school/student/quiz?topicId=${t.topicId}` })
+    goals.push({ id: `pyq-${t.topicId}`, icon: ClipboardList, text: `Attempt ${t.topicName} PYQ`, sub: `${t.subjectName} · Not attempted`, url: `/school/student/quiz?topicId=${t.topicId}` })
   );
 
   const display = goals.slice(0, 5);
@@ -953,8 +953,8 @@ function MicroGoalsCard({ weakTopics, revisionTopics, pendingPYQTopics, highNega
                 </button>
                 <div className="flex-1 min-w-0">
                   <button onClick={() => !done && navigate(g.url)}
-                    className={`text-xs font-medium text-left leading-snug ${done ? "line-through text-gray-400" : "text-gray-800 hover:text-indigo-600"}`}>
-                    {g.icon} {g.text}
+                    className={`text-xs font-medium text-left leading-snug inline-flex items-center gap-1.5 ${done ? "line-through text-gray-400" : "text-gray-800 hover:text-indigo-600"}`}>
+                    <g.icon className="size-3 shrink-0" /> {g.text}
                   </button>
                   <div className="text-[10px] text-gray-400 mt-0.5">{g.sub}</div>
                 </div>
@@ -985,46 +985,46 @@ function SmartRemindersCard({ revisionTopics, weeklyActivity, pendingMockTests, 
   const activeDays = weeklyActivity.filter(d => d.minutesStudied > 0).length;
 
   type Sev = "high" | "medium" | "info";
-  const reminders: Array<{ id: string; icon: string; text: string; sev: Sev; action?: { label: string; fn: () => void } }> = [];
+  const reminders: Array<{ id: string; icon: typeof AlertTriangle; text: string; sev: Sev; action?: { label: string; fn: () => void } }> = [];
 
   if (overdueCount > 0)
     reminders.push({
-      id: "overdue", icon: "⚠️", sev: "high",
+      id: "overdue", icon: AlertTriangle, sev: "high",
       text: `${overdueCount} topic${overdueCount > 1 ? "s" : ""} overdue for revision`,
       action: { label: "Revise now →", fn: () => onTabChange("revision") }
     });
 
   if (activeDays < 3)
     reminders.push({
-      id: "inactive", icon: "📉", sev: activeDays === 0 ? "high" : "medium",
+      id: "inactive", icon: TrendingDown, sev: activeDays === 0 ? "high" : "medium",
       text: `Only ${activeDays} active day${activeDays !== 1 ? "s" : ""} this week — streak at risk`,
       action: { label: "Study today →", fn: () => onTabChange("today") }
     });
 
   if (pendingMockTests.length > 0)
     reminders.push({
-      id: "mock", icon: "📝", sev: "info",
+      id: "mock", icon: FileText, sev: "info",
       text: `${pendingMockTests.length} mock test${pendingMockTests.length > 1 ? "s" : ""} available`,
       action: { label: "Take now →", fn: () => navigate("/school/student/assessments") }
     });
 
   if (forgottenConcepts.length > 3)
     reminders.push({
-      id: "forgotten", icon: "🔁", sev: "medium",
+      id: "forgotten", icon: RotateCcw, sev: "medium",
       text: `${forgottenConcepts.length} concepts not revisited in 14+ days`,
       action: { label: "View →", fn: () => onTabChange("revision") }
     });
 
   if (weakTopics.length > 5)
     reminders.push({
-      id: "weak", icon: "⚡", sev: "medium",
+      id: "weak", icon: Zap, sev: "medium",
       text: `${weakTopics.length} weak topics need practice`,
       action: { label: "Practice →", fn: () => onTabChange("weakness") }
     });
 
   if (pendingPYQTopics.length > 0)
     reminders.push({
-      id: "pyq", icon: "📋", sev: "info",
+      id: "pyq", icon: ClipboardList, sev: "info",
       text: `${pendingPYQTopics.length} topics with no PYQ attempts yet`,
       action: { label: "Go to Backlogs →", fn: () => { onTabChange("backlogs"); onBacklogPageChange("pyq"); } }
     });
@@ -1064,7 +1064,7 @@ function SmartRemindersCard({ revisionTopics, weeklyActivity, pendingMockTests, 
               onClick={r.action ? r.action.fn : undefined}
               className={`px-4 py-2.5 ${SEV[r.sev].row} ${r.action ? "cursor-pointer hover:brightness-95 transition-all" : ""}`}>
               <div className="flex items-start gap-2">
-                <span className="text-sm shrink-0 mt-px">{r.icon}</span>
+                <r.icon className="size-3.5 shrink-0 mt-px" />
                 <div className="flex-1 min-w-0">
                   <span className={`text-xs font-medium leading-snug block ${SEV[r.sev].text}`}>{r.text}</span>
                   {r.action && (
@@ -1172,30 +1172,30 @@ function AISarthiCard({ todayItems, streak, xpPoints, progressReport, weeklyActi
 
   // ── Build personalised insights ───────────────────────────────────────────────
   type InsightSeverity = "warning" | "success" | "info";
-  const insights: { icon: string; text: string; sev: InsightSeverity }[] = [];
+  const insights: { icon: typeof TrendingDown; text: string; sev: InsightSeverity }[] = [];
 
   if (consistencyDropped)
-    insights.push({ icon: "📉", text: "Your consistency dropped this week.", sev: "warning" });
+    insights.push({ icon: TrendingDown, text: "Your consistency dropped this week.", sev: "warning" });
   if (lectureImbalance)
-    insights.push({ icon: "📺", text: "You are spending too much time watching lectures vs solving questions.", sev: "warning" });
+    insights.push({ icon: Tv, text: "You are spending too much time watching lectures vs solving questions.", sev: "warning" });
   if (overdueCount > 5 || (syllabusCompleted > 0 && overdueCount / syllabusCompleted > 0.3))
-    insights.push({ icon: "🔁", text: "Your revision gap is too high. Schedule revision sessions.", sev: "warning" });
+    insights.push({ icon: RotateCcw, text: "Your revision gap is too high. Schedule revision sessions.", sev: "warning" });
   if (testReadiness > 0 && testReadiness < 50)
-    insights.push({ icon: "📝", text: "Mock test accuracy is below 50%. Increase practice question frequency.", sev: "warning" });
+    insights.push({ icon: FileText, text: "Mock test accuracy is below 50%. Increase practice question frequency.", sev: "warning" });
   if (weakTopicsCount >= 5)
-    insights.push({ icon: "⚠️", text: `${weakTopicsCount} weak topics need focused practice this week.`, sev: "warning" });
+    insights.push({ icon: AlertTriangle, text: `${weakTopicsCount} weak topics need focused practice this week.`, sev: "warning" });
   if (bestTimeInsight)
-    insights.push({ icon: "⏰", text: bestTimeInsight, sev: "info" });
+    insights.push({ icon: Clock, text: bestTimeInsight, sev: "info" });
   if (streak >= 7)
-    insights.push({ icon: "🔥", text: `${streak}-day streak! You're building an unbreakable habit.`, sev: "success" });
+    insights.push({ icon: Flame, text: `${streak}-day streak! You're building an unbreakable habit.`, sev: "success" });
   if (syllabusPct >= 80)
-    insights.push({ icon: "🚀", text: "Syllabus almost complete — start full-length mock tests now.", sev: "success" });
+    insights.push({ icon: Rocket, text: "Syllabus almost complete — start full-length mock tests now.", sev: "success" });
   if (testReadiness >= 75)
-    insights.push({ icon: "💪", text: "Excellent test accuracy — keep the momentum.", sev: "success" });
+    insights.push({ icon: Dumbbell, text: "Excellent test accuracy — keep the momentum.", sev: "success" });
   if (insights.length === 0 && syllabusPct === 0)
-    insights.push({ icon: "✨", text: "Complete more study sessions to unlock personalised insights.", sev: "info" });
+    insights.push({ icon: Sparkles, text: "Complete more study sessions to unlock personalised insights.", sev: "info" });
   if (insights.length === 0)
-    insights.push({ icon: "📚", text: "You're on track. Keep completing tasks consistently.", sev: "info" });
+    insights.push({ icon: BookOpen, text: "You're on track. Keep completing tasks consistently.", sev: "info" });
 
   // Sort: warnings first, then info, then success
   const ORDER: Record<InsightSeverity, number> = { warning: 0, info: 1, success: 2 };
@@ -1208,12 +1208,12 @@ function AISarthiCard({ todayItems, streak, xpPoints, progressReport, weeklyActi
   };
 
   const METRICS = [
-    { label: "Syllabus", value: `${syllabusPct}%`, score: syllabusPct, icon: "📚" },
-    { label: "Consistency", value: `${streak} day streak`, score: Math.min(100, streak * 14), icon: "🔥" },
-    { label: "Test Ready", value: doneSessions.length > 0 ? `${testReadiness}%` : "—", score: testReadiness, icon: "📝" },
-    { label: "XP Points", value: xpPoints.toLocaleString(), score: -1, icon: "⭐" },
-    { label: "Rev. Health", value: `${revisionHealth}%`, score: revisionHealth, icon: "🔁" },
-    { label: "Weak Topics", value: String(weakTopicsCount), score: weakTopicsCount === 0 ? 100 : weakTopicsCount > 10 ? 10 : 50, icon: "⚡" },
+    { label: "Syllabus", value: `${syllabusPct}%`, score: syllabusPct, icon: BookOpen },
+    { label: "Consistency", value: `${streak} day streak`, score: Math.min(100, streak * 14), icon: Flame },
+    { label: "Test Ready", value: doneSessions.length > 0 ? `${testReadiness}%` : "—", score: testReadiness, icon: FileText },
+    { label: "XP Points", value: xpPoints.toLocaleString(), score: -1, icon: Star },
+    { label: "Rev. Health", value: `${revisionHealth}%`, score: revisionHealth, icon: RotateCcw },
+    { label: "Weak Topics", value: String(weakTopicsCount), score: weakTopicsCount === 0 ? 100 : weakTopicsCount > 10 ? 10 : 50, icon: Zap },
   ];
 
   return (
@@ -1231,7 +1231,7 @@ function AISarthiCard({ todayItems, streak, xpPoints, progressReport, weeklyActi
       <div className="grid grid-cols-3 divide-x divide-y divide-gray-100 border-b border-gray-100">
         {METRICS.map(m => (
           <div key={m.label} className={`px-2 py-2.5 text-center ${m.score >= 0 ? metricBg(m.score) : "bg-slate-50"}`}>
-            <div className="text-base mb-0.5">{m.icon}</div>
+            <div className="mb-0.5 flex items-center justify-center"><m.icon className="size-4" /></div>
             <div className={`text-sm font-bold leading-none ${m.score >= 0 ? metricColor(m.score) : "text-slate-600"}`}>
               {m.value}
             </div>
@@ -1245,7 +1245,7 @@ function AISarthiCard({ todayItems, streak, xpPoints, progressReport, weeklyActi
         <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Insights</p>
         {insights.slice(0, 3).map((ins, i) => (
           <div key={i} className={`flex gap-2 items-start text-xs px-2.5 py-2 rounded-lg border ${SEV_STYLE[ins.sev]} leading-snug`}>
-            <span className="shrink-0 text-sm">{ins.icon}</span>
+            <ins.icon className="size-3.5 shrink-0 mt-0.5" />
             <span className="font-medium">{ins.text}</span>
           </div>
         ))}
@@ -1395,7 +1395,7 @@ function RevisionTopicCard({ topic, isNoteOpen, noteText, onToggleNote, onNoteCh
             <span className="text-gray-400 truncate">{topic.chapterName}</span>
           </div>
           <div className="flex items-center gap-4 mt-2 text-[11px] text-gray-500">
-            <span>📅 Learned <strong className="text-gray-700">{topic.learnedOn}</strong></span>
+            <span className="inline-flex items-center gap-1"><Calendar className="size-3 shrink-0" /> Learned <strong className="text-gray-700">{topic.learnedOn}</strong></span>
             <span className={`font-semibold ${topic.isOverdue ? "text-red-600" : "text-teal-600"}`}>
               → {topic.isOverdue ? "Overdue" : `Revise ${topic.nextRevisionLabel}`}
             </span>

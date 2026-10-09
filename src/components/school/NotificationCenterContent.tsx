@@ -29,7 +29,7 @@ import api from "@/lib/api/school-client";
 import { createNotificationSocket } from "@/lib/notification-socket";
 import { toast } from "sonner";
 import { useSchoolNotification } from "@/context/SchoolNotificationContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import "./NotificationCenterContent.css";
 
 interface NotificationCenterContentProps {
@@ -81,6 +81,7 @@ export default function NotificationCenterContent({
 }: NotificationCenterContentProps) {
   const { fetchUnreadCount: updateGlobalBadge } = useSchoolNotification();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -89,7 +90,10 @@ export default function NotificationCenterContent({
   const [totalUnread, setTotalUnread] = useState(0);
 
   // Filters
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState(() => {
+    const requestedTab = searchParams.get("tab");
+    return requestedTab && CATEGORIES.some((c) => c.key === requestedTab) ? requestedTab : "all";
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 

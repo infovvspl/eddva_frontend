@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-  UserCheck, UserX, Clock, Calendar, TrendingUp, Plus, Eye, Edit2, 
-  Download, RefreshCw, CheckCircle2, AlertCircle, Sparkles, 
-  Users, X, Info, ChevronRight, Filter, Search, RotateCcw
+  UserCheck, UserX, Clock, Calendar, TrendingUp, Plus, Eye, Edit2,
+  Download, RefreshCw, CheckCircle2, AlertCircle, Sparkles,
+  Users, X, Info, ChevronRight, Filter, Search, RotateCcw, Circle
 } from 'lucide-react';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -1031,7 +1031,7 @@ const AttendanceSystem: React.FC = () => {
                                             : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900'
                                         }`}
                                       >
-                                        🟢 Present
+                                        <Circle className="inline size-2 -mt-0.5 mr-1 fill-emerald-500 text-emerald-500" /> Present
                                       </button>
                                       
                                       {/* Absent Button */}
@@ -1043,7 +1043,7 @@ const AttendanceSystem: React.FC = () => {
                                             : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900'
                                         }`}
                                       >
-                                        🔴 Absent
+                                        <Circle className="inline size-2 -mt-0.5 mr-1 fill-rose-500 text-rose-500" /> Absent
                                       </button>
 
                                       {/* Late Button */}
@@ -1055,7 +1055,7 @@ const AttendanceSystem: React.FC = () => {
                                             : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900'
                                         }`}
                                       >
-                                        🟡 Late
+                                        <Circle className="inline size-2 -mt-0.5 mr-1 fill-amber-500 text-amber-500" /> Late
                                       </button>
 
                                       {/* Leave Button */}
@@ -1067,7 +1067,7 @@ const AttendanceSystem: React.FC = () => {
                                             : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900'
                                         }`}
                                       >
-                                        ⚪ Leave
+                                        <Circle className="inline size-2 -mt-0.5 mr-1 fill-slate-400 text-slate-400" /> Leave
                                       </button>
                                     </div>
                                   </td>
@@ -1115,7 +1115,7 @@ const AttendanceSystem: React.FC = () => {
                                       : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-800/80'
                                   }`}
                                 >
-                                  🟢 Present
+                                  <Circle className="inline size-2 -mt-0.5 mr-1 fill-emerald-500 text-emerald-500" /> Present
                                 </button>
                                 {/* Absent */}
                                 <button
@@ -1126,7 +1126,7 @@ const AttendanceSystem: React.FC = () => {
                                       : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-800/80'
                                   }`}
                                 >
-                                  🔴 Absent
+                                  <Circle className="inline size-2 -mt-0.5 mr-1 fill-rose-500 text-rose-500" /> Absent
                                 </button>
                                 {/* Late */}
                                 <button
@@ -1137,7 +1137,7 @@ const AttendanceSystem: React.FC = () => {
                                       : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-800/80'
                                   }`}
                                 >
-                                  🟡 Late
+                                  <Circle className="inline size-2 -mt-0.5 mr-1 fill-amber-500 text-amber-500" /> Late
                                 </button>
                                 {/* Leave */}
                                 <button
@@ -1148,7 +1148,7 @@ const AttendanceSystem: React.FC = () => {
                                       : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-800/80'
                                   }`}
                                 >
-                                  ⚪ Leave
+                                  <Circle className="inline size-2 -mt-0.5 mr-1 fill-slate-400 text-slate-400" /> Leave
                                 </button>
                               </div>
 
@@ -1224,19 +1224,19 @@ const AttendanceSystem: React.FC = () => {
                           <span className="font-bold text-slate-800 dark:text-white">{liveStats.total}</span>
                         </div>
                         <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-                          <span>🟢 Present</span>
+                          <span className="inline-flex items-center gap-1"><Circle className="size-2 fill-emerald-500 text-emerald-500" /> Present</span>
                           <span className="font-bold text-emerald-600">{liveStats.present}</span>
                         </div>
                         <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-                          <span>🟡 Late Arrivals</span>
+                          <span className="inline-flex items-center gap-1"><Circle className="size-2 fill-amber-500 text-amber-500" /> Late Arrivals</span>
                           <span className="font-bold text-amber-500">{liveStats.late}</span>
                         </div>
                         <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-                          <span>🔴 Absent</span>
+                          <span className="inline-flex items-center gap-1"><Circle className="size-2 fill-rose-500 text-rose-500" /> Absent</span>
                           <span className="font-bold text-rose-500">{liveStats.absent}</span>
                         </div>
                         <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-                          <span>⚪ On Leave</span>
+                          <span className="inline-flex items-center gap-1"><Circle className="size-2 fill-slate-400 text-slate-400" /> On Leave</span>
                           <span className="font-bold text-slate-500 dark:text-slate-400">{liveStats.leave}</span>
                         </div>
                       </div>
@@ -1544,9 +1544,11 @@ const AttendanceSystem: React.FC = () => {
                             r.status.toLowerCase() === 'late' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
                             'bg-slate-50 text-slate-600 border border-slate-100'
                           }`}>
-                            {r.status.toLowerCase() === 'present' ? '🟢 ' :
-                             r.status.toLowerCase() === 'absent' ? '🔴 ' :
-                             r.status.toLowerCase() === 'late' ? '🟡 ' : '⚪ '}
+                            <Circle className={`size-2 ${
+                              r.status.toLowerCase() === 'present' ? 'fill-emerald-500 text-emerald-500' :
+                              r.status.toLowerCase() === 'absent' ? 'fill-rose-500 text-rose-500' :
+                              r.status.toLowerCase() === 'late' ? 'fill-amber-500 text-amber-500' : 'fill-slate-400 text-slate-400'
+                            }`} />
                             {r.status}
                           </span>
                         </td>

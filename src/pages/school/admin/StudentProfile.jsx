@@ -4,7 +4,7 @@ import {
   User, GraduationCap, Calendar, BarChart2, DollarSign, 
   Mail, Smartphone, MapPin, ArrowLeft, Download, Users, Phone, Shield,
   Edit2, Clock, CheckCircle, AlertCircle, TrendingUp, HeartPulse, Briefcase, FileText, Printer, Share2, Loader2, Send, Key, X, Plus, Trash2,
-  UserX, FileCheck, CheckCircle2, XCircle, UserCheck
+  UserX, FileCheck, CheckCircle2, XCircle, UserCheck, Lock
 } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/admin/Modal';
@@ -816,7 +816,7 @@ export default function StudentProfile() {
                   className="w-full rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 text-sm font-bold text-slate-900 dark:text-white outline-none focus:border-blue-500 transition-colors"
                 />
                 {!sendCredsForm.parentEmail && (
-                  <p className="mt-1.5 text-[10px] font-bold text-amber-500 uppercase">⚠ No parent email on record — enter one above</p>
+                  <p className="mt-1.5 text-[10px] font-bold text-amber-500 uppercase flex items-center gap-1"><AlertCircle className="size-3 shrink-0" /> No parent email on record — enter one above</p>
                 )}
               </div>
 
@@ -837,8 +837,8 @@ export default function StudentProfile() {
 
               {/* Info box */}
               <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30">
-                <p className="text-xs font-bold text-blue-700 dark:text-blue-400 leading-relaxed">
-                  📧 A beautiful welcome email will be sent to the parent with their login credentials and a link to the parent portal.
+                <p className="text-xs font-bold text-blue-700 dark:text-blue-400 leading-relaxed flex items-start gap-1.5">
+                  <Mail className="size-3.5 shrink-0 mt-0.5" /> A beautiful welcome email will be sent to the parent with their login credentials and a link to the parent portal.
                 </p>
               </div>
 
@@ -1309,8 +1309,8 @@ export default function StudentProfile() {
                           <span className="text-[10px] font-bold text-slate-400 uppercase">Username / Email</span>
                           <div className="text-sm font-extrabold text-slate-700 dark:text-slate-200 mt-1 select-all">{student.email}</div>
                         </div>
-                        <div className="p-3 rounded-2xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100/50 dark:border-blue-900/30 text-[10px] font-bold text-blue-600 leading-relaxed mt-2">
-                          🔒 Password can be reset by sending a reset link or updating via user management.
+                        <div className="p-3 rounded-2xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100/50 dark:border-blue-900/30 text-[10px] font-bold text-blue-600 leading-relaxed mt-2 flex items-start gap-1.5">
+                          <Lock className="size-3 shrink-0 mt-0.5" /> Password can be reset by sending a reset link or updating via user management.
                         </div>
                       </div>
                     </div>
@@ -1862,9 +1862,9 @@ export default function StudentProfile() {
                                 </td>
                                 <td className="p-4 text-center font-extrabold text-blue-600 dark:text-blue-400">{s.score ?? 0}</td>
                                 <td className="p-4 text-center text-[11px]">
-                                  <span className="text-emerald-600 dark:text-emerald-400">{s.correctCount ?? 0} ✅</span>
+                                  <span className="text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-0.5">{s.correctCount ?? 0} <CheckCircle2 className="size-3 shrink-0" /></span>
                                   <span className="mx-1.5 text-slate-300">/</span>
-                                  <span className="text-rose-600 dark:text-rose-400">{s.wrongCount ?? 0} ❌</span>
+                                  <span className="text-rose-600 dark:text-rose-400 inline-flex items-center gap-0.5">{s.wrongCount ?? 0} <XCircle className="size-3 shrink-0" /></span>
                                 </td>
                               </tr>
                             ))

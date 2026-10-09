@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useConfirm } from "@/context/ConfirmContext";
 import {
-  FileText, Key, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target, Trophy, Clock
+  FileText, Key, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target, Trophy, Clock, Pencil, Eye, Check, AlertTriangle
 } from "lucide-react";
 import AssessmentContentRenderer from "@/components/school/AssessmentContentRenderer";
 import GlassCard from "@/components/school/GlassCard";
@@ -240,7 +240,7 @@ function ContentEditor({
               : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
           >
-            ✏️ Edit Test
+            <Pencil className="inline size-3.5 mr-1 -mt-0.5" /> Edit Test
           </button>
           <button
             type="button"
@@ -250,7 +250,7 @@ function ContentEditor({
               : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
           >
-            👁️ Preview (Student View)
+            <Eye className="inline size-3.5 mr-1 -mt-0.5" /> Preview (Student View)
           </button>
         </div>
 
@@ -1615,19 +1615,20 @@ const AssessmentSystem: React.FC = () => {
                       indexed textbook, or did some chapters fall back to general knowledge? */}
                   {aiGrounding && contentText && (
                     (aiGrounding.ungroundedChapters && aiGrounding.ungroundedChapters.length > 0) ? (
-                      <div className="rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-xs font-semibold text-amber-800">
-                        ⚠ Not from the textbook (used general knowledge) for: {aiGrounding.ungroundedChapters.join(", ")}.
+                      <div className="rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-xs font-semibold text-amber-800 flex items-start gap-1.5">
+                        <AlertTriangle className="size-3.5 shrink-0 mt-0.5" />
+                        <span>Not from the textbook (used general knowledge) for: {aiGrounding.ungroundedChapters.join(", ")}.
                         {aiGrounding.groundedChapters && aiGrounding.groundedChapters.length > 0 && (
                           <> Grounded from the textbook for: {aiGrounding.groundedChapters.join(", ")}.</>
-                        )} Upload these chapters' PDFs under Textbook Coverage for book-only questions.
+                        )} Upload these chapters' PDFs under Textbook Coverage for book-only questions.</span>
                       </div>
                     ) : aiGrounding.grounded ? (
-                      <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-2.5 text-xs font-semibold text-emerald-800">
-                        ✓ Generated strictly from your indexed textbook.
+                      <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-2.5 text-xs font-semibold text-emerald-800 flex items-center gap-1.5">
+                        <Check className="size-3.5 shrink-0" /> Generated strictly from your indexed textbook.
                       </div>
                     ) : (
-                      <div className="rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-xs font-semibold text-amber-800">
-                        ⚠ This chapter has no indexed textbook, so questions were written from general knowledge. Upload the chapter PDF under Textbook Coverage for book-only questions.
+                      <div className="rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-xs font-semibold text-amber-800 flex items-start gap-1.5">
+                        <AlertTriangle className="size-3.5 shrink-0 mt-0.5" /> This chapter has no indexed textbook, so questions were written from general knowledge. Upload the chapter PDF under Textbook Coverage for book-only questions.
                       </div>
                     )
                   )}

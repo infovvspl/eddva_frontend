@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { BookOpen, ChevronRight, Flame, PlayCircle, Radio, TrendingUp, Trophy, Zap } from "lucide-react";
+import { BookOpen, ChevronRight, Flame, PartyPopper, PlayCircle, Radio, Rocket, TrendingUp, Trophy, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { useStudentMe, useMyCourses, useStudentDashboard } from "@/hooks/use-student";
@@ -231,13 +231,13 @@ export default function StudentDashboard() {
                 </span>
               )}
 
-              <h1 className="text-xl sm:text-3xl font-extrabold leading-tight">
-                Welcome, {firstName}! 👋
+              <h1 className="text-xl sm:text-3xl font-extrabold leading-tight flex items-center gap-2">
+                Welcome, {firstName}! <PartyPopper className="size-6 shrink-0" />
               </h1>
 
-              <p className="text-white/80 text-xs sm:text-sm">
+              <p className="text-white/80 text-xs sm:text-sm flex items-center gap-1.5">
                 {courses.length > 0
-                  ? `You've completed ${avgProgress}% of your journey. Stay consistent 🚀`
+                  ? <>You've completed {avgProgress}% of your journey. Stay consistent <Rocket className="size-3.5 inline shrink-0" /></>
                   : "Enroll in a course to start tracking progress here."}
               </p>
 

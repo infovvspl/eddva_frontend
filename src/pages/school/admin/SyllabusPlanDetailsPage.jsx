@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, BookOpen, Calendar, Clock, User, Layers,
-  Sparkles, CheckCircle2, AlertCircle, Edit3, Shield, ListTree, ChevronRight
+  Sparkles, CheckCircle2, AlertCircle, Edit3, Shield, ListTree, ChevronRight, Zap, X
 } from 'lucide-react';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import { toast } from 'sonner';
@@ -319,8 +319,8 @@ export default function SyllabusPlanDetailsPage() {
                         </span>
                       </div>
                       {!isTopicDone && topicProg > 0 && (
-                        <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300">
-                          ⚡ Carried forward as pending execution
+                        <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 inline-flex items-center gap-1">
+                          <Zap className="size-2.5 shrink-0" /> Carried forward as pending execution
                         </span>
                       )}
                     </div>
@@ -545,7 +545,7 @@ export default function SyllabusPlanDetailsPage() {
                 onClick={() => setUpdatingTopic(null)}
                 className="p-1 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
               >
-                ✕
+                <X className="size-4" />
               </button>
             </div>
 

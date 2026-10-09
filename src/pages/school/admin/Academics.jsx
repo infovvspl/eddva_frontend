@@ -248,13 +248,6 @@ export default function Academics() {
                   ]}
                   className="w-full"
                 />
-                <button
-                  onClick={handleAddSection}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-blue-500 bg-white px-4 text-sm font-bold text-blue-600 hover:bg-blue-50 dark:bg-surface-900 dark:hover:bg-blue-950/20"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Section
-                </button>
               </div>
             )}
           </div>
@@ -282,13 +275,6 @@ export default function Academics() {
                 className="w-full"
               />
             </div>
-            <button
-              onClick={handleAddSection}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-blue-50 bg-white px-4 text-sm font-bold text-blue-600 hover:bg-blue-50 dark:bg-surface-900 dark:hover:bg-blue-950/20"
-            >
-              <Plus className="h-4 w-4" />
-              Add Section
-            </button>
           </div>
         </div>
 

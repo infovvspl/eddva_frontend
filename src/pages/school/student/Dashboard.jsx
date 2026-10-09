@@ -25,7 +25,8 @@ import {
   Pencil,
   Award,
   Video,
-  Pi
+  Pi,
+  PartyPopper
 } from 'lucide-react';
 import SmartCalendar from '@/components/school/SmartCalendar';
 import './Dashboard.css';
@@ -458,8 +459,9 @@ export default function Dashboard() {
             <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
             
             <div className="relative z-10 p-8 sm:p-10 max-w-lg">
-              <h1 className="text-[28px] sm:text-[34px] leading-tight font-bold text-white mb-3">
-                Welcome back,<br/>{user?.name?.split(' ')[0] || 'Abhijit'}! 👋
+              <h1 className="text-[28px] sm:text-[34px] leading-tight font-bold text-white mb-3 flex items-center gap-2 flex-wrap">
+                <span>Welcome back,<br/>{user?.name?.split(' ')[0] || 'Abhijit'}!</span>
+                <PartyPopper className="size-7 shrink-0 text-white/90" />
               </h1>
               <p className="text-white/90 text-xs sm:text-[13px] font-medium leading-relaxed tracking-wide max-w-xs">
                 Stay curious, stay focused and keep growing every day.

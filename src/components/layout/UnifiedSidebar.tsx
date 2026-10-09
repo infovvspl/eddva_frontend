@@ -1,9 +1,23 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { ChevronLeft, LogOut } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { ChevronDown, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarProvider,
+  SidebarSeparator,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar";
 
 /* ─────────────────────────────── Types ─────────────────────────────── */
 
@@ -57,361 +71,175 @@ export interface UnifiedSidebarProps {
   mobileBreakpoint?: "md" | "lg";
 }
 
-/* ─────────────────────── Dimension constants ──────────────────────── */
-
-const EXPANDED_WIDTH = 210;
-const COLLAPSED_WIDTH = 72;
-
-/* ──────────────────────── Tooltip Component ───────────────────────── */
-
-function SidebarTooltip({ label, show }: { label: string; show: boolean }) {
-  return (
-    <AnimatePresence>
-      {show && (
-        <motion.div
-          initial={{ opacity: 0, x: -4 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -4 }}
-          transition={{ duration: 0.15, delay: 0.08 }}
-          className="absolute left-full top-1/2 -translate-y-1/2 ml-3 z-[200] pointer-events-none"
-        >
-          <div className="whitespace-nowrap rounded-lg bg-slate-900 px-3 py-1.5 text-[11px] font-semibold text-white shadow-xl">
-            {label}
-            {/* Arrow */}
-            <div className="absolute right-full top-1/2 -translate-y-1/2 border-[5px] border-transparent border-r-slate-900" />
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
+function isItemActive(item: SidebarNavItem, pathname: string) {
+  if (item.end) return pathname === item.path;
+  return pathname === item.path || pathname.startsWith(`${item.path}/`);
 }
 
-/* ──────────────────────── Nav Item Component ──────────────────────── */
+/**
+ * Bridges the externally-controlled `mobileOpen`/`onMobileClose` props onto
+ * SidebarProvider's internal mobile-sheet state (which has no controlled-prop
+ * escape hatch of its own) — lets every caller keep owning "is the drawer
+ * open" without reaching into shadcn's context themselves. Also closes the
+ * drawer on route change, matching the previous behavior.
+ */
+function MobileBridge({
+  mobileOpen,
+  onMobileClose,
+}: {
+  mobileOpen: boolean;
+  onMobileClose: () => void;
+}) {
+  const { openMobile, setOpenMobile } = useSidebar();
+  const wasOpen = useRef(openMobile);
+  const location = useLocation();
 
-function SidebarItem({
+  useEffect(() => {
+    setOpenMobile(mobileOpen);
+  }, [mobileOpen, setOpenMobile]);
+
+  useEffect(() => {
+    if (wasOpen.current && !openMobile) onMobileClose();
+    wasOpen.current = openMobile;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openMobile]);
+
+  useEffect(() => {
+    if (mobileOpen) onMobileClose();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
+  return null;
+}
+
+function NavItemButton({
   item,
   collapsed,
+  isMobile,
   onNavClick,
   onAction,
   badgeOverlay,
 }: {
   item: SidebarNavItem;
   collapsed: boolean;
+  isMobile: boolean;
   onNavClick?: (path: string) => void;
   onAction?: (action: string) => void;
   badgeOverlay?: React.ReactNode;
 }) {
-  const [hovered, setHovered] = useState(false);
+  const location = useLocation();
+  const tooltip = collapsed && !isMobile ? item.label : undefined;
 
-  // Action button (e.g. logout)
-  // Action button (e.g. logout)
+  const buttonClassName = cn(
+    "h-11 rounded-2xl px-3 text-[13.5px] font-semibold tracking-tight text-slate-500 transition-all duration-200 dark:text-slate-400",
+    "data-[active=true]:bg-blue-50 data-[active=true]:text-blue-600 data-[active=true]:font-bold data-[active=true]:shadow-sm",
+    "dark:data-[active=true]:bg-blue-950/40 dark:data-[active=true]:text-blue-400",
+    "hover:bg-slate-50 dark:hover:bg-slate-800/40",
+    "group-data-[collapsible=icon]:data-[active=true]:bg-blue-600 group-data-[collapsible=icon]:data-[active=true]:text-white"
+  );
+
   if (item.action) {
     return (
-      <div className="relative" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
-        <button
-          type="button"
-          onClick={() => onAction?.(item.action!)}
-          className={cn(
-            "group relative flex w-full items-center rounded-xl text-[13px] font-bold tracking-tight transition-all duration-200 hover:translate-x-0.5",
-            collapsed
-              ? "h-[46px] w-[46px] mx-auto justify-center"
-              : "h-[50px] gap-3.5 px-3.5",
-            "text-slate-500 hover:text-slate-800 hover:bg-slate-50/80 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/40"
-          )}
-        >
-          <div className={cn(
-            "flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105",
-            collapsed ? "w-5 h-5" : "w-[18px] h-[18px]"
-          )}>
-            <item.icon className="w-full h-full" />
-          </div>
-          {!collapsed && (
-            <span className="truncate transition-[opacity,width] duration-200">{item.label}</span>
-          )}
-        </button>
-        {collapsed && <SidebarTooltip label={item.label} show={hovered} />}
-      </div>
+      <SidebarMenuButton onClick={() => onAction?.(item.action!)} tooltip={tooltip} className={buttonClassName}>
+        <item.icon className="size-[18px]" />
+        <span className="truncate">{item.label}</span>
+      </SidebarMenuButton>
     );
   }
 
+  const active = isItemActive(item, location.pathname);
+
   return (
-    <div className="relative" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
-      <NavLink
-        to={item.path}
-        end={item.end}
-        onClick={() => onNavClick?.(item.path)}
-        className={({ isActive }) =>
-          cn(
-            "group relative flex items-center rounded-2xl text-[13px] font-medium transition-all duration-300 tracking-tight",
-            collapsed
-              ? "h-11 w-11 mx-auto justify-center my-0.5"
-              : "gap-2.5 px-3 py-3 my-0.5",
-            isActive
-              ? collapsed
-                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/25"
-                : "bg-indigo-50/60 text-indigo-600 border border-indigo-100/60 scale-[1.01] z-10 font-bold shadow-xs dark:bg-indigo-950/40 dark:border-indigo-900/50 dark:text-indigo-400"
-              : "text-slate-600 hover:text-slate-950 hover:bg-slate-50/60 hover:translate-x-0.5 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/40"
-          )
-        }
-      >
-        {({ isActive }) => (
-          <>
-            {/* Active rounded icon badge container */}
-            <div className={cn(
-              "flex items-center justify-center rounded-xl shrink-0 transition-all duration-300",
-              collapsed ? "w-5 h-5" : "w-7.5 h-7.5",
-              isActive
-                ? "bg-indigo-100/80 text-indigo-600 dark:bg-indigo-950/80 dark:text-indigo-400"
-                : "bg-transparent text-slate-500 group-hover:text-slate-800 dark:text-slate-400"
-            )}>
-              <item.icon className={cn("w-4.5 h-4.5", isActive ? "text-indigo-600 dark:text-indigo-400" : "text-current")} />
-            </div>
-
-            {!collapsed && (
-              <span className="truncate transition-[opacity] duration-200" title={item.label}>{item.label}</span>
-            )}
-
-            {/* Badge — expanded only */}
-            {item.badge && !collapsed && (
-              <span className="ml-auto shrink-0 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[9px] font-black uppercase text-white leading-none">
-                {item.badge}
-              </span>
-            )}
-
-            {/* Badge overlay — collapsed (e.g. unread dot) */}
-            {badgeOverlay && collapsed && (
-              <span className="absolute top-1 right-1">{badgeOverlay}</span>
-            )}
-
-            {/* Badge overlay — expanded */}
-            {badgeOverlay && !collapsed && (
-              <span className="ml-auto shrink-0">{badgeOverlay}</span>
-            )}
-          </>
+    <SidebarMenuButton asChild isActive={active} tooltip={tooltip} className={buttonClassName}>
+      <NavLink to={item.path} end={item.end} onClick={() => onNavClick?.(item.path)}>
+        <item.icon className="size-[18px]" />
+        <span className="truncate flex-1">{item.label}</span>
+        {item.badge && (
+          <span className="ml-auto shrink-0 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[9px] font-black uppercase leading-none text-white">
+            {item.badge}
+          </span>
+        )}
+        {badgeOverlay && <span className="ml-auto shrink-0">{badgeOverlay}</span>}
+        {!item.badge && !badgeOverlay && (
+          <ChevronDown className={cn("size-3.5 shrink-0 opacity-0 transition-opacity", active && "opacity-60")} />
         )}
       </NavLink>
-      {collapsed && <SidebarTooltip label={item.label} show={hovered} />}
-    </div>
+    </SidebarMenuButton>
   );
 }
 
-/* ──────────────────── Sidebar Content (inner) ─────────────────────── */
+function SidebarBody(props: UnifiedSidebarProps) {
+  const { groups, logo, logoCollapsed, profileCard, onNavClick, onAction, badgeOverlay, showCollapseToggle = true } = props;
+  const { isMobile, state } = useSidebar();
+  const collapsed = state === "collapsed" && !isMobile;
 
-function SidebarInner({
-  groups,
-  collapsed,
-  onToggleCollapse,
-  logo,
-  logoCollapsed,
-  profileCard,
-  onNavClick,
-  onAction,
-  badgeOverlay,
-  isMobileDrawer,
-  onMobileClose,
-  showCollapseToggle = true,
-}: UnifiedSidebarProps & { isMobileDrawer?: boolean }) {
   return (
-    <div
-      className={cn(
-        "flex h-full w-full flex-col bg-white border-r border-slate-100 dark:bg-slate-950 dark:border-slate-800 overflow-hidden",
-        !isMobileDrawer && "transition-[width] [transition-duration:250ms] [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]"
-      )}
-      style={isMobileDrawer ? undefined : { width: collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH }}
-    >
-      {/* ── Header: logo + collapse toggle ── */}
-      <div className={cn(
-        "flex items-center shrink-0 py-6",
-        collapsed ? "justify-center px-2" : "justify-between px-5"
-      )}>
-        {/* Logo */}
-        <div className={cn(
-          "min-w-0 transition-[opacity,width] duration-200 overflow-hidden",
-          collapsed && !isMobileDrawer ? "w-0 opacity-0 pointer-events-none" : "opacity-100"
-        )}>
-          {logo}
-        </div>
-
-        {/* Collapsed logo mark */}
-        {collapsed && !isMobileDrawer && logoCollapsed && (
-          <div className="flex items-center justify-center">
+    <>
+      <SidebarHeader className="gap-0 py-4">
+        {collapsed ? (
+          <div className="flex flex-col items-center gap-2">
             {logoCollapsed}
+            {showCollapseToggle && !isMobile && <SidebarTrigger />}
+          </div>
+        ) : (
+          <div className="flex items-center justify-between px-1">
+            <div className="min-w-0 flex-1">{logo}</div>
+            {showCollapseToggle && !isMobile && <SidebarTrigger className="shrink-0" />}
           </div>
         )}
+      </SidebarHeader>
 
-        {/* Collapse toggle — desktop only */}
-        {!isMobileDrawer && showCollapseToggle && (
-          <button
-            type="button"
-            onClick={onToggleCollapse}
-            className={cn(
-              "hidden lg:flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-300 transition-colors shrink-0",
-              collapsed && "mx-auto"
-            )}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            <ChevronLeft className={cn("h-4 w-4 transition-transform duration-200", collapsed && "rotate-180")} />
-          </button>
-        )}
-
-        {/* Close button — mobile drawer */}
-        {isMobileDrawer && (
-          <button
-            type="button"
-            onClick={onMobileClose}
-            className="flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
-            aria-label="Close menu"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-        )}
-      </div>
-
-      {/* ── Navigation ── */}
-      <nav className={cn(
-        "flex-1 min-h-0 overflow-y-auto sidebar-scrollbar py-2",
-        collapsed && !isMobileDrawer ? "px-3" : "px-3"
-      )}>
+      <SidebarContent className="px-2">
         {groups.map((group, gi) => (
-          <div key={group.heading} className={cn(gi > 0 && "mt-4")}>
-            {/* Section heading — hidden when collapsed */}
-            {(!collapsed || isMobileDrawer) && (
-              <p className="mb-2 px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 select-none">
-                {group.heading}
-              </p>
-            )}
-
-            {/* Collapsed separator line */}
-            {collapsed && !isMobileDrawer && gi > 0 && (
-              <div className="mx-auto mb-2 w-8 border-t border-slate-100 dark:border-slate-800" />
-            )}
-
-            <div className="flex flex-col gap-1">
-              {group.items.map((item) => (
-                <SidebarItem
-                  key={item.action ? `action-${item.label}` : item.path}
-                  item={item}
-                  collapsed={collapsed && !isMobileDrawer}
-                  onNavClick={onNavClick}
-                  onAction={onAction}
-                  badgeOverlay={badgeOverlay?.[item.path]}
-                />
-              ))}
-            </div>
-          </div>
+          <React.Fragment key={group.heading}>
+            {collapsed && gi > 0 && <SidebarSeparator className="mx-auto my-1 w-8" />}
+            <SidebarGroup>
+              {!collapsed && <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">{group.heading}</SidebarGroupLabel>}
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {group.items.map((item) => (
+                    <SidebarMenuItem key={item.action ? `action-${item.label}` : item.path}>
+                      <NavItemButton
+                        item={item}
+                        collapsed={collapsed}
+                        isMobile={isMobile}
+                        onNavClick={onNavClick}
+                        onAction={onAction}
+                        badgeOverlay={badgeOverlay?.[item.path]}
+                      />
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </React.Fragment>
         ))}
-      </nav>
+      </SidebarContent>
 
-      {/* ── Footer / Profile Card ── */}
-      {profileCard && (
-        <div className="shrink-0 border-t border-slate-100 dark:border-slate-800 p-3">
-          {profileCard(collapsed && !isMobileDrawer)}
-        </div>
-      )}
-    </div>
+      {profileCard && <SidebarFooter className="border-t border-sidebar-border p-2">{profileCard(collapsed)}</SidebarFooter>}
+    </>
   );
 }
 
 /* ─────────────────────── Main Export ──────────────────────────────── */
 
 export function UnifiedSidebar(props: UnifiedSidebarProps) {
-  const {
-    collapsed,
-    mobileOpen,
-    onMobileClose,
-    className,
-    mobileBreakpoint = "md",
-  } = props;
-
-  const location = useLocation();
-  const isMobile = useIsMobile();
-
-  // Close mobile drawer on route change
-  useEffect(() => {
-    if (mobileOpen) {
-      onMobileClose();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname]);
-
-  // Lock body scroll when mobile drawer is open
-  useEffect(() => {
-    if (!mobileOpen) return;
-    const prev = document.body.style.overflow;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onMobileClose();
-    };
-
-    document.body.style.overflow = "hidden";
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.body.style.overflow = prev;
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [mobileOpen, onMobileClose]);
+  const { collapsed, onToggleCollapse, mobileOpen, onMobileClose, className } = props;
+  const open = !collapsed;
 
   return (
-    <>
-      {/* ── Desktop sidebar ── */}
-      <aside
-        className={cn(
-          "hidden lg:flex flex-col shrink-0 relative z-40",
-          className
-        )}
-        style={{
-          width: collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH,
-          transition: "width 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-        }}
-      >
-        <SidebarInner {...props} isMobileDrawer={false} />
-      </aside>
-
-      {/* ── Tablet: auto-collapsed sidebar ── */}
-      <aside
-        className={cn(
-          "hidden flex-col shrink-0 relative z-40",
-          mobileBreakpoint === "md" && "md:flex lg:hidden",
-          className
-        )}
-        style={{ width: COLLAPSED_WIDTH }}
-      >
-        <SidebarInner {...props} collapsed={true} isMobileDrawer={false} />
-      </aside>
-
-      {/* ── Mobile drawer ── */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <div
-            className={cn(
-              "fixed inset-0 z-[100]",
-              mobileBreakpoint === "lg" ? "lg:hidden" : "md:hidden"
-            )}
-          >
-            {/* Backdrop (full screen absolute) */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              onClick={onMobileClose}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
-              aria-label="Close menu"
-            />
-
-            {/* Drawer panel (on top of backdrop) */}
-            <motion.div
-              initial={{ x: "-100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
-              transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="absolute left-0 top-0 bottom-0 h-full shadow-2xl z-10 w-[80%] max-w-[320px] md:w-[280px] md:max-w-none"
-            >
-              <SidebarInner {...props} collapsed={false} isMobileDrawer={true} />
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-    </>
+    <SidebarProvider
+      open={open}
+      onOpenChange={(next) => {
+        if (next === collapsed) onToggleCollapse();
+      }}
+      className={cn("w-auto min-h-0", className)}
+    >
+      <MobileBridge mobileOpen={mobileOpen} onMobileClose={onMobileClose} />
+      <Sidebar collapsible="icon" className="border-sidebar-border">
+        <SidebarBody {...props} />
+      </Sidebar>
+    </SidebarProvider>
   );
 }
 
@@ -445,12 +273,10 @@ export function SidebarProfileCard({
       "flex items-center rounded-xl transition-all duration-200",
       collapsed ? "justify-center p-2" : "gap-3 bg-slate-50 dark:bg-slate-900 p-2.5"
     )}>
-      {/* Avatar */}
       <div className="w-9 h-9 shrink-0 rounded-xl overflow-hidden flex items-center justify-center">
         {avatar}
       </div>
 
-      {/* Name + role — hidden when collapsed */}
       {!collapsed && (
         <div className="min-w-0 flex-1">
           <p className="truncate text-[12px] font-semibold text-slate-900 dark:text-white">{displayName}</p>
@@ -461,7 +287,6 @@ export function SidebarProfileCard({
         </div>
       )}
 
-      {/* Logout button — expanded only */}
       {!collapsed && onLogout && (
         <button
           type="button"

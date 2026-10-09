@@ -73,7 +73,6 @@ const superAdminGroups = [
 
 function buildInstituteGroups(mods) {
   const chatEnabled = isModuleEnabled(mods, 'chat');
-  const liveEnabled = isModuleEnabled(mods, 'live_classes');
   const calendarEnabled = isModuleEnabled(mods, 'academic_calendar');
   const timetableEnabled = isModuleEnabled(mods, 'timetable');
   const reportsEnabled = isModuleEnabled(mods, 'reports');
@@ -99,7 +98,7 @@ function buildInstituteGroups(mods) {
       heading: 'Operations',
       items: [
         { path: '/school/admin/attendance', label: 'Attendance', icon: BarChart3 },
-        timetableEnabled && { path: '/school/admin/timetable', label: liveEnabled ? 'Timetable & Live Classes' : 'Timetable', icon: CalendarDays },
+        timetableEnabled && { path: '/school/admin/timetable', label: 'Timetable and Roster', icon: CalendarDays },
         calendarEnabled && { path: '/school/admin/calendar', label: 'Academic Calendar', icon: CalendarDays },
       ].filter(Boolean),
     },
@@ -229,20 +228,17 @@ export default function Sidebar({ open, onClose }) {
       onMobileClose={onClose}
       logo={
         !isSuperAdmin ? (
-          <div className="flex flex-col items-center gap-1.5 w-full pt-4 pb-1 text-center">
-            <SchoolLogo src={institute?.logo} alt={institute?.name} size="navbar" className="w-[42px] h-[42px] shrink-0" />
-            <div className="flex flex-col items-center min-w-0">
-              <h2 className="text-xs font-black tracking-tight text-slate-800 dark:text-white uppercase leading-tight line-clamp-2">
-                {institute?.name || 'Army Public School'}
-              </h2>
-              <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5 truncate">
-                {institute?.state || institute?.location || 'State'}
-              </p>
-            </div>
+          <div className="min-w-0 flex-1 py-1">
+            <h2 className="truncate text-sm font-black tracking-tight text-slate-900 dark:text-white leading-snug">
+              {institute?.name || 'Army Public School'}
+            </h2>
+            <p className="truncate text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+              {institute?.state || institute?.location || 'State'}
+            </p>
           </div>
         ) : (
-          <div className="px-2 pt-2">
-            <EddvaLogo />
+          <div className="px-2 pt-2 text-sm font-black tracking-tight text-slate-900 dark:text-white">
+            Super Admin
           </div>
         )
       }

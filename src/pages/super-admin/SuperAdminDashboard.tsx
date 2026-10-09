@@ -30,6 +30,7 @@ import {
   Plus,
   ChevronRight,
   MoreHorizontal,
+  Zap,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePlatformStats } from '@/hooks/use-stats';
@@ -501,7 +502,7 @@ const SuperAdminDashboard = () => {
               </span>
             </div>
             <h1 className="text-xl sm:text-3xl md:text-4xl font-bold tracking-tight text-white flex items-center gap-2">
-              Welcome, {user?.name || "Super Admin"} <span className="waving-emoji">👋</span>
+              Welcome, {user?.name || "Super Admin"} <Sparkles className="size-6 shrink-0" />
             </h1>
             <p className="text-xs sm:text-base mt-1 sm:mt-2 font-medium text-white/75">
               Managing global edtech infrastructure and institute growth.
@@ -560,7 +561,7 @@ const SuperAdminDashboard = () => {
       >
         <div className="flex items-center gap-2 mb-3 px-4 sm:px-0">
           <span className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-            ⚡ Quick Actions
+            <Zap className="size-4 shrink-0 text-amber-500" /> Quick Actions
           </span>
         </div>
         <div className="flex flex-row gap-2 sm:gap-3 w-full pb-1">

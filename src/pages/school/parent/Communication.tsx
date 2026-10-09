@@ -960,7 +960,7 @@ function MessagesTab() {
                   <div className="absolute bottom-16 left-4 z-50 w-64 rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl">
                     <div className="flex justify-between items-center mb-2 pb-1.5 border-b border-slate-100">
                       <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Select Emoji</span>
-                      <button onClick={() => setShowEmojiPicker(false)} className="text-slate-400 hover:text-slate-650 text-xs">✕</button>
+                      <button onClick={() => setShowEmojiPicker(false)} className="text-slate-400 hover:text-slate-650 text-xs"><X className="size-3.5" /></button>
                     </div>
                     <div className="grid grid-cols-8 gap-1.5 max-h-48 overflow-y-auto no-scrollbar">
                       {EMOJIS.map((emoji, idx) => (

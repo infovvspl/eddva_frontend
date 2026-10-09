@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { 
-  CalendarDays, ChevronLeft, ChevronRight, Filter, 
-  Clock, MapPin, AlertTriangle
+import {
+  CalendarDays, ChevronLeft, ChevronRight, Filter,
+  Clock, MapPin, AlertTriangle, BookOpen, ClipboardList,
+  Palmtree, Plane, Users, Video
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
@@ -48,13 +49,13 @@ const CATEGORY_CELL_GRADIENTS = {
 const categoryOptions = ['ACADEMIC', 'EXAM', 'HOLIDAY', 'VACATION', 'MEETING', 'LIVE_CLASS', 'All'];
 
 const categoryIcons = {
-  ACADEMIC: '📚',
-  EXAM: '📝',
-  HOLIDAY: '🏖️',
-  VACATION: '✈️',
-  MEETING: '👨‍👩‍👧',
-  LIVE_CLASS: '🎥',
-  All: '📅',
+  ACADEMIC: BookOpen,
+  EXAM: ClipboardList,
+  HOLIDAY: Palmtree,
+  VACATION: Plane,
+  MEETING: Users,
+  LIVE_CLASS: Video,
+  All: CalendarDays,
 };
 
 function toDateKey(date) {
@@ -700,11 +701,14 @@ export default function Calendar() {
               className="w-full flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-3 py-2.5 text-left transition hover:bg-white dark:hover:bg-slate-800 group hover:scale-[1.01] hover:underline cursor-pointer"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <span className="shrink-0 text-[22px] opacity-90 transition-opacity group-hover:opacity-100">{categoryIcons[ev.category] || '📅'}</span>
+                {(() => {
+                  const CatIcon = categoryIcons[ev.category] || CalendarDays;
+                  return <CatIcon className="size-5 shrink-0 opacity-90 transition-opacity group-hover:opacity-100" />;
+                })()}
                 <div className="min-w-0">
                   <p className="truncate text-sm font-bold text-slate-950 dark:text-white">{ev.title}</p>
-                  <p className="truncate text-xs font-medium text-slate-500 dark:text-slate-400">
-                    📅 {new Date(ev.startTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  <p className="truncate text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                    <CalendarDays className="size-3 shrink-0" /> {new Date(ev.startTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     {ev.isAllDay ? '' : ` • ${new Date(ev.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
                   </p>
                 </div>
@@ -761,7 +765,7 @@ export default function Calendar() {
             )}
             <div className="grid gap-2.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
               <div className="flex items-center gap-2">
-                <span className="text-slate-400">📅 Date:</span>
+                <span className="text-slate-400 flex items-center gap-1"><CalendarDays className="size-3.5 shrink-0" /> Date:</span>
                 <span>
                   {selectedInfoEvent.isAllDay 
                     ? `${new Date(selectedInfoEvent.startTime).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })} (All Day)`
@@ -771,13 +775,13 @@ export default function Calendar() {
               </div>
               {selectedInfoEvent.location && (
                 <div className="flex items-center gap-2">
-                  <span className="text-slate-400">📍 Location:</span>
+                  <span className="text-slate-400 flex items-center gap-1"><MapPin className="size-3.5 shrink-0" /> Location:</span>
                   <span>{selectedInfoEvent.location}</span>
                 </div>
               )}
               {selectedInfoEvent.priority && (
                 <div className="flex items-center gap-2">
-                  <span className="text-slate-400">⚠️ Priority:</span>
+                  <span className="text-slate-400 flex items-center gap-1"><AlertTriangle className="size-3.5 shrink-0" /> Priority:</span>
                   <span className="capitalize">{selectedInfoEvent.priority.toLowerCase()}</span>
                 </div>
               )}
