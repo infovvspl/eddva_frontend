@@ -2,15 +2,19 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ArrowRight, HelpCircle, AlertCircle, Compass, Check, X, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import { soundEngine } from '@/lib/audioManager';
+import HintPanel from './shared/HintPanel';
 
 export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
-  const { questions, stageName, stageOrder } = challenge;
+  const { questions, stageName, stageOrder, sessionId } = challenge;
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selectedOptionId, setSelectedOptionId] = useState(null);
   const [hasAnswered, setHasAnswered] = useState(false);
   const [answers, setAnswers] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [tabSwitchesCount, setTabSwitchesCount] = useState(0);
+  const [hintsUsedThisQuestion, setHintsUsedThisQuestion] = useState(0);
+  const hintsUsedThisQuestionRef = useRef(0);
+  hintsUsedThisQuestionRef.current = hintsUsedThisQuestion;
 
   const startTimeRef = useRef(Date.now());
   const timeoutRef = useRef(null);
@@ -72,6 +76,7 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
       setCurrentIdx((prev) => prev + 1);
       setSelectedOptionId(null);
       setHasAnswered(false);
+      setHintsUsedThisQuestion(0);
     } else {
       handleSubmit(currentAnswers);
     }
@@ -95,14 +100,19 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
       {
         questionId: currentQuestion.id,
         selectedOptionId: optionId,
+        hintsUsed: hintsUsedThisQuestionRef.current,
       },
     ];
     setAnswers(newAnswers);
 
-    // Auto-advance after 1.5 seconds
-    timeoutRef.current = setTimeout(() => {
-      handleNext(newAnswers);
-    }, 1500);
+    // Auto-advance after 1.5 seconds — but not if a hint is on screen for
+    // this question; give the student time to read it and advance manually
+    // via the Next Checkpoint button instead.
+    if (hintsUsedThisQuestionRef.current === 0) {
+      timeoutRef.current = setTimeout(() => {
+        handleNext(newAnswers);
+      }, 1500);
+    }
   };
 
   const correctOption = currentQuestion?.options.find((o) => o.isCorrect);
@@ -162,6 +172,16 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
               />
             </div>
           )}
+
+          <div className="mt-5">
+            <HintPanel
+              sessionId={sessionId}
+              gameType="treasure_hunt"
+              questionId={currentQuestion?.id}
+              disabled={hasAnswered}
+              onHintsUsedChange={setHintsUsedThisQuestion}
+            />
+          </div>
 
           {/* Feedback Banner */}
           {hasAnswered && (

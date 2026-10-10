@@ -8,6 +8,13 @@ import {
 import { toast } from 'sonner';
 import api from '@/lib/api/school-client';
 import { useAuth } from '@/context/SchoolAuthContext';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 
 /**
  * Which chapters the AI can teach from the school's own book.
@@ -32,8 +39,6 @@ type Row = {
   materialId: string | null;
   pages: number | null;
   passages: number | null;
-  /** Diagrams cropped from this chapter's PDF. Absent on an older backend. */
-  figures?: number | null;
   method: string | null;
   quality: string | null;
   fileName: string | null;
@@ -305,8 +310,14 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
 
   if (loading) {
     return (
-      <div className="flex h-[60vh] items-center justify-center gap-2 text-surface-500">
-        <Loader2 className="size-5 animate-spin" /> Loading coverage…
+      <div className="space-y-5" aria-busy="true" aria-label="Loading coverage">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}
+        </div>
+        <Skeleton className="h-10 w-full rounded-xl" />
+        <div className="space-y-2">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 rounded-xl" />)}
+        </div>
       </div>
     );
   }
@@ -331,11 +342,13 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
           const m = STATE_META[k];
           const active = filter === k;
           return (
-            <button
+            <Button
               key={k}
+              variant={null}
+              size={null}
               onClick={() => setFilter(active ? 'all' : k)}
               aria-pressed={active}
-              className={`rounded-xl border p-3 text-left transition ${m.cls} ${
+              className={`h-auto flex-col items-stretch justify-start whitespace-normal rounded-xl border p-3 text-left font-normal transition ${m.cls} ${
                 active ? 'ring-2 ring-offset-1 ring-current' : 'hover:brightness-95'
               }`}
             >
@@ -345,7 +358,7 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
               </div>
               <p className="mt-1 text-2xl font-black tabular-nums">{counts[k]}</p>
               <p className="text-[11px] opacity-80">{m.hint}</p>
-            </button>
+            </Button>
           );
         })}
       </div>
@@ -356,78 +369,82 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
           it's actually visible "along with the book being trained" rather than in a banner
           disconnected from the list. */}
       {run && run.status === 'running' && run.total > 1 && (
-        <div className="rounded-xl border border-brand-200 bg-brand-50 p-3 dark:border-brand-900 dark:bg-brand-950/40">
-          <div className="flex items-center justify-between gap-3 text-sm">
+        <Card className="rounded-xl border-brand-200 bg-brand-50 p-3 shadow-none dark:border-brand-900 dark:bg-brand-950/40">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 text-sm">
             <span className="flex items-center gap-2 font-bold text-brand-700 dark:text-brand-300">
               <Loader2 className="size-4 animate-spin" />
               Indexing {run.done} of {run.total}
             </span>
-            <div className="flex items-center gap-3">
-              <span className="hidden text-xs text-brand-600 dark:text-brand-400 sm:inline">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="hidden min-w-0 truncate text-xs text-brand-600 dark:text-brand-400 sm:inline">
                 {run.currentChapter ? `Reading "${run.currentChapter}"` : run.lastChapter ? `Last: ${run.lastChapter}` : 'Starting…'}
               </span>
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={cancelIndexing}
                 disabled={busy === 'cancel'}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-2.5 py-1 text-xs font-bold text-rose-600 transition hover:bg-rose-50 disabled:opacity-60 dark:border-rose-900 dark:bg-transparent dark:text-rose-300 dark:hover:bg-rose-950/40"
+                className="h-7 shrink-0 gap-1.5 border-rose-200 bg-white px-2.5 text-xs font-bold text-rose-600 hover:bg-rose-50 hover:text-rose-600 dark:border-rose-900 dark:bg-transparent dark:text-rose-300 dark:hover:bg-rose-950/40"
               >
                 {busy === 'cancel' ? <Loader2 className="size-3.5 animate-spin" /> : <X className="size-3.5" />}
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
-          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-brand-100 dark:bg-brand-900">
-            <div
-              className="h-full rounded-full bg-brand-500 transition-all"
-              style={{ width: `${run.total ? (run.done / run.total) * 100 : 0}%` }}
-            />
-          </div>
-        </div>
+          <Progress
+            value={run.total ? (run.done / run.total) * 100 : 0}
+            className="mt-2 h-1.5 bg-brand-100 dark:bg-brand-900"
+            indicatorClassName="bg-brand-500"
+          />
+        </Card>
       )}
 
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[14rem]">
+        <div className="relative min-w-0 flex-1 basis-full sm:basis-56">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-surface-400" />
-          <input
+          <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search chapter, subject or class"
-            className="w-full rounded-xl border border-surface-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-brand-400 dark:border-surface-700 dark:bg-surface-900"
+            className="rounded-xl bg-white pl-9 dark:border-surface-700 dark:bg-surface-900"
           />
         </div>
         {filter !== 'all' && (
-          <button onClick={() => setFilter('all')} className="rounded-xl border border-surface-200 px-3 py-2 text-xs font-bold text-surface-600 dark:border-surface-700 dark:text-surface-300">
+          <Button variant="outline" size="sm" onClick={() => setFilter('all')} className="h-9 rounded-xl text-xs font-bold">
             Clear filter
-          </button>
+          </Button>
         )}
         {isAdmin && (
           <>
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={auditLinks}
               disabled={!!busy}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-surface-200 px-3 py-2 text-xs font-bold text-surface-700 disabled:opacity-50 dark:border-surface-700 dark:text-surface-200"
+              className="h-9 flex-1 gap-1.5 rounded-xl text-xs font-bold sm:flex-none"
             >
               {busy === 'audit' ? <Loader2 className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
               Check files
-            </button>
-            <button
+            </Button>
+            <Button
+              size="sm"
               onClick={indexAll}
               disabled={!!busy || run?.status === 'running' || counts.pending + counts.stale === 0}
               title={counts.pending + counts.stale === 0 ? 'Nothing waiting to be indexed' : undefined}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
+              className="h-9 flex-1 gap-1.5 rounded-xl bg-brand-600 text-xs font-bold text-white hover:bg-brand-700 sm:flex-none"
             >
               {busy === 'bulk' ? <Loader2 className="size-3.5 animate-spin" /> : <PlayCircle className="size-3.5" />}
               Index {counts.pending + counts.stale} waiting
-            </button>
+            </Button>
           </>
         )}
       </div>
 
       {visible.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-surface-300 p-8 text-center text-sm text-surface-500 dark:border-surface-700">
+        <Card className="rounded-xl border-dashed border-surface-300 p-8 text-center text-sm text-surface-500 shadow-none dark:border-surface-700">
           No chapters match.
-        </p>
+        </Card>
       ) : (
         <div className="space-y-2">
           {Object.keys(grouped)
@@ -437,172 +454,174 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
               return normA.localeCompare(normB, undefined, { numeric: true, sensitivity: 'base' });
             })
             .map((cls) => {
-              const subjects = grouped[cls];
+            const subjects = grouped[cls];
             const total = Object.values(subjects).reduce((n, l) => n + l.length, 0);
             const ready = Object.values(subjects).flat().filter((r) => r.indexed && !r.stale).length;
             const isOpen = open[cls] ?? false;
             return (
-              <div key={cls} className="overflow-hidden rounded-xl border border-surface-200 bg-white dark:border-surface-800 dark:bg-surface-900">
-                <button
-                  onClick={() => toggle(cls)}
-                  aria-expanded={isOpen}
-                  className="flex w-full items-center gap-2 px-4 py-3 text-left hover:bg-surface-50 dark:hover:bg-surface-800/60"
-                >
-                  {isOpen ? <ChevronDown className="size-4 text-surface-400" /> : <ChevronRight className="size-4 text-surface-400" />}
-                  <span className="font-bold text-surface-900 dark:text-white">{cls}</span>
-                  <span className="ml-auto text-xs tabular-nums text-surface-500">
-                    {ready}/{total} ready
-                  </span>
-                </button>
+              <Collapsible key={cls} open={isOpen} onOpenChange={() => toggle(cls)} asChild>
+                <Card className="overflow-hidden rounded-xl border-surface-200 bg-white shadow-none dark:border-surface-800 dark:bg-surface-900">
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size={null}
+                      className="h-auto w-full justify-start gap-2 whitespace-normal rounded-none px-3 py-3 text-left font-normal hover:bg-surface-50 sm:px-4 dark:hover:bg-surface-800/60"
+                    >
+                      {isOpen ? <ChevronDown className="size-4 shrink-0 text-surface-400" /> : <ChevronRight className="size-4 shrink-0 text-surface-400" />}
+                      <span className="min-w-0 truncate font-bold text-surface-900 dark:text-white">{cls}</span>
+                      <span className="ml-auto shrink-0 text-xs tabular-nums text-surface-500">
+                        {ready}/{total} ready
+                      </span>
+                    </Button>
+                  </CollapsibleTrigger>
 
-                {isOpen && (
-                  <div className="border-t border-surface-100 dark:border-surface-800">
-                    {Object.entries(subjects).map(([subject, list]) => (
-                      <div key={subject} className="border-b border-surface-100 last:border-0 dark:border-surface-800">
-                        <div className="flex items-center gap-1.5 bg-surface-50 px-4 py-1.5 text-[11px] font-black uppercase tracking-wider text-surface-500 dark:bg-surface-800/50">
-                          <BookOpen className="size-3" /> {subject}
-                        </div>
-                        {list.map((r) => {
-                          const st = stateOf(r);
-                          const m = STATE_META[st];
-                          // This is the one book the active run is reading right now — matched by
-                          // materialId (the backend's own heartbeat), not local click state, so a
-                          // bulk run (which sets busy='bulk', never a specific chapterId) still
-                          // shows live progress on the right row instead of nowhere.
-                          // Backend heartbeat (works for a bulk run we didn't personally click into)
-                          // OR our own optimistic flag (works even if the job finishes faster than
-                          // any poll can catch it "running" — see activeChapterId's comment above).
-                          const isIndexingNow =
-                            (run?.status === 'running' && !!r.materialId && r.materialId === run.currentMaterialId) ||
-                            activeChapterId === r.chapterId;
-                          const disableActions = busy === r.chapterId || isIndexingNow;
-                          return (
-                            <div key={r.chapterId} className="border-b border-surface-50 last:border-0 dark:border-surface-800/60">
-                              <div className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-surface-50 dark:hover:bg-surface-800/40">
-                                {isIndexingNow ? (
-                                  <Loader2 className="size-4 shrink-0 animate-spin text-brand-500" />
-                                ) : (
-                                  <m.Icon className={`size-4 shrink-0 ${st === 'ready' ? 'text-emerald-500' : st === 'stale' ? 'text-orange-500' : st === 'pending' ? 'text-amber-500' : st === 'broken' ? 'text-rose-500' : 'text-surface-400'}`} />
-                                )}
-                                <span className="flex-1 min-w-0">
-                                  <span className="block truncate text-surface-800 dark:text-surface-100">{r.chapterName}</span>
-                                  {r.fileName ? (
-                                    r.fileUrl ? (
-                                      <a
-                                        href={r.fileUrl}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        onClick={(e) => e.stopPropagation()}
-                                        className="mt-0.5 inline-flex max-w-full items-center gap-1 truncate text-[11px] text-surface-500 underline-offset-2 hover:text-brand-600 hover:underline"
-                                        title={r.fileName}
-                                      >
-                                        <FileText className="size-3 shrink-0" />
-                                        <span className="truncate">{r.fileName}</span>
-                                      </a>
-                                    ) : (
-                                      <span className="mt-0.5 flex items-center gap-1 text-[11px] text-surface-500">
-                                        <FileText className="size-3" /> {r.fileName}
-                                      </span>
-                                    )
-                                  ) : null}
-                                </span>
-                                {r.indexed && (
-                                  <span className="hidden text-[11px] tabular-nums text-surface-400 sm:inline">
-                                    {r.pages}p · {r.passages} passages{r.method === 'ocr' ? ' · scanned' : ''}
-                                    {/* Figures are what a generated paper can illustrate a
-                                        question with. Shown because "Ready" alone cannot tell
-                                        a chapter whose book has no diagrams from one indexed
-                                        before figures were extracted at all — both look
-                                        identical, and both produce a paper with no images. */}
-                                    {typeof r.figures === 'number' && (
-                                      <>
-                                        {' · '}
-                                        <span className={r.figures > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}>
-                                          {r.figures} figures
+                  <CollapsibleContent>
+                    <div className="border-t border-surface-100 dark:border-surface-800">
+                      {Object.entries(subjects).map(([subject, list]) => (
+                        <div key={subject} className="border-b border-surface-100 last:border-0 dark:border-surface-800">
+                          <div className="flex items-center gap-1.5 bg-surface-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-surface-500 sm:px-4 dark:bg-surface-800/50">
+                            <BookOpen className="size-3 shrink-0" /> <span className="truncate">{subject}</span>
+                          </div>
+                          {list.map((r) => {
+                            const st = stateOf(r);
+                            const m = STATE_META[st];
+                            // This is the one book the active run is reading right now — matched by
+                            // materialId (the backend's own heartbeat), not local click state, so a
+                            // bulk run (which sets busy='bulk', never a specific chapterId) still
+                            // shows live progress on the right row instead of nowhere.
+                            // Backend heartbeat (works for a bulk run we didn't personally click into)
+                            // OR our own optimistic flag (works even if the job finishes faster than
+                            // any poll can catch it "running" — see activeChapterId's comment above).
+                            const isIndexingNow =
+                              (run?.status === 'running' && !!r.materialId && r.materialId === run.currentMaterialId) ||
+                              activeChapterId === r.chapterId;
+                            const disableActions = busy === r.chapterId || isIndexingNow;
+                            const canIndex = (st === 'pending' || st === 'ready' || st === 'stale') && !isIndexingNow;
+                            const stats = r.indexed ? (
+                              <span className="text-[11px] tabular-nums text-surface-400">
+                                {r.pages}p · {r.passages} passages{r.method === 'ocr' ? ' · scanned' : ''}
+                              </span>
+                            ) : null;
+                            return (
+                              <div key={r.chapterId} className="border-b border-surface-50 last:border-0 dark:border-surface-800/60">
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2 text-sm hover:bg-surface-50 sm:px-4 dark:hover:bg-surface-800/40">
+                                  {isIndexingNow ? (
+                                    <Loader2 className="size-4 shrink-0 animate-spin text-brand-500" />
+                                  ) : (
+                                    <m.Icon className={`size-4 shrink-0 ${st === 'ready' ? 'text-emerald-500' : st === 'stale' ? 'text-orange-500' : st === 'pending' ? 'text-amber-500' : st === 'broken' ? 'text-rose-500' : 'text-surface-400'}`} />
+                                  )}
+                                  <span className="min-w-0 flex-1 basis-40">
+                                    <span className="block truncate text-surface-800 dark:text-surface-100">{r.chapterName}</span>
+                                    {r.fileName ? (
+                                      r.fileUrl ? (
+                                        <a
+                                          href={r.fileUrl}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="mt-0.5 inline-flex max-w-full items-center gap-1 truncate text-[11px] text-surface-500 underline-offset-2 hover:text-brand-600 hover:underline"
+                                          title={r.fileName}
+                                        >
+                                          <FileText className="size-3 shrink-0" />
+                                          <span className="truncate">{r.fileName}</span>
+                                        </a>
+                                      ) : (
+                                        <span className="mt-0.5 flex items-center gap-1 text-[11px] text-surface-500">
+                                          <FileText className="size-3 shrink-0" /> <span className="truncate">{r.fileName}</span>
                                         </span>
-                                      </>
-                                    )}
+                                      )
+                                    ) : null}
+                                    {/* Phones: stats sit under the name instead of squeezing the row */}
+                                    {stats && <span className="mt-0.5 block sm:hidden">{stats}</span>}
                                   </span>
-                                )}
-                                <span className={`rounded-md border px-1.5 py-0.5 text-[10px] font-bold ${isIndexingNow ? 'text-brand-700 bg-brand-50 border-brand-200 dark:text-brand-300 dark:bg-brand-950/40 dark:border-brand-900' : m.cls}`}>
-                                  {isIndexingNow ? 'Reading…' : m.label}
-                                </span>
-                                {/* A chapter already marked Ready used to offer nothing but
-                                    Replace, so refreshing one meant re-uploading its PDF.
-                                    Indexing improves over time — figure extraction is the
-                                    current example — and every chapter indexed before an
-                                    improvement stays stale until it is read again. */}
-                                {(st === 'pending' || st === 'ready' || st === 'stale') && !isIndexingNow && (
-                                  <button
-                                    onClick={() => indexOne(r)}
-                                    disabled={disableActions || !r.materialId}
-                                    title={
-                                      st === 'stale'
-                                        ? 'A newer file was uploaded since this was last read — index it to fix what the AI generates'
-                                        : st === 'ready'
-                                        ? 'Read this book again — picks up figures and any other indexing improvements'
-                                        : 'Read this book and index it'
-                                    }
-                                    className={`rounded-lg px-2 py-1 text-[11px] font-bold disabled:opacity-50 ${
-                                      st === 'ready'
-                                        ? 'border border-surface-200 text-surface-600 hover:bg-surface-100 dark:border-surface-700 dark:text-surface-300'
-                                        : st === 'stale'
-                                        ? 'bg-orange-600 text-white'
-                                        : 'bg-brand-600 text-white'
-                                    }`}
+                                  {stats && <span className="hidden sm:inline">{stats}</span>}
+                                  <Badge
+                                    variant="outline"
+                                    className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${isIndexingNow ? 'border-brand-200 bg-brand-50 text-brand-700 dark:border-brand-900 dark:bg-brand-950/40 dark:text-brand-300' : m.cls}`}
                                   >
-                                    {busy === r.chapterId
-                                      ? 'Reading…'
-                                      : st === 'ready' || st === 'stale' ? 'Re-index' : 'Index'}
-                                  </button>
-                                )}
-                                <label
-                                  className={`cursor-pointer rounded-lg border px-2 py-1 text-[11px] font-bold ${
-                                    st === 'ready' || st === 'pending' || st === 'stale'
-                                      ? 'border-surface-200 text-surface-600 hover:bg-surface-100 dark:border-surface-700 dark:text-surface-300'
-                                      : 'border-brand-600 bg-brand-600 text-white hover:bg-brand-700'
-                                  } ${disableActions ? 'pointer-events-none opacity-50' : ''}`}
-                                  title={st === 'ready' || st === 'stale' ? 'Replace this book and read it again' : 'Upload this chapter as a PDF'}
-                                >
-                                  {busy === r.chapterId ? 'Reading…' : st === 'ready' || st === 'pending' || st === 'stale' ? 'Replace' : 'Upload'}
-                                  <input
-                                    type="file"
-                                    accept="application/pdf,.pdf"
-                                    className="hidden"
-                                    onChange={(e) => {
-                                      const f = e.target.files?.[0];
-                                      e.target.value = '';
-                                      if (f) uploadOne(r, f);
-                                    }}
-                                  />
-                                </label>
-                              </div>
-
-                              {/* Pagewise tracker — lives on the book actually being read, not in a
-                                  banner elsewhere on the page. Only appears once the slow scanned-page
-                                  OCR pass has published a page count; a chapter with a normal text
-                                  layer is read in one fast pass and never reaches this. */}
-                              {isIndexingNow && !!run?.currentPagesTotal && (
-                                <div className="flex items-center gap-2 px-4 pb-2 pl-11">
-                                  <div className="h-1 flex-1 overflow-hidden rounded-full bg-brand-100 dark:bg-brand-900">
-                                    <div
-                                      className="h-full rounded-full bg-brand-500 transition-all"
-                                      style={{ width: `${Math.min(100, ((run.currentPagesDone ?? 0) / run.currentPagesTotal) * 100)}%` }}
-                                    />
-                                  </div>
-                                  <span className="shrink-0 text-[11px] tabular-nums text-brand-600 dark:text-brand-400">
-                                    page {run.currentPagesDone ?? 0} of {run.currentPagesTotal}
-                                  </span>
+                                    {isIndexingNow ? 'Reading…' : m.label}
+                                  </Badge>
+                                  {/* A chapter already marked Ready used to offer nothing but
+                                      Replace, so refreshing one meant re-uploading its PDF.
+                                      Indexing improves over time, and every chapter indexed
+                                      before an improvement stays stale until it is read again. */}
+                                  {canIndex && (
+                                    <Button
+                                      size="sm"
+                                      variant={st === 'ready' ? 'outline' : 'default'}
+                                      onClick={() => indexOne(r)}
+                                      disabled={disableActions || !r.materialId}
+                                      title={
+                                        st === 'stale'
+                                          ? 'A newer file was uploaded since this was last read — index it to fix what the AI generates'
+                                          : st === 'ready'
+                                          ? 'Read this book again — picks up any indexing improvements'
+                                          : 'Read this book and index it'
+                                      }
+                                      className={`h-7 rounded-lg px-2 text-[11px] font-bold ${
+                                        st === 'ready'
+                                          ? 'border-surface-200 text-surface-600 hover:bg-surface-100 dark:border-surface-700 dark:text-surface-300'
+                                          : st === 'stale'
+                                          ? 'bg-orange-600 text-white hover:bg-orange-700'
+                                          : 'bg-brand-600 text-white hover:bg-brand-700'
+                                      }`}
+                                    >
+                                      {busy === r.chapterId
+                                        ? 'Reading…'
+                                        : st === 'ready' || st === 'stale' ? 'Re-index' : 'Index'}
+                                    </Button>
+                                  )}
+                                  <Button
+                                    asChild
+                                    size="sm"
+                                    variant={st === 'ready' || st === 'pending' || st === 'stale' ? 'outline' : 'default'}
+                                    className={`h-7 cursor-pointer rounded-lg px-2 text-[11px] font-bold ${
+                                      st === 'ready' || st === 'pending' || st === 'stale'
+                                        ? 'border-surface-200 text-surface-600 hover:bg-surface-100 dark:border-surface-700 dark:text-surface-300'
+                                        : 'border-brand-600 bg-brand-600 text-white hover:bg-brand-700'
+                                    } ${disableActions ? 'pointer-events-none opacity-50' : ''}`}
+                                  >
+                                    <label title={st === 'ready' || st === 'stale' ? 'Replace this book and read it again' : 'Upload this chapter as a PDF'}>
+                                      {busy === r.chapterId ? 'Reading…' : st === 'ready' || st === 'pending' || st === 'stale' ? 'Replace' : 'Upload'}
+                                      <input
+                                        type="file"
+                                        accept="application/pdf,.pdf"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                          const f = e.target.files?.[0];
+                                          e.target.value = '';
+                                          if (f) uploadOne(r, f);
+                                        }}
+                                      />
+                                    </label>
+                                  </Button>
                                 </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+
+                                {/* Pagewise tracker — lives on the book actually being read, not in a
+                                    banner elsewhere on the page. Only appears once the slow scanned-page
+                                    OCR pass has published a page count; a chapter with a normal text
+                                    layer is read in one fast pass and never reaches this. */}
+                                {isIndexingNow && !!run?.currentPagesTotal && (
+                                  <div className="flex items-center gap-2 px-3 pb-2 pl-9 sm:px-4 sm:pl-11">
+                                    <Progress
+                                      value={Math.min(100, ((run.currentPagesDone ?? 0) / run.currentPagesTotal) * 100)}
+                                      className="h-1 flex-1 bg-brand-100 dark:bg-brand-900"
+                                      indicatorClassName="bg-brand-500"
+                                    />
+                                    <span className="shrink-0 text-[11px] tabular-nums text-brand-600 dark:text-brand-400">
+                                      page {run.currentPagesDone ?? 0} of {run.currentPagesTotal}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
             );
           })}
         </div>

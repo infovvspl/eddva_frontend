@@ -3,7 +3,34 @@ import { Camera, Mail, Phone, Shield, BookOpen, Users, ClipboardList, CheckCircl
 import { useAuth } from "@/context/SchoolAuthContext";
 import api from "@/lib/api/school-client";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
-import "./Profile.css";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+// A read-only labelled value (disabled input) used in the Personal Details card.
+function ReadOnlyField({ label, icon, value, type = "text" }: { label: string; icon?: React.ReactNode; value: string; type?: string }) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+        {icon}
+        {label}
+      </Label>
+      <Input type={type} value={value} disabled readOnly className="cursor-not-allowed bg-slate-50 font-medium text-slate-800 dark:bg-slate-900 dark:text-white" />
+    </div>
+  );
+}
+
+// A small labelled value tile (Address, City, State …).
+function InfoTile({ label, value }: { label: string; value?: string }) {
+  return (
+    <Card className="rounded-xl border-slate-100 bg-slate-50 px-4 py-3 shadow-none dark:border-slate-800 dark:bg-slate-900">
+      <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">{label}</p>
+      <p className="break-words text-xs font-semibold text-slate-800 dark:text-white sm:text-sm">{value || "—"}</p>
+    </Card>
+  );
+}
 
 const Profile: React.FC = () => {
   const { user } = useAuth();
@@ -24,17 +51,6 @@ const Profile: React.FC = () => {
     pinCode: "",
   });
   const [avatarUrl, setAvatarUrl] = useState<string>("");
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 640);
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
   const [assignments, setAssignments] = useState<any[]>([]);
   const [stats, setStats] = useState({
     attendancePercentage: "—",
@@ -121,255 +137,189 @@ const Profile: React.FC = () => {
     }
   }, [user]);
 
+  const initialsCard = "rounded-2xl border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900";
+
   return (
-    <div className="profile-page font-poppins">
-      <div className="profile-header">
-        <div className="profile-avatar">
-          <ProfileAvatar
-            src={avatarUrl || user?.profileImage || null}
-            name={profile.name || user?.name}
-            className="size-full rounded-full"
-            fallbackClassName="text-inherit"
-          />
-          <button
-            className="profile-avatar-btn"
-            type="button"
-            onClick={() => avatarInputRef.current?.click()}
-          >
-            <Camera size={16} />
-          </button>
-          <input
-            ref={avatarInputRef}
-            type="file"
-            accept="image/*"
-            hidden
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (!file) return;
-              const objectUrl = URL.createObjectURL(file);
-              setAvatarUrl(objectUrl);
-            }}
-          />
-        </div>
-
-        <div>
-          <h1>{profile.name}</h1>
-          <p>Teacher Profile</p>
-        </div>
-      </div>
-
-      <div className="space-y-6">
-        {/* Row 1 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="profile-card">
-          <h2>Personal Details</h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
-            <div className="profile-field">
-              <label>Full Name</label>
-              <input
-                type="text"
-                name="name"
-                value={profile.name}
-                disabled
-                className="bg-slate-50 cursor-not-allowed"
-              />
-            </div>
-            
-            <div className="profile-field">
-              <label>Employee ID</label>
-              <input
-                type="text"
-                name="employeeId"
-                value={profile.employeeId}
-                disabled
-                className="bg-slate-50 cursor-not-allowed"
-              />
-            </div>
-
-            <div className="profile-field">
-              <label>Email Address</label>
-              <input
-                type="email"
-                name="email"
-                value={profile.email}
-                disabled
-                className="bg-slate-50 cursor-not-allowed"
-              />
-            </div>
-
-            <div className="profile-field">
-              <label>Mobile Number</label>
-              <input
-                type="text"
-                name="phone"
-                value={profile.phone}
-                disabled
-                className="bg-slate-50 cursor-not-allowed"
-              />
-            </div>
-
-            <div className="profile-field">
-              <label>Date of Joining</label>
-              <input
-                type="text"
-                name="dateOfJoining"
-                value={profile.dateOfJoining}
-                disabled
-                className="bg-slate-50 cursor-not-allowed"
-              />
-            </div>
-
-            <div className="profile-field">
-              <label>
-                <span className="flex items-center gap-1.5"><Award size={14} className="text-blue-500" /> Qualifications</span>
-              </label>
-              <input
-                type="text"
-                name="qualifications"
-                value={profile.qualifications}
-                disabled
-                className="bg-slate-50 cursor-not-allowed"
-              />
-            </div>
-
-            <div className="profile-field">
-              <label>
-                <span className="flex items-center gap-1.5"><Globe size={14} className="text-blue-500" /> Nationality</span>
-              </label>
-              <input
-                type="text"
-                name="nationality"
-                value={profile.nationality}
-                disabled
-                className="bg-slate-50 cursor-not-allowed"
-              />
-            </div>
+    <div className="mx-auto w-full max-w-6xl space-y-6 p-4 font-poppins sm:p-6">
+      {/* Header */}
+      <Card className={`${initialsCard} p-4 sm:p-6`}>
+        <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
+          <div className="relative size-24 shrink-0 sm:size-28">
+            <ProfileAvatar
+              src={avatarUrl || user?.profileImage || null}
+              name={profile.name || user?.name}
+              className="size-full rounded-full"
+              fallbackClassName="text-inherit"
+            />
+            <Button
+              type="button"
+              size="icon"
+              aria-label="Change profile photo"
+              className="absolute bottom-0 right-0 size-8 rounded-full border-2 border-white shadow-md"
+              onClick={() => avatarInputRef.current?.click()}
+            >
+              <Camera size={14} />
+            </Button>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                const objectUrl = URL.createObjectURL(file);
+                setAvatarUrl(objectUrl);
+              }}
+            />
           </div>
-        </div>
 
-        {/* Address Information */}
-          <div className="profile-card">
-            <h2>
-              <span className="flex items-center gap-2"><MapPin size={18} className="text-blue-500" /> Address Information</span>
-            </h2>
-            <div className="space-y-2">
-              <div className="grid grid-cols-1 gap-2">
-                <div className="px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl">
-                  <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Address</p>
-                  <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">{profile.address || '—'}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl">
-                    <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">City</p>
-                    <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">{profile.city || '—'}</p>
-                  </div>
-                  <div className="px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl">
-                    <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">State</p>
-                    <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">{profile.state || '—'}</p>
-                  </div>
-                  <div className="px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl">
-                    <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Country</p>
-                    <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">{profile.country || '—'}</p>
-                  </div>
-                  <div className="px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl">
-                    <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Pin Code</p>
-                    <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">{profile.pinCode || '—'}</p>
-                  </div>
-                </div>
-              </div>
+          <div className="min-w-0">
+            <h1 className="break-words text-xl font-semibold text-slate-900 dark:text-white sm:text-2xl">{profile.name}</h1>
+            <div className="mt-1 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+              <Badge variant="outline" className="border-transparent bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">Teacher Profile</Badge>
+              {profile.employeeId && <span className="text-xs font-medium text-slate-500">ID: {profile.employeeId}</span>}
             </div>
-          </div>
-        </div>
-
-        {/* Row 2 */}
-        <div className="w-full">
-          {/* Academic Information */}
-          <div className="profile-card">
-            <h2>Academic Information</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {groupedAssignments.length > 0 ? (
-                groupedAssignments.map((item: any, i: number) => {
-                  const displayClassName = item.className.toLowerCase().startsWith("class")
-                    ? item.className
-                    : `Class ${item.className}`;
-                  return (
-                    <div key={i} className="p-4 sm:p-5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm flex flex-col justify-between">
-                      <div className="flex items-center justify-between gap-4 w-full">
-                        <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
-                          {displayClassName} <span className="text-slate-400 font-medium mx-1">·</span> Section {item.sectionName}
-                        </p>
-                        {item.isClassTeacher && (
-                          <span className="px-2 py-0.5 sm:px-3 sm:py-1 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-[10px] sm:text-xs font-semibold rounded-full shrink-0">
-                            Class Teacher
-                          </span>
-                        )}
-                      </div>
-                      {item.subjects.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-3 sm:mt-4">
-                          {item.subjects.map((sub: string, idx: number) => (
-                            <span
-                              key={idx}
-                              className="px-2.5 py-1 sm:px-3.5 sm:py-1.5 bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-350 text-[10px] sm:text-xs font-bold rounded-full border border-slate-100 dark:border-slate-850"
-                            >
-                              {sub}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              ) : (
-                <p className="text-[10px] sm:text-xs text-slate-400 font-semibold py-2">No active assignments found.</p>
+            <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs font-medium text-slate-500 sm:justify-start">
+              {profile.email && (
+                <span className="inline-flex min-w-0 items-center gap-1.5"><Mail size={13} className="shrink-0" /><span className="truncate">{profile.email}</span></span>
+              )}
+              {profile.phone && (
+                <span className="inline-flex items-center gap-1.5"><Phone size={13} className="shrink-0" />{profile.phone}</span>
               )}
             </div>
           </div>
         </div>
+      </Card>
 
-        {/* Row 3 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="profile-card">
-            <h2>Attendance Information</h2>
-            <div className="grid grid-cols-2 md:grid-cols-2 gap-2.5 sm:gap-4 md:gap-5">
-              <div className="p-3.5 sm:p-5 md:p-6 bg-emerald-50 dark:bg-emerald-950/30 rounded-2xl border border-emerald-100 dark:border-emerald-900/50 shadow-sm">
-                <div className="flex items-center gap-1.5 mb-2 sm:mb-3 text-emerald-600 dark:text-emerald-400">
-                  <CheckCircle size={isMobile ? 14 : 18} />
-                  <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Rate</span>
-                </div>
-                <p className="text-lg sm:text-2xl md:text-3xl font-black text-slate-900 dark:text-white">{stats.attendancePercentage}</p>
-              </div>
-              <div className="p-3.5 sm:p-5 md:p-6 bg-blue-50 dark:bg-blue-950/30 rounded-2xl border border-blue-100 dark:border-blue-900/50 shadow-sm">
-                <div className="flex items-center gap-1.5 mb-2 sm:mb-3 text-blue-600 dark:text-blue-400">
-                  <BookOpen size={isMobile ? 14 : 18} />
-                  <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Classes</span>
-                </div>
-                <p className="text-lg sm:text-2xl md:text-3xl font-black text-slate-900 dark:text-white">{stats.classesConducted}</p>
-              </div>
+      {/* Personal + address */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card className={initialsCard}>
+          <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-4">
+            <CardTitle className="text-base font-semibold leading-normal tracking-normal">Personal Details</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+            <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+              <ReadOnlyField label="Full Name" value={profile.name} />
+              <ReadOnlyField label="Employee ID" value={profile.employeeId} />
+              <ReadOnlyField label="Email Address" type="email" value={profile.email} />
+              <ReadOnlyField label="Mobile Number" value={profile.phone} />
+              <ReadOnlyField label="Date of Joining" value={profile.dateOfJoining} />
+              <ReadOnlyField label="Qualifications" icon={<Award size={14} className="text-blue-500" />} value={profile.qualifications} />
+              <ReadOnlyField label="Nationality" icon={<Globe size={14} className="text-blue-500" />} value={profile.nationality} />
             </div>
-          </div>
+          </CardContent>
+        </Card>
 
-          <div className="profile-card">
-            <h2>Performance Summary</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 md:gap-5">
-              <div className="text-center p-2 sm:p-5 bg-slate-50 dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
-                <Users size={isMobile ? 14 : 20} className="mx-auto mb-1.5 sm:mb-3 text-indigo-500" />
-                <p className="text-[8px] sm:text-[10px] text-slate-500 uppercase font-bold tracking-tight mb-1">Students</p>
-                <p className="text-sm sm:text-xl md:text-2xl font-black text-slate-900 dark:text-white">{stats.totalStudents}</p>
-              </div>
-              <div className="text-center p-2 sm:p-5 bg-slate-50 dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
-                <ClipboardList size={isMobile ? 14 : 20} className="mx-auto mb-1.5 sm:mb-3 text-rose-500" />
-                <p className="text-[8px] sm:text-[10px] text-slate-500 uppercase font-bold tracking-tight mb-1">Assignments</p>
-                <p className="text-sm sm:text-xl md:text-2xl font-black text-slate-900 dark:text-white">{stats.assignmentsCreated}</p>
-              </div>
-              <div className="text-center p-2 sm:p-5 bg-slate-50 dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
-                <Shield size={isMobile ? 14 : 20} className="mx-auto mb-1.5 sm:mb-3 text-teal-500" />
-                <p className="text-[8px] sm:text-[10px] text-slate-500 uppercase font-bold tracking-tight mb-1">Assessments</p>
-                <p className="text-sm sm:text-xl md:text-2xl font-black text-slate-900 dark:text-white">{stats.assessmentsConducted}</p>
-              </div>
+        <Card className={initialsCard}>
+          <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-4">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold leading-normal tracking-normal">
+              <MapPin size={18} className="text-blue-500" /> Address Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 p-4 pt-0 sm:p-6 sm:pt-0">
+            <InfoTile label="Address" value={profile.address} />
+            <div className="grid grid-cols-2 gap-2">
+              <InfoTile label="City" value={profile.city} />
+              <InfoTile label="State" value={profile.state} />
+              <InfoTile label="Country" value={profile.country} />
+              <InfoTile label="Pin Code" value={profile.pinCode} />
             </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Academic information */}
+      <Card className={initialsCard}>
+        <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-4">
+          <CardTitle className="flex items-center gap-2 text-base font-semibold leading-normal tracking-normal">
+            <Building size={18} className="text-blue-500" /> Academic Information
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {groupedAssignments.length > 0 ? (
+              groupedAssignments.map((item: any, i: number) => {
+                const displayClassName = item.className.toLowerCase().startsWith("class")
+                  ? item.className
+                  : `Class ${item.className}`;
+                return (
+                  <Card key={i} className="flex flex-col justify-between rounded-2xl border-slate-100 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5">
+                    <div className="flex w-full items-start justify-between gap-3">
+                      <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 sm:text-sm">
+                        {displayClassName} <span className="mx-1 font-medium text-slate-400">·</span> Section {item.sectionName}
+                      </p>
+                      {item.isClassTeacher && (
+                        <Badge variant="outline" className="shrink-0 rounded-full border-transparent bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 sm:px-3 sm:py-1 sm:text-xs">
+                          Class Teacher
+                        </Badge>
+                      )}
+                    </div>
+                    {item.subjects.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-1.5 sm:mt-4">
+                        {item.subjects.map((sub: string, idx: number) => (
+                          <Badge
+                            key={idx}
+                            variant="outline"
+                            className="rounded-full border-slate-100 bg-slate-50 px-2.5 py-1 text-[10px] font-semibold text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 sm:px-3.5 sm:py-1.5 sm:text-xs"
+                          >
+                            {sub}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </Card>
+                );
+              })
+            ) : (
+              <p className="py-2 text-xs font-semibold text-slate-400">No active assignments found.</p>
+            )}
           </div>
-        </div>
+        </CardContent>
+      </Card>
+
+      {/* Attendance + performance */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card className={initialsCard}>
+          <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-4">
+            <CardTitle className="text-base font-semibold leading-normal tracking-normal">Attendance Information</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 gap-3 p-4 pt-0 sm:gap-4 sm:p-6 sm:pt-0">
+            <Card className="rounded-2xl border-emerald-100 bg-emerald-50 p-3.5 shadow-sm dark:border-emerald-900/50 dark:bg-emerald-950/30 sm:p-5">
+              <div className="mb-2 flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 sm:mb-3">
+                <CheckCircle className="size-3.5 sm:size-[18px]" />
+                <span className="text-[10px] font-semibold uppercase tracking-wider sm:text-xs">Rate</span>
+              </div>
+              <p className="text-lg font-semibold text-slate-900 dark:text-white sm:text-2xl md:text-3xl">{stats.attendancePercentage}</p>
+            </Card>
+            <Card className="rounded-2xl border-blue-100 bg-blue-50 p-3.5 shadow-sm dark:border-blue-900/50 dark:bg-blue-950/30 sm:p-5">
+              <div className="mb-2 flex items-center gap-1.5 text-blue-600 dark:text-blue-400 sm:mb-3">
+                <BookOpen className="size-3.5 sm:size-[18px]" />
+                <span className="text-[10px] font-semibold uppercase tracking-wider sm:text-xs">Classes</span>
+              </div>
+              <p className="text-lg font-semibold text-slate-900 dark:text-white sm:text-2xl md:text-3xl">{stats.classesConducted}</p>
+            </Card>
+          </CardContent>
+        </Card>
+
+        <Card className={initialsCard}>
+          <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-4">
+            <CardTitle className="text-base font-semibold leading-normal tracking-normal">Performance Summary</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-3 gap-2 p-4 pt-0 sm:gap-4 sm:p-6 sm:pt-0">
+            {[
+              { label: "Students", value: stats.totalStudents, icon: Users, tone: "text-indigo-500" },
+              { label: "Assignments", value: stats.assignmentsCreated, icon: ClipboardList, tone: "text-rose-500" },
+              { label: "Assessments", value: stats.assessmentsConducted, icon: Shield, tone: "text-teal-500" },
+            ].map(({ label, value, icon: Icon, tone }) => (
+              <Card key={label} className="rounded-2xl border-slate-100 bg-slate-50 p-2 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5">
+                <Icon className={`mx-auto mb-1.5 size-3.5 sm:mb-3 sm:size-5 ${tone}`} />
+                <p className="mb-1 truncate text-[9px] font-semibold uppercase tracking-tight text-slate-500 sm:text-[10px]">{label}</p>
+                <p className="text-sm font-semibold text-slate-900 dark:text-white sm:text-xl md:text-2xl">{value}</p>
+              </Card>
+            ))}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -1,18 +1,48 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { MessageSquareWarning, Plus, Filter, AlertCircle, Clock, CheckCircle, XCircle, Search, X, Calendar, User, Send, MessageSquare } from 'lucide-react';
-import GlassCard from '@/components/school/GlassCard';
-import Button from '@/components/school/Button';
-import Badge from '@/components/school/Badge';
-import Tabs from '@/components/school/Tabs';
 import DataTable from '@/components/school/DataTable';
-import Modal from '@/components/school/Modal';
-import InputField from '@/components/school/InputField';
-import SelectField from '@/components/school/SelectField';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import api from '@/lib/api/school-client';
-import { CustomSelect } from "@/components/ui/CustomSelect";
 import './GrievanceHandling.css';
+
+const TONE_BADGE: Record<string, string> = {
+  success: 'bg-emerald-500/10 text-emerald-700',
+  info: 'bg-blue-500/10 text-blue-700',
+  warning: 'bg-amber-500/10 text-amber-700',
+  error: 'bg-red-500/10 text-red-700',
+  purple: 'bg-violet-500/10 text-violet-700',
+  default: 'bg-slate-500/10 text-slate-600',
+};
+
+function ToneBadge({ tone, className, children }: { tone: string; className?: string; children: React.ReactNode }) {
+  return (
+    <Badge variant="outline" className={cn('border-transparent', TONE_BADGE[tone] ?? TONE_BADGE.default, className)}>
+      {children}
+    </Badge>
+  );
+}
+
+const STATUS_TONE: Record<string, string> = {
+  open: 'error',
+  'in-progress': 'warning',
+  resolved: 'success',
+  closed: 'default',
+};
+const categoryTone = (v: string) => (v === 'academic' ? 'purple' : v === 'infrastructure' ? 'info' : 'warning');
+const priorityTone = (v: string) => (v === 'high' ? 'error' : v === 'medium' ? 'warning' : 'success');
+const ticketNo = (item: any) => item.ticketNumber || item.ticket_number || `USR-${String(item.id || '').replace(/-/g, '').slice(0, 8).toUpperCase()}`;
 
 const GrievanceHandling: React.FC = () => {
   const navigate = useNavigate();
@@ -40,18 +70,6 @@ const GrievanceHandling: React.FC = () => {
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
   const [replySuccess, setReplySuccess] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [showSearchInput, setShowSearchInput] = useState(false);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 640);
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
   const closeTicketModal = () => {
     setSelectedTicket(null);
     const nextParams = new URLSearchParams(searchParams);
@@ -145,7 +163,7 @@ const GrievanceHandling: React.FC = () => {
         status: (g.status || 'open').toLowerCase(),
         raisedBy: g.raised_by_name || 'Anonymous',
         date: new Date(g.created_at).toLocaleDateString(),
-        priority: 'medium' 
+        priority: 'medium'
       }));
       setGrievancesList(formatted);
       if (typeof res.data.total !== 'undefined') {
@@ -212,295 +230,205 @@ const GrievanceHandling: React.FC = () => {
 
 
   const columns = [
-    { key: 'ticketNumber', title: 'Ticket ID', render: (v: string) => <Badge variant="info">{v}</Badge> },
+    { key: 'ticketNumber', title: 'Ticket ID', render: (v: string) => <ToneBadge tone="info">{v}</ToneBadge> },
     { key: 'title', title: 'Complaint' },
-    { key: 'category', title: 'Category', render: (v: string) => (
-      <Badge variant={v === 'academic' ? 'purple' : v === 'infrastructure' ? 'info' : 'warning'}>{v}</Badge>
-    )},
-    { key: 'priority', title: 'Priority', render: (v: string) => (
-      <Badge variant={v === 'high' ? 'error' : v === 'medium' ? 'warning' : 'success'}>{v}</Badge>
-    )},
+    { key: 'category', title: 'Category', render: (v: string) => <ToneBadge tone={categoryTone(v)}>{v}</ToneBadge> },
+    { key: 'priority', title: 'Priority', render: (v: string) => <ToneBadge tone={priorityTone(v)}>{v}</ToneBadge> },
     { key: 'raisedBy', title: 'Raised By' },
     { key: 'date', title: 'Date' },
-    { key: 'status', title: 'Status', render: (v: string) => {
-      const icons: Record<string, React.ReactNode> = {
-        open: <AlertCircle size={14} />,
-        'in-progress': <Clock size={14} />,
-        resolved: <CheckCircle size={14} />,
-        closed: <XCircle size={14} />,
-      };
-      const variants: Record<string, string> = {
-        open: 'error',
-        'in-progress': 'warning',
-        resolved: 'success',
-        closed: 'default',
-      };
-      return (
-        <Badge variant={variants[v] as any}>
-          <span className="grievance__status-badge">{icons[v]} {v}</span>
-        </Badge>
-      );
-    }},
+    { key: 'status', title: 'Status', render: (v: string) => renderStatusBadge(v, 14) },
   ];
 
-  const renderStatusBadge = (status: string) => {
+  function renderStatusBadge(status: string, size = 12) {
     const icons: Record<string, React.ReactNode> = {
-      open: <AlertCircle size={12} className="shrink-0" />,
-      'in-progress': <Clock size={12} className="shrink-0" />,
-      resolved: <CheckCircle size={12} className="shrink-0" />,
-      closed: <XCircle size={12} className="shrink-0" />,
-    };
-    const variants: Record<string, string> = {
-      open: 'error',
-      'in-progress': 'warning',
-      resolved: 'success',
-      closed: 'default',
+      open: <AlertCircle size={size} className="shrink-0" />,
+      'in-progress': <Clock size={size} className="shrink-0" />,
+      resolved: <CheckCircle size={size} className="shrink-0" />,
+      closed: <XCircle size={size} className="shrink-0" />,
     };
     return (
-      <Badge variant={variants[status] as any}>
-        <span className="flex items-center gap-1 text-[10px] capitalize">
-          {icons[status]} {status}
-        </span>
-      </Badge>
+      <ToneBadge tone={STATUS_TONE[status] ?? 'default'} className="gap-1 capitalize">
+        {icons[status]} {status}
+      </ToneBadge>
     );
-  };
+  }
 
-  const renderMobileGrievanceList = (data: any[]) => {
-    return (
-      <div className="space-y-3 mt-1.5">
-        {data.map((item) => (
-          <div
-            key={item.id}
-            onClick={() => openTicketMessages(item)}
-            className="p-3.5 rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col gap-2 cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-850 transition"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded-md">
-                #{item.ticketNumber || item.ticket_number || `USR-${String(item.id || '').replace(/-/g, '').slice(0, 8).toUpperCase()}`}
-              </span>
-              {renderStatusBadge(item.status)}
-            </div>
-
-            <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-snug">
-              {item.title}
-            </h4>
-
-            <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-              <Badge variant={item.category === 'academic' ? 'purple' : item.category === 'infrastructure' ? 'info' : 'warning'}>
-                <span className="text-[9px] capitalize">{item.category}</span>
-              </Badge>
-              <Badge variant={item.priority === 'high' ? 'error' : item.priority === 'medium' ? 'warning' : 'success'}>
-                <span className="text-[9px] capitalize">{item.priority} Priority</span>
-              </Badge>
-            </div>
-
-            <div className="flex items-center justify-between text-[9px] font-semibold text-slate-400 dark:text-slate-500 border-t border-slate-100/60 dark:border-slate-800/60 pt-2 mt-1">
-              <span>By: {item.raisedBy}</span>
-              <span>{item.date}</span>
-            </div>
+  const renderMobileGrievanceList = (data: any[]) => (
+    <div className="space-y-3">
+      {data.map((item) => (
+        <Card
+          key={item.id}
+          role="button"
+          tabIndex={0}
+          onClick={() => openTicketMessages(item)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openTicketMessages(item); } }}
+          className="flex cursor-pointer flex-col gap-2 rounded-2xl border-slate-100 bg-white p-3.5 shadow-sm transition hover:border-blue-300 dark:border-slate-800 dark:bg-slate-900"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <ToneBadge tone="info" className="rounded-md px-2 py-0.5 text-[10px] font-black uppercase tracking-wider">
+              #{ticketNo(item)}
+            </ToneBadge>
+            {renderStatusBadge(item.status)}
           </div>
-        ))}
-        {data.length === 0 && (
-          <div className="py-8 text-center text-xs font-semibold text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">
-            No complaints found.
+
+          <h4 className="text-xs font-bold leading-snug text-slate-800 dark:text-slate-200">{item.title}</h4>
+
+          <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+            <ToneBadge tone={categoryTone(item.category)} className="text-[9px] capitalize">{item.category}</ToneBadge>
+            <ToneBadge tone={priorityTone(item.priority)} className="text-[9px] capitalize">{item.priority} Priority</ToneBadge>
           </div>
-        )}
+
+          <div className="mt-1 flex items-center justify-between border-t border-slate-100/60 pt-2 text-[9px] font-semibold text-slate-400 dark:border-slate-800/60 dark:text-slate-500">
+            <span>By: {item.raisedBy}</span>
+            <span>{item.date}</span>
+          </div>
+        </Card>
+      ))}
+      {data.length === 0 && (
+        <Card className="rounded-2xl border-slate-100 bg-white py-8 text-center text-xs font-semibold text-slate-400 shadow-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-500">
+          No complaints found.
+        </Card>
+      )}
+    </div>
+  );
+
+  const renderList = (data: any[]) => (
+    <>
+      <div className="md:hidden">{renderMobileGrievanceList(data)}</div>
+      <div className="grievance__section hidden w-full overflow-x-auto md:block">
+        <DataTable columns={columns} data={data} onRowClick={openTicketMessages} />
       </div>
-    );
-  };
-
-  const allContent = isMobile ? (
-    renderMobileGrievanceList(grievancesList)
-  ) : (
-    <div className="grievance__section overflow-x-auto w-full">
-      <DataTable columns={columns} data={grievancesList} onRowClick={openTicketMessages} />
-    </div>
+    </>
   );
 
-  const academicContent = isMobile ? (
-    renderMobileGrievanceList(grievancesList.filter((g) => g.category === 'academic'))
-  ) : (
-    <div className="grievance__section overflow-x-auto w-full">
-      <DataTable columns={columns} data={grievancesList.filter((g) => g.category === 'academic')} onRowClick={openTicketMessages} />
-    </div>
-  );
-
-  const infraContent = isMobile ? (
-    renderMobileGrievanceList(grievancesList.filter((g) => g.category === 'infrastructure'))
-  ) : (
-    <div className="grievance__section overflow-x-auto w-full">
-      <DataTable columns={columns} data={grievancesList.filter((g) => g.category === 'infrastructure')} onRowClick={openTicketMessages} />
-    </div>
-  );
-
-  const supportContent = isMobile ? (
-    renderMobileGrievanceList(grievancesList)
-  ) : (
-    <div className="grievance__section">
-      <GlassCard>
-        <h3 className="grievance__support-title">Support Requests</h3>
-        <div className="grievance__support-list">
-          {grievancesList.map((g) => (
-            <div key={g.id} className="grievance__support-item cursor-pointer hover:bg-slate-50/50 transition" onClick={() => openTicketMessages(g)}>
-              <div className="grievance__support-priority">
-                <div className={`grievance__priority-dot grievance__priority-dot--${g.priority}`} />
-              </div>
-              <div className="grievance__support-info">
-                <h4>{g.title}</h4>
-                <p>{g.description}</p>
-                <div className="grievance__support-meta">
-                  <span>Raised by: {g.raisedBy}</span>
-                  <span>{g.date}</span>
+  const renderSupportList = () => (
+    <>
+      <div className="md:hidden">{renderMobileGrievanceList(grievancesList)}</div>
+      <div className="grievance__section hidden md:block">
+        <Card className="rounded-2xl border-slate-200 bg-white p-[18px] shadow-sm">
+          <CardHeader className="p-0 pb-3">
+            <CardTitle className="grievance__support-title text-base leading-normal tracking-normal">Support Requests</CardTitle>
+          </CardHeader>
+          <CardContent className="grievance__support-list p-0">
+            {grievancesList.map((g) => (
+              <div key={g.id} className="grievance__support-item cursor-pointer transition hover:bg-slate-50/50" onClick={() => openTicketMessages(g)}>
+                <div className="grievance__support-priority">
+                  <div className={`grievance__priority-dot grievance__priority-dot--${g.priority}`} />
                 </div>
+                <div className="grievance__support-info">
+                  <h4>{g.title}</h4>
+                  <p>{g.description}</p>
+                  <div className="grievance__support-meta">
+                    <span>Raised by: {g.raisedBy}</span>
+                    <span>{g.date}</span>
+                  </div>
+                </div>
+                <ToneBadge tone={g.status === 'open' ? 'error' : 'warning'}>{g.status}</ToneBadge>
               </div>
-              <Badge variant={g.status === 'open' ? 'error' : 'warning'}>{g.status}</Badge>
-            </div>
-          ))}
-        </div>
-      </GlassCard>
-    </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    </>
   );
+
+  const commitSearch = () => {
+    if (searchQuery !== searchInput) {
+      setPage(1);
+      setSearchQuery(searchInput);
+    }
+  };
 
   return (
     <div className="grievance">
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 w-full">
-        <div className="grievance__header-stats flex flex-row flex-nowrap overflow-x-auto no-scrollbar gap-1.5 sm:gap-2.5 w-full" style={{ flexWrap: 'nowrap' }}>
-          <div className="grievance__stat-pill flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-xs shrink-0">
-            <AlertCircle size={isMobile ? 12 : 14} className="grievance__stat-icon--open shrink-0" />
-            <span>{stats.open} Open</span>
-          </div>
-          <div className="grievance__stat-pill flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-xs shrink-0">
-            <Clock size={isMobile ? 12 : 14} className="grievance__stat-icon--progress shrink-0" />
-            <span>{stats.inProgress} In Progress</span>
-          </div>
-          <div className="grievance__stat-pill flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-xs shrink-0">
-            <CheckCircle size={isMobile ? 12 : 14} className="grievance__stat-icon--resolved shrink-0" />
-            <span>{stats.resolved} Resolved</span>
-          </div>
+      <div className="flex w-full flex-col items-stretch justify-between gap-3 lg:flex-row lg:items-center">
+        <div className="no-scrollbar flex w-full flex-row flex-nowrap gap-1.5 overflow-x-auto sm:gap-2.5">
+          {[
+            { icon: <AlertCircle className="grievance__stat-icon--open size-3 shrink-0 sm:size-3.5" />, label: `${stats.open} Open` },
+            { icon: <Clock className="grievance__stat-icon--progress size-3 shrink-0 sm:size-3.5" />, label: `${stats.inProgress} In Progress` },
+            { icon: <CheckCircle className="grievance__stat-icon--resolved size-3 shrink-0 sm:size-3.5" />, label: `${stats.resolved} Resolved` },
+          ].map((pill) => (
+            <Badge key={pill.label} variant="outline" className="grievance__stat-pill shrink-0 gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold sm:px-2.5 sm:py-1 sm:text-xs">
+              {pill.icon}
+              <span>{pill.label}</span>
+            </Badge>
+          ))}
         </div>
 
-        {isMobile ? (
-          <div className="flex flex-row items-center gap-2 w-full mt-1">
-            {showSearchInput ? (
-              <div className="relative flex-1 flex items-center gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Search complaints..."
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        setPage(1);
-                        setSearchQuery(searchInput);
-                      }
-                    }}
-                    onBlur={() => {
-                      if (searchQuery !== searchInput) {
-                        setPage(1);
-                        setSearchQuery(searchInput);
-                      }
-                    }}
-                    className="w-full pl-8 pr-8 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:outline-none text-slate-800 dark:text-slate-100"
-                    autoFocus
-                  />
-                  <button onClick={() => { setSearchInput(''); setSearchQuery(''); setShowSearchInput(false); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-650">
-                    <X size={14} />
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setShowSearchInput(true)}
-                  className="shrink-0 h-[36px] w-[36px] flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 transition active:scale-95 shadow-sm"
-                >
-                  <Search size={16} className="stroke-[2.5]" />
-                </button>
-                <div className="flex-1">
-                  <CustomSelect
-                    value={activeTab}
-                    onChange={(val) => {
-                      setActiveTab(val);
-                      setPage(1);
-                    }}
-                    options={[
-                      { value: 'all', label: 'All Complaints' },
-                      { value: 'academic', label: 'Academic' },
-                      { value: 'infrastructure', label: 'Infrastructure' },
-                      { value: 'support', label: 'Support Requests' },
-                    ]}
-                    className="w-full"
-                    triggerClassName="flex h-[36px] w-full items-center justify-between gap-1 px-3 rounded-xl border border-slate-200 bg-white text-xs font-semibold outline-none text-slate-700 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowComplaintModal(true)}
-                  className="shrink-0 h-[36px] w-[36px] flex items-center justify-center rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white shadow-md transition active:scale-95"
-                >
-                  <Plus size={18} className="stroke-[2.5]" />
-                </button>
-              </>
+        <div className="flex w-full flex-row items-center gap-2 lg:w-auto lg:gap-2.5">
+          <div className="relative min-w-0 flex-1 lg:min-w-[240px] lg:flex-initial">
+            <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400 sm:size-4" />
+            <Input
+              type="text"
+              placeholder="Search complaints..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setPage(1);
+                  setSearchQuery(searchInput);
+                }
+              }}
+              onBlur={commitSearch}
+              className="h-9 w-full rounded-xl border-slate-200 bg-white pl-8 pr-8 text-xs text-slate-800 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 sm:pl-9 sm:text-sm"
+            />
+            {searchInput && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Clear search"
+                onClick={() => { setSearchInput(''); setSearchQuery(''); setPage(1); }}
+                className="absolute right-1 top-1/2 size-7 -translate-y-1/2 text-slate-400 hover:bg-transparent hover:text-slate-600"
+              >
+                <X size={14} />
+              </Button>
             )}
           </div>
-        ) : (
-          <div className="flex flex-row items-center gap-2.5 w-full sm:w-auto">
-            <div className="relative flex-1 sm:flex-initial min-w-0 sm:min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search complaints..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    setPage(1);
-                    setSearchQuery(searchInput);
-                  }
-                }}
-                onBlur={() => {
-                  if (searchQuery !== searchInput) {
-                    setPage(1);
-                    setSearchQuery(searchInput);
-                  }
-                }}
-                className="w-full pl-9 pr-4 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-slate-100"
-              />
-            </div>
-            <Button className="shrink-0" icon={<Plus size={16} />} onClick={() => setShowComplaintModal(true)}>Raise Complaint</Button>
-          </div>
-        )}
+          <Button className="shrink-0 gap-1.5" onClick={() => setShowComplaintModal(true)} aria-label="Raise Complaint">
+            <Plus size={16} />
+            <span className="hidden sm:inline">Raise Complaint</span>
+          </Button>
+        </div>
       </div>
 
-      <div className="mb-4">
-        {isMobile ? (
-          <div className="mt-3">
-            {activeTab === 'all' && allContent}
-            {activeTab === 'academic' && academicContent}
-            {activeTab === 'infrastructure' && infraContent}
-            {activeTab === 'support' && supportContent}
-          </div>
-        ) : (
-          <Tabs
-            onChange={(tabId) => {
-              setActiveTab(tabId);
-              setPage(1);
-            }}
-            tabs={[
-              { id: 'all', label: 'All Complaints', icon: <MessageSquareWarning size={16} />, content: allContent },
-              { id: 'academic', label: 'Academic', icon: <AlertCircle size={16} />, content: academicContent },
-              { id: 'infrastructure', label: 'Infrastructure', icon: <Filter size={16} />, content: infraContent },
-              { id: 'support', label: 'Support Requests', icon: <Clock size={16} />, content: supportContent },
-            ]}
-          />
-        )}
+      <div className="mb-4 mt-3">
+        <Tabs
+          value={activeTab}
+          onValueChange={(tabId) => {
+            setActiveTab(tabId);
+            setPage(1);
+          }}
+        >
+          <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border border-slate-100 bg-white p-1.5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            {[
+              { id: 'all', label: 'All Complaints', icon: <MessageSquareWarning size={16} /> },
+              { id: 'academic', label: 'Academic', icon: <AlertCircle size={16} /> },
+              { id: 'infrastructure', label: 'Infrastructure', icon: <Filter size={16} /> },
+              { id: 'support', label: 'Support Requests', icon: <Clock size={16} /> },
+            ].map((t) => (
+              <TabsTrigger
+                key={t.id}
+                value={t.id}
+                className="shrink-0 gap-2 rounded-lg px-3 py-2 text-xs font-bold text-slate-500 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm sm:text-sm"
+              >
+                {t.icon}
+                {t.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+
+        <div className="mt-3">
+          {activeTab === 'all' && renderList(grievancesList)}
+          {activeTab === 'academic' && renderList(grievancesList.filter((g) => g.category === 'academic'))}
+          {activeTab === 'infrastructure' && renderList(grievancesList.filter((g) => g.category === 'infrastructure'))}
+          {activeTab === 'support' && renderSupportList()}
+        </div>
       </div>
 
       {grievancesList.length > 0 && (
-        <div className="mt-4 border-t border-slate-100 dark:border-slate-800 pt-4">
+        <div className="mt-4 border-t border-slate-100 pt-4 dark:border-slate-800">
           <DataTablePagination
             page={page}
             limit={limit}
@@ -512,163 +440,178 @@ const GrievanceHandling: React.FC = () => {
         </div>
       )}
 
-      <Modal isOpen={showComplaintModal} onClose={() => setShowComplaintModal(false)} title="Raise New Complaint">
-        <div className="grievance__modal-form">
-          <InputField label="Title" placeholder="Brief title for the complaint" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} />
-          <SelectField
-            label="Category"
-            value={formData.category}
-            onChange={(e) => setFormData({...formData, category: e.target.value})}
-            options={[
-              { value: 'academic', label: 'Academic' },
-              { value: 'infrastructure', label: 'Infrastructure' },
-              { value: 'administrative', label: 'Administrative' },
-            ]}
-          />
-          <SelectField
-            label="Priority"
-            value={formData.priority}
-            onChange={(e) => setFormData({...formData, priority: e.target.value})}
-            options={[
-              { value: 'high', label: 'High' },
-              { value: 'medium', label: 'Medium' },
-              { value: 'low', label: 'Low' },
-            ]}
-          />
-          <div className="grievance__modal-textarea-wrapper">
-            <label className="grievance__modal-label">Description</label>
-            <textarea className="grievance__modal-textarea" placeholder="Describe the issue in detail..." rows={4} value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} />
+      {/* Raise complaint */}
+      <Dialog open={showComplaintModal} onOpenChange={setShowComplaintModal}>
+        <DialogContent className="max-h-[90vh] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-2xl sm:rounded-2xl">
+          <DialogHeader className="text-left">
+            <DialogTitle>Raise New Complaint</DialogTitle>
+            <DialogDescription className="sr-only">Describe the issue and submit it to the institute admin.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="complaint-title">Title</Label>
+              <Input
+                id="complaint-title"
+                placeholder="Brief title for the complaint"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>Category</Label>
+                <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
+                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="academic">Academic</SelectItem>
+                    <SelectItem value="infrastructure">Infrastructure</SelectItem>
+                    <SelectItem value="administrative">Administrative</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Priority</Label>
+                <Select value={formData.priority} onValueChange={(v) => setFormData({ ...formData, priority: v })}>
+                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="complaint-description">Description</Label>
+              <Textarea
+                id="complaint-description"
+                placeholder="Describe the issue in detail..."
+                rows={4}
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              />
+            </div>
           </div>
-          <div className="grievance__modal-actions">
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row">
             <Button variant="outline" onClick={() => setShowComplaintModal(false)}>Cancel</Button>
             <Button onClick={handleCreateComplaint}>Submit Complaint</Button>
-          </div>
-        </div>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      {selectedTicket && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={closeTicketModal} />
-          <div className="relative w-[calc(100%-1.5rem)] sm:w-full max-w-2xl max-h-[85vh] sm:max-h-[90vh] overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-100 bg-white shadow-2xl flex flex-col dark:border-slate-800 dark:bg-slate-950">
-            <div className="flex items-center justify-between border-b border-slate-100 p-4 sm:p-6 dark:border-slate-800">
-              <div>
+      {/* Ticket details */}
+      <Dialog open={!!selectedTicket} onOpenChange={(open) => { if (!open) closeTicketModal(); }}>
+        <DialogContent className="flex max-h-[85vh] w-[calc(100%-1.5rem)] max-w-2xl flex-col gap-0 overflow-hidden rounded-2xl border-slate-100 bg-white p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-950 sm:max-h-[90vh] sm:w-full sm:rounded-3xl">
+          {selectedTicket && (
+            <>
+              <DialogHeader className="border-b border-slate-100 p-4 pr-12 text-left dark:border-slate-800 sm:p-6 sm:pr-14">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Support Ticket</span>
-                <p className="mt-1 text-xs font-black uppercase tracking-widest text-blue-600">
-                  #{selectedTicket.ticketNumber || selectedTicket.ticket_number || `USR-${String(selectedTicket.id || '').replace(/-/g, '').slice(0, 8).toUpperCase()}`}
-                </p>
-                <h2 className="mt-1 font-display text-base sm:text-xl font-bold text-slate-950 dark:text-white leading-snug">
+                <p className="mt-1 text-xs font-black uppercase tracking-widest text-blue-600">#{ticketNo(selectedTicket)}</p>
+                <DialogTitle className="mt-1 text-base font-bold leading-snug tracking-normal text-slate-950 dark:text-white sm:text-xl">
                   {selectedTicket.title}
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={closeTicketModal}
-                className="rounded-full p-1.5 sm:p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-900"
-              >
-                <X className="size-5" />
-              </button>
-            </div>
+                </DialogTitle>
+                <DialogDescription className="sr-only">Ticket details and admin replies</DialogDescription>
+              </DialogHeader>
 
-            <div className="max-h-[50vh] sm:max-h-[60vh] space-y-4 sm:space-y-6 overflow-y-auto p-4 sm:p-6">
-              <div>
-                <h4 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">Description</h4>
-                <div className="mt-1.5 sm:mt-2 whitespace-pre-wrap rounded-xl sm:rounded-2xl bg-slate-50 p-3 sm:p-4 text-xs sm:text-sm font-medium leading-relaxed text-slate-700 dark:bg-slate-900 dark:text-slate-300">
-                  {selectedTicket.description || 'No description provided.'}
-                </div>
-              </div>
-
-              <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
-                <div className="rounded-xl sm:rounded-2xl border border-slate-100 p-3 sm:p-4 dark:border-slate-800">
-                  <h4 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">Status</h4>
-                  <div className="mt-1.5">
-                    <Badge variant={selectedTicket.status === 'resolved' || selectedTicket.status === 'closed' ? 'success' : 'warning'}>
-                      {selectedTicket.status}
-                    </Badge>
+              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 sm:space-y-6 sm:p-6">
+                <div>
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 sm:text-xs">Description</h4>
+                  <div className="mt-1.5 whitespace-pre-wrap rounded-xl bg-slate-50 p-3 text-xs font-medium leading-relaxed text-slate-700 dark:bg-slate-900 dark:text-slate-300 sm:mt-2 sm:rounded-2xl sm:p-4 sm:text-sm">
+                    {selectedTicket.description || 'No description provided.'}
                   </div>
                 </div>
 
-                <div className="rounded-xl sm:rounded-2xl border border-slate-100 p-3 sm:p-4 dark:border-slate-800">
-                  <h4 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">Created At</h4>
-                  <p className="mt-1.5 flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
-                    <Calendar className="size-3.5 text-slate-400" />
-                    {selectedTicket.createdAt || selectedTicket.created_at ? new Date(selectedTicket.createdAt || selectedTicket.created_at).toLocaleString() : 'Recently'}
-                  </p>
-                </div>
-
-                <div className="rounded-xl sm:rounded-2xl border border-slate-100 p-3 sm:p-4 dark:border-slate-800">
-                  <h4 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">Category</h4>
-                  <p className="mt-1.5 text-xs sm:text-sm font-bold capitalize text-slate-800 dark:text-slate-200">
-                    {selectedTicket.category || 'General'}
-                  </p>
-                </div>
-
-                {/* Ticket messages */}
-                <div className="col-span-full rounded-xl sm:rounded-2xl border border-slate-100 bg-slate-50/50 p-3 sm:p-4 dark:border-slate-800">
-                  <h4 className="mb-2.5 sm:mb-3 flex items-center gap-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500">
-                    <MessageSquare className="size-3.5 text-slate-400" />
-                    Institute Admin Replies
-                  </h4>
-                  {loadingMessages ? (
-                    <p className="text-xs sm:text-sm font-bold text-slate-500">Loading replies...</p>
-                  ) : ticketMessages.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-slate-200 bg-white p-3 sm:p-4 text-[11px] sm:text-xs font-semibold text-slate-500">
-                      No replies have been sent for this ticket yet.
+                <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
+                  <Card className="rounded-xl border-slate-100 p-3 shadow-none dark:border-slate-800 sm:rounded-2xl sm:p-4">
+                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 sm:text-xs">Status</h4>
+                    <div className="mt-1.5">
+                      <ToneBadge tone={selectedTicket.status === 'resolved' || selectedTicket.status === 'closed' ? 'success' : 'warning'}>
+                        {selectedTicket.status}
+                      </ToneBadge>
                     </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {ticketMessages.map((message) => (
-                        <div key={message.id} className="rounded-xl border border-slate-100 bg-white p-2.5 sm:p-3 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-                          <p className="whitespace-pre-wrap break-words text-xs sm:text-sm font-medium leading-relaxed text-slate-700 dark:text-slate-200">
-                            {message.content || 'Message unavailable'}
-                          </p>
-                          <p className="mt-1.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                            {message.senderRole === 'INSTITUTE_ADMIN' ? (message.senderName || 'Institute Admin') : 'You (Sender)'} - {message.createdAt ? new Date(message.createdAt).toLocaleString() : 'Recently'}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  </Card>
+
+                  <Card className="rounded-xl border-slate-100 p-3 shadow-none dark:border-slate-800 sm:rounded-2xl sm:p-4">
+                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 sm:text-xs">Created At</h4>
+                    <p className="mt-1.5 flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200 sm:text-sm">
+                      <Calendar className="size-3.5 text-slate-400" />
+                      {selectedTicket.createdAt || selectedTicket.created_at ? new Date(selectedTicket.createdAt || selectedTicket.created_at).toLocaleString() : 'Recently'}
+                    </p>
+                  </Card>
+
+                  <Card className="rounded-xl border-slate-100 p-3 shadow-none dark:border-slate-800 sm:rounded-2xl sm:p-4">
+                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 sm:text-xs">Category</h4>
+                    <p className="mt-1.5 text-xs font-bold capitalize text-slate-800 dark:text-slate-200 sm:text-sm">
+                      {selectedTicket.category || 'General'}
+                    </p>
+                  </Card>
+
+                  {/* Ticket messages */}
+                  <Card className="col-span-full rounded-xl border-slate-100 bg-slate-50/50 p-3 shadow-none dark:border-slate-800 sm:rounded-2xl sm:p-4">
+                    <h4 className="mb-2.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 sm:mb-3 sm:text-xs">
+                      <MessageSquare className="size-3.5 text-slate-400" />
+                      Institute Admin Replies
+                    </h4>
+                    {loadingMessages ? (
+                      <p className="text-xs font-bold text-slate-500 sm:text-sm">Loading replies...</p>
+                    ) : ticketMessages.length === 0 ? (
+                      <div className="rounded-xl border border-dashed border-slate-200 bg-white p-3 text-[11px] font-semibold text-slate-500 sm:p-4 sm:text-xs">
+                        No replies have been sent for this ticket yet.
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {ticketMessages.map((message) => (
+                          <Card key={message.id} className="rounded-xl border-slate-100 bg-white p-2.5 shadow-sm dark:border-slate-800 dark:bg-slate-950 sm:p-3">
+                            <p className="whitespace-pre-wrap break-words text-xs font-medium leading-relaxed text-slate-700 dark:text-slate-200 sm:text-sm">
+                              {message.content || 'Message unavailable'}
+                            </p>
+                            <p className="mt-1.5 text-[9px] font-bold uppercase tracking-wider text-slate-400 sm:text-[10px]">
+                              {message.senderRole === 'INSTITUTE_ADMIN' ? (message.senderName || 'Institute Admin') : 'You (Sender)'} - {message.createdAt ? new Date(message.createdAt).toLocaleString() : 'Recently'}
+                            </p>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </Card>
                 </div>
               </div>
-            </div>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-slate-100 bg-slate-50 p-4 sm:p-6 dark:border-slate-800 dark:bg-slate-900/50">
-              <label className="flex items-center justify-between sm:justify-start gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400">
-                <span>Reopen</span>
-                <input
-                  type="checkbox"
-                  role="switch"
-                  checked={String(selectedTicket.status || '').toUpperCase() === 'REOPENED'}
-                  disabled={['OPEN', 'REOPENED'].includes(String(selectedTicket.status || '').toUpperCase())}
-                  onChange={(event) => {
-                    if (event.target.checked && selectedTicket.id) {
-                      void reopenTicket(selectedTicket.id);
-                    }
-                  }}
-                  className="h-5 w-10 cursor-pointer appearance-none rounded-full bg-slate-300 transition before:block before:size-5 before:rounded-full before:bg-white before:shadow before:transition checked:bg-blue-600 checked:before:translate-x-5 disabled:cursor-not-allowed disabled:opacity-70"
-                />
-              </label>
-              <div className="flex items-center justify-end gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => void openChatForTicket(selectedTicket)}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3.5 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100 dark:border-blue-900/50 dark:bg-blue-950/50 dark:text-blue-400 sm:px-4 sm:py-2.5"
-                >
-                  <MessageSquare className="size-3.5" />
-                  Chat
-                </button>
-                <button
-                  type="button"
-                  onClick={closeTicketModal}
-                  className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white transition hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-slate-200 sm:px-5 sm:py-2.5"
-                >
-                  Close
-                </button>
+              <div className="flex flex-col items-stretch justify-between gap-3 border-t border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50 sm:flex-row sm:items-center sm:p-6">
+                <Label className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400 sm:justify-start">
+                  <span>Reopen</span>
+                  <Switch
+                    checked={String(selectedTicket.status || '').toUpperCase() === 'REOPENED'}
+                    disabled={['OPEN', 'REOPENED'].includes(String(selectedTicket.status || '').toUpperCase())}
+                    onCheckedChange={(checked) => {
+                      if (checked && selectedTicket.id) {
+                        void reopenTicket(selectedTicket.id);
+                      }
+                    }}
+                  />
+                </Label>
+                <div className="flex items-center justify-end gap-2.5">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => void openChatForTicket(selectedTicket)}
+                    className="gap-1.5 rounded-xl border-blue-200 bg-blue-50 text-xs font-bold text-blue-700 hover:bg-blue-100 hover:text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/50 dark:text-blue-400"
+                  >
+                    <MessageSquare className="size-3.5" />
+                    Chat
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={closeTicketModal}
+                    className="rounded-xl bg-slate-900 text-xs font-bold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-slate-200"
+                  >
+                    Close
+                  </Button>
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

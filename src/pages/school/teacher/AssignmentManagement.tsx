@@ -249,7 +249,7 @@ const AssignmentManagement: React.FC = () => {
     target_type: "individual" as TargetType,
     max_marks: "100",
   });
-  
+
   // Grouping Engine State
   const [groupStrategy, setGroupStrategy] = useState<'group_size' | 'group_count'>('group_size');
   const [groupSizeValue, setGroupSizeValue] = useState<number>(3);
@@ -1091,19 +1091,19 @@ const AssignmentManagement: React.FC = () => {
   const pendingSubmissionsCount = inboxItems.filter((s) => s.status !== 'graded').length;
 
   return (
-    <div className="w-full min-h-screen p-4 sm:p-6 lg:p-8 bg-slate-50/50 space-y-6">
+    <div className="w-full space-y-6 px-4 py-6 font-poppins sm:px-6 lg:px-8">
       {/* Page Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-primary/10 text-primary">
-              <BookOpen className="size-6" />
+            <div className="rounded-xl bg-blue-100 p-2 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+              <BookOpen className="size-5" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+            <h1 className="text-xl font-black text-slate-900 dark:text-white sm:text-2xl">
               Assignments & Projects
             </h1>
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-xs text-slate-500">
             Create individual & group assignments, auto-assign student teams, and grade submissions.
           </p>
         </div>
@@ -1117,7 +1117,7 @@ const AssignmentManagement: React.FC = () => {
           )}
 
           {level === 'workspace' && (
-            <Button onClick={openCreateModal} size="sm" className="gap-2 shadow-sm font-semibold">
+            <Button onClick={openCreateModal} size="sm" className="gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 font-extrabold text-white shadow-md shadow-blue-600/20 hover:brightness-110">
               <Plus className="size-4" />
               Create Assignment
             </Button>
@@ -1127,58 +1127,58 @@ const AssignmentManagement: React.FC = () => {
 
       {/* Metrics Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="shadow-xs border-slate-200">
+        <Card className="rounded-2xl bg-white shadow-sm transition-colors dark:bg-slate-900 border-blue-200 hover:border-blue-500 dark:border-blue-900/50 dark:hover:border-blue-500">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Total Workspace Assignments
             </CardTitle>
-            <BookOpen className="size-4 text-primary" />
+            <span className="flex size-8 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-950/60 dark:text-blue-300"><BookOpen className="size-4" /></span>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{workspaceAssignments.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <div className="text-2xl font-black text-slate-900 dark:text-white">{workspaceAssignments.length}</div>
+            <p className="text-xs text-slate-500 mt-1">
               {level === 'workspace' ? `${selectedSubject?.name} • ${selectedClass?.name}` : 'Select workspace context'}
             </p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-xs border-slate-200">
+        <Card className="rounded-2xl bg-white shadow-sm transition-colors dark:bg-slate-900 border-amber-200 hover:border-amber-500 dark:border-amber-900/50 dark:hover:border-amber-500">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Pending Submissions
             </CardTitle>
-            <Inbox className="size-4 text-amber-500" />
+            <span className="flex size-8 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-950/60 dark:text-amber-300"><Inbox className="size-4" /></span>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
-              <div className="text-2xl font-bold text-slate-900">{pendingSubmissionsCount}</div>
+              <div className="text-2xl font-black text-slate-900 dark:text-white">{pendingSubmissionsCount}</div>
               {pendingSubmissionsCount > 0 && (
                 <Badge variant="destructive" className="text-[10px]">Action Required</Badge>
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Awaiting teacher grading</p>
+            <p className="text-xs text-slate-500 mt-1">Awaiting teacher grading</p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-xs border-slate-200">
+        <Card className="rounded-2xl bg-white shadow-sm transition-colors dark:bg-slate-900 border-violet-200 hover:border-violet-500 dark:border-violet-900/50 dark:hover:border-violet-500">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Group Projects
             </CardTitle>
-            <GroupIcon className="size-4 text-indigo-600" />
+            <span className="flex size-8 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-950/60 dark:text-violet-300"><GroupIcon className="size-4" /></span>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{groupAssignmentsList.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Team collaborative tasks</p>
+            <div className="text-2xl font-black text-slate-900 dark:text-white">{groupAssignmentsList.length}</div>
+            <p className="text-xs text-slate-500 mt-1">Team collaborative tasks</p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-xs border-slate-200">
+        <Card className="rounded-2xl bg-white shadow-sm transition-colors dark:bg-slate-900 border-emerald-200 hover:border-emerald-500 dark:border-emerald-900/50 dark:hover:border-emerald-500">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Avg Submission Rate
             </CardTitle>
-            <BarChart3 className="size-4 text-emerald-600" />
+            <span className="flex size-8 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-300"><BarChart3 className="size-4" /></span>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-slate-900">{submissionRate === null ? '-' : `${submissionRate}%`}</div>
@@ -1189,12 +1189,12 @@ const AssignmentManagement: React.FC = () => {
 
       {/* Main Tabs Navigation */}
       <Tabs value={mainTab} onValueChange={(val: any) => setMainTab(val)} className="w-full space-y-6">
-        <TabsList className="bg-slate-200/60 p-1 rounded-xl grid grid-cols-3 max-w-md">
-          <TabsTrigger value="manage" className="rounded-lg text-xs font-bold gap-2">
+        <TabsList className="grid h-auto w-full max-w-md grid-cols-3 gap-1 rounded-xl border border-slate-100 bg-white p-1.5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <TabsTrigger value="manage" className="gap-2 rounded-lg px-2 py-2 text-xs font-bold text-slate-500 data-[state=active]:bg-brand-600 data-[state=active]:text-white data-[state=active]:shadow-sm">
             <BookOpen className="size-3.5" />
             My Assignments
           </TabsTrigger>
-          <TabsTrigger value="inbox" className="rounded-lg text-xs font-bold gap-2 relative">
+          <TabsTrigger value="inbox" className="gap-2 rounded-lg px-2 py-2 text-xs font-bold text-slate-500 data-[state=active]:bg-brand-600 data-[state=active]:text-white data-[state=active]:shadow-sm relative">
             <Inbox className="size-3.5" />
             Submissions
             {pendingSubmissionsCount > 0 && (
@@ -1203,7 +1203,7 @@ const AssignmentManagement: React.FC = () => {
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="groups" className="rounded-lg text-xs font-bold gap-2">
+          <TabsTrigger value="groups" className="gap-2 rounded-lg px-2 py-2 text-xs font-bold text-slate-500 data-[state=active]:bg-brand-600 data-[state=active]:text-white data-[state=active]:shadow-sm">
             <GroupIcon className="size-3.5" />
             Group Tracker
           </TabsTrigger>
@@ -1212,7 +1212,7 @@ const AssignmentManagement: React.FC = () => {
         {/* TAB 1: MY ASSIGNMENTS */}
         <TabsContent value="manage" className="space-y-6">
           {/* Workspace Hierarchy Navigation */}
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs space-y-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-4 dark:border-slate-800 dark:bg-slate-900">
             <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-600">
               <span className="text-slate-400">Context:</span>
               <Button
@@ -1252,7 +1252,7 @@ const AssignmentManagement: React.FC = () => {
               {selectedSubject && (
                 <>
                   <ChevronRight className="size-3.5 text-slate-400" />
-                  <Badge variant="default" className="h-6 px-2.5 text-xs font-semibold bg-primary">
+                  <Badge variant="default" className="h-6 bg-brand-600 px-2.5 text-xs font-semibold text-white hover:bg-brand-600">
                     {selectedSubject.name}
                   </Badge>
                 </>
@@ -1267,7 +1267,7 @@ const AssignmentManagement: React.FC = () => {
                   {classes.map((cls) => (
                     <Card
                       key={cls.id}
-                      className="hover:border-primary/50 transition-all cursor-pointer shadow-xs group"
+                      className="group cursor-pointer rounded-2xl border-blue-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-500 hover:shadow-md dark:border-blue-900/50 dark:bg-slate-900 dark:hover:border-blue-500"
                       onClick={() => {
                         setSelectedClass({ id: cls.id, name: cls.name });
                         setSelectedSection(null);
@@ -1275,14 +1275,17 @@ const AssignmentManagement: React.FC = () => {
                       }}
                     >
                       <CardHeader className="p-4 pb-2">
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-base font-bold text-slate-900 group-hover:text-primary transition-colors">
+                        <div className="flex items-center gap-3">
+                          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 transition-colors group-hover:bg-blue-600 group-hover:text-white dark:bg-blue-950/60 dark:text-blue-300">
+                            <Layers className="size-5" />
+                          </span>
+                          <CardTitle className="min-w-0 flex-1 truncate text-base font-bold text-slate-900 dark:text-white">
                             {cls.name}
                           </CardTitle>
-                          <ChevronRight className="size-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+                          <ChevronRight className="size-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-1 group-hover:text-blue-600" />
                         </div>
                       </CardHeader>
-                      <CardContent className="p-4 pt-0 text-xs text-muted-foreground flex items-center gap-3">
+                      <CardContent className="p-4 pt-0 text-xs text-slate-500 flex items-center gap-3">
                         <span className="flex items-center gap-1">
                           <Layers className="size-3.5" />
                           {cls.sections.size} Sections
@@ -1306,21 +1309,24 @@ const AssignmentManagement: React.FC = () => {
                   {sections.map((sec) => (
                     <Card
                       key={sec.id}
-                      className="hover:border-primary/50 transition-all cursor-pointer shadow-xs group"
+                      className="group cursor-pointer rounded-2xl border-violet-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-violet-500 hover:shadow-md dark:border-violet-900/50 dark:bg-slate-900 dark:hover:border-violet-500"
                       onClick={() => {
                         setSelectedSection({ id: sec.id, name: sec.name });
                         setSelectedSubject(null);
                       }}
                     >
                       <CardHeader className="p-4 pb-2">
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-base font-bold text-slate-900 group-hover:text-primary transition-colors">
+                        <div className="flex items-center gap-3">
+                          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600 transition-colors group-hover:bg-violet-600 group-hover:text-white dark:bg-violet-950/60 dark:text-violet-300">
+                            <Users className="size-5" />
+                          </span>
+                          <CardTitle className="min-w-0 flex-1 truncate text-base font-bold text-slate-900 dark:text-white">
                             {sec.name}
                           </CardTitle>
-                          <ChevronRight className="size-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+                          <ChevronRight className="size-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-1 group-hover:text-violet-600" />
                         </div>
                       </CardHeader>
-                      <CardContent className="p-4 pt-0 text-xs text-muted-foreground">
+                      <CardContent className="p-4 pt-0 text-xs text-slate-500">
                         {sec.subjects.size} Enrolled Subjects
                       </CardContent>
                     </Card>
@@ -1339,20 +1345,23 @@ const AssignmentManagement: React.FC = () => {
                   {subjects.map((sub) => (
                     <Card
                       key={sub.id}
-                      className="hover:border-primary/50 transition-all cursor-pointer shadow-xs group"
+                      className="group cursor-pointer rounded-2xl border-emerald-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-500 hover:shadow-md dark:border-emerald-900/50 dark:bg-slate-900 dark:hover:border-emerald-500"
                       onClick={() => {
                         setSelectedSubject(sub);
                       }}
                     >
                       <CardHeader className="p-4 pb-2">
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-base font-bold text-slate-900 group-hover:text-primary transition-colors">
+                        <div className="flex items-center gap-3">
+                          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 transition-colors group-hover:bg-emerald-600 group-hover:text-white dark:bg-emerald-950/60 dark:text-emerald-300">
+                            <BookOpen className="size-5" />
+                          </span>
+                          <CardTitle className="min-w-0 flex-1 truncate text-base font-bold text-slate-900 dark:text-white">
                             {sub.name}
                           </CardTitle>
-                          <ChevronRight className="size-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+                          <ChevronRight className="size-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-1 group-hover:text-emerald-600" />
                         </div>
                       </CardHeader>
-                      <CardContent className="p-4 pt-0 text-xs text-muted-foreground">
+                      <CardContent className="p-4 pt-0 text-xs text-slate-500">
                         Click to view assignment workspace
                       </CardContent>
                     </Card>
@@ -1413,12 +1422,12 @@ const AssignmentManagement: React.FC = () => {
                   <Skeleton className="h-44 w-full rounded-xl" />
                 </div>
               ) : filteredAssignments.length === 0 ? (
-                <Card className="border-dashed p-8 text-center space-y-3">
-                  <div className="mx-auto size-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                <Card className="space-y-3 rounded-2xl border-2 border-dashed border-blue-200 bg-blue-50/40 p-8 text-center dark:border-blue-900/50 dark:bg-slate-900">
+                  <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-blue-100 text-blue-600">
                     <FileText className="size-6" />
                   </div>
                   <h4 className="text-base font-bold text-slate-900">No Assignments Found</h4>
-                  <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
                     There are no assignments created for {selectedSubject?.name} yet. Click below to create your first assignment.
                   </p>
                   <Button onClick={openCreateModal} size="sm" className="gap-2">
@@ -1432,11 +1441,15 @@ const AssignmentManagement: React.FC = () => {
                     return (
                       <Card
                         key={a.id}
-                        className="hover:shadow-md transition-all border-slate-200 flex flex-col justify-between"
+                        className={`flex flex-col justify-between rounded-2xl bg-white shadow-sm transition-all hover:shadow-md dark:bg-slate-900 ${
+                          isGroup
+                            ? 'border-violet-200 hover:border-violet-500 dark:border-violet-900/50 dark:hover:border-violet-500'
+                            : 'border-blue-200 hover:border-blue-500 dark:border-blue-900/50 dark:hover:border-blue-500'
+                        }`}
                       >
                         <CardHeader className="p-4 pb-2 space-y-2">
                           <div className="flex items-start justify-between gap-2">
-                            <Badge variant={isGroup ? 'default' : 'secondary'} className="text-[11px] font-semibold gap-1">
+                            <Badge variant="outline" className={`gap-1 border-transparent text-[11px] font-semibold ${isGroup ? 'bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'}`}>
                               {isGroup ? <GroupIcon className="size-3" /> : <User className="size-3" />}
                               {isGroup ? 'Group Project' : 'Individual'}
                             </Badge>
@@ -1455,7 +1468,7 @@ const AssignmentManagement: React.FC = () => {
                           <CardTitle className="text-base font-bold text-slate-900 line-clamp-1">
                             {a.title}
                           </CardTitle>
-                          <CardDescription className="text-xs text-muted-foreground line-clamp-2">
+                          <CardDescription className="text-xs text-slate-500 line-clamp-2">
                             {a.instructions || 'No detailed instructions provided.'}
                           </CardDescription>
                         </CardHeader>
@@ -1483,7 +1496,7 @@ const AssignmentManagement: React.FC = () => {
                             variant="ghost"
                             size="sm"
                             onClick={() => openAssignmentDetail(a, 'details')}
-                            className="text-xs gap-1.5 text-primary hover:bg-primary/5"
+                            className="text-xs gap-1.5 text-blue-600 hover:bg-blue-50"
                           >
                             <Eye className="size-3.5" /> View Details
                           </Button>
@@ -1507,7 +1520,7 @@ const AssignmentManagement: React.FC = () => {
 
         {/* TAB 2: SUBMISSIONS INBOX */}
         <TabsContent value="inbox" className="space-y-4">
-          <Card className="shadow-xs border-slate-200">
+          <Card className="shadow-sm border-slate-200 rounded-2xl dark:border-slate-800 dark:bg-slate-900">
             <CardHeader className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
                 <CardTitle className="text-base font-bold text-slate-900">Submissions Inbox</CardTitle>
@@ -1530,80 +1543,179 @@ const AssignmentManagement: React.FC = () => {
                 <div className="p-8 text-center space-y-2">
                   <Inbox className="size-8 mx-auto text-slate-300" />
                   <p className="text-sm font-semibold text-slate-700">No Submissions Found</p>
-                  <p className="text-xs text-muted-foreground">All submitted assignments will appear here for review.</p>
+                  <p className="text-xs text-slate-500">All submitted assignments will appear here for review.</p>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-xs">Student</TableHead>
-                      <TableHead className="text-xs">Assignment</TableHead>
-                      <TableHead className="text-xs">Submitted Date</TableHead>
-                      <TableHead className="text-xs">Status / Grade</TableHead>
-                      <TableHead className="text-xs text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <>
+                  {/* Phones: one card per submission */}
+                  <div className="space-y-3 p-3 md:hidden">
                     {inboxItems.map((sub) => (
-                      <React.Fragment key={sub.id}>
+                      <Card key={sub.id} className="space-y-3 rounded-xl border-slate-200 p-4 shadow-none dark:border-slate-800 dark:bg-slate-900">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <Avatar className="size-8 shrink-0">
+                              <AvatarFallback className="bg-blue-100 text-[10px] text-blue-600">
+                                {sub.student_name?.[0] || 'S'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-slate-900">{sub.student_name || 'Student'}</p>
+                              <p className="truncate text-xs text-slate-500">{sub.assignment_title || 'Assignment'}</p>
+                            </div>
+                          </div>
+                          <Badge variant={sub.status === 'graded' ? 'default' : 'secondary'} className="shrink-0 text-[10px] capitalize">
+                            {sub.status || 'Submitted'}
+                          </Badge>
+                        </div>
+
+                        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+                          <span>{sub.submitted_at ? new Date(sub.submitted_at).toLocaleDateString() : 'Recently'}</span>
+                          {sub.marks != null && <span className="font-bold text-emerald-600">{sub.marks} Marks</span>}
+                        </div>
+
+                        {sub.feedback && <p className="text-[11px] italic text-slate-500">"{sub.feedback}"</p>}
+
+                        <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+                          {sub.file_path && (
+                            <>
+                              <Button variant="outline" size="sm" onClick={() => openSubmissionPreview(sub)} className="h-8 gap-1 text-xs">
+                                <Eye className="size-3" /> Preview
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const url = resolveUploadUrl(sub.file_path);
+                                  if (url) window.open(url, '_blank');
+                                  else toast.error('File link not found');
+                                }}
+                                className="h-8 gap-1 text-xs"
+                              >
+                                <Download className="size-3" /> Download
+                              </Button>
+                            </>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => startGrading(sub, sub.assignment_id || sub.assignmentId)}
+                            className="h-8 gap-1 text-xs text-blue-600 hover:bg-blue-50"
+                          >
+                            <PenLine className="size-3" />
+                            {sub.status === 'graded' ? 'Edit Grade' : 'Grade'}
+                          </Button>
+                        </div>
+
+                        {gradingId === sub.id && (
+                          <div className="flex flex-col gap-2 rounded-lg bg-slate-50 p-3">
+                            {renderGrader()}
+                            {gradingAnswers.length === 0 && (
+                              <Input
+                                type="number"
+                                placeholder="Marks"
+                                value={gradeForm.marks}
+                                onChange={(e) => setGradeForm((f) => ({ ...f, marks: e.target.value }))}
+                                className="h-9 bg-white text-xs"
+                              />
+                            )}
+                            <Input
+                              type="text"
+                              placeholder="Feedback (optional)"
+                              value={gradeForm.feedback}
+                              onChange={(e) => setGradeForm((f) => ({ ...f, feedback: e.target.value }))}
+                              className="h-9 bg-white text-xs"
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => handleGradeSubmission(sub.id, sub.assignment_id || sub.assignmentId)}
+                                className="h-9 flex-1 text-xs font-semibold"
+                              >
+                                Save Grade
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => setGradingId(null)} className="h-9 px-3 text-xs">
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </Card>
+                    ))}
+                  </div>
+
+                  {/* Tablet / desktop table */}
+                  <div className="hidden md:block">
+                    <Table>
+                      <TableHeader>
                         <TableRow>
-                          <TableCell className="font-semibold text-xs text-slate-900">
-                            <div className="flex items-center gap-2">
-                              <Avatar className="size-7">
-                                <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
-                                  {sub.student_name?.[0] || 'S'}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <div>{sub.student_name || 'Student'}</div>
-                                {sub.feedback && (
-                                  <div className="text-[11px] text-slate-500 font-normal italic">"{sub.feedback}"</div>
-                                )}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-xs text-slate-700">{sub.assignment_title || 'Assignment'}</TableCell>
-                          <TableCell className="text-xs text-slate-500">
-                            {sub.submitted_at ? new Date(sub.submitted_at).toLocaleDateString() : 'Recently'}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col items-start gap-1">
-                              <Badge variant={sub.status === 'graded' ? 'default' : 'secondary'} className="text-[10px] capitalize">
-                                {sub.status || 'Submitted'}
-                              </Badge>
-                              {sub.marks != null && (
-                                <span className="text-xs font-bold text-emerald-600">
-                                  {sub.marks} Marks
-                                </span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              {sub.file_path && (
-                                <>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => openSubmissionPreview(sub)}
-                                    className="h-7 text-xs gap-1"
-                                  >
-                                    <Eye className="size-3" /> Preview
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                      const url = resolveUploadUrl(sub.file_path);
-                                      if (url) window.open(url, '_blank');
-                                      else toast.error('File link not found');
-                                    }}
-                                    className="h-7 text-xs gap-1"
-                                  >
-                                    <Download className="size-3" /> Download
-                                  </Button>
-                                </>
-                              )}
+                          <TableHead className="text-xs">Student</TableHead>
+                          <TableHead className="text-xs">Assignment</TableHead>
+                          <TableHead className="text-xs">Submitted Date</TableHead>
+                          <TableHead className="text-xs">Status / Grade</TableHead>
+                          <TableHead className="text-xs text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {inboxItems.map((sub) => (
+                          <React.Fragment key={sub.id}>
+                            <TableRow>
+                              <TableCell className="font-semibold text-xs text-slate-900">
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="size-7">
+                                    <AvatarFallback className="text-[10px] bg-blue-100 text-blue-600">
+                                      {sub.student_name?.[0] || 'S'}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <div>{sub.student_name || 'Student'}</div>
+                                    {sub.feedback && (
+                                      <div className="text-[11px] text-slate-500 font-normal italic">"{sub.feedback}"</div>
+                                    )}
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-xs text-slate-700">{sub.assignment_title || 'Assignment'}</TableCell>
+                              <TableCell className="text-xs text-slate-500">
+                                {sub.submitted_at ? new Date(sub.submitted_at).toLocaleDateString() : 'Recently'}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-col items-start gap-1">
+                                  <Badge variant={sub.status === 'graded' ? 'default' : 'secondary'} className="text-[10px] capitalize">
+                                    {sub.status || 'Submitted'}
+                                  </Badge>
+                                  {sub.marks != null && (
+                                    <span className="text-xs font-bold text-emerald-600">
+                                      {sub.marks} Marks
+                                    </span>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  {sub.file_path && (
+                                    <>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => openSubmissionPreview(sub)}
+                                        className="h-7 text-xs gap-1"
+                                      >
+                                        <Eye className="size-3" /> Preview
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          const url = resolveUploadUrl(sub.file_path);
+                                          if (url) window.open(url, '_blank');
+                                          else toast.error('File link not found');
+                                        }}
+                                        className="h-7 text-xs gap-1"
+                                      >
+                                        <Download className="size-3" /> Download
+                                      </Button>
+                                    </>
+                                  )}
 
                               <Button
                                 variant="ghost"
@@ -1665,6 +1777,8 @@ const AssignmentManagement: React.FC = () => {
                     ))}
                   </TableBody>
                 </Table>
+              </div>
+              </>
               )}
             </CardContent>
           </Card>
@@ -1672,10 +1786,10 @@ const AssignmentManagement: React.FC = () => {
 
         {/* TAB 3: GROUP PROJECTS TRACKER */}
         <TabsContent value="groups" className="space-y-4">
-          <Card className="shadow-xs border-slate-200">
+          <Card className="shadow-sm border-slate-200 rounded-2xl dark:border-slate-800 dark:bg-slate-900">
             <CardHeader className="p-4 border-b border-slate-100">
               <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <GroupIcon className="size-5 text-indigo-600" />
+                <GroupIcon className="size-5 text-blue-600" />
                 Active Group Assignments Tracker
               </CardTitle>
               <CardDescription className="text-xs">
@@ -1687,7 +1801,7 @@ const AssignmentManagement: React.FC = () => {
                 <div className="p-8 text-center space-y-3 border border-dashed rounded-xl">
                   <GroupIcon className="size-8 mx-auto text-slate-300" />
                   <p className="text-sm font-semibold text-slate-700">No Group Assignments Created Yet</p>
-                  <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
                     Create a new assignment and select <span className="font-semibold text-slate-900">Group Target</span> to automatically split students into collaborative teams.
                   </p>
                   <Button onClick={openCreateModal} size="sm" className="gap-2">
@@ -1697,10 +1811,10 @@ const AssignmentManagement: React.FC = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {groupAssignmentsList.map((ga) => (
-                    <Card key={ga.id} className="border-slate-200">
+                    <Card key={ga.id} className="border-slate-200 rounded-2xl dark:border-slate-800 dark:bg-slate-900">
                       <CardHeader className="p-4 pb-2">
                         <div className="flex items-center justify-between">
-                          <Badge variant="default" className="bg-indigo-600 text-[10px] gap-1">
+                          <Badge variant="default" className="bg-brand-600 text-[10px] gap-1">
                             <GroupIcon className="size-3" /> Group Assignment
                           </Badge>
                           <span className="text-xs text-slate-500">{ga.due_date ? `Due: ${new Date(ga.due_date).toLocaleDateString()}` : 'No deadline'}</span>
@@ -1708,14 +1822,14 @@ const AssignmentManagement: React.FC = () => {
                         <CardTitle className="text-base font-bold text-slate-900 mt-2">{ga.title}</CardTitle>
                       </CardHeader>
                       <CardContent className="p-4 pt-0 text-xs space-y-2">
-                        <p className="text-muted-foreground line-clamp-2">{ga.instructions || 'No instructions'}</p>
+                        <p className="text-slate-500 line-clamp-2">{ga.instructions || 'No instructions'}</p>
                         <div className="pt-2 flex items-center justify-between text-slate-700">
                           <span className="font-semibold">{ga.group_count || 0} Student Groups Assigned</span>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => openAssignmentDetail(ga, 'groups')}
-                            className="text-xs gap-1 text-primary"
+                            className="text-xs gap-1 text-blue-600"
                           >
                             View Teams <ChevronRight className="size-3" />
                           </Button>
@@ -1735,7 +1849,7 @@ const AssignmentManagement: React.FC = () => {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-6">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
-              <BookOpen className="size-5 text-primary" />
+              <BookOpen className="size-5 text-blue-600" />
               Create New Assignment
             </DialogTitle>
             <DialogDescription className="text-xs">
@@ -1885,7 +1999,7 @@ const AssignmentManagement: React.FC = () => {
 
                 {/* TARGET TYPE SELECTION (INDIVIDUAL vs GROUP) */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-primary font-bold flex items-center gap-1">
+                  <Label className="text-xs font-semibold text-blue-600 font-bold flex items-center gap-1">
                     <Users className="size-3.5" />
                     Assignment Target *
                   </Label>
@@ -1893,7 +2007,7 @@ const AssignmentManagement: React.FC = () => {
                     value={formData.target_type}
                     onValueChange={(val: TargetType) => setFormData({ ...formData, target_type: val })}
                   >
-                    <SelectTrigger className="text-xs font-semibold border-primary/50">
+                    <SelectTrigger className="text-xs font-semibold border-blue-500">
                       <SelectValue placeholder="Target" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1917,9 +2031,9 @@ const AssignmentManagement: React.FC = () => {
               </div>
 
               {formData.target_type === 'group' && (
-                <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-xs text-indigo-900 space-y-1">
+                <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs text-blue-900 space-y-1">
                   <p className="font-bold flex items-center gap-1.5">
-                    <GroupIcon className="size-4 text-indigo-600" />
+                    <GroupIcon className="size-4 text-blue-600" />
                     Group Assignment Selected
                   </p>
                   <p className="text-indigo-700">
@@ -1936,7 +2050,7 @@ const AssignmentManagement: React.FC = () => {
               <div className="bg-slate-100 p-4 rounded-xl space-y-3">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                    <RefreshCw className="size-4 text-primary" />
+                    <RefreshCw className="size-4 text-blue-600" />
                     Auto-Assign Student Groups Strategy
                   </h4>
                   <Badge variant="outline" className="text-[10px]">
@@ -2012,14 +2126,14 @@ const AssignmentManagement: React.FC = () => {
                 <div className="space-y-3">
                   <h4 className="text-xs font-bold text-slate-800 flex items-center justify-between">
                     <span>Generated Student Teams ({generatedGroups.length})</span>
-                    <span className="text-[11px] text-muted-foreground font-normal">Review teams before publishing</span>
+                    <span className="text-[11px] text-slate-500 font-normal">Review teams before publishing</span>
                   </h4>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-56 overflow-y-auto pr-1">
                     {generatedGroups.map((group) => (
-                      <Card key={group.id} className="border-indigo-100 bg-indigo-50/30 p-3 space-y-2">
+                      <Card key={group.id} className="border-blue-100 bg-blue-50/40 p-3 space-y-2 rounded-2xl">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-indigo-950">{group.name}</span>
+                          <span className="text-xs font-bold text-blue-950">{group.name}</span>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -2085,14 +2199,14 @@ const AssignmentManagement: React.FC = () => {
           {currentStep === 'content' && (
             <div className="space-y-4">
               <Tabs value={createMode} onValueChange={(val: any) => setCreateMode(val)} className="w-full">
-                <TabsList className="grid grid-cols-3 bg-slate-100 p-1 rounded-lg">
-                  <TabsTrigger value="manual" className="text-xs font-semibold gap-1.5">
+                <TabsList className="grid h-auto grid-cols-3 rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
+                  <TabsTrigger value="manual" className="text-xs font-semibold gap-1.5 text-slate-500 data-[state=active]:bg-brand-600 data-[state=active]:text-white data-[state=active]:shadow-sm">
                     <PenLine className="size-3.5" /> Manual / Upload
                   </TabsTrigger>
-                  <TabsTrigger value="ai" className="text-xs font-semibold gap-1.5">
+                  <TabsTrigger value="ai" className="text-xs font-semibold gap-1.5 text-slate-500 data-[state=active]:bg-brand-600 data-[state=active]:text-white data-[state=active]:shadow-sm">
                     <Sparkles className="size-3.5" /> AI Generator
                   </TabsTrigger>
-                  <TabsTrigger value="image" className="text-xs font-semibold gap-1.5">
+                  <TabsTrigger value="image" className="text-xs font-semibold gap-1.5 text-slate-500 data-[state=active]:bg-brand-600 data-[state=active]:text-white data-[state=active]:shadow-sm">
                     <ImageIcon className="size-3.5" /> OCR Scan Photo
                   </TabsTrigger>
                 </TabsList>
@@ -2785,13 +2899,13 @@ const AssignmentManagement: React.FC = () => {
                       <Skeleton className="h-10 w-full" />
                     </div>
                   ) : submissions.length === 0 ? (
-                    <div className="p-6 text-center text-xs text-muted-foreground border border-dashed rounded-xl">
+                    <div className="p-6 text-center text-xs text-slate-500 border border-dashed rounded-xl">
                       No submissions recorded for this assignment yet.
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {submissions.map((sub) => (
-                        <Card key={sub.id} className="p-3 border-slate-200 text-xs space-y-3">
+                        <Card key={sub.id} className="p-3 border-slate-200 text-xs space-y-3 rounded-2xl dark:border-slate-800 dark:bg-slate-900">
                           <div className="flex items-center justify-between">
                             <span className="font-bold text-slate-900">
                               {sub.group_name ? `${sub.group_name} (submitted by ${sub.student_name || 'Student'})` : (sub.student_name || 'Student')}
@@ -2928,7 +3042,7 @@ const AssignmentManagement: React.FC = () => {
                     <DialogTitle className="text-base font-bold text-slate-900 truncate">
                       {name}
                     </DialogTitle>
-                    <DialogDescription className="text-xs text-muted-foreground mt-0.5 truncate">
+                    <DialogDescription className="text-xs text-slate-500 mt-0.5 truncate">
                       Submitted by <span className="font-semibold text-slate-800">{previewSubmission.student_name || 'Student'}</span>
                       {previewSubmission.assignment_title ? ` for ${previewSubmission.assignment_title}` : ''}
                     </DialogDescription>
@@ -2954,7 +3068,7 @@ const AssignmentManagement: React.FC = () => {
                     <div className="text-center space-y-2 p-6">
                       <AlertCircle className="size-10 text-amber-500 mx-auto" />
                       <p className="text-sm font-bold text-slate-800">Submitted File Missing on Server</p>
-                      <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                      <p className="text-xs text-slate-500 max-w-sm mx-auto">
                         The submission record exists, but the file could not be fetched from the server. Ask the student to resubmit.
                       </p>
                     </div>
@@ -2962,7 +3076,7 @@ const AssignmentManagement: React.FC = () => {
                     <img
                       src={url}
                       alt={name}
-                      className="max-h-[65vh] max-w-full rounded-lg object-contain shadow-xs"
+                      className="max-h-[65vh] max-w-full rounded-lg object-contain shadow-sm"
                       onError={() => setPreviewFileMissing(true)}
                     />
                   ) : isPdf ? (
@@ -2971,7 +3085,7 @@ const AssignmentManagement: React.FC = () => {
                     <div className="text-center space-y-3 p-6">
                       <FileText className="size-10 text-slate-400 mx-auto" />
                       <p className="text-sm font-semibold text-slate-800">Preview Not Available For This File Format</p>
-                      <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                      <p className="text-xs text-slate-500 max-w-sm mx-auto">
                         Click the Download File button above to view this file on your device.
                       </p>
                       <Button

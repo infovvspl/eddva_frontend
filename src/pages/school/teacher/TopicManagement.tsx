@@ -52,12 +52,18 @@ import {
   ZoomIn,
   Clapperboard,
   Play,
+  ScanLine,
 } from 'lucide-react';
 
-import GlassCard from '@/components/school/GlassCard';
-import Button from '@/components/school/Button';
+import { Button } from '@/components/ui/button';
+import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { Breadcrumb as UiBreadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import SearchBar from '@/components/school/SearchBar';
-import Badge from '@/components/school/Badge';
+import { Badge } from '@/components/ui/badge';
 import Modal from '@/components/school/Modal';
 import InputField from '@/components/school/InputField';
 
@@ -74,6 +80,16 @@ import { toast } from 'sonner';
 import { useConfirm } from '@/context/ConfirmContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSchoolFeature } from '@/hooks/use-school-feature';
+import { pptStudioPath } from './PptStudioPage';
+import PptJobsList from '@/components/school/teacher/PptJobsList';
+import { pptJobOpenPath, pptJobRetryPath } from '@/components/school/teacher/PptJobsNotifier';
+import { dismissPptJob, isGenerating, pptJobToResume, usePptJobs } from '@/lib/pptJobs';
+
+function formatSectionName(name: string | null | undefined) {
+  const value = String(name || '').trim();
+  if (!value) return 'Section';
+  return /^(sec|section)\b/i.test(value) ? value : `Sec ${value}`;
+}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -96,13 +112,11 @@ interface CourseContentReturnState {
   selectedTopic?: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' | 'subject' } | null;
 }
 
-// AI PPT Studio — served natively from the EDVA frontend (same origin), so nothing
-// separate needs to run. Override via VITE_PPT_STUDIO_URL only if hosted elsewhere.
-const PPT_STUDIO_URL = (import.meta.env.VITE_PPT_STUDIO_URL as string) || '/ppt-studio/index.html';
 
 const TopicManagement: React.FC = () => {
   const confirm = useConfirm();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
   const { assignments, setAssignments, activeAcademicContext, setActiveAcademicContext } = useAcademicStore();
   const canEditCurriculum =
@@ -142,11 +156,12 @@ const TopicManagement: React.FC = () => {
 
   const [search, setSearch] = useState('');
   const [loadingAssignments, setLoadingAssignments] = useState(true);
+  const [cardActiveSections, setCardActiveSections] = useState<Record<string, string>>({});
+  const [expandedClasses, setExpandedClasses] = useState<Record<string, boolean>>({});
 
   // ── Curriculum (chapters / topics tree + selected topic) ───────────────────
   const [chaptersList, setChaptersList] = useState<any[]>([]);
   const [loadingChapters, setLoadingChapters] = useState(false);
-  const [pptStudioOpen, setPptStudioOpen] = useState(false);
   // Bumped after any topic mutation so open chapter nodes re-fetch their topics.
   const [curriculumVersion, setCurriculumVersion] = useState(0);
   // Bumped after a PPT (or other material) is saved so the open MaterialWorkspace re-fetches its list.
@@ -407,52 +422,6 @@ const TopicManagement: React.FC = () => {
   const filteredSubjects = subjects.filter((s) => s.name?.toLowerCase().includes(q));
 
   // ── Render ─────────────────────────────────────────────────────────────────
-  // Receive a generated .pptx from the embedded PPT Studio and save it to the
-  // open topic's Course Content materials, then acknowledge the iframe.
-  useEffect(() => {
-    const onMessage = async (e: MessageEvent) => {
-      const data = e.data as { type?: string; title?: string; fileName?: string; base64?: string; markdownContent?: string };
-      if (data?.type !== 'EDVA_PPT_SAVE') return;
-      const reply = (type: string, message?: string) =>
-        (e.source as Window | null)?.postMessage({ type, message }, '*');
-      try {
-        if (!selectedTopic) { toast.error('Open a topic first, then save the PPT to it.'); reply('EDVA_PPT_SAVE_ERROR', 'Open a topic first'); return; }
-        if (!data.base64) { reply('EDVA_PPT_SAVE_ERROR', 'No file data'); return; }
-        const bin = atob(data.base64);
-        const bytes = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-        const fileName = data.fileName || `${data.title || 'Presentation'}.pptx`;
-        const file = new File([bytes], fileName, {
-          type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-        });
-        const fileUrl = await schoolContent.uploadMaterialFile(file);
-        await schoolContent.createMaterial({
-          title: data.title || 'Presentation',
-          fileType: 'ppt',
-          fileUrl,
-          fileName,
-          fileSizeKb: Math.round(file.size / 1024),
-          // Save the slide markdown so KaTeX math renders when viewed
-          description: data.markdownContent || undefined,
-          topicId: selectedTopic.kind === 'topic' ? selectedTopic.id : undefined,
-          chapterId: selectedTopic.kind === 'subject' ? undefined : selectedTopic.chapterId,
-          subjectId: selectedSubject?.id,
-          classId: selectedClass?.id,
-          sectionId: selectedSection?.id,
-        });
-        toast.success('PPT saved to Course Content');
-        reply('EDVA_PPT_SAVED');
-        setMaterialsRefreshToken((v) => v + 1);
-        setPptStudioOpen(false);
-      } catch (err: unknown) {
-        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Save failed';
-        toast.error(msg);
-        reply('EDVA_PPT_SAVE_ERROR', msg);
-      }
-    };
-    window.addEventListener('message', onMessage);
-    return () => window.removeEventListener('message', onMessage);
-  }, [selectedTopic, selectedSubject, selectedClass, selectedSection]);
 
   return (
     <div className="space-y-6">
@@ -467,7 +436,8 @@ const TopicManagement: React.FC = () => {
           </p>
         </div>
         {level !== 'classes' && (
-          <Button variant="outline" size="sm" icon={<ChevronLeft size={16} />} onClick={goBack}>
+          <Button variant="outline" size="sm" onClick={goBack}>
+<ChevronLeft size={16} />
             Back
           </Button>
         )}
@@ -494,69 +464,217 @@ const TopicManagement: React.FC = () => {
         </div>
       )}
 
-      {/* ── CLASSES ── */}
-      {level === 'classes' && (
+      {/* ── CLASSES GRID WITH SHADCN ACCORDION SECTIONS & SUBJECTS ── */}
+      {(level === 'classes' || level === 'sections' || level === 'subjects') && (
         loadingAssignments ? (
           <CardGridSkeleton />
         ) : filteredClasses.length === 0 ? (
           <EmptyState icon={<GraduationCap size={40} />} title="No classes assigned" message="You haven't been assigned to any classes yet. Contact your administrator." />
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredClasses.map((c, i) => (
-              <NavCard
-                key={`${c.id}-${i}`}
-                icon={<GraduationCap size={22} />}
-                tone="brand"
-                title={c.name}
-                meta={`${c.sections.size} section${c.sections.size === 1 ? '' : 's'} • ${c.subjects.size} subject${c.subjects.size === 1 ? '' : 's'}`}
-                badge={c.isClassTeacher ? <Badge variant="success" className="text-[9px] px-1.5 py-0.5 sm:text-xs"><span className="hidden sm:inline">Class Teacher</span><span className="inline sm:hidden">Teacher</span></Badge> : null}
-                actionLabel="View sections"
-                onClick={() => { setSelectedClass({ id: c.id, name: c.name }); setSearch(''); }}
-              />
-            ))}
-          </div>
-        )
-      )}
+          <Accordion
+            type="multiple"
+            defaultValue={filteredClasses.slice(0, 1).map((c) => c.id)}
+            className="grid grid-cols-1 items-start gap-6 md:grid-cols-2 xl:grid-cols-3"
+          >
+            {filteredClasses.map((c, classIdx) => {
+              // 1. All sections for this class
+              const classSecs: { id: string; name: string }[] = [];
+              const secMap = new Map<string, string>();
+              all.filter((a) => a.classId === c.id).forEach((a) => {
+                if (a.sectionId && !secMap.has(a.sectionId)) {
+                  secMap.set(a.sectionId, formatSectionName(a.sectionName));
+                  classSecs.push({ id: a.sectionId, name: formatSectionName(a.sectionName) });
+                }
+              });
 
-      {/* ── SECTIONS ── */}
-      {level === 'sections' && (
-        filteredSections.length === 0 ? (
-          <EmptyState icon={<Layers size={40} />} title="No sections" message="No sections found for this class." />
-        ) : (
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredSections.map((s, i) => (
-              <NavCard
-                key={`${s.id}-${i}`}
-                icon={<Layers size={22} />}
-                tone="violet"
-                title={`Section ${s.name}`}
-                meta={`${s.subjects.size} subject${s.subjects.size === 1 ? '' : 's'}`}
-                actionLabel="View subjects"
-                onClick={() => { setSelectedSection({ id: s.id, name: s.name }); setSearch(''); }}
-              />
-            ))}
-          </div>
-        )
-      )}
+              // Active selected section for this card (defaults to first section)
+              const activeSecId = cardActiveSections[c.id] || classSecs[0]?.id;
+              const activeSecObj = classSecs.find((s) => s.id === activeSecId) || classSecs[0];
 
-      {/* ── SUBJECTS ── */}
-      {level === 'subjects' && (
-        filteredSubjects.length === 0 ? (
-          <EmptyState icon={<BookOpen size={40} />} title="No subjects" message="No subjects found for this section." />
-        ) : (
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredSubjects.map((s, i) => (
-              <NavCard
-                key={`${s.id}-${i}`}
-                icon={<BookOpen size={22} />}
-                tone="emerald"
-                title={s.name}
-                meta="Chapters & topics"
-                actionLabel="Open curriculum"
-                onClick={() => { setSelectedSubject({ id: s.id, name: s.name }); setSearch(''); }}
-              />
-            ))}
-          </div>
+              // 2. All subjects for active section in this class
+              const classSubjs: { id: string; name: string }[] = [];
+              if (activeSecObj) {
+                const subjMap = new Map<string, string>();
+                all
+                  .filter((a) => a.classId === c.id && a.sectionId === activeSecObj.id)
+                  .forEach((a) => {
+                    if (a.subjectId && !subjMap.has(a.subjectId)) {
+                      subjMap.set(a.subjectId, a.subjectName);
+                      classSubjs.push({ id: a.subjectId, name: a.subjectName });
+                    }
+                  });
+              }
+
+              // Pre-calculate all unique subjects for this class
+              const totalClassSubjectsCount = new Set(all.filter((a) => a.classId === c.id && a.subjectId).map((a) => a.subjectId)).size;
+
+              // Card theme gradients per card index for rich visual variety
+              const cardThemes = [
+                {
+                  gradient: 'from-blue-600 via-indigo-600 to-violet-600',
+                  accentBg: 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
+                  badge: 'bg-blue-500/10 text-blue-600 border-blue-200/60 dark:bg-blue-400/10 dark:text-blue-300',
+                  glow: 'hover:border-blue-400/50 hover:shadow-blue-500/10',
+                },
+                {
+                  gradient: 'from-violet-600 via-purple-600 to-fuchsia-600',
+                  accentBg: 'bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300',
+                  badge: 'bg-purple-500/10 text-purple-600 border-purple-200/60 dark:bg-purple-400/10 dark:text-purple-300',
+                  glow: 'hover:border-purple-400/50 hover:shadow-purple-500/10',
+                },
+                {
+                  gradient: 'from-emerald-600 via-teal-600 to-cyan-600',
+                  accentBg: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
+                  badge: 'bg-emerald-500/10 text-emerald-600 border-emerald-200/60 dark:bg-emerald-400/10 dark:text-emerald-300',
+                  glow: 'hover:border-emerald-400/50 hover:shadow-emerald-500/10',
+                },
+                {
+                  gradient: 'from-amber-500 via-orange-600 to-rose-600',
+                  accentBg: 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
+                  badge: 'bg-amber-500/10 text-amber-600 border-amber-200/60 dark:bg-amber-400/10 dark:text-amber-300',
+                  glow: 'hover:border-amber-400/50 hover:shadow-amber-500/10',
+                },
+              ];
+              const theme = cardThemes[classIdx % cardThemes.length];
+
+              return (
+                <AccordionItem
+                  key={c.id}
+                  value={c.id}
+                  className={`group relative flex h-fit self-start flex-col justify-start overflow-hidden rounded-3xl border border-surface-200/80 bg-white shadow-xs transition-all duration-300 hover:shadow-lg dark:border-surface-800 dark:bg-surface-900 ${theme.glow}`}
+                >
+                  {/* shadcn Accordion Trigger as the Card Hero Header */}
+                  <AccordionTrigger
+                    className={`relative w-full text-left overflow-hidden bg-gradient-to-r ${theme.gradient} px-5 py-4 text-white shadow-inner transition-all duration-200 hover:no-underline hover:brightness-105 [&[data-state=open]>svg]:rotate-180 [&>svg]:hidden`}
+                  >
+                    {/* Abstract background blur orbs */}
+                    <div className="pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-full bg-white/10 blur-xl transition-transform duration-500 group-hover:scale-150" />
+                    <div className="pointer-events-none absolute -left-6 -bottom-6 h-24 w-24 rounded-full bg-black/10 blur-lg" />
+
+                    <div className="relative flex w-full items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md ring-1 ring-white/30 shadow-xs transition-transform duration-300 group-hover:scale-105">
+                          <GraduationCap className="h-6 w-6 text-white" />
+                        </div>
+                        <div className="truncate">
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-xl font-black tracking-tight leading-tight drop-shadow-xs truncate text-white">
+                              {c.name}
+                            </h3>
+                            {c.isClassTeacher && (
+                              <span className="shrink-0 rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold tracking-wide text-white backdrop-blur-md ring-1 ring-white/30">
+                                ★ Incharge
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs font-medium text-white/80 mt-0.5">
+                            {classSecs.length} {classSecs.length === 1 ? 'Section' : 'Sections'} • {totalClassSubjectsCount} {totalClassSubjectsCount === 1 ? 'Subject' : 'Subjects'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Styled indicator icon that rotates on data-state=open */}
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm ring-1 ring-white/25 transition-transform duration-300 group-hover:bg-white/25 group-data-[state=open]:rotate-180">
+                        <ChevronDown className="h-4 w-4 text-white" />
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+
+                  {/* shadcn Accordion Content */}
+                  <AccordionContent className="p-0 pb-0">
+                    {/* Section Segmented Switcher */}
+                    {classSecs.length > 0 && (
+                      <div className="border-b border-surface-100 bg-surface-50/60 p-3 dark:border-surface-800 dark:bg-surface-900/50">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-surface-400 dark:text-surface-500">
+                            Select Section
+                          </span>
+                          <span className="text-[11px] font-semibold text-surface-500">
+                            Active: <strong className="text-surface-800 dark:text-white">{activeSecObj?.name}</strong>
+                          </span>
+                        </div>
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                          {classSecs.map((sec) => {
+                            const isSelected = activeSecObj?.id === sec.id;
+                            return (
+                              <button
+                                key={sec.id}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setCardActiveSections((prev) => ({ ...prev, [c.id]: sec.id }));
+                                }}
+                                className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all duration-200 ${
+                                  isSelected
+                                    ? 'bg-surface-900 text-white shadow-xs ring-1 ring-surface-900 dark:bg-white dark:text-surface-900'
+                                    : 'border border-surface-200/80 bg-white text-surface-600 hover:border-surface-300 hover:bg-surface-100 dark:border-surface-700 dark:bg-surface-800 dark:text-surface-300'
+                                }`}
+                              >
+                                <span>{sec.name}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Subjects Area */}
+                    <div className="p-4">
+                      <div className="mb-2.5 flex items-center justify-between">
+                        <span className="text-xs font-bold text-surface-700 dark:text-surface-300">
+                          Assigned Courses in {activeSecObj?.name || 'Section'}
+                        </span>
+                        <span className="rounded-md bg-surface-100 px-2 py-0.5 text-[11px] font-bold text-surface-600 dark:bg-surface-800 dark:text-surface-400">
+                          {classSubjs.length} available
+                        </span>
+                      </div>
+
+                      {classSubjs.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-surface-200 bg-surface-50/40 py-6 text-center dark:border-surface-800 dark:bg-surface-900/30">
+                          <BookOpen className="h-6 w-6 text-surface-300 dark:text-surface-600 mb-1.5" />
+                          <p className="text-xs font-semibold text-surface-500">No subjects in {activeSecObj?.name || 'this section'}</p>
+                          <p className="text-[11px] text-surface-400">Switch section above to explore</p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          {classSubjs.map((sub) => (
+                            <button
+                              key={sub.id}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (!activeSecObj) return;
+                                setSelectedClass({ id: c.id, name: c.name });
+                                setSelectedSection({ id: activeSecObj.id, name: activeSecObj.name });
+                                setSelectedSubject({ id: sub.id, name: sub.name });
+                                setSearch('');
+                              }}
+                              className="group/sub flex flex-col justify-between rounded-2xl border border-surface-200/80 bg-surface-50/50 p-3 text-left transition-all duration-200 hover:border-brand-400 hover:bg-brand-50/30 hover:shadow-xs dark:border-surface-800 dark:bg-surface-800/40 dark:hover:border-brand-600 dark:hover:bg-brand-950/20"
+                            >
+                              <div className="flex items-center justify-between w-full mb-2">
+                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white shadow-2xs ring-1 ring-surface-200/60 dark:bg-surface-700 dark:ring-surface-700">
+                                  <BookOpen className="h-3.5 w-3.5 text-brand-600 dark:text-brand-400" />
+                                </div>
+                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-surface-200/60 text-surface-600 transition-transform group-hover/sub:translate-x-0.5 group-hover/sub:bg-brand-600 group-hover/sub:text-white dark:bg-surface-700 dark:text-surface-300">
+                                  <ChevronRight className="h-3 w-3" />
+                                </div>
+                              </div>
+                              <span className="line-clamp-1 text-xs font-bold text-surface-900 transition-colors group-hover/sub:text-brand-600 dark:text-surface-100 dark:group-hover/sub:text-brand-400">
+                                {sub.name}
+                              </span>
+                              <span className="text-[10px] font-medium text-surface-400">
+                                View Chapters
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
         )
       )}
 
@@ -564,7 +682,7 @@ const TopicManagement: React.FC = () => {
       {level === 'curriculum' && selectedSubject && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(300px,380px)_1fr]">
           {/* Curriculum tree: chapters → topics */}
-          <div className="self-start lg:sticky lg:top-6 rounded-2xl border border-surface-100 bg-white dark:border-surface-700 dark:bg-surface-900/40">
+          <Card className="self-start lg:sticky lg:top-6 rounded-2xl border-surface-100 bg-white dark:border-surface-700 dark:bg-surface-900/40 shadow-none">
             <div className="flex items-center justify-between border-b border-surface-100 p-4 dark:border-surface-700">
               <div className="flex items-center gap-2">
                 <Library size={18} className="text-brand-600" />
@@ -572,8 +690,10 @@ const TopicManagement: React.FC = () => {
               </div>
               {canEditCurriculum && (
                 <div className="flex items-center gap-2">
-                  <Button size="sm" variant="outline" icon={<Upload size={16} />} onClick={() => setShowBulkModal(true)}>Import</Button>
-                  <Button size="sm" icon={<Plus size={16} />} onClick={openCreateChapter}>Chapter</Button>
+                  <Button size="sm" variant="outline" onClick={() => setShowBulkModal(true)}>
+<Upload size={16} />Import</Button>
+                  <Button size="sm" onClick={openCreateChapter}>
+<Plus size={16} />Chapter</Button>
                 </div>
               )}
             </div>
@@ -630,10 +750,10 @@ const TopicManagement: React.FC = () => {
                 </div>
               )}
             </div>
-          </div>
+          </Card>
 
           {/* Material workspace for the selected topic */}
-          <div className="rounded-2xl border border-surface-100 bg-white dark:border-surface-700 dark:bg-surface-900/40">
+          <Card className="rounded-2xl border-surface-100 bg-white dark:border-surface-700 dark:bg-surface-900/40 shadow-none">
             {selectedTopic ? (
               <MaterialWorkspace
                 key={selectedTopic.id}
@@ -643,7 +763,10 @@ const TopicManagement: React.FC = () => {
                 sectionId={selectedSection?.id}
                 canEdit={canEditCurriculum}
                 returnState={{ selectedClass, selectedSection, selectedSubject, selectedTopic }}
-                onOpenPptStudio={() => setPptStudioOpen(true)}
+                onOpenPptStudio={() => navigate(pptStudioPath({
+                  topic: selectedTopic, subject: selectedSubject,
+                  klass: selectedClass, section: selectedSection,
+                }))}
                 refreshToken={materialsRefreshToken}
               />
             ) : (
@@ -651,7 +774,7 @@ const TopicManagement: React.FC = () => {
                 <EmptyState icon={<UploadCloud size={40} />} title="Select a topic" message="Pick a topic on the left to view and add its study materials." />
               </div>
             )}
-          </div>
+          </Card>
         </div>
       )}
 
@@ -692,73 +815,16 @@ const TopicManagement: React.FC = () => {
         </>
       )}
 
-      {/* ── AI PPT Studio (embedded ppt-generator) ──────────────────────── */}
-      {pptStudioOpen && (
-        <div className="fixed inset-0 z-[300]">
-          {/* Floating close button */}
-          <button
-            onClick={() => setPptStudioOpen(false)}
-            className="absolute top-3 right-3 z-10 grid size-9 place-items-center rounded-lg bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/60"
-            title="Close PPT Studio"
-          >
-            <X size={18} />
-          </button>
-          <iframe
-            title="AI PPT Studio"
-            src={(() => {
-              const q = new URLSearchParams();
-              q.set('api', getApiBaseUrl());
-              const inst = (user as any)?.instituteId || (user as any)?.tenantId;
-              if (inst) q.set('institute', String(inst));
-
-              // Forward the curriculum scope so the AI writes slides for THIS
-              // class/subject/chapter/topic. IDs are authoritative — the backend
-              // resolves the real names from them; the names below are only so the
-              // studio can show the scope banner without a round-trip.
-              if (selectedTopic) {
-                // A "subject" node's name is "<Subject> Materials", which is a
-                // useless prompt subject — fall back to the real subject name.
-                const topicLabel =
-                  selectedTopic.kind === 'subject'
-                    ? (selectedSubject?.name ?? selectedTopic.name)
-                    : selectedTopic.name;
-                q.set('topic', topicLabel);
-
-                if (selectedTopic.kind === 'topic') {
-                  q.set('topicId', selectedTopic.id);
-                  q.set('topicName', selectedTopic.name);
-                  if (selectedTopic.chapterId) q.set('chapterId', selectedTopic.chapterId);
-                } else if (selectedTopic.kind === 'chapter') {
-                  q.set('chapterId', selectedTopic.id);
-                  q.set('chapterName', selectedTopic.name);
-                }
-              }
-              if (selectedClass?.name) q.set('className', selectedClass.name);
-              if (selectedSubject?.name) q.set('subjectName', selectedSubject.name);
-              // subjectId lets the server resolve the class even when the subject
-              // is only reachable via its section or the teacher's assignment.
-              if (selectedSubject?.id) q.set('subjectId', selectedSubject.id);
-              if (selectedClass?.id) q.set('classId', selectedClass.id);
-
-              // Force browser to load the latest app.js code by cache-busting
-              q.set('cb', String(Date.now()));
-              return `${PPT_STUDIO_URL}?${q.toString()}`;
-            })()}
-            className="size-full border-0 bg-white block"
-            allow="clipboard-write; downloads"
-          />
-        </div>
-      )}
     </div >
   );
 };
 
 // ── Presentational helpers ───────────────────────────────────────────────────
 
-const toneStyles: Record<string, { soft: string; icon: string }> = {
-  brand: { soft: 'bg-brand-100 dark:bg-brand-900/40', icon: 'text-brand-600 dark:text-brand-400' },
-  violet: { soft: 'bg-violet-100 dark:bg-violet-900/40', icon: 'text-violet-600 dark:text-violet-400' },
-  emerald: { soft: 'bg-emerald-100 dark:bg-emerald-900/40', icon: 'text-emerald-600 dark:text-emerald-400' },
+const toneStyles: Record<string, { soft: string; icon: string; border: string }> = {
+  brand: { soft: 'bg-brand-100 dark:bg-brand-900/40', icon: 'text-brand-600 dark:text-brand-400', border: 'border-brand-200 hover:border-brand-500 dark:border-brand-800 dark:hover:border-brand-500' },
+  violet: { soft: 'bg-violet-100 dark:bg-violet-900/40', icon: 'text-violet-600 dark:text-violet-400', border: 'border-violet-200 hover:border-violet-500 dark:border-violet-800 dark:hover:border-violet-500' },
+  emerald: { soft: 'bg-emerald-100 dark:bg-emerald-900/40', icon: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-200 hover:border-emerald-500 dark:border-emerald-800 dark:hover:border-emerald-500' },
 };
 
 function NavCard({
@@ -769,70 +835,93 @@ function NavCard({
 }) {
   const t = toneStyles[tone];
   return (
-    <GlassCard hover className="group cursor-pointer p-3.5 sm:p-5 transition-all flex flex-col justify-between h-full" onClick={onClick}>
-      <div>
+    <Card
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      className={`group flex h-full cursor-pointer flex-col justify-between rounded-2xl border bg-white shadow-none transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:bg-surface-900 ${t.border}`}
+    >
+      <CardHeader className="space-y-0 p-3.5 pb-0 sm:p-5 sm:pb-0">
         <div className="flex items-start justify-between gap-2 sm:gap-3">
-          <div className={`rounded-lg sm:rounded-xl p-2 sm:p-2.5 ${t.soft} ${t.icon} [&>svg]:w-5 [&>svg]:h-5 sm:[&>svg]:w-[22px] sm:[&>svg]:h-[22px]`}>{icon}</div>
+          <div className={`rounded-lg p-2 sm:rounded-xl sm:p-2.5 ${t.soft} ${t.icon} [&>svg]:h-5 [&>svg]:w-5 sm:[&>svg]:h-[22px] sm:[&>svg]:w-[22px]`}>{icon}</div>
           {badge}
         </div>
-        <h4 className="mt-3 sm:mt-4 truncate text-sm sm:text-lg font-bold text-surface-900 dark:text-white" title={title}>{title}</h4>
-        <p className="mt-1 flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm font-medium text-surface-500">
-          <Users size={14} className="shrink-0 size-3.5 sm:size-4" /> <span className="truncate">{meta}</span>
-        </p>
-      </div>
-      <div className="mt-3 sm:mt-4 flex items-center justify-between border-t border-surface-100 pt-2.5 sm:pt-3 dark:border-surface-700">
-        <span className={`text-xs sm:text-sm font-semibold ${t.icon}`}>{actionLabel}</span>
-        <ChevronRight size={16} className="text-surface-400 transition-transform group-hover:translate-x-0.5 shrink-0 hidden sm:block" />
-      </div>
-    </GlassCard>
+        <CardTitle className="mt-3 truncate text-sm font-bold leading-normal tracking-normal text-surface-900 dark:text-white sm:mt-4 sm:text-lg" title={title}>{title}</CardTitle>
+        <CardDescription className="mt-1 flex items-center gap-1 text-xs font-medium text-surface-500 sm:gap-1.5 sm:text-sm">
+          <Users size={14} className="size-3.5 shrink-0 sm:size-4" /> <span className="truncate">{meta}</span>
+        </CardDescription>
+      </CardHeader>
+      <CardFooter className="mt-3 justify-between border-t border-surface-100 p-3.5 pt-2.5 dark:border-surface-700 sm:mt-4 sm:p-5 sm:pt-3">
+        <span className={`text-xs font-semibold sm:text-sm ${t.icon}`}>{actionLabel}</span>
+        <ChevronRight size={16} className="hidden shrink-0 text-surface-400 transition-transform group-hover:translate-x-0.5 sm:block" />
+      </CardFooter>
+    </Card>
   );
 }
 
 function IconButton({ children, label, danger, onClick }: { children: React.ReactNode; label: string; danger?: boolean; onClick: (e: React.MouseEvent) => void }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="icon"
       title={label}
       aria-label={label}
       onClick={onClick}
-      className={`grid size-8 place-items-center rounded-lg border border-transparent transition-colors ${danger
+      className={`size-8 rounded-lg border border-transparent ${danger
         ? 'text-surface-400 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-900/30'
         : 'text-surface-400 hover:border-brand-200 hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-brand-900/30'
         }`}
     >
       {children}
-    </button>
+    </Button>
   );
 }
 
 function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode; onClick: () => void; active: boolean }[] }) {
   return (
-    <nav className="flex flex-wrap items-center gap-1.5 text-sm">
-      {items.map((it, i) => (
-        <React.Fragment key={`${it.label}-${i}`}>
-          {i > 0 && <ChevronRight size={14} className="text-surface-300" />}
-          <button
-            type="button"
-            onClick={it.onClick}
-            disabled={it.active}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-colors ${it.active ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300' : 'text-surface-500 hover:bg-surface-100 hover:text-surface-900 dark:hover:bg-surface-800'
-              }`}
-          >
-            {it.icon}{it.label}
-          </button>
-        </React.Fragment>
-      ))}
-    </nav>
+    <UiBreadcrumb>
+      <BreadcrumbList className="gap-1.5 text-sm sm:gap-1.5">
+        {items.map((it, i) => (
+          <React.Fragment key={`${it.label}-${i}`}>
+            {i > 0 && <BreadcrumbSeparator />}
+            <BreadcrumbItem>
+              {it.active ? (
+                <BreadcrumbPage className="inline-flex items-center gap-1.5 rounded-lg bg-brand-50 px-2.5 py-1 font-semibold text-brand-700 dark:bg-brand-900/30 dark:text-brand-300">
+                  {it.icon}{it.label}
+                </BreadcrumbPage>
+              ) : (
+                <BreadcrumbLink asChild>
+                  <Button variant="ghost" size={null}
+                    type="button"
+                    onClick={it.onClick}
+                    className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold text-surface-500 transition-colors hover:bg-surface-100 hover:text-surface-900 dark:hover:bg-surface-800"
+                  >
+                    {it.icon}{it.label}
+                  </Button>
+                </BreadcrumbLink>
+              )}
+            </BreadcrumbItem>
+          </React.Fragment>
+        ))}
+      </BreadcrumbList>
+    </UiBreadcrumb>
   );
 }
 
 function EmptyState({ icon, title, message, compact }: { icon: React.ReactNode; title: string; message: string; compact?: boolean }) {
   return (
-    <div className={`flex flex-col items-center justify-center rounded-2xl border border-dashed border-surface-200 bg-surface-50/60 text-center dark:border-surface-700 dark:bg-surface-800/40 ${compact ? 'px-6 py-10' : 'px-6 py-16'}`}>
+    <Card className={`flex flex-col items-center justify-center rounded-2xl border-dashed border-surface-200 bg-surface-50/60 text-center shadow-none dark:border-surface-700 dark:bg-surface-800/40 ${compact ? 'px-6 py-10' : 'px-6 py-16'}`}>
       <div className="mb-3 text-surface-300 dark:text-surface-600">{icon}</div>
       <p className="text-base font-bold text-surface-800 dark:text-surface-200">{title}</p>
       <p className="mt-1 max-w-sm text-sm font-medium text-surface-500">{message}</p>
-    </div>
+    </Card>
   );
 }
 
@@ -840,21 +929,21 @@ function CardGridSkeleton() {
   return (
     <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="rounded-xl sm:rounded-2xl border border-surface-100 bg-white p-3.5 sm:p-5 dark:border-surface-700 dark:bg-surface-800 flex flex-col justify-between">
+        <Card key={i} className="flex flex-col justify-between rounded-xl border-surface-100 bg-white p-3.5 shadow-none dark:border-surface-700 dark:bg-surface-800 sm:rounded-2xl sm:p-5">
           <div>
-            <div className="size-9 sm:size-11 animate-pulse rounded-lg sm:rounded-xl bg-surface-200 dark:bg-surface-700" />
-            <div className="mt-3 sm:mt-4 h-4 sm:h-5 w-2/3 animate-pulse rounded bg-surface-200 dark:bg-surface-700" />
-            <div className="mt-1 sm:mt-2 h-3 sm:h-4 w-1/2 animate-pulse rounded bg-surface-100 dark:bg-surface-700/60" />
+            <Skeleton className="size-9 rounded-lg sm:size-11 sm:rounded-xl" />
+            <Skeleton className="mt-3 h-4 w-2/3 sm:mt-4 sm:h-5" />
+            <Skeleton className="mt-1 h-3 w-1/2 sm:mt-2 sm:h-4" />
           </div>
-          <div className="mt-3 sm:mt-4 h-3.5 sm:h-4 w-full animate-pulse rounded bg-surface-100 dark:bg-surface-700/60" />
-        </div>
+          <Skeleton className="mt-3 h-3.5 w-full sm:mt-4 sm:h-4" />
+        </Card>
       ))}
     </div>
   );
 }
 
 function RowSkeleton() {
-  return <div className="h-16 w-full animate-pulse rounded-xl bg-surface-100 dark:bg-surface-800" />;
+  return <Skeleton className="h-16 w-full rounded-xl" />;
 }
 
 // ── Material type config ─────────────────────────────────────────────────────
@@ -914,10 +1003,10 @@ function ChapterNode({
     <div className="relative">
       {/* ── Chapter header row ── */}
       <div className={`group flex items-center gap-2 rounded-xl px-2.5 py-2 transition-all ${anyChildSelected && !open ? 'bg-brand-50/60 dark:bg-brand-900/10' : 'hover:bg-surface-50 dark:hover:bg-surface-800'}`}>
-        <button
+        <Button variant="ghost" size={null}
           type="button"
           onClick={() => setOpen((o) => !o)}
-          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+          className="h-auto min-w-0 flex-1 justify-start gap-2 whitespace-normal p-0 text-left font-normal hover:bg-transparent"
         >
           {/* Chapter number badge */}
           <span className={`flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-black transition-colors ${open ? 'bg-brand-500 text-white' : 'bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-400'}`}>
@@ -927,19 +1016,10 @@ function ChapterNode({
             size={13}
             className={`shrink-0 text-surface-400 transition-transform duration-200 ${open ? 'rotate-0' : '-rotate-90'}`}
           />
-          <span className={`truncate text-sm font-bold leading-tight ${open ? 'text-brand-700 dark:text-brand-300' : 'text-surface-800 dark:text-surface-100'}`}>
+          <span className={`min-w-0 flex-1 truncate text-left text-sm font-bold leading-tight ${open ? 'text-brand-700 dark:text-brand-300' : 'text-surface-800 dark:text-surface-100'}`}>
             {chapter.name}
           </span>
-          {chapter.indexed && (
-            <span
-              title="This chapter's textbook is trained — AI content (notes, PPT, papers) can be grounded in the book."
-              className="ml-1.5 inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
-            >
-              <span className="size-1 rounded-full bg-current" />
-              Trained
-            </span>
-          )}
-        </button>
+        </Button>
         {canEdit && (
           <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
             <IconButton label="Edit chapter" onClick={(e) => { e.stopPropagation(); onEditChapter(); }}><Pencil size={13} /></IconButton>
@@ -948,15 +1028,12 @@ function ChapterNode({
         )}
       </div>
 
-      {/* ── Topics subtree (with tree lines) ── */}
+      {/* ── Topics subtree ── */}
       {open && (
-        <div className="relative ml-[22px] mt-0.5 pb-1">
-          {/* Vertical trunk line */}
-          <div className="absolute bottom-2 left-2.5 top-0 w-px bg-surface-200 dark:bg-surface-700" />
-
+        <div className="ml-5 mt-1 space-y-0.5 border-l-2 border-surface-100 pb-2 pl-3 dark:border-surface-800">
           {loading ? (
-            <div className="flex items-center gap-2 py-3 pl-6 text-xs text-surface-400">
-              <Loader2 size={13} className="animate-spin" /> Loading…
+            <div className="space-y-1.5 py-1">
+              {[0, 1, 2].map((i) => <Skeleton key={i} className="h-8 w-full rounded-lg" />)}
             </div>
           ) : (
             <>
@@ -966,24 +1043,28 @@ function ChapterNode({
                 label="Chapter Materials"
                 sublabel="Overview & shared files"
                 active={isChapterSelected}
-                italic
                 onClick={onSelectChapter}
               />
+
+              {topics.length > 0 && (
+                <p className="px-2 pb-0.5 pt-2 text-[10px] font-black uppercase tracking-widest text-surface-400 dark:text-surface-600">
+                  Topics · {topics.length}
+                </p>
+              )}
 
               {/* ── Topic nodes ── */}
               {topics.map((t, ti) => {
                 const active = selectedScopeId === t.id;
-                const isLast = ti === topics.length - 1;
                 return (
-                  <div key={`${t.id}-${ti}`} className="group/topic relative">
+                  <div key={`${t.id}-${ti}`} className="group/topic">
                     <TreeItem
                       icon={<BookOpen size={13} />}
                       label={t.name}
+                      index={ti + 1}
                       active={active}
-                      isLast={isLast && !canEdit}
                       onClick={() => onSelectTopic(t)}
                       actions={canEdit ? (
-                        <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover/topic:opacity-100">
+                        <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover/topic:opacity-100">
                           <IconButton label="Edit topic" onClick={(e) => { e.stopPropagation(); onEditTopic({ ...t, chapter_id: chapter.id }, ti + 1); }}><Pencil size={12} /></IconButton>
                           <IconButton label="Delete topic" danger onClick={(e) => { e.stopPropagation(); onDeleteTopic(t); }}><Trash2 size={12} /></IconButton>
                         </div>
@@ -995,21 +1076,19 @@ function ChapterNode({
 
               {/* ── Add Topic ── */}
               {canEdit && (
-                <div className="relative flex items-center">
-                  {/* horizontal stub */}
-                  <div className="absolute left-2.5 top-1/2 h-px w-4 bg-surface-200 dark:bg-surface-700" />
-                  <button
-                    type="button"
-                    onClick={() => onAddTopic(topics.length)}
-                    className="ml-8 flex items-center gap-1.5 rounded-lg py-2 pr-2 text-xs font-semibold text-surface-400 transition-all hover:text-brand-600"
-                  >
-                    <Plus size={12} /> Add Topic
-                  </button>
-                </div>
+                <Button
+                  variant="ghost"
+                  size={null}
+                  type="button"
+                  onClick={() => onAddTopic(topics.length)}
+                  className="mt-1.5 h-8 w-full justify-start gap-1.5 rounded-lg border border-dashed border-surface-200 px-2.5 text-xs font-semibold text-surface-500 hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-600 dark:border-surface-700 dark:hover:bg-brand-900/10"
+                >
+                  <Plus size={13} /> Add topic
+                </Button>
               )}
 
               {!canEdit && topics.length === 0 && (
-                <p className="py-2 pl-8 text-xs text-surface-400 italic">No topics yet.</p>
+                <p className="px-2 py-2 text-xs italic text-surface-400">No topics yet.</p>
               )}
             </>
           )}
@@ -1020,24 +1099,31 @@ function ChapterNode({
 }
 
 function TreeItem({
-  icon, label, sublabel, active, italic, isLast, onClick, actions,
+  icon, label, sublabel, index, active, onClick, actions,
 }: {
-  icon: React.ReactNode; label: string; sublabel?: string; active?: boolean;
-  italic?: boolean; isLast?: boolean; onClick: () => void; actions?: React.ReactNode;
+  icon: React.ReactNode; label: string; sublabel?: string; index?: number; active?: boolean;
+  onClick: () => void; actions?: React.ReactNode;
 }) {
   return (
     <div
-      className={`relative flex cursor-pointer items-center gap-2 rounded-lg py-2 pr-2 transition-all ${active ? 'bg-brand-50 ring-1 ring-brand-200 dark:bg-brand-900/30' : 'hover:bg-surface-50 dark:hover:bg-surface-800'}`}
+      role="button"
+      tabIndex={0}
+      aria-current={active ? 'true' : undefined}
       onClick={onClick}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
+      className={`relative flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-brand-400 ${
+        active
+          ? 'bg-brand-50 dark:bg-brand-900/30'
+          : 'hover:bg-surface-50 dark:hover:bg-surface-800'
+      }`}
     >
-      {/* Horizontal branch line */}
-      <div className="absolute left-2.5 top-1/2 h-px w-4 bg-surface-200 dark:bg-surface-700" />
-      {/* Icon */}
-      <div className={`relative z-10 ml-8 flex size-6 shrink-0 items-center justify-center rounded-md transition-colors ${active ? 'bg-brand-500 text-white' : 'bg-surface-100 text-surface-400 dark:bg-surface-800 dark:text-surface-500'}`}>
-        {icon}
+      {/* Selected marker sits on the guide line */}
+      {active && <span className="absolute -left-[14px] top-1.5 bottom-1.5 w-0.5 rounded-full bg-brand-500" />}
+      <div className={`flex size-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold transition-colors ${active ? 'bg-brand-500 text-white' : 'bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-400'}`}>
+        {index !== undefined ? index : icon}
       </div>
       <div className="min-w-0 flex-1">
-        <p className={`truncate text-sm leading-tight ${italic ? 'italic' : ''} ${active ? 'font-semibold text-brand-700 dark:text-brand-300' : 'font-medium text-surface-700 dark:text-surface-200'}`}>
+        <p className={`truncate text-[13px] leading-tight ${active ? 'font-semibold text-brand-700 dark:text-brand-300' : 'font-medium text-surface-700 dark:text-surface-200'}`}>
           {label}
         </p>
         {sublabel && (
@@ -1081,6 +1167,8 @@ function MaterialWorkspace({
   const [showAdd, setShowAdd] = useState(false);
   const [addType, setAddType] = useState<SchoolMaterialType | undefined>(undefined);
   const [showAi, setShowAi] = useState(false);
+  // Presentations generating in the background (PPT Studio "Continue in background").
+  const { generating: pptGenerating } = usePptJobs();
   const [viewMaterial, setViewMaterial] = useState<SchoolMaterial | null>(null);
   const [editingFlashcards, setEditingFlashcards] = useState<SchoolMaterial | null>(null);
   const [editingChecklist, setEditingChecklist] = useState<SchoolMaterial | null>(null);
@@ -1182,30 +1270,38 @@ function MaterialWorkspace({
           <h3 className="truncate text-lg font-bold text-surface-900 dark:text-white">{topic.name}</h3>
         </div>
         <div className="flex items-center gap-2">
-          <span className="rounded-lg border border-surface-100 bg-surface-50 px-2.5 py-1 text-xs font-bold text-surface-500 dark:border-surface-700 dark:bg-surface-800">
+          <Badge variant="outline" className="rounded-lg border-surface-100 bg-surface-50 px-2.5 py-1 text-xs font-bold text-surface-500 dark:border-surface-700 dark:bg-surface-800">
             {materials.length} item{materials.length === 1 ? '' : 's'}
-          </span>
+          </Badge>
           {aiCount > 0 && (
-            <button
+            <Button variant="outline" size={null}
               onClick={handleDownloadAll}
               disabled={downloadingAll}
               title="Download all AI-generated materials as one PDF"
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-surface-200 bg-white px-3 text-sm font-bold text-surface-600 transition-colors hover:bg-surface-50 disabled:opacity-50 dark:border-surface-700 dark:bg-surface-800 dark:text-surface-200"
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-sm font-bold disabled:opacity-50 dark:border-surface-700 dark:bg-surface-800 dark:text-surface-200"
             >
               {downloadingAll ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />} Download all
-            </button>
+            </Button>
           )}
           {canEdit && (
             <>
               {topic.kind !== 'subject' && (hasAiMaterials || hasPptGen) && (
-                <button
+                <Button variant={null} size={null}
                   onClick={() => setShowAi(true)}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300"
+                  title={hasPptGen && pptGenerating.length ? 'A presentation is generating in the background' : undefined}
+                  className="relative inline-flex h-9 items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300"
                 >
                   <Sparkles size={15} /> AI Generate
-                </button>
+                  {hasPptGen && pptGenerating.length > 0 && (
+                    <span data-testid="ppt-generating-dot" className="absolute -right-1 -top-1 flex h-3 w-3">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
+                      <span className="relative inline-flex h-3 w-3 rounded-full bg-violet-600" />
+                    </span>
+                  )}
+                </Button>
               )}
-              <Button size="sm" icon={<Plus size={16} />} onClick={() => { setAddType(topic.kind === 'subject' ? 'ebook' : undefined); setShowAdd(true); }}>Add Material</Button>
+              <Button size="sm" onClick={() => { setAddType(topic.kind === 'subject' ? 'ebook' : undefined); setShowAdd(true); }}>
+<Plus size={16} />Add Material</Button>
             </>
           )}
         </div>
@@ -1225,12 +1321,12 @@ function MaterialWorkspace({
                   {MATERIAL_TYPES.filter(mt => topic.kind !== 'subject' || mt.value === 'ebook').map((mt) => {
                     const Icon = mt.icon;
                     return (
-                      <button key={mt.value} onClick={() => { setAddType(mt.value); setShowAdd(true); }}
+                      <Button variant={null} size={null} key={mt.value} onClick={() => { setAddType(mt.value); setShowAdd(true); }}
                         className={`flex items-center gap-2 rounded-xl border border-surface-100 p-3 text-left transition-all hover:shadow-sm dark:border-surface-700 ${mt.soft}`}>
                         <Icon size={16} className={mt.text} />
                         <span className={`text-sm font-bold ${mt.text}`}>{mt.label}</span>
 
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>
@@ -1240,10 +1336,10 @@ function MaterialWorkspace({
                       <span className="h-px w-10 bg-surface-200 dark:bg-surface-700" /> or <span className="h-px w-10 bg-surface-200 dark:bg-surface-700" />
                     </div>
                     {(hasAiMaterials || hasPptGen) && (
-                      <button onClick={() => setShowAi(true)}
+                      <Button variant={null} size={null} onClick={() => setShowAi(true)}
                         className="mt-4 inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300">
                         <Sparkles size={16} /> Generate with AI
-                      </button>
+                      </Button>
                     )}
                   </>
                 )}
@@ -1261,7 +1357,7 @@ function MaterialWorkspace({
                   <div className="mb-2 flex items-center gap-2">
                     <div className={`rounded-lg p-1.5 ${mt.soft}`}><Icon size={14} className={mt.text} /></div>
                     <h4 className={`text-sm font-bold ${mt.text}`}>{mt.label}</h4>
-                    <span className="rounded-full bg-surface-100 px-2 py-0.5 text-xs font-bold text-surface-500 dark:bg-surface-800">{items.length}</span>
+                    <Badge variant="secondary" className="rounded-full border-0 bg-surface-100 px-2 py-0.5 text-xs font-bold text-surface-500 hover:bg-surface-100 dark:bg-surface-800">{items.length}</Badge>
                   </div>
                   <div className="space-y-2">
                     {items.map((m, mi) => {
@@ -1276,7 +1372,7 @@ function MaterialWorkspace({
                         /\.(mp4|webm|og[gv])([?#].*)?$/i.test(href);
                       const isPpt = mt.value === 'ppt' || String(m.fileType || '').toLowerCase() === 'ppt';
                       return (
-                        <div key={`${m.id}-${mi}`} className="overflow-hidden rounded-xl border border-surface-100 bg-white transition-colors hover:border-brand-200 dark:border-surface-700 dark:bg-surface-800">
+                        <Card key={`${m.id}-${mi}`} className="overflow-hidden rounded-xl border-surface-100 bg-white transition-colors hover:border-brand-200 dark:border-surface-700 dark:bg-surface-800 shadow-none">
                           <div className="group flex items-center gap-3 p-3">
                             <div className={`rounded-lg p-2 ${mt.soft}`}><Icon size={16} className={mt.text} /></div>
                             <div className="min-w-0 flex-1">
@@ -1296,47 +1392,43 @@ function MaterialWorkspace({
                               </div>
                             </div>
                             {isText && (
-                              <button onClick={() => downloadMaterial(m)} title="Download as PDF"
-                                className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                              <Button variant="outline" size={null} onClick={() => downloadMaterial(m)} title="Download as PDF"
+                                className="inline-flex h-8 items-center gap-1 rounded-lg px-2.5 text-xs font-bold hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
                                 <Download size={13} /> PDF
-                              </button>
+                              </Button>
                             )}
                             {isAnimation && href ? (
-                              <button
+                              <Button variant={null} size={null}
                                 onClick={() => setAnimationUrl(href)}
                                 className="inline-flex h-8 items-center gap-1 rounded-lg border border-purple-200 bg-purple-50 px-2.5 text-xs font-bold text-purple-600 transition-colors hover:bg-purple-100 dark:border-purple-800 dark:bg-purple-900/30"
                               >
                                 <Play size={13} /> Play
-                              </button>
+                              </Button>
                             ) : canPreviewInPage ? (
-                              <button onClick={() => isFlashcardMaterial(m) ? setViewMaterial(m) : navigate(`/school/teacher/course-content/materials/${m.id}`, { state: { from: sourcePath, courseContentState: returnState } })}
+                              <Button variant={null} size={null} onClick={() => isFlashcardMaterial(m) ? setViewMaterial(m) : navigate(`/school/teacher/course-content/materials/${m.id}`, { state: { from: sourcePath, courseContentState: returnState } })}
                                 className="inline-flex h-8 items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 text-xs font-bold text-violet-600 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30">
                                 <Eye size={13} /> View
-                              </button>
+                              </Button>
                             ) : href && !isPdfOrEbook ? (
                               isPpt ? (
-                                <a href={href} download target="_blank" rel="noreferrer"
-                                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                                <Button asChild variant="outline" size={null} className="h-8 gap-1 rounded-lg px-2.5 text-xs font-bold hover:border-brand-200 hover:text-brand-600 dark:border-surface-700"><a href={href} download target="_blank" rel="noreferrer">
                                   <Download size={13} /> PPT
-                                </a>
+                                </a></Button>
                               ) : (
-                                <a href={href} target="_blank" rel="noreferrer"
-                                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                                <Button asChild variant="outline" size={null} className="h-8 gap-1 rounded-lg px-2.5 text-xs font-bold hover:border-brand-200 hover:text-brand-600 dark:border-surface-700"><a href={href} target="_blank" rel="noreferrer">
                                   <ExternalLink size={13} /> Open
-                                </a>
+                                </a></Button>
                               )
                             ) : null}
                             {!isAnimation && canPreviewInPage && href && !isPdfOrEbook && (
                               isPpt ? (
-                                <a href={href} download target="_blank" rel="noreferrer"
-                                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                                <Button asChild variant="outline" size={null} className="h-8 gap-1 rounded-lg px-2.5 text-xs font-bold hover:border-brand-200 hover:text-brand-600 dark:border-surface-700"><a href={href} download target="_blank" rel="noreferrer">
                                   <Download size={13} /> PPT
-                                </a>
+                                </a></Button>
                               ) : (
-                                <a href={href} target="_blank" rel="noreferrer"
-                                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                                <Button asChild variant="outline" size={null} className="h-8 gap-1 rounded-lg px-2.5 text-xs font-bold hover:border-brand-200 hover:text-brand-600 dark:border-surface-700"><a href={href} target="_blank" rel="noreferrer">
                                   <ExternalLink size={13} /> Open
-                                </a>
+                                </a></Button>
                               )
                             )}
                             {canEdit && isText && isFlashcardMaterial(m) && (
@@ -1349,7 +1441,7 @@ function MaterialWorkspace({
                               <IconButton label="Delete material" danger onClick={() => handleDelete(m)}><Trash2 size={15} /></IconButton>
                             )}
                           </div>
-                        </div>
+                        </Card>
                       );
                     })}
                   </div>
@@ -1405,25 +1497,22 @@ function MaterialWorkspace({
       )}
 
       {animationUrl && (
-        <div
-          className="fixed inset-0 z-[220] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
-          onClick={() => setAnimationUrl(null)}
-        >
-          <div
-            className="w-full max-w-4xl overflow-hidden rounded-2xl bg-black shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <Dialog open onOpenChange={(open) => { if (!open) setAnimationUrl(null); }}>
+  <DialogContent className="w-full max-w-4xl overflow-hidden rounded-2xl bg-black shadow-2xl gap-0 p-0 sm:rounded-2xl [&>button:last-child]:hidden">
+    <DialogTitle className="sr-only">Animation player</DialogTitle>
+    <DialogDescription className="sr-only">Animation player</DialogDescription>
+
             <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-2.5">
               <div className="flex items-center gap-2 text-white">
                 <Clapperboard size={16} className="text-purple-400" />
                 <span className="text-sm font-bold text-white">Animation</span>
               </div>
-              <button
+              <Button variant={null} size={null}
                 onClick={() => setAnimationUrl(null)}
                 className="grid size-8 place-items-center rounded-lg bg-white/10 text-white hover:bg-white/20"
               >
                 <X size={16} />
-              </button>
+              </Button>
             </div>
             <video
               src={animationUrl}
@@ -1432,8 +1521,9 @@ function MaterialWorkspace({
               className="w-full bg-black"
               style={{ maxHeight: '75vh' }}
             />
-          </div>
-        </div>
+          
+  </DialogContent>
+</Dialog>
       )}
 
     </div>
@@ -1473,7 +1563,7 @@ function InlineMaterialPage({ material, fileUrl }: { material: SchoolMaterial; f
 
   return (
     <div className="border-t border-surface-100 bg-surface-50/70 p-4 dark:border-surface-700 dark:bg-surface-900/50">
-      <div className="rounded-2xl border border-surface-100 bg-white p-4 shadow-sm dark:border-surface-700 dark:bg-surface-900">
+      <Card className="rounded-2xl border-surface-100 bg-white p-4 shadow-sm dark:border-surface-700 dark:bg-surface-900">
         {showTree ? (
           <MindMapCanvas data={tree} height={520} />
         ) : showSlides ? (
@@ -1501,7 +1591,7 @@ function InlineMaterialPage({ material, fileUrl }: { material: SchoolMaterial; f
             This material is available as an external file.
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }
@@ -1581,14 +1671,14 @@ function SlideImage({
             </div>
             <p className="text-xs font-medium text-surface-400">No image generated</p>
             <div className="flex gap-2">
-              <button type="button" onClick={handleRegenerate}
+              <Button variant={null} size={null} type="button" onClick={handleRegenerate}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-rose-500 px-3 py-1.5 text-[11px] font-bold text-white shadow-sm hover:bg-rose-600 active:scale-95 transition-all">
                 <RefreshCw size={11} /> Retry
-              </button>
-              <button type="button" onClick={() => fileRef.current?.click()}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 bg-white px-3 py-1.5 text-[11px] font-bold text-surface-600 shadow-sm hover:bg-surface-50 active:scale-95 transition-all dark:border-surface-600 dark:bg-surface-700 dark:text-surface-200">
+              </Button>
+              <Button variant="outline" size={null} type="button" onClick={() => fileRef.current?.click()}
+                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold shadow-sm active:scale-95 transition-all dark:border-surface-600 dark:bg-surface-700 dark:text-surface-200">
                 <Upload size={11} /> Upload
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -1596,34 +1686,37 @@ function SlideImage({
         {/* Hover actions — shown over existing image */}
         {hasImage && !resolving && (
           <div className="absolute inset-0 flex items-end justify-end gap-1.5 bg-gradient-to-t from-black/40 to-transparent p-2.5 opacity-0 transition-opacity group-hover:opacity-100">
-            <button type="button" title="Enlarge" onClick={() => setLightbox(true)}
+            <Button variant={null} size={null} type="button" title="Enlarge" onClick={() => setLightbox(true)}
               className="flex size-7 items-center justify-center rounded-lg bg-white/90 text-slate-700 shadow hover:bg-white active:scale-95 transition-all">
               <ZoomIn size={13} />
-            </button>
-            <button type="button" title="Regenerate image" onClick={handleRegenerate}
+            </Button>
+            <Button variant={null} size={null} type="button" title="Regenerate image" onClick={handleRegenerate}
               className="flex size-7 items-center justify-center rounded-lg bg-white/90 text-slate-700 shadow hover:bg-white active:scale-95 transition-all">
               <RefreshCw size={13} />
-            </button>
-            <button type="button" title="Upload your own image" onClick={() => fileRef.current?.click()}
+            </Button>
+            <Button variant={null} size={null} type="button" title="Upload your own image" onClick={() => fileRef.current?.click()}
               className="flex size-7 items-center justify-center rounded-lg bg-rose-500 text-white shadow hover:bg-rose-600 active:scale-95 transition-all">
               <ImagePlus size={13} />
-            </button>
+            </Button>
           </div>
         )}
       </div>
 
       {/* Lightbox */}
       {lightbox && hasImage && (
-        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
-          onClick={() => setLightbox(false)}>
-          <div className="relative max-h-full max-w-3xl w-full" onClick={(e) => e.stopPropagation()}>
-            <button type="button" onClick={() => setLightbox(false)}
+        <Dialog open onOpenChange={(open) => { if (!open) setLightbox(false); }}>
+  <DialogContent className="relative max-h-full max-w-3xl w-full gap-0 p-0 [&>button:last-child]:hidden border-0 bg-transparent shadow-none">
+    <DialogTitle className="sr-only">Image preview</DialogTitle>
+    <DialogDescription className="sr-only">Image preview</DialogDescription>
+
+            <Button variant={null} size={null} type="button" onClick={() => setLightbox(false)}
               className="absolute -right-3 -top-3 z-10 flex size-8 items-center justify-center rounded-full bg-white text-slate-800 shadow-lg text-sm font-bold hover:bg-slate-100">
               <X size={14} />
-            </button>
+            </Button>
             <img src={url!} alt={alt} className="max-h-[85vh] w-full rounded-2xl object-contain shadow-2xl" />
-          </div>
-        </div>
+          
+  </DialogContent>
+</Dialog>
       )}
     </div>
   );
@@ -1672,11 +1765,11 @@ function SlideDeck({ slides, height = 460, topic = '' }: { slides: Slide[]; heig
             </span>
             {/* Per-slide image actions */}
             <div className="flex items-center gap-1.5">
-              <button type="button" onClick={handleRegenerate}
+              <Button variant={null} size={null} type="button" onClick={handleRegenerate}
                 title="Regenerate slide image"
                 className="inline-flex items-center gap-1 rounded-md bg-white/20 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-white/30 active:scale-95 transition-all">
                 <RefreshCw size={10} /> Regen image
-              </button>
+              </Button>
               <label title="Upload your own image"
                 className="inline-flex cursor-pointer items-center gap-1 rounded-md bg-white/20 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-white/30 active:scale-95 transition-all">
                 <ImagePlus size={10} /> Upload image
@@ -1730,32 +1823,32 @@ function SlideDeck({ slides, height = 460, topic = '' }: { slides: Slide[]; heig
 
       {/* Navigation */}
       <div className="flex items-center justify-between gap-2">
-        <button type="button" onClick={() => go(-1)} disabled={safeIdx === 0}
-          className="inline-flex items-center gap-1 rounded-xl border border-surface-200 px-3 py-1.5 text-xs font-bold text-surface-600 transition-all hover:border-rose-200 hover:text-rose-600 disabled:opacity-40 dark:border-surface-700 dark:text-surface-300">
+        <Button variant="outline" size={null} type="button" onClick={() => go(-1)} disabled={safeIdx === 0}
+          className="inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-bold transition-all hover:border-rose-200 hover:text-rose-600 disabled:opacity-40 dark:border-surface-700 dark:text-surface-300">
           <ChevronLeft size={14} /> Prev
-        </button>
+        </Button>
 
         {/* Slide dots */}
         <div className="flex flex-1 flex-wrap justify-center gap-1.5">
           {slides.map((s, i) => (
-            <button key={i} type="button" onClick={() => setIdx(i)} title={`${i + 1}. ${s.title}`}
+            <Button variant={null} size={null} key={i} type="button" onClick={() => setIdx(i)} title={`${i + 1}. ${s.title}`}
               aria-label={`Go to slide ${i + 1}`}
               className={`size-2.5 rounded-full transition-all ${i === safeIdx ? 'scale-125 bg-rose-500' : 'bg-surface-300 hover:bg-rose-300 dark:bg-surface-600'}`} />
           ))}
         </div>
 
-        <button type="button" onClick={() => go(1)} disabled={safeIdx === slides.length - 1}
-          className="inline-flex items-center gap-1 rounded-xl border border-surface-200 px-3 py-1.5 text-xs font-bold text-surface-600 transition-all hover:border-rose-200 hover:text-rose-600 disabled:opacity-40 dark:border-surface-700 dark:text-surface-300">
+        <Button variant="outline" size={null} type="button" onClick={() => go(1)} disabled={safeIdx === slides.length - 1}
+          className="inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-bold transition-all hover:border-rose-200 hover:text-rose-600 disabled:opacity-40 dark:border-surface-700 dark:text-surface-300">
           Next <ChevronRight size={14} />
-        </button>
+        </Button>
       </div>
 
       {/* Slide thumbnail strip */}
       {slides.length > 1 && (
         <div className="flex gap-2 overflow-x-auto pb-1 pt-0.5">
           {slides.map((s, i) => (
-            <button key={i} type="button" onClick={() => setIdx(i)}
-              className={`flex-shrink-0 rounded-lg border-2 px-3 py-2 text-left transition-all ${i === safeIdx ? 'border-rose-400 bg-rose-50 dark:bg-rose-900/20' : 'border-surface-200 bg-white hover:border-rose-200 dark:border-surface-700 dark:bg-surface-800'}`}
+            <Button variant={null} size={null} key={i} type="button" onClick={() => setIdx(i)}
+              className={`h-auto flex-shrink-0 flex-col items-stretch justify-start gap-0 rounded-lg border-2 px-3 py-2 text-left font-normal transition-all ${i === safeIdx ? 'border-rose-400 bg-rose-50 dark:bg-rose-900/20' : 'border-surface-200 bg-white hover:border-rose-200 dark:border-surface-700 dark:bg-surface-800'}`}
               style={{ minWidth: 120, maxWidth: 150 }}>
               <p className="truncate text-[9px] font-black uppercase tracking-wide text-rose-500">{i + 1}</p>
               <p className="truncate text-[10px] font-semibold text-surface-700 dark:text-surface-200">{s.title}</p>
@@ -1764,7 +1857,7 @@ function SlideDeck({ slides, height = 460, topic = '' }: { slides: Slide[]; heig
                   <img src={imageOverrides[i]} alt="" className="size-full object-cover" />
                 </div>
               )}
-            </button>
+            </Button>
           ))}
         </div>
       )}
@@ -1918,9 +2011,11 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
   // -------------------------
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className={`flex max-h-[88vh] w-full flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900 ${widthClass}`}>
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+  <DialogContent className={`flex max-h-[88vh] w-full flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900 ${widthClass} gap-0 p-0 [&>button:last-child]:hidden sm:rounded-3xl`}>
+    <DialogTitle className="sr-only">Material viewer</DialogTitle>
+    <DialogDescription className="sr-only">Material viewer</DialogDescription>
+
         <div className="flex items-center justify-between gap-3 border-b border-surface-100 px-6 py-4 dark:border-surface-700">
           <div className="min-w-0">
             <h3 className="truncate text-lg font-bold text-surface-900 dark:text-white">{displayTitle}</h3>
@@ -1929,24 +2024,23 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
           <div className="flex items-center gap-2">
             {hasRich && (
               <div className="flex rounded-xl border border-surface-200 p-0.5 dark:border-surface-700">
-                <button onClick={() => setView('rich')}
-                  className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-colors ${view === 'rich' ? 'bg-violet-500 text-white' : 'text-surface-500'}`}>{richLabel}</button>
-                <button onClick={() => setView('text')}
-                  className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-colors ${view === 'text' ? 'bg-violet-500 text-white' : 'text-surface-500'}`}>Text</button>
+                <Button variant={null} size={null} onClick={() => setView('rich')}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-colors ${view === 'rich' ? 'bg-violet-500 text-white' : 'text-surface-500'}`}>{richLabel}</Button>
+                <Button variant={null} size={null} onClick={() => setView('text')}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-colors ${view === 'text' ? 'bg-violet-500 text-white' : 'text-surface-500'}`}>Text</Button>
               </div>
             )}
             {isBinaryPpt ? (
-              <a href={fileUrl} target="_blank" rel="noreferrer" download title="Download PPT"
-                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-surface-200 px-3 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700 dark:text-surface-200">
+              <Button asChild variant="outline" size={null} className="h-9 gap-1.5 rounded-xl px-3 text-xs font-bold hover:border-brand-200 hover:text-brand-600 dark:border-surface-700 dark:text-surface-200"><a href={fileUrl} target="_blank" rel="noreferrer" download title="Download PPT">
                 <Download size={14} /> PPT
-              </a>
+              </a></Button>
             ) : (
-              <button onClick={() => downloadMaterial(material)} title="Download as PDF"
-                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-surface-200 px-3 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700 dark:text-surface-200">
+              <Button variant="outline" size={null} onClick={() => downloadMaterial(material)} title="Download as PDF"
+                className="inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-bold hover:border-brand-200 hover:text-brand-600 dark:border-surface-700 dark:text-surface-200">
                 <Download size={14} /> PDF
-              </button>
+              </Button>
             )}
-            <button onClick={onClose} className="grid size-9 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><X size={18} /></button>
+            <Button variant="secondary" size="icon" onClick={onClose} className="size-9 rounded-xl"><X size={18} /></Button>
           </div>
         </div>
         {isBinaryPpt ? (
@@ -1997,7 +2091,7 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
               >
                 <div className="flex items-center gap-1.5 px-1">
                   {["#fef08a", "#bfdbfe", "#bbf7d0", "#fecaca", "#e9d5ff"].map((color) => (
-                    <button
+                    <Button variant={null} size={null}
                       key={color}
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
@@ -2009,20 +2103,21 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
                   ))}
                 </div>
                 <div className="w-px h-6 bg-surface-200 dark:bg-surface-700 mx-1" />
-                <button
+                <Button variant={null} size={null}
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={(e) => { e.preventDefault(); handleCaptureHighlight(); }}
                   className="rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-violet-700 flex items-center gap-1.5"
                 >
                   <Highlighter size={13} /> Save
-                </button>
+                </Button>
               </div>
             )}
           </div>
         )}
-      </div>
-    </div>
+      
+  </DialogContent>
+</Dialog>
   );
 }
 
@@ -2169,7 +2264,7 @@ function PracticeContentPreview({ content, typeId }: { content: string; typeId: 
           ['questions', 'Page 1'],
           ['solutions', typeId === 'pyq' ? 'Detailed Solutions' : 'Answer Key'],
         ].map(([id, label]) => (
-          <button
+          <Button variant={null} size={null}
             key={id}
             type="button"
             onClick={() => setPage(id as 'questions' | 'solutions')}
@@ -2177,7 +2272,7 @@ function PracticeContentPreview({ content, typeId }: { content: string; typeId: 
               }`}
           >
             {label}
-          </button>
+          </Button>
         ))}
       </div>
       <MarkdownRenderer content={page === 'questions' ? pages.questions : pages.solutions} className="prose-slate" />
@@ -2203,6 +2298,15 @@ function AiGeneratePanel({
   const scopeRef = topic.kind === 'subject' ? { subjectId: topic.id } : topic.kind === 'chapter' ? { chapterId: topic.id } : { topicId: topic.id };
   const hasAiMaterials = useSchoolFeature('ai', 'ai_content_generator_materials');
   const hasPptGen = useSchoolFeature('ai', 'ai_ppt_generator');
+  const navigate = useNavigate();
+  const { jobs: pptJobs } = usePptJobs();
+  // A deck already being made for this topic (or made and not opened yet):
+  // Presentation opens that, rather than a setup screen to generate it again.
+  const pptJobHere = pptJobToResume(pptJobs, topic);
+  const openPresentation = () => {
+    if (pptJobHere) { onClose(); navigate(pptJobOpenPath(pptJobHere)); return; }
+    onOpenPptStudio();
+  };
 
   const [typeId, setTypeId] = useState(() => {
     // Match production: default to a material type, never 'presentation'.
@@ -2353,12 +2457,16 @@ function AiGeneratePanel({
   // Keep generated work as an unpublished draft until the teacher confirms it.
   if (content) {
     return (
-      <div className="fixed inset-0 z-[210] flex flex-col bg-surface-50 dark:bg-surface-950">
+      <Dialog open onOpenChange={() => { /* closed via its own Back / Discard buttons */ }}>
+  <DialogContent className="left-0 top-0 h-dvh w-screen max-w-none translate-x-0 translate-y-0 rounded-none border-0 sm:rounded-none flex flex-col bg-surface-50 dark:bg-surface-950 gap-0 p-0 [&>button:last-child]:hidden">
+    <DialogTitle className="sr-only">AI content generator</DialogTitle>
+    <DialogDescription className="sr-only">AI content generator</DialogDescription>
+
         <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-surface-200 bg-white px-5 py-4 shadow-sm dark:border-surface-700 dark:bg-surface-900">
           <div className="flex min-w-0 items-center gap-3">
-            <button type="button" onClick={() => setContent(null)} className="grid size-10 shrink-0 place-items-center rounded-xl border border-surface-200 text-surface-600 transition hover:bg-surface-50 dark:border-surface-700 dark:hover:bg-surface-800" aria-label="Back to generator settings">
+            <Button variant="outline" size={null} type="button" onClick={() => setContent(null)} className="grid size-10 shrink-0 place-items-center rounded-xl dark:border-surface-700 dark:hover:bg-surface-800" aria-label="Back to generator settings">
               <ChevronLeft size={19} />
-            </button>
+            </Button>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <Sparkles size={16} className="text-violet-600" />
@@ -2371,9 +2479,9 @@ function AiGeneratePanel({
               </div>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="grid size-10 place-items-center rounded-xl text-surface-500 transition hover:bg-surface-100 dark:hover:bg-surface-800" aria-label="Discard and close">
+          <Button variant="ghost" size={null} type="button" onClick={onClose} className="grid size-10 place-items-center rounded-xl text-surface-500 transition hover:bg-surface-100 dark:hover:bg-surface-800" aria-label="Discard and close">
             <X size={19} />
-          </button>
+          </Button>
         </header>
 
         <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
@@ -2396,13 +2504,18 @@ function AiGeneratePanel({
             {saving ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Publishing…</span> : 'Confirm & publish to students'}
           </Button>
         </footer>
-      </div>
+      
+  </DialogContent>
+</Dialog>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900">
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+  <DialogContent className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900 gap-0 p-0 [&>button:last-child]:hidden sm:rounded-3xl">
+    <DialogTitle className="sr-only">AI content generator</DialogTitle>
+    <DialogDescription className="sr-only">AI content generator</DialogDescription>
+
         <div className="flex items-start justify-between border-b border-surface-100 bg-gradient-to-r from-violet-50 to-blue-50 px-5 py-4 dark:border-surface-700 dark:from-violet-900/20 dark:to-blue-900/20">
           <div className="flex items-center gap-2">
             <div className="grid size-7 place-items-center rounded-lg bg-violet-600 text-white"><Sparkles size={15} /></div>
@@ -2411,10 +2524,18 @@ function AiGeneratePanel({
               <p className="truncate text-sm font-bold text-surface-900 dark:text-white">{topic.name}</p>
             </div>
           </div>
-          <button onClick={onClose} className="grid size-8 place-items-center rounded-xl bg-white/70 text-surface-500 dark:bg-surface-800"><X size={16} /></button>
+          <Button variant={null} size={null} onClick={onClose} className="grid size-8 place-items-center rounded-xl bg-white/70 text-surface-500 dark:bg-surface-800"><X size={16} /></Button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-5">
+          {hasPptGen && (
+            <PptJobsList
+              jobs={pptJobs}
+              onOpen={(job) => { onClose(); navigate(pptJobOpenPath(job)); }}
+              onRetry={(job) => { void dismissPptJob(job.jobId); onClose(); navigate(pptJobRetryPath(job)); }}
+              onDismiss={(job) => { void dismissPptJob(job.jobId); }}
+            />
+          )}
           <p className="mb-3 text-[11px] font-black uppercase tracking-wider text-surface-400">1 · Choose content type</p>
           <div className="grid grid-cols-2 gap-2.5">
             {AI_GEN_TYPES.map((t) => {
@@ -2426,12 +2547,23 @@ function AiGeneratePanel({
               const Icon = t.icon;
               const active = typeId === t.id;
               return (
-                <button key={t.id} onClick={() => { if (t.id === 'presentation') { onOpenPptStudio(); return; } setTypeId(t.id); setContent(null); }}
+                <Button variant={null} size={null} key={t.id} onClick={() => { if (t.id === 'presentation') { openPresentation(); return; } setTypeId(t.id); setContent(null); }}
                   className={`rounded-2xl border-2 p-3 text-left transition-all ${active ? 'border-violet-400 bg-violet-50 dark:bg-violet-900/30' : 'border-surface-100 hover:border-surface-200 dark:border-surface-700'}`}>
                   <div className={`mb-1.5 inline-flex rounded-lg p-1.5 ${t.soft}`}><Icon size={16} className={t.text} /></div>
                   <p className="text-sm font-bold text-surface-900 dark:text-white">{t.label}</p>
                   <p className="mt-0.5 text-[11px] font-medium leading-snug text-surface-400">{t.desc}</p>
-                </button>
+                  {t.id === 'presentation' && pptJobHere && (
+                    isGenerating(pptJobHere) ? (
+                      <p data-testid="ppt-card-state" className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
+                        <Loader2 size={10} className="animate-spin" /> Generating now · click to see progress
+                      </p>
+                    ) : (
+                      <p data-testid="ppt-card-state" className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                        Ready · click to open
+                      </p>
+                    )
+                  )}
+                </Button>
               );
             })}
           </div>
@@ -2447,7 +2579,7 @@ function AiGeneratePanel({
                     ['lecture', 'Lecture Transcript', true],
                     ['both', 'Both', sourceAvailability?.ebookAvailable !== false],
                   ] as const).map(([mode, label, enabled]) => (
-                    <button
+                    <Button variant={null} size={null}
                       key={mode}
                       type="button"
                       disabled={!enabled}
@@ -2459,7 +2591,7 @@ function AiGeneratePanel({
                         }`}
                     >
                       {label}
-                    </button>
+                    </Button>
                   ))}
                 </div>
                 <p className="mt-1 text-[11px] font-medium text-surface-400">
@@ -2477,7 +2609,7 @@ function AiGeneratePanel({
                 {(['english', 'hindi', 'odia'] as const).map((lang) => {
                   const labels: Record<string, string> = { english: 'English', hindi: 'Hindi (हिंदी)', odia: 'Odia (ଓଡ଼ିଆ)' };
                   return (
-                    <button
+                    <Button variant={null} size={null}
                       key={lang}
                       onClick={() => { setLanguage(lang); setContent(null); }}
                       className={`rounded-xl border-2 px-3 py-2 text-sm font-bold transition-all ${language === lang
@@ -2486,7 +2618,7 @@ function AiGeneratePanel({
                         }`}
                     >
                       {labels[lang]}
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -2496,17 +2628,17 @@ function AiGeneratePanel({
                 <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-surface-400">Number of Questions</p>
                 <div className="flex flex-wrap gap-2">
                   {[5, 10, 15, 20, 25, 30].map((n) => (
-                    <button key={n} onClick={() => setQuestionCount(n)}
+                    <Button variant={null} size={null} key={n} onClick={() => setQuestionCount(n)}
                       className={`h-9 w-10 rounded-xl border-2 text-sm font-bold transition-colors ${questionCount === n ? 'border-violet-400 bg-violet-500 text-white' : 'border-surface-200 text-surface-600 dark:border-surface-700'}`}>
                       {n}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
             )}
             <div>
               <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-surface-400">Extra context (optional)</p>
-              <textarea value={extraContext} onChange={(e) => setExtraContext(e.target.value)} rows={2}
+              <Textarea value={extraContext} onChange={(e) => setExtraContext(e.target.value)} rows={2}
                 placeholder="e.g. focus on numericals, include real-world examples…"
                 className="w-full resize-none rounded-xl border-2 border-surface-200 bg-surface-50 px-3 py-2 text-sm outline-none focus:border-violet-400 dark:border-surface-700 dark:bg-surface-800" />
             </div>
@@ -2555,8 +2687,9 @@ function AiGeneratePanel({
             </Button>
           )}
         </div>
-      </div>
-    </div>
+      
+  </DialogContent>
+</Dialog>
   );
 }
 
@@ -2626,12 +2759,14 @@ function EditFlashcardsModal({ material, onClose, onSaved }: {
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-      onClick={(e) => { if (e.target === e.currentTarget) void requestClose(); }}>
-      <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900">
+    <Dialog open onOpenChange={(open) => { if (!open) void requestClose(); }}>
+  <DialogContent className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900 gap-0 p-0 [&>button:last-child]:hidden sm:rounded-3xl">
+    <DialogTitle className="sr-only">Edit flashcards</DialogTitle>
+    <DialogDescription className="sr-only">Edit flashcards</DialogDescription>
+
         <div className="flex shrink-0 items-center justify-between border-b border-surface-100 px-5 py-4 dark:border-surface-700">
           <h3 className="text-sm font-bold text-surface-900 dark:text-white">Edit Flashcards</h3>
-          <button onClick={() => void requestClose()} aria-label="Close" className="grid size-8 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><X size={16} /></button>
+          <Button variant="secondary" size="icon" onClick={() => void requestClose()} aria-label="Close" className="size-8 rounded-xl"><X size={16} /></Button>
         </div>
         {original.length === 0 ? (
           // Never open an unreadable set as an empty editor — saving it would wipe the content.
@@ -2650,8 +2785,9 @@ function EditFlashcardsModal({ material, onClose, onSaved }: {
             </Button>
           </div>
         )}
-      </div>
-    </div>
+      
+  </DialogContent>
+</Dialog>
   );
 }
 
@@ -2699,12 +2835,14 @@ function EditChecklistModal({ material, onClose, onSaved }: {
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-      onClick={(e) => { if (e.target === e.currentTarget) void requestClose(); }}>
-      <div className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900">
+    <Dialog open onOpenChange={(open) => { if (!open) void requestClose(); }}>
+  <DialogContent className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900 gap-0 p-0 [&>button:last-child]:hidden sm:rounded-3xl">
+    <DialogTitle className="sr-only">Edit revision checklist</DialogTitle>
+    <DialogDescription className="sr-only">Edit revision checklist</DialogDescription>
+
         <div className="flex shrink-0 items-center justify-between border-b border-surface-100 px-5 py-4 dark:border-surface-700">
           <h3 className="text-sm font-bold text-surface-900 dark:text-white">Edit Revision Checklist</h3>
-          <button onClick={() => void requestClose()} aria-label="Close" className="grid size-8 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><X size={16} /></button>
+          <Button variant="secondary" size="icon" onClick={() => void requestClose()} aria-label="Close" className="size-8 rounded-xl"><X size={16} /></Button>
         </div>
         <div className="space-y-4 overflow-y-auto p-5">
           <InputField label="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -2713,8 +2851,9 @@ function EditChecklistModal({ material, onClose, onSaved }: {
             {busy ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Saving…</span> : 'Save Changes'}
           </Button>
         </div>
-      </div>
-    </div>
+      
+  </DialogContent>
+</Dialog>
   );
 }
 
@@ -2878,20 +3017,22 @@ function AddMaterialModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-      onClick={(e) => { if (e.target === e.currentTarget) void requestClose(); }}>
-      <div className={`flex max-h-[92vh] w-full flex-col ${(isTypingCards || isTypingChecklist) && step === 'input' ? 'max-w-3xl' : 'max-w-md'} overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900`}>
+    <Dialog open onOpenChange={(open) => { if (!open) void requestClose(); }}>
+  <DialogContent className={`flex max-h-[92vh] w-full flex-col ${(isTypingCards || isTypingChecklist) && step === 'input' ? 'max-w-3xl' : 'max-w-md'} overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900 gap-0 p-0 [&>button:last-child]:hidden sm:rounded-3xl`}>
+    <DialogTitle className="sr-only">Add material</DialogTitle>
+    <DialogDescription className="sr-only">Add material</DialogDescription>
+
         <div className="flex shrink-0 items-center justify-between border-b border-surface-100 px-5 py-4 dark:border-surface-700">
           <div className="flex items-center gap-2">
             {step === 'input' && !initialType && !isSubject && (
-              <button onClick={() => setStep('type')} className="grid size-8 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><ChevronLeft size={16} /></button>
+              <Button variant="secondary" size="icon" onClick={() => setStep('type')} className="size-8 rounded-xl"><ChevronLeft size={16} /></Button>
             )}
             <div>
               <h3 className="text-sm font-bold text-surface-900 dark:text-white">{step === 'type' ? 'Choose material type' : `Add ${cfg.label}`}</h3>
               <p className="max-w-[240px] truncate text-xs text-surface-400">{topic.name}</p>
             </div>
           </div>
-          <button onClick={() => void requestClose()} aria-label="Close" className="grid size-8 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><X size={16} /></button>
+          <Button variant="secondary" size="icon" onClick={() => void requestClose()} aria-label="Close" className="size-8 rounded-xl"><X size={16} /></Button>
         </div>
 
         {step === 'type' ? (
@@ -2899,7 +3040,7 @@ function AddMaterialModal({
             {MATERIAL_TYPES.map((mt) => {
               const Icon = mt.icon;
               return (
-                <button key={mt.value}
+                <Button variant={null} size={null} key={mt.value}
                   onClick={() => {
                     setType(mt.value);
                     setSource(mt.value === 'flashcard' || mt.value === 'revision_checklist' ? 'cards' : 'file');
@@ -2912,7 +3053,7 @@ function AddMaterialModal({
                     <span className={`block text-sm font-bold ${mt.text}`}>{mt.label}</span>
                     <span className="block truncate text-[11px] font-medium text-surface-500 dark:text-surface-400">{formatSummary(mt.value)}</span>
                   </span>
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -2923,31 +3064,31 @@ function AddMaterialModal({
 
             <div className="flex gap-2">
               {type === 'flashcard' && (
-                <button onClick={() => setSource('cards')} className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-2 text-sm font-bold transition-colors ${source === 'cards' ? 'border-brand-400 bg-brand-50 text-brand-700 dark:bg-brand-900/30' : 'border-surface-200 text-surface-500 dark:border-surface-700'}`}>
+                <Button variant={null} size={null} onClick={() => setSource('cards')} className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-2 text-sm font-bold transition-colors ${source === 'cards' ? 'border-brand-400 bg-brand-50 text-brand-700 dark:bg-brand-900/30' : 'border-surface-200 text-surface-500 dark:border-surface-700'}`}>
                   <Pencil size={15} /> Type cards
-                </button>
+                </Button>
               )}
               {type === 'revision_checklist' && (
-                <button onClick={() => setSource('cards')} className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-2 text-sm font-bold transition-colors ${source === 'cards' ? 'border-brand-400 bg-brand-50 text-brand-700 dark:bg-brand-900/30' : 'border-surface-200 text-surface-500 dark:border-surface-700'}`}>
+                <Button variant={null} size={null} onClick={() => setSource('cards')} className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-2 text-sm font-bold transition-colors ${source === 'cards' ? 'border-brand-400 bg-brand-50 text-brand-700 dark:bg-brand-900/30' : 'border-surface-200 text-surface-500 dark:border-surface-700'}`}>
                   <Pencil size={15} /> Type checklist
-                </button>
+                </Button>
               )}
-              <button onClick={() => setSource('file')} className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-2 text-sm font-bold transition-colors ${source === 'file' ? 'border-brand-400 bg-brand-50 text-brand-700 dark:bg-brand-900/30' : 'border-surface-200 text-surface-500 dark:border-surface-700'}`}>
+              <Button variant={null} size={null} onClick={() => setSource('file')} className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-2 text-sm font-bold transition-colors ${source === 'file' ? 'border-brand-400 bg-brand-50 text-brand-700 dark:bg-brand-900/30' : 'border-surface-200 text-surface-500 dark:border-surface-700'}`}>
                 <Upload size={15} /> Upload file
-              </button>
-              <button onClick={() => setSource('link')} className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-2 text-sm font-bold transition-colors ${source === 'link' ? 'border-brand-400 bg-brand-50 text-brand-700 dark:bg-brand-900/30' : 'border-surface-200 text-surface-500 dark:border-surface-700'}`}>
+              </Button>
+              <Button variant={null} size={null} onClick={() => setSource('link')} className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-2 text-sm font-bold transition-colors ${source === 'link' ? 'border-brand-400 bg-brand-50 text-brand-700 dark:bg-brand-900/30' : 'border-surface-200 text-surface-500 dark:border-surface-700'}`}>
                 <Link2 size={15} /> Paste link
-              </button>
+              </Button>
             </div>
 
             {type === 'ppt' && (
-              <button
+              <Button variant={null} size={null}
                 type="button"
                 onClick={onOpenPptStudio}
                 className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-rose-200 bg-rose-50/50 py-2.5 text-sm font-bold text-rose-600 transition-colors hover:border-rose-300 hover:bg-rose-50 dark:border-rose-800 dark:bg-rose-900/10 dark:text-rose-300"
               >
                 <Presentation size={15} /> Build it in PPT Studio instead
-              </button>
+              </Button>
             )}
 
             {source === 'cards' && type === 'flashcard' ? (
@@ -2964,7 +3105,7 @@ function AddMaterialModal({
                     <p className="truncate text-sm font-bold text-surface-800 dark:text-surface-100">{file.name}</p>
                     <p className="text-xs text-surface-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                   </div>
-                  <button onClick={() => { setFile(null); if (fileRef.current) fileRef.current.value = ''; }} className="grid size-7 place-items-center rounded-lg bg-white/70 text-surface-400 hover:text-rose-500"><X size={14} /></button>
+                  <Button variant={null} size={null} onClick={() => { setFile(null); if (fileRef.current) fileRef.current.value = ''; }} className="grid size-7 place-items-center rounded-lg bg-white/70 text-surface-400 hover:text-rose-500"><X size={14} /></Button>
                 </div>
                 {type === 'animation' && (
                   <video
@@ -3009,8 +3150,9 @@ function AddMaterialModal({
             </Button>
           </div>
         )}
-      </div>
-    </div>
+      
+  </DialogContent>
+</Dialog>
   );
 }
 
@@ -3079,6 +3221,22 @@ function rowsFromCsv(text: string): ParsedRow[] {
   return out;
 }
 
+function csvField(value: string): string {
+  const v = String(value ?? '');
+  return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+}
+
+/** Turns the AI's chapter/topics read-out into the same two-column CSV the
+ * textarea already understands, so a scanned index page reuses every bit of
+ * the existing preview/edit/import flow instead of a parallel code path. */
+function csvFromScannedChapters(chapters: Array<{ chapter: string; topics: string[] }>): string {
+  const lines = ['Chapter,Topic'];
+  for (const ch of chapters) {
+    lines.push(`${csvField(ch.chapter)},${csvField((ch.topics || []).join(', '))}`);
+  }
+  return lines.join('\n');
+}
+
 const CSV_TEMPLATE =
   'Chapter,Topic\n' +
   'Real Numbers,Euclid’s Division Lemma\n' +
@@ -3094,7 +3252,9 @@ function BulkImportModal({
 }) {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const imageRef = useRef<HTMLInputElement>(null);
 
   const rows = useMemo(() => rowsFromCsv(text), [text]);
   const grouped = useMemo(() => {
@@ -3114,6 +3274,38 @@ function BulkImportModal({
   const onFile = async (f: File) => {
     const content = await f.text();
     setText(content);
+  };
+
+  const onScanImage = async (f: File) => {
+    setScanning(true);
+    try {
+      const fd = new FormData();
+      fd.append('image', f);
+      // The shared axios instance defaults every request to Content-Type:
+      // application/json, which — left in place — stops the browser from
+      // setting the multipart boundary header a FormData body needs; the
+      // server then sees no file. Same fix as uploadMaterialFile() in
+      // lib/api/school-content.ts.
+      const res = await api.post('/topics/bulk-import/parse-image', fd, {
+        transformRequest: [(data: any, headers: any) => {
+          delete headers['Content-Type'];
+          return data;
+        }],
+      });
+      const data = res.data?.data || res.data || {};
+      const chapters: Array<{ chapter: string; topics: string[] }> = data.chapters || [];
+      if (!chapters.length) {
+        toast.warning(data.warning || 'Could not read a chapter/topic structure from that image — try a clearer, flatter photo of the index page.');
+        return;
+      }
+      setText(csvFromScannedChapters(chapters));
+      const topicCount = chapters.reduce((n, c) => n + (c.topics?.length || 0), 0);
+      toast.success(`Read ${chapters.length} chapter(s), ${topicCount} topic(s) from the image — review below before importing.`);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Could not scan that image. Please try again or enter manually.');
+    } finally {
+      setScanning(false);
+    }
   };
 
   const downloadTemplate = () => {
@@ -3154,19 +3346,34 @@ function BulkImportModal({
         <div className="flex items-start justify-between gap-3">
           <p className="text-sm text-surface-500 dark:text-surface-300">
             Import chapters &amp; topics into <span className="font-semibold text-surface-700 dark:text-surface-100">{subjectName}</span>.
-            Use two columns — <b>Chapter</b>, <b>Topic</b>. Existing names are reused, not duplicated.
+            Upload a CSV, type two columns — <b>Chapter</b>, <b>Topic</b> — or scan a photo of the
+            book's index page and let AI fill it in. Existing names are reused, not duplicated.
           </p>
-          <Button size="sm" variant="ghost" icon={<Download size={15} />} onClick={downloadTemplate}>Template</Button>
+          <Button size="sm" variant="ghost" onClick={downloadTemplate}>
+<Download size={15} />Template</Button>
         </div>
 
         <div className="flex flex-wrap gap-2">
           <input ref={fileRef} type="file" accept=".csv,text/csv,text/plain" className="hidden"
             onChange={(e) => { if (e.target.files?.[0]) void onFile(e.target.files[0]); e.target.value = ''; }} />
-          <Button size="sm" variant="outline" icon={<FileSpreadsheet size={15} />} onClick={() => fileRef.current?.click()}>Upload CSV</Button>
-          {text && <Button size="sm" variant="ghost" icon={<X size={15} />} onClick={() => setText('')}>Clear</Button>}
+          <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()}>
+<FileSpreadsheet size={15} />Upload CSV</Button>
+          <input ref={imageRef} type="file" accept="image/*" className="hidden"
+            onChange={(e) => { if (e.target.files?.[0]) void onScanImage(e.target.files[0]); e.target.value = ''; }} />
+          <Button size="sm" variant="outline" disabled={scanning} onClick={() => imageRef.current?.click()}>
+            {scanning ? <Loader2 size={15} className="animate-spin" /> : <ScanLine size={15} />}
+            {scanning ? 'Scanning…' : 'Scan Book Index'}
+          </Button>
+          {text && <Button size="sm" variant="ghost" onClick={() => setText('')}>
+<X size={15} />Clear</Button>}
         </div>
+        {scanning && (
+          <p className="text-xs text-surface-400">
+            Reading the chapter/topic structure from your photo — this can take up to ~20s.
+          </p>
+        )}
 
-        <textarea
+        <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={7}

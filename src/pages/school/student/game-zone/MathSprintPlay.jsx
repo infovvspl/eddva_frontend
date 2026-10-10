@@ -3,6 +3,7 @@ import { Clock, Zap, Flame, LogOut, ShieldCheck, Check, X, Heart } from 'lucide-
 import { soundEngine } from '@/lib/audioManager';
 import { toast } from 'sonner';
 import { apiClient as api } from '@/lib/api/client';
+import HintPanel from './shared/HintPanel';
 
 export default function MathSprintPlay({ session, onFinish, onQuit }) {
   const { sessionId } = session;
@@ -21,6 +22,9 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
   const [lives, setLives] = useState(3);
   const livesRef = useRef(3);
   livesRef.current = lives;
+  const [hintsUsedThisQuestion, setHintsUsedThisQuestion] = useState(0);
+  const hintsUsedThisQuestionRef = useRef(0);
+  hintsUsedThisQuestionRef.current = hintsUsedThisQuestion;
 
   const timerRef = useRef(null);
   const timeoutRef = useRef(null);
@@ -77,6 +81,7 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
     setTimeLeft(15);
     setHasAnswered(false);
     setSelectedOptionId(null);
+    setHintsUsedThisQuestion(0);
 
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
@@ -106,15 +111,37 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
     };
   }, []);
 
+  // Shared "what happens after this question is resolved" step — called
+  // either by the short auto-advance timer, or (when a hint was used, so the
+  // timer is skipped to give the student time to read it) by the manual
+  // Continue button.
+  const advanceRef = useRef(null);
+
+  const fetchNextQuestion = async () => {
+    try {
+      const res = await api.get('/school/gamification/math-sprint/next-question', {
+        params: { sessionId, currentIdx }
+      });
+      const data = res.data?.data ?? res.data;
+      setLocalQuestions((prev) => [...prev, data.question]);
+      setCurrentIdx((prev) => prev + 1);
+    } catch (err) {
+      console.error('Failed to load next math question:', err);
+      toast.error('Failed to generate next equation.');
+    }
+  };
+
   // Handle expiration of the timer
   const handleTimeUp = () => {
     soundEngine.playWrong();
     setStreak(0);
+    setHasAnswered(true);
     const newAnswers = [
       ...answersRef.current,
       {
         questionId: currentQuestion.id,
         selectedOptionId: '', // Empty means timeout
+        hintsUsed: hintsUsedThisQuestionRef.current,
       },
     ];
     setAnswers(newAnswers);
@@ -122,22 +149,10 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
     const nextLives = livesRef.current - 1;
     setLives(nextLives);
 
-    if (nextLives > 0) {
-      timeoutRef.current = setTimeout(async () => {
-        try {
-          const res = await api.get('/school/gamification/math-sprint/next-question', {
-            params: { sessionId, currentIdx }
-          });
-          const data = res.data?.data ?? res.data;
-          setLocalQuestions((prev) => [...prev, data.question]);
-          setCurrentIdx((prev) => prev + 1);
-        } catch (err) {
-          console.error('Failed to load next math question:', err);
-          toast.error('Failed to generate next equation.');
-        }
-      }, 600);
-    } else {
-      handleSubmit(newAnswers);
+    const advance = () => (nextLives > 0 ? fetchNextQuestion() : handleSubmit(newAnswers));
+    advanceRef.current = advance;
+    if (hintsUsedThisQuestionRef.current === 0) {
+      timeoutRef.current = setTimeout(advance, 600);
     }
   };
 
@@ -179,44 +194,31 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
       {
         questionId: currentQuestion.id,
         selectedOptionId: optionId,
+        hintsUsed: hintsUsedThisQuestionRef.current,
       },
     ];
     setAnswers(newAnswers);
 
-    // Auto-advance to the next question after 600ms if correct, or check lives
-    timeoutRef.current = setTimeout(async () => {
+    // Auto-advance after 600ms if correct, or check lives — but not if a
+    // hint is on screen for this question; give the student time to read it
+    // and advance manually via the Continue button instead.
+    const advance = async () => {
       if (isCorrect) {
-        try {
-          const res = await api.get('/school/gamification/math-sprint/next-question', {
-            params: { sessionId, currentIdx }
-          });
-          const data = res.data?.data ?? res.data;
-          setLocalQuestions((prev) => [...prev, data.question]);
-          setCurrentIdx((prev) => prev + 1);
-        } catch (err) {
-          console.error('Failed to load next math question:', err);
-          toast.error('Failed to generate next equation.');
-        }
+        await fetchNextQuestion();
       } else {
         const nextLives = livesRef.current - 1;
         setLives(nextLives);
         if (nextLives > 0) {
-          try {
-            const res = await api.get('/school/gamification/math-sprint/next-question', {
-              params: { sessionId, currentIdx }
-            });
-            const data = res.data?.data ?? res.data;
-            setLocalQuestions((prev) => [...prev, data.question]);
-            setCurrentIdx((prev) => prev + 1);
-          } catch (err) {
-            console.error('Failed to load next math question:', err);
-            toast.error('Failed to generate next equation.');
-          }
+          await fetchNextQuestion();
         } else {
           handleSubmit(newAnswers);
         }
       }
-    }, 600);
+    };
+    advanceRef.current = advance;
+    if (hintsUsedThisQuestionRef.current === 0) {
+      timeoutRef.current = setTimeout(advance, 600);
+    }
   };
 
   const handleSubmit = (finalAnswers) => {
@@ -309,6 +311,15 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
           <h2 className="text-4xl md:text-5xl font-black text-white leading-relaxed tracking-tight text-center py-6 font-mono select-none">
             {currentQuestion?.content} = ?
           </h2>
+          <div className="flex justify-center">
+            <HintPanel
+              sessionId={sessionId}
+              gameType="math_sprint"
+              questionId={currentQuestion?.id}
+              disabled={hasAnswered}
+              onHintsUsedChange={setHintsUsedThisQuestion}
+            />
+          </div>
         </div>
 
         {/* Explanation / Streak indicator */}
@@ -323,6 +334,20 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
                 <X className="size-5 stroke-[3]" /> Streak reset!
               </span>
             )}
+          </div>
+        )}
+
+        {/* A hint was used on this question, so the usual auto-advance timer
+            was skipped to give the student time to read it — continue manually. */}
+        {hasAnswered && hintsUsedThisQuestion > 0 && (
+          <div className="mt-4 flex justify-center">
+            <button
+              type="button"
+              onClick={() => advanceRef.current?.()}
+              className="rounded-xl bg-rose-600 px-6 py-2.5 text-xs font-black uppercase tracking-wide text-white transition hover:bg-rose-500"
+            >
+              Continue
+            </button>
           </div>
         )}
       </div>

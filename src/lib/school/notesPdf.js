@@ -44,7 +44,7 @@ const loadImageSize = (dataUrl) =>
     img.src = dataUrl;
   });
 
-export const downloadNotesAsPDF = async ({ markdown, title = 'AI Notes', filename = 'ai-notes.pdf', imageMap = {} }) => {
+export const downloadNotesAsPDF = async ({ markdown, title = 'AI Notes', filename = 'ai-notes.pdf', imageMap = {}, subtitle = 'AI-generated notes' }) => {
   if (!markdown || !markdown.trim()) throw new Error('No notes content');
 
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -122,7 +122,7 @@ export const downloadNotesAsPDF = async ({ markdown, title = 'AI Notes', filenam
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(9);
   pdf.setTextColor(...COLORS.muted);
-  pdf.text(`AI-generated notes  ·  ${new Date().toLocaleDateString('en-GB')}`, PAGE.margin, y);
+  pdf.text(`${subtitle}  ·  ${new Date().toLocaleDateString('en-GB')}`, PAGE.margin, y);
   y += 3;
   pdf.setDrawColor(...COLORS.accent);
   pdf.setLineWidth(0.6);

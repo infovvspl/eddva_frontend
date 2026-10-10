@@ -12,6 +12,18 @@ window.PPTExport = {
     large:  { x: 5.6, y: 0.9, w: 4.0, h: 3.0  },
   },
 
+  // A painted slide goes into the file as a JPEG at this quality. The PNG the
+  // image model returns is about 1.4 MB a slide; a 10-slide deck was a 14.4 MB
+  // file that took 6.6s to build and - on a school connection - half a minute
+  // to upload. At 0.9 a slide is about 200 KB and, zoomed 3x on card text,
+  // indistinguishable from the PNG (41.7 dB PSNR).
+  PAINTED_JPEG_QUALITY: 0.9,
+  // Pictures are fetched this many at a time, not one after another.
+  FETCH_PARALLEL: 4,
+  // url -> the JPEG data URL made from it, so a second save or a download
+  // after a save does not fetch and convert the slides again.
+  _paintedCache: new Map(),
+
   // ── Entry point ──────────────────────────────────────────────
   async exportPresentation(presentationData) {
     await this._prefillBase64Images(presentationData);
@@ -19,7 +31,8 @@ window.PPTExport = {
     await pptx.writeFile({ fileName });
   },
 
-  // Build the same deck but return base64 (used to save into EDVA Course Content).
+  // Build the same deck but return base64. Kept for callers that want text;
+  // saving to Course Content uses exportToFile.
   async exportToBase64(presentationData) {
     await this._prefillBase64Images(presentationData);
     const { pptx, fileName } = this._buildPptx(presentationData);
@@ -27,16 +40,100 @@ window.PPTExport = {
     return { base64, fileName };
   },
 
-  async _prefillBase64Images(presentationData) {
+  // The deck as the bytes of a .pptx, for saving into EDVA Course Content.
+  // Bytes, not base64: text is a third larger and has to be decoded again.
+  // onProgress(stage, done, total): 'images' while pictures are fetched, then 'file'.
+  async exportToFile(presentationData, onProgress) {
+    const report = typeof onProgress === 'function' ? onProgress : () => {};
+    await this._prefillBase64Images(presentationData, (done, total) => report('images', done, total));
+    report('file', 0, 1);
+    const { pptx, fileName } = this._buildPptx(presentationData);
+    const buffer = await pptx.write({ outputType: 'arraybuffer' });
+    report('file', 1, 1);
+    return { buffer, fileName };
+  },
+
+  // Fetch every picture the file needs, a few at a time. onProgress(done, total).
+  async _prefillBase64Images(presentationData, onProgress) {
     if (!presentationData?.slides) return;
+    const jobs = [];
     for (const slide of presentationData.slides) {
+      // A painted slide is fetched into the file like any other picture, so
+      // the .pptx does not depend on the image server staying up. It is kept
+      // in a cache, not on the slide: the deck data stays as it was generated.
+      const painted = slide.slideImage;
+      if (painted && painted.url && !this._paintedCache.has(painted.url)) {
+        jobs.push(async () => {
+          const jpeg = await this._paintedJpeg(painted.url);
+          if (jpeg) this._paintedCache.set(painted.url, jpeg);
+        });
+      }
       if (slide.imageUrl && !slide.imageBase64) {
-        const b64 = await this._urlToBase64(slide.imageUrl);
-        if (b64) {
-          slide.imageBase64 = b64;
-        }
+        jobs.push(async () => {
+          const b64 = await this._urlToBase64(slide.imageUrl);
+          if (b64) slide.imageBase64 = b64;
+        });
       }
     }
+    let done = 0;
+    let next = 0;
+    const total = jobs.length;
+    if (onProgress) onProgress(0, total);
+    const worker = async () => {
+      while (next < total) {
+        const job = jobs[next++];
+        try { await job(); } catch (e) { console.warn('Picture could not be prepared:', e); }
+        done += 1;
+        if (onProgress) onProgress(done, total);
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(this.FETCH_PARALLEL, total) }, worker));
+  },
+
+  // What a painted slide is drawn from in the file: its JPEG when it was
+  // prepared, else whatever the slide carries.
+  _paintedData(painted) {
+    return (painted && painted.url && this._paintedCache.get(painted.url)) || (painted && painted.base64) || null;
+  },
+
+  // A painted slide as a JPEG data URL (see PAINTED_JPEG_QUALITY). Falls back
+  // to the picture as it is when the browser cannot re-encode it; null when it
+  // cannot be fetched at all.
+  async _paintedJpeg(url) {
+    if (!url) return null;
+    if (url.startsWith('data:image/jpeg')) return url;
+    let blob;
+    try {
+      blob = await (await fetch(url)).blob();
+    } catch (e) {
+      console.warn('Failed to fetch slide picture:', e);
+      return null;
+    }
+    try {
+      const bitmap = await createImageBitmap(blob);
+      const canvas = document.createElement('canvas');
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      const g = canvas.getContext('2d');
+      g.fillStyle = '#FFFFFF';              // JPEG has no transparency
+      g.fillRect(0, 0, canvas.width, canvas.height);
+      g.drawImage(bitmap, 0, 0);
+      if (bitmap.close) bitmap.close();
+      const jpeg = canvas.toDataURL('image/jpeg', this.PAINTED_JPEG_QUALITY);
+      if (jpeg && jpeg.startsWith('data:image/jpeg')) return jpeg;
+    } catch (e) {
+      console.warn('Slide picture kept as it is (could not be re-encoded):', e);
+    }
+    return this._blobToDataUrl(blob);
+  },
+
+  _blobToDataUrl(blob) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
   },
 
   async _urlToBase64(url) {
@@ -96,6 +193,33 @@ window.PPTExport = {
     // renders math with KaTeX; PptxGenJS cannot, so without this the exported
     // .pptx shows raw "$$...$$" markup.
     data = this._deLatexSlide(data);
+
+    // An image slide is one painted picture, placed full-bleed. Its words are
+    // in the speaker notes (added by the caller), not drawn again on top.
+    const painted = data.slideImage;
+    if (painted && (painted.base64 || painted.url)) {
+      const prepared = this._paintedData(painted);
+      slide.background = { color: 'FFFFFF' };
+      slide.addImage(Object.assign(
+        prepared ? { data: prepared } : { path: painted.url },
+        { x: 0, y: 0, w: 10, h: 5.625, altText: data.title || 'Slide' }));
+      return;
+    }
+
+    // V2 slides carry their own layout, theme and visual specification and are
+    // drawn by pptV2.js. Kept to a guard rather than folded into the design
+    // map below so V1 rendering is untouched and the two can be compared on
+    // the same input. A V2 failure falls through to V1: a plainer slide beats
+    // a lost one.
+    if (window.PPTV2 && window.PPTV2.isV2(data)) {
+      try {
+        window.PPTV2.renderSlide(slide, pptx, data, this);
+        return;
+      } catch (err) {
+        console.warn(`V2 render failed on slide ${data.slideNumber || '?'}; using V1:`, err);
+      }
+    }
+
     const type = (data.type || 'content').toLowerCase();
     const map  = {
       executive: { title: '_exec_title', content: '_exec_content', summary: '_exec_summary' },

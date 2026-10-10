@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   Users, UserCheck, FileText, ClipboardList, Clock, MapPin, MessageSquare, CalendarDays,
   ChevronRight, CheckSquare, PlusCircle, Video, TrendingUp, AlertCircle, ArrowUpRight,
@@ -8,15 +8,16 @@ import {
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
-import GlassCard from '@/components/school/GlassCard';
-import Badge from '@/components/school/Badge';
-import ProgressBar from '@/components/school/ProgressBar';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { useAcademicStore } from '@/lib/academic-store';
 import { toast } from 'sonner';
 import TeacherAvatar from '@/assets/images/Teacher_Avatar.png';
-import SmartCalendar from '@/components/school/SmartCalendar';
 import BgBanner from '@/assets/images/bgbanner3.png';
 import ImgChalkboard from '@/assets/images/10.png';
 import ImgGlobe from '@/assets/images/11 (1).png';
@@ -63,21 +64,21 @@ const MAX_CLASS_CARDS_SHOWN = 4;
 const scheduleItems = [
   { time: '09:00 AM', timeColor: '#1E293B', subject: 'Mathematics', meta: 'Class 10 - Section A', dot: '#10B981',
     badge: (
-      <span className="flex items-center gap-1 text-[9px] sm:text-[10px] font-bold text-[#059669] bg-[#ECFDF5] px-2 py-1 rounded-full border border-[#D1FAE5]">
+      <Badge variant="outline" className="gap-1 text-[9px] sm:text-[10px] font-bold text-[#059669] bg-[#ECFDF5] px-2 py-1 border-[#D1FAE5]">
         <div className="size-1.5 rounded-full bg-[#10B981] animate-pulse" /> Live
-      </span>
+      </Badge>
     ) },
   { time: '11:00 AM', timeColor: '#64748B', subject: 'Science', meta: 'Class 9 - Section A', dot: '#3B82F6',
     badge: (
-      <span className="text-[9px] sm:text-[10px] font-bold text-[#2563EB] bg-[#EFF6FF] px-2 py-1 rounded-full border border-[#DBEAFE]">
+      <Badge variant="outline" className="text-[9px] sm:text-[10px] font-bold text-[#2563EB] bg-[#EFF6FF] px-2 py-1 border-[#DBEAFE]">
         Upcoming
-      </span>
+      </Badge>
     ) },
   { time: '02:00 PM', timeColor: '#64748B', subject: 'Assignment Review', meta: 'Class 10 - Section A', dot: '#9333EA',
     badge: (
-      <span className="text-[9px] sm:text-[10px] font-bold text-[#9333EA] bg-[#FAF5FF] px-2 py-1 rounded-full border border-[#F3E8FF]">
+      <Badge variant="outline" className="text-[9px] sm:text-[10px] font-bold text-[#9333EA] bg-[#FAF5FF] px-2 py-1 border-[#F3E8FF]">
         Review
-      </span>
+      </Badge>
     ) },
 ];
 
@@ -240,50 +241,52 @@ const Dashboard: React.FC = () => {
       <MaintenanceBroadcastBanner />
       <div className="flex flex-col gap-6 mb-6">
         {/* Welcome Banner — full width */}
-        <div className="relative overflow-hidden rounded-[2rem] shadow-sm group min-h-[300px]">
+        <Card className="relative overflow-hidden rounded-[2rem] shadow-sm group min-h-[300px] border-0">
           <div className="absolute inset-0 bg-cover bg-[center_top] bg-no-repeat z-0" style={{ backgroundImage: `url(${BgBanner})` }} />
           <div className="absolute inset-y-0 left-0 w-full md:w-[60%] lg:w-[45%] bg-gradient-to-r from-white/95 via-white/70 to-transparent z-10" />
 
-          <div className="relative z-20 flex flex-col justify-center max-w-xl p-6 md:p-8 min-h-[300px]">
+          <CardContent className="relative z-20 flex flex-col justify-center max-w-xl p-6 md:p-8 min-h-[300px]">
             <h1 className="text-3xl md:text-4xl font-extrabold text-[#112A46] tracking-tight leading-tight">
               Welcome back, <br /><span className="text-blue-600">{user?.name || 'Teacher'}!</span>
             </h1>
             <div className="my-1.5">
               <p className="text-[15px] font-medium text-slate-700/90 leading-relaxed max-w-md">Here's what's happening with your classes today. You have {upcomingClasses.length} upcoming sessions.</p>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Today's Schedule + Today's Overview — side by side, 50/50 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        <div className="rounded-[2rem] border border-slate-100 bg-white shadow-sm flex flex-col overflow-hidden">
-          <div className="p-5 sm:p-6 border-b border-slate-100 flex justify-between items-center bg-white">
-            <h3 className="text-[15px] sm:text-[17px] font-extrabold text-[#112A46] flex items-center gap-2">
+        <Card className="rounded-[2rem] border-slate-100 bg-white shadow-sm flex flex-col overflow-hidden">
+          <CardHeader className="p-5 sm:p-6 flex-row justify-between items-center space-y-0 bg-white">
+            <CardTitle className="text-[15px] sm:text-[17px] font-extrabold text-[#112A46] flex items-center gap-2 leading-normal tracking-normal">
               <Calendar size={18} className="text-[#1C4ED8]" /> Today's Schedule
-            </h3>
-            <div className="text-[10px] sm:text-[11px] font-bold text-[#1C4ED8] bg-[#EFF6FF] px-2 sm:px-3 py-1 sm:py-1.5 rounded-full flex items-center gap-1 cursor-pointer hover:bg-blue-100 transition-colors">
+            </CardTitle>
+            <Button variant="ghost" size="sm" className="h-auto text-[10px] sm:text-[11px] font-bold text-[#1C4ED8] bg-[#EFF6FF] px-2 sm:px-3 py-1 sm:py-1.5 rounded-full gap-1 hover:bg-blue-100 hover:text-[#1C4ED8]">
               <PlusCircle size={14} /> Add
-            </div>
-          </div>
-          <div className="p-5 sm:p-6">
+            </Button>
+          </CardHeader>
+          <Separator className="bg-slate-100" />
+          <CardContent className="p-5 sm:p-6">
             <ScheduleTimeline />
-          </div>
-          <div className="p-4 border-t border-slate-100 bg-white">
-            <button onClick={() => navigate('/school/teacher/timetable')} className="w-full text-[12px] sm:text-[13px] font-bold text-[#1C4ED8] hover:text-[#1E40AF] flex items-center justify-center gap-1 transition-colors">
+          </CardContent>
+          <Separator className="bg-slate-100" />
+          <CardFooter className="p-4 bg-white">
+            <Button variant="link" onClick={() => navigate('/school/teacher/timetable')} className="w-full h-auto text-[12px] sm:text-[13px] font-bold text-[#1C4ED8] hover:text-[#1E40AF] hover:no-underline gap-1">
               View Full Calendar <ArrowRight size={16} />
-            </button>
-          </div>
-        </div>
+            </Button>
+          </CardFooter>
+        </Card>
 
         {/* Today's Overview — full width */}
-        <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
+        <Card className="bg-white rounded-[2rem] p-6 shadow-sm border-slate-100">
         <div className="flex justify-between items-end mb-6">
-          <h2 className="text-xl font-extrabold text-[#112A46] tracking-tight">Today's Overview</h2>
+          <CardTitle className="text-xl font-extrabold text-[#112A46] tracking-tight leading-normal">Today's Overview</CardTitle>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Students Card */}
-          <div className="bg-[#F0F7FF] rounded-[1.5rem] p-5 border border-[#E0F0FE]/60 flex flex-col hover:-translate-y-1 transition-transform cursor-pointer" onClick={() => navigate('/school/teacher/students')}>
+          <Card className="bg-[#F0F7FF] rounded-[1.5rem] p-5 border-[#E0F0FE]/60 flex flex-col hover:-translate-y-1 transition-transform cursor-pointer" onClick={() => navigate('/school/teacher/students')}>
             <div className="flex items-start gap-4">
               <div className="bg-[#E0F0FE] text-[#2563EB] size-14 flex items-center justify-center rounded-full shrink-0 shadow-sm"><Users size={24} /></div>
               <div className="flex flex-col min-w-0">
@@ -295,10 +298,10 @@ const Dashboard: React.FC = () => {
               <div className="size-2 rounded-full bg-[#10B981]"></div>
               Total Assigned
             </div>
-          </div>
+          </Card>
 
           {/* Classes Today Card */}
-          <div className="bg-[#FFF7ED] rounded-[1.5rem] p-5 border border-[#FFEDD5]/60 flex flex-col hover:-translate-y-1 transition-transform cursor-pointer" onClick={() => navigate('/school/teacher/timetable')}>
+          <Card className="bg-[#FFF7ED] rounded-[1.5rem] p-5 border-[#FFEDD5]/60 flex flex-col hover:-translate-y-1 transition-transform cursor-pointer" onClick={() => navigate('/school/teacher/timetable')}>
             <div className="flex items-start gap-4">
               <div className="bg-[#FFEDD5] text-[#EA580C] size-14 flex items-center justify-center rounded-full shrink-0 shadow-sm"><Presentation size={24} /></div>
               <div className="flex flex-col min-w-0">
@@ -310,10 +313,10 @@ const Dashboard: React.FC = () => {
               <div className="size-2 rounded-full bg-[#F97316]"></div>
               Remaining
             </div>
-          </div>
+          </Card>
 
           {/* Assignments Card */}
-          <div className="bg-[#F5F3FF] rounded-[1.5rem] p-5 border border-[#EDE9FE]/60 flex flex-col hover:-translate-y-1 transition-transform cursor-pointer" onClick={() => navigate('/school/teacher/assignments')}>
+          <Card className="bg-[#F5F3FF] rounded-[1.5rem] p-5 border-[#EDE9FE]/60 flex flex-col hover:-translate-y-1 transition-transform cursor-pointer" onClick={() => navigate('/school/teacher/assignments')}>
             <div className="flex items-start gap-4">
               <div className="bg-[#EDE9FE] text-[#7C3AED] size-14 flex items-center justify-center rounded-full shrink-0 shadow-sm"><FileText size={24} /></div>
               <div className="flex flex-col min-w-0">
@@ -325,10 +328,10 @@ const Dashboard: React.FC = () => {
               <div className="size-2 rounded-full bg-[#8B5CF6]"></div>
               Active
             </div>
-          </div>
+          </Card>
 
           {/* Assessments Card */}
-          <div className="bg-[#FEF2F2] rounded-[1.5rem] p-5 border border-[#FEE2E2]/60 flex flex-col hover:-translate-y-1 transition-transform cursor-pointer" onClick={() => navigate('/school/teacher/assessments')}>
+          <Card className="bg-[#FEF2F2] rounded-[1.5rem] p-5 border-[#FEE2E2]/60 flex flex-col hover:-translate-y-1 transition-transform cursor-pointer" onClick={() => navigate('/school/teacher/assessments')}>
             <div className="flex items-start gap-4">
               <div className="bg-[#FEE2E2] text-[#DC2626] size-14 flex items-center justify-center rounded-full shrink-0 shadow-sm"><CheckSquare size={24} /></div>
               <div className="flex flex-col min-w-0">
@@ -340,29 +343,30 @@ const Dashboard: React.FC = () => {
               <div className="size-2 rounded-full bg-[#3B82F6]"></div>
               Scheduled
             </div>
-          </div>
+          </Card>
         </div>
-        </div>
+        </Card>
         </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 mb-6">
+      <Card className="bg-white rounded-[2rem] p-6 shadow-sm border-slate-100 mb-6">
         <div className="flex justify-between items-end mb-6">
-          <h2 className="text-[22px] font-extrabold text-[#112A46] tracking-tight">Quick Actions</h2>
-          <button className="text-[13px] font-bold text-[#1C4ED8] hover:text-[#1E40AF] flex items-center gap-1 transition-colors">View All <ArrowRight size={16} /></button>
+          <CardTitle className="text-[22px] font-extrabold text-[#112A46] tracking-tight leading-normal">Quick Actions</CardTitle>
+          <Button variant="link" className="h-auto p-0 text-[13px] font-bold text-[#1C4ED8] hover:text-[#1E40AF] hover:no-underline gap-1">View All <ArrowRight size={16} /></Button>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: 'Take Attendance', desc: "Track student presence", icon: <UserCheck size={20} />, graphic: ImgGradCap, bg: 'bg-[#D1F2EB]', iconBg: 'bg-[#A9DFD1]/40', text: 'text-[#0E6655]', path: '/school/teacher/attendance' },
-            { label: 'Create Assignment', desc: 'Set and share tasks', icon: <PlusCircle size={20} />, graphic: ImgPencils1, bg: 'bg-[#E8DAFF]', iconBg: 'bg-[#D2BCF6]/50', text: 'text-[#5B2C6F]', path: '/school/teacher/assignments' },
-            { label: 'Create Assessment', desc: 'Test & analyze learning', icon: <ClipboardList size={20} />, graphic: ImgChalkboardAlt, bg: 'bg-[#FDEBD0]', iconBg: 'bg-[#FAD7A1]/50', text: 'text-[#935116]', path: '/school/teacher/assessments' },
-            { label: 'Start Live Class', desc: 'Engage students in real time', icon: <Video size={20} />, graphic: ImgLaptop, bg: 'bg-[#FADBD8]', iconBg: 'bg-[#F5B7B1]/50', text: 'text-[#78281F]', path: '/school/teacher/classes', state: { scheduleLive: true } },
+            { label: 'Take Attendance', desc: "Track student presence", icon: <UserCheck size={20} />, graphic: ImgGradCap, bg: 'bg-[#D1F2EB] hover:bg-[#D1F2EB]', iconBg: 'bg-[#A9DFD1]/40', text: 'text-[#0E6655]', path: '/school/teacher/attendance' },
+            { label: 'Create Assignment', desc: 'Set and share tasks', icon: <PlusCircle size={20} />, graphic: ImgPencils1, bg: 'bg-[#E8DAFF] hover:bg-[#E8DAFF]', iconBg: 'bg-[#D2BCF6]/50', text: 'text-[#5B2C6F]', path: '/school/teacher/assignments' },
+            { label: 'Create Assessment', desc: 'Test & analyze learning', icon: <ClipboardList size={20} />, graphic: ImgChalkboardAlt, bg: 'bg-[#FDEBD0] hover:bg-[#FDEBD0]', iconBg: 'bg-[#FAD7A1]/50', text: 'text-[#935116]', path: '/school/teacher/assessments' },
+            { label: 'Start Live Class', desc: 'Engage students in real time', icon: <Video size={20} />, graphic: ImgLaptop, bg: 'bg-[#FADBD8] hover:bg-[#FADBD8]', iconBg: 'bg-[#F5B7B1]/50', text: 'text-[#78281F]', path: '/school/teacher/classes', state: { scheduleLive: true } },
           ].map(({ label, desc, icon, graphic, bg, iconBg, text, path, state }) => (
-            <button
+            <Button
               key={label}
+              variant="ghost"
               onClick={() => navigate(path, { state })}
-              className={`relative overflow-hidden flex items-center justify-between p-5 rounded-2xl ${bg} shadow-sm transition-transform hover:-translate-y-1 group border-0 min-h-[100px]`}
+              className={`relative overflow-hidden flex items-center justify-between p-5 h-auto rounded-2xl ${bg} shadow-sm transition-transform hover:-translate-y-1 group border-0 min-h-[100px] whitespace-normal`}
             >
               <div className="flex items-center gap-3 z-10 w-full pr-[60px]">
                 <div className={`size-10 rounded-full ${iconBg} flex items-center justify-center transition-colors ${text} shrink-0`}>
@@ -377,10 +381,10 @@ const Dashboard: React.FC = () => {
               <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 group-hover:scale-110 transition-transform duration-300 pointer-events-none">
                 <img src={graphic} alt="" className="h-20 w-auto object-contain drop-shadow-md mix-blend-multiply" style={{ mixBlendMode: 'normal' }} />
               </div>
-            </button>
+            </Button>
           ))}
         </div>
-      </div>
+      </Card>
 
       <div className="dashboard__grid">
         <div className="dashboard__main">
@@ -388,16 +392,21 @@ const Dashboard: React.FC = () => {
           {/* Performance & Needs Attention Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-4">
             {/* Student Performance */}
-            <div className="bg-white rounded-[1.5rem] p-7 border border-slate-100 shadow-sm flex flex-col">
+            <Card className="bg-white rounded-[1.5rem] p-7 border-slate-100 shadow-sm flex flex-col">
               <div className="flex justify-between items-start mb-6">
                 <div>
-                  <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">Student Performance</h3>
+                  <CardTitle className="text-lg font-extrabold text-slate-900 tracking-tight leading-normal">Student Performance</CardTitle>
                   <p className="text-xs font-semibold text-slate-500 mt-1">Class 10 - Section A</p>
                 </div>
-                <select className="text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option>Class 10 - Section A</option>
-                  <option>Class 9 - Section A</option>
-                </select>
+                <Select defaultValue="class-10-a">
+                  <SelectTrigger className="w-auto h-8 gap-2 text-xs font-bold text-slate-700 bg-slate-50 border-slate-200 rounded-lg px-3 py-1.5">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="class-10-a" className="text-xs font-semibold">Class 10 - Section A</SelectItem>
+                    <SelectItem value="class-9-a" className="text-xs font-semibold">Class 9 - Section A</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-6 flex-1 items-center">
@@ -406,9 +415,9 @@ const Dashboard: React.FC = () => {
                     <p className="text-xs font-bold text-slate-500">Average Performance</p>
                     <div className="flex items-end gap-2 mt-1">
                       <p className="text-3xl font-black text-slate-900 leading-none">78%</p>
-                      <span className="flex items-center gap-0.5 text-xs font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded mb-1">
+                      <Badge variant="secondary" className="gap-0.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-50 px-1.5 py-0.5 rounded mb-1 border-0">
                         <TrendingUp size={12} /> 6%
-                      </span>
+                      </Badge>
                     </div>
                     <p className="text-[10px] font-semibold text-slate-400 mt-1">vs last month</p>
                   </div>
@@ -454,18 +463,18 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </div>
+            </Card>
 
             {/* My Classes */}
-            <div className="bg-white rounded-[1.5rem] p-7 border border-slate-100 shadow-sm flex flex-col">
+            <Card className="bg-white rounded-[1.5rem] p-7 border-slate-100 shadow-sm flex flex-col">
               <div className="flex justify-between items-end mb-6">
-                <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">My Classes</h3>
-                <button onClick={() => navigate('/school/teacher/classes')} className="text-xs font-semibold text-blue-600 hover:text-blue-700">View All</button>
+                <CardTitle className="text-lg font-extrabold text-slate-900 tracking-tight leading-normal">My Classes</CardTitle>
+                <Button variant="link" onClick={() => navigate('/school/teacher/classes')} className="h-auto p-0 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:no-underline">View All</Button>
               </div>
 
               <div className="flex flex-col gap-4 flex-1">
                 {/* Class Card 1 */}
-                <div className="bg-[#F8FAFC] rounded-[1.5rem] p-3 border border-slate-100 flex gap-4 hover:shadow-sm transition-shadow cursor-pointer items-stretch" onClick={() => navigate('/school/teacher/classes')}>
+                <Card className="bg-[#F8FAFC] rounded-[1.5rem] p-3 border-slate-100 shadow-none flex gap-4 hover:shadow-sm transition-shadow cursor-pointer items-stretch" onClick={() => navigate('/school/teacher/classes')}>
                   {/* Left Image Placeholder */}
                   <div className="w-[110px] bg-[#E8F4FD] rounded-xl flex items-center justify-center shrink-0 relative overflow-hidden">
                     <img src={ImgChalkboard} alt="Classroom" className="absolute inset-0 size-full object-cover scale-110" />
@@ -475,7 +484,7 @@ const Dashboard: React.FC = () => {
                   <div className="flex flex-col flex-1 min-w-0 py-1 pr-2 justify-between">
                     <div className="flex justify-between items-start gap-2">
                       <h3 className="text-[17px] font-extrabold text-[#112A46] leading-tight truncate min-w-0">Class 10 - Section A</h3>
-                      <span className="text-[10px] font-bold bg-[#DCFCE7] text-[#059669] px-2.5 py-1 rounded-full shrink-0">Class Teacher</span>
+                      <Badge variant="secondary" className="text-[10px] font-bold bg-[#DCFCE7] hover:bg-[#DCFCE7] text-[#059669] px-2.5 py-1 shrink-0 border-0">Class Teacher</Badge>
                     </div>
 
                     <div className="flex items-center flex-wrap gap-x-4 gap-y-1 my-2">
@@ -488,16 +497,16 @@ const Dashboard: React.FC = () => {
                     </div>
                     
                     <div className="flex flex-wrap gap-2">
-                      <span className="text-[10px] font-bold px-3 py-1.5 rounded-full bg-blue-100/50 text-blue-700 border border-blue-200/50">Mathematics</span>
-                      <span className="text-[10px] font-bold px-3 py-1.5 rounded-full bg-blue-100/50 text-blue-700 border border-blue-200/50">Science</span>
-                      <span className="text-[10px] font-bold px-3 py-1.5 rounded-full bg-blue-100/50 text-blue-700 border border-blue-200/50">History</span>
-                      <span className="text-[10px] font-bold px-2 py-1.5 rounded-full bg-indigo-100/50 text-indigo-700">+2</span>
+                      <Badge variant="outline" className="text-[10px] font-bold px-3 py-1.5 bg-blue-100/50 text-blue-700 border-blue-200/50">Mathematics</Badge>
+                      <Badge variant="outline" className="text-[10px] font-bold px-3 py-1.5 bg-blue-100/50 text-blue-700 border-blue-200/50">Science</Badge>
+                      <Badge variant="outline" className="text-[10px] font-bold px-3 py-1.5 bg-blue-100/50 text-blue-700 border-blue-200/50">History</Badge>
+                      <Badge variant="secondary" className="text-[10px] font-bold px-2 py-1.5 bg-indigo-100/50 hover:bg-indigo-100/50 text-indigo-700 border-0">+2</Badge>
                     </div>
                   </div>
-                </div>
+                </Card>
 
                 {/* Class Card 2 */}
-                <div className="bg-[#F8FAFC] rounded-[1.5rem] p-3 border border-slate-100 flex gap-4 hover:shadow-sm transition-shadow cursor-pointer items-stretch" onClick={() => navigate('/school/teacher/classes')}>
+                <Card className="bg-[#F8FAFC] rounded-[1.5rem] p-3 border-slate-100 shadow-none flex gap-4 hover:shadow-sm transition-shadow cursor-pointer items-stretch" onClick={() => navigate('/school/teacher/classes')}>
                   {/* Left Image Placeholder */}
                   <div className="w-[110px] bg-[#F3E8FF] rounded-xl flex items-center justify-center shrink-0 relative overflow-hidden">
                     <img src={ImgGlobe} alt="Globe" className="absolute inset-0 size-full object-cover scale-110" />
@@ -519,22 +528,22 @@ const Dashboard: React.FC = () => {
                     </div>
                     
                     <div className="flex flex-wrap gap-2">
-                      <span className="text-[10px] font-bold px-3 py-1.5 rounded-full bg-purple-100/50 text-purple-700 border border-purple-200/50">Mathematics</span>
-                      <span className="text-[10px] font-bold px-3 py-1.5 rounded-full bg-purple-100/50 text-purple-700 border border-purple-200/50">English</span>
-                      <span className="text-[10px] font-bold px-3 py-1.5 rounded-full bg-purple-100/50 text-purple-700 border border-purple-200/50">Science</span>
-                      <span className="text-[10px] font-bold px-2 py-1.5 rounded-full bg-indigo-100/50 text-indigo-700">+2</span>
+                      <Badge variant="outline" className="text-[10px] font-bold px-3 py-1.5 bg-purple-100/50 text-purple-700 border-purple-200/50">Mathematics</Badge>
+                      <Badge variant="outline" className="text-[10px] font-bold px-3 py-1.5 bg-purple-100/50 text-purple-700 border-purple-200/50">English</Badge>
+                      <Badge variant="outline" className="text-[10px] font-bold px-3 py-1.5 bg-purple-100/50 text-purple-700 border-purple-200/50">Science</Badge>
+                      <Badge variant="secondary" className="text-[10px] font-bold px-2 py-1.5 bg-indigo-100/50 hover:bg-indigo-100/50 text-indigo-700 border-0">+2</Badge>
                     </div>
                   </div>
-                </div>
+                </Card>
               </div>
-            </div>
+            </Card>
           </div>
 
           {/* Recent Activity */}
           <div className="mt-4">
             <div className="flex justify-between items-end mb-4">
               <h2 className="text-xl font-extrabold text-[#112A46] tracking-tight">Recent Activity</h2>
-              <button className="text-[13px] font-bold text-[#1C4ED8] hover:text-[#1E40AF] flex items-center gap-1 transition-colors">View All <ArrowRight size={16} /></button>
+              <Button variant="link" className="h-auto p-0 text-[13px] font-bold text-[#1C4ED8] hover:text-[#1E40AF] hover:no-underline gap-1">View All <ArrowRight size={16} /></Button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
@@ -543,7 +552,7 @@ const Dashboard: React.FC = () => {
                 { icon: <Users size={18} />, color: 'text-emerald-600', bg: 'bg-emerald-100', title: 'Attendance Updated', sub: 'Class 9 - Section A', context: '5 students absent', time: 'Yesterday' },
                 { icon: <BookOpen size={18} />, color: 'text-amber-600', bg: 'bg-amber-100', title: 'Study Material Added', sub: 'Triangles - Class 9', context: 'Video and PDF', time: 'Yesterday' },
               ].map((item, idx) => (
-                <div key={idx} className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm flex flex-col gap-3 hover:shadow-md transition-shadow">
+                <Card key={idx} className="bg-white rounded-3xl p-5 border-slate-100 shadow-sm flex flex-col gap-3 hover:shadow-md transition-shadow">
                   <div className="flex items-center gap-3">
                     <div className={`size-9 rounded-xl ${item.bg} ${item.color} flex items-center justify-center shrink-0`}>
                       {item.icon}
@@ -557,7 +566,7 @@ const Dashboard: React.FC = () => {
                     <p className="text-xs font-semibold text-slate-700">{item.context}</p>
                     <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wider">{item.time}</p>
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
           </div>
@@ -569,7 +578,7 @@ const Dashboard: React.FC = () => {
           <div className="flex flex-col gap-5 mt-2">
             <div className="flex justify-between items-end mb-1">
               <h2 className="text-[20px] font-extrabold text-[#112A46] tracking-tight">Needs Your Attention</h2>
-              <button className="text-[13px] font-bold text-[#1C4ED8] hover:text-[#1E40AF] flex items-center gap-1 transition-colors">See All <ArrowRight size={16}/></button>
+              <Button variant="link" className="h-auto p-0 text-[13px] font-bold text-[#1C4ED8] hover:text-[#1E40AF] hover:no-underline gap-1">See All <ArrowRight size={16}/></Button>
             </div>
 
             <div className="flex flex-col gap-3">
@@ -578,7 +587,7 @@ const Dashboard: React.FC = () => {
                 { icon: <Clock size={16}/>, color: 'text-amber-600', bg: 'bg-amber-50', title: 'Pending Evaluations', desc: '15 assignments waiting for review' },
                 { icon: <MessageSquare size={16}/>, color: 'text-blue-600', bg: 'bg-blue-50', title: 'Unanswered Doubts', desc: '4 new questions from Science batch' },
               ].map((item, idx) => (
-                <div key={idx} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer group">
+                <Card key={idx} className="bg-white rounded-2xl p-4 shadow-sm border-slate-100 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer group">
                   <div className="flex items-center gap-3">
                     <div className={`size-10 rounded-full ${item.bg} ${item.color} flex items-center justify-center shrink-0`}>
                         {item.icon}
@@ -589,13 +598,13 @@ const Dashboard: React.FC = () => {
                     </div>
                   </div>
                   <ChevronRight size={16} className="text-slate-300 group-hover:text-slate-500 transition-colors" />
-                </div>
+                </Card>
               ))}
             </div>
           </div>
 
           {/* Quote Card */}
-          <div className="mt-4 bg-gradient-to-br from-[#E8F4FD] to-[#F1F8FE] rounded-2xl p-6 border border-[#D1E9FA] shadow-sm relative overflow-hidden">
+          <Card className="mt-4 bg-gradient-to-br from-[#E8F4FD] to-[#F1F8FE] rounded-2xl p-6 border-[#D1E9FA] shadow-sm relative overflow-hidden">
             <div className="absolute right-2 bottom-0 size-24 opacity-60">
               {/* Stack of books illustration placeholder */}
               <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -611,7 +620,7 @@ const Dashboard: React.FC = () => {
               </p>
               <p className="text-xs font-semibold text-slate-500">- Unknown</p>
             </div>
-          </div>
+          </Card>
 
         </div>
       </div>
