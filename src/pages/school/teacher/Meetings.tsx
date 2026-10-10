@@ -16,6 +16,66 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { Alert } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Textarea } from '@/components/ui/textarea';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
+// shadcn Select. An empty-string value (nothing chosen / "all") is mapped to a sentinel, since
+// Select items cannot have an empty value.
+const NONE_VALUE = '__none__';
+function PlainSelect({
+  value,
+  onChange,
+  options,
+  placeholder,
+  emptyLabel,
+  disabled,
+  className,
+  triggerClassName,
+  leading,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  options: { value: string; label: string }[];
+  placeholder?: string;
+  emptyLabel?: string;
+  disabled?: boolean;
+  className?: string;
+  triggerClassName?: string;
+  leading?: React.ReactNode;
+}) {
+  return (
+    <Select
+      value={value === '' ? (emptyLabel ? NONE_VALUE : undefined) : value}
+      onValueChange={(v) => onChange(v === NONE_VALUE ? '' : v)}
+      disabled={disabled}
+    >
+      <SelectTrigger className={cn('w-full', className, triggerClassName)}>
+        {leading}
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {emptyLabel && <SelectItem value={NONE_VALUE}>{emptyLabel}</SelectItem>}
+        {options.map((o) => (
+          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+const FIELD_LABEL = 'text-[10px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400';
+const FIELD_INPUT = 'h-auto rounded-xl sm:rounded-2xl border-slate-200 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-bold text-slate-800 focus-visible:border-cyan-400 focus-visible:bg-white focus-visible:ring-0 focus-visible:ring-offset-0';
+const FIELD_SELECT = 'h-auto rounded-xl sm:rounded-2xl border-slate-200 bg-white px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-semibold text-slate-700 shadow-sm';
 
 type MeetingRow = {
   id: string;
@@ -271,7 +331,7 @@ export default function TeacherMeetingsPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <section className="rounded-2xl sm:rounded-[28px] bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-700 px-4 py-4 sm:px-6 sm:py-8 text-white shadow-[0_30px_80px_-35px_rgba(14,116,144,0.6)]">
+      <Card className="rounded-2xl sm:rounded-[28px] border-0 bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-700 px-4 py-4 sm:px-6 sm:py-8 text-white shadow-[0_30px_80px_-35px_rgba(14,116,144,0.6)]">
         <div className="flex flex-row items-center justify-between gap-4">
           <div className="min-w-0">
             <p className="text-[11px] font-black uppercase tracking-[0.24em] text-white/75 hidden sm:block">Teacher Workspace</p>
@@ -280,7 +340,7 @@ export default function TeacherMeetingsPage() {
               Review parent meeting requests, confirm schedules, and manage online or offline discussions from one place.
             </p>
           </div>
-          <button
+          <Button
             type="button"
             onClick={() => {
               setStep(1);
@@ -290,13 +350,13 @@ export default function TeacherMeetingsPage() {
               setSectionFilter('');
               setShowCreate(true);
             }}
-            className="inline-flex items-center justify-center rounded-xl sm:rounded-2xl bg-white px-3 py-2 sm:px-5 sm:py-3 text-[11px] sm:text-sm font-black text-cyan-700 shadow-lg transition hover:bg-cyan-50 shrink-0"
+            className="h-auto shrink-0 rounded-xl bg-white px-3 py-2 text-[11px] font-black text-cyan-700 shadow-lg hover:bg-cyan-50 sm:rounded-2xl sm:px-5 sm:py-3 sm:text-sm"
           >
-            <CalendarDays className="mr-1.5 size-3.5 sm:mr-2 sm:size-4 shrink-0" />
+            <CalendarDays className="mr-1.5 size-3.5 shrink-0 sm:mr-2 sm:size-4" />
             <span>Schedule Meeting</span>
-          </button>
+          </Button>
         </div>
-      </section>
+      </Card>
 
       <section className="grid grid-cols-4 gap-1.5 sm:gap-4">
         {[
@@ -305,7 +365,7 @@ export default function TeacherMeetingsPage() {
           { label: 'Incoming Requests', value: summary.incoming, icon: Users, tone: 'text-violet-600 bg-violet-50', bgMobile: 'bg-violet-50 border-violet-200 dark:bg-violet-950/20 dark:border-violet-900/40', textTone: 'text-violet-800 dark:text-violet-300', valTone: 'text-violet-900 dark:text-violet-100' },
           { label: 'Scheduled / Done', value: summary.scheduled, icon: CheckCircle2, tone: 'text-emerald-600 bg-emerald-50', bgMobile: 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-900/40', textTone: 'text-emerald-800 dark:text-emerald-300', valTone: 'text-emerald-900 dark:text-emerald-100' },
         ].map((item) => (
-          <div key={item.label} className={`rounded-xl sm:rounded-3xl border p-2 sm:p-5 shadow-sm flex flex-col items-center sm:items-start text-center sm:text-left ${item.bgMobile} sm:bg-white sm:border-slate-200 dark:sm:bg-slate-900 dark:sm:border-slate-800`}>
+          <Card key={item.label} className={`rounded-xl sm:rounded-3xl p-2 sm:p-5 shadow-sm flex flex-col items-center sm:items-start text-center sm:text-left ${item.bgMobile} sm:bg-white sm:border-slate-200 dark:sm:bg-slate-900 dark:sm:border-slate-800`}>
             <div className={`mb-2 sm:mb-4 flex size-7 sm:size-12 items-center justify-center rounded-lg sm:rounded-2xl ${item.tone}`}>
               <item.icon className="size-3.5 sm:size-5" />
             </div>
@@ -313,68 +373,77 @@ export default function TeacherMeetingsPage() {
               {item.label.split(' ')[0]} <span className="hidden sm:inline">{item.label.split(' ').slice(1).join(' ')}</span>
             </p>
             <p className={`mt-1 text-base sm:text-3xl font-black ${item.valTone} sm:text-slate-900 dark:sm:text-white`}>{item.value}</p>
-          </div>
+          </Card>
         ))}
       </section>
 
-      <section className="rounded-2xl sm:rounded-[28px] border border-slate-200 bg-white p-3.5 sm:p-5 shadow-sm">
+      <Card className="rounded-2xl sm:rounded-[28px] border-slate-200 bg-white p-3.5 sm:p-5 shadow-sm">
         <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 sm:left-4 top-1/2 size-3.5 sm:size-4 -translate-y-1/2 text-slate-400" />
-            <input
+            <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search parent, title, date"
-              className="w-full rounded-xl sm:rounded-2xl border border-slate-200 bg-slate-50 py-2 sm:py-3 pl-9 sm:pl-11 pr-4 text-xs sm:text-sm font-semibold text-slate-700 outline-none transition focus:border-cyan-400 focus:bg-white"
+              className="h-auto w-full rounded-xl border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-xs font-semibold text-slate-700 focus-visible:border-cyan-400 focus-visible:bg-white focus-visible:ring-0 focus-visible:ring-offset-0 sm:rounded-2xl sm:py-3 sm:pl-11"
             />
           </div>
-          <div className="flex flex-row gap-2 w-full lg:w-auto">
-            <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2 flex-1 lg:flex-initial">
-              <Filter className="size-3.5 text-slate-400 shrink-0" />
-              <CustomSelect
-                onChange={setScopeFilter}
-                value={scopeFilter}
-                options={[
-                  { value: "all", label: "All flow" },
-                  { value: "incoming", label: "Incoming" },
-                  { value: "outgoing", label: "Outgoing" },
-                ]}
-                className="w-full sm:w-[130px]"
-                triggerClassName="flex size-full items-center justify-between gap-1 py-1.5 sm:py-2.5 text-[11px] sm:text-sm font-semibold outline-none text-slate-700"
-              />
-            </div>
-            <CustomSelect
-              onChange={setStatusFilter}
-              value={statusFilter}
+          <div className="grid w-full grid-cols-2 gap-2 lg:flex lg:w-auto">
+            <PlainSelect
+              value={scopeFilter}
+              onChange={(v) => setScopeFilter(v as 'all' | 'incoming' | 'outgoing')}
               options={[
-                { value: "all", label: "All status" },
-                { value: "pending", label: "Pending" },
-                { value: "accepted", label: "Accepted" },
-                { value: "scheduled", label: "Scheduled" },
-                { value: "completed", label: "Completed" },
-                { value: "rejected", label: "Rejected" },
-                { value: "cancelled", label: "Cancelled" },
+                { value: 'all', label: 'All flow' },
+                { value: 'incoming', label: 'Incoming' },
+                { value: 'outgoing', label: 'Outgoing' },
               ]}
-              className="flex-1 sm:w-[140px]"
-              triggerClassName="flex size-full items-center justify-between gap-1 px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-xl border border-slate-200 bg-white text-[11px] sm:text-sm font-semibold outline-none text-slate-700 shadow-sm"
+              leading={<Filter className="size-3.5 shrink-0 text-slate-400" />}
+              className="lg:w-[150px]"
+              triggerClassName="h-auto gap-1.5 rounded-xl border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 sm:py-2.5 sm:text-sm"
+            />
+            <PlainSelect
+              value={statusFilter}
+              onChange={(v) => setStatusFilter(v as typeof statusFilter)}
+              options={[
+                { value: 'all', label: 'All status' },
+                { value: 'pending', label: 'Pending' },
+                { value: 'accepted', label: 'Accepted' },
+                { value: 'scheduled', label: 'Scheduled' },
+                { value: 'completed', label: 'Completed' },
+                { value: 'rejected', label: 'Rejected' },
+                { value: 'cancelled', label: 'Cancelled' },
+              ]}
+              className="lg:w-[150px]"
+              triggerClassName="h-auto rounded-xl border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 shadow-sm sm:px-4 sm:py-2.5 sm:text-sm"
             />
           </div>
         </div>
-      </section>
+      </Card>
 
       <section className="space-y-4">
         {loading ? (
-          <div className="rounded-[28px] border border-slate-200 bg-white p-8 text-center text-sm font-bold text-slate-400 shadow-sm">
-            Loading meetings...
+          <div className="space-y-3" aria-busy="true">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Card key={i} className="rounded-xl border-slate-200 p-4 shadow-sm sm:rounded-[28px] sm:p-5">
+                <Skeleton className="h-5 w-1/3" />
+                <Skeleton className="mt-3 h-4 w-1/4" />
+                <div className="mt-4 grid grid-cols-2 gap-2 xl:grid-cols-4">
+                  <Skeleton className="h-12 rounded-xl" />
+                  <Skeleton className="h-12 rounded-xl" />
+                  <Skeleton className="h-12 rounded-xl" />
+                  <Skeleton className="h-12 rounded-xl" />
+                </div>
+              </Card>
+            ))}
           </div>
         ) : filteredMeetings.length === 0 ? (
-          <div className="rounded-[28px] border border-dashed border-slate-300 bg-white p-12 text-center shadow-sm">
+          <Card className="rounded-[28px] border-dashed border-slate-300 bg-white p-8 text-center shadow-sm sm:p-12">
             <CalendarDays className="mx-auto size-12 text-slate-300" />
             <h3 className="mt-4 text-lg font-black text-slate-800">No meetings found</h3>
             <p className="mt-2 text-sm font-semibold text-slate-500">
               Parent requests and your scheduled meetings will appear here.
             </p>
-          </div>
+          </Card>
         ) : (
           filteredMeetings.map((meeting) => {
             const status = String(meeting.status || 'pending').toLowerCase();
@@ -386,58 +455,58 @@ export default function TeacherMeetingsPage() {
                   : 'bg-rose-100 text-rose-700';
 
             return (
-              <article
+              <Card
                 key={meeting.id}
-                className="rounded-xl sm:rounded-[28px] border border-slate-200 bg-white p-3.5 sm:p-5 shadow-sm transition hover:shadow-md"
+                className="rounded-xl sm:rounded-[28px] border-slate-200 bg-white p-3.5 sm:p-5 shadow-sm transition hover:shadow-md"
               >
                 <div className="flex flex-col gap-3.5 sm:gap-5 xl:flex-row xl:items-start xl:justify-between">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                       <h3 className="text-sm sm:text-lg font-black text-slate-900">{meeting.title || 'Meeting'}</h3>
-                      <span className={`rounded-full px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-[0.2em] ${statusTone}`}>
+                      <Badge variant="outline" className={`border-transparent px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-[0.2em] ${statusTone}`}>
                         {status}
-                      </span>
-                      <span className={`rounded-full px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-[0.2em] ${
+                      </Badge>
+                      <Badge variant="outline" className={`border-transparent px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-[0.2em] ${
                         meeting.isIncoming ? 'bg-violet-100 text-violet-700' : 'bg-blue-100 text-blue-700'
                       }`}>
                         {meeting.isIncoming ? 'Incoming' : 'Outgoing'}
-                      </span>
+                      </Badge>
                     </div>
 
                     <div className="mt-2 sm:mt-3 flex flex-wrap gap-2 text-xs sm:text-sm font-semibold text-slate-500">
                       <span>{meeting.counterpartName || 'Parent'}</span>
                       {meeting.counterpartRole && (
-                        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.16em] text-slate-500">
+                        <Badge variant="outline" className="rounded border-transparent bg-slate-100 px-1.5 py-0.5 text-[9px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.16em] text-slate-500">
                           {String(meeting.counterpartRole).replace('_', ' ')}
-                        </span>
+                        </Badge>
                       )}
                     </div>
 
                     <div className="mt-3 sm:mt-4 grid grid-cols-2 gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                      <div className="rounded-xl bg-slate-50 px-3 py-2 sm:px-4 sm:py-3">
+                      <Card className="rounded-xl border-0 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 shadow-none">
                         <p className="text-[9px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Date & Time</p>
                         <p className="mt-0.5 text-[11px] sm:text-sm font-bold text-slate-800">
                           {meeting.meetingDate || 'TBD'}{meeting.startTime ? ` • ${meeting.startTime}` : ''}
                         </p>
-                      </div>
-                      <div className="rounded-xl bg-slate-50 px-3 py-2 sm:px-4 sm:py-3">
+                      </Card>
+                      <Card className="rounded-xl border-0 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 shadow-none">
                         <p className="text-[9px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Mode</p>
                         <p className="mt-0.5 text-[11px] sm:text-sm font-bold capitalize text-slate-800">{meeting.meetingMode || 'online'}</p>
-                      </div>
-                      <div className="rounded-xl bg-slate-50 px-3 py-2 sm:px-4 sm:py-3">
+                      </Card>
+                      <Card className="rounded-xl border-0 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 shadow-none">
                         <p className="text-[9px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Duration</p>
                         <p className="mt-0.5 text-[11px] sm:text-sm font-bold text-slate-800">
                           {meeting.durationMinutes ? `${meeting.durationMinutes} mins` : 'Not set'}
                         </p>
-                      </div>
-                      <div className="rounded-xl bg-slate-50 px-3 py-2 sm:px-4 sm:py-3">
+                      </Card>
+                      <Card className="rounded-xl border-0 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 shadow-none">
                         <p className="text-[9px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Location / Link</p>
                         <p className="mt-0.5 truncate text-[11px] sm:text-sm font-bold text-slate-800">
                           {meeting.meetingMode === 'offline'
                             ? meeting.location || 'Campus'
                             : meeting.meetingPlatform || meeting.meetingLink || 'Online'}
                         </p>
-                      </div>
+                      </Card>
                     </div>
 
                     {meeting.description && (
@@ -447,89 +516,85 @@ export default function TeacherMeetingsPage() {
                     )}
                   </div>
 
-                  <div className="flex w-full flex-row gap-2 xl:flex-col xl:w-[220px]">
+                  <div className="flex w-full flex-row flex-wrap gap-2 xl:flex-col xl:w-[220px]">
                     {meeting.meetingMode === 'online' && meeting.meetingLink && !['completed', 'cancelled'].includes(status) && (
-                      <a
-                        href={meeting.meetingLink}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex-1 inline-flex items-center justify-center rounded-xl sm:rounded-2xl bg-blue-600 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-black text-white transition hover:bg-blue-700"
+                      <Button
+                        asChild
+                        className="h-auto flex-1 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white hover:bg-blue-700 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm"
                       >
-                        <Video className="mr-1.5 size-3.5 sm:mr-2 sm:size-4" />
-                        Join Link
-                      </a>
+                        <a href={meeting.meetingLink} target="_blank" rel="noreferrer">
+                          <Video className="mr-1.5 size-3.5 sm:mr-2 sm:size-4" />
+                          Join Link
+                        </a>
+                      </Button>
                     )}
 
                     {meeting.meetingMode === 'offline' && meeting.location && (
-                      <div className="flex-1 inline-flex items-center justify-center rounded-xl sm:rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-bold text-slate-700">
+                      <Card className="flex-1 inline-flex items-center justify-center rounded-xl sm:rounded-2xl border-slate-200 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-bold text-slate-700 shadow-none">
                         <MapPin className="mr-1.5 size-3.5 sm:mr-2 sm:size-4" />
                         {meeting.location}
-                      </div>
+                      </Card>
                     )}
 
                     {status === 'pending' && meeting.isIncoming && (
                       <>
-                        <button
+                        <Button
                           type="button"
                           disabled={updatingId === meeting.id}
                           onClick={() => void updateStatus(meeting.id, 'accepted')}
-                          className="flex-1 rounded-xl sm:rounded-2xl bg-emerald-600 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-black text-white transition hover:bg-emerald-700 disabled:opacity-60"
+                          className="h-auto flex-1 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black text-white shadow-none hover:bg-emerald-700 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm"
                         >
                           Accept
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           type="button"
+                          variant="ghost"
                           disabled={updatingId === meeting.id}
                           onClick={() => void updateStatus(meeting.id, 'rejected')}
-                          className="flex-1 rounded-xl sm:rounded-2xl bg-rose-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-black text-rose-700 transition hover:bg-rose-100 disabled:opacity-60"
+                          className="h-auto flex-1 rounded-xl bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 hover:bg-rose-100 hover:text-rose-700 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm"
                         >
                           Reject
-                        </button>
+                        </Button>
                       </>
                     )}
 
                     {status === 'pending' && meeting.isOutgoing && (
-                      <button
+                      <Button
                         type="button"
+                        variant="secondary"
                         disabled={updatingId === meeting.id}
                         onClick={() => void updateStatus(meeting.id, 'cancelled')}
-                        className="flex-1 rounded-xl sm:rounded-2xl bg-slate-100 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-black text-slate-700 transition hover:bg-slate-200 disabled:opacity-60"
+                        className="h-auto flex-1 rounded-xl border-0 bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-200 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm"
                       >
                         Cancel
-                      </button>
+                      </Button>
                     )}
 
                     {['accepted', 'scheduled'].includes(status) && (
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
                         disabled={updatingId === meeting.id}
                         onClick={() => void updateStatus(meeting.id, 'completed')}
-                        className="flex-1 rounded-xl sm:rounded-2xl bg-blue-100 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-black text-blue-700 transition hover:bg-blue-200 disabled:opacity-60"
+                        className="h-auto flex-1 rounded-xl bg-blue-100 px-3 py-2 text-xs font-black text-blue-700 hover:bg-blue-200 hover:text-blue-700 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm"
                       >
                         Complete
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
-              </article>
+              </Card>
             );
           })
         )}
       </section>
 
-      {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-2xl rounded-2xl sm:rounded-[30px] bg-white p-4 sm:p-6 shadow-2xl">
-            <div className="mb-4 sm:mb-5 flex items-center justify-between">
-              <h2 className="text-base sm:text-xl font-black text-slate-900">Schedule Parent Meeting</h2>
-              <button
-                type="button"
-                onClick={resetCreateForm}
-                className="rounded-full p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-              >
-                <X className="size-4 sm:size-5" />
-              </button>
-            </div>
+      <Dialog open={showCreate} onOpenChange={(open) => { if (!open) resetCreateForm(); }}>
+        <DialogContent className="max-h-[92vh] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:rounded-[30px] sm:p-6">
+          <DialogHeader className="mb-1 text-left sm:mb-2">
+            <DialogTitle className="text-base font-black leading-normal tracking-normal text-slate-900 sm:text-xl">Schedule Parent Meeting</DialogTitle>
+            <DialogDescription className="sr-only">Pick a parent, then choose when and where to meet.</DialogDescription>
+          </DialogHeader>
 
             {/* Step indicator */}
             <div className="mb-4 sm:mb-6 flex items-center gap-2">
@@ -560,7 +625,7 @@ export default function TeacherMeetingsPage() {
             </div>
 
             {selectedParent && (
-              <div className="mb-3 sm:mb-4 flex items-center gap-2.5 rounded-xl sm:rounded-2xl border border-cyan-100 bg-cyan-50/60 px-3 py-2 sm:px-4 sm:py-2.5">
+              <Card className="mb-3 sm:mb-4 flex items-center gap-2.5 rounded-xl sm:rounded-2xl border-cyan-100 bg-cyan-50/60 px-3 py-2 sm:px-4 sm:py-2.5 shadow-none">
                 <span className="flex size-7 sm:size-8 shrink-0 items-center justify-center rounded-full bg-cyan-100 text-cyan-700">
                   <User className="size-3.5 sm:size-4" />
                 </span>
@@ -573,7 +638,7 @@ export default function TeacherMeetingsPage() {
                     ].filter(Boolean).join(' • ') || 'Meeting contact'}
                   </p>
                 </div>
-              </div>
+              </Card>
             )}
 
             <div className="grid gap-2.5 sm:gap-4 md:grid-cols-2">
@@ -582,36 +647,36 @@ export default function TeacherMeetingsPage() {
                   {classOptions.length > 1 && (
                     <>
                       <div className="space-y-1 sm:space-y-1.5">
-                        <label className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Class</label>
-                        <CustomSelect
+                        <Label className={FIELD_LABEL}>Class</Label>
+                        <PlainSelect
                           onChange={(val) => {
                             setClassFilter(val);
                             setSectionFilter('');
                           }}
                           value={classFilter}
                           placeholder="All classes"
+                          emptyLabel="All classes"
                           options={classOptions.map((c) => ({ value: c, label: c }))}
-                          className="w-full"
-                          triggerClassName="flex size-full items-center justify-between gap-1 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 shadow-sm"
+                          triggerClassName={FIELD_SELECT}
                         />
                       </div>
                       <div className="space-y-1 sm:space-y-1.5">
-                        <label className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Section</label>
-                        <CustomSelect
+                        <Label className={FIELD_LABEL}>Section</Label>
+                        <PlainSelect
                           onChange={setSectionFilter}
                           value={sectionFilter}
                           disabled={sectionOptions.length === 0}
                           placeholder="All sections"
+                          emptyLabel="All sections"
                           options={sectionOptions.map((s) => ({ value: s, label: `Section ${s}` }))}
-                          className="w-full"
-                          triggerClassName="flex size-full items-center justify-between gap-1 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 shadow-sm disabled:opacity-50"
+                          triggerClassName={FIELD_SELECT}
                         />
                       </div>
                     </>
                   )}
 
                   <div className="space-y-1 sm:space-y-1.5 md:col-span-2">
-                    <label className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Parent</label>
+                    <Label className={FIELD_LABEL}>Parent</Label>
                     <CustomSelect
                       onChange={(val) => {
                         const parent = parents.find((p) => p.id === val);
@@ -651,50 +716,51 @@ export default function TeacherMeetingsPage() {
                   </div>
 
                   <div className="space-y-1 sm:space-y-1.5 md:col-span-2">
-                    <label className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Title</label>
-                    <input
+                    <Label className={FIELD_LABEL}>Title</Label>
+                    <Input
                       value={form.title}
                       onChange={(e) => {
                         setTitleTouched(true);
                         setForm((prev) => ({ ...prev, title: e.target.value }));
                       }}
-                      className="w-full rounded-xl sm:rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
+                      className={FIELD_INPUT}
                     />
                   </div>
 
                   <div className="space-y-1 sm:space-y-1.5 md:col-span-2">
-                    <label className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Purpose</label>
-                    <textarea
+                    <Label className={FIELD_LABEL}>Purpose</Label>
+                    <Textarea
                       rows={2}
                       value={form.description}
                       onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-                      className="w-full resize-none rounded-xl sm:rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-semibold text-slate-700 outline-none focus:border-cyan-400 focus:bg-white"
+                      className="min-h-0 resize-none rounded-xl border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 focus-visible:border-cyan-400 focus-visible:bg-white focus-visible:ring-0 focus-visible:ring-offset-0 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm"
                       placeholder="Discuss attendance, performance, assessments, or classroom follow-up."
                     />
                   </div>
 
                   <div className="space-y-1 sm:space-y-1.5 md:col-span-2">
-                    <label className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Mode</label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <Label className={FIELD_LABEL}>Mode</Label>
+                    <ToggleGroup
+                      type="single"
+                      value={form.meetingMode}
+                      onValueChange={(mode) => {
+                        if (!mode) return;
+                        setStep2Error('');
+                        setForm((prev) => ({ ...prev, meetingMode: mode as 'online' | 'offline' }));
+                      }}
+                      className="grid grid-cols-2 gap-2"
+                    >
                       {(['online', 'offline'] as const).map((mode) => (
-                        <button
+                        <ToggleGroupItem
                           key={mode}
-                          type="button"
-                          onClick={() => {
-                            setStep2Error('');
-                            setForm((prev) => ({ ...prev, meetingMode: mode }));
-                          }}
-                          className={`flex items-center justify-center gap-1.5 rounded-xl sm:rounded-2xl border px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-black capitalize transition ${
-                            form.meetingMode === mode
-                              ? 'border-cyan-500 bg-cyan-50 text-cyan-700'
-                              : 'border-slate-200 bg-slate-50 text-slate-500'
-                          }`}
+                          value={mode}
+                          className="h-auto gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black capitalize text-slate-500 data-[state=on]:border-cyan-500 data-[state=on]:bg-cyan-50 data-[state=on]:text-cyan-700 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm"
                         >
                           {mode === 'online' ? <Video className="size-3.5" /> : <MapPin className="size-3.5" />}
                           {mode}
-                        </button>
+                        </ToggleGroupItem>
                       ))}
-                    </div>
+                    </ToggleGroup>
                   </div>
                 </>
               )}
@@ -702,76 +768,75 @@ export default function TeacherMeetingsPage() {
               {step === 2 && (
                 <>
                   <div className="space-y-1 sm:space-y-1.5">
-                    <label className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Date</label>
-                    <input
+                    <Label className={FIELD_LABEL}>Date</Label>
+                    <Input
                       type="date"
                       min={new Date().toISOString().split('T')[0]}
                       value={form.meetingDate}
                       onChange={(e) => setForm((prev) => ({ ...prev, meetingDate: e.target.value }))}
-                      className="w-full rounded-xl sm:rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
+                      className={FIELD_INPUT}
                     />
                   </div>
 
                   <div className="space-y-1 sm:space-y-1.5">
-                    <label className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Time</label>
-                    <input
+                    <Label className={FIELD_LABEL}>Time</Label>
+                    <Input
                       type="time"
                       value={form.startTime}
                       onChange={(e) => setForm((prev) => ({ ...prev, startTime: e.target.value }))}
-                      className="w-full rounded-xl sm:rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
+                      className={FIELD_INPUT}
                     />
                   </div>
 
                   <div className="space-y-1 sm:space-y-1.5 md:col-span-2">
-                    <label className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Duration</label>
-                    <CustomSelect
+                    <Label className={FIELD_LABEL}>Duration</Label>
+                    <PlainSelect
                       onChange={(val) => setForm(prev => ({ ...prev, durationMinutes: val }))}
                       value={form.durationMinutes}
                       options={[
-                        { value: "15", label: "15 mins" },
-                        { value: "30", label: "30 mins" },
-                        { value: "45", label: "45 mins" },
-                        { value: "60", label: "60 mins" },
+                        { value: '15', label: '15 mins' },
+                        { value: '30', label: '30 mins' },
+                        { value: '45', label: '45 mins' },
+                        { value: '60', label: '60 mins' },
                       ]}
-                      className="w-full"
-                      triggerClassName="flex size-full items-center justify-between gap-1 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 shadow-sm"
+                      triggerClassName={FIELD_SELECT}
                     />
                   </div>
 
                   {form.meetingMode === 'online' ? (
                     <>
                       <div className="space-y-1 sm:space-y-1.5">
-                        <label className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Platform</label>
-                        <input
+                        <Label className={FIELD_LABEL}>Platform</Label>
+                        <Input
                           value={form.meetingPlatform}
                           onChange={(e) => setForm((prev) => ({ ...prev, meetingPlatform: e.target.value }))}
-                          className="w-full rounded-xl sm:rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
+                          className={FIELD_INPUT}
                         />
                       </div>
                       <div className="space-y-1 sm:space-y-1.5 md:col-span-2">
-                        <label className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Meeting Link</label>
-                        <input
+                        <Label className={FIELD_LABEL}>Meeting Link</Label>
+                        <Input
                           value={form.meetingLink}
                           onChange={(e) => {
                             setStep2Error('');
                             setForm((prev) => ({ ...prev, meetingLink: e.target.value }));
                           }}
                           placeholder="https://meet.google.com/..."
-                          className="w-full rounded-xl sm:rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
+                          className={FIELD_INPUT}
                         />
                       </div>
                     </>
                   ) : (
                     <div className="space-y-1 sm:space-y-1.5 md:col-span-2">
-                      <label className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Location</label>
-                      <input
+                      <Label className={FIELD_LABEL}>Location</Label>
+                      <Input
                         value={form.location}
                         onChange={(e) => {
                           setStep2Error('');
                           setForm((prev) => ({ ...prev, location: e.target.value }));
                         }}
                         placeholder="School campus / classroom / office"
-                        className="w-full rounded-xl sm:rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
+                        className={FIELD_INPUT}
                       />
                     </div>
                   )}
@@ -780,46 +845,46 @@ export default function TeacherMeetingsPage() {
             </div>
 
             {step2Error && (
-              <p className="mt-3 flex items-start gap-1.5 rounded-xl bg-rose-50 px-3 py-2 text-[11px] sm:text-xs font-bold text-rose-700">
+              <Alert className="mt-3 flex items-start gap-1.5 rounded-xl border-0 bg-rose-50 px-3 py-2 text-[11px] font-bold text-rose-700 sm:text-xs [&>svg]:static [&>svg]:text-current [&>svg~*]:pl-0">
                 <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
                 {step2Error}
-              </p>
+              </Alert>
             )}
 
-            <div className="mt-4 sm:mt-6 flex flex-row justify-end gap-2 sm:gap-3">
-              <button
+            <DialogFooter className="mt-4 flex-row justify-end gap-2 sm:mt-6 sm:gap-3 sm:space-x-0">
+              <Button
                 type="button"
+                variant="secondary"
                 onClick={() => {
                   if (step === 2) setStep(1);
                   else resetCreateForm();
                 }}
-                className="flex-1 sm:flex-initial rounded-xl sm:rounded-2xl bg-slate-100 px-4 py-2.5 sm:px-5 sm:py-3 text-xs sm:text-sm font-black text-slate-700 transition hover:bg-slate-200"
+                className="h-auto flex-1 rounded-xl border-0 bg-slate-100 px-4 py-2.5 text-xs font-black text-slate-700 hover:bg-slate-200 sm:flex-initial sm:rounded-2xl sm:px-5 sm:py-3 sm:text-sm"
               >
                 {step === 2 ? 'Back' : 'Cancel'}
-              </button>
+              </Button>
               {step === 1 ? (
-                <button
+                <Button
                   type="button"
                   disabled={!form.parentId || !form.title.trim()}
                   onClick={() => setStep(2)}
-                  className="flex-1 sm:flex-initial rounded-xl sm:rounded-2xl bg-cyan-600 px-4 py-2.5 sm:px-5 sm:py-3 text-xs sm:text-sm font-black text-white transition hover:bg-cyan-700 disabled:opacity-60"
+                  className="h-auto flex-1 rounded-xl bg-cyan-600 px-4 py-2.5 text-xs font-black text-white shadow-none hover:bg-cyan-700 sm:flex-initial sm:rounded-2xl sm:px-5 sm:py-3 sm:text-sm"
                 >
                   Continue
-                </button>
+                </Button>
               ) : (
-                <button
+                <Button
                   type="button"
                   disabled={creating || !form.parentId}
                   onClick={() => void createMeeting()}
-                  className="flex-1 sm:flex-initial rounded-xl sm:rounded-2xl bg-cyan-600 px-4 py-2.5 sm:px-5 sm:py-3 text-xs sm:text-sm font-black text-white transition hover:bg-cyan-700 disabled:opacity-60"
+                  className="h-auto flex-1 rounded-xl bg-cyan-600 px-4 py-2.5 text-xs font-black text-white shadow-none hover:bg-cyan-700 sm:flex-initial sm:rounded-2xl sm:px-5 sm:py-3 sm:text-sm"
                 >
                   {creating ? 'Scheduling...' : 'Create Meeting'}
-                </button>
+                </Button>
               )}
-            </div>
-          </div>
-        </div>
-      )}
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

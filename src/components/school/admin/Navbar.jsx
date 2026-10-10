@@ -45,6 +45,8 @@ function pageTitle(pathname, state) {
   if (pathname === '/' || pathname.includes('dashboard')) return 'Dashboard';
   if (pathname === '/school/teacher/classes') return 'My Schedule';
   if (/^\/school\/(?:teacher|student)\/recorded-classes\/[^/]+$/.test(pathname)) return state?.recordingTitle || 'Recorded Class';
+  if (pathname === '/school/teacher/assessments/new') return 'Create Test';
+  if (/^\/school\/teacher\/assessments\/[^/]+\/edit$/.test(pathname)) return 'Edit Test';
   if (/^\/school\/(?:teacher|student)\/assessments\/[^/]+(?:\/(?:view|take))?$/.test(pathname)) return state?.assessmentTitle || 'Assessment';
   if (/^\/school\/teacher\/course-content\/materials\/[^/]+$/.test(pathname)) return state?.materialTypeLabel || 'Material';
   if (/^\/school\/teacher\/reports\/student\/[^/]+(?:\/report-card)?$/.test(pathname)) return 'Reports';

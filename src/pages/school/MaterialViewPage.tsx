@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Check, Download, ExternalLink, FileText, Loader2, Printer, X } from 'lucide-react';
+import { ArrowLeft, Check, Download, ExternalLink, FileText, Printer, X } from 'lucide-react';
 import FlashcardViewer from '@/components/resources/FlashcardViewer';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { MindMapCanvas, type MindMapCanvasHandle, type LayoutMode } from '@/components/school/MindMapVisualizer';
@@ -9,6 +9,11 @@ import { presentationMarkdownToSlides, type Slide } from '@/lib/presentation-mar
 import { materialDisplayTitle } from '@/lib/material-download';
 import { schoolContent, type SchoolMaterial } from '@/lib/api/school-content';
 import ResourceViewerModal from '@/components/resources/ResourceViewerModal';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { getApiBaseUrl } from '@/lib/api-config';
 import { useAuthStore } from '@/lib/auth-store';
@@ -103,23 +108,16 @@ function PracticeViewer({ content, typeId }: { content: string; typeId: string }
 
   return (
     <div>
-      <div className="mb-5 flex rounded-xl border border-slate-200 bg-white p-1">
-        {[
-          ['questions', 'Questions'],
-          ['solutions', typeId === 'pyq' ? 'Detailed Solutions' : 'Answer Key'],
-        ].map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setPage(id as 'questions' | 'solutions')}
-            className={`flex-1 rounded-lg px-4 py-2 text-sm font-bold transition ${
-              page === id ? 'bg-violet-600 text-white' : 'text-slate-500 hover:bg-slate-100'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <Tabs value={page} onValueChange={(v) => setPage(v as 'questions' | 'solutions')} className="mb-5">
+        <TabsList className="grid h-auto w-full grid-cols-2 rounded-xl border border-slate-200 bg-white p-1">
+          <TabsTrigger value="questions" className="rounded-lg px-3 py-2 text-sm font-bold text-slate-500 data-[state=active]:bg-violet-600 data-[state=active]:text-white">
+            Questions
+          </TabsTrigger>
+          <TabsTrigger value="solutions" className="rounded-lg px-3 py-2 text-sm font-bold text-slate-500 data-[state=active]:bg-violet-600 data-[state=active]:text-white">
+            {typeId === 'pyq' ? 'Detailed Solutions' : 'Answer Key'}
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
       <MarkdownRenderer content={page === 'questions' ? pages.questions : pages.solutions} className="prose-slate max-w-none" />
     </div>
   );
@@ -159,12 +157,12 @@ function RevisionChecklistViewer({ content, materialId }: { content: string; mat
             mark === 'done' ? 'border-emerald-200 bg-emerald-50' : mark === 'skip' ? 'border-rose-200 bg-rose-50' : 'border-slate-200 bg-white'
           }`}>
             <div className="flex shrink-0 gap-1">
-              <button type="button" onClick={() => updateMark(itemKey, 'done')} className={`grid h-8 w-8 place-items-center rounded-lg border ${mark === 'done' ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-200 text-slate-400'}`}>
+              <Button type="button" variant="outline" size="icon" aria-label="Mark done" aria-pressed={mark === 'done'} onClick={() => updateMark(itemKey, 'done')} className={`size-8 rounded-lg ${mark === 'done' ? 'border-emerald-500 bg-emerald-500 text-white hover:bg-emerald-600 hover:text-white' : 'border-slate-200 text-slate-400'}`}>
                 <Check size={16} />
-              </button>
-              <button type="button" onClick={() => updateMark(itemKey, 'skip')} className={`grid h-8 w-8 place-items-center rounded-lg border ${mark === 'skip' ? 'border-rose-500 bg-rose-500 text-white' : 'border-slate-200 text-slate-400'}`}>
+              </Button>
+              <Button type="button" variant="outline" size="icon" aria-label="Skip" aria-pressed={mark === 'skip'} onClick={() => updateMark(itemKey, 'skip')} className={`size-8 rounded-lg ${mark === 'skip' ? 'border-rose-500 bg-rose-500 text-white hover:bg-rose-600 hover:text-white' : 'border-slate-200 text-slate-400'}`}>
                 <X size={16} />
-              </button>
+              </Button>
             </div>
             <MarkdownRenderer content={match[1]} className="prose-slate max-w-none prose-p:my-0 text-sm font-semibold text-slate-700" />
           </div>
@@ -179,12 +177,12 @@ function SlideDeck({ slides, topic = '' }: { slides: Slide[]; topic?: string }) 
   if (!slides.length) return null;
   const slide = slides[Math.min(idx, slides.length - 1)];
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6">
-      <div className="mb-4 flex items-center justify-between">
+    <Card className="rounded-2xl border-slate-200 bg-white p-4 shadow-none sm:p-6">
+      <div className="mb-4 flex items-center justify-between gap-2">
         <span className="text-xs font-black uppercase tracking-wider text-rose-500">Slide {idx + 1} / {slides.length}</span>
-        <span className="text-xs font-semibold text-slate-400">{topic}</span>
+        <span className="min-w-0 truncate text-xs font-semibold text-slate-400">{topic}</span>
       </div>
-      <h2 className="border-b border-rose-100 pb-3 text-2xl font-black text-slate-900">
+      <h2 className="break-words border-b border-rose-100 pb-3 text-xl font-black text-slate-900 sm:text-2xl">
         <MarkdownRenderer content={slide.title} className="prose-slate max-w-none prose-p:my-0 prose-headings:my-0" />
       </h2>
       <ul className="mt-5 space-y-3">
@@ -198,10 +196,10 @@ function SlideDeck({ slides, topic = '' }: { slides: Slide[]; topic?: string }) 
         ))}
       </ul>
       <div className="mt-6 flex items-center justify-between">
-        <button type="button" disabled={idx === 0} onClick={() => setIdx((v) => Math.max(0, v - 1))} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 disabled:opacity-40">Prev</button>
-        <button type="button" disabled={idx === slides.length - 1} onClick={() => setIdx((v) => Math.min(slides.length - 1, v + 1))} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 disabled:opacity-40">Next</button>
+        <Button type="button" variant="outline" disabled={idx === 0} onClick={() => setIdx((v) => Math.max(0, v - 1))} className="rounded-xl border-slate-200 px-4 text-sm font-bold text-slate-600">Prev</Button>
+        <Button type="button" variant="outline" disabled={idx === slides.length - 1} onClick={() => setIdx((v) => Math.min(slides.length - 1, v + 1))} className="rounded-xl border-slate-200 px-4 text-sm font-bold text-slate-600">Next</Button>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -232,7 +230,7 @@ function MaterialBody({ material, isStudent }: { material: SchoolMaterial; isStu
             if (inst) q.set('institute', inst);
             return `/ppt-studio/index.html?${q.toString()}`;
           })()}
-          className="h-[75vh] w-full rounded-xl border border-slate-200 bg-white"
+          className="h-[65vh] w-full rounded-xl border border-slate-200 bg-white sm:h-[75vh]"
           onLoad={() => {
             const iframe = document.getElementById('ppt-viewer-iframe') as HTMLIFrameElement;
             if (iframe && iframe.contentWindow) {
@@ -248,7 +246,7 @@ function MaterialBody({ material, isStudent }: { material: SchoolMaterial; isStu
         />
       );
     } else if (fileUrl) {
-      return <iframe title={title} src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`} className="h-[75vh] w-full rounded-xl border border-slate-200 bg-white" />;
+      return <iframe title={title} src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`} className="h-[65vh] w-full rounded-xl border border-slate-200 bg-white sm:h-[75vh]" />;
     }
   }
 
@@ -257,10 +255,10 @@ function MaterialBody({ material, isStudent }: { material: SchoolMaterial; isStu
   if (isFlashcard && content) return <FlashcardViewer content={content} />;
   if (content) return <MarkdownRenderer content={content} className="prose-slate max-w-none" />;
   if (fileUrl && /\.(pptx?|docx?|xlsx?)$/i.test(fileUrl)) {
-    return <iframe title={title} src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`} className="h-[75vh] w-full rounded-xl border border-slate-200 bg-white" />;
+    return <iframe title={title} src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`} className="h-[65vh] w-full rounded-xl border border-slate-200 bg-white sm:h-[75vh]" />;
   }
   if (fileUrl && /\.pdf($|\?)/i.test(fileUrl)) {
-    return <iframe title={title} src={fileUrl} className="h-[75vh] w-full rounded-xl border border-slate-200 bg-white" />;
+    return <iframe title={title} src={fileUrl} className="h-[65vh] w-full rounded-xl border border-slate-200 bg-white sm:h-[75vh]" />;
   }
   // Photos of notes, mind-map exports etc. — the upload form accepts JPG/PNG.
   if (fileUrl && /\.(png|jpe?g|webp|gif)($|[?#])/i.test(fileUrl)) {
@@ -270,7 +268,7 @@ function MaterialBody({ material, isStudent }: { material: SchoolMaterial; isStu
       </a>
     );
   }
-  return <div className="rounded-xl border border-dashed border-slate-200 p-10 text-center text-sm font-semibold text-slate-400">No preview content is available.</div>;
+  return <Card className="rounded-xl border-dashed border-slate-200 p-10 text-center text-sm font-semibold text-slate-400 shadow-none">No preview content is available.</Card>;
 }
 
 const MINDMAP_TABS: Array<{ mode: LayoutMode; label: string }> = [
@@ -285,50 +283,57 @@ function MindmapFullScreenView({ material, tree, onBack }: { material: SchoolMat
 
   return (
     <div className="flex h-full min-h-[600px] flex-col bg-slate-50">
-      <div className="flex flex-nowrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-6">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="icon"
             onClick={onBack}
             aria-label="Go back"
-            className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50"
+            className="size-9 shrink-0 rounded-lg border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50"
           >
             <ArrowLeft size={16} />
-          </button>
+          </Button>
           <div className="min-w-0">
-            <div className="mb-1 inline-flex items-center gap-2 rounded-full bg-violet-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-violet-600">
+            <Badge variant="secondary" className="mb-1 gap-2 rounded-full bg-violet-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-violet-600 hover:bg-violet-50">
               <FileText size={14} /> {labelFromType(material.fileType)}
-            </div>
+            </Badge>
             <h1 className="truncate text-xl font-black text-slate-900 sm:text-2xl">{topicLabel}</h1>
           </div>
         </div>
-        <div className="flex flex-shrink-0 items-center gap-1.5">
-          {MINDMAP_TABS.map(t => (
-            <button
-              key={t.mode}
-              type="button"
-              onClick={() => setMode(t.mode)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${
-                mode === t.mode ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-          <button
+        <div className="flex w-full flex-wrap items-center gap-1.5 sm:w-auto">
+          <Tabs value={mode} onValueChange={(v) => setMode(v as LayoutMode)} className="w-full sm:w-auto">
+            <TabsList className="grid h-auto w-full grid-cols-2 bg-slate-100 p-1 sm:inline-flex sm:w-auto">
+              {MINDMAP_TABS.map((t) => (
+                <TabsTrigger
+                  key={t.mode}
+                  value={t.mode}
+                  className="rounded-md px-3 py-1.5 text-xs font-bold text-slate-600 data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+                >
+                  {t.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={() => canvasRef.current?.exportPNG(topicLabel)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm hover:bg-slate-50"
+            className="h-8 flex-1 gap-1.5 rounded-lg border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 shadow-sm hover:bg-slate-50 sm:flex-none"
           >
             <Download size={14} /> Download
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={() => canvasRef.current?.printMindmap(topicLabel)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm hover:bg-slate-50"
+            className="h-8 flex-1 gap-1.5 rounded-lg border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 shadow-sm hover:bg-slate-50 sm:flex-none"
           >
             <Printer size={14} /> Print
-          </button>
+          </Button>
         </div>
       </div>
       <div className="min-h-0 flex-1 p-3 sm:p-4">
@@ -405,34 +410,44 @@ export default function SchoolMaterialViewPage() {
   return (
     <div className="min-h-full bg-slate-50 p-4 sm:p-6">
       {loading ? (
-        <div className="flex h-64 items-center justify-center gap-2 text-sm font-semibold text-slate-500">
-          <Loader2 size={18} className="animate-spin" /> Loading material...
-        </div>
+        <Card className="w-full space-y-5 rounded-2xl border-slate-200 bg-white p-5 shadow-sm sm:p-8" aria-busy="true" aria-label="Loading material">
+          <div className="flex items-center gap-3">
+            <Skeleton className="size-9 rounded-lg" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-5 w-24 rounded-full" />
+              <Skeleton className="h-7 w-2/3" />
+            </div>
+          </div>
+          <Skeleton className="h-64 w-full rounded-xl" />
+        </Card>
       ) : !material ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm font-semibold text-slate-500">Material not found.</div>
+        <Card className="rounded-2xl border-slate-200 bg-white p-10 text-center text-sm font-semibold text-slate-500 shadow-none">Material not found.</Card>
       ) : (
-        <article className="w-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
-          <div className="mb-6 flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-5">
+        <Card className="w-full rounded-2xl border-slate-200 bg-white p-5 shadow-sm sm:p-8">
+          <div className="mb-6 flex flex-col gap-3 border-b border-slate-100 pb-5 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
             <div className="flex min-w-0 items-start gap-3">
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="icon"
                 onClick={handleBack}
                 aria-label="Go back"
-                className="mt-1 inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50"
+                className="mt-1 size-9 shrink-0 rounded-lg border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50"
               >
                 <ArrowLeft size={16} />
-              </button>
-              <div>
-                <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-violet-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-violet-600">
+              </Button>
+              <div className="min-w-0">
+                <Badge variant="secondary" className="mb-2 gap-2 rounded-full bg-violet-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-violet-600 hover:bg-violet-50">
                   <FileText size={14} /> {labelFromType(material.fileType)}
-                </div>
-                <h1 className="text-2xl font-black text-slate-900">{materialTopicLabel(material)}</h1>
+                </Badge>
+                <h1 className="break-words text-xl font-black text-slate-900 sm:text-2xl">{materialTopicLabel(material)}</h1>
                 <p className="mt-1 text-sm font-semibold text-slate-400">{material.subjectName || material.chapterName || material.topicName || ''}</p>
               </div>
             </div>
             {fileType === 'ppt' ? (
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => {
                   const iframe = document.getElementById('ppt-viewer-iframe') as HTMLIFrameElement;
                   if (iframe && iframe.contentWindow) {
@@ -442,18 +457,20 @@ export default function SchoolMaterialViewPage() {
                     }, '*');
                   }
                 }}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 shadow-sm hover:bg-slate-50 transition"
+                className="w-full gap-2 rounded-xl border-slate-200 bg-white px-4 text-sm font-bold text-slate-600 shadow-sm hover:bg-slate-50 sm:w-auto"
               >
                 <FileText size={15} className="text-violet-600" /> Download PDF
-              </button>
+              </Button>
             ) : (material.fileUrl || material.file_url) && (
-              <a href={resolveFileUrl(material.fileUrl ?? material.file_url)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600">
-                <ExternalLink size={15} /> Open file
-              </a>
+              <Button asChild variant="outline" className="w-full gap-2 rounded-xl border-slate-200 px-4 text-sm font-bold text-slate-600 sm:w-auto">
+                <a href={resolveFileUrl(material.fileUrl ?? material.file_url)} target="_blank" rel="noreferrer">
+                  <ExternalLink size={15} /> Open file
+                </a>
+              </Button>
             )}
           </div>
           <MaterialBody material={material} isStudent={isStudent} />
-        </article>
+        </Card>
       )}
     </div>
   );

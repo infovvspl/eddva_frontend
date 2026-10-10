@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { X, Layers, Plus, BookOpen, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Card } from '@/components/ui/card';
 
 export default function LessonTemplatesModal({ open, isOpen, onClose, onSelectTemplate }) {
   const isVisible = open ?? isOpen;
@@ -65,17 +67,12 @@ export default function LessonTemplatesModal({ open, isOpen, onClose, onSelectTe
   const allTemplates = [...defaultTemplates, ...templates];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900 space-y-6">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
-          <div>
-            <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">Lesson Plan Templates Library</h2>
-            <p className="text-xs text-slate-500">Pick a standard, lab, or revision template to quickly populate your lesson plan.</p>
-          </div>
-          <button onClick={onClose} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
-            <X size={20} />
-          </button>
-        </div>
+    <Dialog open={isVisible} onOpenChange={(o) => { if (!o) onClose?.(); }}>
+      <DialogContent className="max-w-2xl rounded-3xl border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900 space-y-2">
+        <DialogHeader className="border-b border-slate-100 pb-4 dark:border-slate-800">
+          <DialogTitle className="text-xl font-extrabold text-slate-900 dark:text-white tracking-normal leading-normal">Lesson Plan Templates Library</DialogTitle>
+          <DialogDescription className="text-xs text-slate-500">Pick a standard, lab, or revision template to quickly populate your lesson plan.</DialogDescription>
+        </DialogHeader>
 
         {loading ? (
           <div className="flex h-40 items-center justify-center">
@@ -84,14 +81,14 @@ export default function LessonTemplatesModal({ open, isOpen, onClose, onSelectTe
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {allTemplates.map(t => (
-              <div
+              <Card
                 key={t.id}
                 onClick={() => {
                   onSelectTemplate?.(t.contentJson);
                   toast.success(`Loaded template "${t.title}"`);
                   onClose();
                 }}
-                className="cursor-pointer rounded-2xl border border-slate-200 p-4 hover:border-blue-600 hover:bg-blue-50/50 transition-all dark:border-slate-800 dark:hover:bg-slate-800/50 space-y-2 group"
+                className="cursor-pointer rounded-2xl border-slate-200 p-4 shadow-none hover:border-blue-600 hover:bg-blue-50/50 transition-all dark:border-slate-800 dark:hover:bg-slate-800/50 space-y-2 group"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-600 dark:text-blue-400">{t.category}</span>
@@ -99,11 +96,11 @@ export default function LessonTemplatesModal({ open, isOpen, onClose, onSelectTe
                 </div>
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t.title}</h3>
                 <p className="text-[11px] text-slate-500 line-clamp-2">{t.contentJson?.teachingMethodology}</p>
-              </div>
+              </Card>
             ))}
           </div>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

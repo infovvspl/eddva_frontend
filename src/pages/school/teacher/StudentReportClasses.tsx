@@ -6,12 +6,34 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
-import GlassCard from '@/components/school/GlassCard';
-import Badge from '@/components/school/Badge';
-import Tabs from '@/components/school/Tabs';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import DataTable from '@/components/school/DataTable';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import './StudentReportClasses.css';
+
+const TONE_BADGE: Record<string, string> = {
+  success: 'bg-emerald-500/10 text-emerald-700',
+  warning: 'bg-amber-500/10 text-amber-700',
+  error: 'bg-red-500/10 text-red-700',
+  purple: 'bg-violet-500/10 text-violet-700',
+  default: 'bg-slate-500/10 text-slate-600',
+};
+
+function ToneBadge({ tone, className, children }: { tone: string; className?: string; children: React.ReactNode }) {
+  return (
+    <Badge variant="outline" className={cn('border-transparent', TONE_BADGE[tone] ?? TONE_BADGE.default, className)}>
+      {children}
+    </Badge>
+  );
+}
 
 interface SubjectRow {
   subjectName: string;
@@ -85,10 +107,10 @@ export default function StudentReportClasses() {
 
   const isInformationTechnologySubject = (subjectName = '') => {
     const subject = String(subjectName || '').trim().toLowerCase();
-    return /\b(information|informational)\s+technology\b/.test(subject) || 
+    return /\b(information|informational)\s+technology\b/.test(subject) ||
            /\bcomputer\s+science\b/.test(subject) ||
            /\bcomputer\b/.test(subject) ||
-           subject === 'it' || 
+           subject === 'it' ||
            subject === 'cs';
   };
 
@@ -111,7 +133,7 @@ export default function StudentReportClasses() {
 
     Object.entries(subjectMap).forEach(([subject, records]) => {
       const isIT = isInformationTechnologySubject(subject);
-      
+
       if (isBoard) {
         let obtained = 0, max = 0;
         records.forEach((rec: any) => {
@@ -198,7 +220,7 @@ export default function StudentReportClasses() {
               aExam += marks;
             }
           }
-          
+
           try {
             if (rec.remarks && rec.remarks.trim().startsWith('{')) {
               const parsed = JSON.parse(rec.remarks);
@@ -598,8 +620,8 @@ export default function StudentReportClasses() {
     previousResultsList.forEach((res: any) => {
       if (!res.className) return;
       const isCurrent = res.className === currentClassName;
-      const key = isCurrent 
-        ? `${res.className} (Ongoing Class)` 
+      const key = isCurrent
+        ? `${res.className} (Ongoing Class)`
         : `${res.className} (${res.academicYear || 'N/A'})`;
       if (!grouped[key]) {
         grouped[key] = [];
@@ -611,17 +633,25 @@ export default function StudentReportClasses() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
-        <Loader2 className="size-8 animate-spin text-blue-600" />
-        <p className="text-sm font-bold text-slate-500">Loading student performance classes...</p>
+      <div className="space-y-4 pb-12">
+        <Skeleton className="h-6 w-32" />
+        <Skeleton className="h-24 w-full rounded-3xl" />
+        <Skeleton className="h-11 w-full rounded-xl" />
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <Skeleton className="h-44 rounded-3xl" />
+          <Skeleton className="hidden h-44 rounded-3xl md:block" />
+          <Skeleton className="hidden h-44 rounded-3xl lg:block" />
+        </div>
       </div>
     );
   }
 
   if (!student) {
     return (
-      <div className="p-8 text-center text-slate-500 font-bold">
-        Student not found.
+      <div className="p-4 sm:p-8">
+        <Card className="rounded-3xl border-dashed border-slate-200 bg-white p-8 text-center font-bold text-slate-500 shadow-none">
+          Student not found.
+        </Card>
       </div>
     );
   }
@@ -635,13 +665,13 @@ export default function StudentReportClasses() {
   const assessmentStatusBadge = (status: string) => {
     switch (status) {
       case 'evaluated':
-        return <Badge variant="success">Evaluated</Badge>;
+        return <ToneBadge tone="success">Evaluated</ToneBadge>;
       case 'pending_evaluation':
-        return <Badge variant="warning">Pending Evaluation</Badge>;
+        return <ToneBadge tone="warning">Pending Evaluation</ToneBadge>;
       case 'absent':
-        return <Badge variant="error">Absent</Badge>;
+        return <ToneBadge tone="error">Absent</ToneBadge>;
       default:
-        return <Badge variant="default">Not Attempted</Badge>;
+        return <ToneBadge tone="default">Not Attempted</ToneBadge>;
     }
   };
 
@@ -693,11 +723,11 @@ export default function StudentReportClasses() {
   const assignmentStatusBadge = (status: string) => {
     switch (status) {
       case 'evaluated':
-        return <Badge variant="success">Evaluated</Badge>;
+        return <ToneBadge tone="success">Evaluated</ToneBadge>;
       case 'submitted':
-        return <Badge variant="warning">Pending Evaluation</Badge>;
+        return <ToneBadge tone="warning">Pending Evaluation</ToneBadge>;
       default:
-        return <Badge variant="default">Not Submitted</Badge>;
+        return <ToneBadge tone="default">Not Submitted</ToneBadge>;
     }
   };
 
@@ -745,14 +775,10 @@ export default function StudentReportClasses() {
   const reportCardsContent = (
     <>
       <div className="mb-6 flex justify-end">
-        <button
-          type="button"
-          onClick={openAddPrevModal}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md transition-all active:scale-[0.98]"
-        >
+        <Button type="button" onClick={openAddPrevModal} className="w-full gap-1.5 rounded-xl text-sm font-bold sm:w-auto">
           <PlusCircle size={16} />
           Add Class Result
-        </button>
+        </Button>
       </div>
 
       <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-6">
@@ -770,28 +796,39 @@ export default function StudentReportClasses() {
             const overallPercentage = calculateReportCardPercentage(results, classNameVal);
 
             return (
-              <GlassCard
+              <Card
                 key={classKey}
+                role="button"
+                tabIndex={0}
                 onClick={() => navigate(`/school/teacher/reports/student/${id}/report-card?class=${encodeURIComponent(classNameVal)}&year=${encodeURIComponent(academicYearVal)}`)}
-                className="group relative cursor-pointer p-5 rounded-3xl border border-slate-200/85 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 flex flex-col active:scale-[0.99] student-report-classes__card"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    (e.currentTarget as HTMLElement).click();
+                  }
+                }}
+                className="group relative flex cursor-pointer flex-col rounded-3xl border-slate-200/85 bg-white p-5 shadow-sm transition-all duration-300 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/5 active:scale-[0.99] dark:border-slate-800 dark:bg-slate-900 student-report-classes__card"
               >
                 <div className="space-y-2">
                   <div className="flex justify-between items-start">
-                    <span className="px-3 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 font-extrabold text-[10px] uppercase tracking-wider">
+                    <Badge variant="outline" className="rounded-xl border-transparent bg-blue-50 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-blue-600 dark:bg-blue-950/30 dark:text-blue-400">
                       {academicYearVal || 'Academic Year'}
-                    </span>
+                    </Badge>
                     <div className="flex items-center gap-2">
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="icon"
                         onClick={(e) => {
                           e.stopPropagation();
                           openEditPrevModal(classNameVal, academicYearVal, results);
                         }}
-                        className="size-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors"
+                        className="size-8 rounded-full bg-slate-50 text-slate-400 hover:bg-blue-50 hover:text-blue-500 dark:bg-slate-800 dark:hover:bg-blue-950/30"
                         title="Edit marks"
+                        aria-label="Edit marks"
                       >
                         <Edit2 size={14} />
-                      </button>
+                      </Button>
                       <div className="size-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-blue-500 group-hover:bg-blue-50 dark:group-hover:bg-blue-950/30 transition-colors">
                         <FileText size={16} />
                       </div>
@@ -811,18 +848,18 @@ export default function StudentReportClasses() {
                       {overallPercentage}%
                     </span>
                   </div>
-                  <span className="text-xs font-extrabold text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center gap-1 translate-x-2 group-hover:translate-x-0">
+                  <span className="flex translate-x-0 items-center gap-1 text-xs font-extrabold text-blue-600 transition-all duration-300 dark:text-blue-400 md:translate-x-2 md:opacity-0 md:group-hover:translate-x-0 md:group-hover:opacity-100">
                     View Report Card &rarr;
                   </span>
                 </div>
-              </GlassCard>
+              </Card>
             );
           })}
         </div>
       ) : (
-        <div className="text-center py-12 bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-3xl text-slate-500 font-bold">
+        <Card className="rounded-3xl border-dashed border-slate-200 bg-white py-12 text-center font-bold text-slate-500 shadow-none dark:border-slate-800 dark:bg-slate-950">
           No previous class results found on record.
-        </div>
+        </Card>
       )}
     </>
   );
@@ -838,8 +875,25 @@ export default function StudentReportClasses() {
         </p>
       </div>
       {allAssessments.length > 0 ? (
-        <GlassCard className="p-0 overflow-hidden">
-          <DataTable columns={assessmentColumns} data={paginatedAssessments} />
+        <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white p-0 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="space-y-3 p-3 md:hidden">
+            {paginatedAssessments.map((row: any, i: number) => (
+              <Card key={row.id || i} className="space-y-2 rounded-xl border-slate-100 p-4 shadow-none dark:border-slate-800">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">{(assessmentColumns[0].render as any)(row.title, row)}</div>
+                  {assessmentStatusBadge(row.status)}
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-slate-500">
+                  <span>{row.subjectName || 'General'}</span>
+                  <span>{row.scheduledDate ? new Date(row.scheduledDate).toLocaleDateString() : '—'}</span>
+                  {(assessmentColumns[3].render as any)(row.marksObtained, row)}
+                </div>
+              </Card>
+            ))}
+          </div>
+          <div className="hidden md:block">
+            <DataTable columns={assessmentColumns} data={paginatedAssessments} />
+          </div>
           <DataTablePagination
             page={assessmentPageClamped}
             limit={assessmentPageSize}
@@ -851,11 +905,11 @@ export default function StudentReportClasses() {
               setAssessmentPage(1);
             }}
           />
-        </GlassCard>
+        </Card>
       ) : (
-        <div className="text-center py-12 bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-3xl text-slate-500 font-bold">
+        <Card className="rounded-3xl border-dashed border-slate-200 bg-white py-12 text-center font-bold text-slate-500 shadow-none dark:border-slate-800 dark:bg-slate-950">
           No assessments have been scheduled for this student's class yet.
-        </div>
+        </Card>
       )}
     </>
   );
@@ -871,8 +925,25 @@ export default function StudentReportClasses() {
         </p>
       </div>
       {allAssignments.length > 0 ? (
-        <GlassCard className="p-0 overflow-hidden">
-          <DataTable columns={assignmentColumns} data={paginatedAssignments} />
+        <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white p-0 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="space-y-3 p-3 md:hidden">
+            {paginatedAssignments.map((row: any, i: number) => (
+              <Card key={row.id || i} className="space-y-2 rounded-xl border-slate-100 p-4 shadow-none dark:border-slate-800">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">{(assignmentColumns[0].render as any)(row.title, row)}</div>
+                  {assignmentStatusBadge(row.status)}
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-slate-500">
+                  <span>{row.subjectName || 'General'}</span>
+                  <span>Due {row.dueDate ? new Date(row.dueDate).toLocaleDateString() : '—'}</span>
+                  {(assignmentColumns[3].render as any)(row.marksObtained, row)}
+                </div>
+              </Card>
+            ))}
+          </div>
+          <div className="hidden md:block">
+            <DataTable columns={assignmentColumns} data={paginatedAssignments} />
+          </div>
           <DataTablePagination
             page={assignmentPageClamped}
             limit={assignmentPageSize}
@@ -884,11 +955,11 @@ export default function StudentReportClasses() {
               setAssignmentPage(1);
             }}
           />
-        </GlassCard>
+        </Card>
       ) : (
-        <div className="text-center py-12 bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-3xl text-slate-500 font-bold">
+        <Card className="rounded-3xl border-dashed border-slate-200 bg-white py-12 text-center font-bold text-slate-500 shadow-none dark:border-slate-800 dark:bg-slate-950">
           No assignments have been set for this student's class yet.
-        </div>
+        </Card>
       )}
     </>
   );
@@ -896,220 +967,217 @@ export default function StudentReportClasses() {
   return (
     <div className="student-report-classes pb-12 font-poppins">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <button
+        <Button
+          variant="ghost"
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold transition-colors text-sm"
+          className="h-auto gap-2 self-start p-0 text-sm font-bold text-slate-500 hover:bg-transparent hover:text-slate-900"
         >
           <ArrowLeft size={16} />
           Back to Reports
-        </button>
+        </Button>
       </div>
 
-      <div className="bg-white dark:bg-slate-950 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/30 dark:shadow-none mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Student Profile</span>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white leading-tight">{student.name}</h1>
-          <p className="text-xs font-semibold text-slate-500 mt-1">Class: {currentClassName} | Roll No: {profile.rollNo || '—'}</p>
+      <Card className="mb-8 flex flex-col justify-between gap-4 rounded-3xl border-slate-100 bg-white p-4 shadow-xl shadow-slate-200/30 dark:border-slate-800 dark:bg-slate-950 dark:shadow-none sm:flex-row sm:items-center sm:p-6">
+        <div className="min-w-0">
+          <span className="mb-0.5 block text-[10px] font-bold uppercase tracking-widest text-slate-400">Student Profile</span>
+          <h1 className="break-words text-xl font-black leading-tight text-slate-800 dark:text-white sm:text-2xl">{student.name}</h1>
+          <p className="mt-1 text-xs font-semibold text-slate-500">Class: {currentClassName} | Roll No: {profile.rollNo || '—'}</p>
         </div>
         <div className="text-left sm:text-right">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Ongoing Term</span>
-          <Badge variant="purple">{currentAcademicYear}</Badge>
+          <span className="mb-0.5 block text-[10px] font-bold uppercase tracking-widest text-slate-400">Ongoing Term</span>
+          <ToneBadge tone="purple">{currentAcademicYear}</ToneBadge>
         </div>
-      </div>
+      </Card>
 
-      <Tabs
-        tabs={[
-          { id: 'report-cards', label: 'Report Cards', icon: <FileText size={16} />, content: reportCardsContent },
-          { id: 'assessment-marks', label: 'Assessment Marks', icon: <ClipboardList size={16} />, content: assessmentMarksContent },
-          { id: 'assignments', label: 'Assignments', icon: <Calendar size={16} />, content: assignmentsContent },
-        ]}
-      />
+      <Tabs defaultValue="report-cards">
+        <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border border-slate-100 bg-white p-1.5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          {[
+            { id: 'report-cards', label: 'Report Cards', icon: <FileText size={16} /> },
+            { id: 'assessment-marks', label: 'Assessment Marks', icon: <ClipboardList size={16} /> },
+            { id: 'assignments', label: 'Assignments', icon: <Calendar size={16} /> },
+          ].map((t) => (
+            <TabsTrigger
+              key={t.id}
+              value={t.id}
+              className="shrink-0 gap-2 rounded-lg px-3 py-2 text-xs font-bold text-slate-500 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm sm:text-sm"
+            >
+              {t.icon}
+              {t.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        <TabsContent value="report-cards" className="mt-6">{reportCardsContent}</TabsContent>
+        <TabsContent value="assessment-marks" className="mt-6">{assessmentMarksContent}</TabsContent>
+        <TabsContent value="assignments" className="mt-6">{assignmentsContent}</TabsContent>
+      </Tabs>
 
-      {isAddPrevOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
-          <div className="w-full max-w-4xl max-h-[90vh] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
-            {/* Modal Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6 shrink-0">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="size-10 rounded-xl bg-white/20 flex items-center justify-center">
-                    <GraduationCap size={20} className="text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-white">Save Class Result</h3>
-                    <p className="text-xs text-blue-200 font-bold">Record historical academic achievements</p>
-                  </div>
-                </div>
-                <button onClick={() => setIsAddPrevOpen(false)} className="size-8 rounded-xl bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-all">
-                  <X size={16} />
-                </button>
+      <Dialog open={isAddPrevOpen} onOpenChange={setIsAddPrevOpen}>
+        <DialogContent className="flex max-h-[92vh] w-[calc(100%-1rem)] max-w-4xl flex-col gap-0 overflow-hidden rounded-3xl p-0 sm:rounded-3xl [&>button]:text-white">
+          {/* Header */}
+          <div className="shrink-0 bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-5 pr-14 sm:px-8 sm:py-6">
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/20">
+                <GraduationCap size={20} className="text-white" />
+              </div>
+              <div className="min-w-0">
+                <DialogTitle className="text-lg font-bold leading-normal tracking-normal text-white">Save Class Result</DialogTitle>
+                <DialogDescription className="text-xs font-bold text-blue-200">Record historical academic achievements</DialogDescription>
+              </div>
+            </div>
+          </div>
+
+          {/* Body */}
+          <form onSubmit={handleAddPrevResultSubmit} className="no-scrollbar flex-1 space-y-5 overflow-y-auto p-4 sm:p-8">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="prev-class" className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Class Name</Label>
+                <Input
+                  id="prev-class"
+                  type="text"
+                  required
+                  placeholder="e.g. Class 9"
+                  value={prevForm.className}
+                  onChange={(e) => handlePrevClassChange(e.target.value)}
+                  className="h-10 rounded-xl border-2 text-xs font-bold"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="prev-year" className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Academic Year</Label>
+                <Input
+                  id="prev-year"
+                  type="text"
+                  required
+                  placeholder="e.g. 2024-2025"
+                  value={prevForm.academicYear}
+                  onChange={(e) => setPrevForm({ ...prevForm, academicYear: e.target.value })}
+                  className="h-10 rounded-xl border-2 text-xs font-bold"
+                />
               </div>
             </div>
 
-            {/* Modal Body */}
-            <form onSubmit={handleAddPrevResultSubmit} className="p-4 sm:p-8 space-y-5 overflow-y-auto flex-1 no-scrollbar">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Class Name</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Class 9"
-                    value={prevForm.className}
-                    onChange={(e) => handlePrevClassChange(e.target.value)}
-                    className="w-full rounded-xl border-2 border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-blue-500"
-                  />
+            <div>
+              <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Subject-wise Report Card Marks</h4>
+                  <p className="mt-0.5 text-[11px] font-semibold text-slate-400">
+                    Columns: {isPrePrimaryResultClass(prevForm.className) ? '' : 'Subject, '}{resultColumns.map((column) => column.title).join(', ')}, {isBoardResultClass(prevForm.className) ? 'Total' : isPrePrimaryResultClass(prevForm.className) ? 'Grade' : 'T1 Total, T2 Total, Final, Grade'}
+                  </p>
                 </div>
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Academic Year</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. 2024-2025"
-                    value={prevForm.academicYear}
-                    onChange={(e) => setPrevForm({ ...prevForm, academicYear: e.target.value })}
-                    className="w-full rounded-xl border-2 border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-blue-500"
-                  />
-                </div>
+                {!isPrePrimaryResultClass(prevForm.className) && (
+                  <Button type="button" variant="link" onClick={addSubjectRow} className="h-auto gap-1 p-0 text-[11px] font-bold text-blue-600">
+                    <Plus size={12} />
+                    Add Subject
+                  </Button>
+                )}
               </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Subject-wise Report Card Marks</h4>
-                    <p className="text-[11px] font-semibold text-slate-400 mt-0.5">
-                      Columns: {isPrePrimaryResultClass(prevForm.className) ? '' : 'Subject, '}{resultColumns.map((column) => column.title).join(', ')}, {isBoardResultClass(prevForm.className) ? 'Total' : isPrePrimaryResultClass(prevForm.className) ? 'Grade' : 'T1 Total, T2 Total, Final, Grade'}
-                    </p>
-                  </div>
-                  {!isPrePrimaryResultClass(prevForm.className) && (
-                    <button
-                      type="button"
-                      onClick={addSubjectRow}
-                      className="flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-700 transition-colors"
-                    >
-                      <Plus size={12} />
-                      Add Subject
-                    </button>
-                  )}
-                </div>
+              <div className="space-y-6">
+                {prevForm.subjects.map((sub, idx) => {
+                  let subObtained = 0;
+                  let subMax = 0;
+                  const subjectColumns = getResultColumnsForSubject(prevForm.className, sub.subjectName);
+                  subjectColumns.forEach(({ key }) => {
+                    const marks = sub.assessments?.[key] || {};
+                    subObtained += Number(marks.obtained || 0);
+                    subMax += Number(marks.max || 0);
+                  });
 
-                <div className="space-y-6">
-                  {prevForm.subjects.map((sub, idx) => {
-                    let subObtained = 0;
-                    let subMax = 0;
-                    const subjectColumns = getResultColumnsForSubject(prevForm.className, sub.subjectName);
-                    subjectColumns.forEach(({ key }) => {
-                      const marks = sub.assessments?.[key] || {};
-                      subObtained += Number(marks.obtained || 0);
-                      subMax += Number(marks.max || 0);
-                    });
-                    
-                    return (
-                      <div key={idx} className="p-5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10 space-y-4">
-                        <div className="flex items-center justify-between gap-4">
-                          {!isPrePrimaryResultClass(prevForm.className) && (
-                            <div className="flex-1">
-                              <input
-                                type="text"
-                                required
-                                placeholder="Subject Name (e.g. Physics)"
-                                value={sub.subjectName}
-                                onChange={(e) => handlePrevSubjectChange(idx, 'subjectName', e.target.value)}
-                                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2.5 text-xs font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500"
-                              />
-                            </div>
-                          )}
-                          
-                          <div className="text-right shrink-0">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{isPrePrimaryResultClass(prevForm.className) ? 'Indicator Total' : 'Subject Total'}</span>
-                            <span className="text-xs font-extrabold text-slate-800 dark:text-white">{subObtained} / {subMax}</span>
+                  return (
+                    <Card key={idx} className="space-y-4 rounded-2xl border-slate-100 bg-slate-50/50 p-4 shadow-none dark:border-slate-800 dark:bg-slate-900/10 sm:p-5">
+                      <div className="flex flex-wrap items-center justify-between gap-3 sm:flex-nowrap sm:gap-4">
+                        {!isPrePrimaryResultClass(prevForm.className) && (
+                          <div className="min-w-0 flex-1 basis-full sm:basis-auto">
+                            <Input
+                              type="text"
+                              required
+                              placeholder="Subject Name (e.g. Physics)"
+                              value={sub.subjectName}
+                              onChange={(e) => handlePrevSubjectChange(idx, 'subjectName', e.target.value)}
+                              className="h-10 rounded-xl bg-white text-xs font-bold dark:bg-slate-900"
+                            />
                           </div>
+                        )}
 
-                          {!isPrePrimaryResultClass(prevForm.className) && prevForm.subjects.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => removeSubjectRow(idx)}
-                              className="p-2 rounded-xl border border-rose-100 hover:bg-rose-50 text-rose-500 transition-colors shrink-0"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          )}
+                        <div className="shrink-0 text-left sm:text-right">
+                          <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">{isPrePrimaryResultClass(prevForm.className) ? 'Indicator Total' : 'Subject Total'}</span>
+                          <span className="text-xs font-extrabold text-slate-800 dark:text-white">{subObtained} / {subMax}</span>
                         </div>
 
-                        <div>
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Report Card Columns</span>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        {!isPrePrimaryResultClass(prevForm.className) && prevForm.subjects.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => removeSubjectRow(idx)}
+                            aria-label="Remove subject"
+                            className="size-9 shrink-0 rounded-xl border-rose-100 text-rose-500 hover:bg-rose-50 hover:text-rose-500"
+                          >
+                            <Trash2 size={13} />
+                          </Button>
+                        )}
+                      </div>
+
+                      <div>
+                        <span className="mb-2 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Report Card Columns</span>
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                           {subjectColumns.map((column) => {
                             const marks = sub.assessments?.[column.key] || { obtained: '', max: column.defaultMax };
                             return (
-                              <div key={column.key} className="p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">
-                                <span className="text-xs font-bold text-slate-500 block">{column.title}</span>
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <input
+                              <Card key={column.key} className="space-y-2 rounded-xl border-slate-100 bg-white p-3 shadow-none dark:border-slate-800 dark:bg-slate-900">
+                                <span className="block text-xs font-bold text-slate-500">{column.title}</span>
+                                <div className="flex min-w-0 items-center gap-2">
+                                  <Input
                                     type="number"
                                     required
                                     min="0"
                                     placeholder="Marks"
                                     value={marks.obtained}
                                     onChange={(e) => handlePrevAssessmentChange(idx, column.key, 'obtained', e.target.value)}
-                                    className="w-full min-w-0 rounded-lg border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs text-center font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500 bg-white dark:bg-slate-850"
+                                    className="h-8 w-full min-w-0 px-2 text-center text-xs font-bold"
                                   />
-                                  <span className="text-slate-400 text-xs">/</span>
-                                  <input
+                                  <span className="text-xs text-slate-400">/</span>
+                                  <Input
                                     type="number"
                                     required
                                     min="1"
                                     placeholder="Max"
                                     value={marks.max}
                                     onChange={(e) => handlePrevAssessmentChange(idx, column.key, 'max', e.target.value)}
-                                    className="w-full min-w-0 rounded-lg border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs text-center font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500 bg-white dark:bg-slate-850"
+                                    className="h-8 w-full min-w-0 px-2 text-center text-xs font-bold"
                                   />
                                 </div>
-                              </div>
+                              </Card>
                             );
                           })}
-                          </div>
-                        </div>
-
-                        <div>
-                          <input
-                             type="text"
-                             placeholder="Remarks (e.g. Notebook score, subject enrichment notes)"
-                             value={sub.remarks}
-                             onChange={(e) => handlePrevSubjectChange(idx, 'remarks', e.target.value)}
-                             className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-xs font-medium text-slate-500 dark:text-slate-350 outline-none focus:border-blue-500"
-                           />
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+
+                      <Input
+                        type="text"
+                        placeholder="Remarks (e.g. Notebook score, subject enrichment notes)"
+                        value={sub.remarks}
+                        onChange={(e) => handlePrevSubjectChange(idx, 'remarks', e.target.value)}
+                        className="h-10 rounded-xl bg-white text-xs font-medium dark:bg-slate-900"
+                      />
+                    </Card>
+                  );
+                })}
               </div>
+            </div>
 
-
-
-              {/* Actions */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setIsAddPrevOpen(false)}
-                  className="px-6 py-2.5 rounded-xl border border-slate-100 dark:border-slate-800 text-slate-500 font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSavingPrev}
-                  className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm shadow-blue-500/10 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center gap-2"
-                >
-                  {isSavingPrev && <Loader2 size={14} className="animate-spin" />}
-                  Save Result
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            {/* Actions */}
+            <div className="flex shrink-0 flex-col-reverse gap-3 border-t border-slate-100 pt-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-end">
+              <Button type="button" variant="outline" onClick={() => setIsAddPrevOpen(false)} className="rounded-xl px-6 text-xs font-bold">
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSavingPrev} className="gap-2 rounded-xl px-6 text-xs font-bold">
+                {isSavingPrev && <Loader2 size={14} className="animate-spin" />}
+                Save Result
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

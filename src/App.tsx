@@ -262,6 +262,7 @@ const SchoolAttendanceSystem = lazy(() => import("./pages/school/teacher/Attenda
 const SchoolAssignmentManagement = lazy(() => import("./pages/school/teacher/AssignmentManagement"));
 const SchoolAssessmentSystem = lazy(() => import("./pages/school/teacher/AssessmentSystem"));
 const SchoolAssessmentDetails = lazy(() => import("./pages/school/teacher/AssessmentDetails"));
+const SchoolAssessmentForm = lazy(() => import("./pages/school/teacher/AssessmentForm"));
 const SchoolAssessmentSubmissionReview = lazy(() => import("./pages/school/teacher/AssessmentSubmissionReview"));
 const SchoolTeacherReports = lazy(() => import("./pages/school/teacher/Reports"));
 const SchoolTeacherStudentClasses = lazy(() => import("./pages/school/teacher/StudentReportClasses"));
@@ -601,6 +602,8 @@ const SchoolRoutes = () => (
       <Route path="assignments" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'assignments' }}><SchoolAssignmentManagement /></SchoolGuard>} />
       <Route path="assessments" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'assessments' }}><SchoolAssessmentSystem /></SchoolGuard>} />
       <Route path="assessments/:id/submissions/:studentId/review" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'assessments' }}><SchoolAssessmentSubmissionReview /></SchoolGuard>} />
+      <Route path="assessments/new" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'assessments' }}><SchoolAssessmentForm /></SchoolGuard>} />
+      <Route path="assessments/:id/edit" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'assessments' }}><SchoolAssessmentForm /></SchoolGuard>} />
       <Route path="assessments/:id" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'assessments' }}><SchoolAssessmentDetails /></SchoolGuard>} />
       <Route path="reports" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'reports' }}><SchoolTeacherReports /></SchoolGuard>} />
       <Route path="reports/student/:id" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'reports' }}><SchoolTeacherStudentClasses /></SchoolGuard>} />
