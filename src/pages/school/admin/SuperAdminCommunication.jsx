@@ -12,20 +12,22 @@ import { motion } from 'framer-motion';
 import Communications from './Communications';
 import { MAINTENANCE_MESSAGE, MAINTENANCE_TITLE } from '@/components/shared/MaintenanceNotice';
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
 // ── Shared helpers ─────────────────────────────────────────────────────────
 
 const CATEGORIES = [
-  { value: 'GENERAL', label: 'General', color: 'bg-slate-100 text-slate-700' },
-  { value: 'ACADEMIC', label: 'Academic', color: 'bg-blue-100 text-blue-700' },
-  { value: 'ADMINISTRATIVE', label: 'Administrative', color: 'bg-violet-100 text-violet-700' },
-  { value: 'MAINTENANCE', label: 'Maintenance', color: 'bg-amber-100 text-amber-800' },
-  { value: 'EMERGENCY', label: 'Emergency', color: 'bg-red-100 text-red-700' },
+  { value: 'GENERAL', label: 'General', color: 'bg-slate-100 text-slate-700 hover:bg-slate-100' },
+  { value: 'ACADEMIC', label: 'Academic', color: 'bg-blue-100 text-blue-700 hover:bg-blue-100' },
+  { value: 'ADMINISTRATIVE', label: 'Administrative', color: 'bg-violet-100 text-violet-700 hover:bg-violet-100' },
+  { value: 'MAINTENANCE', label: 'Maintenance', color: 'bg-amber-100 text-amber-800 hover:bg-amber-100' },
+  { value: 'EMERGENCY', label: 'Emergency', color: 'bg-red-100 text-red-700 hover:bg-red-100' },
 ];
 const PRIORITIES = [
-  { value: 'NORMAL', label: 'Normal', color: 'bg-slate-100 text-slate-700' },
-  { value: 'HIGH', label: 'High', color: 'bg-orange-100 text-orange-700' },
-  { value: 'URGENT', label: 'Urgent', color: 'bg-red-100 text-red-700' },
+  { value: 'NORMAL', label: 'Normal', color: 'bg-slate-100 text-slate-700 hover:bg-slate-100' },
+  { value: 'HIGH', label: 'High', color: 'bg-orange-100 text-orange-700 hover:bg-orange-100' },
+  { value: 'URGENT', label: 'Urgent', color: 'bg-red-100 text-red-700 hover:bg-red-100' },
 ];
 const ROLES_OPTIONS = [
   { value: null, label: 'All Users' },
@@ -51,7 +53,7 @@ function StatCard({ icon, label, value, sub, tone }) {
   return (
     <div className={`rounded-2xl border p-3 sm:p-5 ${tones[tone] ?? tones.blue}`}>
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-        <div className="grid h-8 w-8 sm:h-10 sm:w-10 place-items-center rounded-xl bg-white shadow-sm shrink-0">{icon}</div>
+        <div className="grid size-8 sm:size-10 place-items-center rounded-xl bg-white shadow-sm shrink-0">{icon}</div>
         <div className="min-w-0">
           <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wide opacity-70 truncate">{label}</p>
           <p className="text-lg sm:text-2xl font-black mt-0.5 sm:mt-0 leading-tight">{value}</p>
@@ -327,8 +329,8 @@ export default function SuperAdminCommunication() {
         <div className="pt-0">
           <div className="mb-4 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 bg-blue-100 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
             <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-sm">
-                <Radio className="h-5 w-5" />
+              <div className="grid size-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-sm">
+                <Radio className="size-5" />
               </div>
               <div>
                 <h1 className="font-display text-2xl font-bold text-slate-950 dark:text-white">
@@ -345,22 +347,22 @@ export default function SuperAdminCommunication() {
           {activeTab !== 'chat' && (
             <div className="mb-5 grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
               <StatCard
-                icon={<Building2 className="h-5 w-5 text-blue-600" />}
+                icon={<Building2 className="size-5 text-blue-600" />}
                 label="Total Institutes" value={institutes.length}
                 sub="active on platform" tone="blue"
               />
               <StatCard
-                icon={<Send className="h-5 w-5 text-violet-600" />}
+                icon={<Send className="size-5 text-violet-600" />}
                 label="Total Notices" value={log.length || '—'}
                 sub="platform-wide" tone="violet"
               />
               <StatCard
-                icon={<Bell className="h-5 w-5 text-emerald-650" />}
+                icon={<Bell className="size-5 text-emerald-650" />}
                 label="Today's Broadcasts" value={todayBroadcasts || '—'}
                 sub="sent today" tone="emerald"
               />
               <StatCard
-                icon={<AlertTriangle className="h-5 w-5 text-amber-600" />}
+                icon={<AlertTriangle className="size-5 text-amber-600" />}
                 label="Urgent Notices" value={urgentNotices || '—'}
                 sub="high priority" tone="amber"
               />
@@ -378,7 +380,7 @@ export default function SuperAdminCommunication() {
                     : 'bg-white border-slate-200 sm:bg-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'
                   }`}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="size-4" />
                 {label}
               </button>
             ))}
@@ -402,7 +404,7 @@ export default function SuperAdminCommunication() {
             <form onSubmit={handleSend} className="w-full">
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900 space-y-5">
                 <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Globe className="h-4 w-4 text-blue-600" />
+                  <Globe className="size-4 text-blue-600" />
                   New Broadcast
                 </h2>
 
@@ -419,7 +421,7 @@ export default function SuperAdminCommunication() {
                       onClick={applyMaintenanceTemplate}
                       className="inline-flex items-center justify-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-700"
                     >
-                      <AlertTriangle className="h-4 w-4" />
+                      <AlertTriangle className="size-4" />
                       Use Maintenance Template
                     </button>
                   </div>
@@ -505,7 +507,7 @@ export default function SuperAdminCommunication() {
                             : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300'
                           } px-4`}
                       >
-                        <Icon className="h-4 w-4" />{label}
+                        <Icon className="size-4" />{label}
                       </button>
                     ))}
                   </div>
@@ -516,9 +518,9 @@ export default function SuperAdminCommunication() {
                     <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Choose Institutes
                       {form.selectedInstitutes.length > 0 && (
-                        <span className="ml-2 rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-bold text-white">
+                        <Badge className="ml-2 rounded-full bg-blue-600 text-[10px] font-bold text-white hover:bg-blue-600">
                           {form.selectedInstitutes.length} selected
-                        </span>
+                        </Badge>
                       )}
                     </label>
                     <div ref={dropRef} className="relative">
@@ -532,7 +534,7 @@ export default function SuperAdminCommunication() {
                             ? 'Click to select institutes…'
                             : `${form.selectedInstitutes.length} institute${form.selectedInstitutes.length !== 1 ? 's' : ''} selected`}
                         </span>
-                        <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
+                        <ChevronDown className="size-4 shrink-0 text-slate-400" />
                       </button>
                       {instDropOpen && (
                         <div className="absolute z-20 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-600 dark:bg-slate-900 max-h-56 overflow-y-auto">
@@ -558,8 +560,8 @@ export default function SuperAdminCommunication() {
                                   className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800 ${sel ? 'text-blue-700 font-semibold dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'
                                     }`}
                                 >
-                                  <div className={`h-4 w-4 rounded border-2 transition-colors ${sel ? 'border-blue-600 bg-blue-600' : 'border-slate-300'} grid place-items-center`}>
-                                    {sel && <CheckCircle2 className="h-3 w-3 text-white" />}
+                                  <div className={`size-4 rounded border-2 transition-colors ${sel ? 'border-blue-600 bg-blue-600' : 'border-slate-300'} grid place-items-center`}>
+                                    {sel && <CheckCircle2 className="size-3 text-white" />}
                                   </div>
                                   {inst.name}
                                 </button>
@@ -574,12 +576,12 @@ export default function SuperAdminCommunication() {
 
                 {error && (
                   <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-400">
-                    <AlertTriangle className="h-4 w-4 shrink-0" />{error}
+                    <AlertTriangle className="size-4 shrink-0" />{error}
                   </div>
                 )}
                 {success && (
                   <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-400">
-                    <CheckCircle2 className="h-4 w-4 shrink-0" />{success}
+                    <CheckCircle2 className="size-4 shrink-0" />{success}
                   </div>
                 )}
 
@@ -596,7 +598,7 @@ export default function SuperAdminCommunication() {
                     disabled={sending}
                     className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:brightness-110 disabled:opacity-60"
                   >
-                    {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    {sending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
                     {sending ? 'Sending…' : 'Send Broadcast'}
                   </button>
                 </div>
@@ -633,7 +635,7 @@ export default function SuperAdminCommunication() {
                   </div>
                 )}
                 <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 flex-1 min-w-48 w-full">
-                  <Search className="h-4 w-4 shrink-0 text-slate-400" />
+                  <Search className="size-4 shrink-0 text-slate-400" />
                   <input
                     placeholder="Search by title or message…"
                     value={logSearch}
@@ -642,7 +644,7 @@ export default function SuperAdminCommunication() {
                   />
                   {logSearch && (
                     <button onClick={() => setLogSearch('')}>
-                      <X className="h-3.5 w-3.5 text-slate-400 hover:text-slate-700" />
+                      <X className="size-3.5 text-slate-400 hover:text-slate-700" />
                     </button>
                   )}
                 </div>
@@ -650,11 +652,11 @@ export default function SuperAdminCommunication() {
 
               {logLoading ? (
                 <div className="flex h-48 items-center justify-center">
-                  <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                  <Loader2 className="size-6 animate-spin text-blue-600" />
                 </div>
               ) : filteredLog.length === 0 ? (
                 <div className="flex h-48 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
-                  <Megaphone className="h-10 w-10 text-slate-300" />
+                  <Megaphone className="size-10 text-slate-300" />
                   <p className="text-sm font-semibold text-slate-400">No notices found</p>
                 </div>
               ) : (
@@ -679,7 +681,7 @@ export default function SuperAdminCommunication() {
                               }}
                               className="shrink-0 p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-600 transition"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="size-4" />
                             </button>
                           </div>
                           <p className="text-xs text-slate-500 line-clamp-2">{n.content}</p>
@@ -695,20 +697,20 @@ export default function SuperAdminCommunication() {
 
                   {/* Desktop Table */}
                   <div className="hidden sm:block w-full overflow-x-auto">
-                    <table className="w-full text-sm min-w-[800px]">
-                      <thead>
-                        <tr className="border-b border-slate-100 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
+                    <Table className="w-full text-sm min-w-[800px]">
+                      <TableHeader>
+                        <TableRow className="border-b border-slate-100 bg-slate-50 dark:border-slate-700 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
                           {['Title', 'Institute', 'Category', 'Priority', 'Posted', 'Audience', ''].map(h => (
-                            <th
+                            <TableHead
                               key={h}
-                              className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap"
+                              className="h-auto px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap"
                             >
                               {h}
-                            </th>
+                            </TableHead>
                           ))}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody className="divide-y divide-slate-100 dark:divide-slate-700">
                         {paginatedDesktopLog.map(n => {
                           const cat = catMeta(n.category);
                           const pri = priMeta(n.priority);
@@ -716,33 +718,33 @@ export default function SuperAdminCommunication() {
                             ? n.targetRoles.map(r => r.charAt(0) + r.slice(1).toLowerCase()).join(', ')
                             : 'All Users';
                           return (
-                            <tr
+                            <TableRow
                               key={n.id}
                               onClick={() => setSelectedNotice(n)}
                               className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                             >
-                              <td className="px-4 py-3.5 max-w-xs">
+                              <TableCell className="px-4 py-3.5 max-w-xs">
                                 <p className="font-semibold text-slate-900 dark:text-white truncate">{n.title}</p>
                                 <p className="mt-0.5 text-xs text-slate-400 line-clamp-1">{n.content}</p>
-                              </td>
-                              <td className="px-4 py-3.5 text-slate-600 dark:text-slate-350 text-xs">
+                              </TableCell>
+                              <TableCell className="px-4 py-3.5 text-slate-600 dark:text-slate-350 text-xs">
                                 {n.instituteName ?? n.instituteId?.slice(0, 8) ?? '—'}
-                              </td>
-                              <td className="hidden md:table-cell px-4 py-3.5">
-                                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${cat.color}`}>
+                              </TableCell>
+                              <TableCell className="hidden md:table-cell px-4 py-3.5">
+                                <Badge variant="secondary" className={`rounded-full border-transparent text-xs font-semibold ${cat.color}`}>
                                   {cat.label}
-                                </span>
-                              </td>
-                              <td className="hidden md:table-cell px-4 py-3.5">
-                                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${pri.color}`}>
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="hidden md:table-cell px-4 py-3.5">
+                                <Badge variant="secondary" className={`rounded-full border-transparent text-xs font-semibold ${pri.color}`}>
                                   {pri.label}
-                                </span>
-                              </td>
-                              <td className="hidden lg:table-cell px-4 py-3.5 text-xs text-slate-500">
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="hidden lg:table-cell px-4 py-3.5 text-xs text-slate-500">
                                 {fmtDate(n.postedDate ?? n.createdAt)}
-                              </td>
-                              <td className="hidden lg:table-cell px-4 py-3.5 text-xs text-slate-500">{audience}</td>
-                              <td className="px-4 py-3.5">
+                              </TableCell>
+                              <TableCell className="hidden lg:table-cell px-4 py-3.5 text-xs text-slate-500">{audience}</TableCell>
+                              <TableCell className="px-4 py-3.5">
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -750,14 +752,14 @@ export default function SuperAdminCommunication() {
                                   }}
                                   className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors dark:hover:bg-red-950"
                                 >
-                                  <Trash2 className="h-4 w-4" />
+                                  <Trash2 className="size-4" />
                                 </button>
-                              </td>
-                            </tr>
+                              </TableCell>
+                            </TableRow>
                           );
                         })}
-                      </tbody>
-                    </table>
+                      </TableBody>
+                    </Table>
                   </div>
 
                   {/* Footer / Pagination */}
@@ -840,7 +842,7 @@ export default function SuperAdminCommunication() {
                 onClick={() => setSelectedNotice(null)}
                 className="rounded-full p-1.5 hover:bg-slate-100 dark:hover:bg-slate-900 transition text-slate-500 hover:text-slate-700"
               >
-                <X className="h-5 w-5" />
+                <X className="size-5" />
               </button>
             </div>
             <div className="space-y-4">

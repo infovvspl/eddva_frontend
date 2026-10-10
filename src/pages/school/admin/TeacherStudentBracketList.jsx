@@ -3,6 +3,9 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Search, GraduationCap, Award, Loader2, Download, ExternalLink } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 const BRACKET_CONFIGS = {
   outstanding: {
@@ -148,7 +151,7 @@ export default function TeacherStudentBracketList() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-32 space-y-4">
+      <div className="flex flex-col items-center justify-center py-32 gap-y-4">
         <Loader2 size={40} className="animate-spin text-blue-600" />
         <p className="text-sm font-bold text-slate-500 uppercase tracking-widest animate-pulse">
           Loading Bracket Details...
@@ -214,7 +217,7 @@ export default function TeacherStudentBracketList() {
         {/* Controls */}
         <div className="p-6 md:p-8 border-b border-slate-100 dark:border-slate-800/80 flex flex-col sm:flex-row gap-4 justify-between items-center bg-slate-50/50 dark:bg-slate-900/10">
           <div className="relative w-full sm:max-w-md">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -229,41 +232,43 @@ export default function TeacherStudentBracketList() {
             onClick={downloadCSV}
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-slate-700 shadow-sm transition disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
           >
-            <Download className="h-4 w-4" />
+            <Download className="size-4" />
             Export CSV
           </button>
         </div>
 
         {/* Desktop View */}
         <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[600px]">
-            <thead>
-              <tr className="bg-slate-50/40 text-slate-500 dark:bg-slate-900/40 border-b border-slate-100 dark:border-slate-800">
-                <th className="px-8 py-4 text-[10px] font-bold uppercase tracking-widest">Student Name</th>
-                <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest">Enrollment No.</th>
-                <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest">Class/Section</th>
-                <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-center">Attendance</th>
-                <th className="px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-right">Avg Score</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          <Table className="w-full text-left border-collapse min-w-[600px]">
+            <TableHeader>
+              <TableRow className="bg-slate-50/40 text-slate-500 dark:bg-slate-900/40 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/40 dark:hover:bg-slate-900/40">
+                <TableHead className="h-auto px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Student Name</TableHead>
+                <TableHead className="h-auto px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Enrollment No.</TableHead>
+                <TableHead className="h-auto px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Class/Section</TableHead>
+                <TableHead className="h-auto px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-center text-slate-500">Attendance</TableHead>
+                <TableHead className="h-auto px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-right text-slate-500">Avg Score</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-slate-100 dark:divide-slate-800">
               {filteredStudents.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="px-8 py-16 text-center text-slate-400 font-bold">
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan="5" className="px-8 py-16 text-center text-slate-400 font-bold">
                     No students in this bracket matching the search query.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : (
                 filteredStudents.map((student) => (
-                  <tr
+                  <TableRow
                     key={student.id}
                     className="hover:bg-slate-50/40 dark:hover:bg-slate-900/20 transition-all duration-150"
                   >
-                    <td className="px-8 py-4.5">
+                    <TableCell className="px-8 py-4.5">
                       <div className="flex items-center gap-4">
-                        <div className="h-10 w-10 shrink-0 overflow-hidden rounded-2xl bg-slate-100 flex items-center justify-center font-bold text-slate-700 dark:bg-slate-900 dark:text-slate-300">
-                          {student.name.slice(0, 1).toUpperCase()}
-                        </div>
+                        <Avatar className="size-10 shrink-0 rounded-2xl bg-slate-100 dark:bg-slate-900">
+                          <AvatarFallback className="rounded-2xl bg-slate-100 font-bold text-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                            {student.name.slice(0, 1).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
                         <div>
                           <Link
                             to={`/school/admin/students/${student.id}`}
@@ -274,36 +279,36 @@ export default function TeacherStudentBracketList() {
                           </Link>
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4.5 font-bold text-slate-600 dark:text-slate-400">
+                    </TableCell>
+                    <TableCell className="px-6 py-4.5 font-bold text-slate-600 dark:text-slate-400">
                       {student.enrollmentNo || '-'}
-                    </td>
-                    <td className="px-6 py-4.5 font-bold text-slate-600 dark:text-slate-400">
+                    </TableCell>
+                    <TableCell className="px-6 py-4.5 font-bold text-slate-600 dark:text-slate-400">
                       {student.class || '-'}
-                    </td>
-                    <td className="px-6 py-4.5 text-center">
+                    </TableCell>
+                    <TableCell className="px-6 py-4.5 text-center">
                       {student.attendance !== undefined ? (
-                        <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${
+                        <Badge className={`rounded-lg text-[10px] font-bold border-transparent ${
                           student.attendance >= 75
-                            ? 'bg-emerald-500/10 text-emerald-600'
-                            : 'bg-rose-500/10 text-rose-500'
+                            ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/10'
+                            : 'bg-rose-500/10 text-rose-500 hover:bg-rose-500/10'
                         }`}>
                           {student.attendance}%
-                        </span>
+                        </Badge>
                       ) : (
                         <span className="text-slate-400 font-bold">—</span>
                       )}
-                    </td>
-                    <td className="px-8 py-4.5 text-right font-black text-base">
+                    </TableCell>
+                    <TableCell className="px-8 py-4.5 text-right font-black text-base">
                       <span className={config.textColor}>
                         {Math.round(student.avgScore)}%
                       </span>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
 
         {/* Mobile View */}
@@ -316,9 +321,11 @@ export default function TeacherStudentBracketList() {
             filteredStudents.map((student) => (
               <div key={student.id} className="p-4 space-y-3 hover:bg-slate-50/40 transition-colors">
                 <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-2xl bg-slate-100 flex items-center justify-center font-bold text-slate-700 dark:bg-slate-900 dark:text-slate-300">
-                    {student.name.slice(0, 1).toUpperCase()}
-                  </div>
+                  <Avatar className="size-10 shrink-0 rounded-2xl bg-slate-100 dark:bg-slate-900">
+                    <AvatarFallback className="rounded-2xl bg-slate-100 font-bold text-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                      {student.name.slice(0, 1).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                   <div className="min-w-0 flex-1">
                     <Link
                       to={`/school/admin/students/${student.id}`}

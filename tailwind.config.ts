@@ -18,7 +18,7 @@ export default {
         "4xl": "2560px",
       },
       fontFamily: {
-        sans: ['var(--font-sans, "Plus Jakarta Sans")', "system-ui", "sans-serif"],
+        sans: ["Poppins", "system-ui", "sans-serif"],
         poppins: ["Poppins", "system-ui", "sans-serif"],
       },
       colors: {

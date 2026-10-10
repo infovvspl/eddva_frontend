@@ -33,6 +33,7 @@ import {
   resolveBatchExamTargetFormState,
 } from "@/lib/batch-form";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1065,13 +1066,8 @@ function EditBatchModal({ batch, onClose, commissionPercent }: { batch: any; onC
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 12 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 12 }}
-        className="w-full max-w-xl bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
-      >
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-xl p-0 overflow-hidden max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-slate-100 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
@@ -1079,13 +1075,10 @@ function EditBatchModal({ batch, onClose, commissionPercent }: { batch: any; onC
               <Edit2 className="w-4 h-4 text-white" />
             </div>
             <div>
-              <h3 className="text-base font-black text-slate-900">Edit Course</h3>
+              <DialogTitle className="text-base font-black text-slate-900">Edit Course</DialogTitle>
               <p className="text-[11px] text-slate-400 font-medium truncate max-w-[240px]">{batch.name}</p>
             </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all">
-            <X className="w-4 h-4" />
-          </button>
         </div>
 
         {/* Body */}
@@ -1294,8 +1287,8 @@ function EditBatchModal({ batch, onClose, commissionPercent }: { batch: any; onC
             </Button>
           </div>
         </form>
-      </motion.div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

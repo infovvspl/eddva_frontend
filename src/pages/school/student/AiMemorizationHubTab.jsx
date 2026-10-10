@@ -39,7 +39,7 @@ export default function AiMemorizationHubTab() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
         <div>
           <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-100 dark:bg-indigo-950/50 px-2.5 py-0.5 text-[10px] font-black uppercase text-indigo-800 dark:text-indigo-300">
-            <Sparkles className="h-3 w-3 text-indigo-500" />
+            <Sparkles className="size-3 text-indigo-500" />
             AI Powered Concept Retention
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1">AI Memorization Engine</h2>
@@ -67,7 +67,7 @@ export default function AiMemorizationHubTab() {
                   : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
               }`}
             >
-              <Icon className="h-3.5 w-3.5" />
+              <Icon className="size-3.5" />
               {tab.label}
             </button>
           );
@@ -77,7 +77,7 @@ export default function AiMemorizationHubTab() {
       {/* Memorization Grid */}
       {loading ? (
         <div className="py-12 text-center">
-          <Brain className="mx-auto h-8 w-8 animate-pulse text-indigo-500" />
+          <Brain className="mx-auto size-8 animate-pulse text-indigo-500" />
           <p className="mt-2 text-xs font-bold text-slate-400">AI is analyzing weak concepts & building retention tools...</p>
         </div>
       ) : filteredItems.length === 0 ? (
@@ -158,7 +158,7 @@ export default function AiMemorizationHubTab() {
                   {isFlashcard ? (
                     <>
                       <span>{isFlipped ? 'Tap to flip back' : 'Tap to reveal answer / details'}</span>
-                      <ChevronRight className="h-4 w-4 transition group-hover:translate-x-1" />
+                      <ChevronRight className="size-4 transition group-hover:translate-x-1" />
                     </>
                   ) : (
                     <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">

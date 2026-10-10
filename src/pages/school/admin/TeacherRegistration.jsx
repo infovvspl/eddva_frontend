@@ -73,10 +73,10 @@ export default function TeacherRegistration() {
             <button
               type="button"
               onClick={goBack}
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 sm:h-12 sm:w-12"
+              className="grid size-10 shrink-0 place-items-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 sm:size-12"
               aria-label="Back to teachers"
             >
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft className="size-5" />
             </button>
             <div className="min-w-0">
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-600 sm:text-[11px] sm:tracking-[0.22em]">
@@ -92,7 +92,7 @@ export default function TeacherRegistration() {
         <div className="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-xl shadow-slate-200/60 dark:border-slate-800 dark:bg-slate-950 dark:shadow-none sm:rounded-[24px]">
           {loading ? (
             <div className="flex min-h-[520px] items-center justify-center gap-3 text-sm font-bold text-slate-500 dark:text-slate-400">
-              <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+              <Loader2 className="size-5 animate-spin text-blue-600" />
               Loading teacher details...
             </div>
           ) : (

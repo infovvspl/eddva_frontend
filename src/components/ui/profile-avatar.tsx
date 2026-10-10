@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { UserRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 function getInitials(name?: string | null) {
   const clean = String(name || '').trim();
@@ -38,29 +39,25 @@ export function ProfileAvatar({
   imageClassName,
   fallbackClassName,
 }: ProfileAvatarProps) {
-  const [imageFailed, setImageFailed] = useState(false);
-
-  useEffect(() => {
-    setImageFailed(false);
-  }, [src]);
-
   const initials = useMemo(() => getInitials(name), [name]);
-  const shouldShowImage = !!src && !imageFailed && !isCartoonAvatar(src);
+  const showImage = !!src && !isCartoonAvatar(src);
 
   return (
-    <div className={cn('relative overflow-hidden bg-slate-100 flex items-center justify-center', className)}>
-      {shouldShowImage ? (
-        <img
+    <Avatar className={cn('bg-slate-100', className)}>
+      {showImage && (
+        <AvatarImage
           src={src ?? undefined}
           alt={alt || name || 'Profile photo'}
-          className={cn('h-full w-full object-cover', imageClassName)}
-          onError={() => setImageFailed(true)}
+          className={cn('object-cover', imageClassName)}
         />
-      ) : initials ? (
-        <span className={cn('font-bold tracking-tight text-slate-700', fallbackClassName)}>{initials}</span>
-      ) : (
-        <UserRound className={cn('text-slate-400', fallbackClassName)} />
       )}
-    </div>
+      <AvatarFallback className="bg-slate-100">
+        {initials ? (
+          <span className={cn('font-bold tracking-tight text-slate-700', fallbackClassName)}>{initials}</span>
+        ) : (
+          <UserRound className={cn('text-slate-400', fallbackClassName)} />
+        )}
+      </AvatarFallback>
+    </Avatar>
   );
 }

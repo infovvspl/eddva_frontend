@@ -4,10 +4,12 @@
 // `allPosts` (for the related rail) is passed down from BlogDetailPage's own
 // useBlogPosts() call rather than fetched here.
 
+import DOMPurify from "dompurify";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Calendar, Clock, User } from "lucide-react";
 import { getCategoryStyle } from "../data/blogCategoryStyle";
 import renderBlogText from "../lib/renderBlogText";
+import { isHtmlBody } from "../lib/blogBody";
 
 const formatDate = iso =>
   new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
@@ -68,7 +70,19 @@ const BlogPost = ({ post, allPosts = [] }) => {
           {sections.map(section => (
             <div className="nw-bpost__section" key={section.heading}>
               <h2 className="nw-bpost__h2">{section.heading}</h2>
-              {renderBlogText(section.body)}
+              {isHtmlBody(section.body) ? (
+                <div
+                  className="nw-bpost__html"
+                  dangerouslySetInnerHTML={{
+                    __html: DOMPurify.sanitize(section.body, {
+                      ADD_ATTR: ["target", "rel", "loading", "data-revision"],
+                      ALLOW_DATA_ATTR: true,
+                    }),
+                  }}
+                />
+              ) : (
+                renderBlogText(section.body)
+              )}
             </div>
           ))}
 

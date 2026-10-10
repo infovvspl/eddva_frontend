@@ -58,10 +58,10 @@ export default function DeviceSettings({ micDeviceId, camDeviceId, onMicChange, 
     <div ref={rootRef} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="grid h-9 w-9 place-items-center rounded-xl text-slate-300 hover:bg-white/10"
+        className="grid size-9 place-items-center rounded-xl text-slate-300 hover:bg-white/10"
         title="Microphone & camera settings"
       >
-        <Settings className="h-5 w-5" />
+        <Settings className="size-5" />
       </button>
 
       {open && (
@@ -69,17 +69,17 @@ export default function DeviceSettings({ micDeviceId, camDeviceId, onMicChange, 
           <div className="mb-2 flex items-center justify-between">
             <span className="text-xs font-black uppercase tracking-wider text-slate-400">Devices</span>
             <div className="flex items-center gap-1">
-              <button onClick={() => void enumerate(true)} className="grid h-7 w-7 place-items-center rounded-lg text-slate-400 hover:bg-white/10" title="Refresh">
-                <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <button onClick={() => void enumerate(true)} className="grid size-7 place-items-center rounded-lg text-slate-400 hover:bg-white/10" title="Refresh">
+                <RefreshCw className={`size-3.5 ${loading ? 'animate-spin' : ''}`} />
               </button>
-              <button onClick={() => setOpen(false)} className="grid h-7 w-7 place-items-center rounded-lg text-slate-400 hover:bg-white/10">
-                <X className="h-3.5 w-3.5" />
+              <button onClick={() => setOpen(false)} className="grid size-7 place-items-center rounded-lg text-slate-400 hover:bg-white/10">
+                <X className="size-3.5" />
               </button>
             </div>
           </div>
 
           {/* Microphone */}
-          <label className="mb-1 flex items-center gap-1.5 text-xs font-bold text-slate-300"><Mic className="h-3.5 w-3.5" /> Microphone</label>
+          <label className="mb-1 flex items-center gap-1.5 text-xs font-bold text-slate-300"><Mic className="size-3.5" /> Microphone</label>
           {mics.length === 0 ? (
             <p className="mb-3 rounded-lg bg-amber-500/15 px-2.5 py-1.5 text-xs font-semibold text-amber-200">No microphone detected — you'll broadcast without audio.</p>
           ) : (
@@ -96,7 +96,7 @@ export default function DeviceSettings({ micDeviceId, camDeviceId, onMicChange, 
           )}
 
           {/* Camera */}
-          <label className="mb-1 flex items-center gap-1.5 text-xs font-bold text-slate-300"><Video className="h-3.5 w-3.5" /> Camera</label>
+          <label className="mb-1 flex items-center gap-1.5 text-xs font-bold text-slate-300"><Video className="size-3.5" /> Camera</label>
           {cams.length === 0 ? (
             <p className="rounded-lg bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-slate-400">No camera detected.</p>
           ) : (

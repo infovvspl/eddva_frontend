@@ -6,9 +6,12 @@
 // set `img` to switch it over.
 
 import { products } from "../data/products";
+import useInView from "../hooks/useInView";
 
 
 const ProductsSection = () => {
+  const [gridRef, gridIn] = useInView({ threshold: 0.12 });
+
   return (
     <section className="nw-products nw-bg-frame" id="nw-product">
       <div className="nw-products__container">
@@ -21,13 +24,13 @@ const ProductsSection = () => {
         </div>
 
         {/* Cards */}
-        <div className="nw-products__grid">
-          {products.map(({ id, title, desc, img, Icon, color, bg, border, btn, btnHover }) => (
+        <div className={`nw-products__grid${gridIn ? " nw-in" : ""}`} ref={gridRef}>
+          {products.map(({ id, title, desc, img, Icon, color, bg, border, btn, btnHover }, i) => (
             <div
               className="nw-products__card"
               key={id}
               id={id}
-              style={{ "--nw-accent": color, background: bg, borderColor: border }}
+              style={{ "--nw-accent": color, background: bg, borderColor: border, "--i": i }}
             >
               <div className="nw-products__card-art">
                 {img ? (

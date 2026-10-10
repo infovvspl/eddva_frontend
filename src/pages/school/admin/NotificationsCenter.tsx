@@ -8,7 +8,7 @@ export default function NotificationsCenter() {
   if (!user) return null;
 
   return (
-    <div className="flex h-full w-full flex-col">
+    <div className="flex size-full flex-col">
       <NotificationCenterContent currentUser={user} />
     </div>
   );

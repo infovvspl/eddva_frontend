@@ -12,6 +12,7 @@ import { useTeachers } from "@/hooks/use-admin";
 import { useMockTests } from "@/hooks/use-admin";
 import { useAdminPresenceStats } from "@/hooks/use-presence";
 import { cn } from "@/lib/utils";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
 const BLUE = "#013889";
 const BLUE_M = "#0257c8";
@@ -228,17 +229,17 @@ export default function ReportsPage() {
           <>
             {/* Desktop Table View */}
             <div className="hidden md:block overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-slate-50/50">
+              <Table className="w-full border-collapse">
+                <TableHeader>
+                  <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
                     {["Batch", "Class / Exam", "Students", "Status"].map((h) => (
-                      <th key={h} className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                      <TableHead key={h} className="h-auto text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
                         {h}
-                      </th>
+                      </TableHead>
                     ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-slate-50">
                   {batchList.map((b: any) => {
                     const statusStyle: Record<string, string> = {
                       active: "bg-emerald-50 text-emerald-600 border-emerald-200",
@@ -246,24 +247,24 @@ export default function ReportsPage() {
                       completed: "bg-blue-50 text-blue-600 border-blue-200",
                     };
                     return (
-                      <tr key={b.id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-6 py-4 font-bold text-slate-900 text-sm">{b.name}</td>
-                        <td className="px-6 py-4">
+                      <TableRow key={b.id} className="hover:bg-slate-50/50 transition-colors">
+                        <TableCell className="px-6 py-4 font-bold text-slate-900 text-sm">{b.name}</TableCell>
+                        <TableCell className="px-6 py-4">
                           <span className="inline-flex px-2.5 py-1 rounded-lg bg-slate-100 text-[10px] font-bold text-slate-600 uppercase tracking-wider">
                             {b.examTarget} · Class {b.class}
                           </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm font-bold text-slate-700">{b.studentCount}</td>
-                        <td className="px-6 py-4">
+                        </TableCell>
+                        <TableCell className="px-6 py-4 text-sm font-bold text-slate-700">{b.studentCount}</TableCell>
+                        <TableCell className="px-6 py-4">
                           <span className={cn("text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border", statusStyle[b.status] ?? statusStyle.inactive)}>
                             {b.status}
                           </span>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     );
                   })}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
 
             {/* Mobile Stack View */}

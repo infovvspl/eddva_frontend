@@ -186,7 +186,7 @@ export default function TreasureHunt() {
   if (loading && stage === 'lobby') {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+        <Loader2 className="size-8 animate-spin text-amber-500" />
         <p className="text-sm font-semibold text-slate-500">Loading learning arcade...</p>
       </div>
     );
@@ -201,7 +201,7 @@ export default function TreasureHunt() {
               to="/school/student/gamification"
               className="inline-flex items-center gap-1.5 text-xs font-black text-slate-500 hover:text-slate-800 dark:hover:text-white transition uppercase tracking-wider"
             >
-              <ArrowLeft className="h-3 w-3" /> Gamification Center
+              <ArrowLeft className="size-3" /> Gamification Center
             </Link>
           </div>
 
@@ -262,12 +262,12 @@ export default function TreasureHunt() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-white/80 dark:bg-slate-950 border border-sky-200 dark:border-sky-800 flex items-center gap-1 ${accentColor}`}>
-                        <Shield className="h-3 w-3" />
+                        <Shield className="size-3" />
                         {quest.difficulty}
                       </span>
                       {isCompleted && (
                         <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">
-                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          <CheckCircle2 className="size-3.5" />
                           COMPLETED
                         </span>
                       )}
@@ -417,7 +417,7 @@ export default function TreasureHunt() {
                       return (
                         <div className="pt-2 pb-1" onClick={(e) => e.stopPropagation()}>
                           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1 mb-1.5">
-                            <BookOpen className={`h-3 w-3 ${accentColor}`} /> Target Chapter
+                            <BookOpen className={`size-3 ${accentColor}`} /> Target Chapter
                           </label>
                           <select
                             value={currentChapterId}
@@ -460,7 +460,7 @@ export default function TreasureHunt() {
                       className={`w-full flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-xs font-bold text-white shadow-sm transition ${btnBg}`}
                     >
                       {isCompleted ? 'Replay Quest Adventure' : currentLvl > 1 ? 'Resume Adventure Map' : 'Enter Quest Map'}
-                      <ChevronRight className="h-3.5 w-3.5" />
+                      <ChevronRight className="size-3.5" />
                     </button>
                   </div>
                 </div>
@@ -505,12 +505,12 @@ export default function TreasureHunt() {
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900 text-center space-y-6">
             <div className="flex justify-center">
               {resultData.passed ? (
-                <div className="h-16 w-16 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20">
-                  <CheckCircle2 className="h-8 w-8" />
+                <div className="size-16 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+                  <CheckCircle2 className="size-8" />
                 </div>
               ) : (
-                <div className="h-16 w-16 rounded-full bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-500/20">
-                  <AlertCircle className="h-8 w-8" />
+                <div className="size-16 rounded-full bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-500/20">
+                  <AlertCircle className="size-8" />
                 </div>
               )}
             </div>
@@ -529,12 +529,12 @@ export default function TreasureHunt() {
             {resultData.passed && (
               <div className="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-950/40 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
                 <div className="flex flex-col items-center justify-center border-r border-slate-200 dark:border-slate-850">
-                  <Star className="h-5 w-5 text-amber-500 fill-current mb-1" />
+                  <Star className="size-5 text-amber-500 fill-current mb-1" />
                   <span className="text-xs text-slate-400 uppercase font-black">Loot Gained</span>
                   <span className="text-base font-black text-slate-900 dark:text-white">+{resultData.xpEarned} XP</span>
                 </div>
                 <div className="flex flex-col items-center justify-center">
-                  <Coins className="h-5 w-5 text-yellow-500 mb-1" />
+                  <Coins className="size-5 text-yellow-500 mb-1" />
                   <span className="text-xs text-slate-400 uppercase font-black">Coins Gained</span>
                   <span className="text-base font-black text-slate-900 dark:text-white">+{resultData.coinsEarned} Coins</span>
                 </div>

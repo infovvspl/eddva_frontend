@@ -4,7 +4,7 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Video, BookOpen, MessageSquare, Users, Layout,
   ChevronRight, Loader2, CheckCircle, Clock,
-  AlertTriangle, Info, BarChart3, Bell, X, BellOff, UserCheck,
+  AlertTriangle, Info, BarChart3, Bell, X, BellOff, UserCheck, Sparkles,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -166,8 +166,8 @@ const TeacherDashboard = () => {
       {/* ── Header ── */}
       <div className="relative overflow-hidden rounded-2xl sm:rounded-[2rem] bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 p-5 sm:p-8 text-white shadow-xl shadow-teal-900/10 flex items-start justify-between">
         <div className="relative z-10">
-          <h1 className="text-xl sm:text-3xl font-black tracking-tight">
-            {greeting}, {user?.name?.split(" ")[0] ?? "Teacher"}! 👨‍🏫✨
+          <h1 className="text-xl sm:text-3xl font-black tracking-tight flex items-center gap-2">
+            {greeting}, {user?.name?.split(" ")[0] ?? "Teacher"}! <Sparkles className="size-6 shrink-0" />
           </h1>
           <p className="mt-2 text-teal-50 font-medium leading-relaxed font-sans text-xs sm:text-sm">{today}</p>
         </div>

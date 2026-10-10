@@ -16,28 +16,30 @@ const FaqBrowser = () => {
   return (
     <section className="nw-faqp" id="nw-faq-browser" ref={ref}>
       <div className="nw-faqp__container">
+        <div className={`nw-faqp__layout${inView ? " nw-in" : ""}`}>
 
-        <div className={`nw-faqp__pills${inView ? " nw-in" : ""}`} role="tablist" aria-label="FAQ category">
-          {faqCategories.map(({ id, label, questions }) => (
-            <button
-              type="button"
-              key={id}
-              role="tab"
-              aria-selected={activeId === id}
-              className={`nw-faqp__pill${activeId === id ? " nw-on" : ""}`}
-              onClick={() => setActiveId(id)}
-            >
-              {label}
-              <span className="nw-faqp__pill-count">{questions.length}</span>
-            </button>
-          ))}
+          <div className="nw-faqp__sidebar" role="tablist" aria-label="FAQ category" aria-orientation="vertical">
+            {faqCategories.map(({ id, label, questions }) => (
+              <button
+                type="button"
+                key={id}
+                role="tab"
+                aria-selected={activeId === id}
+                className={`nw-faqp__sidebar-item${activeId === id ? " nw-on" : ""}`}
+                onClick={() => setActiveId(id)}
+              >
+                <span>{label}</span>
+                <span className="nw-faqp__sidebar-count">{questions.length}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="nw-faqp__panel" key={active.id}>
+            <h2 className="nw-faqp__panel-title">{active.label}</h2>
+            <FaqCategoryAccordion category={active} />
+          </div>
+
         </div>
-
-        <div className="nw-faqp__panel" key={active.id}>
-          <h2 className="nw-faqp__panel-title">{active.label}</h2>
-          <FaqCategoryAccordion category={active} />
-        </div>
-
       </div>
     </section>
   );

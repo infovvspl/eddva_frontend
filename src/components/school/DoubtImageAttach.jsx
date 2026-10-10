@@ -56,7 +56,7 @@ export default function DoubtImageAttach({
           onClick={() => inputRef.current?.click()}
           className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
         >
-          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+          {uploading ? <Loader2 className="size-4 animate-spin" /> : <ImagePlus className="size-4" />}
           {uploading ? 'Uploading…' : label}
         </button>
         {imageUrl && (
@@ -65,7 +65,7 @@ export default function DoubtImageAttach({
             onClick={clear}
             className="inline-flex items-center gap-1 rounded-xl px-2 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
           >
-            <X className="h-4 w-4" /> Remove
+            <X className="size-4" /> Remove
           </button>
         )}
       </div>

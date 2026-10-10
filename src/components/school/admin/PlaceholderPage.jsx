@@ -14,8 +14,8 @@ export default function PlaceholderPage({ title, description, icon: Icon }) {
         animate={{ opacity: 1, y: 0 }}
         className="glass-premium rounded-[2.5rem] p-16 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col items-center justify-center text-center"
       >
-        <div className="w-24 h-24 rounded-full bg-blue-50 dark:bg-slate-900 flex items-center justify-center mb-6">
-          {Icon && <Icon className="w-10 h-10 text-blue-600" />}
+        <div className="size-24 rounded-full bg-blue-50 dark:bg-slate-900 flex items-center justify-center mb-6">
+          {Icon && <Icon className="size-10 text-blue-600" />}
         </div>
         <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white mb-2">Coming Soon</h2>
         <p className="text-slate-500 font-medium max-w-md">

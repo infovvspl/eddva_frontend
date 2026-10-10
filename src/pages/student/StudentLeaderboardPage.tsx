@@ -153,8 +153,8 @@ function MemberRow({ m, idx }: { m: LeaderboardGroupMember; idx: number }) {
       {/* Rank */}
       <div className="flex justify-center text-sm font-black">
         {m.rank === 1 ? <Crown className="h-4 w-4 text-amber-400" fill="currentColor" /> :
-         m.rank === 2 ? <span className="text-slate-400">🥈</span> :
-         m.rank === 3 ? <span className="text-orange-400">🥉</span> :
+         m.rank === 2 ? <Medal className="h-4 w-4 text-slate-400" /> :
+         m.rank === 3 ? <Medal className="h-4 w-4 text-orange-400" /> :
          <span className="text-slate-400 text-[13px]">{m.rank}</span>}
       </div>
 

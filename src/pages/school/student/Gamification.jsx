@@ -178,7 +178,7 @@ export default function Gamification() {
                   : 'border-lime-400/30 bg-lime-400/10 text-lime-300'
               }`}
             >
-              {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+              {isMuted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
               <span className="hidden sm:inline">{isMuted ? 'Muted' : 'Sound'}</span>
             </button>
 
@@ -191,7 +191,7 @@ export default function Gamification() {
                   : 'border-white/10 bg-white/[0.03] text-slate-400'
               }`}
             >
-              <Music className={`h-4 w-4 ${isMusicOn ? 'animate-pulse' : ''}`} />
+              <Music className={`size-4 ${isMusicOn ? 'animate-pulse' : ''}`} />
               <span className="hidden sm:inline">{isMusicOn ? 'BGM On' : 'BGM Off'}</span>
             </button>
 
@@ -200,7 +200,7 @@ export default function Gamification() {
               title="Audio Settings"
               className={`${iconBtn} border-white/10 bg-white/[0.03] text-slate-300 hover:border-cyan-400/30`}
             >
-              <Settings className="h-4 w-4" />
+              <Settings className="size-4" />
               <span className="hidden sm:inline">Settings</span>
             </button>
 
@@ -209,7 +209,7 @@ export default function Gamification() {
               title="Exit to dashboard"
               className={`${iconBtn} border-white/10 bg-white/[0.03] text-slate-300 hover:border-rose-400/35 hover:text-rose-300`}
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="size-4" />
               <span className="hidden sm:inline">Exit</span>
             </button>
           </div>
@@ -237,7 +237,7 @@ export default function Gamification() {
             </h2>
             <div className="mt-2.5 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
               <span className="qr-chip qr-flicker inline-flex items-center gap-1.5 border border-orange-400/35 bg-orange-500/10 px-2.5 py-1 text-[11px] font-bold text-orange-300">
-                <Flame className="h-3.5 w-3.5 fill-current" />
+                <Flame className="size-3.5 fill-current" />
                 {currentStreak} day streak
               </span>
               <span className="qr-read text-[11px] font-medium text-slate-500">
@@ -254,7 +254,7 @@ export default function Gamification() {
               { label: 'Wallet', value: `₹${walletInr.toFixed(0)}`, icon: Wallet, tone: 'text-lime-300', glow: '' },
             ].map((s) => (
               <div key={s.label} className="qr-chip border border-white/10 bg-white/[0.03] px-3 py-2.5 text-center sm:min-w-[92px]">
-                <s.icon className={`mx-auto h-3.5 w-3.5 ${s.tone}`} />
+                <s.icon className={`mx-auto size-3.5 ${s.tone}`} />
                 <p className={`qr-display mt-1.5 text-lg font-bold tabular-nums leading-none ${s.tone} ${s.glow}`}>
                   {s.value}
                 </p>
@@ -279,7 +279,7 @@ export default function Gamification() {
                     : 'border-white/10 bg-white/[0.03] text-slate-400 hover:border-cyan-400/30 hover:text-cyan-200'
                 }`}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="size-4" />
                 <span>{tab.label}</span>
                 {tab.badge && (
                   <span className={`rounded px-1.5 py-0.5 text-[9px] font-bold ${
@@ -315,7 +315,7 @@ export default function Gamification() {
                         {game.badge}
                       </span>
                       <GameIcon
-                        className="h-6 w-6 shrink-0 transition-transform duration-300 group-hover:scale-110"
+                        className="size-6 shrink-0 transition-transform duration-300 group-hover:scale-110"
                         style={{ color: game.accent }}
                       />
                     </div>
@@ -336,10 +336,10 @@ export default function Gamification() {
                       Insert coin
                     </span>
                     <span
-                      className="flex h-8 w-8 items-center justify-center rounded-full border transition-transform duration-300 group-hover:translate-x-1"
+                      className="flex size-8 items-center justify-center rounded-full border transition-transform duration-300 group-hover:translate-x-1"
                       style={{ borderColor: `${game.accent}55`, color: game.accent, background: `${game.accent}14` }}
                     >
-                      <ChevronRight className="h-4 w-4" />
+                      <ChevronRight className="size-4" />
                     </span>
                   </div>
                 </Link>

@@ -82,7 +82,7 @@ function DoubtHistoryCard({ hd }: { hd: any }) {
         <div className="mt-2 bg-white p-3 rounded-lg border border-slate-100 text-slate-600">
           <div className="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-slate-50">
             <p className="font-bold text-violet-700 text-[9px] uppercase tracking-wider flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5" /> AI Explanation
+              <Sparkles className="size-3.5" /> AI Explanation
             </p>
             {parsedAi && (
               <div className="flex items-center gap-0.5 rounded-md bg-slate-100 p-0.5">
@@ -334,11 +334,11 @@ export function SchoolAskDoubtPanel({
       {/* ── Context Strip ── */}
       <div className="flex items-center gap-2 flex-wrap mb-4">
         <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-violet-700 bg-violet-50 border border-violet-200 px-2.5 py-1 rounded-full">
-          <Clock className="w-3 h-3 shrink-0" />
+          <Clock className="size-3 shrink-0" />
           {fmtTime(timestampSeconds)}
         </span>
         <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full max-w-[180px]">
-          <BookOpen className="w-3 h-3 shrink-0" />
+          <BookOpen className="size-3 shrink-0" />
           <span className="truncate">{subjectName || "General"}</span>
         </span>
       </div>
@@ -359,8 +359,8 @@ export function SchoolAskDoubtPanel({
             )}
           >
             {t === "ai"
-              ? <><Sparkles className="w-3.5 h-3.5" /> Ask AI</>
-              : <><GraduationCap className="w-3.5 h-3.5" /> Ask Teacher</>
+              ? <><Sparkles className="size-3.5" /> Ask AI</>
+              : <><GraduationCap className="size-3.5" /> Ask Teacher</>
             }
           </button>
         ))}
@@ -405,7 +405,7 @@ export function SchoolAskDoubtPanel({
               ]}
               className="w-full text-xs"
             />
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-450" />
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-450" />
           </div>
         </div>
       )}
@@ -424,12 +424,12 @@ export function SchoolAskDoubtPanel({
       >
         {loading ? (
           <>
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <Loader2 className="size-4 animate-spin" />
             {tab === "ai" ? "Thinking…" : "Sending…"}
           </>
         ) : (
           <>
-            {tab === "ai" ? <Sparkles className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+            {tab === "ai" ? <Sparkles className="size-4" /> : <Send className="size-4" />}
             {tab === "ai" ? "Get AI Answer" : "Send to Teacher"}
           </>
         )}
@@ -469,8 +469,8 @@ export function SchoolAskDoubtPanel({
               {/* Response header */}
               <div className="flex items-center justify-between px-4 py-3 border-b border-violet-100">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shrink-0">
-                    <Sparkles className="w-3.5 h-3.5 text-white" />
+                  <div className="size-6 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shrink-0">
+                    <Sparkles className="size-3.5 text-white" />
                   </div>
                   <span className="text-xs font-bold text-violet-800">AI Answer</span>
                 </div>
@@ -505,16 +505,16 @@ export function SchoolAskDoubtPanel({
                   )}
                   <button
                     onClick={() => { resetState(); textareaRef.current?.focus(); }}
-                    className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-100 transition-all"
+                    className="size-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-100 transition-all"
                     title="Ask another question"
                   >
-                    <RefreshCw className="w-3.5 h-3.5" />
+                    <RefreshCw className="size-3.5" />
                   </button>
                   <button
                     onClick={() => setResponseExpanded(v => !v)}
-                    className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
+                    className="size-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
                   >
-                    {responseExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    {responseExpanded ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
                   </button>
                 </div>
               </div>
@@ -602,7 +602,7 @@ export function SchoolAskDoubtPanel({
                             : "bg-white text-slate-500 border-slate-200 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-300",
                         )}
                       >
-                        <ThumbsUp className="w-3.5 h-3.5" /> Yes
+                        <ThumbsUp className="size-3.5" /> Yes
                       </button>
                       <button
                         onClick={() => handleFeedback(false)}
@@ -614,7 +614,7 @@ export function SchoolAskDoubtPanel({
                             : "bg-white text-slate-500 border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-300",
                         )}
                       >
-                        <ThumbsDown className="w-3.5 h-3.5" /> No
+                        <ThumbsDown className="size-3.5" /> No
                       </button>
                       {feedbackMsg && (
                         <span className={cn(
@@ -643,8 +643,8 @@ export function SchoolAskDoubtPanel({
             exit={{ opacity: 0 }}
             className="mt-4 rounded-2xl border border-blue-100 bg-gradient-to-b from-blue-50/60 to-white p-5 text-center"
           >
-            <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center mx-auto mb-3">
-              <CheckCircle className="w-6 h-6 text-blue-600" />
+            <div className="size-12 rounded-2xl bg-blue-100 flex items-center justify-center mx-auto mb-3">
+              <CheckCircle className="size-6 text-blue-600" />
             </div>
             <p className="text-sm font-bold text-blue-800 mb-1">Doubt sent successfully!</p>
             <p className="text-xs text-slate-500 leading-relaxed">
@@ -677,7 +677,7 @@ export function SchoolAskDoubtPanel({
           <div className="mt-8 border-t border-slate-100 pt-6">
             <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
               <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                <Clock className="w-3.5 h-3.5" />
+                <Clock className="size-3.5" />
                 My past doubts
               </h3>
               
@@ -707,7 +707,7 @@ export function SchoolAskDoubtPanel({
             
             {historyLoading ? (
               <div className="flex justify-center py-6">
-                <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+                <Loader2 className="size-5 animate-spin text-slate-400" />
               </div>
             ) : activeHistory.length === 0 ? (
               <p className="text-xs text-slate-400 text-center py-6 font-medium">

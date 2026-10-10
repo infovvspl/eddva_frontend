@@ -55,7 +55,7 @@ export default function AiInsights() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center">
             <div className="p-4 bg-indigo-50 rounded-lg text-indigo-600 mr-4">
-              <Users className="w-8 h-8" />
+              <Users className="size-8" />
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500 uppercase">Active Students</p>
@@ -65,7 +65,7 @@ export default function AiInsights() {
           
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center">
             <div className="p-4 bg-green-50 rounded-lg text-green-600 mr-4">
-              <TrendingUp className="w-8 h-8" />
+              <TrendingUp className="size-8" />
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500 uppercase">Avg Assessment Score</p>
@@ -75,7 +75,7 @@ export default function AiInsights() {
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center">
             <div className="p-4 bg-red-50 rounded-lg text-red-600 mr-4">
-              <AlertTriangle className="w-8 h-8" />
+              <AlertTriangle className="size-8" />
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500 uppercase">At-Risk Students</p>
@@ -87,20 +87,20 @@ export default function AiInsights() {
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <BrainCircuit className="w-5 h-5 mr-2 text-indigo-600" />
+          <BrainCircuit className="size-5 mr-2 text-indigo-600" />
           AI Recommendations
         </h2>
         <ul className="space-y-4 text-gray-700">
           <li className="flex items-start">
-            <span className="h-6 w-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm mr-3 flex-shrink-0">1</span>
+            <span className="size-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm mr-3 flex-shrink-0">1</span>
             <p><strong>Remedial Action:</strong> {stats.riskStudents} students have consistently scored below average in recent mock tests. Consider scheduling a remedial live class for Physics.</p>
           </li>
           <li className="flex items-start">
-            <span className="h-6 w-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm mr-3 flex-shrink-0">2</span>
+            <span className="size-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm mr-3 flex-shrink-0">2</span>
             <p><strong>Engagement Alert:</strong> Platform engagement drops by 15% on weekends. Deploying a weekend quiz with XP rewards might boost activity.</p>
           </li>
           <li className="flex items-start">
-            <span className="h-6 w-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm mr-3 flex-shrink-0">3</span>
+            <span className="size-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm mr-3 flex-shrink-0">3</span>
             <p><strong>Content Optimization:</strong> Study Material "Thermodynamics Basics" has high read times. The content might be too dense and could be split into smaller subtopics.</p>
           </li>
         </ul>

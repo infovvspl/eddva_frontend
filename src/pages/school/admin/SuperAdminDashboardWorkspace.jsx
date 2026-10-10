@@ -41,6 +41,7 @@ import {
   BarChart3,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Badge } from '@/components/ui/badge';
 
 
 function formatNumber(value) {
@@ -71,7 +72,7 @@ function ChartTooltip({ active, payload, label }) {
       <p className="mb-2 font-bold uppercase tracking-wide text-brand-700 dark:text-brand-200">{label}</p>
       {payload.map((entry) => (
         <p key={entry.name} className="flex items-center gap-2 font-semibold" style={{ color: entry.color }}>
-          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
+          <span className="size-2 rounded-full" style={{ backgroundColor: entry.color }} />
           {entry.name}: {entry.value}
         </p>
       ))}
@@ -95,7 +96,7 @@ function StatBadge({ label, value, trend, trendValue, color = 'blue', formatter 
       <div className="mt-1.5 sm:mt-2 flex items-center justify-between gap-1">
         <p className="font-display text-base sm:text-2xl font-bold truncate">{formatter ? formatter(value) : typeof value === 'number' ? formatNumber(value) : value}</p>
         <div className="inline-flex items-center gap-0.5 rounded-full bg-white/70 px-1.5 py-0.5 sm:px-2 sm:py-1 shrink-0">
-          <TrendIcon className={`h-3 w-3 sm:h-3.5 sm:w-3.5 ${trendClass}`} />
+          <TrendIcon className={`size-3 sm:size-3.5 ${trendClass}`} />
           <span className={`text-[10px] sm:text-xs font-bold ${trendClass}`}>{trendValue}%</span>
         </div>
       </div>
@@ -104,26 +105,22 @@ function StatBadge({ label, value, trend, trendValue, color = 'blue', formatter 
 }
 
 function KpiCard({ title, value, icon: Icon, subtext, trend, gradient, delay, formatter }) {
+  const safeGradient = Array.isArray(gradient) ? gradient : ['#2563eb', '#38bdf8', 'bg-gradient-to-br from-blue-600 to-sky-400'];
   const trendValue = typeof trend === 'number' ? trend : 0;
   const TrendIcon = trendValue >= 0 ? ArrowUpRight : ArrowDownRight;
   const trendText = `${trendValue >= 0 ? '+' : ''}${trendValue}%`;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, delay }}
-      className="group relative overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-100 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md dark:border-slate-800 dark:bg-slate-950 flex flex-col justify-between"
-    >
-      <div className="absolute inset-0 opacity-0 transition-all duration-300 group-hover:opacity-100 pointer-events-none" style={{ background: `linear-gradient(135deg, ${gradient[0]}15, ${gradient[1]}15)` }} />
+    <div className="group relative overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-100 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md dark:border-slate-800 dark:bg-slate-950 flex flex-col justify-between">
+      <div className="absolute inset-0 opacity-0 transition-all duration-300 group-hover:opacity-100 pointer-events-none" style={{ background: `linear-gradient(135deg, ${safeGradient[0]}15, ${safeGradient[1]}15)` }} />
       <div className="relative z-10 flex items-center justify-between gap-2 mb-2">
-        <div className={`w-11 h-11 sm:w-12 sm:h-12 min-w-[44px] min-h-[44px] sm:min-w-[48px] sm:min-h-[48px] shrink-0 flex items-center justify-center rounded-2xl ${gradient[2]} text-white shadow-sm ring-1 ring-slate-100/50`}>
-          <Icon className="w-5 h-5 sm:w-6 sm:h-6 shrink-0 stroke-[2.5]" />
+        <div className={`size-11 sm:size-12 min-w-[44px] min-h-[44px] sm:min-w-[48px] sm:min-h-[48px] shrink-0 flex items-center justify-center rounded-2xl ${safeGradient[2]} text-white shadow-sm ring-1 ring-slate-100/50`}>
+          <Icon className="size-5 sm:size-6 shrink-0 stroke-[2.5]" />
         </div>
-        <span className="inline-flex items-center gap-0.5 rounded-full bg-slate-100/80 px-2 py-0.5 text-[10px] font-bold text-slate-700 ring-1 ring-slate-200/60 dark:bg-slate-900 dark:text-slate-200 dark:ring-slate-700 shrink-0 whitespace-nowrap">
-          <TrendIcon className="w-3 h-3 shrink-0 stroke-[2.5]" />
+        <Badge variant="secondary" className="items-center gap-0.5 rounded-full border-transparent bg-slate-100/80 text-[10px] font-bold text-slate-700 ring-1 ring-slate-200/60 dark:bg-slate-900 dark:text-slate-200 dark:ring-slate-700 shrink-0 whitespace-nowrap hover:bg-slate-100/80 dark:hover:bg-slate-900">
+          <TrendIcon className="size-3 shrink-0 stroke-[2.5]" />
           {trendText}
-        </span>
+        </Badge>
       </div>
       <div className="relative z-10 min-w-0">
         <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">{title}</p>
@@ -132,7 +129,7 @@ function KpiCard({ title, value, icon: Icon, subtext, trend, gradient, delay, fo
         </p>
         {subtext && <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">{subtext}</p>}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -249,7 +246,7 @@ function ChartShell({ title, subtitle, badge, badgeClass, children, hasData, emp
           children
         ) : (
           <div className="flex h-full flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-6 text-center dark:border-slate-800 dark:bg-slate-900/50">
-            <BarChart3 className="mb-3 h-9 w-9 text-brand-300 dark:text-brand-700" />
+            <BarChart3 className="mb-3 size-9 text-brand-300 dark:text-brand-700" />
             <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">{emptyTitle}</h4>
             <p className="mt-1 max-w-xs text-xs font-medium leading-5 text-slate-500">{emptyText}</p>
           </div>
@@ -307,32 +304,22 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
   }));
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.35 }}
-      className="space-y-6 pb-12"
-    >
+    <div className="space-y-6 pb-12">
       {/* Hero Section */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.05 }}
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-blue-700 p-4 sm:p-8 text-white shadow-lg"
-      >
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-blue-700 p-4 sm:p-8 text-white shadow-lg">
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white, transparent 50%)' }} />
-        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
+        <div className="absolute -right-20 -top-20 size-64 rounded-full bg-white/10 blur-3xl" />
 
         <div className="relative z-10">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-2 backdrop-blur">
-            <Shield className="h-4 w-4" />
+            <Shield className="size-4" />
             <span className="text-xs font-bold uppercase tracking-wider">Super Admin Dashboard</span>
           </div>
 
           <div className="grid gap-8 lg:grid-cols-2">
             <div>
-              <h1 className="font-display text-2xl sm:text-4xl font-bold leading-tight">
-                Welcome, Super Admin 👋
+              <h1 className="font-display text-2xl sm:text-4xl font-bold leading-tight flex items-center gap-2">
+                Welcome, Super Admin <Sparkles className="size-7 shrink-0" />
               </h1>
               <p className="mt-4 text-lg font-medium text-white/90">
                 Monitor school performance, onboarding, and operational metrics in real-time.
@@ -355,15 +342,10 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
             </div>
           </div>
         </div>
-      </motion.section>
+      </section>
 
       {/* KPI Cards Grid */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.15 }}
-        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 sm:gap-4"
-      >
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 sm:gap-4">
         <KpiCard
           title="Total Schools"
           value={stats?.totalInstitutes || 0}
@@ -437,14 +419,10 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
           gradient={['#0891b2', '#67e8f9', 'bg-gradient-to-br from-cyan-700 to-cyan-300']}
           delay={0.26}
         />
-      </motion.div>
+      </div>
 
       {/* Quick Actions */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.15 }}
-      >
+      <div>
         <div className="rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
           <h3 className="mb-4 font-display text-base sm:text-lg font-bold text-slate-950 dark:text-white">Quick Actions</h3>
           <div className="grid grid-cols-4 gap-1.5 sm:gap-3">
@@ -459,41 +437,31 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
                 onClick={action.action}
                 className="rounded-2xl border border-slate-100 bg-white p-2.5 sm:p-4 text-center transition-all duration-300 hover:-translate-y-1.5 hover:shadow-md hover:border-blue-200 hover:bg-blue-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-700 dark:hover:bg-slate-800 flex flex-col items-center justify-center min-w-0"
               >
-                <div className="mx-auto grid h-8 w-8 sm:h-10 sm:w-10 place-items-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300 shrink-0">
-                  <action.icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                <div className="mx-auto grid size-8 sm:size-10 place-items-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300 shrink-0">
+                  <action.icon className="size-4 sm:size-5" />
                 </div>
                 <p className="mt-1.5 text-[10px] sm:text-xs font-bold text-slate-950 dark:text-white leading-tight break-words w-full truncate sm:overflow-visible sm:whitespace-normal">{action.label}</p>
               </button>
             ))}
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* System Status Cards */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.2 }}
-        className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-4"
-      >
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatBadge label="System Health" value={stats?.systemHealth || 0} trend="up" trendValue={2.1} color="emerald" formatter={(value) => `${Number(value || 0).toFixed(1)}%`} />
         <StatBadge label="AI Requests Today" value={stats?.aiRequestsToday || 0} trend="up" trendValue={aiTrend} color="violet" />
         <StatBadge label="Storage Usage" value={storageUsageGb} trend="up" trendValue={8.2} color="amber" formatter={(value) => `${Number(value || 0).toFixed(1)} GB`} />
         <StatBadge label="Security Alerts" value={stats?.securityAlerts || 0} trend="down" trendValue={42.5} color="blue" />
-      </motion.div>
+      </div>
 
       {/* Management Tables */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.25 }}
-        className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
-      >
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {/* Recent Institute Registrations */}
         <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-950">
           <div className="flex items-start justify-between gap-3">
-            <div className="grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
-              <Building2 className="h-5 w-5 sm:h-6 sm:w-6" />
+            <div className="grid size-10 sm:size-12 place-items-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
+              <Building2 className="size-5 sm:size-6" />
             </div>
           </div>
           <h3 className="mt-3 sm:mt-4 font-display text-base sm:text-lg font-bold text-slate-950 dark:text-white">Recent Registrations</h3>
@@ -513,8 +481,8 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
         {/* Support Tickets */}
         <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-950">
           <div className="flex items-start justify-between gap-3">
-            <div className="grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300">
-              <Ticket className="h-5 w-5 sm:h-6 sm:w-6" />
+            <div className="grid size-10 sm:size-12 place-items-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300">
+              <Ticket className="size-5 sm:size-6" />
             </div>
           </div>
           <h3 className="mt-3 sm:mt-4 font-display text-base sm:text-lg font-bold text-slate-950 dark:text-white">Support Tickets</h3>
@@ -534,8 +502,8 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
         {/* Top Performing Institutes */}
         <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-950">
           <div className="flex items-start justify-between gap-3">
-            <div className="grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300">
-              <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />
+            <div className="grid size-10 sm:size-12 place-items-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300">
+              <TrendingUp className="size-5 sm:size-6" />
             </div>
           </div>
           <h3 className="mt-3 sm:mt-4 font-display text-base sm:text-lg font-bold text-slate-950 dark:text-white">Top Institutes</h3>
@@ -551,15 +519,10 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
             </button>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Analytics Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.3 }}
-        className="grid gap-4 lg:grid-cols-2"
-      >
+      <div className="grid gap-4 lg:grid-cols-2">
         <ChartShell
           title="User Growth"
           subtitle="Cumulative new and active accounts over the last 6 months"
@@ -592,34 +555,21 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
           emptyText="Onboard a school to start seeing registration and approval trends."
         >
           <ResponsiveContainer width="100%" height="100%">
-            <ScatterChart data={registrationBubbleData} margin={{ top: 10, right: 16, left: -18, bottom: 0 }}>
+            <BarChart data={instituteGrowthDisplayData} margin={{ top: 10, right: 16, left: -18, bottom: 0 }}>
               <CartesianGrid stroke={EDDVA[100]} strokeDasharray="4 6" vertical={false} />
-              <XAxis
-                dataKey="monthIndex"
-                type="number"
-                domain={[0.5, Math.max(6.5, registrationBubbleData.length + 0.5)]}
-                tickFormatter={(value) => registrationBubbleData[value - 1]?.name || ''}
-                axisLine={false}
-                tickLine={false}
-                stroke={EDDVA[400]}
-                style={CHART_AXIS_STYLE}
-              />
-              <YAxis dataKey="total" type="number" allowDecimals={false} axisLine={false} tickLine={false} stroke={EDDVA[400]} style={CHART_AXIS_STYLE} />
-              <ZAxis dataKey="bubbleSize" range={[90, 900]} />
-              <RechartsTooltip content={<BubbleTooltip />} />
-              <Scatter name="Registrations" data={registrationBubbleData} fill={EDDVA[600]} />
-            </ScatterChart>
+              <XAxis dataKey="name" axisLine={false} tickLine={false} stroke={EDDVA[400]} style={CHART_AXIS_STYLE} />
+              <YAxis allowDecimals={false} axisLine={false} tickLine={false} stroke={EDDVA[400]} style={CHART_AXIS_STYLE} />
+              <RechartsTooltip content={<ChartTooltip />} />
+              <Legend iconType="circle" />
+              <Bar dataKey="institutes" name="Registered" fill={EDDVA[600]} radius={[8, 8, 0, 0]} maxBarSize={26} />
+              <Bar dataKey="approved" name="Approved" fill={EDDVA[300]} radius={[8, 8, 0, 0]} maxBarSize={26} />
+            </BarChart>
           </ResponsiveContainer>
         </ChartShell>
-      </motion.div>
+      </div>
 
       {/* More Analytics */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.35 }}
-        className="grid gap-4 lg:grid-cols-2"
-      >
+      <div className="grid gap-4 lg:grid-cols-2">
         <ChartShell
           title="Revenue"
           subtitle="Billing trend from finance records"
@@ -671,8 +621,8 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
             </BarChart>
           </ResponsiveContainer>
         </ChartShell>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 }
 

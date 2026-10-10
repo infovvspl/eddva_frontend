@@ -18,6 +18,7 @@ import s23 from "../assets/logos/23.png";
 import s24 from "../assets/logos/24.png";
 import s25 from "../assets/logos/25.png";
 import s26 from "../assets/logos/26.png";
+import useInView from "../hooks/useInView";
 
 const partners = [
   { id: "nw-partner-saraswati",    name: "Saraswati Shishu Mandir",    logo: s17 },
@@ -49,11 +50,13 @@ const Strip = ({ clone }) => (
 );
 
 const PartnersStrip = () => {
+  const [titleRef, titleIn] = useInView({ threshold: 0.4 });
+
   return (
     <section className="nw-partners" id="nw-partners">
       <div className="nw-partners__container">
 
-        <p className="nw-partners__title" id="nw-partners-title">
+        <p className={`nw-partners__title${titleIn ? " nw-in" : ""}`} id="nw-partners-title" ref={titleRef}>
           Preferred by Educators. Trusted by Institutions.
         </p>
 

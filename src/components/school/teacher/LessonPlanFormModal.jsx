@@ -5,6 +5,34 @@ import {
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import { toast } from 'sonner';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+const NONE_VALUE = '__none__';
+
+// shadcn Select can't hold an empty-string value, so the "nothing selected" option is mapped
+// to a sentinel here and translated back to '' for the form state.
+function ModalSelect({ value, onChange, disabled, emptyLabel, children }) {
+  return (
+    <Select
+      value={value ? String(value) : (emptyLabel ? NONE_VALUE : undefined)}
+      onValueChange={(v) => onChange(v === NONE_VALUE ? '' : v)}
+      disabled={disabled}
+    >
+      <SelectTrigger className="h-auto w-full rounded-2xl border-slate-200 px-4 py-2.5 text-xs font-semibold dark:border-slate-800 dark:bg-slate-950 dark:text-white">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {emptyLabel && <SelectItem value={NONE_VALUE} className="text-xs font-semibold">{emptyLabel}</SelectItem>}
+        {children}
+      </SelectContent>
+    </Select>
+  );
+}
 
 export default function LessonPlanFormModal({ open, isOpen, onClose, onSuccess, timetableSlot = null, initialTimetableSlot = null, templateData = null, teacherAssignments = [] }) {
   const isVisible = open ?? isOpen;
@@ -259,35 +287,32 @@ export default function LessonPlanFormModal({ open, isOpen, onClose, onSuccess, 
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm overflow-y-auto">
-      <div className="w-full max-w-4xl rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900 my-8 space-y-6">
+    <Dialog open={isVisible} onOpenChange={(o) => { if (!o) onClose?.(); }}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900 space-y-6">
         {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
-          <div>
-            <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">New Lesson Plan</h2>
-            <p className="text-xs text-slate-500">Generate a quick AI brief to skim before class, or write out full details yourself.</p>
-          </div>
-          <button onClick={onClose} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
-            <X size={20} />
-          </button>
-        </div>
+        <DialogHeader className="border-b border-slate-100 pb-4 dark:border-slate-800 text-left">
+          <DialogTitle className="text-xl font-extrabold text-slate-900 dark:text-white tracking-normal leading-normal">New Lesson Plan</DialogTitle>
+          <DialogDescription className="text-xs text-slate-500">Generate a quick AI brief to skim before class, or write out full details yourself.</DialogDescription>
+        </DialogHeader>
 
         {/* Tabs */}
         <div className="flex gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => setActiveTab('ai')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'ai' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm' : 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'}`}
+            className={`h-auto hover:text-inherit flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'ai' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm' : 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'}`}
           >
             <Sparkles size={15} /> Generate Brief
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => setActiveTab('form')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'form' ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'}`}
+            className={`h-auto flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'form' ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'}`}
           >
             <Edit3 size={15} /> Add Full Details
-          </button>
+          </Button>
         </div>
 
         {activeTab === 'ai' ? (
@@ -319,47 +344,41 @@ export default function LessonPlanFormModal({ open, isOpen, onClose, onSuccess, 
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Class *</label>
-                  <select
-                    value={form.classId}
-                    onChange={e => handleClassChange(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-                  >
-                    <option value="">Select Class</option>
-                    {classes.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
+                  <Label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Class *</Label>
+                  <ModalSelect value={form.classId}
+ onChange={v => handleClassChange(v)}
+ emptyLabel={<>Select Class</>}
+>
+{classes.map(c => (
+                      <SelectItem key={c.id} value={String(c.id)} className="text-xs font-semibold">{c.name}</SelectItem>
                     ))}
-                  </select>
+</ModalSelect>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Section</label>
-                  <select
-                    value={form.sectionId}
-                    onChange={e => setForm(f => ({ ...f, sectionId: e.target.value }))}
-                    disabled={!form.classId}
-                    className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-                  >
-                    <option value="">All / Any Section</option>
-                    {sections.map(sec => (
-                      <option key={sec.id} value={sec.id}>Section {sec.name}</option>
+                  <Label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Section</Label>
+                  <ModalSelect value={form.sectionId}
+ onChange={v => setForm(f => ({ ...f, sectionId: v }))}
+ disabled={!form.classId}
+ emptyLabel={<>All / Any Section</>}
+>
+{sections.map(sec => (
+                      <SelectItem key={sec.id} value={String(sec.id)} className="text-xs font-semibold">Section {sec.name}</SelectItem>
                     ))}
-                  </select>
+</ModalSelect>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Subject *</label>
-                  <select
-                    value={form.subjectId}
-                    onChange={e => handleSubjectChange(e.target.value)}
-                    disabled={!form.classId}
-                    className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-                  >
-                    <option value="">Select Subject</option>
-                    {subjects.map(s => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
+                  <Label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Subject *</Label>
+                  <ModalSelect value={form.subjectId}
+ onChange={v => handleSubjectChange(v)}
+ disabled={!form.classId}
+ emptyLabel={<>Select Subject</>}
+>
+{subjects.map(s => (
+                      <SelectItem key={s.id} value={String(s.id)} className="text-xs font-semibold">{s.name}</SelectItem>
                     ))}
-                  </select>
+</ModalSelect>
                 </div>
               </div>
             )}
@@ -367,70 +386,67 @@ export default function LessonPlanFormModal({ open, isOpen, onClose, onSuccess, 
             {(activeSlot || classes.length > 0) && (
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Chapter *</label>
-                  <select
-                    value={form.chapterId}
-                    onChange={e => handleChapterChange(e.target.value)}
-                    disabled={!form.subjectId}
-                    className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-                  >
-                    <option value="">Select Chapter ({chapters.length} available)</option>
-                    {chapters.map(ch => (
-                      <option key={ch.id} value={ch.id}>{ch.name}</option>
+                  <Label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Chapter *</Label>
+                  <ModalSelect value={form.chapterId}
+ onChange={v => handleChapterChange(v)}
+ disabled={!form.subjectId}
+ emptyLabel={<>Select Chapter ({chapters.length} available)</>}
+>
+{chapters.map(ch => (
+                      <SelectItem key={ch.id} value={String(ch.id)} className="text-xs font-semibold">{ch.name}</SelectItem>
                     ))}
-                  </select>
+</ModalSelect>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Topic</label>
-                  <select
-                    value={form.topicId}
-                    onChange={e => setForm(f => ({ ...f, topicId: e.target.value }))}
-                    disabled={!form.chapterId}
-                    className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-                  >
-                    <option value="">All / Specific Topic ({topics.length} available)</option>
-                    {topics.map(t => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
+                  <Label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Topic</Label>
+                  <ModalSelect value={form.topicId}
+ onChange={v => setForm(f => ({ ...f, topicId: v }))}
+ disabled={!form.chapterId}
+ emptyLabel={<>All / Specific Topic ({topics.length} available)</>}
+>
+{topics.map(t => (
+                      <SelectItem key={t.id} value={String(t.id)} className="text-xs font-semibold">{t.name}</SelectItem>
                     ))}
-                  </select>
+</ModalSelect>
                 </div>
               </div>
             )}
 
             {!form.aiBrief ? (
-              <button
+              <Button
                 type="button"
                 onClick={handleGenerateAiTemplate}
                 disabled={generatingAi || !form.classId || !form.subjectId || !form.chapterId}
-                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 py-3.5 text-xs font-extrabold text-white shadow-lg shadow-blue-600/20 hover:brightness-110 transition-all disabled:opacity-50"
+                className="h-auto w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 py-3.5 text-xs font-extrabold text-white shadow-lg shadow-blue-600/20 hover:brightness-110 transition-all disabled:opacity-50"
               >
                 {generatingAi ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
                 Generate Brief
-              </button>
+              </Button>
             ) : (
               <div className="space-y-4">
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-950 max-h-[45vh] overflow-y-auto">
                   <MarkdownRenderer content={form.aiBrief} className="prose prose-sm dark:prose-invert max-w-none" />
                 </div>
                 <div className="flex justify-end gap-3">
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
                     onClick={() => setForm(f => ({ ...f, aiBrief: null }))}
                     disabled={generatingAi}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-2xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300"
+                    className="h-auto flex items-center gap-2 px-5 py-2.5 rounded-2xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300"
                   >
                     <RefreshCw size={14} /> Regenerate
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
                     onClick={saveLessonPlan}
                     disabled={submitting}
-                    className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-2.5 text-xs font-extrabold text-white shadow-lg shadow-blue-600/20 hover:brightness-110 transition-all disabled:opacity-50"
+                    className="h-auto flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-2.5 text-xs font-extrabold text-white shadow-lg shadow-blue-600/20 hover:brightness-110 transition-all disabled:opacity-50"
                   >
                     {submitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                     Save Lesson
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -439,175 +455,164 @@ export default function LessonPlanFormModal({ open, isOpen, onClose, onSuccess, 
           <form onSubmit={handleSubmit} className="space-y-5 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Academic Session</label>
-                <select
-                  value={form.academicYear}
-                  onChange={e => {
-                    const yr = e.target.value;
+                <Label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Academic Session</Label>
+                <ModalSelect value={form.academicYear}
+ onChange={v => {
+                    const yr = v;
                     setForm(f => ({ ...f, academicYear: yr }));
                   }}
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-                >
-                  <option value="2026-2027">2026-2027</option>
-                  <option value="2025-2026">2025-2026</option>
-                  <option value="2024-2025">2024-2025</option>
-                  <option value="2026">2026</option>
-                </select>
+>
+<SelectItem value="2026-2027" className="text-xs font-semibold">2026-2027</SelectItem>
+                  <SelectItem value="2025-2026" className="text-xs font-semibold">2025-2026</SelectItem>
+                  <SelectItem value="2024-2025" className="text-xs font-semibold">2024-2025</SelectItem>
+                  <SelectItem value="2026" className="text-xs font-semibold">2026</SelectItem>
+</ModalSelect>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Class *</label>
-                <select
-                  value={form.classId}
-                  onChange={e => handleClassChange(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-                >
-                  <option value="">Select Class</option>
-                  {classes.map(c => (
-                    <option key={c.id} value={c.id}>
+                <Label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Class *</Label>
+                <ModalSelect value={form.classId}
+ onChange={v => handleClassChange(v)}
+ emptyLabel={<>Select Class</>}
+>
+{classes.map(c => (
+                    <SelectItem key={c.id} value={String(c.id)} className="text-xs font-semibold">
                       {c.name} {c.academic_year ? `(${c.academic_year})` : ''}
-                    </option>
+                    </SelectItem>
                   ))}
-                </select>
+</ModalSelect>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Section</label>
-                <select
-                  value={form.sectionId}
-                  onChange={e => setForm(f => ({ ...f, sectionId: e.target.value }))}
-                  disabled={!form.classId}
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-                >
-                  <option value="">All / Any Section</option>
-                  {sections.map(sec => (
-                    <option key={sec.id} value={sec.id}>Section {sec.name}</option>
+                <Label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Section</Label>
+                <ModalSelect value={form.sectionId}
+ onChange={v => setForm(f => ({ ...f, sectionId: v }))}
+ disabled={!form.classId}
+ emptyLabel={<>All / Any Section</>}
+>
+{sections.map(sec => (
+                    <SelectItem key={sec.id} value={String(sec.id)} className="text-xs font-semibold">Section {sec.name}</SelectItem>
                   ))}
-                </select>
+</ModalSelect>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Subject *</label>
-                <select
-                  value={form.subjectId}
-                  onChange={e => handleSubjectChange(e.target.value)}
-                  disabled={!form.classId}
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-                >
-                  <option value="">Select Subject</option>
-                  {subjects.map(s => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
+                <Label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Subject *</Label>
+                <ModalSelect value={form.subjectId}
+ onChange={v => handleSubjectChange(v)}
+ disabled={!form.classId}
+ emptyLabel={<>Select Subject</>}
+>
+{subjects.map(s => (
+                    <SelectItem key={s.id} value={String(s.id)} className="text-xs font-semibold">{s.name}</SelectItem>
                   ))}
-                </select>
+</ModalSelect>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Chapter (Subject Curriculum)</label>
-                <select
-                  value={form.chapterId}
-                  onChange={e => handleChapterChange(e.target.value)}
-                  disabled={!form.subjectId}
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-                >
-                  <option value="">Select Chapter ({chapters.length} available)</option>
-                  {chapters.map(ch => (
-                    <option key={ch.id} value={ch.id}>{ch.name}</option>
+                <Label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Chapter (Subject Curriculum)</Label>
+                <ModalSelect value={form.chapterId}
+ onChange={v => handleChapterChange(v)}
+ disabled={!form.subjectId}
+ emptyLabel={<>Select Chapter ({chapters.length} available)</>}
+>
+{chapters.map(ch => (
+                    <SelectItem key={ch.id} value={String(ch.id)} className="text-xs font-semibold">{ch.name}</SelectItem>
                   ))}
-                </select>
+</ModalSelect>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Topic</label>
-                <select
-                  value={form.topicId}
-                  onChange={e => setForm(f => ({ ...f, topicId: e.target.value }))}
-                  disabled={!form.chapterId}
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-                >
-                  <option value="">All / Specific Topic ({topics.length} available)</option>
-                  {topics.map(t => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
+                <Label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Topic</Label>
+                <ModalSelect value={form.topicId}
+ onChange={v => setForm(f => ({ ...f, topicId: v }))}
+ disabled={!form.chapterId}
+ emptyLabel={<>All / Specific Topic ({topics.length} available)</>}
+>
+{topics.map(t => (
+                    <SelectItem key={t.id} value={String(t.id)} className="text-xs font-semibold">{t.name}</SelectItem>
                   ))}
-                </select>
+</ModalSelect>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Lesson Date *</label>
-                <input
+                <Label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Lesson Date *</Label>
+                <Input
                   type="date"
                   value={form.date}
                   onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                  className="h-auto w-full rounded-2xl border-slate-200 px-4 py-2.5 text-xs font-semibold dark:border-slate-800 dark:bg-slate-950 dark:text-white"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Learning Objectives</label>
-              <textarea
+              <Label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Learning Objectives</Label>
+              <Textarea
                 rows="3"
                 value={form.learningObjectives}
                 onChange={e => setForm(f => ({ ...f, learningObjectives: e.target.value }))}
                 placeholder="Key concepts & goals for this session…"
-                className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                className="h-auto w-full rounded-2xl border-slate-200 px-4 py-2.5 text-xs font-semibold dark:border-slate-800 dark:bg-slate-950 dark:text-white"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Teaching Activities & Flow</label>
-              <textarea
+              <Label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Teaching Activities & Flow</Label>
+              <Textarea
                 rows="3"
                 value={form.teachingActivities}
                 onChange={e => setForm(f => ({ ...f, teachingActivities: e.target.value }))}
                 placeholder="Classroom flow, introduction, explanation, board work…"
-                className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                className="h-auto w-full rounded-2xl border-slate-200 px-4 py-2.5 text-xs font-semibold dark:border-slate-800 dark:bg-slate-950 dark:text-white"
               />
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Assessment & Quick Check</label>
-                <input
+                <Label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Assessment & Quick Check</Label>
+                <Input
                   type="text"
                   value={form.assessmentMethod}
                   onChange={e => setForm(f => ({ ...f, assessmentMethod: e.target.value }))}
                   placeholder="e.g. Q&A, Short 3-question quiz"
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                  className="h-auto w-full rounded-2xl border-slate-200 px-4 py-2.5 text-xs font-semibold dark:border-slate-800 dark:bg-slate-950 dark:text-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Homework Assigned</label>
-                <input
+                <Label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Homework Assigned</Label>
+                <Input
                   type="text"
                   value={form.homework}
                   onChange={e => setForm(f => ({ ...f, homework: e.target.value }))}
                   placeholder="e.g. Exercise 1 to 5"
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                  className="h-auto w-full rounded-2xl border-slate-200 px-4 py-2.5 text-xs font-semibold dark:border-slate-800 dark:bg-slate-950 dark:text-white"
                 />
               </div>
             </div>
 
             <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={onClose}
-                className="px-5 py-2.5 rounded-2xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300"
+                className="h-auto px-5 py-2.5 rounded-2xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 disabled={submitting}
-                className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-2.5 text-xs font-extrabold text-white shadow-lg shadow-blue-600/20 hover:brightness-110 transition-all disabled:opacity-50"
+                className="h-auto flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-2.5 text-xs font-extrabold text-white shadow-lg shadow-blue-600/20 hover:brightness-110 transition-all disabled:opacity-50"
               >
                 {submitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                 Save & Schedule Lesson
-              </button>
+              </Button>
             </div>
           </form>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -579,3 +579,37 @@ describe('robustness', () => {
     }
   });
 });
+
+describe('picture mat', () => {
+  // A dark studio theme sends image_mat white: figures drawn for a white page
+  // (transparent PNGs with dark labels) otherwise lose their labels.
+  const frameOf = () => canvas.querySelector('img')!.parentElement!.style.background;
+  const DARK = { ...THEME, colors: { ...THEME.colors, surface: '#1A1A2E',
+                                       surface_alt: '#16213E', image_mat: '#FFFFFF' } };
+
+  it('frames the picture on the theme mat', () => {
+    const data = slideSpec();
+    data.v2.theme = DARK;
+    render(data);
+    expect(frameOf()).toBe('rgb(255, 255, 255)');
+  });
+
+  it('a deck saved before the mat existed keeps its panel colour', () => {
+    render(slideSpec());
+    expect(frameOf()).toBe('rgb(244, 246, 248)');            // surface_alt
+  });
+
+  it('the export frames it the same way', () => {
+    const fills: string[] = [];
+    const fakeSlide = {
+      addShape: (_s: any, o: any) => { if (o && o.fill) fills.push(o.fill.color); },
+      addText: () => {}, addImage: () => {}, addNotes: () => {}, background: null,
+    };
+    const fakePptx = { shapes: new Proxy({}, { get: (_t, k) => String(k) }) };
+    const data = slideSpec();
+    data.v2.theme = DARK;
+    PPTV2.renderSlide(fakeSlide, fakePptx, data, {});
+    expect(fills).toContain('FFFFFF');
+    expect(fills).not.toContain('16213E');
+  });
+});

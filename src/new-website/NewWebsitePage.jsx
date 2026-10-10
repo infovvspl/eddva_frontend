@@ -5,8 +5,8 @@
 // Partner schools appear once, in PartnersStrip. Stakeholders live inside
 // ServicesSection rather than as a band of their own.
 //
-// SchoolsSection, WhoWeAreSection, WhyChooseSection and FaqSection are
-// intentionally not mounted; their files are kept for easy reinstatement.
+// SchoolsSection, WhoWeAreSection and FaqSection are intentionally not
+// mounted; their files are kept for easy reinstatement.
 
 import "./new-website.css";
 import TopBar from "./components/TopBar";

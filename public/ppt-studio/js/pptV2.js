@@ -766,7 +766,9 @@ window.PPTV2 = {
     // A full-bleed cover image runs to the slide edge, so the framing panel
     // would show as bands above and below it.
     if (!bleed) {
-      this._roundRect(slide, pptx, b, this._color(theme, 'surface_alt'), {
+      // White on dark themes (see `image_mat` in design.py); surface_alt
+      // for decks saved before the token existed.
+      this._roundRect(slide, pptx, b, this._color(theme, 'image_mat', 'surface_alt'), {
         radius: 0.08, line: { color: this._color(theme, 'border'), width: 1 },
       });
     }

@@ -1766,7 +1766,7 @@ function MockTestTabContent({
                   ) : bestSession ? (
                     <p className="text-[11px] text-slate-500">
                       Score: <span className="font-semibold text-slate-700">{(bestSession.totalScore ?? 0).toFixed(0)}/{mt.totalMarks}</span>
-                      {" · "}✓{bestSession.correctCount ?? 0} ✗{bestSession.wrongCount ?? 0}
+                      {" · "}<Check className="inline size-3 -mt-0.5 text-emerald-500" />{bestSession.correctCount ?? 0} <X className="inline size-3 -mt-0.5 text-rose-500" />{bestSession.wrongCount ?? 0}
                     </p>
                   ) : (
                     <p className="text-[11px] text-emerald-600 font-semibold">● Available now</p>

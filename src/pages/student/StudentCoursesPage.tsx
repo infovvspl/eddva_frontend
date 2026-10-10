@@ -5,6 +5,7 @@ import {
   Play, FileText, FlaskConical, BookOpen, Search,
   ShieldCheck, Loader2, CalendarDays,
   Trophy, ClipboardList, CheckCircle2, ArrowLeft,
+  Radio, Shuffle, Clapperboard,
 } from "lucide-react";
 import { useMyCourses } from "@/hooks/use-student";
 import { useAuthStore } from "@/lib/auth-store";
@@ -120,10 +121,10 @@ function EnrolledCourseCard({ course, onResume, instituteName }: { course: MyCou
 // ─── Format filter pills ─────────────────────────────────────────────────────
 
 const FORMAT_FILTERS = [
-  { value: "all",      label: "All" },
-  { value: "live",     label: "🔴 Live" },
-  { value: "hybrid",   label: "🔀 Hybrid" },
-  { value: "recorded", label: "🎬 Recorded" },
+  { value: "all",      label: "All", icon: null as typeof Radio | null },
+  { value: "live",     label: "Live", icon: Radio },
+  { value: "hybrid",   label: "Hybrid", icon: Shuffle },
+  { value: "recorded", label: "Recorded", icon: Clapperboard },
 ];
 
 import { useModuleAccess } from "@/hooks/use-module-access";
@@ -165,7 +166,7 @@ function EnrolledTabSection({
                 ? "bg-indigo-600 text-white border-indigo-600 shadow"
                 : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300"
             )}>
-            {f.label}
+            {f.icon && <f.icon className="inline size-3 mr-1 -mt-0.5" />}{f.label}
           </button>
         ))}
         <span className="text-xs text-slate-400 ml-1">{filtered.length} of {allCount}</span>

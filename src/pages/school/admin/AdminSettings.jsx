@@ -9,6 +9,8 @@ import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
 import { useConfirm } from '@/context/ConfirmContext';
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
 const baseTabs = [
   { id: 'workspace', label: 'Workspace', icon: Globe },
@@ -159,7 +161,7 @@ export default function Settings() {
                   activeTab === tab.id ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/20' : 'text-surface-600 hover:bg-surface-50 hover:text-surface-950'
                 }`}
               >
-                <tab.icon className="h-4 w-4" />
+                <tab.icon className="size-4" />
                 {tab.label}
               </button>
             ))}
@@ -199,7 +201,7 @@ export default function Settings() {
                   ['Institute Admin', 'Tenant domain only. Sees institute logo, dashboard, and scoped support data.'],
                 ].map(([title, copy]) => (
                   <div key={title} className="rounded-lg border border-surface-200 bg-surface-50 p-4 sm:p-5">
-                    <Shield className="mb-3 sm:mb-4 h-5 w-5 sm:h-6 sm:w-6 text-brand-700" />
+                    <Shield className="mb-3 sm:mb-4 size-5 sm:size-6 text-brand-700" />
                     <p className="text-sm sm:text-base font-bold text-surface-950">{title}</p>
                     <p className="mt-2 text-xs sm:text-sm font-medium leading-relaxed sm:leading-6 text-surface-600">{copy}</p>
                   </div>
@@ -229,7 +231,7 @@ export default function Settings() {
                     type="checkbox" 
                     checked={settings[key] || false} 
                     onChange={() => toggleSetting(key)} 
-                    className="h-4.5 w-4.5 rounded border-surface-300 text-brand-700 focus:ring-brand-200 cursor-pointer" 
+                    className="size-4.5 rounded border-surface-300 text-brand-700 focus:ring-brand-200 cursor-pointer" 
                   />
                 </div>
               ))}
@@ -262,13 +264,13 @@ export default function Settings() {
 
               {maintenanceLoading ? (
                 <div className="flex items-center gap-2 text-xs sm:text-sm text-surface-400">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Loading platform config…
+                  <Loader2 className="size-4 animate-spin" /> Loading platform config…
                 </div>
               ) : (
                 <div className="space-y-4">
                   {/* Warning banner */}
                   <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
-                    <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                    <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-600" />
                     <p className="text-[10px] sm:text-xs font-bold text-amber-700 leading-relaxed">
                       Enabling Maintenance Mode will lock all non-super-admin users out of the platform immediately. Use with caution during scheduled upgrades.
                     </p>
@@ -289,15 +291,15 @@ export default function Settings() {
                       } ${savingMaintenance ? 'opacity-60 cursor-not-allowed' : ''}`}
                     >
                       {savingMaintenance
-                        ? <div className="absolute inset-0 flex items-center justify-center"><Loader2 className="w-3 h-3 animate-spin text-white" /></div>
-                        : <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${maintenanceMode ? 'left-7' : 'left-1'}`} />}
+                        ? <div className="absolute inset-0 flex items-center justify-center"><Loader2 className="size-3 animate-spin text-white" /></div>
+                        : <div className={`absolute top-1 size-4 bg-white rounded-full shadow transition-all ${maintenanceMode ? 'left-7' : 'left-1'}`} />}
                     </button>
                   </div>
 
                   {/* Status pill */}
                   {maintenanceMode && (
                     <div className="flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 sm:px-4 py-2 sm:py-3">
-                      <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
+                      <span className="size-2 rounded-full bg-rose-500 animate-pulse" />
                       <span className="text-[10px] sm:text-xs font-bold text-rose-700">Platform is currently in MAINTENANCE MODE</span>
                     </div>
                   )}
@@ -309,7 +311,7 @@ export default function Settings() {
 
           <div className="mt-8 flex justify-end border-t border-surface-200 pt-5">
             <button className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]">
-              <Save className="h-4 w-4" />
+              <Save className="size-4" />
               Save Settings
             </button>
           </div>
@@ -534,7 +536,7 @@ export function PeriodSettings() {
                   type="checkbox"
                   checked={formData.isActive}
                   onChange={e => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
-                  className="h-5 w-5 rounded border-slate-350 text-blue-600 focus:ring-blue-500"
+                  className="size-5 rounded border-slate-350 text-blue-600 focus:ring-blue-500"
                 />
                 <span className="text-sm font-bold text-slate-700">Is Active</span>
               </label>
@@ -560,46 +562,46 @@ export function PeriodSettings() {
         </div>
       ) : (
         <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-450 uppercase tracking-widest text-[10px] font-black">
-              <tr>
-                <th className="px-5 py-3.5 w-16 text-center">Seq</th>
-                <th className="px-5 py-3.5">Period Name</th>
-                <th className="px-5 py-3.5">Timings</th>
-                <th className="px-5 py-3.5">Type</th>
-                <th className="px-5 py-3.5">Status</th>
-                <th className="px-5 py-3.5 w-24 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 font-semibold text-slate-755">
+          <Table className="w-full text-left text-sm">
+            <TableHeader className="bg-slate-50 border-b border-slate-200 text-slate-450 uppercase tracking-widest text-[10px] font-black">
+              <TableRow className="hover:bg-transparent border-b-0">
+                <TableHead className="h-auto px-5 py-3.5 w-16 text-center text-slate-450">Seq</TableHead>
+                <TableHead className="h-auto px-5 py-3.5 text-slate-450">Period Name</TableHead>
+                <TableHead className="h-auto px-5 py-3.5 text-slate-450">Timings</TableHead>
+                <TableHead className="h-auto px-5 py-3.5 text-slate-450">Type</TableHead>
+                <TableHead className="h-auto px-5 py-3.5 text-slate-450">Status</TableHead>
+                <TableHead className="h-auto px-5 py-3.5 w-24 text-right text-slate-450">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-slate-100 font-semibold text-slate-755 [&_tr]:border-b-0">
               {periods.map(p => (
-                <tr key={p.id} className="hover:bg-slate-50/50">
-                  <td className="px-5 py-4 text-center font-bold text-slate-400">{p.sequenceNo}</td>
-                  <td className="px-5 py-4 font-black text-slate-900">{p.periodName}</td>
-                  <td className="px-5 py-4 font-mono text-xs">{p.startTime} - {p.endTime}</td>
-                  <td className="px-5 py-4">
-                    <span className={`inline-flex rounded-lg px-2 py-0.5 text-[10px] font-black uppercase ${
-                      (p.periodType === 'Break' || (p.periodName && p.periodName.toLowerCase().includes('break'))) ? 'bg-amber-100 text-amber-700' :
-                      p.periodType === 'Academic' ? 'bg-blue-100 text-blue-700' :
-                      p.periodType === 'Assembly' ? 'bg-purple-100 text-purple-700' :
-                      p.periodType === 'Sports' ? 'bg-emerald-100 text-emerald-700' :
-                      'bg-slate-100 text-slate-600'
+                <TableRow key={p.id} className="hover:bg-slate-50/50">
+                  <TableCell className="p-4 px-5 py-4 text-center font-bold text-slate-400">{p.sequenceNo}</TableCell>
+                  <TableCell className="p-4 px-5 py-4 font-black text-slate-900">{p.periodName}</TableCell>
+                  <TableCell className="p-4 px-5 py-4 font-mono text-xs">{p.startTime} - {p.endTime}</TableCell>
+                  <TableCell className="p-4 px-5 py-4">
+                    <Badge className={`rounded-lg border-transparent text-[10px] font-black uppercase ${
+                      (p.periodType === 'Break' || (p.periodName && p.periodName.toLowerCase().includes('break'))) ? 'bg-amber-100 text-amber-700 hover:bg-amber-100' :
+                      p.periodType === 'Academic' ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' :
+                      p.periodType === 'Assembly' ? 'bg-purple-100 text-purple-700 hover:bg-purple-100' :
+                      p.periodType === 'Sports' ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100' :
+                      'bg-slate-100 text-slate-600 hover:bg-slate-100'
                     }`}>
                       {(p.periodType === 'Break' || (p.periodName && p.periodName.toLowerCase().includes('break'))) ? 'BREAK' : p.periodType}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4">
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="p-4 px-5 py-4">
                     {p.isActive ? (
                       <span className="text-emerald-600 text-xs font-bold flex items-center gap-1.5">
-                        <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full" /> Active
+                        <span className="size-2.5 bg-emerald-500 rounded-full" /> Active
                       </span>
                     ) : (
                       <span className="text-slate-400 text-xs font-bold flex items-center gap-1.5">
-                        <span className="w-2.5 h-2.5 bg-slate-300 rounded-full" /> Inactive
+                        <span className="size-2.5 bg-slate-300 rounded-full" /> Inactive
                       </span>
                     )}
-                  </td>
-                  <td className="px-5 py-4 text-right">
+                  </TableCell>
+                  <TableCell className="p-4 px-5 py-4 text-right">
                     <div className="flex gap-2 justify-end">
                       <button
                         type="button"
@@ -616,18 +618,18 @@ export function PeriodSettings() {
                         <Trash2 size={14} />
                       </button>
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
               {periods.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-5 py-10 text-center text-slate-400 font-bold">
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={6} className="px-5 py-10 text-center text-slate-400 font-bold">
                     No periods configured. Click "Add Period" to get started.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>

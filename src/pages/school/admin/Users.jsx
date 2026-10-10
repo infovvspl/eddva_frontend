@@ -20,6 +20,9 @@ import { Skeleton } from '@/components/school/admin/Skeleton';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { getResponseList } from '@/lib/school/apiData';
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 function getPaginationWindowSize() {
   if (typeof window === 'undefined') return 7;
@@ -64,7 +67,7 @@ function ResetPasswordModal({ targetUser, onClose }) {
             </p>
           </div>
           <button onClick={onClose} className="rounded-lg p-1 hover:bg-surface-100 transition">
-            <X className="h-4 w-4 text-surface-500" />
+            <X className="size-4 text-surface-500" />
           </button>
         </div>
 
@@ -87,7 +90,7 @@ function ResetPasswordModal({ targetUser, onClose }) {
                 onClick={() => setShowPw(v => !v)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600"
               >
-                {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showPw ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
               </button>
             </div>
           </div>
@@ -155,7 +158,7 @@ function AddStaffModal({ onClose, onSuccess }) {
             <p className="text-xs text-surface-500 mt-0.5">Create a generic staff user account.</p>
           </div>
           <button onClick={onClose} className="rounded-lg p-1 hover:bg-surface-100 transition">
-            <X className="h-4 w-4 text-surface-500" />
+            <X className="size-4 text-surface-500" />
           </button>
         </div>
 
@@ -418,7 +421,7 @@ export default function Users() {
               onClick={() => setShowAddStaff(true)}
               className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-brand-700 sm:px-4 sm:py-2 sm:text-sm self-start sm:self-auto"
             >
-              <UserPlus className="h-4 w-4" />
+              <UserPlus className="size-4" />
               Add Staff / User
             </button>
           )}
@@ -426,7 +429,7 @@ export default function Users() {
             onClick={exportData}
             className="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 bg-white px-3 py-2 text-xs font-bold text-surface-700 transition hover:bg-surface-50 hover:text-brand-600 self-start sm:self-auto sm:px-4 sm:py-2 sm:text-sm"
           >
-            <Download className="h-4 w-4" />
+            <Download className="size-4" />
             Export CSV
           </button>
         </div>
@@ -439,7 +442,7 @@ export default function Users() {
         <div className="flex flex-col md:hidden gap-3 border-b border-surface-200 p-3 bg-surface-50">
           <div className="flex items-center justify-between gap-2">
             <div className="inline-flex items-center gap-1.5 rounded-full border border-surface-200 bg-surface-100 px-2.5 py-1 text-xs font-semibold text-surface-700">
-              <Search className="h-3.5 w-3.5 text-blue-600" />
+              <Search className="size-3.5 text-blue-600" />
               <span>Users Filter</span>
             </div>
             <button
@@ -452,13 +455,13 @@ export default function Users() {
                   : "bg-white border-surface-200 text-surface-700"
               )}
             >
-              <Filter className="h-3.5 w-3.5" />
+              <Filter className="size-3.5" />
               <span>Filter</span>
             </button>
           </div>
 
           <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-surface-400" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -552,7 +555,7 @@ export default function Users() {
             </div>
           )}
           <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-surface-400" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -564,83 +567,85 @@ export default function Users() {
 
         {/* Desktop View */}
         <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-surface-50 text-xs font-bold uppercase text-surface-500">
-                <th className="p-4 pl-5">User</th>
-                <th className="p-4">Role & Institute</th>
-                <th className="p-4">Contact</th>
-                <th className="p-4">Registered</th>
-                <th className="p-4">Status</th>
-                <th className="p-4">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="w-full text-left">
+            <TableHeader>
+              <TableRow className="bg-surface-50 text-xs font-bold uppercase text-surface-500 hover:bg-surface-50 border-b-0">
+                <TableHead className="h-auto p-4 pl-5 text-surface-500">User</TableHead>
+                <TableHead className="h-auto p-4 text-surface-500">Role & Institute</TableHead>
+                <TableHead className="h-auto p-4 text-surface-500">Contact</TableHead>
+                <TableHead className="h-auto p-4 text-surface-500">Registered</TableHead>
+                <TableHead className="h-auto p-4 text-surface-500">Status</TableHead>
+                <TableHead className="h-auto p-4 text-surface-500">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {loading ? (
                 Array.from({ length: 5 }).map((_, index) => (
-                  <tr key={index} className="border-t border-surface-100">
-                    <td className="p-4 pl-5"><Skeleton className="h-10 w-48" /></td>
-                    <td className="p-4"><Skeleton className="h-8 w-40" /></td>
-                    <td className="p-4"><Skeleton className="h-8 w-36" /></td>
-                    <td className="p-4"><Skeleton className="h-8 w-24" /></td>
-                    <td className="p-4"><Skeleton className="h-8 w-20" /></td>
-                    <td className="p-4"><Skeleton className="ml-auto h-8 w-16" /></td>
-                  </tr>
+                  <TableRow key={index} className="border-t border-surface-100 border-b-0 hover:bg-transparent">
+                    <TableCell className="p-4 pl-5"><Skeleton className="h-10 w-48" /></TableCell>
+                    <TableCell className="p-4"><Skeleton className="h-8 w-40" /></TableCell>
+                    <TableCell className="p-4"><Skeleton className="h-8 w-36" /></TableCell>
+                    <TableCell className="p-4"><Skeleton className="h-8 w-24" /></TableCell>
+                    <TableCell className="p-4"><Skeleton className="h-8 w-20" /></TableCell>
+                    <TableCell className="p-4"><Skeleton className="ml-auto h-8 w-16" /></TableCell>
+                  </TableRow>
                 ))
               ) : users.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="p-10 text-center text-sm font-semibold text-surface-500">
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan="6" className="p-10 text-center text-sm font-semibold text-surface-500">
                     No users found matching your filters.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : (
                 users.map((item) => (
-                  <tr key={item.id} className="border-t border-surface-100 transition hover:bg-surface-50">
-                    <td className="p-4 pl-5">
+                  <TableRow key={item.id} className="border-t border-surface-100 border-b-0 transition hover:bg-surface-50">
+                    <TableCell className="p-4 pl-5">
                       <div className="flex items-center gap-3">
-                        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-100 text-sm font-bold tracking-tight text-brand-700">
-                          {(item.name || 'U').charAt(0).toUpperCase()}
-                        </div>
+                        <Avatar className="size-10 shrink-0 rounded-xl bg-brand-100">
+                          <AvatarFallback className="rounded-xl bg-brand-100 text-sm font-bold tracking-tight text-brand-700">
+                            {(item.name || 'U').charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
                         <div>
                           <p className="font-bold text-surface-950">{item.name}</p>
                           <p className="text-xs font-medium text-surface-500">{item.email}</p>
                         </div>
                       </div>
-                    </td>
-                    <td className="p-4">
+                    </TableCell>
+                    <TableCell className="p-4">
                       <div className="flex flex-col gap-1">
-                        <span className="inline-flex w-fit items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">
+                        <Badge variant="secondary" className="w-fit rounded-md border-transparent bg-blue-50 text-xs font-bold text-blue-700 hover:bg-blue-50">
                           {item.role?.replace('_', ' ')}
-                        </span>
+                        </Badge>
                         <p className="text-xs font-semibold text-surface-600 truncate max-w-[200px]" title={item.institute_name || item.tenant?.name || 'Eddva HQ'}>
                           {item.institute_name || item.tenant?.name || 'Eddva HQ'}
                         </p>
                       </div>
-                    </td>
-                    <td className="p-4">
+                    </TableCell>
+                    <TableCell className="p-4">
                       <p className="text-sm font-medium text-surface-700">{item.phone || item.parent_phone || item.phoneNumber || item.contact || 'N/A'}</p>
-                    </td>
-                    <td className="p-4">
+                    </TableCell>
+                    <TableCell className="p-4">
                       <p className="text-sm font-medium text-surface-700">{new Date(item.createdAt).toLocaleDateString()}</p>
-                    </td>
-                    <td className="p-4">
+                    </TableCell>
+                    <TableCell className="p-4">
                       <StatusBadge status={item.status || 'ACTIVE'} />
-                    </td>
-                    <td className="p-4">
+                    </TableCell>
+                    <TableCell className="p-4">
                       <button
                         onClick={() => setResetTarget(item)}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 bg-white px-2.5 py-1.5 text-xs font-bold text-surface-700 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 transition"
                         title="Reset password"
                       >
-                        <KeyRound className="h-3.5 w-3.5" />
+                        <KeyRound className="size-3.5" />
                         Reset PW
                       </button>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
 
         {/* Mobile View */}
@@ -661,9 +666,11 @@ export default function Users() {
               <div key={item.id} className="p-4 space-y-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-100 text-sm font-bold tracking-tight text-brand-700">
-                      {(item.name || 'U').charAt(0).toUpperCase()}
-                    </div>
+                    <Avatar className="size-10 shrink-0 rounded-xl bg-brand-100">
+                      <AvatarFallback className="rounded-xl bg-brand-100 text-sm font-bold tracking-tight text-brand-700">
+                        {(item.name || 'U').charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="min-w-0">
                       <p className="font-bold text-surface-950 truncate">{item.name}</p>
                       <p className="text-xs font-medium text-surface-500 truncate">{item.email}</p>
@@ -691,7 +698,7 @@ export default function Users() {
                   onClick={() => setResetTarget(item)}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 bg-white px-2.5 py-1.5 text-xs font-bold text-surface-700 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 transition self-start"
                 >
-                  <KeyRound className="h-3.5 w-3.5" />
+                  <KeyRound className="size-3.5" />
                   Reset Password
                 </button>
               </div>
@@ -729,9 +736,9 @@ export default function Users() {
                 <button
                   onClick={() => setPage(p => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-surface-200 bg-white text-surface-500 hover:bg-surface-100 disabled:opacity-50 sm:h-8 sm:w-8"
+                  className="grid size-7 shrink-0 place-items-center rounded-lg border border-surface-200 bg-white text-surface-500 hover:bg-surface-100 disabled:opacity-50 sm:size-8"
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <ChevronLeft className="size-4" />
                 </button>
                 <div className="min-w-0 max-w-full overflow-hidden">
                   <div className="flex items-center justify-center gap-1 px-1 sm:gap-1.5">
@@ -743,7 +750,7 @@ export default function Users() {
                           type="button"
                           onClick={() => setPage(pageNumber)}
                           aria-current={isActive ? 'page' : undefined}
-                          className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border text-xs font-bold transition sm:h-8 sm:w-8 ${
+                          className={`grid size-7 shrink-0 place-items-center rounded-full border text-xs font-bold transition sm:size-8 ${
                             isActive
                               ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
                               : 'border-surface-200 bg-white text-surface-600 hover:border-indigo-300 hover:text-indigo-700'
@@ -758,9 +765,9 @@ export default function Users() {
                 <button
                   onClick={() => setPage(p => Math.min(effectiveTotalPages, p + 1))}
                   disabled={page === effectiveTotalPages}
-                  className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-surface-200 bg-white text-surface-500 hover:bg-surface-100 disabled:opacity-50 sm:h-8 sm:w-8"
+                  className="grid size-7 shrink-0 place-items-center rounded-lg border border-surface-200 bg-white text-surface-500 hover:bg-surface-100 disabled:opacity-50 sm:size-8"
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="size-4" />
                 </button>
               </div>
             </div>

@@ -132,13 +132,13 @@ export default function QuestionBank() {
           onClick={() => openModal()}
           className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
         >
-          <Plus className="w-5 h-5 mr-2" />
+          <Plus className="size-5 mr-2" />
           Add Question
         </button>
       </div>
 
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex items-center">
-        <Search className="w-5 h-5 text-gray-400 mr-2" />
+        <Search className="size-5 text-gray-400 mr-2" />
         <input
           type="text"
           placeholder="Search questions..."
@@ -157,7 +157,7 @@ export default function QuestionBank() {
           {filteredQuestions.map(q => (
             <div key={q.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex justify-between items-start">
               <div>
-                <div className="flex items-center space-x-2 mb-2">
+                <div className="flex items-center gap-x-2 mb-2">
                   <span className={`px-2 py-1 text-xs font-semibold rounded ${
                     q.difficulty === 'EASY' ? 'bg-green-100 text-green-700' :
                     q.difficulty === 'HARD' ? 'bg-red-100 text-red-700' :
@@ -180,12 +180,12 @@ export default function QuestionBank() {
                   </ul>
                 )}
               </div>
-              <div className="flex space-x-2 ml-4">
+              <div className="flex gap-x-2 ml-4">
                 <button onClick={() => openModal(q)} className="p-2 text-gray-400 hover:text-indigo-600 transition-colors">
-                  <Edit2 className="w-4 h-4" />
+                  <Edit2 className="size-4" />
                 </button>
                 <button onClick={() => handleDelete(q.id)} className="p-2 text-gray-400 hover:text-red-600 transition-colors">
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="size-4" />
                 </button>
               </div>
             </div>
@@ -227,13 +227,13 @@ export default function QuestionBank() {
             <label className="block text-sm font-medium text-gray-700 mb-2">Options</label>
             <div className="space-y-2">
               {options.map((opt, idx) => (
-                <div key={idx} className="flex items-center space-x-2">
+                <div key={idx} className="flex items-center gap-x-2">
                   <input
                     type="radio"
                     name="correctOption"
                     checked={opt.isCorrect}
                     onChange={() => updateOption(idx, 'isCorrect', true)}
-                    className="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                    className="size-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
                   />
                   <input
                     type="text"
@@ -249,7 +249,7 @@ export default function QuestionBank() {
                     className="p-2 text-gray-400 hover:text-red-600"
                     disabled={options.length <= 2}
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="size-4" />
                   </button>
                 </div>
               ))}
@@ -259,7 +259,7 @@ export default function QuestionBank() {
               onClick={addOption}
               className="mt-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center"
             >
-              <Plus className="w-4 h-4 mr-1" /> Add Option
+              <Plus className="size-4 mr-1" /> Add Option
             </button>
           </div>
 

@@ -3,6 +3,7 @@ import { Plus, Edit2, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiClient as api } from '@/lib/api/client';
 import * as LucideIcons from 'lucide-react';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 
 // Common icons for the dropdown
 const COMMON_ICONS = [
@@ -106,31 +107,31 @@ export default function SuperAdminErpModulesPage() {
 
       <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400">
-              <tr>
-                <th className="px-6 py-4 font-bold">Module</th>
-                <th className="px-6 py-4 font-bold">Key / Path</th>
-                <th className="px-6 py-4 font-bold">Sort</th>
-                <th className="px-6 py-4 font-bold">Status</th>
-                <th className="px-6 py-4 font-bold text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          <Table className="w-full text-left text-sm">
+            <TableHeader className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400">
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="h-auto px-6 py-4 font-bold">Module</TableHead>
+                <TableHead className="h-auto px-6 py-4 font-bold">Key / Path</TableHead>
+                <TableHead className="h-auto px-6 py-4 font-bold">Sort</TableHead>
+                <TableHead className="h-auto px-6 py-4 font-bold">Status</TableHead>
+                <TableHead className="h-auto px-6 py-4 font-bold text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-slate-100 dark:divide-slate-800">
               {loading ? (
-                <tr>
-                  <td colSpan="5" className="px-6 py-8 text-center text-slate-500">Loading modules...</td>
-                </tr>
+                <TableRow>
+                  <TableCell colSpan="5" className="px-6 py-8 text-center text-slate-500">Loading modules...</TableCell>
+                </TableRow>
               ) : modules.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="px-6 py-8 text-center text-slate-500">No modules found</td>
-                </tr>
+                <TableRow>
+                  <TableCell colSpan="5" className="px-6 py-8 text-center text-slate-500">No modules found</TableCell>
+                </TableRow>
               ) : (
                 modules.map(mod => {
                   const Icon = LucideIcons[mod.icon] || LucideIcons.Box;
                   return (
-                    <tr key={mod.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                      <td className="px-6 py-4">
+                    <TableRow key={mod.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                      <TableCell className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className={`p-2 rounded-lg bg-${mod.color}-50 text-${mod.color}-600 dark:bg-${mod.color}-950/30 dark:text-${mod.color}-400`}>
                             <Icon size={18} />
@@ -140,15 +141,15 @@ export default function SuperAdminErpModulesPage() {
                             <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">{mod.description}</p>
                           </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4">
+                      </TableCell>
+                      <TableCell className="px-6 py-4">
                         <p className="font-mono text-xs text-slate-600 dark:text-slate-300">{mod.key}</p>
                         <p className="text-xs text-slate-400">{mod.path || 'No path (Coming Soon)'}</p>
-                      </td>
-                      <td className="px-6 py-4 font-medium text-slate-700 dark:text-slate-300">
+                      </TableCell>
+                      <TableCell className="px-6 py-4 font-medium text-slate-700 dark:text-slate-300">
                         {mod.sort_order}
-                      </td>
-                      <td className="px-6 py-4">
+                      </TableCell>
+                      <TableCell className="px-6 py-4">
                         {mod.is_active ? (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400">
                             <CheckCircle size={14} /> Active
@@ -158,21 +159,21 @@ export default function SuperAdminErpModulesPage() {
                             <XCircle size={14} /> Inactive
                           </span>
                         )}
-                      </td>
-                      <td className="px-6 py-4 text-right">
+                      </TableCell>
+                      <TableCell className="px-6 py-4 text-right">
                         <button
                           onClick={() => handleOpenModal(mod)}
                           className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                         >
                           <Edit2 size={16} />
                         </button>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
 

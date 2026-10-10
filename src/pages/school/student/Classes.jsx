@@ -49,14 +49,14 @@ function LiveRecordingCard({ rec }) {
           <img 
             src={rec.thumbnailKey} 
             alt={rec.title} 
-            className="h-full w-full object-cover" 
+            className="size-full object-cover" 
             loading="lazy" 
             onError={() => setImgError(true)} 
           />
         ) : isProcessing ? (
-          <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-amber-400" />
+          <Loader2 className="size-6 sm:size-8 animate-spin text-amber-400" />
         ) : (
-          <MonitorPlay className="h-6 w-6 sm:h-8 sm:w-8 text-white/60" />
+          <MonitorPlay className="size-6 sm:size-8 text-white/60" />
         )}
         {rec.durationSeconds && !isProcessing && (
           <span className="absolute bottom-1 right-1 rounded bg-black/75 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold text-white">
@@ -129,16 +129,16 @@ function RecordedClassCard({ recording, renderRecordingStatus }) {
             <img
               src={recording.thumbnail_url}
               alt={recording.title}
-              className="h-full w-full object-cover transition-transform duration-300 group-hover/thumb:scale-105"
+              className="size-full object-cover transition-transform duration-300 group-hover/thumb:scale-105"
               loading="lazy"
               onError={() => setImgError(true)}
             />
           ) : (
-            <PlayCircle className="h-10 w-10 text-white/70" />
+            <PlayCircle className="size-10 text-white/70" />
           )}
           {/* Play icon overlay on hover */}
           <span className="absolute inset-0 flex items-center justify-center bg-slate-950/0 opacity-0 transition-all group-hover/thumb:bg-slate-950/35 group-hover/thumb:opacity-100">
-            <PlayCircle className="h-9 w-9 text-white drop-shadow-lg" />
+            <PlayCircle className="size-9 text-white drop-shadow-lg" />
           </span>
           {/* Duration badge */}
           {recording.duration && (
@@ -439,7 +439,7 @@ export default function Classes() {
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <div className="size-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
       </div>
     );
   }
@@ -574,9 +574,9 @@ export default function Classes() {
       {showOngoing && obsLiveLectures.length > 0 && (
         <div className="space-y-3">
           <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-indigo-650">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-75" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-indigo-500" />
+            <span className="relative flex size-2.5">
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-indigo-400 opacity-75" />
+              <span className="relative inline-flex size-2.5 rounded-full bg-indigo-500" />
             </span>
             Live Now
           </h3>
@@ -749,7 +749,7 @@ export default function Classes() {
         ((schoolStudentLiveFilter === 'completed' || schoolStudentLiveFilter === 'finished') && completedCount === 0) ||
         (totalLiveClassesCount === 0)) && (
         <div className="flex flex-col items-center justify-center rounded-2xl sm:rounded-[2rem] border border-dashed border-slate-200 bg-white p-8 sm:p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <Radio className="mb-3 sm:mb-4 h-10 w-10 sm:h-12 sm:w-12 text-slate-300 dark:text-slate-700" />
+          <Radio className="mb-3 sm:mb-4 size-10 sm:size-12 text-slate-300 dark:text-slate-700" />
           <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
             {schoolStudentLiveFilter === 'ongoing' ? 'No ongoing live classes' :
              schoolStudentLiveFilter === 'scheduled' ? 'No scheduled live classes' :
@@ -772,25 +772,25 @@ export default function Classes() {
       {/* Stats */}
       <div className="grid gap-2.5 grid-cols-2 lg:grid-cols-4">
         <div className="rounded-2xl border border-blue-100 bg-blue-50/70 p-3 sm:p-5 dark:border-blue-900/40 dark:bg-blue-950/20">
-          <Video className="h-4.5 w-4.5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
+          <Video className="size-4.5 sm:size-6 text-blue-600 dark:text-blue-400" />
           <p className="mt-2 sm:mt-4 text-[9px] sm:text-[11px] font-black uppercase tracking-[0.24em] text-blue-700 dark:text-blue-300">Lectures</p>
           <p className="mt-0.5 sm:mt-2 text-xl sm:text-3xl font-black text-slate-900 dark:text-white">{recordingsSummary.total}</p>
           <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-sm font-medium text-slate-500 hidden sm:block">Recorded lessons available</p>
         </div>
         <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3 sm:p-5 dark:border-emerald-900/40 dark:bg-emerald-950/20">
-          <Sparkles className="h-4.5 w-4.5 sm:h-6 sm:w-6 text-emerald-600 dark:text-emerald-400" />
+          <Sparkles className="size-4.5 sm:size-6 text-emerald-600 dark:text-emerald-400" />
           <p className="mt-2 sm:mt-4 text-[9px] sm:text-[11px] font-black uppercase tracking-[0.24em] text-emerald-700 dark:text-emerald-300">AI Notes</p>
           <p className="mt-0.5 sm:mt-2 text-xl sm:text-3xl font-black text-slate-950 dark:text-white">{recordingsSummary.notesReady}</p>
           <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-sm font-medium text-slate-500 hidden sm:block">Ready to read and revise</p>
         </div>
         <div className="rounded-2xl border border-violet-100 bg-violet-50/70 p-3 sm:p-5 dark:border-violet-900/40 dark:bg-violet-950/20">
-          <FileText className="h-4.5 w-4.5 sm:h-6 sm:w-6 text-violet-600 dark:text-violet-400" />
+          <FileText className="size-4.5 sm:size-6 text-violet-600 dark:text-violet-400" />
           <p className="mt-2 sm:mt-4 text-[9px] sm:text-[11px] font-black uppercase tracking-[0.24em] text-violet-700 dark:text-violet-300">Transcript</p>
           <p className="mt-0.5 sm:mt-2 text-xl sm:text-3xl font-black text-slate-900 dark:text-white">{recordingsSummary.transcriptReady}</p>
           <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-sm font-medium text-slate-500 hidden sm:block">Lecture transcripts ready</p>
         </div>
         <div className="rounded-2xl border border-amber-100 bg-amber-50/70 p-3 sm:p-5 dark:border-amber-900/40 dark:bg-amber-950/20">
-          <Loader2 className="h-4.5 w-4.5 sm:h-6 sm:w-6 text-amber-600 dark:text-amber-400 animate-spin" />
+          <Loader2 className="size-4.5 sm:size-6 text-amber-600 dark:text-amber-400 animate-spin" />
           <p className="mt-2 sm:mt-4 text-[9px] sm:text-[11px] font-black uppercase tracking-[0.24em] text-amber-700 dark:text-amber-300">Processing</p>
           <p className="mt-0.5 sm:mt-2 text-xl sm:text-3xl font-black text-slate-900 dark:text-white">{recordingsSummary.processing}</p>
           <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-sm font-medium text-slate-500 hidden sm:block">AI is still preparing content</p>
@@ -854,7 +854,7 @@ export default function Classes() {
               >
                 <X size={12} />
                 Clear
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-black text-white">{activeFilterCount}</span>
+                <span className="flex size-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-black text-white">{activeFilterCount}</span>
               </button>
             )}
           </div>
@@ -871,7 +871,7 @@ export default function Classes() {
       {/* ── Recording cards ── */}
       {recordings.length === 0 ? (
         <div className="rounded-2xl sm:rounded-[2rem] border border-dashed border-slate-200 bg-white p-8 sm:p-12 text-center shadow-sm">
-          <Video className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-slate-300" />
+          <Video className="mx-auto size-10 sm:size-12 text-slate-300" />
           <h3 className="mt-3 sm:mt-4 text-base sm:text-lg font-bold text-slate-900">No recorded classes yet</h3>
           <p className="mt-1 text-xs sm:text-sm text-slate-500">
             Once your teachers upload recorded lectures, transcript and notes will appear here.
@@ -879,7 +879,7 @@ export default function Classes() {
         </div>
       ) : filteredRecordings.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <Filter className="mx-auto h-9 w-9 text-slate-300" />
+          <Filter className="mx-auto size-9 text-slate-300" />
           <h3 className="mt-3 text-sm font-bold text-slate-700 dark:text-slate-300">No recordings match your filters</h3>
           <p className="mt-1 text-xs text-slate-400">Try a different subject, chapter, or topic.</p>
           <button
@@ -941,17 +941,17 @@ export default function Classes() {
         <>
       <div className="grid gap-2.5 grid-cols-3 sm:gap-4">
         <div className="rounded-2xl border border-blue-100 bg-blue-50 p-3 sm:p-4 dark:border-blue-900/40 dark:bg-blue-950/20">
-          <Radio className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+          <Radio className="size-5 sm:size-6 text-blue-600" />
           <h2 className="mt-3 text-xs sm:text-sm font-black text-slate-950 dark:text-white">Live Session</h2>
           <p className="mt-1 text-[10px] sm:text-xs font-medium text-slate-500 hidden sm:block">Live sessions support auto attendance and classroom interaction.</p>
         </div>
         <div className="rounded-2xl border border-violet-100 bg-violet-50 p-3 sm:p-4 dark:border-violet-900/40 dark:bg-violet-950/20">
-          <Hand className="h-5 w-5 sm:h-6 sm:w-6 text-violet-600" />
+          <Hand className="size-5 sm:size-6 text-violet-600" />
           <h2 className="mt-3 text-xs sm:text-sm font-black text-slate-950 dark:text-white">Raise Hand</h2>
           <p className="mt-1 text-[10px] sm:text-xs font-medium text-slate-500 hidden sm:block">Ask questions during class and participate in polls or quizzes.</p>
         </div>
         <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-3 sm:p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20">
-          <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" />
+          <BarChart3 className="size-5 sm:size-6 text-emerald-600" />
           <h2 className="mt-3 text-xs sm:text-sm font-black text-slate-950 dark:text-white">Progress</h2>
           <p className="mt-1 text-[10px] sm:text-xs font-medium text-slate-500 hidden sm:block">Recorded lessons can resume from your last watched point.</p>
         </div>
@@ -959,7 +959,7 @@ export default function Classes() {
 
       {courses.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-[2rem] border border-slate-100 border-dashed bg-white p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <BookOpen className="mb-4 h-12 w-12 text-slate-300 dark:text-slate-700" />
+          <BookOpen className="mb-4 size-12 text-slate-300 dark:text-slate-700" />
           <h3 className="text-lg font-bold text-slate-900 dark:text-white">No active classes</h3>
           <p className="mt-1 text-sm text-slate-500">You are not enrolled in any active classes yet.</p>
         </div>
@@ -969,10 +969,10 @@ export default function Classes() {
             <div key={course.enrollmentId} className="group flex flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl dark:border-slate-800 dark:bg-slate-900">
               <div className="relative h-36 sm:h-48 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
                 {course.batch?.thumbnailUrl ? (
-                  <img src={course.batch.thumbnailUrl} alt={course.batch.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                  <img src={course.batch.thumbnailUrl} alt={course.batch.name} className="size-full object-cover transition-transform duration-500 group-hover:scale-105" />
                 ) : (
                   <div className="flex h-full items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600">
-                    <BookOpen className="h-12 w-12 sm:h-16 sm:w-16 text-white/50" />
+                    <BookOpen className="size-12 sm:size-16 text-white/50" />
                   </div>
                 )}
                 <div className="absolute left-3 top-3 rounded-lg bg-white/90 px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-900 backdrop-blur-md">

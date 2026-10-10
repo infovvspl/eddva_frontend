@@ -307,7 +307,9 @@ window.PPTV2Preview = {
     Object.assign(wrap.style, {
       // A full-bleed cover image runs to the slide edge, so the framing
       // panel would show as bands above and below it.
-      background: bleed ? 'transparent' : this._hex(theme, 'surface_alt'),
+      // `image_mat` is white on dark themes, so a figure drawn for a white
+      // page keeps its labels; decks saved before it existed use surface_alt.
+      background: bleed ? 'transparent' : this._hex(theme, 'image_mat', 'surface_alt'),
       border: bleed ? 'none' : '1px solid ' + this._hex(theme, 'border'),
       borderRadius: bleed ? '0' : '0.5em',
       overflow: 'hidden', position: 'absolute',

@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api, { unwrapSchoolData } from '@/lib/api/school-client';
 import { ChevronLeft, PlayCircle, FileText, CheckCircle2, MonitorPlay, FileDown, ExternalLink } from 'lucide-react';
+import { useSetBreadcrumbLabel } from '@/components/school/breadcrumbs/BreadcrumbContext';
 
 export default function TopicDetails() {
   const { batchId, topicId } = useParams();
   const [topicData, setTopicData] = useState(null);
   const [loading, setLoading] = useState(true);
+  useSetBreadcrumbLabel(topicData?.topic?.name);
 
   useEffect(() => {
     const fetchTopic = async () => {
@@ -25,7 +27,7 @@ export default function TopicDetails() {
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <div className="size-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
       </div>
     );
   }
@@ -33,7 +35,7 @@ export default function TopicDetails() {
   if (!topicData) {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center text-center">
-        <MonitorPlay className="mb-4 h-12 w-12 text-slate-300 dark:text-slate-700" />
+        <MonitorPlay className="mb-4 size-12 text-slate-300 dark:text-slate-700" />
         <h2 className="text-xl font-bold text-slate-900 dark:text-white">Topic not found</h2>
         <Link to={`/school/student/classes/${batchId}`} className="mt-4 text-sm font-bold text-blue-600 hover:underline">Back to Course</Link>
       </div>
@@ -85,7 +87,7 @@ export default function TopicDetails() {
                   <div key={lec.id} className="flex gap-4 overflow-hidden rounded-2xl border border-slate-100 bg-slate-50 p-2 dark:border-slate-800 dark:bg-slate-900/50">
                     <div className="relative h-24 w-32 shrink-0 overflow-hidden rounded-xl bg-slate-200 dark:bg-slate-800">
                       {lec.thumbnailUrl ? (
-                        <img src={lec.thumbnailUrl} alt={lec.title} className="h-full w-full object-cover" />
+                        <img src={lec.thumbnailUrl} alt={lec.title} className="size-full object-cover" />
                       ) : (
                         <div className="flex h-full items-center justify-center"><PlayCircle className="text-slate-400" /></div>
                       )}

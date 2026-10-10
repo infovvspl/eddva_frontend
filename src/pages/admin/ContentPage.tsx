@@ -38,6 +38,7 @@ import * as adminApi from "@/lib/api/admin";
 import type { TopicResourceType, Subject, Chapter, Topic, TopicResource, BulkImportPayload, BulkImportSubject } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog";
 import { IfAiFeature } from "@/components/ai/AiFeatureGate";
 import { toast } from "sonner";
 import { getApiOrigin } from "@/lib/api-config";
@@ -199,22 +200,17 @@ function ConfirmDeleteDialog({
   label, name, onConfirm, onCancel, loading,
 }: { label: string; name: string; onConfirm: () => void; onCancel: () => void; loading?: boolean }) {
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-      onClick={e => { if (e.target === e.currentTarget) onCancel(); }}>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm"
-      >
+    <AlertDialog open onOpenChange={(o) => { if (!o) onCancel(); }}>
+      <AlertDialogContent className="max-w-sm rounded-2xl p-6">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-2xl bg-red-50 flex items-center justify-center shrink-0">
             <AlertTriangle className="w-5 h-5 text-red-500" />
           </div>
           <div>
-            <p className="font-black text-slate-900 text-sm">Delete {label}?</p>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <AlertDialogTitle className="font-black text-slate-900 text-sm">Delete {label}?</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-slate-500 mt-0.5">
               "<span className="font-semibold text-slate-700">{name}</span>" and all its content will be permanently removed.
-            </p>
+            </AlertDialogDescription>
           </div>
         </div>
         <div className="flex gap-2">
@@ -227,8 +223,8 @@ function ConfirmDeleteDialog({
             Delete
           </button>
         </div>
-      </motion.div>
-    </div>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 

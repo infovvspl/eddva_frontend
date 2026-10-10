@@ -4,6 +4,8 @@ import { apiClient } from '@/lib/api/client';
 import { toast } from 'sonner';
 import { ShieldCheck, Activity, AlertTriangle, Search, X, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 
 const getBrowserName = (ua) => {
   if (!ua) return '-';
@@ -135,8 +137,8 @@ export default function SecurityCenterPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Security Score */}
         <div className="flex flex-col justify-between rounded-lg border bg-white p-3 shadow-sm sm:p-4">
-          <div className="flex items-center space-x-2 text-surface-600">
-            <ShieldCheck className="h-4 w-4 text-primary-600" />
+          <div className="flex items-center gap-x-2 text-surface-600">
+            <ShieldCheck className="size-4 text-primary-600" />
             <p className="text-sm font-semibold">Security Score</p>
           </div>
           <div className="mt-2">
@@ -151,8 +153,8 @@ export default function SecurityCenterPage() {
 
         {/* Active Sessions */}
         <div className="flex flex-col justify-between rounded-lg border bg-white p-3 shadow-sm sm:p-4">
-          <div className="flex items-center space-x-2 text-surface-600">
-            <Activity className="h-4 w-4 text-primary-600" />
+          <div className="flex items-center gap-x-2 text-surface-600">
+            <Activity className="size-4 text-primary-600" />
             <p className="text-sm font-semibold">Active Sessions</p>
           </div>
           <div className="mt-2">
@@ -164,8 +166,8 @@ export default function SecurityCenterPage() {
 
         {/* Failed Logins */}
         <div className="flex flex-col justify-between rounded-lg border bg-white p-3 shadow-sm sm:p-4">
-          <div className="flex items-center space-x-2 text-surface-600">
-            <AlertTriangle className="h-4 w-4 text-orange-500" />
+          <div className="flex items-center gap-x-2 text-surface-600">
+            <AlertTriangle className="size-4 text-orange-500" />
             <p className="text-sm font-semibold">Failed Logins</p>
           </div>
           <div className="mt-2">
@@ -186,7 +188,7 @@ export default function SecurityCenterPage() {
             {/* Search Input */}
             <div className="relative w-full sm:w-64">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                <Search className="h-4 w-4 text-surface-400" />
+                <Search className="size-4 text-surface-400" />
               </div>
               <input
                 type="text"
@@ -209,7 +211,7 @@ export default function SecurityCenterPage() {
                     }}
                     className="ml-2 flex-shrink-0 text-primary-400 hover:text-primary-600"
                   >
-                    <X className="h-4 w-4" />
+                    <X className="size-4" />
                   </button>
                 </div>
               ) : (
@@ -223,7 +225,7 @@ export default function SecurityCenterPage() {
                     className="block w-full rounded-md border border-surface-300 bg-white py-1.5 pr-8 pl-3 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                    <ChevronDown className="h-4 w-4 text-surface-400" />
+                    <ChevronDown className="size-4 text-surface-400" />
                   </div>
 
                   {isSearchOpen && (
@@ -266,25 +268,25 @@ export default function SecurityCenterPage() {
         </div>
         {/* Desktop View */}
         <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-surface-50">
-              <tr className="border-b font-semibold text-surface-700">
-                <th className="px-4 py-3 sticky left-0 z-20 bg-surface-50 dark:bg-slate-850 shadow-sm">User</th>
-                <th className="px-4 py-3">{isSuperAdminRoute ? 'Institute' : 'School'}</th>
-                <th className="px-4 py-3">Location</th>
-                <th className="px-4 py-3">Login Time</th>
-                <th className="px-4 py-3">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-surface-200">
+          <Table className="w-full text-left text-sm">
+            <TableHeader className="bg-surface-50">
+              <TableRow className="border-b font-semibold text-surface-700 hover:bg-transparent">
+                <TableHead className="h-auto px-4 py-3 sticky left-0 z-20 bg-surface-50 dark:bg-slate-850 shadow-sm text-surface-700">User</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-surface-700">{isSuperAdminRoute ? 'Institute' : 'School'}</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-surface-700">Location</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-surface-700">Login Time</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-surface-700">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-surface-200 [&_tr]:border-b-0">
               {filteredSessions.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-surface-500">No active sessions</td>
-                </tr>
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={5} className="px-4 py-6 text-center text-surface-500">No active sessions</TableCell>
+                </TableRow>
               )}
               {paginatedSessions.map((s) => (
-                <tr key={s.sessionId} className={`group transition-colors ${s.status === 'Failure' ? 'bg-red-50/40 hover:bg-red-50/60' : s.isTerminated ? 'bg-surface-50 opacity-60' : 'hover:bg-surface-50'}`}>
-                  <td className="px-4 py-4 sticky left-0 z-20 bg-white dark:bg-slate-900">
+                <TableRow key={s.sessionId} className={`group transition-colors ${s.status === 'Failure' ? 'bg-red-50/40 hover:bg-red-50/60' : s.isTerminated ? 'bg-surface-50 opacity-60' : 'hover:bg-surface-50'}`}>
+                  <TableCell className="p-4 px-4 py-4 sticky left-0 z-20 bg-white dark:bg-slate-900">
                     {s.status === 'Failure' ? (
                       <div>
                         <div className="font-semibold text-red-700">Failed Login Attempt</div>
@@ -296,21 +298,21 @@ export default function SecurityCenterPage() {
                         {s.role && <div className="text-xs text-surface-500">{s.role}</div>}
                       </>
                     )}
-                  </td>
-                  <td className="px-4 py-4 text-surface-600">{s.schoolName || '-'}</td>
-                  <td className="px-4 py-4 text-surface-600">{s.ipAddress || '-'}</td>
-                  <td className="px-4 py-4 text-surface-600">
+                  </TableCell>
+                  <TableCell className="p-4 px-4 py-4 text-surface-600">{s.schoolName || '-'}</TableCell>
+                  <TableCell className="p-4 px-4 py-4 text-surface-600">{s.ipAddress || '-'}</TableCell>
+                  <TableCell className="p-4 px-4 py-4 text-surface-600">
                     {s.loginAt ? new Date(s.loginAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : '-'}
-                  </td>
-                  <td className="px-4 py-4">
+                  </TableCell>
+                  <TableCell className="p-4 px-4 py-4">
                     {s.status === 'Failure' ? (
-                      <span className="inline-flex items-center rounded-md bg-red-50 border border-red-200 px-2.5 py-1 text-xs font-semibold text-red-600">
+                      <Badge variant="secondary" className="rounded-md border-red-200 bg-red-50 text-xs font-semibold text-red-600 hover:bg-red-50">
                         Failed
-                      </span>
+                      </Badge>
                     ) : s.isTerminated ? (
-                      <span className="inline-flex items-center rounded-md bg-surface-100 px-2.5 py-1 text-xs font-medium text-surface-600">
+                      <Badge variant="secondary" className="rounded-md border-transparent bg-surface-100 text-xs font-medium text-surface-600 hover:bg-surface-100">
                         Terminated
-                      </span>
+                      </Badge>
                     ) : (
                       <button
                         onClick={() => terminateSession(s.sessionId)}
@@ -319,11 +321,11 @@ export default function SecurityCenterPage() {
                         Terminate
                       </button>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
 
         {/* Mobile View */}
@@ -416,7 +418,7 @@ export default function SecurityCenterPage() {
                     className="relative inline-flex items-center rounded-l-md px-2 py-2 text-surface-400 ring-1 ring-inset ring-surface-300 hover:bg-surface-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
                   >
                     <span className="sr-only">Previous</span>
-                    <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                    <ChevronLeft className="size-5" aria-hidden="true" />
                   </button>
                   {Array.from({ length: totalPages }).map((_, idx) => {
                     const pageNum = idx + 1;
@@ -440,7 +442,7 @@ export default function SecurityCenterPage() {
                     className="relative inline-flex items-center rounded-r-md px-2 py-2 text-surface-400 ring-1 ring-inset ring-surface-300 hover:bg-surface-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
                   >
                     <span className="sr-only">Next</span>
-                    <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                    <ChevronRight className="size-5" aria-hidden="true" />
                   </button>
                 </nav>
               </div>

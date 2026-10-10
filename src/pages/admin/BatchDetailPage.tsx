@@ -28,6 +28,7 @@ import {
   resolveBatchExamTargetFormState,
 } from "@/lib/batch-form";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -184,13 +185,10 @@ function EditCourseModal({ batch, onClose }: { batch: any; onClose: () => void }
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 p-4"
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-lg p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-lg font-black text-slate-900">Edit Course</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
+          <DialogTitle className="text-lg font-black text-slate-900">Edit Course</DialogTitle>
         </div>
 
         {error && (
@@ -325,8 +323,8 @@ function EditCourseModal({ batch, onClose }: { batch: any; onClose: () => void }
             </Button>
           </div>
         </form>
-      </motion.div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

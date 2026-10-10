@@ -173,7 +173,7 @@ export default function Calendar() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
         <div className="glass-premium rounded-[3rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 rounded-full blur-[100px] -mr-48 -mt-48" />
+          <div className="absolute top-0 right-0 size-96 bg-blue-500/5 rounded-full blur-[100px] -mr-48 -mt-48" />
           
           <div className="relative z-10">
             <div className="flex flex-wrap gap-2 mb-8">
@@ -220,7 +220,7 @@ export default function Calendar() {
                         "text-xs font-bold tracking-tight",
                         isToday ? "text-blue-600" : "text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white"
                       )}>{day.getDate()}</span>
-                      {dayEvents.length > 0 && <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />}
+                      {dayEvents.length > 0 && <div className="size-1.5 rounded-full bg-blue-600 animate-pulse" />}
                     </div>
                     
                     <div className="space-y-1">
@@ -292,7 +292,7 @@ export default function Calendar() {
           </div>
 
           <div className="p-8 rounded-[2.5rem] bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/20 rounded-full blur-3xl -mr-16 -mt-16" />
+            <div className="absolute top-0 right-0 size-32 bg-amber-500/20 rounded-full blur-3xl -mr-16 -mt-16" />
             <div className="relative z-10">
               <div className="flex items-center gap-2 mb-4">
                 <AlertTriangle size={16} className="text-amber-500" />
@@ -368,7 +368,7 @@ export default function Calendar() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
         <div className="glass-premium rounded-[3rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 rounded-full blur-[100px] -mr-48 -mt-48" />
+          <div className="absolute top-0 right-0 size-96 bg-blue-500/5 rounded-full blur-[100px] -mr-48 -mt-48" />
           
           <div className="relative z-10">
             <div className="flex flex-wrap gap-2 mb-8">
@@ -415,7 +415,7 @@ export default function Calendar() {
                         "text-xs font-bold tracking-tight",
                         isToday ? "text-blue-600" : "text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white"
                       )}>{day.getDate()}</span>
-                      {dayEvents.length > 0 && <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />}
+                      {dayEvents.length > 0 && <div className="size-1.5 rounded-full bg-blue-600 animate-pulse" />}
                     </div>
                     
                     <div className="space-y-1">
@@ -487,7 +487,7 @@ export default function Calendar() {
           </div>
 
           <div className="p-8 rounded-[2.5rem] bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/20 rounded-full blur-3xl -mr-16 -mt-16" />
+            <div className="absolute top-0 right-0 size-32 bg-amber-500/20 rounded-full blur-3xl -mr-16 -mt-16" />
             <div className="relative z-10">
               <div className="flex items-center gap-2 mb-4">
                 <AlertTriangle size={16} className="text-amber-500" />

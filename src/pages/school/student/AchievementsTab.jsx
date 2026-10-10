@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import api from '@/lib/api/school-client';
 import { soundEngine } from '@/lib/audioManager';
-import { Trophy, Award, Lock, CheckCircle2, Sparkles, Filter, RefreshCw, Star, Coins, Gamepad2, Zap, Rocket, Brain, BookOpen, Compass, Info, X } from 'lucide-react';
+import { Trophy, Award, Lock, CheckCircle2, Sparkles, Filter, RefreshCw, Star, Coins, Gamepad2, Zap, Rocket, Brain, BookOpen, Compass, Info, X, Type } from 'lucide-react';
 
 export default function AchievementsTab() {
   const [achievements, setAchievements] = useState([]);
@@ -14,13 +14,13 @@ export default function AchievementsTab() {
   const [lockedTabNotice, setLockedTabNotice] = useState(null);
 
   const categories = [
-    { key: 'ALL', label: '🎮 All Game Badges' },
-    { key: 'QUIZ_RUSH', label: '⚡ Quiz Rush' },
-    { key: 'MATH_SPRINT', label: '🚀 Math Sprint' },
-    { key: 'MEMORY_MATCH', label: '🧠 Memory Match' },
-    { key: 'WORD_MASTER', label: '🔤 Word Master' },
-    { key: 'TREASURE_HUNT', label: '🗺️ Treasure Hunt' },
-    { key: 'ARCADE_OVERALL', label: '🏆 Arcade Overall' },
+    { key: 'ALL', label: 'All Game Badges', icon: Gamepad2 },
+    { key: 'QUIZ_RUSH', label: 'Quiz Rush', icon: Zap },
+    { key: 'MATH_SPRINT', label: 'Math Sprint', icon: Rocket },
+    { key: 'MEMORY_MATCH', label: 'Memory Match', icon: Brain },
+    { key: 'WORD_MASTER', label: 'Word Master', icon: Type },
+    { key: 'TREASURE_HUNT', label: 'Treasure Hunt', icon: Compass },
+    { key: 'ARCADE_OVERALL', label: 'Arcade Overall', icon: Trophy },
   ];
 
   const tiers = ['ALL', 'BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'DIAMOND', 'MYTHIC'];
@@ -105,24 +105,24 @@ export default function AchievementsTab() {
 
   const getTierBadgeInfo = (tier) => {
     switch (tier) {
-      case 'MYTHIC': return { label: '🟣 MYTHIC', style: 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/60 dark:text-purple-300' };
-      case 'DIAMOND': return { label: '🔷 DIAMOND', style: 'bg-cyan-100 text-cyan-800 border-cyan-300 dark:bg-cyan-950/60 dark:text-cyan-300' };
-      case 'PLATINUM': return { label: '💎 PLATINUM', style: 'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-950/60 dark:text-indigo-300' };
-      case 'GOLD': return { label: '🟡 GOLD', style: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300' };
-      case 'SILVER': return { label: '⚪ SILVER', style: 'bg-slate-200 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200' };
-      default: return { label: '🟤 BRONZE', style: 'bg-amber-900/10 text-amber-900 border-amber-300 dark:bg-amber-950/60 dark:text-amber-400' };
+      case 'MYTHIC': return { label: 'MYTHIC', dot: 'bg-purple-500', style: 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/60 dark:text-purple-300' };
+      case 'DIAMOND': return { label: 'DIAMOND', dot: 'bg-cyan-500', style: 'bg-cyan-100 text-cyan-800 border-cyan-300 dark:bg-cyan-950/60 dark:text-cyan-300' };
+      case 'PLATINUM': return { label: 'PLATINUM', dot: 'bg-indigo-400', style: 'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-950/60 dark:text-indigo-300' };
+      case 'GOLD': return { label: 'GOLD', dot: 'bg-amber-400', style: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300' };
+      case 'SILVER': return { label: 'SILVER', dot: 'bg-slate-400', style: 'bg-slate-200 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200' };
+      default: return { label: 'BRONZE', dot: 'bg-amber-700', style: 'bg-amber-900/10 text-amber-900 border-amber-300 dark:bg-amber-950/60 dark:text-amber-400' };
     }
   };
 
   const getGameCategoryIcon = (cat) => {
     switch (cat) {
-      case 'QUIZ_RUSH': return '⚡';
-      case 'MATH_SPRINT': return '🚀';
-      case 'MEMORY_MATCH': return '🧠';
-      case 'WORD_MASTER': return '🔤';
-      case 'TREASURE_HUNT': return '🗺️';
-      case 'ARCADE_OVERALL': return '🏆';
-      default: return '🎮';
+      case 'QUIZ_RUSH': return Zap;
+      case 'MATH_SPRINT': return Rocket;
+      case 'MEMORY_MATCH': return Brain;
+      case 'WORD_MASTER': return Type;
+      case 'TREASURE_HUNT': return Compass;
+      case 'ARCADE_OVERALL': return Trophy;
+      default: return Gamepad2;
     }
   };
 
@@ -233,10 +233,10 @@ export default function AchievementsTab() {
       {/* Toast Notice for Locked Tab / Card attempts */}
       {lockedTabNotice && (
         <div className="fixed top-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 text-white px-4 py-3 shadow-2xl border border-slate-700 animate-in fade-in slide-in-from-top-4">
-          <Lock className="h-4 w-4 text-amber-400 shrink-0" />
+          <Lock className="size-4 text-amber-400 shrink-0" />
           <p className="text-xs font-bold">{lockedTabNotice}</p>
           <button onClick={() => setLockedTabNotice(null)} className="ml-2 text-slate-400 hover:text-white">
-            <X className="h-4 w-4" />
+            <X className="size-4" />
           </button>
         </div>
       )}
@@ -245,11 +245,11 @@ export default function AchievementsTab() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
         <div>
           <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-950/50 px-2.5 py-0.5 text-[10px] font-black uppercase text-amber-800 dark:text-amber-300">
-            <Sparkles className="h-3 w-3 text-amber-500" />
+            <Sparkles className="size-3 text-amber-500" />
             {unlockedCount} / {totalGameBadges} Game Badges Unlocked
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1 flex items-center gap-2">
-            <Gamepad2 className="h-6 w-6 text-amber-500" /> Game Achievement Showcase
+            <Gamepad2 className="size-6 text-amber-500" /> Game Achievement Showcase
           </h2>
           <p className="text-xs text-slate-500 font-medium">
             Play Quiz Rush, Math Sprint, Memory Match, Word Master, and Treasure Hunt to progress through Bronze ➔ Silver ➔ Gold ➔ Platinum ➔ Diamond ➔ Mythic tiers!
@@ -275,12 +275,13 @@ export default function AchievementsTab() {
                 }
               }
             }}
-            className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
               activeCategory === c.key
                 ? 'bg-white text-amber-600 shadow dark:bg-slate-700 dark:text-white'
                 : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
             }`}
           >
+            <c.icon className="size-3.5 shrink-0" />
             {c.label}
           </button>
         ))}
@@ -306,7 +307,7 @@ export default function AchievementsTab() {
                   : 'bg-slate-100 text-slate-400 border-slate-200 dark:bg-slate-900/60 dark:text-slate-600 dark:border-slate-800 cursor-not-allowed opacity-60'
               }`}
             >
-              {!unlocked && <Lock className="h-3 w-3 text-amber-500 shrink-0" />}
+              {!unlocked && <Lock className="size-3 text-amber-500 shrink-0" />}
               <span>{t}</span>
             </button>
           );
@@ -316,7 +317,7 @@ export default function AchievementsTab() {
       {/* Grid Showcase */}
       {loading ? (
         <div className="py-12 text-center">
-          <RefreshCw className="mx-auto h-8 w-8 animate-spin text-amber-500" />
+          <RefreshCw className="mx-auto size-8 animate-spin text-amber-500" />
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -331,7 +332,7 @@ export default function AchievementsTab() {
             const displayVal = !isTierUnlocked ? 0 : currentVal;
 
             const tierInfo = getTierBadgeInfo(a.tier);
-            const gameCategoryIcon = getGameCategoryIcon(a.category);
+            const GameCategoryIcon = getGameCategoryIcon(a.category);
             const colorStyle = getCardColorStyle(a.category, a.tier);
             const prevTierName = prevTierNameMap[a.tier] || 'previous tier';
 
@@ -348,20 +349,20 @@ export default function AchievementsTab() {
                 }`}
               >
                 {/* Top game icon tag */}
-                <div className="absolute top-2 left-2.5 text-xs opacity-85" title={gameNameMap[a.category] || a.category}>
-                  {gameCategoryIcon}
+                <div className="absolute top-2 left-2.5 opacity-85" title={gameNameMap[a.category] || a.category}>
+                  <GameCategoryIcon className="size-3.5" />
                 </div>
 
                 {/* Lock Overlay Badge if Tier is Locked */}
                 {!isTierUnlocked && (
                   <div className="absolute top-2 right-2.5 flex items-center justify-center rounded-full bg-slate-800/90 p-1 border border-slate-700" title={`Complete 100% of all ${prevTierName} achievements in ${gameNameMap[a.category]} to unlock`}>
-                    <Lock className="h-3.5 w-3.5 text-slate-400" />
+                    <Lock className="size-3.5 text-slate-400" />
                   </div>
                 )}
 
                 {/* Achievement main icon */}
                 <div className={`text-3.5xl my-1.5 transition-transform duration-300 group-hover:scale-110 ${!isTierUnlocked ? 'grayscale opacity-40' : !isUnlocked ? 'grayscale opacity-75' : ''}`}>
-                  {a.icon || '🎮'}
+                  {a.icon || <Gamepad2 className="size-8 mx-auto" />}
                 </div>
 
                 <h3 className="text-xs font-black text-white line-clamp-1">{a.title}</h3>
@@ -373,11 +374,11 @@ export default function AchievementsTab() {
                     {tierInfo.label}
                   </span>
                   {!isTierUnlocked ? (
-                    <Lock className="h-3.5 w-3.5 text-slate-500" />
+                    <Lock className="size-3.5 text-slate-500" />
                   ) : isUnlocked ? (
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                    <CheckCircle2 className="size-3.5 text-emerald-400" />
                   ) : (
-                    <Lock className="h-3.5 w-3.5 text-slate-500" />
+                    <Lock className="size-3.5 text-slate-500" />
                   )}
                 </div>
 
@@ -420,9 +421,12 @@ export default function AchievementsTab() {
       {selectedAch && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
           <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900 text-center animate-in fade-in zoom-in-95">
-            <div className="text-5xl mb-2">{selectedAch.icon || '🎮'}</div>
+            <div className="text-5xl mb-2 flex items-center justify-center">{selectedAch.icon || <Gamepad2 className="size-10" />}</div>
             <div className="flex items-center justify-center gap-2 mb-2">
-              <span className="text-sm">{getGameCategoryIcon(selectedAch.category)}</span>
+              {(() => {
+                const SelectedCategoryIcon = getGameCategoryIcon(selectedAch.category);
+                return <SelectedCategoryIcon className="size-4" />;
+              })()}
               <span className={`inline-block rounded-full px-3 py-0.5 text-xs font-black uppercase border ${getTierBadgeInfo(selectedAch.tier).style}`}>
                 {getTierBadgeInfo(selectedAch.tier).label}
               </span>
@@ -450,10 +454,10 @@ export default function AchievementsTab() {
 
             <div className="mt-4 flex items-center justify-center gap-3 rounded-xl bg-amber-50 p-3 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-900/40">
               <div className="flex items-center gap-1 text-xs font-black text-amber-600 dark:text-amber-300">
-                <Star className="h-4 w-4 fill-amber-500" /> +{selectedAch.reward_xp || 50} XP
+                <Star className="size-4 fill-amber-500" /> +{selectedAch.reward_xp || 50} XP
               </div>
               <div className="flex items-center gap-1 text-xs font-black text-yellow-600 dark:text-yellow-300">
-                <Coins className="h-4 w-4 fill-yellow-500" /> +{selectedAch.reward_coins || 10} Coins
+                <Coins className="size-4 fill-yellow-500" /> +{selectedAch.reward_coins || 10} Coins
               </div>
             </div>
 

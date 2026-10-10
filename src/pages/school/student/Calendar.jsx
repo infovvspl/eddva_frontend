@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { 
-  CalendarDays, ChevronLeft, ChevronRight, Filter, 
-  Clock, MapPin, AlertTriangle
+import {
+  CalendarDays, ChevronLeft, ChevronRight, Filter,
+  Clock, MapPin, AlertTriangle, BookOpen, ClipboardList,
+  Palmtree, Plane, Users, Video
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
@@ -48,13 +49,13 @@ const CATEGORY_CELL_GRADIENTS = {
 const categoryOptions = ['ACADEMIC', 'EXAM', 'HOLIDAY', 'VACATION', 'MEETING', 'LIVE_CLASS', 'All'];
 
 const categoryIcons = {
-  ACADEMIC: '📚',
-  EXAM: '📝',
-  HOLIDAY: '🏖️',
-  VACATION: '✈️',
-  MEETING: '👨‍👩‍👧',
-  LIVE_CLASS: '🎥',
-  All: '📅',
+  ACADEMIC: BookOpen,
+  EXAM: ClipboardList,
+  HOLIDAY: Palmtree,
+  VACATION: Plane,
+  MEETING: Users,
+  LIVE_CLASS: Video,
+  All: CalendarDays,
 };
 
 function toDateKey(date) {
@@ -369,13 +370,13 @@ export default function Calendar() {
 
           <div className="grid grid-cols-1 gap-1.5 sm:gap-2.5 mt-1 sm:mt-2">
             <div className="relative">
-              <Filter className="pointer-events-none absolute left-2.5 sm:left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 z-10" />
+              <Filter className="pointer-events-none absolute left-2.5 sm:left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400 z-10" />
               <CustomSelect
                 onChange={setSelectedCategory}
                 value={selectedCategory}
                 options={categoryOptions.map((item) => ({ value: item, label: item.replace('_', ' ') }))}
                 className="w-full"
-                triggerClassName="flex h-full w-full items-center justify-between gap-1 pl-8 sm:pl-9 pr-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 bg-white text-[10px] sm:text-xs font-semibold outline-none text-slate-700 shadow-sm"
+                triggerClassName="flex size-full items-center justify-between gap-1 pl-8 sm:pl-9 pr-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 bg-white text-[10px] sm:text-xs font-semibold outline-none text-slate-700 shadow-sm"
               />
             </div>
           </div>
@@ -438,7 +439,7 @@ export default function Calendar() {
                       >
                         <span>{day.getDate()}</span>
                         {dayEvents.length > 0 && (
-                          <span className={cn('h-1.5 w-1.5 rounded-full', isSelected ? 'bg-white' : 'bg-blue-600 dark:bg-sky-505')} />
+                          <span className={cn('size-1.5 rounded-full', isSelected ? 'bg-white' : 'bg-blue-600 dark:bg-sky-505')} />
                         )}
                       </button>
                     );
@@ -548,7 +549,7 @@ export default function Calendar() {
                             </span>
                             {dayEvents.length > 0 && (
                               <span className={cn(
-                                "h-1.5 w-1.5 rounded-full",
+                                "size-1.5 rounded-full",
                                 isSelected ? "bg-blue-600 dark:bg-sky-400" : "bg-blue-500 dark:bg-sky-505"
                               )} />
                             )}
@@ -578,7 +579,7 @@ export default function Calendar() {
                                       }}
                                       className="p-0.5 hover:scale-110 transition-transform cursor-pointer"
                                     >
-                                      <EventIcon category={details.category} className="h-8 w-8 sm:h-9 sm:w-9 filter drop-shadow-md" />
+                                      <EventIcon category={details.category} className="size-8 sm:size-9 filter drop-shadow-md" />
                                     </div>
                                   );
                                 })}
@@ -700,11 +701,14 @@ export default function Calendar() {
               className="w-full flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-3 py-2.5 text-left transition hover:bg-white dark:hover:bg-slate-800 group hover:scale-[1.01] hover:underline cursor-pointer"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <span className="shrink-0 text-[22px] opacity-90 transition-opacity group-hover:opacity-100">{categoryIcons[ev.category] || '📅'}</span>
+                {(() => {
+                  const CatIcon = categoryIcons[ev.category] || CalendarDays;
+                  return <CatIcon className="size-5 shrink-0 opacity-90 transition-opacity group-hover:opacity-100" />;
+                })()}
                 <div className="min-w-0">
                   <p className="truncate text-sm font-bold text-slate-950 dark:text-white">{ev.title}</p>
-                  <p className="truncate text-xs font-medium text-slate-500 dark:text-slate-400">
-                    📅 {new Date(ev.startTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  <p className="truncate text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                    <CalendarDays className="size-3 shrink-0" /> {new Date(ev.startTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     {ev.isAllDay ? '' : ` • ${new Date(ev.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
                   </p>
                 </div>
@@ -725,7 +729,7 @@ export default function Calendar() {
       <Modal isOpen={showExamsSyncModal} title="Final Exams Sync" onClose={() => setShowExamsSyncModal(false)} size="md">
         <div className="p-2">
           <div className="p-8 rounded-[2rem] bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/20 rounded-full blur-3xl -mr-16 -mt-16" />
+            <div className="absolute top-0 right-0 size-32 bg-amber-500/20 rounded-full blur-3xl -mr-16 -mt-16" />
             <div className="relative z-10">
               <div className="flex items-center gap-2 mb-4">
                 <AlertTriangle size={16} className="text-amber-500" />
@@ -761,7 +765,7 @@ export default function Calendar() {
             )}
             <div className="grid gap-2.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
               <div className="flex items-center gap-2">
-                <span className="text-slate-400">📅 Date:</span>
+                <span className="text-slate-400 flex items-center gap-1"><CalendarDays className="size-3.5 shrink-0" /> Date:</span>
                 <span>
                   {selectedInfoEvent.isAllDay 
                     ? `${new Date(selectedInfoEvent.startTime).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })} (All Day)`
@@ -771,13 +775,13 @@ export default function Calendar() {
               </div>
               {selectedInfoEvent.location && (
                 <div className="flex items-center gap-2">
-                  <span className="text-slate-400">📍 Location:</span>
+                  <span className="text-slate-400 flex items-center gap-1"><MapPin className="size-3.5 shrink-0" /> Location:</span>
                   <span>{selectedInfoEvent.location}</span>
                 </div>
               )}
               {selectedInfoEvent.priority && (
                 <div className="flex items-center gap-2">
-                  <span className="text-slate-400">⚠️ Priority:</span>
+                  <span className="text-slate-400 flex items-center gap-1"><AlertTriangle className="size-3.5 shrink-0" /> Priority:</span>
                   <span className="capitalize">{selectedInfoEvent.priority.toLowerCase()}</span>
                 </div>
               )}

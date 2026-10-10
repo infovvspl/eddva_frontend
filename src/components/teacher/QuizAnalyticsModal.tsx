@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   getMockTestById,
   getMockTestSessions,
@@ -12,7 +14,7 @@ import {
   type QuestionStat,
 } from "@/lib/api/teacher";
 import {
-  X, RefreshCw, Download, Play, BookOpen, Clock, Target, Users,
+  RefreshCw, Download, Play, BookOpen, Clock, Target, Users,
   CheckCircle2, XCircle, Minus, BarChart2, Settings2, ListOrdered,
   Loader2, Calendar, Shuffle, Eye, RotateCcw, Trophy, TrendingUp,
   AlertTriangle, Brain, Zap, Timer, HelpCircle, Share2,
@@ -319,48 +321,48 @@ function StudentsTab({ sessions, quiz }: { sessions: MockTestSession[]; quiz: Mo
         </div>
       ) : (
         <div className="border border-border rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50">
-              <tr className="text-left">
-                <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">#</th>
-                <th className="px-4 py-3 text-xs font-semibold">
+          <Table className="w-full text-sm">
+            <TableHeader className="bg-muted/50">
+              <TableRow className="text-left hover:bg-transparent">
+                <TableHead className="h-auto px-4 py-3 text-xs font-semibold text-muted-foreground">#</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-xs font-semibold">
                   <SortBtn k="name" label="Student" />
-                </th>
-                <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">Status</th>
-                <th className="px-4 py-3 text-xs font-semibold text-right">
+                </TableHead>
+                <TableHead className="h-auto px-4 py-3 text-xs font-semibold text-muted-foreground">Status</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-xs font-semibold text-right">
                   <SortBtn k="score" label="Score" />
-                </th>
-                <th className="px-4 py-3 text-xs font-semibold text-right text-emerald-600">✓</th>
-                <th className="px-4 py-3 text-xs font-semibold text-right text-red-500">✗</th>
-                <th className="px-4 py-3 text-xs font-semibold text-right text-muted-foreground">—</th>
-                <th className="px-4 py-3 text-xs font-semibold text-right">
+                </TableHead>
+                <TableHead className="h-auto px-4 py-3 text-xs font-semibold text-right text-emerald-600">✓</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-xs font-semibold text-right text-red-500">✗</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-xs font-semibold text-right text-muted-foreground">—</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-xs font-semibold text-right">
                   <SortBtn k="accuracy" label="Accuracy" />
-                </th>
-                <th className="px-4 py-3 text-xs font-semibold text-right text-muted-foreground">Submitted</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
+                </TableHead>
+                <TableHead className="h-auto px-4 py-3 text-xs font-semibold text-right text-muted-foreground">Submitted</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-border">
               {sorted.map((s, i) => {
                 const acc = accuracy(s.correctCount, s.wrongCount, s.skippedCount);
                 const pct = scorePercent(s.totalScore, quiz.totalMarks);
                 const isSubmitted = s.status === "completed";
                 return (
-                  <tr key={s.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{i + 1}</td>
-                    <td className="px-4 py-3 font-medium">
+                  <TableRow key={s.id} className="hover:bg-muted/30 transition-colors">
+                    <TableCell className="px-4 py-3 text-muted-foreground font-mono text-xs">{i + 1}</TableCell>
+                    <TableCell className="px-4 py-3 font-medium">
                       {s.student?.fullName ?? (
                         <span className="text-muted-foreground font-mono text-xs">{s.studentId.slice(0, 8)}…</span>
                       )}
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
                       <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium",
                         s.status === "completed" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-50/40 dark:text-emerald-400" :
                         s.status === "in_progress" ? "bg-blue-100 text-blue-700 dark:bg-blue-50/40 dark:text-blue-400" :
                         "bg-slate-100 text-slate-600 dark:bg-gray-100 dark:text-slate-400")}>
                         {s.status === "completed" ? "Submitted" : s.status === "in_progress" ? "In Progress" : "Abandoned"}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-right">
                       {isSubmitted ? (
                         <div className="flex items-center justify-end gap-2">
                           <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
@@ -370,26 +372,26 @@ function StudentsTab({ sessions, quiz }: { sessions: MockTestSession[]; quiz: Mo
                           <span className="font-semibold text-xs w-10 text-right">{s.totalScore}/{quiz.totalMarks}</span>
                         </div>
                       ) : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-right text-emerald-600 font-medium text-xs">{isSubmitted ? (s.correctCount ?? 0) : "—"}</td>
-                    <td className="px-4 py-3 text-right text-red-500 font-medium text-xs">{isSubmitted ? (s.wrongCount ?? 0) : "—"}</td>
-                    <td className="px-4 py-3 text-right text-muted-foreground text-xs">{isSubmitted ? (s.skippedCount ?? 0) : "—"}</td>
-                    <td className="px-4 py-3 text-right">
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-right text-emerald-600 font-medium text-xs">{isSubmitted ? (s.correctCount ?? 0) : "—"}</TableCell>
+                    <TableCell className="px-4 py-3 text-right text-red-500 font-medium text-xs">{isSubmitted ? (s.wrongCount ?? 0) : "—"}</TableCell>
+                    <TableCell className="px-4 py-3 text-right text-muted-foreground text-xs">{isSubmitted ? (s.skippedCount ?? 0) : "—"}</TableCell>
+                    <TableCell className="px-4 py-3 text-right">
                       {isSubmitted ? (
                         <span className={cn("font-semibold text-xs",
                           acc >= 70 ? "text-emerald-600" : acc >= 40 ? "text-amber-600" : "text-red-500")}>
                           {acc}%
                         </span>
                       ) : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-right text-xs text-muted-foreground">
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-right text-xs text-muted-foreground">
                       {s.submittedAt ? new Date(s.submittedAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>
@@ -511,51 +513,51 @@ function QuestionsTab({ quiz }: { quiz: MockTest }) {
 
       {/* Question list */}
       <div className="border border-border rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50">
-            <tr className="text-left">
-              <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">#</th>
-              <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">Question</th>
-              <th className="px-4 py-3 text-xs font-semibold text-muted-foreground hidden sm:table-cell">Difficulty</th>
-              <th className="px-4 py-3 text-xs font-semibold text-muted-foreground text-right hidden md:table-cell">Attempts</th>
-              <th className="px-4 py-3 text-xs font-semibold text-muted-foreground text-right hidden md:table-cell">Correct</th>
-              <th className="px-4 py-3 text-xs font-semibold text-muted-foreground hidden lg:table-cell">Avg Time</th>
-              <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">Accuracy</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
+        <Table className="w-full text-sm">
+          <TableHeader className="bg-muted/50">
+            <TableRow className="text-left hover:bg-transparent">
+              <TableHead className="h-auto px-4 py-3 text-xs font-semibold text-muted-foreground">#</TableHead>
+              <TableHead className="h-auto px-4 py-3 text-xs font-semibold text-muted-foreground">Question</TableHead>
+              <TableHead className="h-auto px-4 py-3 text-xs font-semibold text-muted-foreground hidden sm:table-cell">Difficulty</TableHead>
+              <TableHead className="h-auto px-4 py-3 text-xs font-semibold text-muted-foreground text-right hidden md:table-cell">Attempts</TableHead>
+              <TableHead className="h-auto px-4 py-3 text-xs font-semibold text-muted-foreground text-right hidden md:table-cell">Correct</TableHead>
+              <TableHead className="h-auto px-4 py-3 text-xs font-semibold text-muted-foreground hidden lg:table-cell">Avg Time</TableHead>
+              <TableHead className="h-auto px-4 py-3 text-xs font-semibold text-muted-foreground">Accuracy</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="divide-y divide-border">
             {sorted.map(s => (
-              <tr key={s.questionId} className={cn("hover:bg-muted/20 transition-colors",
+              <TableRow key={s.questionId} className={cn("hover:bg-muted/20 transition-colors",
                 s.accuracy !== null && s.accuracy < 40 ? "bg-red-50/40 dark:bg-red-950/10" : "")}>
-                <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{s.order}</td>
-                <td className="px-4 py-3 max-w-[220px]">
+                <TableCell className="px-4 py-3 font-mono text-xs text-muted-foreground">{s.order}</TableCell>
+                <TableCell className="px-4 py-3 max-w-[220px]">
                   <p className="line-clamp-2 text-sm">{s.content || "—"}</p>
                   <p className="text-xs text-muted-foreground capitalize mt-0.5 sm:hidden">
                     {s.difficulty}
                   </p>
-                </td>
-                <td className="px-4 py-3 hidden sm:table-cell">
+                </TableCell>
+                <TableCell className="px-4 py-3 hidden sm:table-cell">
                   <span className={cn("text-xs px-1.5 py-0.5 rounded capitalize font-medium",
                     DIFFICULTY_COLOR[s.difficulty] ?? "bg-muted text-muted-foreground")}>
                     {s.difficulty}
                   </span>
-                </td>
-                <td className="px-4 py-3 text-right text-xs font-medium hidden md:table-cell">
+                </TableCell>
+                <TableCell className="px-4 py-3 text-right text-xs font-medium hidden md:table-cell">
                   {s.totalAttempts}
-                </td>
-                <td className="px-4 py-3 text-right text-xs font-medium text-emerald-600 hidden md:table-cell">
+                </TableCell>
+                <TableCell className="px-4 py-3 text-right text-xs font-medium text-emerald-600 hidden md:table-cell">
                   {s.correctCount}
-                </td>
-                <td className="px-4 py-3 text-xs text-muted-foreground hidden lg:table-cell">
+                </TableCell>
+                <TableCell className="px-4 py-3 text-xs text-muted-foreground hidden lg:table-cell">
                   {s.avgTimeSeconds !== null ? `${s.avgTimeSeconds}s` : "—"}
-                </td>
-                <td className="px-4 py-3 min-w-[120px]">
+                </TableCell>
+                <TableCell className="px-4 py-3 min-w-[120px]">
                   <AccuracyBar value={s.accuracy} />
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
@@ -664,17 +666,17 @@ export function QuizAnalyticsModal({ quiz, onClose }: { quiz: MockTest; onClose:
     : "bg-slate-100 text-slate-600 dark:bg-gray-100 dark:text-slate-400";
 
   return (
-    <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-background rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl border border-border">
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="p-0 gap-0 max-w-4xl max-h-[92vh] flex flex-col">
 
         {/* Header */}
-        <div className="flex items-start justify-between px-6 pt-5 pb-4 border-b border-border shrink-0">
+        <div className="flex items-start justify-between px-6 pt-5 pb-4 border-b border-border shrink-0 pr-14">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium capitalize", statusStyle)}>{status}</span>
               <span className="text-xs text-muted-foreground capitalize">{q.type?.replace(/_/g, " ")}</span>
             </div>
-            <h2 className="text-xl font-bold truncate">{q.title}</h2>
+            <DialogTitle className="text-xl font-bold truncate">{q.title}</DialogTitle>
           </div>
           <div className="flex items-center gap-1.5 ml-3 shrink-0">
             <button
@@ -693,12 +695,6 @@ export function QuizAnalyticsModal({ quiz, onClose }: { quiz: MockTest; onClose:
               title="Share / Copy summary"
             >
               <Share2 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg hover:bg-secondary text-muted-foreground transition-colors"
-            >
-              <X className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -742,7 +738,7 @@ export function QuizAnalyticsModal({ quiz, onClose }: { quiz: MockTest; onClose:
             <SettingsTab quiz={q} onPublish={async () => { await publishM.mutateAsync(); }} />
           )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

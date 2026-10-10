@@ -139,7 +139,7 @@ export default function Timetable() {
               <div className="space-y-3">
                 {getSortedClasses(mobileSelectedDay).length === 0 ? (
                   <div className="p-12 text-center rounded-2xl border border-dashed border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-                    <BookOpen className="w-10 h-10 mx-auto text-slate-300 mb-3" />
+                    <BookOpen className="size-10 mx-auto text-slate-300 mb-3" />
                     <p className="font-bold text-slate-500 text-xs">No classes scheduled.</p>
                   </div>
                 ) : (
@@ -182,11 +182,11 @@ export default function Timetable() {
                         <div className="flex items-center justify-between border-t border-slate-50 dark:border-slate-800/50 pt-2.5 mt-0.5 text-xs text-slate-500 font-medium">
                           <div className="flex flex-col gap-0.5 text-[11px] sm:text-xs">
                             <div className="flex items-center gap-1.5">
-                              <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <Clock className="size-3.5 text-slate-400 shrink-0" />
                               <span>{cls.startTime} - {cls.endTime} ({cls.periodName || `P${cls.periodNumber || (idx + 1)}`})</span>
                             </div>
                             <div className="flex items-center gap-1.5 mt-0.5">
-                              <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <MapPin className="size-3.5 text-slate-400 shrink-0" />
                               <span className="truncate">{cls.room || (isLive ? 'Virtual' : (cls.type === 'break' ? 'Cafeteria' : 'TBD'))}</span>
                             </div>
                           </div>
@@ -235,7 +235,7 @@ export default function Timetable() {
                         <tr key={idx} className={`transition ${isActive ? 'bg-blue-50/50 dark:bg-blue-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
                           <td className="px-4 py-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">
                             <div className="flex items-center gap-2">
-                              {isActive && <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />}
+                              {isActive && <span className="size-2 rounded-full bg-blue-500 animate-pulse" />}
                               <span className="font-bold text-slate-900 dark:text-white">
                                 {cls.periodName || (cls.periodNumber ? `Period ${cls.periodNumber}` : '')}
                               </span>
@@ -270,7 +270,7 @@ export default function Timetable() {
                 </table>
                 {getSortedClasses(currentDay).length === 0 && (
                   <div className="p-8 text-center bg-slate-50 dark:bg-slate-900/50">
-                    <BookOpen className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+                    <BookOpen className="size-12 mx-auto text-slate-300 mb-3" />
                     <p className="font-bold text-slate-500">No classes scheduled for today.</p>
                   </div>
                 )}
@@ -309,7 +309,7 @@ export default function Timetable() {
                   {timeSlots.length === 0 ? (
                     <tr>
                       <td colSpan={DAYS.length + 1} className="p-12 text-center text-slate-500">
-                        <BookOpen className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+                        <BookOpen className="size-12 mx-auto text-slate-300 mb-3" />
                         No timetable data available.
                       </td>
                     </tr>
@@ -339,7 +339,7 @@ export default function Timetable() {
                                 >
                                   <div className="h-full min-h-[80px] rounded-lg flex items-center justify-center border border-dashed border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600">
                                     <div className="text-center">
-                                      <Coffee className="w-4 h-4 mx-auto mb-1 opacity-50" />
+                                      <Coffee className="size-4 mx-auto mb-1 opacity-50" />
                                       <span className="text-[10px] font-bold uppercase tracking-widest opacity-50">Break</span>
                                     </div>
                                   </div>
@@ -386,7 +386,7 @@ export default function Timetable() {
   
                                   <div className="mt-auto flex items-center justify-between gap-2">
                                     <div className="flex items-center gap-1 text-[10px] font-semibold text-slate-500 truncate">
-                                      <MapPin className="w-3 h-3 flex-shrink-0" />
+                                      <MapPin className="size-3 flex-shrink-0" />
                                       <span className="truncate">{cls.room || (isLive ? 'Virtual' : (cls.type === 'break' ? 'Cafeteria' : 'TBD'))}</span>
                                     </div>
                                     {renderBadge(cls.type, isLive, isLab)}

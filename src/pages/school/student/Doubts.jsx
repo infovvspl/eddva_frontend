@@ -5,10 +5,13 @@ import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client
 import {
   ArrowLeft,
   Bot,
+  BookOpen,
+  Check,
   CheckCircle2,
   ChevronDown,
   Clock,
   HelpCircle,
+  Lightbulb,
   Loader2,
   Plus,
   Send,
@@ -17,6 +20,7 @@ import {
   ThumbsUp,
   User,
   X,
+  Zap,
 } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
 import DoubtImageAttach, { DoubtImagePreview } from '@/components/school/DoubtImageAttach';
@@ -119,7 +123,7 @@ function DoubtCard({ doubt, onHelpful, escalating }) {
                       : 'text-indigo-600 hover:bg-white/50 dark:text-indigo-300 dark:hover:bg-indigo-800/50',
                   )}
                 >
-                  ⚡ Brief
+                  <Zap className="inline size-3 mr-1 -mt-0.5" /> Brief
                 </button>
                 <button
                   type="button"
@@ -131,7 +135,7 @@ function DoubtCard({ doubt, onHelpful, escalating }) {
                       : 'text-indigo-600 hover:bg-white/50 dark:text-indigo-300 dark:hover:bg-indigo-800/50',
                   )}
                 >
-                  📖 Detailed
+                  <BookOpen className="inline size-3 mr-1 -mt-0.5" /> Detailed
                 </button>
               </div>
             )}
@@ -154,19 +158,19 @@ function DoubtCard({ doubt, onHelpful, escalating }) {
                     />
                     {parsedAi.detailed?.final_answer && (
                       <div className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50/80 p-4 dark:border-indigo-800 dark:bg-indigo-900/40">
-                        <h4 className="text-xs font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 mb-2">✅ Final Answer</h4>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 mb-2 flex items-center gap-1.5"><CheckCircle2 className="size-3.5 shrink-0" /> Final Answer</h4>
                         <MarkdownRenderer content={parsedAi.detailed.final_answer} className="prose-slate max-w-none prose-sm" />
                       </div>
                     )}
                     {parsedAi.detailed?.verification && !isAnswerPlaceholder(parsedAi.detailed.verification) && (
                       <div className="mt-3 rounded-xl border border-slate-200 bg-white/60 p-4 dark:border-slate-700 dark:bg-slate-800/60">
-                        <h4 className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2">✓ Verification</h4>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5"><Check className="size-3.5 shrink-0" /> Verification</h4>
                         <MarkdownRenderer content={parsedAi.detailed.verification} className="prose-slate max-w-none prose-sm" />
                       </div>
                     )}
                     {parsedAi.detailed?.key_concept && !isAnswerPlaceholder(parsedAi.detailed.key_concept) && (
                       <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900/30 dark:bg-amber-950/20">
-                        <h4 className="text-xs font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-2">💡 Key Concept</h4>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-2 flex items-center gap-1.5"><Lightbulb className="size-3.5 shrink-0" /> Key Concept</h4>
                         <MarkdownRenderer content={parsedAi.detailed.key_concept} className="prose-slate max-w-none prose-sm" />
                       </div>
                     )}
@@ -403,7 +407,7 @@ export default function Doubts() {
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="size-8 animate-spin text-blue-600" />
       </div>
     );
   }
@@ -415,10 +419,10 @@ export default function Doubts() {
           <button
             type="button"
             onClick={() => setView('list')}
-            className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+            className="mt-1 flex size-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
             aria-label="Back to my doubts"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="size-5" />
           </button>
           <div className="min-w-0 flex-1">
             <h1 className="text-2xl font-black text-slate-900 dark:text-white">Ask a Doubt</h1>
@@ -434,10 +438,10 @@ export default function Doubts() {
           <button
             type="button"
             onClick={() => setView('list')}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"
+            className="flex size-10 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"
             aria-label="Close"
           >
-            <X className="h-5 w-5" />
+            <X className="size-5" />
           </button>
         </div>
 
@@ -469,7 +473,7 @@ export default function Doubts() {
                 ]}
                   className="w-full"
                 />
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
               </div>
             </div>
             <div>
@@ -483,7 +487,7 @@ export default function Doubts() {
                 ]}
                   className="w-full"
                 />
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
               </div>
             </div>
           </div>
@@ -512,7 +516,7 @@ export default function Doubts() {
               ]}
               className="w-full"
             />
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
           </div>
         </div>
 
@@ -537,7 +541,7 @@ export default function Doubts() {
               onClick={() => submit(false)}
               className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-indigo-600 text-sm font-black text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 disabled:opacity-40"
             >
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {submitting ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
               Ask AI
             </button>
             <button
@@ -546,7 +550,7 @@ export default function Doubts() {
               onClick={() => submit(true)}
               className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-blue-600 text-sm font-black text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700 disabled:opacity-40"
             >
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {submitting ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
               Ask Teacher
             </button>
           </div>
@@ -578,7 +582,7 @@ export default function Doubts() {
           onClick={() => setView('ask')}
           className="inline-flex h-11 shrink-0 items-center gap-2 rounded-2xl bg-blue-600 px-4 text-sm font-black text-white shadow-lg shadow-blue-600/25 hover:bg-blue-700"
         >
-          <Plus className="h-5 w-5" />
+          <Plus className="size-5" />
           <span className="hidden sm:inline">Ask a Doubt</span>
         </button>
       </div>
@@ -617,7 +621,7 @@ export default function Doubts() {
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300',
                 )}
               >
-                <Icon className="h-4 w-4 shrink-0" />
+                <Icon className="size-4 shrink-0" />
                 <span>{label}</span>
                 <span className="rounded bg-white/20 px-1 py-0.5 text-[10px] font-bold">{count}</span>
               </button>
@@ -628,7 +632,7 @@ export default function Doubts() {
 
       {doubts.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <HelpCircle className="mx-auto h-12 w-12 text-slate-300" />
+          <HelpCircle className="mx-auto size-12 text-slate-300" />
           <h3 className="mt-4 text-base font-black text-slate-900 dark:text-white">No doubts yet</h3>
           <p className="mt-2 text-sm text-slate-500">Tap the + button to ask your first question.</p>
           <button
@@ -636,13 +640,13 @@ export default function Doubts() {
             onClick={() => setView('ask')}
             className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-black text-white hover:bg-blue-700"
           >
-            <Plus className="h-5 w-5" />
+            <Plus className="size-5" />
             Ask a Doubt
           </button>
         </div>
       ) : shownDoubts.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <HelpCircle className="mx-auto h-10 w-10 text-slate-300" />
+          <HelpCircle className="mx-auto size-10 text-slate-300" />
           <h3 className="mt-3 text-sm font-black text-slate-900 dark:text-white">
             {tab === 'pending' ? 'No pending doubts' : 'No answered doubts yet'}
           </h3>
@@ -668,10 +672,10 @@ export default function Doubts() {
       <button
         type="button"
         onClick={() => setView('ask')}
-        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-xl shadow-blue-600/30 hover:bg-blue-700 sm:hidden"
+        className="fixed bottom-6 right-6 z-40 flex size-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-xl shadow-blue-600/30 hover:bg-blue-700 sm:hidden"
         aria-label="Ask a new doubt"
       >
-        <Plus className="h-7 w-7" />
+        <Plus className="size-7" />
       </button>
     </div>
   );

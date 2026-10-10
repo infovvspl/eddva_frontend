@@ -8,6 +8,7 @@ import {
   ZoomIn, ZoomOut, BarChart3, Lightbulb
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import DppContentRenderer from "@/components/DppContentRenderer";
 import { getResourceDownloadUrl } from "@/lib/api/student";
 import { apiClient, tokenStorage } from "@/lib/api/client";
@@ -845,57 +846,40 @@ export default function ResourceViewerModal({
       </div>
 
       {/* Analytics Dialog */}
-      <AnimatePresence>
-        {showAnalytics && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-sm"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
-                    <BarChart3 className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-slate-800">Chapter Highlights</h3>
-                    <p className="text-xs font-medium text-slate-500">Summary Analytics</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowAnalytics(false)}
-                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-200 text-slate-400 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+      <Dialog open={showAnalytics} onOpenChange={setShowAnalytics}>
+        <DialogContent className="max-w-sm p-0 overflow-hidden rounded-3xl">
+          <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                <BarChart3 className="w-5 h-5" />
               </div>
-
-              <div className="p-6">
-                <div className="space-y-3">
-                  {HIGHLIGHT_CATEGORIES.map(cat => {
-                    const count = analyticsData[cat.id] || 0;
-                    return (
-                      <div key={cat.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-white shadow-sm">
-                        <div className="flex items-center gap-3">
-                          <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shadow-inner", cat.bg)}>
-                            <span className="text-sm">{cat.icon}</span>
-                          </div>
-                          <span className="text-sm font-bold text-slate-700">{cat.label}</span>
-                        </div>
-                        <span className="text-base font-black text-slate-900">{count}</span>
-                      </div>
-                    );
-                  })}
-                </div>
+              <div>
+                <DialogTitle className="font-bold text-slate-800">Chapter Highlights</DialogTitle>
+                <p className="text-xs font-medium text-slate-500">Summary Analytics</p>
               </div>
-            </motion.div>
+            </div>
           </div>
-        )}
-      </AnimatePresence>
+
+          <div className="p-6">
+            <div className="space-y-3">
+              {HIGHLIGHT_CATEGORIES.map(cat => {
+                const count = analyticsData[cat.id] || 0;
+                return (
+                  <div key={cat.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-white shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shadow-inner", cat.bg)}>
+                        <span className="text-sm">{cat.icon}</span>
+                      </div>
+                      <span className="text-sm font-bold text-slate-700">{cat.label}</span>
+                    </div>
+                    <span className="text-base font-black text-slate-900">{count}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 

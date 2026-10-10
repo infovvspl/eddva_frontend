@@ -35,6 +35,8 @@ export interface SchoolMaterial {
   fileType?: string | null;
   fileSizeKb?: number | null;
   isAiGenerated?: boolean;
+  /** 'upload' (file/link), 'manual' (typed by a teacher), 'ai'; null for older rows. */
+  contentSource?: 'upload' | 'manual' | 'ai' | null;
   topicId?: string | null;
   chapterId?: string | null;
   topicName?: string | null;
@@ -78,6 +80,10 @@ export const schoolContent = {
     classId?: string;
     sectionId?: string;
   }) => schoolApi.post('/materials', body).then(extractData),
+
+  /** Partial update — omitted fields are left unchanged. */
+  updateMaterial: (id: string, body: { title?: string; description?: string }) =>
+    schoolApi.put(`/materials/${id}`, body).then(extractData),
 
   deleteMaterial: (id: string) =>
     schoolApi.delete(`/materials/${id}`).then(extractData),

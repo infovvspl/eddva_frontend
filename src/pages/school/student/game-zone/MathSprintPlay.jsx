@@ -3,6 +3,7 @@ import { Clock, Zap, Flame, LogOut, ShieldCheck, Check, X, Heart } from 'lucide-
 import { soundEngine } from '@/lib/audioManager';
 import { toast } from 'sonner';
 import { apiClient as api } from '@/lib/api/client';
+import HintPanel from './shared/HintPanel';
 
 export default function MathSprintPlay({ session, onFinish, onQuit }) {
   const { sessionId } = session;
@@ -21,6 +22,9 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
   const [lives, setLives] = useState(3);
   const livesRef = useRef(3);
   livesRef.current = lives;
+  const [hintsUsedThisQuestion, setHintsUsedThisQuestion] = useState(0);
+  const hintsUsedThisQuestionRef = useRef(0);
+  hintsUsedThisQuestionRef.current = hintsUsedThisQuestion;
 
   const timerRef = useRef(null);
   const timeoutRef = useRef(null);
@@ -77,6 +81,7 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
     setTimeLeft(15);
     setHasAnswered(false);
     setSelectedOptionId(null);
+    setHintsUsedThisQuestion(0);
 
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
@@ -106,15 +111,37 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
     };
   }, []);
 
+  // Shared "what happens after this question is resolved" step — called
+  // either by the short auto-advance timer, or (when a hint was used, so the
+  // timer is skipped to give the student time to read it) by the manual
+  // Continue button.
+  const advanceRef = useRef(null);
+
+  const fetchNextQuestion = async () => {
+    try {
+      const res = await api.get('/school/gamification/math-sprint/next-question', {
+        params: { sessionId, currentIdx }
+      });
+      const data = res.data?.data ?? res.data;
+      setLocalQuestions((prev) => [...prev, data.question]);
+      setCurrentIdx((prev) => prev + 1);
+    } catch (err) {
+      console.error('Failed to load next math question:', err);
+      toast.error('Failed to generate next equation.');
+    }
+  };
+
   // Handle expiration of the timer
   const handleTimeUp = () => {
     soundEngine.playWrong();
     setStreak(0);
+    setHasAnswered(true);
     const newAnswers = [
       ...answersRef.current,
       {
         questionId: currentQuestion.id,
         selectedOptionId: '', // Empty means timeout
+        hintsUsed: hintsUsedThisQuestionRef.current,
       },
     ];
     setAnswers(newAnswers);
@@ -122,22 +149,10 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
     const nextLives = livesRef.current - 1;
     setLives(nextLives);
 
-    if (nextLives > 0) {
-      timeoutRef.current = setTimeout(async () => {
-        try {
-          const res = await api.get('/school/gamification/math-sprint/next-question', {
-            params: { sessionId, currentIdx }
-          });
-          const data = res.data?.data ?? res.data;
-          setLocalQuestions((prev) => [...prev, data.question]);
-          setCurrentIdx((prev) => prev + 1);
-        } catch (err) {
-          console.error('Failed to load next math question:', err);
-          toast.error('Failed to generate next equation.');
-        }
-      }, 600);
-    } else {
-      handleSubmit(newAnswers);
+    const advance = () => (nextLives > 0 ? fetchNextQuestion() : handleSubmit(newAnswers));
+    advanceRef.current = advance;
+    if (hintsUsedThisQuestionRef.current === 0) {
+      timeoutRef.current = setTimeout(advance, 600);
     }
   };
 
@@ -179,44 +194,31 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
       {
         questionId: currentQuestion.id,
         selectedOptionId: optionId,
+        hintsUsed: hintsUsedThisQuestionRef.current,
       },
     ];
     setAnswers(newAnswers);
 
-    // Auto-advance to the next question after 600ms if correct, or check lives
-    timeoutRef.current = setTimeout(async () => {
+    // Auto-advance after 600ms if correct, or check lives — but not if a
+    // hint is on screen for this question; give the student time to read it
+    // and advance manually via the Continue button instead.
+    const advance = async () => {
       if (isCorrect) {
-        try {
-          const res = await api.get('/school/gamification/math-sprint/next-question', {
-            params: { sessionId, currentIdx }
-          });
-          const data = res.data?.data ?? res.data;
-          setLocalQuestions((prev) => [...prev, data.question]);
-          setCurrentIdx((prev) => prev + 1);
-        } catch (err) {
-          console.error('Failed to load next math question:', err);
-          toast.error('Failed to generate next equation.');
-        }
+        await fetchNextQuestion();
       } else {
         const nextLives = livesRef.current - 1;
         setLives(nextLives);
         if (nextLives > 0) {
-          try {
-            const res = await api.get('/school/gamification/math-sprint/next-question', {
-              params: { sessionId, currentIdx }
-            });
-            const data = res.data?.data ?? res.data;
-            setLocalQuestions((prev) => [...prev, data.question]);
-            setCurrentIdx((prev) => prev + 1);
-          } catch (err) {
-            console.error('Failed to load next math question:', err);
-            toast.error('Failed to generate next equation.');
-          }
+          await fetchNextQuestion();
         } else {
           handleSubmit(newAnswers);
         }
       }
-    }, 600);
+    };
+    advanceRef.current = advance;
+    if (hintsUsedThisQuestionRef.current === 0) {
+      timeoutRef.current = setTimeout(advance, 600);
+    }
   };
 
   const handleSubmit = (finalAnswers) => {
@@ -258,7 +260,7 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
             className="rounded-lg p-2 bg-slate-800 text-slate-400 hover:text-white transition"
             title="Quit game"
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="size-4" />
           </button>
           <div>
             <p className="text-[10px] font-black uppercase tracking-wider text-rose-500">Arithmetic Blitz</p>
@@ -269,13 +271,13 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
         {/* HUD Statistics */}
         <div className="flex items-center gap-4 text-xs font-black">
           <div className="flex items-center gap-1.5 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 text-red-500">
-            <Heart className="h-4 w-4 fill-current" />
+            <Heart className="size-4 fill-current" />
             <span className="text-slate-400">Lives:</span>
             <div className="flex items-center gap-0.5">
               {Array.from({ length: 3 }).map((_, i) => (
                 <Heart
                   key={i}
-                  className={`h-3.5 w-3.5 ${
+                  className={`size-3.5 ${
                     i < lives ? 'fill-red-500 text-red-500 animate-pulse' : 'text-slate-600 fill-transparent'
                   }`}
                 />
@@ -283,11 +285,11 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
             </div>
           </div>
           <div className="flex items-center gap-1 bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700">
-            <Zap className={`h-4 w-4 fill-current ${isSupercharged ? 'text-yellow-400 animate-bounce' : isFever ? 'text-orange-500' : 'text-slate-400'}`} />
+            <Zap className={`size-4 fill-current ${isSupercharged ? 'text-yellow-400 animate-bounce' : isFever ? 'text-orange-500' : 'text-slate-400'}`} />
             <span>Streak: {streak}</span>
           </div>
           <div className="flex items-center gap-1 bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700 text-rose-400">
-            <Flame className="h-4 w-4 fill-current animate-pulse" />
+            <Flame className="size-4 fill-current animate-pulse" />
             <span>XP: {score}</span>
           </div>
         </div>
@@ -296,19 +298,28 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
       {/* Main Gameplay Screen Card */}
       <div className={`relative rounded-3xl border p-8 shadow-sm transition-all duration-300 min-h-[300px] flex flex-col justify-between overflow-hidden ${containerBorder} ${auraGlow}`}>
         {/* Ticking circular timer HUD */}
-        <div className="absolute top-4 right-4 flex items-center justify-center h-14 w-14 rounded-full border-4 border-slate-800 bg-slate-900 font-black text-lg text-white">
-          <Clock className={`h-3.5 w-3.5 absolute -top-1 -left-1 text-rose-500 ${timeLeft <= 10 && 'animate-spin-slow text-red-500 font-black'}`} />
+        <div className="absolute top-4 right-4 flex items-center justify-center size-14 rounded-full border-4 border-slate-800 bg-slate-900 font-black text-lg text-white">
+          <Clock className={`size-3.5 absolute -top-1 -left-1 text-rose-500 ${timeLeft <= 10 && 'animate-spin-slow text-red-500 font-black'}`} />
           <span className={timeLeft <= 10 ? 'text-red-500 scale-110 animate-pulse' : ''}>{timeLeft}</span>
         </div>
 
         {/* Question Equation Body */}
-        <div className="space-y-4 pr-12 flex-1 flex flex-col justify-center">
+        <div className="gap-y-4 pr-12 flex-1 flex flex-col justify-center">
           <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${badgeColor} self-start`}>
             {badgeLabel}
           </span>
           <h2 className="text-4xl md:text-5xl font-black text-white leading-relaxed tracking-tight text-center py-6 font-mono select-none">
             {currentQuestion?.content} = ?
           </h2>
+          <div className="flex justify-center">
+            <HintPanel
+              sessionId={sessionId}
+              gameType="math_sprint"
+              questionId={currentQuestion?.id}
+              disabled={hasAnswered}
+              onHintsUsedChange={setHintsUsedThisQuestion}
+            />
+          </div>
         </div>
 
         {/* Explanation / Streak indicator */}
@@ -316,13 +327,27 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
           <div className="mt-4 flex items-center justify-center gap-2 text-sm font-black animate-fade-in">
             {currentQuestion?.options.find((o) => o.id === selectedOptionId)?.isCorrect ? (
               <span className="text-emerald-400 flex items-center gap-1.5">
-                <Check className="h-5 w-5 stroke-[3]" /> Correct! {streak >= 5 ? '⚡ SUPERCHARGE 3X!' : streak >= 3 ? '🔥 FEVER 2X!' : '+10 XP'}
+                <Check className="size-5 stroke-[3]" /> Correct! {streak >= 5 ? '⚡ SUPERCHARGE 3X!' : streak >= 3 ? '🔥 FEVER 2X!' : '+10 XP'}
               </span>
             ) : (
               <span className="text-rose-400 flex items-center gap-1.5">
-                <X className="h-5 w-5 stroke-[3]" /> Streak reset!
+                <X className="size-5 stroke-[3]" /> Streak reset!
               </span>
             )}
+          </div>
+        )}
+
+        {/* A hint was used on this question, so the usual auto-advance timer
+            was skipped to give the student time to read it — continue manually. */}
+        {hasAnswered && hintsUsedThisQuestion > 0 && (
+          <div className="mt-4 flex justify-center">
+            <button
+              type="button"
+              onClick={() => advanceRef.current?.()}
+              className="rounded-xl bg-rose-600 px-6 py-2.5 text-xs font-black uppercase tracking-wide text-white transition hover:bg-rose-500"
+            >
+              Continue
+            </button>
           </div>
         )}
       </div>
@@ -358,7 +383,7 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
               onClick={() => handleSelectOption(option.id)}
               className={`flex items-center gap-4 rounded-2xl border p-5 text-left text-base font-black transition-all active:scale-[0.98] ${cardStyle}`}
             >
-              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-xs font-black transition-all ${badgeStyle}`}>
+              <span className={`flex size-8 shrink-0 items-center justify-center rounded-xl text-xs font-black transition-all ${badgeStyle}`}>
                 {badgeLabel}
               </span>
               <span className="leading-snug text-lg font-mono">{option.content}</span>

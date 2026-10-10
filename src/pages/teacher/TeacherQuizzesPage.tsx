@@ -29,6 +29,7 @@ import {
   PlusCircle, MinusCircle, Brain, CheckCircle2, FileEdit,
 } from "lucide-react";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -1900,45 +1901,45 @@ function LiveResultsDashboard({ quiz, onClose }: { quiz: MockTest; onClose: () =
               <p className="text-sm mt-1">Results will appear here as students submit.</p>
             </div>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs font-semibold text-muted-foreground border-b border-border">
-                  <th className="pb-2 pr-3">Student</th>
-                  <th className="pb-2 pr-3">Status</th>
-                  <th className="pb-2 pr-3 text-right">Score</th>
-                  <th className="pb-2 pr-3 text-right">Correct</th>
-                  <th className="pb-2 pr-3 text-right">Wrong</th>
-                  <th className="pb-2 text-right">Accuracy</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
+            <Table className="w-full text-sm">
+              <TableHeader>
+                <TableRow className="text-left text-xs font-semibold text-muted-foreground border-b border-border hover:bg-transparent">
+                  <TableHead className="h-auto pb-2 pr-3">Student</TableHead>
+                  <TableHead className="h-auto pb-2 pr-3">Status</TableHead>
+                  <TableHead className="h-auto pb-2 pr-3 text-right">Score</TableHead>
+                  <TableHead className="h-auto pb-2 pr-3 text-right">Correct</TableHead>
+                  <TableHead className="h-auto pb-2 pr-3 text-right">Wrong</TableHead>
+                  <TableHead className="h-auto pb-2 text-right">Accuracy</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y divide-border">
                 {sessions.map((s) => {
                   const acc = (s.correctCount && s.correctCount + (s.wrongCount || 0) + (s.skippedCount || 0)) > 0
                     ? Math.round((s.correctCount / ((s.correctCount || 0) + (s.wrongCount || 0) + (s.skippedCount || 0))) * 100)
                     : 0;
                   return (
-                    <tr key={s.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="py-2.5 pr-3 font-medium">{s.student?.fullName || s.studentId.slice(0, 8) + "…"}</td>
-                      <td className="py-2.5 pr-3">
+                    <TableRow key={s.id} className="hover:bg-muted/30 transition-colors">
+                      <TableCell className="py-2.5 pr-3 font-medium">{s.student?.fullName || s.studentId.slice(0, 8) + "…"}</TableCell>
+                      <TableCell className="py-2.5 pr-3">
                         <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium",
                           s.status === "completed" ? "bg-emerald-100 text-emerald-700" :
                           s.status === "in_progress" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600")}>
                           {s.status.replace("_", " ")}
                         </span>
-                      </td>
-                      <td className="py-2.5 pr-3 text-right font-medium">{s.totalScore ?? "—"}</td>
-                      <td className="py-2.5 pr-3 text-right text-emerald-600">{s.correctCount ?? "—"}</td>
-                      <td className="py-2.5 pr-3 text-right text-red-500">{s.wrongCount ?? "—"}</td>
-                      <td className="py-2.5 text-right">
+                      </TableCell>
+                      <TableCell className="py-2.5 pr-3 text-right font-medium">{s.totalScore ?? "—"}</TableCell>
+                      <TableCell className="py-2.5 pr-3 text-right text-emerald-600">{s.correctCount ?? "—"}</TableCell>
+                      <TableCell className="py-2.5 pr-3 text-right text-red-500">{s.wrongCount ?? "—"}</TableCell>
+                      <TableCell className="py-2.5 text-right">
                         <span className={cn("font-medium", acc >= 70 ? "text-emerald-600" : acc >= 40 ? "text-amber-600" : "text-red-500")}>
                           {s.status === "completed" ? `${acc}%` : "—"}
                         </span>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
         </div>
       </div>

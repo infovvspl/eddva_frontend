@@ -65,6 +65,7 @@ import {
   getYouTubeThumbnail,
 } from "@/lib/lecture-source";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { Table, TableHead, TableCell } from "@/components/ui/table";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1087,9 +1088,9 @@ function MarkdownContent({ content }: { content: string }) {
           : <code className="bg-secondary px-1.5 py-0.5 rounded text-xs font-mono text-primary">{children}</code>,
         pre: ({ children }) => <>{children}</>,
         hr: () => <hr className="my-4 border-border" />,
-        table: ({ children }) => <div className="overflow-x-auto my-3"><table className="w-full text-sm border-collapse">{children}</table></div>,
-        th: ({ children }) => <th className="bg-secondary text-left px-3 py-2 text-xs font-semibold border border-border">{children}</th>,
-        td: ({ children }) => <td className="px-3 py-2 text-sm border border-border">{children}</td>,
+        table: ({ children }) => <Table className="text-sm border-collapse my-3">{children}</Table>,
+        th: ({ children }) => <TableHead className="h-auto bg-secondary text-left px-3 py-2 text-xs font-semibold border border-border">{children}</TableHead>,
+        td: ({ children }) => <TableCell className="px-3 py-2 text-sm border border-border">{children}</TableCell>,
         img: ({ src, alt }) => {
           const meta = parseNoteImageAlt(String(alt || ""));
           return (
@@ -6428,7 +6429,8 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
                               broadcast={b}
                               contentLecture={linkedLecture}
                               onDelete={async () => {
-                                if (!window.confirm('Delete this OBS broadcast? This cannot be undone.')) return;
+                                const ok = await confirm({ message: 'Delete this OBS broadcast? This cannot be undone.' });
+                                if (!ok) return;
                                 try {
                                   await liveBroadcast.delete(b.id);
                                   setBroadcastLectures(prev => prev.filter(x => x.id !== b.id));

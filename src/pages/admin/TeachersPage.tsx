@@ -12,6 +12,7 @@ import { useRoles } from "@/hooks/use-roles";
 import type { BulkTeacherRow } from "@/lib/api/admin";
 import { useAuthStore } from "@/lib/auth-store";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
 type View = "list" | "add-single" | "add-bulk" | "created" | "bulk-result";
 
@@ -358,26 +359,26 @@ const TeachersPage = () => {
             {csvRows.length > 0 && (
               <>
                 <div className="bg-secondary/50 rounded-xl overflow-hidden mb-4 max-h-64 overflow-y-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-border">
-                        <th className="text-left p-3 text-xs font-bold uppercase text-muted-foreground">#</th>
-                        <th className="text-left p-3 text-xs font-bold uppercase text-muted-foreground">Name</th>
-                        <th className="text-left p-3 text-xs font-bold uppercase text-muted-foreground">Phone</th>
-                        <th className="text-left p-3 text-xs font-bold uppercase text-muted-foreground">Email</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                  <Table className="w-full text-sm">
+                    <TableHeader>
+                      <TableRow className="border-b border-border hover:bg-transparent">
+                        <TableHead className="h-auto text-left p-3 text-xs font-bold uppercase text-muted-foreground">#</TableHead>
+                        <TableHead className="h-auto text-left p-3 text-xs font-bold uppercase text-muted-foreground">Name</TableHead>
+                        <TableHead className="h-auto text-left p-3 text-xs font-bold uppercase text-muted-foreground">Phone</TableHead>
+                        <TableHead className="h-auto text-left p-3 text-xs font-bold uppercase text-muted-foreground">Email</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {csvRows.map((r, i) => (
-                        <tr key={i} className="border-b border-border last:border-0">
-                          <td className="p-3 text-muted-foreground">{i + 1}</td>
-                          <td className="p-3 font-medium">{r.fullName}</td>
-                          <td className="p-3 text-muted-foreground">{r.phoneNumber}</td>
-                          <td className="p-3 text-muted-foreground">{r.email}</td>
-                        </tr>
+                        <TableRow key={i} className="border-b border-border last:border-0">
+                          <TableCell className="p-3 text-muted-foreground">{i + 1}</TableCell>
+                          <TableCell className="p-3 font-medium">{r.fullName}</TableCell>
+                          <TableCell className="p-3 text-muted-foreground">{r.phoneNumber}</TableCell>
+                          <TableCell className="p-3 text-muted-foreground">{r.email}</TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
                 <div className="flex items-center gap-3">
                   <Button onClick={handleBulkSubmit} disabled={bulkCreate.isPending} className="gap-2">
@@ -408,21 +409,21 @@ const TeachersPage = () => {
             </div>
 
             <div className="bg-secondary/50 rounded-xl overflow-hidden max-h-80 overflow-y-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left p-3 text-xs font-bold uppercase text-muted-foreground">Name</th>
-                    <th className="text-left p-3 text-xs font-bold uppercase text-muted-foreground">Email</th>
-                    <th className="text-left p-3 text-xs font-bold uppercase text-muted-foreground">Temp Password</th>
-                    <th className="text-left p-3 text-xs font-bold uppercase text-muted-foreground">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table className="w-full text-sm">
+                <TableHeader>
+                  <TableRow className="border-b border-border hover:bg-transparent">
+                    <TableHead className="h-auto text-left p-3 text-xs font-bold uppercase text-muted-foreground">Name</TableHead>
+                    <TableHead className="h-auto text-left p-3 text-xs font-bold uppercase text-muted-foreground">Email</TableHead>
+                    <TableHead className="h-auto text-left p-3 text-xs font-bold uppercase text-muted-foreground">Temp Password</TableHead>
+                    <TableHead className="h-auto text-left p-3 text-xs font-bold uppercase text-muted-foreground">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {bulkResult.results.map((r: any, i: number) => (
-                    <tr key={i} className="border-b border-border last:border-0">
-                      <td className="p-3 font-medium">{r.fullName}</td>
-                      <td className="p-3 text-muted-foreground">{r.email}</td>
-                      <td className="p-3">
+                    <TableRow key={i} className="border-b border-border last:border-0">
+                      <TableCell className="p-3 font-medium">{r.fullName}</TableCell>
+                      <TableCell className="p-3 text-muted-foreground">{r.email}</TableCell>
+                      <TableCell className="p-3">
                         {r.tempPassword ? (
                           <div className="flex items-center gap-2">
                             <code className="font-mono font-bold text-foreground">{r.tempPassword}</code>
@@ -431,19 +432,19 @@ const TeachersPage = () => {
                             </button>
                           </div>
                         ) : "—"}
-                      </td>
-                      <td className="p-3">
+                      </TableCell>
+                      <TableCell className="p-3">
                         <span className={`text-xs font-bold px-2 py-1 rounded-full ${
                           r.status === "created" ? "bg-emerald-500/10 text-emerald-600" : "bg-orange-500/10 text-orange-600"
                         }`}>
                           {r.status}
                         </span>
                         {r.error && <span className="text-xs text-red-400 ml-2">{r.error}</span>}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
             <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
               <Mail className="w-3.5 h-3.5" /> Credentials emailed to all created teachers
@@ -512,48 +513,48 @@ const TeachersPage = () => {
         </div>
       ) : (
         <div className="bg-card border border-border rounded-2xl overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border bg-secondary/50">
-                <th className="text-left p-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Name</th>
-                <th className="text-left p-4 text-xs font-bold uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Phone</th>
-                <th className="text-left p-4 text-xs font-bold uppercase tracking-wider text-muted-foreground hidden md:table-cell">Email</th>
+          <Table className="w-full">
+            <TableHeader>
+              <TableRow className="border-b border-border bg-secondary/50 hover:bg-secondary/50">
+                <TableHead className="h-auto text-left p-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Name</TableHead>
+                <TableHead className="h-auto text-left p-4 text-xs font-bold uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Phone</TableHead>
+                <TableHead className="h-auto text-left p-4 text-xs font-bold uppercase tracking-wider text-muted-foreground hidden md:table-cell">Email</TableHead>
                 {isStaffBased && (
-                  <th className="text-left p-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Permission Group</th>
+                  <TableHead className="h-auto text-left p-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Permission Group</TableHead>
                 )}
-                <th className="text-left p-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Status</th>
-              </tr>
-            </thead>
-            <tbody>
+                <TableHead className="h-auto text-left p-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {filteredTeachers.map((t: any) => (
-                <tr key={t.id} onClick={() => navigate(`/admin/teachers/${t.id}`)}
+                <TableRow key={t.id} onClick={() => navigate(`/admin/teachers/${t.id}`)}
                   className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer">
-                  <td className="p-4">
+                  <TableCell className="p-4">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary shrink-0">
                         {(t.fullName || "T").charAt(0)}
                       </div>
                       <span className="text-sm font-medium text-foreground">{t.fullName}</span>
                     </div>
-                  </td>
-                  <td className="p-4 text-sm text-muted-foreground hidden sm:table-cell">{t.phoneNumber}</td>
-                  <td className="p-4 text-sm text-muted-foreground hidden md:table-cell">{t.email || "—"}</td>
+                  </TableCell>
+                  <TableCell className="p-4 text-sm text-muted-foreground hidden sm:table-cell">{t.phoneNumber}</TableCell>
+                  <TableCell className="p-4 text-sm text-muted-foreground hidden md:table-cell">{t.email || "—"}</TableCell>
                   {isStaffBased && (
-                    <td className="p-4 text-sm text-muted-foreground font-semibold uppercase tracking-wider">
+                    <TableCell className="p-4 text-sm text-muted-foreground font-semibold uppercase tracking-wider">
                       {t.customRole?.name || (t.permissionGroup === 'DIRECTOR' ? 'Admin' : (t.permissionGroup?.replace(/_/g, " ") || "Admin"))}
-                    </td>
+                    </TableCell>
                   )}
-                  <td className="p-4">
+                  <TableCell className="p-4">
                     <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
                       (t.status || "").toLowerCase() === "active" ? "bg-emerald-500/10 text-emerald-600" : "bg-orange-500/10 text-orange-600"
                     }`}>
                       {t.status}
                     </span>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
 

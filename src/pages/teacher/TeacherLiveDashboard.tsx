@@ -19,6 +19,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import {
   ArrowLeft,
@@ -232,38 +234,38 @@ function LegacyPostClassSummary({ stats, onDone }: { stats: BroadcastStats; onDo
 
                   {tab === 'participants' && (
                     <div className="overflow-hidden rounded-xl border border-border bg-card/50">
-                      <table className="w-full text-sm text-left">
-                        <thead className="text-muted-foreground bg-muted/30 border-b border-border text-xs uppercase tracking-wider font-bold">
-                          <tr>
-                            <th className="px-6 py-4">Student</th>
-                            <th className="px-6 py-4">Joined At</th>
-                            <th className="px-6 py-4">Total Duration</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
+                      <Table className="w-full text-sm text-left">
+                        <TableHeader className="text-muted-foreground bg-muted/30 border-b border-border text-xs uppercase tracking-wider font-bold">
+                          <TableRow className="hover:bg-transparent">
+                            <TableHead className="h-auto px-6 py-4">Student</TableHead>
+                            <TableHead className="h-auto px-6 py-4">Joined At</TableHead>
+                            <TableHead className="h-auto px-6 py-4">Total Duration</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody className="divide-y divide-border">
                           {stats.participants?.length === 0 && (
-                            <tr><td colSpan={3} className="px-6 py-8 text-center text-muted-foreground">No participants</td></tr>
+                            <TableRow><TableCell colSpan={3} className="px-6 py-8 text-center text-muted-foreground">No participants</TableCell></TableRow>
                           )}
                           {stats.participants?.map((p) => (
-                            <tr key={p.userId} className="hover:bg-muted/20 transition-colors">
-                              <td className="px-6 py-4">
+                            <TableRow key={p.userId} className="hover:bg-muted/20 transition-colors">
+                              <TableCell className="px-6 py-4">
                                 <div className="flex items-center gap-3">
                                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-sm shrink-0">
                                     {p.userName.charAt(0).toUpperCase()}
                                   </div>
                                   <span className="font-medium text-foreground">{p.userName}</span>
                                 </div>
-                              </td>
-                              <td className="px-6 py-4 text-muted-foreground font-medium">{fmtTime(p.joinedAt)}</td>
-                              <td className="px-6 py-4">
+                              </TableCell>
+                              <TableCell className="px-6 py-4 text-muted-foreground font-medium">{fmtTime(p.joinedAt)}</TableCell>
+                              <TableCell className="px-6 py-4">
                                 <span className="px-3 py-1 rounded-full bg-muted/50 border border-border text-xs font-semibold text-foreground">
                                   {p.durationSeconds != null ? formatDuration(p.durationSeconds) : '–'}
                                 </span>
-                              </td>
-                            </tr>
+                              </TableCell>
+                            </TableRow>
                           ))}
-                        </tbody>
-                      </table>
+                        </TableBody>
+                      </Table>
                     </div>
                   )}
 
@@ -2021,44 +2023,42 @@ export default function TeacherLiveDashboard() {
             </button>
           )}
           {/* End Class Confirmation Modal */}
-          {showEndConfirm && (
-            <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-              <div className="w-full max-w-md rounded-2xl bg-white border border-slate-200 p-6 shadow-2xl animate-in zoom-in-95 duration-200">
-                <div className="flex items-center gap-3 mb-4 text-rose-600">
-                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200">
-                    <AlertTriangle size={24} />
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-800">
-                    {lectureStatus === 'LIVE' ? 'End Live Class' : 'Cancel Stream'}
-                  </h3>
+          <AlertDialog open={showEndConfirm} onOpenChange={setShowEndConfirm}>
+            <AlertDialogContent className="max-w-md rounded-2xl p-6">
+              <div className="flex items-center gap-3 mb-4 text-rose-600">
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200">
+                  <AlertTriangle size={24} />
                 </div>
-
-                <p className="text-sm text-slate-600 leading-relaxed mb-6">
-                  {lectureStatus === 'LIVE'
-                    ? 'End this live class? Students will be disconnected.'
-                    : 'Cancel this scheduled stream? This cannot be undone.'}
-                </p>
-
-                <div className="flex justify-end gap-3">
-                  <button
-                    onClick={() => setShowEndConfirm(false)}
-                    className="rounded-xl border border-slate-200 px-5 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-all duration-200"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowEndConfirm(false);
-                      endLecture();
-                    }}
-                    className="rounded-2xl bg-rose-500 hover:bg-rose-600 text-white px-5 py-2.5 text-xs font-bold transition-all duration-200"
-                  >
-                    {lectureStatus === 'LIVE' ? 'End Class' : 'Cancel Stream'}
-                  </button>
-                </div>
+                <AlertDialogTitle className="text-lg font-bold text-slate-800">
+                  {lectureStatus === 'LIVE' ? 'End Live Class' : 'Cancel Stream'}
+                </AlertDialogTitle>
               </div>
-            </div>
-          )}
+
+              <AlertDialogDescription className="text-sm text-slate-600 leading-relaxed mb-6">
+                {lectureStatus === 'LIVE'
+                  ? 'End this live class? Students will be disconnected.'
+                  : 'Cancel this scheduled stream? This cannot be undone.'}
+              </AlertDialogDescription>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowEndConfirm(false)}
+                  className="rounded-xl border border-slate-200 px-5 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-all duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowEndConfirm(false);
+                    endLecture();
+                  }}
+                  className="rounded-2xl bg-rose-500 hover:bg-rose-600 text-white px-5 py-2.5 text-xs font-bold transition-all duration-200"
+                >
+                  {lectureStatus === 'LIVE' ? 'End Class' : 'Cancel Stream'}
+                </button>
+              </div>
+            </AlertDialogContent>
+          </AlertDialog>
 
           {/* ─── Pinned Announcement Creator Modal ─── */}
           {showAnnouncementModal && (

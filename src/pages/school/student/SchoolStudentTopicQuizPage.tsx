@@ -101,11 +101,11 @@ function QuestionCard({
               )}
             >
               <div className={cn(
-                "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-sm font-semibold transition-colors sm:h-10 sm:w-10",
+                "flex size-9 shrink-0 items-center justify-center rounded-xl border text-sm font-semibold transition-colors sm:size-10",
                 isSelected ? "border-white bg-white text-blue-700" : "border-slate-200 bg-slate-50 text-slate-500"
               )}>
                 {isMulti
-                  ? (isSelected ? <Check className="w-5 h-5 sm:w-6 sm:h-6" /> : <span className="text-slate-400">{String.fromCharCode(65 + i)}</span>)
+                  ? (isSelected ? <Check className="size-5 sm:size-6" /> : <span className="text-slate-400">{String.fromCharCode(65 + i)}</span>)
                   : String.fromCharCode(65 + i)}
               </div>
               <div className="flex-1 text-sm font-medium tracking-tight sm:text-base">
@@ -126,11 +126,11 @@ function ScoreRing({ accuracy, score, outOf, correct, wrong, skipped }: {
 }) {
   return (
     <CardGlass className="p-10 border-white bg-slate-900 text-white relative overflow-hidden mb-10">
-      <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-blue-500/10 blur-[80px] rounded-full pointer-events-none" />
+      <div className="absolute -bottom-20 -right-20 size-64 bg-blue-500/10 blur-[80px] rounded-full pointer-events-none" />
       <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-10">Show Results</h3>
       <div className="flex items-center gap-10 flex-col sm:flex-row">
-        <div className="relative w-32 h-32 shrink-0">
-          <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+        <div className="relative size-32 shrink-0">
+          <svg className="size-full -rotate-90" viewBox="0 0 100 100">
             <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="10" />
             <motion.circle cx="50" cy="50" r="45" fill="none"
               stroke={accuracy >= 70 ? "#10b981" : accuracy >= 40 ? "#f59e0b" : "#ef4444"}
@@ -179,8 +179,8 @@ function QuizRunner({
     <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden sm:gap-3">
       <CardGlass className="flex shrink-0 items-center justify-between border-slate-200 bg-white px-3 py-2.5 shadow-sm sm:px-5 sm:py-3">
         <div className="flex items-center gap-6">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm bg-purple-600 text-white">
-            <Sparkles className="w-5 h-5" />
+          <div className="size-10 rounded-lg flex items-center justify-center shadow-sm bg-purple-600 text-white">
+            <Sparkles className="size-5" />
           </div>
           <div className="min-w-0">
             <p className="text-[10px] font-semibold text-slate-500 leading-none mb-1">AI Practice Quiz</p>
@@ -192,16 +192,16 @@ function QuizRunner({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+            className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-800"
             title="Close quiz"
           >
-            <X className="h-4 w-4" />
+            <X className="size-4" />
           </button>
           <div className={cn(
             "flex items-center gap-2 px-3 py-2 rounded-lg border transition-all",
             timerDanger ? "bg-red-500 text-white border-red-600 animate-pulse" : "bg-white border-slate-100 text-slate-900"
           )}>
-            <Clock className="w-3.5 h-3.5" />
+            <Clock className="size-3.5" />
             <span className="text-xs sm:text-sm font-semibold tabular-nums leading-none">{fmt(seconds)}</span>
           </div>
           <motion.button
@@ -236,7 +236,7 @@ function QuizRunner({
                 disabled={currentQ === 0}
                 className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-40"
               >
-                <ArrowLeft className="h-4 w-4" />
+                <ArrowLeft className="size-4" />
                 Previous
               </button>
               <button
@@ -246,7 +246,7 @@ function QuizRunner({
                 )}
               >
                 {isLast ? "Finish Quiz" : "Next Question"}
-                {isLast ? <CheckCircle className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
+                {isLast ? <CheckCircle className="size-4" /> : <ArrowRight className="size-4" />}
               </button>
             </div>
           </CardGlass>
@@ -421,8 +421,8 @@ export default function SchoolStudentTopicQuizPage() {
   if (["loading", "ai_generating", "ai_submitting"].includes(stage)) {
     return (
       <div className="py-40 flex flex-col items-center justify-center text-center gap-10">
-        <div className="w-24 h-24 rounded-[2.5rem] bg-white border border-slate-100 flex items-center justify-center shadow-3xl">
-          <Loader2 className="w-12 h-12 animate-spin text-purple-600" />
+        <div className="size-24 rounded-[2.5rem] bg-white border border-slate-100 flex items-center justify-center shadow-3xl">
+          <Loader2 className="size-12 animate-spin text-purple-600" />
         </div>
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] animate-pulse">Synchronizing Neural Modules...</p>
       </div>
@@ -435,17 +435,17 @@ export default function SchoolStudentTopicQuizPage() {
         <div className="w-full max-w-xl">
           <button
             onClick={() => navigate(-1)}
-            className="w-11 h-11 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-all mx-auto mb-8 shadow-sm"
+            className="size-11 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-all mx-auto mb-8 shadow-sm"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="size-5" />
           </button>
 
           <h2 className="text-3xl font-bold text-slate-900 mb-2">Quiz Generation Failed</h2>
           <p className="text-sm text-slate-500 mb-10">Neural connection is temporarily unavailable. Please try again.</p>
 
           <CardGlass className="p-8 border-slate-200 bg-white shadow-sm">
-            <div className="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md mx-auto mb-6">
-              <Sparkles className="w-6 h-6" />
+            <div className="size-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md mx-auto mb-6">
+              <Sparkles className="size-6" />
             </div>
             <h3 className="text-xl font-semibold text-slate-900 mb-2">Try AI Practice</h3>
             <p className="text-sm text-slate-500 leading-relaxed mb-8">
@@ -483,21 +483,21 @@ export default function SchoolStudentTopicQuizPage() {
           <CardGlass className="p-8 border-slate-200 bg-white shadow-sm relative">
             <button
               onClick={() => navigate(-1)}
-              className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+              className="absolute top-4 right-4 flex size-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
               title="Go back"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="size-4" />
             </button>
-            <div className="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md mb-6"><BrainCircuit className="w-6 h-6" /></div>
+            <div className="size-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md mb-6"><BrainCircuit className="size-6" /></div>
             <p className="text-xs font-semibold text-indigo-600 mb-1">AI quiz ready</p>
             <h1 className="text-3xl font-bold text-slate-900 mb-7 leading-tight">{aiQuizData.topicName}</h1>
             <div className="grid grid-cols-2 gap-4 mb-10">
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-                <Clock className="w-4 h-4 text-indigo-600 mb-2" />
+                <Clock className="size-4 text-indigo-600 mb-2" />
                 <p className="text-xs font-semibold text-slate-800">{aiQuizData.durationMinutes} min duration</p>
               </div>
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-                <Target className="w-4 h-4 text-emerald-500 mb-2" />
+                <Target className="size-4 text-emerald-500 mb-2" />
                 <p className="text-xs font-semibold text-slate-800">70% target score</p>
               </div>
             </div>
@@ -546,11 +546,11 @@ export default function SchoolStudentTopicQuizPage() {
       <div className="py-20 px-6">
         <div className="w-full max-w-4xl mx-auto">
           <div className="text-center mb-16">
-            <div className={cn("w-20 h-20 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-2xl", aiResult.passed ? "bg-emerald-500 text-white" : "bg-purple-600 text-white")}>
-              {aiResult.passed ? <CheckCircle className="w-10 h-10" /> : <Activity className="w-10 h-10" />}
+            <div className={cn("size-20 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-2xl", aiResult.passed ? "bg-emerald-500 text-white" : "bg-purple-600 text-white")}>
+              {aiResult.passed ? <CheckCircle className="size-10" /> : <Activity className="size-10" />}
             </div>
             <h1 className="text-5xl font-black text-slate-900 uppercase italic tracking-tighter mb-2">{aiResult.passed ? "Neural Pass" : "Simulation Logged"}</h1>
-            <div className="flex items-center justify-center gap-3"><Sparkles className="w-4 h-4 text-purple-500" /><p className="text-xs font-black text-purple-500 uppercase tracking-widest">AI Synthesis Result</p></div>
+            <div className="flex items-center justify-center gap-3"><Sparkles className="size-4 text-purple-500" /><p className="text-xs font-black text-purple-500 uppercase tracking-widest">AI Synthesis Result</p></div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -563,7 +563,7 @@ export default function SchoolStudentTopicQuizPage() {
               skipped={0}
             />
             <CardGlass className="p-8 border-amber-400/20 bg-amber-50/60 flex items-center gap-6 mb-10 h-fit">
-              <Trophy className="w-10 h-10 text-amber-500 shrink-0" />
+              <Trophy className="size-10 text-amber-500 shrink-0" />
               <div>
                 <p className="text-2xl font-black italic text-slate-900">+{aiResult.xpEarned} XP</p>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Sync rewards transferred.</p>
@@ -573,8 +573,8 @@ export default function SchoolStudentTopicQuizPage() {
 
           <CardGlass className="p-8 border-white mb-10 overflow-hidden">
             <button onClick={() => setShowReview(!showReview)} className="w-full flex items-center justify-between">
-              <div className="flex items-center gap-4"><Info className="w-5 h-5 text-slate-400" /><span className="text-sm font-black text-slate-900 uppercase italic">Review Logic Patterns</span></div>
-              <ChevronRight className={cn("w-6 h-6 text-slate-300 transition-transform", showReview && "rotate-90")} />
+              <div className="flex items-center gap-4"><Info className="size-5 text-slate-400" /><span className="text-sm font-black text-slate-900 uppercase italic">Review Logic Patterns</span></div>
+              <ChevronRight className={cn("size-6 text-slate-300 transition-transform", showReview && "rotate-90")} />
             </button>
             <AnimatePresence>
               {showReview && (
@@ -592,8 +592,8 @@ export default function SchoolStudentTopicQuizPage() {
                     return (
                       <div key={i} className={cn("p-6 rounded-[2rem] border transition-all", isRight ? "bg-emerald-50 border-emerald-100" : "bg-red-50 border-red-100")}>
                         <div className="flex gap-4 mb-4">
-                          <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm", isRight ? "bg-emerald-500 text-white" : "bg-red-500 text-white")}>
-                            {isRight ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                          <div className={cn("size-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm", isRight ? "bg-emerald-500 text-white" : "bg-red-500 text-white")}>
+                            {isRight ? <CheckCircle className="size-4" /> : <XCircle className="size-4" />}
                           </div>
                           <p className="text-base font-bold text-slate-950">{q.content}</p>
                         </div>
@@ -624,7 +624,7 @@ export default function SchoolStudentTopicQuizPage() {
             </AnimatePresence>
           </CardGlass>
 
-          <button onClick={() => navigate(-1)} className="w-full py-8 rounded-[3rem] bg-slate-900 text-white text-xs font-black uppercase tracking-[0.4em] shadow-2xl flex items-center justify-center gap-6">Return to Planner <ArrowRight className="w-6 h-6" /></button>
+          <button onClick={() => navigate(-1)} className="w-full py-8 rounded-[3rem] bg-slate-900 text-white text-xs font-black uppercase tracking-[0.4em] shadow-2xl flex items-center justify-center gap-6">Return to Planner <ArrowRight className="size-6" /></button>
         </div>
       </div>
     );

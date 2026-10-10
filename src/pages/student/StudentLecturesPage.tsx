@@ -6,7 +6,7 @@ import {
   Bookmark, BookmarkCheck, Zap, Brain, AlertTriangle,
   ChevronRight, Radio, Sparkles, RotateCcw,
   MessageCircle, TrendingUp, Star, ArrowRight,
-  Eye, CheckCircle2, PlayCircle, ChevronDown,
+  Eye, CheckCircle2, PlayCircle, ChevronDown, PartyPopper, X,
 } from "lucide-react";
 import { useAllBatchLectures, useAllEnrolledSubjectNames, useMyCourses } from "@/hooks/use-student";
 import type { StudentLecture } from "@/lib/api/student";
@@ -234,7 +234,7 @@ function InsightPanel({ lectures }: { lectures: StudentLecture[] }) {
           </div>
         </div>
         {weakTopics.length === 0 ? (
-          <p className="text-xs text-slate-400 text-center py-3">Great job — no weak topics! 🎉</p>
+          <p className="text-xs text-slate-400 text-center py-3 flex items-center justify-center gap-1">Great job — no weak topics! <PartyPopper className="size-3.5 shrink-0" /></p>
         ) : (
           <div className="space-y-2.5">
             {weakTopics.map((t, i) => (
@@ -799,7 +799,7 @@ export default function StudentLecturesPage() {
             {search && (
               <button onClick={() => setSearch("")}
                 className="mr-4 w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-slate-200 transition-colors">
-                <span className="text-xs">✕</span>
+                <X className="size-3" />
               </button>
             )}
           </div>

@@ -126,7 +126,7 @@ export default function SlidePresenter({ imageUrls, onSlide, className }: SlideP
     return (
       <div className={className}>
         <div className="grid place-items-center rounded-2xl border border-dashed border-white/15 bg-white/5 p-6 text-center">
-          <Presentation className="mb-2 h-9 w-9 text-slate-400" />
+          <Presentation className="mb-2 size-9 text-slate-400" />
           <p className="text-sm font-bold text-slate-100">Present slides in your class</p>
           <p className="mt-1 max-w-xs text-xs text-slate-400">Upload a PDF — export your PowerPoint to PDF first. Students see each slide live.</p>
           <button
@@ -134,7 +134,7 @@ export default function SlidePresenter({ imageUrls, onSlide, className }: SlideP
             disabled={loading}
             className="mt-3 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-60"
           >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />}
+            {loading ? <Loader2 className="size-4 animate-spin" /> : <FileUp className="size-4" />}
             {loading ? 'Loading…' : 'Upload PDF'}
           </button>
           {error && <p className="mt-2 text-xs font-semibold text-red-400">{error}</p>}
@@ -148,19 +148,19 @@ export default function SlidePresenter({ imageUrls, onSlide, className }: SlideP
     <div className={className}>
       <div className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
         <div className="flex min-w-0 items-center gap-2">
-          <Presentation className="h-4 w-4 shrink-0 text-blue-400" />
+          <Presentation className="size-4 shrink-0 text-blue-400" />
           <span className="truncate text-xs font-bold text-slate-200">{fileName}</span>
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={() => go(-1)} disabled={index === 0} className="grid h-8 w-8 place-items-center rounded-lg text-slate-300 hover:bg-white/10 disabled:opacity-40">
-            <ChevronLeft className="h-4 w-4" />
+          <button onClick={() => go(-1)} disabled={index === 0} className="grid size-8 place-items-center rounded-lg text-slate-300 hover:bg-white/10 disabled:opacity-40">
+            <ChevronLeft className="size-4" />
           </button>
           <span className="min-w-[3.5rem] text-center text-xs font-black text-slate-100">{index + 1} / {total}</span>
-          <button onClick={() => go(1)} disabled={index === total - 1} className="grid h-8 w-8 place-items-center rounded-lg text-slate-300 hover:bg-white/10 disabled:opacity-40">
-            <ChevronRight className="h-4 w-4" />
+          <button onClick={() => go(1)} disabled={index === total - 1} className="grid size-8 place-items-center rounded-lg text-slate-300 hover:bg-white/10 disabled:opacity-40">
+            <ChevronRight className="size-4" />
           </button>
-          <button onClick={clear} title="Close slides" className="ml-1 grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-red-400">
-            <X className="h-4 w-4" />
+          <button onClick={clear} title="Close slides" className="ml-1 grid size-8 place-items-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-red-400">
+            <X className="size-4" />
           </button>
         </div>
       </div>
@@ -193,5 +193,5 @@ function SlideThumb({ slide }: { slide: HTMLCanvasElement | HTMLImageElement }) 
       setSrc(slide.src);
     }
   }, [slide]);
-  return src ? <img src={src} alt="" className="h-full w-full object-cover" /> : <div className="h-full w-full bg-slate-200 dark:bg-slate-700" />;
+  return src ? <img src={src} alt="" className="size-full object-cover" /> : <div className="size-full bg-slate-200 dark:bg-slate-700" />;
 }

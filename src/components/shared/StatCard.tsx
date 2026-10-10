@@ -1,5 +1,6 @@
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Card } from "@/components/ui/card";
 import type { StatCardData } from "@/lib/types";
 
 const colorMap = {
@@ -14,7 +15,7 @@ const colorMap = {
 export const StatCard = ({ label, value, trend, icon: Icon, color }: StatCardData) => {
   const c = colorMap[color];
   return (
-    <div className={cn("card-surface p-5 flex flex-col gap-3", `border-l-2`, c.border)}>
+    <Card className={cn("rounded-xl shadow-none p-5 flex flex-col gap-3 border-l-2", c.border)}>
       <div className="flex items-center justify-between">
         <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center", c.bg)}>
           <Icon className={cn("w-4.5 h-4.5", c.text)} />
@@ -30,6 +31,6 @@ export const StatCard = ({ label, value, trend, icon: Icon, color }: StatCardDat
         <p className="text-2xl font-bold text-foreground">{value}</p>
         <p className="text-sm text-muted-foreground mt-0.5">{label}</p>
       </div>
-    </div>
+    </Card>
   );
 };

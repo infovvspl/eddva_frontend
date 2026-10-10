@@ -16,6 +16,7 @@ import {
 import FloatingReactionLayer, { useFloatingReactions } from '@/components/school/live/FloatingReaction';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { useConfirm } from '@/context/ConfirmContext';
 import {
   ArrowLeft,
   BarChart2,
@@ -103,6 +104,7 @@ export default function StudentLiveRoomPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const { user } = useAuthStore();
 
   const [phase, setPhase] = useState<Phase>('waiting');
@@ -197,8 +199,9 @@ export default function StudentLiveRoomPage() {
     toast({ title: 'Notes downloaded successfully!' });
   };
 
-  const clearNotes = () => {
-    if (window.confirm("Are you sure you want to clear your notes?")) {
+  const clearNotes = async () => {
+    const ok = await confirm({ title: 'Clear Notes', message: "Are you sure you want to clear your notes?" });
+    if (ok) {
       setNotes('');
       if (id) {
         localStorage.removeItem(`coaching_student_notes_${id}`);

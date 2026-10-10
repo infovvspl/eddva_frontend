@@ -62,7 +62,7 @@ function Section({ icon: Icon, title, subtitle, children }: {
     <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-6">
       <header className="mb-4 flex items-start gap-3">
         <div className="rounded-xl bg-indigo-50 p-2 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-300">
-          <Icon className="h-5 w-5" />
+          <Icon className="size-5" />
         </div>
         <div>
           <h2 className="text-base font-black text-slate-900 dark:text-white sm:text-lg">{title}</h2>
@@ -78,7 +78,7 @@ function Section({ icon: Icon, title, subtitle, children }: {
 function DemoNotice({ text }: { text: string }) {
   return (
     <div className="flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-950/40">
-      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+      <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" />
       <div>
         <p className="text-sm font-black text-amber-900 dark:text-amber-200">Demo Feature</p>
         <p className="mt-1 text-xs leading-relaxed text-amber-800 dark:text-amber-300">{text}</p>
@@ -152,7 +152,7 @@ export default function AstroProfile() {
       {/* Hero */}
       <div className="mb-5 flex items-start gap-4">
         <div className="rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 p-3 text-white shadow-lg shadow-indigo-500/25">
-          <Sparkles className="h-6 w-6" />
+          <Sparkles className="size-6" />
         </div>
         <div className="min-w-0">
           <h1 className="text-xl font-black text-slate-900 dark:text-white sm:text-2xl">
@@ -233,16 +233,16 @@ export default function AstroProfile() {
             className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-indigo-500/25 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           >
             {loading
-              ? (<><RefreshCw className="h-4 w-4 animate-spin" /> Generating…</>)
-              : (<><Sparkles className="h-4 w-4" /> Generate Report</>)}
+              ? (<><RefreshCw className="size-4 animate-spin" /> Generating…</>)
+              : (<><Sparkles className="size-4" /> Generate Report</>)}
           </button>
 
           {loading && (
             <div className="mt-5 rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/60">
               <div className="flex items-center gap-3">
-                <span className="relative flex h-3 w-3">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-75" />
-                  <span className="relative inline-flex h-3 w-3 rounded-full bg-indigo-500" />
+                <span className="relative flex size-3">
+                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-indigo-400 opacity-75" />
+                  <span className="relative inline-flex size-3 rounded-full bg-indigo-500" />
                 </span>
                 <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                   {LOADING_STEPS[step]}
@@ -266,11 +266,11 @@ export default function AstroProfile() {
                 <p className="text-xs font-bold uppercase tracking-widest text-indigo-200">Insight Profile</p>
                 <h2 className="mt-1 truncate text-2xl font-black">{report.overview.fullName}</h2>
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-indigo-100">
-                  <span className="inline-flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{report.overview.dateOfBirth}</span>
+                  <span className="inline-flex items-center gap-1"><Calendar className="size-3.5" />{report.overview.dateOfBirth}</span>
                   {report.overview.timeOfBirth && (
-                    <span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{report.overview.timeOfBirth}</span>
+                    <span className="inline-flex items-center gap-1"><Clock className="size-3.5" />{report.overview.timeOfBirth}</span>
                   )}
-                  <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{report.overview.placeOfBirth}</span>
+                  <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" />{report.overview.placeOfBirth}</span>
                 </div>
                 <p className="mt-2 text-[11px] text-indigo-200">
                   Generated {new Date(report.overview.generatedOn).toLocaleDateString()} · Profile {report.overview.profileId}
@@ -278,7 +278,7 @@ export default function AstroProfile() {
               </div>
 
               <div className="shrink-0 text-center">
-                <div className="grid h-24 w-24 place-items-center rounded-full border-4 border-white/30 bg-white/10 backdrop-blur">
+                <div className="grid size-24 place-items-center rounded-full border-4 border-white/30 bg-white/10 backdrop-blur">
                   <div>
                     <p className="text-3xl font-black leading-none">{report.overview.insightScore}</p>
                     <p className="text-[10px] font-bold uppercase tracking-wide text-indigo-200">Insight</p>
@@ -344,7 +344,7 @@ export default function AstroProfile() {
             <ol className="relative space-y-5 border-l-2 border-dashed border-indigo-200 pl-6 dark:border-indigo-800">
               {report.timeline.map((s, i) => (
                 <li key={s.key} className="relative">
-                  <span className="absolute -left-[31px] grid h-6 w-6 place-items-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-[10px] font-black text-white">
+                  <span className="absolute -left-[31px] grid size-6 place-items-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-[10px] font-black text-white">
                     {i + 1}
                   </span>
                   <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{s.label}</p>
@@ -366,7 +366,7 @@ export default function AstroProfile() {
               </div>
             </div>
             <blockquote className="mt-4 flex gap-3 rounded-2xl bg-gradient-to-r from-indigo-50 to-violet-50 p-4 dark:from-indigo-950/40 dark:to-violet-950/40">
-              <Quote className="h-5 w-5 shrink-0 text-indigo-400" />
+              <Quote className="size-5 shrink-0 text-indigo-400" />
               <div>
                 <p className="text-sm font-semibold italic text-slate-700 dark:text-slate-200">
                   “{report.suggestions.quote.text}”
@@ -391,7 +391,7 @@ export default function AstroProfile() {
             onClick={reset}
             className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-300 px-5 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800 sm:w-auto"
           >
-            <ArrowRight className="h-4 w-4" /> Generate another profile
+            <ArrowRight className="size-4" /> Generate another profile
           </button>
         </div>
       )}
@@ -412,7 +412,7 @@ function Field({ label, icon: Icon, required, hint, children }: {
   return (
     <label className="block">
       <span className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-300">
-        <Icon className="h-3.5 w-3.5" />
+        <Icon className="size-3.5" />
         {label}
         {required && <span className="text-rose-500">*</span>}
         {hint && <span className="font-medium normal-case tracking-normal text-slate-400">({hint})</span>}

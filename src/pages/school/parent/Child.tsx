@@ -135,9 +135,9 @@ function AttendanceTab({ studentId }: { studentId: string | null }) {
                   }`}
                 >
                   {day.dayNum}
-                  {day.status === 'present' && <CheckCircle2 className="h-3 w-3 mt-1 text-emerald-500" />}
-                  {day.status === 'absent' && <XCircle className="h-3 w-3 mt-1 text-red-500" />}
-                  {day.status === 'late' && <Clock className="h-3 w-3 mt-1 text-amber-500" />}
+                  {day.status === 'present' && <CheckCircle2 className="size-3 mt-1 text-emerald-500" />}
+                  {day.status === 'absent' && <XCircle className="size-3 mt-1 text-red-500" />}
+                  {day.status === 'late' && <Clock className="size-3 mt-1 text-amber-500" />}
                 </div>
               ))}
             </div>
@@ -145,7 +145,7 @@ function AttendanceTab({ studentId }: { studentId: string | null }) {
         );
       })() : (
         <div className="flex flex-col items-center justify-center text-center opacity-50 py-12">
-          <Calendar className="h-12 w-12 text-slate-400 mb-3" />
+          <Calendar className="size-12 text-slate-400 mb-3" />
           <p className="text-sm font-bold text-slate-600">No attendance data for this month</p>
         </div>
       )}
@@ -288,7 +288,7 @@ function MarksTab({ studentId }: { studentId: string | null }) {
                     <span className="px-3 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 font-extrabold text-[10px] uppercase tracking-wider">
                       {academicYearVal || 'Academic Year'}
                     </span>
-                    <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-blue-500 group-hover:bg-blue-50 dark:group-hover:bg-blue-950/30 transition-colors">
+                    <div className="size-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-blue-500 group-hover:bg-blue-50 dark:group-hover:bg-blue-950/30 transition-colors">
                       <FileText size={16} />
                     </div>
                   </div>
@@ -314,7 +314,7 @@ function MarksTab({ studentId }: { studentId: string | null }) {
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center text-center opacity-50 py-12">
-          <BookOpen className="h-12 w-12 text-slate-400 mb-3" />
+          <BookOpen className="size-12 text-slate-400 mb-3" />
           <p className="text-sm font-bold text-slate-600">No report cards available yet</p>
         </div>
       )}
@@ -358,7 +358,7 @@ function HomeworkTab({ studentId }: { studentId: string | null }) {
           {data.homework.map((hw: any, i: number) => (
             <div key={hw.id ?? i} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:border-blue-200 transition-colors">
               <div className="flex items-start gap-4">
-                <div className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 font-black text-xs uppercase">
+                <div className="mt-1 flex size-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 font-black text-xs uppercase">
                   {(hw.subject ?? hw.title ?? "?").toString().substring(0, 3)}
                 </div>
                 <div>
@@ -391,7 +391,7 @@ function HomeworkTab({ studentId }: { studentId: string | null }) {
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center text-center opacity-50 py-12">
-          <FileText className="h-12 w-12 text-slate-400 mb-3" />
+          <FileText className="size-12 text-slate-400 mb-3" />
           <p className="text-sm font-bold text-slate-600">No homework found for "{filter}"</p>
         </div>
       )}
@@ -626,7 +626,7 @@ function TestsTab({ studentId }: { studentId: string | null }) {
                   onClick={() => setSelectedTest(null)} 
                   className="rounded-full p-2 hover:bg-slate-100 transition-colors"
                 >
-                  <X className="h-5 w-5 text-slate-500" />
+                  <X className="size-5 text-slate-500" />
                 </button>
               </div>
 
@@ -646,7 +646,7 @@ function TestsTab({ studentId }: { studentId: string | null }) {
                     </p>
                   </div>
                   <div className="flex flex-col items-center gap-2 shrink-0">
-                    <div className={`flex h-20 w-20 flex-col items-center justify-center rounded-full bg-gradient-to-br ${selectedTestRingColor} shadow-lg shadow-black/20`}>
+                    <div className={`flex size-20 flex-col items-center justify-center rounded-full bg-gradient-to-br ${selectedTestRingColor} shadow-lg shadow-black/20`}>
                       <p className="text-xl font-black text-white">{selectedTestMarks}</p>
                       <p className="text-[10px] font-bold text-white/80">/{selectedTestTotal}</p>
                     </div>
@@ -660,8 +660,8 @@ function TestsTab({ studentId }: { studentId: string | null }) {
               {/* Results Grid */}
               <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
                 <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 rounded-2xl border border-slate-100 bg-white p-3 sm:p-4 shadow-sm text-center sm:text-left">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                    <Trophy className="h-5 w-5" />
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                    <Trophy className="size-5" />
                   </div>
                   <div>
                     <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Marks</p>
@@ -672,8 +672,8 @@ function TestsTab({ studentId }: { studentId: string | null }) {
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 rounded-2xl border border-slate-100 bg-white p-3 sm:p-4 shadow-sm text-center sm:text-left">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                    <Target className="h-5 w-5" />
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                    <Target className="size-5" />
                   </div>
                   <div>
                     <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Percent</p>
@@ -682,8 +682,8 @@ function TestsTab({ studentId }: { studentId: string | null }) {
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 rounded-2xl border border-slate-100 bg-white p-3 sm:p-4 shadow-sm text-center sm:text-left">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-                    <Award className="h-5 w-5" />
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                    <Award className="size-5" />
                   </div>
                   <div>
                     <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Grade</p>
@@ -725,7 +725,7 @@ function TestsTab({ studentId }: { studentId: string | null }) {
                       return (
                         <div className="space-y-3">
                           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                            <FileText className="w-3.5 h-3.5 text-slate-400" /> Marks Breakdown
+                            <FileText className="size-3.5 text-slate-400" /> Marks Breakdown
                           </h4>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                             {Object.entries(parsed.components).map(([compName, compVal]: [string, any]) => {
@@ -751,7 +751,7 @@ function TestsTab({ studentId }: { studentId: string | null }) {
               {/* Teacher's general remarks */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4 text-indigo-600" />
+                  <MessageSquare className="size-4 text-indigo-600" />
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Teacher's Remarks</h3>
                 </div>
                 <div className="p-4 rounded-2xl bg-indigo-50/40 border border-indigo-100/50">
@@ -779,7 +779,7 @@ function TestsTab({ studentId }: { studentId: string | null }) {
                 
                 {isLoadingDetail ? (
                   <div className="flex items-center justify-center py-12 gap-2 text-slate-400 font-bold text-sm">
-                    <Loader2 className="h-5 w-5 animate-spin text-indigo-600" />
+                    <Loader2 className="size-5 animate-spin text-indigo-600" />
                     Loading questions and answers...
                   </div>
                 ) : (() => {
@@ -818,8 +818,8 @@ function TestsTab({ studentId }: { studentId: string | null }) {
                               )}
                             </div>
                             <div className="flex items-center gap-2">
-                              {row.correct === true && <CheckCircle className="h-5 w-5 text-emerald-500" />}
-                              {row.correct === false && <XCircle className="h-5 w-5 text-rose-500" />}
+                              {row.correct === true && <CheckCircle className="size-5 text-emerald-500" />}
+                              {row.correct === false && <XCircle className="size-5 text-rose-500" />}
                               <span className="rounded-full bg-white border border-slate-200 px-3 py-1 text-xs font-black text-slate-700 shadow-sm">
                                 {row.marks ?? 0}/{row.total} marks
                               </span>

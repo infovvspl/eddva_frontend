@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Upload, File, X } from 'lucide-react';
-import './FileUpload.css';
+import { cn } from '@/lib/utils';
 
 interface FileUploadProps {
   onFilesSelected: (files: File[]) => void;
@@ -45,33 +45,45 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesSelected, accept, multip
   };
 
   return (
-    <div className={`file-upload ${className}`}>
+    <div className={cn("flex flex-col gap-2.5", className)}>
       <div
-        className={`file-upload__dropzone ${isDragging ? 'file-upload__dropzone--active' : ''}`}
+        className={cn(
+          "border-2 border-dashed border-[var(--gray-300)] rounded-[var(--radius-lg)] px-4 py-8 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all duration-300 bg-white/50",
+          "hover:border-[var(--primary-500)] hover:bg-indigo-600/[0.02]",
+          isDragging && "border-[var(--primary-500)] bg-indigo-600/[0.04] scale-[1.005]",
+        )}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={() => inputRef.current?.click()}
       >
-        <Upload size={32} className="file-upload__icon" />
-        <p className="file-upload__text">Drag & drop files here or <span>browse</span></p>
-        <p className="file-upload__hint">Max file size: {maxSize}MB</p>
+        <Upload size={32} className="text-[var(--primary-500)]" />
+        <p className="text-[0.813rem] text-[var(--gray-600)]">
+          Drag & drop files here or <span className="text-[var(--primary-500)] font-semibold">browse</span>
+        </p>
+        <p className="text-[0.688rem] text-[var(--gray-400)]">Max file size: {maxSize}MB</p>
         <input
           ref={inputRef}
           type="file"
-          className="file-upload__input"
+          className="hidden"
           accept={accept}
           multiple={multiple}
           onChange={handleChange}
         />
       </div>
       {files.length > 0 && (
-        <div className="file-upload__list">
+        <div className="flex flex-col gap-1.5">
           {files.map((file, idx) => (
-            <div key={idx} className="file-upload__item">
+            <div
+              key={idx}
+              className="flex items-center gap-2 px-2.5 py-[7px] bg-white border border-[var(--gray-200)] rounded-[7px] text-xs text-[var(--gray-700)]"
+            >
               <File size={16} />
-              <span className="file-upload__name">{file.name}</span>
-              <button className="file-upload__remove" onClick={() => removeFile(idx)}>
+              <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{file.name}</span>
+              <button
+                className="text-[var(--gray-400)] hover:text-red-500 flex items-center transition-colors duration-150"
+                onClick={() => removeFile(idx)}
+              >
                 <X size={14} />
               </button>
             </div>

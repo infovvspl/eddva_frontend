@@ -13,7 +13,7 @@ function ProfileField({ label, value, icon: Icon, onRequestEdit }) {
     <div className="rounded-2xl border border-slate-100 bg-slate-50/30 p-3 sm:p-4 dark:border-slate-800 dark:bg-slate-900/10 flex flex-col justify-between min-h-[75px] sm:min-h-[90px] hover:border-slate-200 dark:hover:border-slate-700 transition-colors">
       <div>
         <p className="flex items-center gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-          {Icon && <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-slate-400 shrink-0" />}
+          {Icon && <Icon className="size-3 sm:size-3.5 text-slate-400 shrink-0" />}
           {label}
         </p>
         <p className="mt-1 truncate text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
@@ -120,20 +120,20 @@ export default function Profile() {
     <div className="space-y-6 pb-12 p-1">
       {/* Compressed Header Card */}
       <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-xl shadow-slate-100/50 dark:border-slate-800/80 dark:bg-slate-950 dark:shadow-none">
-        <div className="absolute top-0 right-0 h-40 w-40 bg-gradient-to-br from-blue-500/10 to-indigo-500/0 blur-2xl rounded-full" />
+        <div className="absolute top-0 right-0 size-40 bg-gradient-to-br from-blue-500/10 to-indigo-500/0 blur-2xl rounded-full" />
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             {user?.profileImage ? (
               <ProfileAvatar
                 src={user.profileImage}
                 name={user?.name}
-                className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 rounded-2xl border border-slate-200/50 shadow-md shadow-blue-500/5"
+                className="size-16 sm:size-20 shrink-0 rounded-2xl border border-slate-200/50 shadow-md shadow-blue-500/5"
                 fallbackClassName="text-xl sm:text-2xl font-black text-blue-700 dark:text-blue-300"
               />
             ) : (
               <ProfileAvatar
                 name={user?.name}
-                className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 rounded-2xl border border-slate-200/50 bg-blue-50/50 shadow-md shadow-blue-500/5"
+                className="size-16 sm:size-20 shrink-0 rounded-2xl border border-slate-200/50 bg-blue-50/50 shadow-md shadow-blue-500/5"
                 fallbackClassName="text-xl sm:text-2xl font-black text-blue-700 dark:text-blue-300"
               />
             )}
@@ -144,7 +144,7 @@ export default function Profile() {
               <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400">
                 {className && (
                   <span className="flex items-center gap-1">
-                    <GraduationCap className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-500" />
+                    <GraduationCap className="size-3.5 sm:size-4 text-blue-500" />
                     Class {className} {sectionName ? `· ${sectionName}` : ''}
                   </span>
                 )}
@@ -159,7 +159,7 @@ export default function Profile() {
 
           <div className="shrink-0 self-start sm:self-center">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-emerald-100 bg-emerald-50/30 text-emerald-700 text-[10px] sm:text-xs font-extrabold uppercase tracking-wider dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30 shadow-sm shadow-emerald-500/5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
               Active
             </span>
           </div>
@@ -174,7 +174,7 @@ export default function Profile() {
             <Calendar size={64} className="text-blue-600 dark:text-blue-400" />
           </div>
           <p className="flex items-center gap-1 sm:gap-1.5 text-[8px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-            <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
+            <Calendar className="size-3 sm:size-4 text-blue-500" />
             <span className="truncate">Attendance</span>
           </p>
           <div className="mt-2 sm:mt-3 flex items-baseline gap-1 sm:gap-2">
@@ -203,7 +203,7 @@ export default function Profile() {
             <BarChart2 size={64} className="text-emerald-600 dark:text-emerald-400" />
           </div>
           <p className="flex items-center gap-1 sm:gap-1.5 text-[8px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-            <BarChart2 className="h-3 w-3 sm:h-4 sm:w-4 text-emerald-500" />
+            <BarChart2 className="size-3 sm:size-4 text-emerald-500" />
             <span className="truncate">Avg Accuracy</span>
           </p>
           <div className="mt-2 sm:mt-3 flex items-baseline gap-1 sm:gap-2">
@@ -222,7 +222,7 @@ export default function Profile() {
             <GraduationCap size={64} className="text-indigo-600 dark:text-indigo-400" />
           </div>
           <p className="flex items-center gap-1 sm:gap-1.5 text-[8px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-            <GraduationCap className="h-3 w-3 sm:h-4 sm:w-4 text-indigo-500" />
+            <GraduationCap className="size-3 sm:size-4 text-indigo-500" />
             <span className="truncate">Acad Year</span>
           </p>
           <div className="mt-2 sm:mt-3 flex items-baseline gap-1 sm:gap-2">
@@ -249,7 +249,7 @@ export default function Profile() {
         {/* Personal & Academic Details */}
         <section className="rounded-2xl sm:rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-xl shadow-slate-100/50 dark:border-slate-800/80 dark:bg-slate-950 dark:shadow-none space-y-5 sm:space-y-6">
           <div className="flex items-center gap-2.5 sm:gap-3">
-            <UserCircle className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400 shrink-0" />
+            <UserCircle className="size-5 sm:size-6 text-blue-600 dark:text-blue-400 shrink-0" />
             <div>
               <h2 className="text-sm sm:text-base font-extrabold text-slate-950 dark:text-white">Personal & Identity Details</h2>
               <p className="text-[10px] sm:text-xs font-medium text-slate-400 dark:text-slate-500">Essential identity and enrollment values.</p>
@@ -268,7 +268,7 @@ export default function Profile() {
           {/* Subjects Card */}
           <div className="rounded-2xl border border-slate-100 bg-slate-50/10 p-3.5 sm:p-5 dark:border-slate-800/50">
             <h3 className="text-[10px] sm:text-xs font-extrabold text-slate-450 dark:text-slate-500 uppercase tracking-wider mb-2.5 sm:mb-3 flex items-center gap-2">
-              <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-500" />
+              <BookOpen className="size-3.5 sm:size-4 text-blue-500" />
               Academic Curriculum Subjects
             </h3>
             {subjectsList.length === 0 ? (
@@ -316,7 +316,7 @@ export default function Profile() {
         <section className="rounded-2xl sm:rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-xl shadow-slate-100/50 dark:border-slate-800/80 dark:bg-slate-950 dark:shadow-none flex flex-col justify-between">
           <div className="space-y-5 sm:space-y-6">
             <div className="flex items-center gap-2.5 sm:gap-3">
-              <Users className="h-5 w-5 sm:h-6 sm:w-6 text-violet-600 dark:text-violet-400 shrink-0" />
+              <Users className="size-5 sm:size-6 text-violet-600 dark:text-violet-400 shrink-0" />
               <div>
                 <h2 className="text-sm sm:text-base font-extrabold text-slate-950 dark:text-white">Parent & Guardian Information</h2>
                 <p className="text-[10px] sm:text-xs font-medium text-slate-400 dark:text-slate-500">Contact mapping for emergency logs.</p>
@@ -325,7 +325,7 @@ export default function Profile() {
 
             {!hasParentDetails ? (
               <div className="flex-1 flex flex-col items-center justify-center text-center p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/10 my-3 sm:my-4">
-                <Users className="h-8 w-8 sm:h-10 sm:w-10 text-slate-400 mb-2.5 sm:mb-3" />
+                <Users className="size-8 sm:size-10 text-slate-400 mb-2.5 sm:mb-3" />
                 <h3 className="text-xs sm:text-sm font-bold text-slate-950 dark:text-white">No Guardian Details Found</h3>
                 <p className="mt-1.5 text-[10px] sm:text-xs text-slate-450 dark:text-slate-500 max-w-xs leading-normal">Family contact details and emergency parent records are currently missing from the portal.</p>
                 <button 
@@ -348,7 +348,7 @@ export default function Profile() {
           {/* Security details (nested in layout card footer) */}
           <div className="border-t border-slate-100 dark:border-slate-800/80 pt-4 sm:pt-6 mt-4 sm:mt-6 space-y-3 sm:space-y-4">
             <h3 className="text-[10px] sm:text-xs font-extrabold text-slate-450 dark:text-slate-500 uppercase tracking-wider flex items-center gap-2">
-              <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-500" />
+              <ShieldCheck className="size-3.5 sm:size-4 text-emerald-500" />
               Security Settings
             </h3>
             <div className="space-y-2.5 sm:space-y-3">
@@ -359,7 +359,7 @@ export default function Profile() {
                 className="flex w-full items-center justify-between rounded-xl sm:rounded-2xl border border-slate-100 p-3.5 sm:p-4 bg-slate-50/20 hover:bg-slate-50 dark:border-slate-800/80 dark:hover:bg-slate-800/50 transition-all font-bold text-slate-700 dark:text-slate-300"
               >
                 <span className="flex items-center gap-2.5 sm:gap-3 text-xs sm:text-sm">
-                  <KeyRound className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
+                  <KeyRound className="size-4 sm:size-5 text-blue-500" />
                   Change Password
                 </span>
                 <span className="text-[8px] sm:text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Send Link →</span>
@@ -372,7 +372,7 @@ export default function Profile() {
                 className="flex w-full items-center justify-between rounded-xl sm:rounded-2xl border border-slate-100 p-3.5 sm:p-4 bg-slate-50/20 hover:bg-slate-50 dark:border-slate-800/80 dark:hover:bg-slate-800/50 transition-all font-bold text-slate-700 dark:text-slate-300"
               >
                 <span className="flex items-center gap-2.5 sm:gap-3 text-xs sm:text-sm">
-                  <Smartphone className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-500" />
+                  <Smartphone className="size-4 sm:size-5 text-emerald-500" />
                   Review Device Sessions
                 </span>
                 <span className="text-[8px] sm:text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Review →</span>

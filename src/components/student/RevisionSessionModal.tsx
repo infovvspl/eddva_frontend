@@ -7,6 +7,8 @@ import {
   AlertTriangle, Trophy, ArrowRight, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { DialogTitle } from "@/components/ui/dialog";
 import type { RevisionSessionData, RevisionDrillQuestion } from "@/lib/api/student";
 import { startRevisionSession } from "@/lib/api/student";
 
@@ -436,15 +438,21 @@ export default function RevisionSessionModal({ topic, onClose }: Props) {
   const meta = session ? SESSION_META[session.sessionType] : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-0 sm:p-4">
-      <div className="w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh]">
+    <DialogPrimitive.Root open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <DialogPrimitive.Content
+          className="fixed z-50 w-full bg-white flex flex-col max-h-[92vh] outline-none
+            bottom-0 left-0 right-0 rounded-t-3xl
+            sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:right-auto sm:-translate-x-1/2 sm:-translate-y-1/2 sm:max-w-lg sm:rounded-2xl sm:shadow-2xl"
+        >
 
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 shrink-0">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <Brain className="w-4 h-4 text-teal-600 shrink-0" />
-              <span className="font-bold text-sm text-gray-900 truncate">{topic.topicName}</span>
+              <DialogTitle className="font-bold text-sm text-gray-900 truncate">{topic.topicName}</DialogTitle>
               {meta && (
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${meta.bg} ${meta.color} ${meta.border}`}>
                   {meta.icon} {meta.label}
@@ -522,7 +530,8 @@ export default function RevisionSessionModal({ topic, onClose }: Props) {
             />
           )}
         </div>
-      </div>
-    </div>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }

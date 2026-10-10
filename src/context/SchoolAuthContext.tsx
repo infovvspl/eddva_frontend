@@ -40,6 +40,15 @@ function schoolRoleToZustand(role: string): UserRole {
 
 const noopAsync = async () => undefined;
 
+/** Best-effort: tells the server to deactivate this session's auth_sessions
+ *  row (so a leaked token stops working too, not just this tab), but a
+ *  logout must never hang on it — the token is about to be cleared either way. */
+function notifyServerLogout(reason: "manual" | "idle_timeout") {
+  const token = tokenStorage.getAccess();
+  if (!token) return;
+  apiClient.get("/school/auth/logout", { params: { reason } }).catch(() => {});
+}
+
 const loggedOutAuth: SchoolAuthContextType = {
   user: null,
   institute: null,
@@ -47,7 +56,8 @@ const loggedOutAuth: SchoolAuthContextType = {
   login: noopAsync,
   register: noopAsync,
   setAuthSession: () => {},
-  logout: () => {
+  logout: (reason = "manual") => {
+    notifyServerLogout(reason);
     useAuthStore.getState().clearAuth();
     tokenStorage.clear();
     window.location.replace("/login");
@@ -441,7 +451,8 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({
     if (instData) setInstitute(instData);
   };
 
-  const logout = () => {
+  const logout = (reason: "manual" | "idle_timeout" = "manual") => {
+    notifyServerLogout(reason);
     clearAuth();
     tokenStorage.clear();
     window.location.replace("/login");
@@ -490,7 +501,8 @@ export const useAuth = (): SchoolAuthContextType => {
       login: noopAsync,
       register: noopAsync,
       setAuthSession: () => {},
-      logout: () => {
+      logout: (reason = "manual") => {
+        notifyServerLogout(reason);
         clearAuth();
         tokenStorage.clear();
         window.location.replace("/login");

@@ -60,14 +60,14 @@ export default function QuizRushLeaderboard({ onBack }) {
 
         {loading ? (
           <div className="flex h-56 flex-col items-center justify-center gap-3">
-            <Loader2 className="h-5 w-5 animate-spin text-cyan-300" />
+            <Loader2 className="size-5 animate-spin text-cyan-300" />
             <span className="qr-display text-[11px] font-bold uppercase tracking-[0.25em] text-cyan-200/70">
               Reading the board
             </span>
           </div>
         ) : rankings.length === 0 ? (
           <ArenaPanel className="flex flex-col items-center gap-3 px-6 py-14 text-center">
-            <Award className="h-10 w-10 text-slate-700" />
+            <Award className="size-10 text-slate-700" />
             <h3 className="qr-display text-base font-bold uppercase tracking-wider text-white">
               Board is empty
             </h3>
@@ -131,11 +131,11 @@ export default function QuizRushLeaderboard({ onBack }) {
                         <p className="qr-read truncate text-sm font-semibold text-white">{u.name}</p>
                         <p className="mt-0.5 flex items-center gap-3 text-[10px] font-medium text-slate-500">
                           <span className="flex items-center gap-1">
-                            <Zap className="h-2.5 w-2.5 fill-current text-fuchsia-400" />
+                            <Zap className="size-2.5 fill-current text-fuchsia-400" />
                             {u.maxStreak}
                           </span>
                           <span className="flex items-center gap-1">
-                            <Clock className="h-2.5 w-2.5 text-cyan-400" />
+                            <Clock className="size-2.5 text-cyan-400" />
                             {u.timeTakenSeconds}s
                           </span>
                           <span className="tabular-nums">
@@ -148,7 +148,7 @@ export default function QuizRushLeaderboard({ onBack }) {
                       </div>
 
                       <span className="qr-display flex items-center gap-1.5 text-sm font-bold tabular-nums text-amber-300">
-                        <Star className="h-3.5 w-3.5 shrink-0 fill-current" />
+                        <Star className="size-3.5 shrink-0 fill-current" />
                         {u.score}
                       </span>
                     </div>
@@ -160,7 +160,7 @@ export default function QuizRushLeaderboard({ onBack }) {
         )}
 
         <ArenaButton type="button" onClick={onBack} tone="ghost" className="w-full">
-          <ArrowLeft className="h-4 w-4" /> Back to Game Room
+          <ArrowLeft className="size-4" /> Back to Game Room
         </ArenaButton>
       </div>
     </div>

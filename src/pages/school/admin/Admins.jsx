@@ -13,6 +13,8 @@ import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import { useConfirm } from '@/context/ConfirmContext';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 function formatNumber(value) {
   return Number(value || 0).toLocaleString();
@@ -290,7 +292,7 @@ export default function Admins() {
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h1 className="font-display text-3xl font-bold text-slate-950 dark:text-white flex items-center gap-2">
-            <Shield className="h-8 w-8 text-blue-600 shrink-0 animate-pulse" />
+            <Shield className="size-8 text-blue-600 shrink-0 animate-pulse" />
             <span>Administrators</span>
           </h1>
           <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">Manage school administrators and credentials.</p>
@@ -300,7 +302,7 @@ export default function Admins() {
             onClick={openAddModal}
             className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]"
           >
-            <Plus className="h-5 w-5" />
+            <Plus className="size-5" />
             Add Administrator
           </button>
         </div>
@@ -360,8 +362,8 @@ export default function Admins() {
                 </p>
                 <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">{card.subtitle}</p>
               </div>
-              <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${card.iconBg}`}>
-                <card.Icon className={`h-5 w-5 ${card.iconColor}`} />
+              <div className={`flex size-11 items-center justify-center rounded-2xl ${card.iconBg}`}>
+                <card.Icon className={`size-5 ${card.iconColor}`} />
               </div>
             </div>
           </motion.div>
@@ -372,12 +374,12 @@ export default function Admins() {
         <div className="relative z-20 border-b border-[rgba(37,99,235,0.10)] bg-white/60 px-4 py-4 backdrop-blur dark:border-slate-700 dark:bg-slate-900/40 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             <div className="inline-flex items-center gap-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
-              <Users className="h-4 w-4 text-blue-600" />
+              <Users className="size-4 text-blue-600" />
               {formatNumber(filtered.length)} results
             </div>
 
             <div className="inline-flex items-center gap-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
-              <Filter className="h-4 w-4 text-blue-600" />
+              <Filter className="size-4 text-blue-600" />
               Filter
             </div>
           </div>
@@ -392,7 +394,7 @@ export default function Admins() {
                 { value: "INACTIVE", label: "Inactive" },
               ]}
               className="w-full sm:w-44"
-              triggerClassName="flex h-full w-full items-center justify-between gap-2 px-3 py-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 text-sm font-semibold text-slate-700 outline-none hover:bg-slate-50 transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15"
+              triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 text-sm font-semibold text-slate-700 outline-none hover:bg-slate-50 transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15"
             />
 
             {isPlatformSuperAdmin && (
@@ -404,12 +406,12 @@ export default function Admins() {
                   ...institutes.map((institute) => ({ value: institute.id, label: institute.name })),
                 ]}
                 className="w-full sm:w-44"
-                triggerClassName="flex h-full w-full items-center justify-between gap-2 px-3 py-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 text-sm font-semibold text-slate-700 outline-none hover:bg-slate-50 transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15"
+                triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 text-sm font-semibold text-slate-700 outline-none hover:bg-slate-50 transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15"
               />
             )}
 
             <div className="relative w-full sm:max-w-xs">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
               <input
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
@@ -419,13 +421,13 @@ export default function Admins() {
             </div>
 
             <div className="flex items-center gap-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
-              <Calendar className="h-4 w-4 text-slate-400" />
+              <Calendar className="size-4 text-slate-400" />
               <CustomSelect
                 value={selectedYear}
                 onChange={setSelectedYear}
                 options={years.map((y) => ({ value: y, label: y }))}
                 className="w-full sm:w-32"
-                triggerClassName="flex h-full w-full items-center justify-between gap-2 px-3 py-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 text-sm font-semibold text-slate-700 outline-none hover:bg-slate-50 transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15"
+                triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 text-sm font-semibold text-slate-700 outline-none hover:bg-slate-50 transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15"
               />
             </div>
 
@@ -442,83 +444,80 @@ export default function Admins() {
               onClick={exportCsv}
               className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[rgba(37,99,235,0.14)] bg-white/90 px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
             >
-              <Download className="h-4 w-4" />
+              <Download className="size-4" />
               Export
             </button>
           </div>
         </div>
 
         <div className="overflow-x-auto rounded-b-2xl overflow-hidden">
-          <table className="min-w-[980px] w-full text-left text-sm">
-            <thead className="bg-slate-50/50 text-slate-500 dark:bg-slate-800/40 dark:text-slate-400">
-              <tr>
-                <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Admin Name</th>
-                <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">School</th>
-                <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Email</th>
-                <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          <Table className="min-w-[980px] w-full text-left text-sm">
+            <TableHeader className="bg-slate-50/50 text-slate-500 dark:bg-slate-800/40 dark:text-slate-400">
+              <TableRow className="hover:bg-transparent border-b-0">
+                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Admin Name</TableHead>
+                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">School</TableHead>
+                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Email</TableHead>
+                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-slate-100 dark:divide-slate-800 [&_tr]:border-b-0">
               {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan="4" className="px-5 py-12 text-center text-slate-400">
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan="4" className="px-5 py-12 text-center text-slate-400">
                     No administrators found.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : (
                 filtered.map((admin) => (
-                  <tr key={admin.id} className="transition hover:bg-blue-50/40 dark:hover:bg-slate-800/40">
-                    <td className="px-5 py-4">
+                  <TableRow key={admin.id} className="transition hover:bg-blue-50/40 dark:hover:bg-slate-800/40">
+                    <TableCell className="p-4 px-5 py-4">
                       <div className="flex items-center gap-4">
-                        <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-2xl border-2 border-white bg-slate-100 shadow-sm dark:border-slate-800 dark:bg-slate-800">
-                          {admin.profileImage ? (
-                            <img src={admin.profileImage} alt={admin.name} className="h-full w-full object-cover" />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center bg-blue-600/10 text-[13px] font-bold tracking-tight text-blue-700 dark:bg-blue-500/20 dark:text-sky-200">
-                              {getInitials(admin.name)}
-                            </div>
-                          )}
-                        </div>
+                        <Avatar className="size-11 shrink-0 rounded-2xl border-2 border-white bg-slate-100 shadow-sm dark:border-slate-800 dark:bg-slate-800">
+                          <AvatarImage src={admin.profileImage} alt={admin.name} className="object-cover" />
+                          <AvatarFallback className="rounded-2xl bg-blue-600/10 text-[13px] font-bold tracking-tight text-blue-700 dark:bg-blue-500/20 dark:text-sky-200">
+                            {getInitials(admin.name)}
+                          </AvatarFallback>
+                        </Avatar>
                         <div className="min-w-0">
                           <p className="truncate text-sm font-bold tracking-tight text-slate-900 dark:text-white">{admin.name}</p>
                           <p className="truncate text-[11px] font-bold text-slate-400 dark:text-slate-500">{admin.teacherProfile?.designation || 'Institute Admin'}</p>
                         </div>
                       </div>
-                    </td>
-                    <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{admin.instituteName || '-'}</td>
-                    <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{admin.email || '-'}</td>
-                    <td className="px-5 py-4">
+                    </TableCell>
+                    <TableCell className="p-4 px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{admin.instituteName || '-'}</TableCell>
+                    <TableCell className="p-4 px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{admin.email || '-'}</TableCell>
+                    <TableCell className="p-4 px-5 py-4">
                       <div className="flex items-center gap-2">
                         <Link
                           to={`/school/admin/teachers/${admin.id}`}
-                          className="group relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                          className="group relative flex size-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
                         >
-                          <Eye className="h-4 w-4" />
+                          <Eye className="size-4" />
                           <span className="absolute -top-10 left-1/2 -translate-x-1/2 scale-0 rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">View</span>
                         </Link>
                         <button
                           onClick={() => handleEdit(admin)}
-                          className="group relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                          className="group relative flex size-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
                           aria-label="Edit administrator"
                         >
-                          <Edit2 className="h-4 w-4" />
+                          <Edit2 className="size-4" />
                           <span className="absolute -top-10 left-1/2 -translate-x-1/2 scale-0 rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">Edit</span>
                         </button>
                         <button
                           onClick={() => handleDelete(admin.id)}
-                          className="group relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 transition-all hover:border-red-400 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                          className="group relative flex size-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 transition-all hover:border-red-400 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
                           aria-label="Delete administrator"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="size-4" />
                           <span className="absolute -top-10 left-1/2 -translate-x-1/2 scale-0 rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">Delete</span>
                         </button>
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
 
         <div className="border-t border-slate-100 dark:border-slate-800 bg-white/60 dark:bg-slate-900/40">
@@ -544,7 +543,7 @@ export default function Admins() {
       >
         <div className="space-y-4">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
             <input
               value={modalSearch}
               onChange={(e) => setModalSearch(e.target.value)}
@@ -564,11 +563,11 @@ export default function Admins() {
                 return (
                   <div key={teacher.id} className="flex items-center justify-between py-3">
                     <div className="flex items-center gap-3">
-                      <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800">
+                      <div className="relative size-10 shrink-0 overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800">
                         {teacher.profileImage ? (
-                          <img src={teacher.profileImage} alt={teacher.name} className="h-full w-full object-cover" />
+                          <img src={teacher.profileImage} alt={teacher.name} className="size-full object-cover" />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center bg-blue-600/10 text-xs font-bold text-blue-700 dark:bg-blue-500/20 dark:text-sky-200">
+                          <div className="flex size-full items-center justify-center bg-blue-600/10 text-xs font-bold text-blue-700 dark:bg-blue-500/20 dark:text-sky-200">
                             {(teacher.name || 'T').slice(0, 1).toUpperCase()}
                           </div>
                         )}
@@ -590,7 +589,7 @@ export default function Admins() {
                           : "bg-slate-200 border-slate-300 dark:bg-slate-800 dark:border-slate-700"
                       )}>
                         <div className={cn(
-                          "w-3.5 h-3.5 rounded-full bg-white transition-transform duration-200 shadow-sm",
+                          "size-3.5 rounded-full bg-white transition-transform duration-200 shadow-sm",
                           isAdmin ? "translate-x-4" : "translate-x-0"
                         )} />
                       </div>

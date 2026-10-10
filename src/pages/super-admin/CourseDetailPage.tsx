@@ -6,6 +6,7 @@ import { useTenant } from "@/hooks/use-tenants";
 import { listEnrollments } from "@/lib/api/tenants";
 import { Loader2, AlertCircle, ChevronLeft, Calendar, Users, GraduationCap, MonitorPlay, BookOpen, Clock, Activity, Layout, FileText, PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
 const CourseDetailPage = () => {
   const { id, courseId } = useParams<{ id: string, courseId: string }>();
@@ -216,38 +217,38 @@ const StudentsTab = ({ batchId, subdomain }: { batchId: string, subdomain?: stri
         <div className="p-10 text-center text-slate-500">No students enrolled yet.</div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 font-semibold">
-              <tr>
-                <th className="px-6 py-4">Student Name</th>
-                <th className="px-6 py-4">Email / Phone</th>
-                <th className="px-6 py-4">Enrolled At</th>
-                <th className="px-6 py-4">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+          <Table className="w-full text-left">
+            <TableHeader className="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 font-semibold">
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="h-auto px-6 py-4">Student Name</TableHead>
+                <TableHead className="h-auto px-6 py-4">Email / Phone</TableHead>
+                <TableHead className="h-auto px-6 py-4">Enrolled At</TableHead>
+                <TableHead className="h-auto px-6 py-4">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-slate-100">
               {students.map((s: any) => (
-                <tr key={s.id || s.studentId} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="px-6 py-4">
+                <TableRow key={s.id || s.studentId} className="hover:bg-slate-50/50 transition-colors">
+                  <TableCell className="px-6 py-4">
                     <p className="text-sm font-semibold text-slate-900">{s.studentName || s.student?.fullName || "—"}</p>
                     <p className="text-xs text-slate-500">ID: {(s.studentId || s.student?.id || "").split('-')[0]}</p>
-                  </td>
-                  <td className="px-6 py-4">
+                  </TableCell>
+                  <TableCell className="px-6 py-4">
                     <p className="text-sm text-slate-700">{s.studentEmail || s.student?.email || "N/A"}</p>
                     <p className="text-xs text-slate-500">{s.studentPhone || s.student?.phone || "N/A"}</p>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-slate-700">
+                  </TableCell>
+                  <TableCell className="px-6 py-4 text-sm text-slate-700">
                     {s.enrolledAt ? new Date(s.enrolledAt).toLocaleDateString() : (s.createdAt ? new Date(s.createdAt).toLocaleDateString() : "N/A")}
-                  </td>
-                  <td className="px-6 py-4">
+                  </TableCell>
+                  <TableCell className="px-6 py-4">
                     <span className="inline-flex px-2 py-1 bg-emerald-50 text-emerald-600 rounded text-xs font-semibold">
                       {s.status || "Active"}
                     </span>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>

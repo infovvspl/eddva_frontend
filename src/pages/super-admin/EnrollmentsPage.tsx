@@ -9,6 +9,9 @@ import { Button } from "@/components/ui/button";
 import { useEnrollments } from "@/hooks/use-tenants";
 import { useTenants } from "@/hooks/use-tenants";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+
+const MotionTableRow = motion(TableRow);
 
 // ─── Exam target badge ────────────────────────────────────────────────────────
 
@@ -221,21 +224,21 @@ const EnrollmentsPage = () => {
                 )}
               </div>
             ) : (
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/60">
-                    <th className="text-left px-5 md:px-7 py-4 text-[10px] font-medium uppercase tracking-wider text-slate-400">Student</th>
-                    <th className="text-left px-5 md:px-7 py-4 text-[10px] font-medium uppercase tracking-wider text-slate-400">Contact</th>
-                    <th className="text-left px-5 md:px-7 py-4 text-[10px] font-medium uppercase tracking-wider text-slate-400">Course / Batch</th>
-                    <th className="text-left px-5 md:px-7 py-4 text-[10px] font-medium uppercase tracking-wider text-slate-400">Institute</th>
-                    <th className="text-left px-5 md:px-7 py-4 text-[10px] font-medium uppercase tracking-wider text-slate-400">Enrolled On</th>
-                    <th className="text-left px-5 md:px-7 py-4 text-[10px] font-medium uppercase tracking-wider text-slate-400">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
+              <Table className="w-full">
+                <TableHeader>
+                  <TableRow className="border-b border-slate-100 bg-slate-50/60 hover:bg-slate-50/60">
+                    <TableHead className="h-auto text-left px-5 md:px-7 py-4 text-[10px] font-medium uppercase tracking-wider text-slate-400">Student</TableHead>
+                    <TableHead className="h-auto text-left px-5 md:px-7 py-4 text-[10px] font-medium uppercase tracking-wider text-slate-400">Contact</TableHead>
+                    <TableHead className="h-auto text-left px-5 md:px-7 py-4 text-[10px] font-medium uppercase tracking-wider text-slate-400">Course / Batch</TableHead>
+                    <TableHead className="h-auto text-left px-5 md:px-7 py-4 text-[10px] font-medium uppercase tracking-wider text-slate-400">Institute</TableHead>
+                    <TableHead className="h-auto text-left px-5 md:px-7 py-4 text-[10px] font-medium uppercase tracking-wider text-slate-400">Enrolled On</TableHead>
+                    <TableHead className="h-auto text-left px-5 md:px-7 py-4 text-[10px] font-medium uppercase tracking-wider text-slate-400">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-slate-50">
                   <AnimatePresence>
                     {enrollments.map((e, i) => (
-                      <motion.tr
+                      <MotionTableRow
                         key={e.id}
                         initial={{ opacity: 0, y: 4 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -243,7 +246,7 @@ const EnrollmentsPage = () => {
                         className="group hover:bg-slate-50/70 transition-colors"
                       >
                         {/* Student */}
-                        <td className="px-5 md:px-7 py-4">
+                        <TableCell className="px-5 md:px-7 py-4">
                           <div className="flex items-center gap-3">
                             <Avatar name={e.studentName || "?"} />
                             <div>
@@ -253,16 +256,16 @@ const EnrollmentsPage = () => {
                               </p>
                             </div>
                           </div>
-                        </td>
+                        </TableCell>
 
                         {/* Contact */}
-                        <td className="px-5 md:px-7 py-4">
+                        <TableCell className="px-5 md:px-7 py-4">
                           <p className="text-sm font-semibold text-slate-700">{e.studentEmail || "—"}</p>
                           <p className="text-[11px] text-slate-400 mt-0.5">{e.studentPhone || ""}</p>
-                        </td>
+                        </TableCell>
 
                         {/* Course */}
-                        <td className="px-5 md:px-7 py-4">
+                        <TableCell className="px-5 md:px-7 py-4">
                           <div className="flex flex-col gap-1.5 max-w-[280px]">
                             {(e.enrollments || []).map((en) => (
                               <div key={en.id} className="flex items-center gap-1.5">
@@ -274,32 +277,32 @@ const EnrollmentsPage = () => {
                               </div>
                             ))}
                           </div>
-                        </td>
+                        </TableCell>
 
                         {/* Institute */}
-                        <td className="px-5 md:px-7 py-4">
+                        <TableCell className="px-5 md:px-7 py-4">
                           <div className="flex items-center gap-2">
                             <Building2 className="w-4 h-4 text-slate-300 shrink-0" />
                             <p className="text-sm font-bold text-slate-700">{e.tenantName || "—"}</p>
                           </div>
-                        </td>
+                        </TableCell>
 
                         {/* Enrolled on */}
-                        <td className="px-5 md:px-7 py-4 text-[11px] font-bold text-slate-500">
+                        <TableCell className="px-5 md:px-7 py-4 text-[11px] font-bold text-slate-500">
                           {e.enrolledAt
                             ? new Date(e.enrolledAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
                             : "—"}
-                        </td>
+                        </TableCell>
 
                         {/* Status */}
-                        <td className="px-5 md:px-7 py-4">
+                        <TableCell className="px-5 md:px-7 py-4">
                           <StatusPill status={e.status} />
-                        </td>
-                      </motion.tr>
+                        </TableCell>
+                      </MotionTableRow>
                     ))}
                   </AnimatePresence>
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             )}
           </div>
 

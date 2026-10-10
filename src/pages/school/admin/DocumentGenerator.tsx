@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import schoolApi from '@/lib/api/school-client';
-import { Loader2, Download, Plus, CheckCircle2, XCircle, FileWarning, UploadCloud, AlertTriangle } from 'lucide-react';
+import { Loader2, Download, Plus, CheckCircle2, XCircle, FileWarning, UploadCloud, AlertTriangle, Search } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import { CustomSelect } from "@/components/ui/CustomSelect";
@@ -44,8 +44,10 @@ export default function DocumentGenerator() {
   const [historyTypeFilter, setHistoryTypeFilter] = useState('all');
   const [historyStatusFilter, setHistoryStatusFilter] = useState('all');
   const [historyDateFilter, setHistoryDateFilter] = useState('');
+  const [historySearch, setHistorySearch] = useState('');
 
   const filteredHistoryLogs = useMemo(() => {
+    const search = historySearch.trim().toLowerCase();
     return historyLogs.filter((log: any) => {
       if (historyTypeFilter !== 'all' && log?.targetType !== historyTypeFilter) return false;
       if (historyStatusFilter !== 'all' && log?.status !== historyStatusFilter) return false;
@@ -53,13 +55,17 @@ export default function DocumentGenerator() {
         const issuedDate = log?.issuedAt ? new Date(log.issuedAt).toISOString().slice(0, 10) : null;
         if (issuedDate !== historyDateFilter) return false;
       }
+      if (search) {
+        const haystack = `${log?.targetName || ''} ${log?.targetEmail || ''}`.toLowerCase();
+        if (!haystack.includes(search)) return false;
+      }
       return true;
     });
-  }, [historyLogs, historyTypeFilter, historyStatusFilter, historyDateFilter]);
+  }, [historyLogs, historyTypeFilter, historyStatusFilter, historyDateFilter, historySearch]);
 
   useEffect(() => {
     setHistoryPage(1);
-  }, [historyTypeFilter, historyStatusFilter, historyDateFilter]);
+  }, [historyTypeFilter, historyStatusFilter, historyDateFilter, historySearch]);
 
   // Preview State
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -540,7 +546,7 @@ export default function DocumentGenerator() {
       {/* School Logo Warning Banner */}
       {!schoolLogo && (
         <div className="flex items-center gap-3 p-4 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700">
-          <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+          <AlertTriangle className="size-5 text-amber-600 flex-shrink-0" />
           <div className="flex-1">
             <p className="text-sm font-medium text-amber-800 dark:text-amber-300">No School Logo Found</p>
             <p className="text-xs text-amber-600 dark:text-amber-400">Upload your school logo so it appears on all generated ID cards.</p>
@@ -548,14 +554,14 @@ export default function DocumentGenerator() {
           <label>
             <input type="file" accept="image/*" className="hidden" onChange={handleUploadLogo} disabled={uploadingLogo} />
             <Button variant="outline" size="sm" asChild className="cursor-pointer border-amber-400">
-              <span>{uploadingLogo ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <UploadCloud className="w-4 h-4 mr-1" />} Upload Logo</span>
+              <span>{uploadingLogo ? <Loader2 className="size-4 animate-spin mr-1" /> : <UploadCloud className="size-4 mr-1" />} Upload Logo</span>
             </Button>
           </label>
         </div>
       )}
       {schoolLogo && (
         <div className="flex items-center gap-3 p-3 rounded-lg border border-green-200 bg-green-50 dark:bg-green-950/30 dark:border-green-700">
-          <img src={schoolLogo} alt="School Logo" className="w-10 h-10 rounded-full object-cover border" />
+          <img src={schoolLogo} alt="School Logo" className="size-10 rounded-full object-cover border" />
           <div className="flex-1">
             <p className="text-sm font-medium text-green-800 dark:text-green-300">School Logo Active</p>
             <p className="text-xs text-green-600 dark:text-green-400">This logo will appear on all generated ID cards.</p>
@@ -563,7 +569,7 @@ export default function DocumentGenerator() {
           <label>
             <input type="file" accept="image/*" className="hidden" onChange={handleUploadLogo} disabled={uploadingLogo} />
             <Button variant="ghost" size="sm" asChild className="cursor-pointer">
-              <span>{uploadingLogo ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Change'}</span>
+              <span>{uploadingLogo ? <Loader2 className="size-4 animate-spin" /> : 'Change'}</span>
             </Button>
           </label>
         </div>
@@ -640,7 +646,7 @@ export default function DocumentGenerator() {
                     <div className="mt-2">
                       <Label htmlFor="photo-upload" className="cursor-pointer">
                         <div className="flex items-center gap-2 text-sm text-primary font-medium p-2 border border-primary/20 rounded-md hover:bg-primary/5 transition-colors w-fit">
-                          {uploadingPhoto ? <Loader2 className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />}
+                          {uploadingPhoto ? <Loader2 className="size-4 animate-spin" /> : <UploadCloud className="size-4" />}
                           {uploadingPhoto ? 'Uploading...' : 'Upload/Update Photo for Selected Student'}
                         </div>
                       </Label>
@@ -680,7 +686,7 @@ export default function DocumentGenerator() {
                               />
                               {isSelected && (
                                 <div className="absolute top-2 right-2 bg-primary text-white rounded-full p-1 shadow-md z-10">
-                                  <CheckCircle2 className="w-5 h-5" />
+                                  <CheckCircle2 className="size-5" />
                                 </div>
                               )}
                             </div>
@@ -696,8 +702,8 @@ export default function DocumentGenerator() {
                 </div>
               </div>
               <Button onClick={() => handleGenerateIdCard('STUDENT')} disabled={loading} className="w-full md:w-auto mt-6">
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {!loading && <Download className="mr-2 h-4 w-4" />}
+                {loading && <Loader2 className="mr-2 size-4 animate-spin" />}
+                {!loading && <Download className="mr-2 size-4" />}
                 Generate Student ID Cards
               </Button>
             </CardContent>
@@ -759,7 +765,7 @@ export default function DocumentGenerator() {
                               />
                               {isSelected && (
                                 <div className="absolute top-2 right-2 bg-primary text-white rounded-full p-1 shadow-md z-10">
-                                  <CheckCircle2 className="w-5 h-5" />
+                                  <CheckCircle2 className="size-5" />
                                 </div>
                               )}
                             </div>
@@ -775,8 +781,8 @@ export default function DocumentGenerator() {
                 </div>
               </div>
               <Button onClick={() => handleGenerateIdCard('STAFF')} disabled={loading} className="w-full md:w-auto mt-6">
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {!loading && <Download className="mr-2 h-4 w-4" />}
+                {loading && <Loader2 className="mr-2 size-4 animate-spin" />}
+                {!loading && <Download className="mr-2 size-4" />}
                 Generate Staff ID Cards
               </Button>
             </CardContent>
@@ -872,7 +878,7 @@ export default function DocumentGenerator() {
                               />
                               {isSelected && (
                                 <div className="absolute top-2 right-2 bg-primary text-white rounded-full p-1 shadow-md z-10">
-                                  <CheckCircle2 className="w-5 h-5" />
+                                  <CheckCircle2 className="size-5" />
                                 </div>
                               )}
                             </div>
@@ -888,8 +894,8 @@ export default function DocumentGenerator() {
                 </div>
               </div>
               <Button onClick={handleGenerateAdmitCard} disabled={loading} className="w-full md:w-auto">
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {!loading && <Download className="mr-2 h-4 w-4" />}
+                {loading && <Loader2 className="mr-2 size-4 animate-spin" />}
+                {!loading && <Download className="mr-2 size-4" />}
                 Generate Admit Cards PDF
               </Button>
             </CardContent>
@@ -991,7 +997,7 @@ export default function DocumentGenerator() {
                               />
                               {isSelected && (
                                 <div className="absolute top-2 right-2 bg-primary text-white rounded-full p-1 shadow-md z-10">
-                                  <CheckCircle2 className="w-5 h-5" />
+                                  <CheckCircle2 className="size-5" />
                                 </div>
                               )}
                             </div>
@@ -1007,8 +1013,8 @@ export default function DocumentGenerator() {
                 </div>
               </div>
               <Button onClick={handleGenerateCertificate} disabled={loading} className="w-full md:w-auto">
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {!loading && <Download className="mr-2 h-4 w-4" />}
+                {loading && <Loader2 className="mr-2 size-4 animate-spin" />}
+                {!loading && <Download className="mr-2 size-4" />}
                 Generate Certificates PDF
               </Button>
             </CardContent>
@@ -1024,6 +1030,18 @@ export default function DocumentGenerator() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap items-end gap-3 mb-4">
+                <div className="w-56">
+                  <Label className="text-xs text-muted-foreground">Search</Label>
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      value={historySearch}
+                      onChange={(e) => setHistorySearch(e.target.value)}
+                      placeholder="Search by name or email..."
+                      className="pl-8"
+                    />
+                  </div>
+                </div>
                 <div className="w-40">
                   <Label className="text-xs text-muted-foreground">Type</Label>
                   <Select value={historyTypeFilter} onValueChange={setHistoryTypeFilter}>
@@ -1059,7 +1077,7 @@ export default function DocumentGenerator() {
                     onChange={(e) => setHistoryDateFilter(e.target.value)}
                   />
                 </div>
-                {(historyTypeFilter !== 'all' || historyStatusFilter !== 'all' || historyDateFilter) && (
+                {(historyTypeFilter !== 'all' || historyStatusFilter !== 'all' || historyDateFilter || historySearch) && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -1067,6 +1085,7 @@ export default function DocumentGenerator() {
                       setHistoryTypeFilter('all');
                       setHistoryStatusFilter('all');
                       setHistoryDateFilter('');
+                      setHistorySearch('');
                     }}
                   >
                     Clear Filters
@@ -1077,7 +1096,7 @@ export default function DocumentGenerator() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Type</TableHead>
-                    <TableHead>Target ID</TableHead>
+                    <TableHead>Name</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Issued At</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -1094,13 +1113,13 @@ export default function DocumentGenerator() {
                   {filteredHistoryLogs.slice((historyPage - 1) * historyLimit, historyPage * historyLimit).map(log => (
                     <TableRow key={log?.id}>
                       <TableCell className="font-medium">{log?.targetType}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground" title={log?.targetId}>
-                        {log?.targetId?.substring(0,8)}...
+                      <TableCell className="text-sm">
+                        {log?.targetName || <span className="text-xs text-muted-foreground" title={log?.targetId}>{log?.targetId?.substring(0,8)}...</span>}
                       </TableCell>
                       <TableCell>
-                        {log?.status === 'ACTIVE' && <span className="inline-flex items-center text-green-600 bg-green-50 px-2 py-1 rounded-full text-xs font-semibold"><CheckCircle2 className="w-3 h-3 mr-1"/> Active</span>}
-                        {log?.status === 'LOST' && <span className="inline-flex items-center text-red-600 bg-red-50 px-2 py-1 rounded-full text-xs font-semibold"><FileWarning className="w-3 h-3 mr-1"/> Lost</span>}
-                        {log?.status === 'INACTIVE' && <span className="inline-flex items-center text-gray-600 bg-gray-100 px-2 py-1 rounded-full text-xs font-semibold"><XCircle className="w-3 h-3 mr-1"/> Inactive</span>}
+                        {log?.status === 'ACTIVE' && <span className="inline-flex items-center text-green-600 bg-green-50 px-2 py-1 rounded-full text-xs font-semibold"><CheckCircle2 className="size-3 mr-1"/> Active</span>}
+                        {log?.status === 'LOST' && <span className="inline-flex items-center text-red-600 bg-red-50 px-2 py-1 rounded-full text-xs font-semibold"><FileWarning className="size-3 mr-1"/> Lost</span>}
+                        {log?.status === 'INACTIVE' && <span className="inline-flex items-center text-gray-600 bg-gray-100 px-2 py-1 rounded-full text-xs font-semibold"><XCircle className="size-3 mr-1"/> Inactive</span>}
                       </TableCell>
                       <TableCell>{log?.issuedAt ? new Date(log.issuedAt).toLocaleDateString() : 'N/A'}</TableCell>
                       <TableCell className="text-right space-x-2">
@@ -1152,10 +1171,10 @@ export default function DocumentGenerator() {
               <object 
                 data={previewUrl} 
                 type="application/pdf"
-                className="w-full h-full border-0 absolute inset-0"
+                className="size-full border-0 absolute inset-0"
               >
                 <div className="flex flex-col items-center justify-center h-full text-slate-500">
-                  <FileWarning className="w-12 h-12 mb-4 opacity-50" />
+                  <FileWarning className="size-12 mb-4 opacity-50" />
                   <p>Your browser does not support inline PDF previews.</p>
                   <p className="text-sm mt-2">Please use the Download button below.</p>
                 </div>
@@ -1184,7 +1203,7 @@ export default function DocumentGenerator() {
               }}
               className="rounded-xl bg-gradient-to-r from-primary to-blue-600 hover:opacity-90 shadow-lg"
             >
-              <Download className="w-4 h-4 mr-2" />
+              <Download className="size-4 mr-2" />
               Download PDF
             </Button>
           </DialogFooter>
@@ -1201,7 +1220,7 @@ export default function DocumentGenerator() {
           
           <div className="flex-1 w-full relative min-h-0 rounded-xl overflow-hidden shadow-inner border border-border">
             <textarea 
-              className="w-full h-full p-4 font-mono text-[13px] bg-slate-900 text-emerald-400 focus:outline-none resize-none whitespace-pre"
+              className="size-full p-4 font-mono text-[13px] bg-slate-900 text-emerald-400 focus:outline-none resize-none whitespace-pre"
               value={editTemplateObj?.htmlContent || ''}
               onChange={(e) => setEditTemplateObj({ ...editTemplateObj, htmlContent: e.target.value })}
               spellCheck={false}

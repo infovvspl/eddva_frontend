@@ -45,7 +45,7 @@ export default function BattleArena() {
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-500 border-t-transparent" />
+        <div className="size-8 animate-spin rounded-full border-4 border-amber-500 border-t-transparent" />
       </div>
     );
   }
@@ -68,19 +68,19 @@ export default function BattleArena() {
           {/* Player Stats */}
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <div className="flex flex-col items-center justify-center rounded-[2rem] border border-amber-200 bg-gradient-to-b from-amber-50 to-white p-6 text-center shadow-sm dark:border-amber-900/30 dark:from-amber-950/20 dark:to-slate-900">
-              <Coins className="mb-2 h-6 w-6 text-amber-500" />
+              <Coins className="mb-2 size-6 text-amber-500" />
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">EDDVA Coins</p>
               <p className="text-2xl font-black text-slate-900 dark:text-white">{eloData?.eddvaCoins || eloData?.coins || Math.floor((eloData?.totalXp || 0) / 10)} Coins</p>
             </div>
 
             <div className="flex flex-col items-center justify-center rounded-[2rem] border border-slate-100 bg-white p-6 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <Swords className="mb-2 h-6 w-6 text-blue-500" />
+              <Swords className="mb-2 size-6 text-blue-500" />
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Rating</p>
               <p className="text-2xl font-black text-slate-900 dark:text-white">{eloData?.eloRating || 1200}</p>
             </div>
 
             <div className="flex flex-col items-center justify-center rounded-[2rem] border border-slate-100 bg-white p-6 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <Flame className="mb-2 h-6 w-6 text-orange-500" />
+              <Flame className="mb-2 size-6 text-orange-500" />
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Win Rate</p>
               <p className="text-2xl font-black text-slate-900 dark:text-white">
                 {eloData?.matchesPlayed > 0 ? Math.round((eloData.wins / eloData.matchesPlayed) * 100) : 0}%
@@ -88,7 +88,7 @@ export default function BattleArena() {
             </div>
 
             <div className="flex flex-col items-center justify-center rounded-[2rem] border border-slate-100 bg-white p-6 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <Crown className="mb-2 h-6 w-6 text-emerald-500" />
+              <Crown className="mb-2 size-6 text-emerald-500" />
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Rank</p>
               <p className="text-2xl font-black text-slate-900 dark:text-white">{eloData?.currentRank || 'Bronze'}</p>
             </div>
@@ -97,7 +97,7 @@ export default function BattleArena() {
           {/* Action Cards */}
           <div className="grid gap-6 sm:grid-cols-2">
             <div className="flex flex-col rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+              <div className="mb-4 flex size-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
                 <Swords size={24} />
               </div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">Ranked Battle (1v1)</h3>
@@ -119,7 +119,7 @@ export default function BattleArena() {
             </div>
 
             <div className="flex flex-col rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
+              <div className="mb-4 flex size-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
                 <Bot size={24} />
               </div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">Practice Battle (AI Bot)</h3>
@@ -166,7 +166,7 @@ export default function BattleArena() {
                   <div key={player.id} className="flex items-center justify-between rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50">
                     <div className="flex items-center gap-3">
                       <div className={cn(
-                        "flex h-8 w-8 items-center justify-center rounded-full text-xs font-black",
+                        "flex size-8 items-center justify-center rounded-full text-xs font-black",
                         idx === 0 ? "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400" :
                           idx === 1 ? "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300" :
                             idx === 2 ? "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400" :

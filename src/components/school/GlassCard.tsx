@@ -1,5 +1,6 @@
 import React from 'react';
-import './GlassCard.css';
+import { cn } from '@/lib/utils';
+import { Card } from '@/components/ui/card';
 
 interface GlassCardProps {
   children: React.ReactNode;
@@ -10,8 +11,13 @@ interface GlassCardProps {
 
 const GlassCard: React.FC<GlassCardProps> = ({ children, className = '', hover = false, onClick }) => {
   return (
-    <div
-      className={`glass-card ${hover ? 'glass-card--hover' : ''} ${className}`}
+    <Card
+      className={cn(
+        "bg-[var(--glass-bg)] text-inherit backdrop-blur-[20px] border-[var(--glass-border)] rounded-[var(--radius-lg)] shadow-[var(--glass-shadow)] p-[18px] transition-all duration-300",
+        hover && "hover:-translate-y-0.5 hover:shadow-lg hover:border-primary/20 active:translate-y-0 active:duration-75",
+        onClick ? "cursor-pointer" : "",
+        className,
+      )}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
@@ -23,7 +29,7 @@ const GlassCard: React.FC<GlassCardProps> = ({ children, className = '', hover =
       } : undefined}
     >
       {children}
-    </div>
+    </Card>
   );
 };
 

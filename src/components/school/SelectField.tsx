@@ -1,6 +1,7 @@
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import React from 'react';
-import './SelectField.css';
+import { cn } from '@/lib/utils';
+import { Label } from '@/components/ui/label';
 
 interface SelectFieldProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
@@ -21,20 +22,25 @@ const SelectField: React.FC<SelectFieldProps> = ({ label, options, error, classN
   };
 
   return (
-    <div className={`select-field ${className}`}>
-      {label && <label className="select-field__label">{label}</label>}
-      <div className={`select-field__wrapper ${error ? 'select-field__wrapper--error' : ''}`}>
-        <CustomSelect 
+    <div className={cn("flex flex-col gap-1", className)}>
+      {label && <Label className="text-[0.813rem] font-medium text-[var(--gray-700)]">{label}</Label>}
+      <div
+        className={cn(
+          "transition-all duration-150 rounded-[var(--radius-md)] focus-within:shadow-[0_0_0_3px_rgba(124,58,237,0.08)]",
+          error && "focus-within:shadow-[0_0_0_3px_rgba(239,68,68,0.08)]",
+        )}
+      >
+        <CustomSelect
           value={value ?? ''}
           onChange={handleChange}
-          options={options} 
+          options={options}
           disabled={disabled}
           id={id}
           placeholder={placeholder}
           className="w-full"
         />
       </div>
-      {error && <p className="select-field__error">{error}</p>}
+      {error && <p className="text-[0.688rem] text-red-500">{error}</p>}
     </div>
   );
 };

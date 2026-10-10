@@ -20,6 +20,15 @@ import {
   BellRing,
   Users,
   X,
+  BookOpen,
+  ClipboardList,
+  Palmtree,
+  Plane,
+  FileText,
+  GraduationCap,
+  Volleyball,
+  Drama,
+  Check,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
@@ -48,16 +57,16 @@ const categories = [
 ];
 
 const categoryIcons = {
-  ACADEMIC: '📚',
-  EXAM: '📝',
-  HOLIDAY: '🏖️',
-  VACATION: '✈️',
-  ASSIGNMENT: '📄',
-  PARENT_MEETING: '👨‍👩‍👧',
-  TEACHER_MEETING: '👩‍🏫',
-  LIVE_CLASS: '🎥',
-  SPORTS_EVENT: '⚽',
-  CULTURAL_PROGRAM: '🎭',
+  ACADEMIC: BookOpen,
+  EXAM: ClipboardList,
+  HOLIDAY: Palmtree,
+  VACATION: Plane,
+  ASSIGNMENT: FileText,
+  PARENT_MEETING: Users,
+  TEACHER_MEETING: GraduationCap,
+  LIVE_CLASS: Video,
+  SPORTS_EVENT: Volleyball,
+  CULTURAL_PROGRAM: Drama,
 };
 
 
@@ -792,20 +801,20 @@ export default function AcademicCalendar({
                 onClick={() => openNew()} 
                 className="inline-flex items-center gap-1 rounded-xl bg-blue-600 px-2.5 sm:px-3 py-1.5 sm:py-2 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-white shadow-md hover:brightness-105 active:scale-[0.99]"
               >
-                <Plus className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Add Event
+                <Plus className="size-3 sm:size-3.5" /> Add Event
               </button>
             </div>
           </div>
 
           <div className="grid grid-cols-3 sm:grid-cols-3 gap-1.5 sm:gap-2.5 mt-1 sm:mt-2">
             <div className="relative">
-              <Filter className="pointer-events-none absolute left-2 sm:left-3 top-1/2 h-3 w-3 sm:h-3.5 sm:w-3.5 -translate-y-1/2 text-slate-400 z-10" />
+              <Filter className="pointer-events-none absolute left-2 sm:left-3 top-1/2 size-3 sm:size-3.5 -translate-y-1/2 text-slate-400 z-10" />
               <CustomSelect
                 onChange={setCategory}
                 value={category}
                 options={categories.map((item) => ({ value: item, label: item.replace('_', ' ') }))}
                 className="w-full"
-                triggerClassName="flex h-full w-full items-center justify-between gap-1 pl-6 sm:pl-9 pr-1.5 sm:pr-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 bg-white text-[10px] sm:text-xs font-semibold outline-none text-slate-700 shadow-sm truncate"
+                triggerClassName="flex size-full items-center justify-between gap-1 pl-6 sm:pl-9 pr-1.5 sm:pr-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 bg-white text-[10px] sm:text-xs font-semibold outline-none text-slate-700 shadow-sm truncate"
               />
             </div>
             
@@ -814,7 +823,7 @@ export default function AcademicCalendar({
               value={classFilter}
               options={[{ value: "", label: 'All Classes' }, ...classes.map((item) => ({ value: item.id, label: item.name }))]}
               className="w-full"
-              triggerClassName="flex h-full w-full items-center justify-between gap-1 px-1.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 bg-white text-[10px] sm:text-xs font-semibold outline-none text-slate-700 shadow-sm truncate"
+              triggerClassName="flex size-full items-center justify-between gap-1 px-1.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 bg-white text-[10px] sm:text-xs font-semibold outline-none text-slate-700 shadow-sm truncate"
             />
             
             <CustomSelect
@@ -823,7 +832,7 @@ export default function AcademicCalendar({
               options={[{ value: "", label: 'All Sections' }, ...availableSections.map((item) => ({ value: item.id, label: item.name }))]}
               disabled={!classFilter}
               className="w-full"
-              triggerClassName="flex h-full w-full items-center justify-between gap-1 px-1.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 bg-white text-[10px] sm:text-xs font-semibold outline-none text-slate-700 shadow-sm disabled:opacity-50 truncate"
+              triggerClassName="flex size-full items-center justify-between gap-1 px-1.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 bg-white text-[10px] sm:text-xs font-semibold outline-none text-slate-700 shadow-sm disabled:opacity-50 truncate"
             />
           </div>
         </div>
@@ -885,7 +894,7 @@ export default function AcademicCalendar({
                       >
                         <span>{day.getDate()}</span>
                         {dayEvents.length > 0 && (
-                          <span className={cn('h-1.5 w-1.5 rounded-full', isSelected ? 'bg-white' : 'bg-blue-600 dark:bg-sky-505')} />
+                          <span className={cn('size-1.5 rounded-full', isSelected ? 'bg-white' : 'bg-blue-600 dark:bg-sky-505')} />
                         )}
                       </button>
                     );
@@ -996,7 +1005,7 @@ export default function AcademicCalendar({
                             </span>
                             {dayEvents.length > 0 && (
                               <span className={cn(
-                                "h-1.5 w-1.5 rounded-full",
+                                "size-1.5 rounded-full",
                                 isSelected ? "bg-blue-600 dark:bg-sky-400" : "bg-blue-505 dark:bg-sky-505"
                               )} />
                             )}
@@ -1030,7 +1039,7 @@ export default function AcademicCalendar({
                                       }}
                                       className="p-0.5 hover:scale-110 transition-transform cursor-pointer"
                                     >
-                                      <EventIcon category={details.category} className="h-8 w-8 sm:h-9 sm:w-9 filter drop-shadow-md" />
+                                      <EventIcon category={details.category} className="size-8 sm:size-9 filter drop-shadow-md" />
                                     </div>
                                   );
                                 })}
@@ -1163,7 +1172,10 @@ export default function AcademicCalendar({
                   <div className="grid grid-cols-2 gap-2">
                     {categories.filter((item) => item !== 'All').map((item) => (
                       <div key={item} className="flex flex-col items-center justify-center rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-2 sm:py-3 px-1 text-center transition hover:border-slate-200 dark:hover:border-slate-700">
-                        <span className="text-base sm:text-xl mb-0.5 sm:mb-1">{categoryIcons[item] || '📅'}</span>
+                        {(() => {
+                          const CatIcon = categoryIcons[item] || CalendarDays;
+                          return <CatIcon className="size-4 sm:size-5 mb-0.5 sm:mb-1" />;
+                        })()}
                         <p className="text-sm sm:text-lg font-black text-slate-950 dark:text-white leading-none">{summary[item] || 0}</p>
                         <p className="mt-1 w-full truncate text-[7px] sm:text-[8px] font-bold tracking-tight uppercase text-slate-400 dark:text-slate-500">{item.replace('_', ' ')}</p>
                       </div>
@@ -1174,17 +1186,20 @@ export default function AcademicCalendar({
                 <div className="rounded-xl sm:rounded-2xl bg-white dark:bg-slate-900 p-3 sm:p-5 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col max-h-[400px] sm:max-h-[500px]">
                   <div className="mb-3 sm:mb-4 flex items-center justify-between shrink-0">
                     <h3 className="text-[10px] sm:text-[11px] font-bold tracking-tight uppercase tracking-[0.24em] text-slate-400">Upcoming Events</h3>
-                    <BellRing className="h-3.5 w-3.5 text-slate-300" />
+                    <BellRing className="size-3.5 text-slate-300" />
                   </div>
                   <div className="space-y-2 overflow-y-auto pr-1 pb-1">
                     {upcomingEvents.map((event) => (
                       <button key={event.id} onClick={(e) => { setSummaryModalOpen(false); handleEventClick(event, e); }} className="w-full flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-2.5 py-2 text-left transition hover:bg-white dark:hover:bg-slate-800 group hover:scale-[1.01] hover:underline cursor-pointer">
                         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                          <span className="shrink-0 text-lg sm:text-[22px] opacity-90 transition-opacity group-hover:opacity-100">{categoryIcons[event.category] || '📅'}</span>
+                          {(() => {
+                            const CatIcon = categoryIcons[event.category] || CalendarDays;
+                            return <CatIcon className="size-4 sm:size-5 shrink-0 opacity-90 transition-opacity group-hover:opacity-100" />;
+                          })()}
                           <div className="min-w-0">
                             <p className="truncate text-xs sm:text-sm font-bold text-slate-950 dark:text-white">{event.title}</p>
-                            <p className="truncate text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400">
-                              📅 {new Date(event.startTime).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            <p className="truncate text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                              <CalendarDays className="size-2.5 shrink-0" /> {new Date(event.startTime).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
                         </div>
@@ -1227,7 +1242,7 @@ export default function AcademicCalendar({
                       { value: "TERM", label: "Term Start/End" }
                     ]}
                     className="w-full"
-                    triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-white shadow-sm"
+                    triggerClassName="flex size-full items-center justify-between gap-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-white shadow-sm"
                   />
                   <input type="datetime-local" required value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold outline-none focus:border-blue-400 dark:border-slate-800 dark:bg-slate-900 dark:text-white sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm" />
                   <input type="datetime-local" required value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold outline-none focus:border-blue-400 dark:border-slate-800 dark:bg-slate-900 dark:text-white sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm" />
@@ -1241,7 +1256,7 @@ export default function AcademicCalendar({
                       { value: "URGENT", label: "Urgent" },
                     ]}
                     className="w-full"
-                    triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-white shadow-sm"
+                    triggerClassName="flex size-full items-center justify-between gap-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-white shadow-sm"
                   />
                 </div>
                 <div className="grid gap-2.5 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -1253,7 +1268,7 @@ export default function AcademicCalendar({
                       ...classes.map((item) => ({ value: item.id, label: classLabel(item) })),
                     ]}
                     className="w-full"
-                    triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-white shadow-sm"
+                    triggerClassName="flex size-full items-center justify-between gap-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-white shadow-sm"
                   />
                   <CustomSelect
                     onChange={(val) => setForm(prev => ({ ...prev, sectionId: val }))}
@@ -1264,7 +1279,7 @@ export default function AcademicCalendar({
                     ]}
                     disabled={form.classId === ALL_TARGET || !formSections.length}
                     className="w-full"
-                    triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    triggerClassName="flex size-full items-center justify-between gap-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                   <CustomSelect
                     onChange={(val) => setForm(prev => ({ ...prev, subjectId: val }))}
@@ -1274,7 +1289,7 @@ export default function AcademicCalendar({
                       ...subjects.map((subject) => ({ value: subject.id, label: subjectLabel(subject) })),
                     ]}
                     className="w-full"
-                    triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-white shadow-sm"
+                    triggerClassName="flex size-full items-center justify-between gap-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-white shadow-sm"
                   />
                   <CustomSelect
                     onChange={(val) => setForm(prev => ({ ...prev, teacherId: val }))}
@@ -1284,7 +1299,7 @@ export default function AcademicCalendar({
                       ...teachers.map((teacher) => ({ value: teacher.teacherProfile?.id || teacher.id, label: teacherLabel(teacher) })),
                     ]}
                     className="w-full"
-                    triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-white shadow-sm"
+                    triggerClassName="flex size-full items-center justify-between gap-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-white shadow-sm"
                   />
                   <input value={form.meetingUrl} onChange={(e) => setForm({ ...form, meetingUrl: e.target.value })} placeholder="Zoom / Meet link" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold outline-none focus:border-blue-400 dark:border-slate-800 dark:bg-slate-900 dark:text-white sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm" />
                   <input value={form.meetingPlatform} onChange={(e) => setForm({ ...form, meetingPlatform: e.target.value })} placeholder="Meeting platform" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold outline-none focus:border-blue-400 dark:border-slate-800 dark:bg-slate-900 dark:text-white sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm" />
@@ -1325,7 +1340,7 @@ export default function AcademicCalendar({
                     {selectedInfoEvent.category?.replace('_', ' ') || 'Event'}
                   </span>
                 </div>
-                <button onClick={() => setInfoModalOpen(false)} className="rounded-2xl p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"><X className="h-5 w-5" /></button>
+                <button onClick={() => setInfoModalOpen(false)} className="rounded-2xl p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"><X className="size-5" /></button>
               </div>
               <div className="p-6 space-y-4">
                 <h3 className="text-xl font-bold text-slate-950 dark:text-white">{selectedInfoEvent.title}</h3>
@@ -1336,7 +1351,7 @@ export default function AcademicCalendar({
                 )}
                 <div className="grid gap-3 text-xs font-semibold text-slate-600 dark:text-slate-400 pt-2">
                   <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-slate-400 shrink-0" />
+                    <Clock className="size-4 text-slate-400 shrink-0" />
                     <span>
                       {selectedInfoEvent.isAllDay 
                         ? `${new Date(selectedInfoEvent.startTime).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })} (All Day)`
@@ -1346,13 +1361,13 @@ export default function AcademicCalendar({
                   </div>
                   {selectedInfoEvent.location && (
                     <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
+                      <MapPin className="size-4 text-slate-400 shrink-0" />
                       <span>{selectedInfoEvent.location}</span>
                     </div>
                   )}
                   {selectedInfoEvent.priority && (
                     <div className="flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 text-slate-400 shrink-0" />
+                      <AlertTriangle className="size-4 text-slate-400 shrink-0" />
                       <span className="capitalize">Priority: {selectedInfoEvent.priority.toLowerCase()}</span>
                     </div>
                   )}
@@ -1522,10 +1537,10 @@ export default function AcademicCalendar({
                         <img
                           src={featuredForm.studentPhoto}
                           alt="Preview"
-                          className="h-12 w-12 object-contain rounded-lg bg-slate-200/50 dark:bg-slate-900 border"
+                          className="size-12 object-contain rounded-lg bg-slate-200/50 dark:bg-slate-900 border"
                         />
-                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                          ✓ Image selected / loaded
+                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1">
+                          <Check className="size-3 shrink-0" /> Image selected / loaded
                         </span>
                       </div>
                     )}

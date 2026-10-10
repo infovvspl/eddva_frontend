@@ -8,6 +8,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { getCoachingLiveUsage, type LiveUsageData } from '@/lib/api/live-usage-admin';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 
 function fmtDuration(secs: number): string {
   if (!secs) return '0m';
@@ -209,35 +210,35 @@ export default function LiveUsagePage() {
             <h3 className="text-base md:text-lg font-bold text-slate-900 tracking-tight">Per Institute</h3>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/60">
+            <Table className="w-full text-sm">
+              <TableHeader>
+                <TableRow className="border-b border-slate-100 bg-slate-50/60 hover:bg-slate-50/60">
                   {['Institute', 'Total', 'Live', 'Completed', 'Total Duration', 'Viewers', 'Last Class'].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap">
+                    <TableHead key={h} className="h-auto px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap">
                       {h}
-                    </th>
+                    </TableHead>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {isLoading ? (
-                  <tr>
-                    <td colSpan={7} className="py-12 text-center text-slate-400">
+                  <TableRow>
+                    <TableCell colSpan={7} className="py-12 text-center text-slate-400">
                       <Loader2 className="w-6 h-6 animate-spin mx-auto" />
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : !data?.perInstitute?.length ? (
-                  <tr>
-                    <td colSpan={7} className="py-12 text-center text-slate-400 text-sm">No data yet</td>
-                  </tr>
+                  <TableRow>
+                    <TableCell colSpan={7} className="py-12 text-center text-slate-400 text-sm">No data yet</TableCell>
+                  </TableRow>
                 ) : (
                   data.perInstitute.map((row, i) => (
-                    <tr key={row.instituteId} className={i % 2 === 0 ? '' : 'bg-slate-50/40'}>
-                      <td className="px-4 py-3 font-medium text-slate-800 whitespace-nowrap max-w-[200px] truncate">
+                    <TableRow key={row.instituteId} className={i % 2 === 0 ? '' : 'bg-slate-50/40'}>
+                      <TableCell className="px-4 py-3 font-medium text-slate-800 whitespace-nowrap max-w-[200px] truncate">
                         {row.instituteName}
-                      </td>
-                      <td className="px-4 py-3 text-slate-600">{row.totalLectures}</td>
-                      <td className="px-4 py-3">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-slate-600">{row.totalLectures}</TableCell>
+                      <TableCell className="px-4 py-3">
                         {row.liveNow > 0 ? (
                           <span className="inline-flex items-center gap-1 text-red-600 font-semibold">
                             <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
@@ -246,23 +247,23 @@ export default function LiveUsagePage() {
                         ) : (
                           <span className="text-slate-400">0</span>
                         )}
-                      </td>
-                      <td className="px-4 py-3 text-slate-600">{row.completed}</td>
-                      <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{fmtDuration(row.totalDurationSeconds)}</td>
-                      <td className="px-4 py-3">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-slate-600">{row.completed}</TableCell>
+                      <TableCell className="px-4 py-3 text-slate-600 whitespace-nowrap">{fmtDuration(row.totalDurationSeconds)}</TableCell>
+                      <TableCell className="px-4 py-3">
                         <span className="flex items-center gap-1 text-slate-600">
                           <Users className="w-3.5 h-3.5 text-slate-400" />
                           {row.uniqueViewers}
                         </span>
-                      </td>
-                      <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">
                         {row.lastLectureAt ? new Date(row.lastLectureAt).toLocaleDateString() : '—'}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </div>
 
@@ -322,52 +323,52 @@ export default function LiveUsagePage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/60">
+            <Table className="w-full text-sm">
+              <TableHeader>
+                <TableRow className="border-b border-slate-100 bg-slate-50/60 hover:bg-slate-50/60">
                   {['Title', 'Institute', 'Teacher', 'Status', 'Duration', 'Viewers', 'Started'].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap">
+                    <TableHead key={h} className="h-auto px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap">
                       {h}
-                    </th>
+                    </TableHead>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {isLoading ? (
-                  <tr>
-                    <td colSpan={7} className="py-12 text-center text-slate-400">
+                  <TableRow>
+                    <TableCell colSpan={7} className="py-12 text-center text-slate-400">
                       <Loader2 className="w-6 h-6 animate-spin mx-auto" />
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : !currentLectures.length ? (
-                  <tr>
-                    <td colSpan={7} className="py-12 text-center text-slate-400 text-sm">
+                  <TableRow>
+                    <TableCell colSpan={7} className="py-12 text-center text-slate-400 text-sm">
                       {statusFilter || schoolFilter ? 'No classes match your filter criteria' : 'No classes yet'}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   currentLectures.map((lec, i) => (
-                    <tr key={lec.id} className={i % 2 === 0 ? '' : 'bg-slate-50/40'}>
-                      <td className="px-4 py-3 font-medium text-slate-800 max-w-[160px] truncate whitespace-nowrap">
+                    <TableRow key={lec.id} className={i % 2 === 0 ? '' : 'bg-slate-50/40'}>
+                      <TableCell className="px-4 py-3 font-medium text-slate-800 max-w-[160px] truncate whitespace-nowrap">
                         {lec.title || 'Untitled'}
-                      </td>
-                      <td className="px-4 py-3 text-slate-600 max-w-[140px] truncate whitespace-nowrap">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-slate-600 max-w-[140px] truncate whitespace-nowrap">
                         {lec.instituteName}
-                      </td>
-                      <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{lec.teacherName ?? '—'}</td>
-                      <td className="px-4 py-3 whitespace-nowrap"><StatusBadge status={lec.status} /></td>
-                      <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-slate-500 whitespace-nowrap">{lec.teacherName ?? '—'}</TableCell>
+                      <TableCell className="px-4 py-3 whitespace-nowrap"><StatusBadge status={lec.status} /></TableCell>
+                      <TableCell className="px-4 py-3 text-slate-600 whitespace-nowrap">
                         {lec.durationSeconds ? fmtDuration(lec.durationSeconds) : '—'}
-                      </td>
-                      <td className="px-4 py-3 text-slate-600">{lec.participantCount}</td>
-                      <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-slate-600">{lec.participantCount}</TableCell>
+                      <TableCell className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">
                         {lec.startedAt ? new Date(lec.startedAt).toLocaleString() : '—'}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           {/* Pagination controls */}

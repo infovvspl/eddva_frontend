@@ -8,6 +8,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
 // ─── Exam gradient map ────────────────────────────────────────────────────────
 
@@ -234,19 +235,19 @@ const StudentsPage = () => {
 
           {/* ── Desktop Table ── */}
           <div className="hidden sm:block bg-white rounded-3xl border border-slate-100 overflow-x-auto shadow-sm pb-1.5 sm:pb-0">
-            <table className="w-full min-w-[800px] lg:min-w-full">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50">
-                  <th className="text-left p-4 text-[10px] font-black uppercase tracking-wider text-slate-400">#</th>
-                  <th className="text-left p-4 text-[10px] font-black uppercase tracking-wider text-slate-400 min-w-[150px] sm:min-w-[180px]">Name</th>
-                  <th className="text-left p-4 text-[10px] font-black uppercase tracking-wider text-slate-400 hidden sm:table-cell">Phone / Email</th>
-                  <th className="text-left p-4 text-[10px] font-black uppercase tracking-wider text-slate-400 hidden md:table-cell">Course</th>
-                  <th className="text-left p-4 text-[10px] font-black uppercase tracking-wider text-slate-400 hidden lg:table-cell">Enrolled On</th>
-                  <th className="text-left p-4 text-[10px] font-black uppercase tracking-wider text-slate-400 hidden lg:table-cell">Last Active</th>
-                  <th className="w-8 p-4" />
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="w-full min-w-[800px] lg:min-w-full">
+              <TableHeader>
+                <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                  <TableHead className="h-auto text-left p-4 text-[10px] font-black uppercase tracking-wider text-slate-400">#</TableHead>
+                  <TableHead className="h-auto text-left p-4 text-[10px] font-black uppercase tracking-wider text-slate-400 min-w-[150px] sm:min-w-[180px]">Name</TableHead>
+                  <TableHead className="h-auto text-left p-4 text-[10px] font-black uppercase tracking-wider text-slate-400 hidden sm:table-cell">Phone / Email</TableHead>
+                  <TableHead className="h-auto text-left p-4 text-[10px] font-black uppercase tracking-wider text-slate-400 hidden md:table-cell">Course</TableHead>
+                  <TableHead className="h-auto text-left p-4 text-[10px] font-black uppercase tracking-wider text-slate-400 hidden lg:table-cell">Enrolled On</TableHead>
+                  <TableHead className="h-auto text-left p-4 text-[10px] font-black uppercase tracking-wider text-slate-400 hidden lg:table-cell">Last Active</TableHead>
+                  <TableHead className="h-auto w-8 p-4" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {paged.map((s: any, i) => {
                   const name = s.name || s.fullName || s.studentName || "—";
                   const phone = s.phone || s.phoneNumber || "—";
@@ -255,16 +256,16 @@ const StudentsPage = () => {
                   const bStyle = EXAM_STYLES.neet;
                   const rowNum = (page - 1) * PAGE_SIZE + i + 1;
                   return (
-                    <tr
+                    <TableRow
                       key={sid ?? i}
                       onClick={() => typeof sid === "string" && navigate(`/teacher/students/${sid}`)}
                       className={cn(
                         "border-b border-slate-50 last:border-0 transition-colors group",
-                        typeof sid === "string" ? "cursor-pointer hover:bg-blue-50/40" : ""
+                        typeof sid === "string" ? "cursor-pointer hover:bg-blue-50/40" : "hover:bg-transparent"
                       )}
                     >
-                      <td className="p-4 text-xs font-bold text-slate-400">{rowNum}</td>
-                      <td className="p-4 min-w-[150px] sm:min-w-[180px]">
+                      <TableCell className="p-4 text-xs font-bold text-slate-400">{rowNum}</TableCell>
+                      <TableCell className="p-4 min-w-[150px] sm:min-w-[180px]">
                         <div className="flex items-center gap-3">
                           <div
                             className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black text-white shrink-0"
@@ -274,8 +275,8 @@ const StudentsPage = () => {
                           </div>
                           <span className="text-sm font-semibold text-slate-800 group-hover:text-blue-700 transition-colors break-words leading-normal">{name}</span>
                         </div>
-                      </td>
-                      <td className="p-4 hidden sm:table-cell">
+                      </TableCell>
+                      <TableCell className="p-4 hidden sm:table-cell">
                         <div className="flex items-center gap-1.5">
                           <p className="text-sm text-slate-600">{phone}</p>
                           {s.phoneVerified && (
@@ -283,8 +284,8 @@ const StudentsPage = () => {
                           )}
                         </div>
                         {email && <p className="text-xs text-slate-400">{email}</p>}
-                      </td>
-                      <td className="p-4 hidden md:table-cell">
+                      </TableCell>
+                      <TableCell className="p-4 hidden md:table-cell">
                         <div className="flex flex-wrap gap-1.5 align-middle">
                           {(s._batchNames || [])
                             .filter((bName: string) => Boolean(bName && typeof bName === "string" && bName.trim().length > 0))
@@ -298,25 +299,25 @@ const StudentsPage = () => {
                               </span>
                             ))}
                         </div>
-                      </td>
-                      <td className="p-4 text-xs text-slate-400 hidden lg:table-cell">
+                      </TableCell>
+                      <TableCell className="p-4 text-xs text-slate-400 hidden lg:table-cell">
                         {s.enrolledAt
                           ? new Date(s.enrolledAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
                           : "—"}
-                      </td>
-                      <td className="p-4 text-sm text-slate-400 hidden lg:table-cell">
+                      </TableCell>
+                      <TableCell className="p-4 text-sm text-slate-400 hidden lg:table-cell">
                         {s.lastLoginAt
                           ? new Date(s.lastLoginAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
                           : "Never"}
-                      </td>
-                      <td className="p-4 flex justify-end items-center">
+                      </TableCell>
+                      <TableCell className="p-4 flex justify-end items-center">
                         <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" />
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           {/* ── Pagination ── */}

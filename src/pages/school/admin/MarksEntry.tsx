@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { FileSpreadsheet, Search, Edit2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/lib/api/school-client';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 
 export default function MarksEntry() {
   const [sessions, setSessions] = useState<any[]>([]);
@@ -39,7 +41,7 @@ export default function MarksEntry() {
       </div>
 
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex items-center">
-        <Search className="w-5 h-5 text-gray-400 mr-2" />
+        <Search className="size-5 text-gray-400 mr-2" />
         <input
           type="text"
           placeholder="Search by student or exam..."
@@ -56,44 +58,44 @@ export default function MarksEntry() {
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 z-20 bg-gray-50 dark:bg-slate-850 shadow-sm">Student</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exam</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Score</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+            <Table className="min-w-full divide-y divide-gray-200">
+              <TableHeader className="bg-gray-50">
+                <TableRow className="hover:bg-transparent border-b-0">
+                  <TableHead className="h-auto px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 z-20 bg-gray-50 dark:bg-slate-850 shadow-sm">Student</TableHead>
+                  <TableHead className="h-auto px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exam</TableHead>
+                  <TableHead className="h-auto px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</TableHead>
+                  <TableHead className="h-auto px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Score</TableHead>
+                  <TableHead className="h-auto px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="bg-white divide-y divide-gray-200 [&_tr]:border-b-0">
                 {filteredSessions.map(session => (
-                  <tr key={session.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap sticky left-0 z-20 bg-white dark:bg-slate-900">
+                  <TableRow key={session.id} className="hover:bg-gray-50">
+                    <TableCell className="p-4 px-6 py-4 whitespace-nowrap sticky left-0 z-20 bg-white dark:bg-slate-900">
                       <div className="text-sm font-medium text-gray-900">{session.student?.user?.name || 'Unknown Student'}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    </TableCell>
+                    <TableCell className="p-4 px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{session.mockTest?.title || 'Unknown Exam'}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        session.status === 'submitted' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                    </TableCell>
+                    <TableCell className="p-4 px-6 py-4 whitespace-nowrap">
+                      <Badge className={`rounded-full border-transparent text-xs font-semibold ${
+                        session.status === 'submitted' ? 'bg-green-100 text-green-800 hover:bg-green-100' : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100'
                       }`}>
                         {session.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="p-4 px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {session.totalScore !== null ? session.totalScore : 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    </TableCell>
+                    <TableCell className="p-4 px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button className="text-indigo-600 hover:text-indigo-900">
-                        <Edit2 className="w-4 h-4 inline" />
+                        <Edit2 className="size-4 inline" />
                       </button>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </div>
       )}

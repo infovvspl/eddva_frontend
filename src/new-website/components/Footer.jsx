@@ -69,7 +69,7 @@ const columns = [
    team names it something else. */
 const BROCHURE_URL = "/eddva-brochure.pdf";
 
-const DEVELOPER = { label: "vvspltech.com", href: "https://vvspltech.com" };
+const DEVELOPER = { label: "VVSPL", href: "https://vvspltech.com" };
 
 const contacts = [
   { id: "phone", Icon: Phone, label: PHONE.display, href: PHONE.href },

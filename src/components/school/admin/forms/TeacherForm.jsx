@@ -107,7 +107,7 @@ export default function TeacherForm({ teacher, onSubmit, onCancel, isLoading }) 
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <div className="flex gap-3 rounded-lg border border-red-200 bg-red-50 p-3">
-          <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
+          <AlertCircle className="size-5 flex-shrink-0 text-red-600" />
           <p className="text-sm font-semibold text-red-700">{error}</p>
         </div>
       )}
@@ -207,7 +207,7 @@ export default function TeacherForm({ teacher, onSubmit, onCancel, isLoading }) 
                   type="checkbox"
                   checked={formData.subjectIds.includes(subject.id)}
                   onChange={() => handleSubjectToggle(subject.id)}
-                  className="h-4 w-4 rounded border-surface-300 accent-brand-600"
+                  className="size-4 rounded border-surface-300 accent-brand-600"
                 />
                 <span className="text-sm text-surface-700">{subject.name}</span>
               </label>
@@ -224,7 +224,7 @@ export default function TeacherForm({ teacher, onSubmit, onCancel, isLoading }) 
                   type="checkbox"
                   checked={formData.sectionIds.includes(section.id)}
                   onChange={() => handleSectionToggle(section.id)}
-                  className="h-4 w-4 rounded border-surface-300 accent-brand-600"
+                  className="size-4 rounded border-surface-300 accent-brand-600"
                 />
                 <span className="text-sm text-surface-700">{section.className} - {section.name}</span>
               </label>
@@ -239,7 +239,7 @@ export default function TeacherForm({ teacher, onSubmit, onCancel, isLoading }) 
           disabled={isLoading}
           className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 active:scale-[0.98] px-4 py-2.5 font-bold text-white shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 transition-all duration-200"
         >
-          {isLoading && <Loader className="h-4 w-4 animate-spin" />}
+          {isLoading && <Loader className="size-4 animate-spin" />}
           {teacher ? 'Update Teacher' : 'Add Teacher'}
         </button>
         <button

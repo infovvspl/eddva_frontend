@@ -374,7 +374,7 @@ export default function Assessments() {
                   : 'border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
               )}
             >
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-current text-xs uppercase">
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-current text-xs uppercase">
                 {option.id || option.value || ''}
               </span>
               <span>{option.text || option.label || option.value}</span>
@@ -480,7 +480,7 @@ export default function Assessments() {
           />
           {isOcrLoading && (
             <div className="absolute inset-0 flex flex-col items-center justify-center rounded-xl bg-white/70 dark:bg-slate-900/70">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              <Loader2 className="size-8 animate-spin text-blue-600" />
               <p className="mt-2 text-xs font-black text-slate-600 dark:text-slate-400">Groq Qwen OCR extracting text...</p>
             </div>
           )}
@@ -550,7 +550,7 @@ export default function Assessments() {
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <div className="size-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
       </div>
     );
   }
@@ -644,7 +644,7 @@ export default function Assessments() {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {filteredAssessments.length === 0 ? (
              <div className="col-span-full flex flex-col items-center justify-center rounded-[2rem] border border-slate-100 border-dashed bg-white p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
-               <ClipboardList className="mb-4 h-12 w-12 text-slate-300 dark:text-slate-700" />
+               <ClipboardList className="mb-4 size-12 text-slate-300 dark:text-slate-700" />
                <h3 className="text-lg font-bold text-slate-900 dark:text-white">No available {selectedTypeLabel.toLowerCase()}</h3>
                <p className="mt-1 text-sm text-slate-500">You don't have any pending assessments in this category right now.</p>
              </div>
@@ -703,7 +703,7 @@ export default function Assessments() {
                   
                   <div className="mb-3 flex items-center gap-3.5 text-[11px] font-semibold text-slate-500 sm:mb-4 sm:gap-4 sm:text-xs">
                     <div className="flex items-center gap-1">
-                      <Clock size={12} className="text-slate-400 sm:h-3.5 sm:w-3.5" />
+                      <Clock size={12} className="text-slate-400 sm:size-3.5" />
                       <span>{durationMins} mins</span>
                     </div>
                     <div>{test.total_marks || test.totalMarks || 100} marks</div>
@@ -740,7 +740,7 @@ export default function Assessments() {
                         rel="noreferrer"
                         className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-2 text-xs font-bold text-slate-600 transition-colors hover:bg-slate-100 sm:py-2.5 sm:text-sm"
                       >
-                        <Download size={14} className="sm:h-4 sm:w-4" />
+                        <Download size={14} className="sm:size-4" />
                         Download Paper
                       </a>
                     )}
@@ -758,7 +758,7 @@ export default function Assessments() {
                             : 'bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-600/20'
                         )}
                       >
-                        <UploadCloud size={14} className="sm:h-4 sm:w-4" />
+                        <UploadCloud size={14} className="sm:size-4" />
                         {attemptStarting
                           ? 'Starting...'
                           : isSubmitted
@@ -778,7 +778,7 @@ export default function Assessments() {
                         onClick={() => window.open(submittedFileUrl, '_blank')}
                         className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-50 py-2 text-xs font-bold text-blue-600 transition-colors hover:bg-blue-100 sm:py-2.5 sm:text-sm"
                       >
-                        <FileText size={14} className="sm:h-4 sm:w-4" />
+                        <FileText size={14} className="sm:size-4" />
                         View my submission
                       </button>
                     )}
@@ -795,11 +795,11 @@ export default function Assessments() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {resultsLoading ? (
             <div className="col-span-full flex h-48 items-center justify-center">
-              <Loader2 className="h-7 w-7 animate-spin text-blue-600" />
+              <Loader2 className="size-7 animate-spin text-blue-600" />
             </div>
           ) : filteredResults.length === 0 ? (
             <div className="col-span-full flex flex-col items-center justify-center rounded-[2rem] border border-dashed border-slate-200 bg-white p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <BarChart3 className="mb-4 h-12 w-12 text-slate-300 dark:text-slate-700" />
+              <BarChart3 className="mb-4 size-12 text-slate-300 dark:text-slate-700" />
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">No {selectedTypeLabel.toLowerCase()} results yet</h3>
               <p className="mt-1 text-sm text-slate-500">Your teacher hasn't published marks in this category yet.</p>
             </div>
@@ -883,7 +883,7 @@ export default function Assessments() {
                       {/* Remarks */}
                       {remarks && (
                         <div className="mt-3 flex items-start gap-2 rounded-xl bg-indigo-50 px-3 py-2 dark:bg-indigo-950/20">
-                          <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-indigo-500" />
+                          <MessageSquare className="mt-0.5 size-4 shrink-0 text-indigo-500" />
                           <p className="text-xs font-medium text-indigo-700 dark:text-indigo-300 line-clamp-2">
                             {remarks}
                           </p>
@@ -895,15 +895,15 @@ export default function Assessments() {
                     <div className="flex flex-row items-center gap-4 sm:flex-col sm:items-end">
                       {hasResult && !isAbsent && pct != null ? (
                         <div className={cn(
-                          'flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-2xl text-white font-black shadow-sm',
+                          'flex size-16 shrink-0 flex-col items-center justify-center rounded-2xl text-white font-black shadow-sm',
                           `bg-gradient-to-br ${ringColor}`
                         )}>
                           <span className="text-lg">{pct}</span>
                           <span className="text-[10px] font-bold">%</span>
                         </div>
                       ) : (
-                        <div className="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800">
-                          <Award className="h-6 w-6 text-slate-300 dark:text-slate-600" />
+                        <div className="flex size-16 shrink-0 flex-col items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800">
+                          <Award className="size-6 text-slate-300 dark:text-slate-600" />
                         </div>
                       )}
                       <Link

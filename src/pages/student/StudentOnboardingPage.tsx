@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle2, Sparkles, ChevronRight, Loader2,
-  ArrowRight, CalendarDays, GraduationCap,
+  ArrowRight, CalendarDays, GraduationCap, Zap, Dna, BookOpen, PartyPopper,
 } from "lucide-react";
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import { useAuthStore } from "@/lib/auth-store";
@@ -17,7 +17,7 @@ const EXAMS = [
     key: "jee",
     label: "JEE",
     full: "JEE Main & Advanced",
-    emoji: "⚡",
+    icon: Zap,
     desc: "Engineering entrance for IITs, NITs & more",
     gradient: "from-orange-400 to-red-500",
     bg: "bg-orange-50",
@@ -29,7 +29,7 @@ const EXAMS = [
     key: "neet",
     label: "NEET",
     full: "NEET UG",
-    emoji: "🧬",
+    icon: Dna,
     desc: "Medical entrance for MBBS & BDS",
     gradient: "from-emerald-400 to-teal-500",
     bg: "bg-emerald-50",
@@ -41,7 +41,7 @@ const EXAMS = [
     key: "cbse_10",
     label: "CBSE Class 10",
     full: "CBSE Class 10 Boards",
-    emoji: "📚",
+    icon: BookOpen,
     desc: "Secondary board examination",
     gradient: "from-blue-400 to-indigo-500",
     bg: "bg-blue-50",
@@ -53,7 +53,7 @@ const EXAMS = [
     key: "cbse_12",
     label: "CBSE Class 12",
     full: "CBSE Class 12 Boards",
-    emoji: "🎓",
+    icon: GraduationCap,
     desc: "Senior secondary board examination",
     gradient: "from-violet-400 to-purple-500",
     bg: "bg-violet-50",
@@ -161,10 +161,10 @@ export default function StudentOnboardingPage() {
               </p>
               <StepDots step={step} />
             </div>
-            <h1 className="text-2xl font-extrabold text-slate-900">
+            <h1 className="text-2xl font-extrabold text-slate-900 flex items-center gap-2">
               {step === 1 && "Which exam are you preparing for?"}
               {step === 2 && "Which year are you targeting?"}
-              {step === 3 && (done ? "Your plan is ready! 🎉" : "Generating your plan…")}
+              {step === 3 && (done ? <>Your plan is ready! <PartyPopper className="size-6 shrink-0" /></> : "Generating your plan…")}
             </h1>
             {step === 1 && (
               <p className="text-sm text-slate-500 mt-1">
@@ -202,7 +202,7 @@ export default function StudentOnboardingPage() {
                             : "border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm"
                         )}
                       >
-                        <span className="text-2xl mb-2 block">{exam.emoji}</span>
+                        <exam.icon className="size-6 mb-2" />
                         <p className={cn(
                           "font-bold text-sm leading-tight mb-0.5",
                           examTarget === exam.key ? exam.textColor : "text-slate-800"
@@ -244,7 +244,7 @@ export default function StudentOnboardingPage() {
                       "flex items-center gap-3 px-4 py-3 rounded-xl mb-6 border",
                       selectedExam.bg, selectedExam.border
                     )}>
-                      <span className="text-xl">{selectedExam.emoji}</span>
+                      <selectedExam.icon className={cn("size-5 shrink-0", selectedExam.textColor)} />
                       <div>
                         <p className={cn("font-bold text-sm", selectedExam.textColor)}>{selectedExam.full}</p>
                         <button

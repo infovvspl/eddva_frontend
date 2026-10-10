@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useMyBatches, useBatchRoster, useBatchPerformance } from "@/hooks/use-teacher";
 import { getInactiveStudents, sendBulkReminder, type InactiveStudent } from "@/lib/api/teacher";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
 // ─── Types & helpers ──────────────────────────────────────────────────────────
 
@@ -197,22 +198,22 @@ const BatchDetail = ({ batchId }: { batchId: string }) => {
           <div className="text-center py-10 text-muted-foreground text-sm">No students enrolled yet.</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-secondary/50">
-                  <th className="text-left px-5 py-3 text-xs font-bold uppercase text-muted-foreground">Student</th>
-                  <th className="text-left px-5 py-3 text-xs font-bold uppercase text-muted-foreground hidden md:table-cell">Contact</th>
-                  <th className="text-left px-5 py-3 text-xs font-bold uppercase text-muted-foreground">Streak</th>
-                  <th className="text-left px-5 py-3 text-xs font-bold uppercase text-muted-foreground hidden sm:table-cell">Lectures (7d)</th>
-                  <th className="text-left px-5 py-3 text-xs font-bold uppercase text-muted-foreground">Last Score</th>
-                  <th className="text-left px-5 py-3 text-xs font-bold uppercase text-muted-foreground hidden lg:table-cell">Last Login</th>
-                  <th className="text-left px-5 py-3 text-xs font-bold uppercase text-muted-foreground">Detail</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="w-full text-sm">
+              <TableHeader>
+                <TableRow className="border-b border-border bg-secondary/50 hover:bg-secondary/50">
+                  <TableHead className="h-auto text-left px-5 py-3 text-xs font-bold uppercase text-muted-foreground">Student</TableHead>
+                  <TableHead className="h-auto text-left px-5 py-3 text-xs font-bold uppercase text-muted-foreground hidden md:table-cell">Contact</TableHead>
+                  <TableHead className="h-auto text-left px-5 py-3 text-xs font-bold uppercase text-muted-foreground">Streak</TableHead>
+                  <TableHead className="h-auto text-left px-5 py-3 text-xs font-bold uppercase text-muted-foreground hidden sm:table-cell">Lectures (7d)</TableHead>
+                  <TableHead className="h-auto text-left px-5 py-3 text-xs font-bold uppercase text-muted-foreground">Last Score</TableHead>
+                  <TableHead className="h-auto text-left px-5 py-3 text-xs font-bold uppercase text-muted-foreground hidden lg:table-cell">Last Login</TableHead>
+                  <TableHead className="h-auto text-left px-5 py-3 text-xs font-bold uppercase text-muted-foreground">Detail</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {roster.map(s => (
-                  <tr key={s.studentId} className="border-b border-border last:border-0 hover:bg-secondary/20 transition-colors">
-                    <td className="px-5 py-3">
+                  <TableRow key={s.studentId} className="border-b border-border last:border-0 hover:bg-secondary/20 transition-colors">
+                    <TableCell className="px-5 py-3">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary shrink-0">
                           {(s.name || "?").charAt(0).toUpperCase()}
@@ -222,30 +223,30 @@ const BatchDetail = ({ batchId }: { batchId: string }) => {
                           <p className="text-xs text-muted-foreground md:hidden">{s.phone || "—"}</p>
                         </div>
                       </div>
-                    </td>
-                    <td className="px-5 py-3 hidden md:table-cell">
+                    </TableCell>
+                    <TableCell className="px-5 py-3 hidden md:table-cell">
                       <p className="text-muted-foreground text-xs">{s.phone || "—"}</p>
-                    </td>
-                    <td className="px-5 py-3">
+                    </TableCell>
+                    <TableCell className="px-5 py-3">
                       <div className="flex items-center gap-1">
                         <Flame className="w-3.5 h-3.5 text-orange-500" />
                         <span className="text-foreground font-semibold">{s.streakDays ?? 0}d</span>
                       </div>
-                    </td>
-                    <td className="px-5 py-3 hidden sm:table-cell text-center">
+                    </TableCell>
+                    <TableCell className="px-5 py-3 hidden sm:table-cell text-center">
                       <span className="text-foreground font-medium">{s.lecturesWatchedThisWeek ?? 0}</span>
-                    </td>
-                    <td className="px-5 py-3">
+                    </TableCell>
+                    <TableCell className="px-5 py-3">
                       {s.lastTestScore != null ? (
                         <span className={`text-xs font-bold px-2 py-1 rounded-full ${s.lastTestScore >= 60 ? "bg-emerald-500/10 text-emerald-600" : s.lastTestScore >= 40 ? "bg-amber-500/10 text-amber-600" : "bg-red-500/10 text-red-500"}`}>
                           {s.lastTestScore}%
                         </span>
                       ) : <span className="text-muted-foreground text-xs">—</span>}
-                    </td>
-                    <td className="px-5 py-3 text-xs text-muted-foreground hidden lg:table-cell">
+                    </TableCell>
+                    <TableCell className="px-5 py-3 text-xs text-muted-foreground hidden lg:table-cell">
                       {s.lastLoginAt ? new Date(s.lastLoginAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "Never"}
-                    </td>
-                    <td className="px-5 py-3">
+                    </TableCell>
+                    <TableCell className="px-5 py-3">
                       <Button
                         size="sm"
                         variant="outline"
@@ -254,11 +255,11 @@ const BatchDetail = ({ batchId }: { batchId: string }) => {
                       >
                         <BarChart3 className="w-3 h-3" /> Progress
                       </Button>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )
       )}

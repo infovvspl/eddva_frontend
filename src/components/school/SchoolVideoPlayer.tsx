@@ -111,7 +111,7 @@ function QuizPopup({ question, questionIndex, total, onAnswer, onClose }: {
                     showResult && !isCorrect && !isWrong && "border-slate-100 opacity-40",
                   )}>
                   <span className={cn(
-                    "w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black shrink-0",
+                    "size-8 rounded-xl flex items-center justify-center text-xs font-black shrink-0",
                     state === "asking" && isSelected ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500",
                     showResult && isCorrect ? "bg-emerald-500 text-white" : "",
                     showResult && isWrong ? "bg-red-500 text-white" : "",
@@ -131,15 +131,15 @@ function QuizPopup({ question, questionIndex, total, onAnswer, onClose }: {
           {state === "asking" ? (
             <button onClick={handleSubmit} disabled={!selected || isSubmitting}
               className="w-full py-3.5 rounded-2xl bg-slate-900 text-white text-sm font-bold flex items-center justify-center gap-2 hover:bg-blue-600 transition-colors disabled:opacity-40">
-              {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Submit <ChevronRight className="w-4 h-4" /></>}
+              {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <>Submit <ChevronRight className="size-4" /></>}
             </button>
           ) : (
             <div className="space-y-3">
               <div className={cn("flex items-start gap-3 rounded-2xl px-4 py-3 border",
                 state === "correct" ? "bg-emerald-50 border-emerald-200" : "bg-red-50 border-red-200")}>
                 {state === "correct"
-                  ? <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                  : <XCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />}
+                  ? <CheckCircle className="size-5 text-emerald-600 shrink-0 mt-0.5" />
+                  : <XCircle className="size-5 text-red-500 shrink-0 mt-0.5" />}
                 <div>
                   <p className={cn("text-sm font-bold", state === "correct" ? "text-emerald-700" : "text-red-600")}>
                     {state === "correct" ? "Correct!" : "Not quite"}
@@ -153,7 +153,7 @@ function QuizPopup({ question, questionIndex, total, onAnswer, onClose }: {
               </div>
               <button onClick={onClose}
                 className="w-full py-3 rounded-2xl bg-white border border-slate-200 text-slate-700 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors">
-                <Play className="w-3.5 h-3.5 fill-current" /> Continue watching
+                <Play className="size-3.5 fill-current" /> Continue watching
               </button>
             </div>
           )}
@@ -483,9 +483,9 @@ export function SchoolVideoPlayer({
     <div ref={containerRef} className="relative bg-black rounded-2xl overflow-hidden aspect-video"
       onMouseMove={showControls} onClick={!isYouTube ? togglePlay : undefined}>
       {isYouTube ? (
-        <div ref={ytContainerRef} className="w-full h-full min-h-[200px]" />
+        <div ref={ytContainerRef} className="size-full min-h-[200px]" />
       ) : (
-        <video ref={videoRef} className="w-full h-full object-contain"
+        <video ref={videoRef} className="size-full object-contain"
           preload="auto"
           playsInline
           onTimeUpdate={handleTimeUpdate}
@@ -545,7 +545,7 @@ export function SchoolVideoPlayer({
                     <div className="h-full rounded-full bg-blue-600" style={{ width: `${progressPct}%` }} />
                     {checkpoints.map(cp => (
                       <div key={cp.id} title="Quiz checkpoint"
-                        className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-yellow-400 border border-black/40 -translate-x-1/2"
+                        className="absolute top-1/2 -translate-y-1/2 size-2 rounded-full bg-yellow-400 border border-black/40 -translate-x-1/2"
                         style={{ left: `${cp.triggerAtPercent}%` }} />
                     ))}
                   </div>
@@ -553,11 +553,11 @@ export function SchoolVideoPlayer({
 
                 <div className="flex items-center gap-3">
                   <button onClick={togglePlay} className="text-white hover:text-blue-300 transition-colors">
-                    {playing ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current" />}
+                    {playing ? <Pause className="size-5 fill-current" /> : <Play className="size-5 fill-current" />}
                   </button>
                   <button onClick={() => { const v = videoRef.current; if (v) v.currentTime = Math.max(0, v.currentTime - 10); }}
                     className="text-white/60 hover:text-white transition-colors">
-                    <RotateCcw className="w-4 h-4" />
+                    <RotateCcw className="size-4" />
                   </button>
                   <span className="text-white/70 text-xs font-mono tabular-nums">{fmt(localTime)} / {fmt(duration)}</span>
                   <div className="flex-1" />
@@ -565,7 +565,7 @@ export function SchoolVideoPlayer({
                   <div className="flex items-center gap-1.5">
                     <button onClick={() => { setMuted(m => !m); if (videoRef.current) videoRef.current.muted = !muted; }}
                       className="text-white/60 hover:text-white transition-colors">
-                      {muted || volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                      {muted || volume === 0 ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
                     </button>
                     <input type="range" min={0} max={1} step={0.05} value={muted ? 0 : volume}
                       onChange={e => {
@@ -585,7 +585,7 @@ export function SchoolVideoPlayer({
                     if (document.fullscreenElement) document.exitFullscreen();
                     else el.requestFullscreen().catch(() => {});
                   }} className="text-white/60 hover:text-white transition-colors">
-                    <Maximize className="w-4 h-4" />
+                    <Maximize className="size-4" />
                   </button>
                 </div>
               </div>

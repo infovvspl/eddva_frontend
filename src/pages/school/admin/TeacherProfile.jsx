@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   User, BookOpen, Calendar, BarChart2, Briefcase,
@@ -15,6 +17,9 @@ import { exportToPDF } from "@/lib/school/pdfExport";
 import { toast } from 'sonner';
 import { cn } from '@/components/school/admin/Skeleton';
 import { normalizeSubjectName } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 const TabButton = ({ active, onClick, icon: Icon, label }) => (
   <button
@@ -151,6 +156,10 @@ export default function TeacherProfile() {
   // Performance states
   const [performanceData, setPerformanceData] = useState(null);
   const [performanceLoading, setPerformanceLoading] = useState(false);
+  const [benchmarkingData, setBenchmarkingData] = useState(null);
+  const [benchmarkingLoading, setBenchmarkingLoading] = useState(false);
+  const [minAttendanceOverride, setMinAttendanceOverride] = useState('');
+  const [savingAttendanceThreshold, setSavingAttendanceThreshold] = useState(false);
 
   // Video analysis states
   const [videoSummary, setVideoSummary] = useState(null);
@@ -176,6 +185,26 @@ export default function TeacherProfile() {
       fetchPerformanceData();
     }
   }, [activeTab, teacher?.id]);
+
+  useEffect(() => {
+    if (activeTab === 'benchmarking' && teacher?.id) {
+      fetchBenchmarkingData();
+    }
+  }, [activeTab, teacher?.id]);
+
+  const fetchBenchmarkingData = async () => {
+    setBenchmarkingLoading(true);
+    try {
+      const res = await api.get(`/teachers/${id}/benchmarking`);
+      setBenchmarkingData(res.data?.data || null);
+    } catch (err) {
+      console.error('Failed to fetch teacher benchmarking:', err);
+      toast.error('Failed to load teacher benchmarking');
+      setBenchmarkingData(null);
+    } finally {
+      setBenchmarkingLoading(false);
+    }
+  };
 
   const fetchPerformanceData = async () => {
     setPerformanceLoading(true);
@@ -311,12 +340,30 @@ export default function TeacherProfile() {
   const fetchTeacher = async () => {
     try {
       const res = await api.get(`/teachers/${id}`);
-      setTeacher(res.data?.data ?? res.data);
+      const data = res.data?.data ?? res.data;
+      setTeacher(data);
+      const override = data?.teacherProfile?.minAttendancePercentage;
+      setMinAttendanceOverride(override != null ? String(override) : '');
     } catch (err) {
       console.error(err);
       setTeacher(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const saveAttendanceThreshold = async () => {
+    setSavingAttendanceThreshold(true);
+    try {
+      await api.put(`/teachers/${id}`, {
+        minAttendancePercentage: minAttendanceOverride === '' ? '' : Number(minAttendanceOverride),
+      });
+      toast.success('Attendance threshold updated');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to update attendance threshold');
+    } finally {
+      setSavingAttendanceThreshold(false);
     }
   };
 
@@ -395,13 +442,13 @@ export default function TeacherProfile() {
             disabled={exporting}
             className="flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2.5 text-xs font-bold tracking-tight uppercase tracking-widest text-white shadow-lg shadow-blue-600/20 hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 flex-1 sm:flex-initial"
           >
-            {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
+            {exporting ? <Loader2 className="size-3.5 animate-spin" /> : <FileText className="size-3.5" />}
             Export PDF
           </button>
-          <button className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 shrink-0">
+          <button className="flex size-10 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 shrink-0">
             <Printer size={16} />
           </button>
-          <button className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 shrink-0">
+          <button className="flex size-10 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 shrink-0">
             <Share2 size={16} />
           </button>
         </div>
@@ -418,15 +465,12 @@ export default function TeacherProfile() {
           <div className="px-6 sm:px-12 pb-4 -mt-14 sm:-mt-16">
             <div className="flex items-end justify-between gap-6 mb-4">
               <div className="flex items-end gap-6 min-w-0">
-                <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl border-4 sm:border-8 border-white dark:border-slate-950 overflow-hidden bg-slate-100 dark:bg-slate-900 shadow-xl shrink-0 z-10">
-                  {teacher.profileImage ? (
-                    <img src={teacher.profileImage} alt={teacher.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-blue-600/10 text-3xl sm:text-4xl font-bold tracking-tight text-blue-700 dark:text-sky-300">
-                      {(teacher.name || 'T').slice(0, 1).toUpperCase()}
-                    </div>
-                  )}
-                </div>
+                <Avatar className="size-28 sm:size-36 rounded-3xl border-4 sm:border-8 border-white dark:border-slate-950 bg-slate-100 dark:bg-slate-900 shadow-xl shrink-0 z-10">
+                  <AvatarImage src={teacher.profileImage} alt={teacher.name} className="object-cover" />
+                  <AvatarFallback className="rounded-3xl bg-blue-600/10 text-3xl sm:text-4xl font-bold tracking-tight text-blue-700 dark:text-sky-300">
+                    {(teacher.name || 'T').slice(0, 1).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="pb-2 min-w-0">
                   <div className="flex items-center gap-3 mb-2 flex-wrap">
                     <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900 dark:text-white leading-tight break-words">{teacher.name}</h1>
@@ -441,7 +485,7 @@ export default function TeacherProfile() {
                         teacher.isActive ? "bg-emerald-500 border-emerald-600" : "bg-slate-300 border-slate-400 dark:bg-slate-800"
                       )}>
                         <div className={cn(
-                          "w-3.5 h-3.5 rounded-full bg-white transition-transform duration-300 shadow-md",
+                          "size-3.5 rounded-full bg-white transition-transform duration-300 shadow-md",
                           teacher.isActive ? "translate-x-4" : "translate-x-0"
                         )} />
                       </div>
@@ -492,15 +536,12 @@ export default function TeacherProfile() {
         <div className="block lg:hidden">
           <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 p-5 sm:p-6 text-white relative">
             <div className="flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-left gap-4">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl border-2 border-white/30 bg-white/10 backdrop-blur-md overflow-hidden shadow-xl shrink-0 flex items-center justify-center">
-                {teacher.profileImage ? (
-                  <img src={teacher.profileImage} alt={teacher.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-white/20 text-2xl sm:text-3xl font-black text-white">
-                    {(teacher.name || 'T').slice(0, 1).toUpperCase()}
-                  </div>
-                )}
-              </div>
+              <Avatar className="size-20 sm:size-24 rounded-2xl border-2 border-white/30 bg-white/10 backdrop-blur-md shadow-xl shrink-0">
+                <AvatarImage src={teacher.profileImage} alt={teacher.name} className="object-cover" />
+                <AvatarFallback className="rounded-2xl bg-white/20 text-2xl sm:text-3xl font-black text-white">
+                  {(teacher.name || 'T').slice(0, 1).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
               <div className="flex-1 min-w-0 space-y-2">
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
                   <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white leading-tight break-words">{teacher.name}</h1>
@@ -514,7 +555,7 @@ export default function TeacherProfile() {
                         : "bg-slate-800/90 border-slate-600 text-slate-200"
                     )}
                   >
-                    <div className={cn("w-2.5 h-2.5 rounded-full bg-white", teacher.isActive ? "bg-emerald-200" : "bg-slate-400")} />
+                    <div className={cn("size-2.5 rounded-full bg-white", teacher.isActive ? "bg-emerald-200" : "bg-slate-400")} />
                     {teacher.isActive ? 'ACTIVE' : 'INACTIVE'}
                   </button>
                 </div>
@@ -545,6 +586,7 @@ export default function TeacherProfile() {
             {isTeacher && <TabButton active={activeTab === 'academic'} onClick={() => setActiveTab('academic')} icon={BookOpen} label="Subjects & Classes" />}
             <TabButton active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={Calendar} label="Attendance" />
             {isTeacher && <TabButton active={activeTab === 'performance'} onClick={() => setActiveTab('performance')} icon={BarChart2} label="Performance" />}
+            {isTeacher && <TabButton active={activeTab === 'benchmarking'} onClick={() => setActiveTab('benchmarking')} icon={Award} label="Benchmarking" />}
             {isTeacher && <TabButton active={activeTab === 'videos'} onClick={() => setActiveTab('videos')} icon={Video} label="Video Analysis" />}
           </div>
 
@@ -673,7 +715,7 @@ export default function TeacherProfile() {
                                     {isImage ? (
                                       <img
                                         src={cert.url}
-                                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                        className="size-full object-cover hover:scale-105 transition-transform duration-300"
                                         alt={cert.name}
                                       />
                                     ) : isPdf ? (
@@ -691,7 +733,7 @@ export default function TeacherProfile() {
                                         title={cert.name}
                                       />
                                     ) : (
-                                      <div className="w-full h-full bg-slate-50 dark:bg-slate-800 flex flex-col items-center justify-center gap-1">
+                                      <div className="size-full bg-slate-50 dark:bg-slate-800 flex flex-col items-center justify-center gap-1">
                                         <File className="text-slate-400" size={24} />
                                         <span className="text-[9px] font-black tracking-widest text-slate-500 uppercase">FILE</span>
                                       </div>
@@ -801,6 +843,35 @@ export default function TeacherProfile() {
                     </div>
                   </div>
 
+                  {/* Minimum attendance threshold override */}
+                  <div className="flex items-center justify-between flex-wrap gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Minimum Attendance % Override</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">Leave blank to use the institute default.</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.5"
+                        value={minAttendanceOverride}
+                        onChange={(e) => setMinAttendanceOverride(e.target.value)}
+                        placeholder="Institute default"
+                        className="w-32 rounded-xl border-2 border-slate-100 dark:border-slate-700 px-3 py-2 text-sm font-bold text-slate-700 dark:text-white bg-white dark:bg-slate-900 outline-none focus:border-blue-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={saveAttendanceThreshold}
+                        disabled={savingAttendanceThreshold}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 text-white px-3 py-2 text-xs font-bold disabled:opacity-60"
+                      >
+                        {savingAttendanceThreshold ? <Loader2 size={14} className="animate-spin" /> : null}
+                        Save
+                      </button>
+                    </div>
+                  </div>
+
                   {attendanceLoading ? (
                     <div className="flex items-center justify-center py-16">
                       <Loader2 size={32} className="animate-spin text-blue-500" />
@@ -814,11 +885,11 @@ export default function TeacherProfile() {
 
                     const statusStyle = (status) => {
                       const s = (status || '').toUpperCase();
-                      if (s === 'PRESENT') return 'bg-emerald-500/10 text-emerald-600';
-                      if (s === 'ABSENT') return 'bg-red-500/10 text-red-500';
-                      if (s === 'LATE') return 'bg-amber-400/10 text-amber-600';
-                      if (s === 'LEAVE') return 'bg-blue-500/10 text-blue-600';
-                      return 'bg-slate-100 text-slate-500';
+                      if (s === 'PRESENT') return 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/10';
+                      if (s === 'ABSENT') return 'bg-red-500/10 text-red-500 hover:bg-red-500/10';
+                      if (s === 'LATE') return 'bg-amber-400/10 text-amber-600 hover:bg-amber-400/10';
+                      if (s === 'LEAVE') return 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/10';
+                      return 'bg-slate-100 text-slate-500 hover:bg-slate-100';
                     };
 
                     return (
@@ -845,47 +916,47 @@ export default function TeacherProfile() {
 
                         {/* Records Table */}
                         <div className="rounded-3xl border border-slate-100 dark:border-slate-800 overflow-hidden overflow-x-auto w-full">
-                          <table className="w-full text-left min-w-[600px]">
-                            <thead className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800">
-                              <tr>
-                                <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Date</th>
-                                <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Day</th>
-                                <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Status</th>
-                                <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Remarks</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50 dark:divide-slate-800 text-sm">
+                          <Table className="w-full text-left min-w-[600px]">
+                            <TableHeader className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800">
+                              <TableRow className="hover:bg-transparent border-b-0">
+                                <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Date</TableHead>
+                                <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Day</TableHead>
+                                <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Status</TableHead>
+                                <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Remarks</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody className="divide-y divide-slate-50 dark:divide-slate-800 text-sm">
                               {attendance.length === 0 ? (
-                                <tr>
-                                  <td colSpan={4} className="p-10 text-center text-slate-400 font-bold">
+                                <TableRow className="hover:bg-transparent">
+                                  <TableCell colSpan={4} className="p-10 text-center text-slate-400 font-bold">
                                     No attendance records for this month.
-                                  </td>
-                                </tr>
+                                  </TableCell>
+                                </TableRow>
                               ) : (
                                 [...attendance]
                                   .sort((a, b) => new Date(b.date) - new Date(a.date))
                                   .map((record, i) => {
                                     const d = new Date(record.date);
                                     return (
-                                      <tr key={record.id || i} className="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
-                                        <td className="p-4 font-bold text-slate-700 dark:text-slate-200">
+                                      <TableRow key={record.id || i} className="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
+                                        <TableCell className="p-4 font-bold text-slate-700 dark:text-slate-200">
                                           {d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                        </td>
-                                        <td className="p-4 font-bold text-slate-400">
+                                        </TableCell>
+                                        <TableCell className="p-4 font-bold text-slate-400">
                                           {d.toLocaleDateString('en-IN', { weekday: 'short' })}
-                                        </td>
-                                        <td className="p-4">
-                                          <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${statusStyle(record.status)}`}>
+                                        </TableCell>
+                                        <TableCell className="p-4">
+                                          <Badge className={`rounded-lg text-[10px] font-bold uppercase tracking-wider border-transparent ${statusStyle(record.status)}`}>
                                             {record.status || 'Unknown'}
-                                          </span>
-                                        </td>
-                                        <td className="p-4 text-slate-400 font-bold">{record.remarks || '—'}</td>
-                                      </tr>
+                                          </Badge>
+                                        </TableCell>
+                                        <TableCell className="p-4 text-slate-400 font-bold">{record.remarks || '—'}</TableCell>
+                                      </TableRow>
                                     );
                                   })
                               )}
-                            </tbody>
-                          </table>
+                            </TableBody>
+                          </Table>
                         </div>
                       </>
                     );
@@ -896,7 +967,7 @@ export default function TeacherProfile() {
                 {activeTab === 'performance' && isTeacher && (() => {
                 if (performanceLoading) {
                   return (
-                    <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                    <div className="flex flex-col items-center justify-center py-20 gap-y-4">
                       <Loader2 size={40} className="animate-spin text-blue-600" />
                       <p className="text-sm font-bold text-slate-500 animate-pulse uppercase tracking-widest">Calculating performance analytics...</p>
                     </div>
@@ -1002,8 +1073,8 @@ export default function TeacherProfile() {
                           </p>
                         </div>
                         <div className="flex items-center gap-10 flex-wrap shrink-0">
-                          <div className="relative w-28 h-28 sm:w-32 sm:h-32 flex items-center justify-center">
-                            <svg className="w-full h-full -rotate-90">
+                          <div className="relative size-28 sm:size-32 flex items-center justify-center">
+                            <svg className="size-full -rotate-90">
                               <circle cx="56" cy="56" r="46" fill="none" stroke="#f1f5f9" strokeWidth="10" className="dark:stroke-slate-800 sm:cx-64 sm:cy-64 sm:r-54 sm:strokeWidth-12" />
                               <circle cx="56" cy="56" r="46" fill="none" stroke="#2563eb" strokeWidth="10" strokeDasharray="290" strokeDashoffset={290 - (290 * overallAverage) / 100} strokeLinecap="round" className="sm:cx-64 sm:cy-64 sm:r-54 sm:strokeWidth-12" />
                             </svg>
@@ -1015,7 +1086,7 @@ export default function TeacherProfile() {
                         </div>
                       </div>
 
-                      <div className="p-5 sm:p-8 rounded-2xl sm:rounded-[2.5rem] bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-xl shadow-blue-600/10 flex flex-col justify-center space-y-4">
+                      <div className="p-5 sm:p-8 rounded-2xl sm:rounded-[2.5rem] bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-xl shadow-blue-600/10 flex flex-col justify-center gap-y-4">
                         <div>
                           <h4 className="text-[10px] font-bold uppercase tracking-widest text-blue-200">Total Graded Students</h4>
                           <div className="text-4xl sm:text-5xl font-black mt-1">{totalEvaluated || evaluatedStudents.length}</div>
@@ -1056,7 +1127,7 @@ export default function TeacherProfile() {
                           return (
                             <div
                               key={cat.key}
-                              className={`p-5 rounded-3xl border ${cat.borderColor} ${cat.bgColor} flex flex-col justify-between space-y-4 shadow-sm hover:shadow-md transition-all duration-300`}
+                              className={`p-5 rounded-3xl border ${cat.borderColor} ${cat.bgColor} flex flex-col justify-between gap-y-4 shadow-sm hover:shadow-md transition-all duration-300`}
                             >
                               <div>
                                 <div className="flex items-center justify-between mb-1">
@@ -1106,30 +1177,153 @@ export default function TeacherProfile() {
                     <div>
                       <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-6">Class-wise Performance Summary</h3>
                       <div className="rounded-3xl border border-slate-100 dark:border-slate-800 overflow-hidden overflow-x-auto w-full shadow-sm">
-                        <table className="w-full text-left min-w-[600px]">
-                          <thead className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800">
-                            <tr>
-                              <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Class Name</th>
-                              <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Total Students Evaluated</th>
-                              <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Average Score</th>
-                              <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Pass Percentage</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-50 dark:divide-slate-800 text-sm">
+                        <Table className="w-full text-left min-w-[600px]">
+                          <TableHeader className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800">
+                            <TableRow className="hover:bg-transparent border-b-0">
+                              <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Class Name</TableHead>
+                              <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Total Students Evaluated</TableHead>
+                              <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Average Score</TableHead>
+                              <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Pass Percentage</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody className="divide-y divide-slate-50 dark:divide-slate-800 text-sm">
                             {(performanceData?.data || []).map((cs, idx) => (
-                              <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
-                                <td className="p-4 font-bold text-slate-950 dark:text-white">{cs.class}</td>
-                                <td className="p-4 font-bold text-slate-600 dark:text-slate-400">{cs.totalEvaluated ?? 0}</td>
-                                <td className="p-4 font-bold text-slate-600 dark:text-slate-400">{Math.round(cs.avgScore)}%</td>
-                                <td className="p-4">
-                                  <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${cs.passRate >= 50 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-500'}`}>
+                              <TableRow key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
+                                <TableCell className="p-4 font-bold text-slate-950 dark:text-white">{cs.class}</TableCell>
+                                <TableCell className="p-4 font-bold text-slate-600 dark:text-slate-400">{cs.totalEvaluated ?? 0}</TableCell>
+                                <TableCell className="p-4 font-bold text-slate-600 dark:text-slate-400">{Math.round(cs.avgScore)}%</TableCell>
+                                <TableCell className="p-4">
+                                  <Badge className={`rounded-lg text-[10px] font-bold uppercase tracking-wider border-transparent ${cs.passRate >= 50 ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/10' : 'bg-red-500/10 text-red-500 hover:bg-red-500/10'}`}>
                                     {cs.passRate}%
-                                  </span>
-                                </td>
-                              </tr>
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
                             ))}
-                          </tbody>
-                        </table>
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+              {activeTab === 'benchmarking' && isTeacher && (() => {
+                if (benchmarkingLoading) {
+                  return (
+                    <div className="flex flex-col items-center justify-center py-20 gap-y-4">
+                      <Loader2 size={40} className="animate-spin text-blue-600" />
+                      <p className="text-sm font-bold text-slate-500 animate-pulse uppercase tracking-widest">Compiling benchmarking insights...</p>
+                    </div>
+                  );
+                }
+
+                if (!benchmarkingData || benchmarkingData.recordingsAnalyzed === 0) {
+                  return (
+                    <div className="p-12 rounded-[2.5rem] bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 text-center shadow-sm">
+                      <Award size={48} className="mx-auto mb-4 text-slate-300 dark:text-slate-700" />
+                      <h4 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No benchmarking data yet.</h4>
+                      <p className="text-sm font-semibold text-slate-500 max-w-md mx-auto">
+                        Benchmarking is built from AI-analyzed class recordings. Analyze at least one recording in the Video Analysis tab to populate this view.
+                      </p>
+                    </div>
+                  );
+                }
+
+                const { rubric, topStrengths, areasForImprovement, classPerformance, recordingsAnalyzed, monthlyTrend = [], instituteRubric } = benchmarkingData;
+                const rubricRows = [
+                  { label: 'Clarity', value: rubric.clarity, peer: instituteRubric?.clarity },
+                  { label: 'Pacing', value: rubric.pacing, peer: instituteRubric?.pacing },
+                  { label: 'Content Coverage', value: rubric.contentCoverage, peer: instituteRubric?.contentCoverage },
+                  { label: 'Student Engagement', value: rubric.studentEngagement, peer: instituteRubric?.studentEngagement },
+                  { label: 'Language Quality', value: rubric.languageQuality, peer: instituteRubric?.languageQuality },
+                ];
+
+                return (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/20">
+                        <div className="text-[10px] font-bold uppercase tracking-widest opacity-80">Overall Teaching Score</div>
+                        <div className="text-3xl font-black mt-1">{rubric.overallScore ?? '—'}{rubric.overallScore != null ? '/10' : ''}</div>
+                        <div className="text-[10px] font-semibold opacity-80 mt-1">Across {recordingsAnalyzed} analyzed recording{recordingsAnalyzed === 1 ? '' : 's'}</div>
+                      </div>
+                      <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Class Average</div>
+                        <div className="text-3xl font-black mt-1 text-slate-900 dark:text-white">{classPerformance.teacherAverage ?? '—'}{classPerformance.teacherAverage != null ? '%' : ''}</div>
+                      </div>
+                      <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Institute Average</div>
+                        <div className="text-3xl font-black mt-1 text-slate-900 dark:text-white">{classPerformance.instituteAverage ?? '—'}{classPerformance.instituteAverage != null ? '%' : ''}</div>
+                      </div>
+                    </div>
+
+                    {monthlyTrend.length > 1 && (
+                      <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                        <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Overall Score Trend</h4>
+                        <ChartContainer config={{ overallScore: { label: 'Overall score', color: 'hsl(var(--primary))' } }} className="h-[200px] w-full aspect-auto">
+                          <LineChart data={monthlyTrend.map((m) => ({ ...m, label: new Date(`${m.month}-01`).toLocaleDateString(undefined, { month: 'short' }) }))} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
+                            <CartesianGrid vertical={false} />
+                            <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
+                            <YAxis domain={[0, 10]} tickLine={false} axisLine={false} />
+                            <ChartTooltip content={<ChartTooltipContent />} />
+                            <Line dataKey="overallScore" type="monotone" stroke="var(--color-overallScore)" strokeWidth={2.5} dot={{ r: 4, fill: 'var(--color-overallScore)' }} />
+                          </LineChart>
+                        </ChartContainer>
+                      </div>
+                    )}
+
+                    <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                      <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Teaching Methodology Rubric</h4>
+                      <p className="text-[11px] font-semibold text-slate-400 mb-4">Bar = this teacher · vertical marker = institute average · right = difference</p>
+                      <div className="space-y-3">
+                        {rubricRows.map((row) => (
+                          <div key={row.label} className="flex items-center gap-3">
+                            <span className="w-40 shrink-0 text-xs font-bold text-slate-600 dark:text-slate-400">{row.label}</span>
+                            <div className="relative flex-1 h-2 rounded-full bg-slate-200 dark:bg-slate-800">
+                              <div className="h-full bg-blue-500 rounded-full" style={{ width: `${row.value != null ? (row.value / 10) * 100 : 0}%` }} />
+                              {row.peer != null && (
+                                <span title={`Institute average ${row.peer}`} className="absolute -top-1 h-4 w-0.5 rounded bg-slate-700 dark:bg-slate-200" style={{ left: `${(row.peer / 10) * 100}%` }} />
+                              )}
+                            </div>
+                            <span className="w-10 text-right text-xs font-black text-slate-900 dark:text-white">{row.value ?? '—'}</span>
+                            {row.value != null && row.peer != null && (
+                              <span className={`w-12 text-right text-[11px] font-bold ${row.value >= row.peer ? 'text-emerald-600' : 'text-amber-600'}`}>
+                                {row.value >= row.peer ? '+' : ''}{(row.value - row.peer).toFixed(1)}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="p-5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-100 dark:border-emerald-900/50">
+                        <h4 className="text-xs font-bold uppercase tracking-widest text-emerald-700 dark:text-emerald-400 mb-3">Top Strengths</h4>
+                        {topStrengths.length === 0 ? (
+                          <p className="text-xs font-semibold text-slate-500">No recurring strengths identified yet.</p>
+                        ) : (
+                          <ul className="space-y-2">
+                            {topStrengths.map((s, idx) => (
+                              <li key={idx} className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex gap-2">
+                                <CheckCircle2 size={14} className="text-emerald-600 shrink-0 mt-0.5" />
+                                {s}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                      <div className="p-5 rounded-2xl bg-amber-50/50 dark:bg-amber-950/10 border border-amber-100 dark:border-amber-900/50">
+                        <h4 className="text-xs font-bold uppercase tracking-widest text-amber-700 dark:text-amber-400 mb-3">Areas for Improvement</h4>
+                        {areasForImprovement.length === 0 ? (
+                          <p className="text-xs font-semibold text-slate-500">No recurring improvement areas identified yet.</p>
+                        ) : (
+                          <ul className="space-y-2">
+                            {areasForImprovement.map((s, idx) => (
+                              <li key={idx} className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex gap-2">
+                                <AlertCircle size={14} className="text-amber-600 shrink-0 mt-0.5" />
+                                {s}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1138,7 +1332,7 @@ export default function TeacherProfile() {
               {activeTab === 'videos' && isTeacher && (
                 <div className="space-y-6">
                   {videoLoading ? (
-                    <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                    <div className="flex flex-col items-center justify-center py-20 gap-y-4">
                       <Loader2 size={40} className="animate-spin text-blue-600" />
                       <p className="text-sm font-bold text-slate-500 animate-pulse uppercase tracking-widest">Loading video data…</p>
                     </div>
@@ -1157,7 +1351,7 @@ export default function TeacherProfile() {
                             return (
                               <div key={label} className={`rounded-2xl border p-4 ${tones[tone]}`}>
                                 <div className="flex items-center gap-2 mb-2">
-                                  <div className="grid h-8 w-8 place-items-center rounded-xl bg-white shadow-sm">{icon}</div>
+                                  <div className="grid size-8 place-items-center rounded-xl bg-white shadow-sm">{icon}</div>
                                   <p className="text-[10px] font-bold uppercase tracking-wide opacity-70">{label}</p>
                                 </div>
                                 <p className="text-2xl font-bold">{value}</p>
@@ -1218,7 +1412,7 @@ export default function TeacherProfile() {
                                   {/* Recording row */}
                                   <div className="p-4 flex flex-col sm:flex-row sm:items-center gap-4">
                                     {/* Icon */}
-                                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 dark:bg-blue-950">
+                                    <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-blue-50 dark:bg-blue-950">
                                       <Play size={18} className="text-blue-600" />
                                     </div>
 
@@ -1313,7 +1507,7 @@ export default function TeacherProfile() {
                                     <div className="border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-5 space-y-4">
                                       {/* Overall score */}
                                       <div className="flex items-center gap-4">
-                                        <div className="grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-display shrink-0">
+                                        <div className="grid size-16 place-items-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-display shrink-0">
                                           <span className="text-2xl font-bold">{analysis.overallScore}</span>
                                           <span className="text-[9px] opacity-70">/10</span>
                                         </div>
@@ -1419,7 +1613,7 @@ export default function TeacherProfile() {
               </div>
               <button
                 onClick={closeWatch}
-                className="ml-4 shrink-0 grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
+                className="ml-4 shrink-0 grid size-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
               >
                 <X size={16} />
               </button>
@@ -1438,7 +1632,7 @@ export default function TeacherProfile() {
                   src={watchUrl}
                   controls
                   autoPlay
-                  className="w-full h-full"
+                  className="size-full"
                   controlsList="nodownload"
                 />
               ) : (
@@ -1479,7 +1673,7 @@ export default function TeacherProfile() {
               </div>
               <button 
                 onClick={() => setViewingDoc(null)} 
-                className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-all"
+                className="size-8 rounded-xl bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-all"
               >
                 <X size={16} />
               </button>

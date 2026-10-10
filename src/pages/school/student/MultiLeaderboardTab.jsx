@@ -3,7 +3,7 @@ import api from '@/lib/api/school-client';
 import { soundEngine } from '@/lib/audioManager';
 import { Trophy, Medal, Star, Flame, Shield, ChevronUp, RefreshCw, Crown } from 'lucide-react';
 
-function GoldenCrown({ className = "h-14 w-14 sm:h-20 sm:w-20" }) {
+function GoldenCrown({ className = "size-14 sm:size-20" }) {
   return (
     <div className={`relative flex items-center justify-center ${className}`}>
       <div className="absolute inset-0 bg-amber-400/50 rounded-full blur-xl animate-pulse" />
@@ -11,7 +11,7 @@ function GoldenCrown({ className = "h-14 w-14 sm:h-20 sm:w-20" }) {
         viewBox="0 0 200 160"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="w-full h-full relative z-10 drop-shadow-[0_8px_16px_rgba(180,83,9,0.7)] transform hover:scale-105 transition-transform duration-300"
+        className="size-full relative z-10 drop-shadow-[0_8px_16px_rgba(180,83,9,0.7)] transform hover:scale-105 transition-transform duration-300"
       >
         <defs>
           <linearGradient id="goldBody" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -226,7 +226,7 @@ export default function MultiLeaderboardTab({ currentProfile }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
         <div>
           <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-100 dark:bg-indigo-950/50 px-2.5 py-0.5 text-[10px] font-black uppercase text-indigo-800 dark:text-indigo-300">
-            <Shield className="h-3 w-3 text-indigo-500" />
+            <Shield className="size-3 text-indigo-500" />
             League Status: {currentProfile?.leagueName || 'Gold League'}
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1">Multi-Scope Leaderboards</h2>
@@ -234,7 +234,7 @@ export default function MultiLeaderboardTab({ currentProfile }) {
         </div>
 
         <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 px-3 py-1.5 shadow-sm shrink-0">
-          <ChevronUp className="h-4 w-4 text-emerald-500" />
+          <ChevronUp className="size-4 text-emerald-500" />
           <div>
             <p className="text-[9px] font-bold uppercase text-slate-400">Promotion Zone</p>
             <p className="text-xs font-black text-slate-900 dark:text-white">Top 5 advance to Platinum</p>
@@ -265,7 +265,7 @@ export default function MultiLeaderboardTab({ currentProfile }) {
       {/* Main Leaderboard Section */}
       {loading ? (
         <div className="py-12 text-center">
-          <RefreshCw className="mx-auto h-8 w-8 animate-spin text-indigo-500" />
+          <RefreshCw className="mx-auto size-8 animate-spin text-indigo-500" />
         </div>
       ) : (
         <div className="space-y-6">
@@ -287,11 +287,11 @@ export default function MultiLeaderboardTab({ currentProfile }) {
                 {top2 && (
                   <div className="flex flex-col items-center z-10">
                     <div className="relative mb-2 flex flex-col items-center">
-                      <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full border-4 border-slate-300 shadow-lg overflow-hidden bg-slate-100 flex items-center justify-center">
+                      <div className="size-16 sm:size-20 rounded-full border-4 border-slate-300 shadow-lg overflow-hidden bg-slate-100 flex items-center justify-center">
                         <img 
                           src={getAvatarUrl(top2)} 
                           alt={top2.name} 
-                          className="h-full w-full object-cover" 
+                          className="size-full object-cover" 
                           onError={(e) => {
                             e.currentTarget.onerror = null;
                             e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(top2.name || 'Student')}&background=6366f1&color=ffffff&bold=true&rounded=true`;
@@ -305,14 +305,14 @@ export default function MultiLeaderboardTab({ currentProfile }) {
                     </p>
 
                     <div className="flex items-center gap-1 text-xs sm:text-sm font-black text-amber-500 my-1">
-                      <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                      <Star className="size-3.5 fill-amber-400 text-amber-400" />
                       <span>{top2.xp || top2.stars || 0}</span>
                     </div>
 
                     {/* Silver Block */}
                     <div className="w-24 sm:w-36 h-40 sm:h-48 rounded-3xl bg-gradient-to-b from-slate-200 via-slate-300 to-slate-400 dark:from-slate-700 dark:to-slate-800 shadow-md border-t-4 border-slate-200 dark:border-slate-600 flex flex-col items-center justify-between p-2.5 sm:p-3 relative overflow-hidden">
                       <div className="inline-flex items-center gap-1 rounded-full bg-white/95 dark:bg-slate-800 px-2.5 py-0.5 text-[10px] sm:text-xs font-black text-rose-500 shadow-sm border border-rose-200 dark:border-rose-900">
-                        <Shield className="h-3 w-3 text-rose-500 fill-rose-500" /> Lv {top2.level || 8}
+                        <Shield className="size-3 text-rose-500 fill-rose-500" /> Lv {top2.level || 8}
                       </div>
 
                       <span className="text-3xl sm:text-4xl font-black text-slate-700 dark:text-slate-200 tracking-tight my-0.5 sm:my-1 drop-shadow-xs">
@@ -321,7 +321,7 @@ export default function MultiLeaderboardTab({ currentProfile }) {
 
                       <div className="relative flex items-center justify-center mb-1">
                         <div className="absolute inset-0 bg-slate-100/80 rounded-full blur-sm" />
-                        <Trophy className="h-10 w-10 sm:h-14 sm:w-14 text-slate-600 fill-slate-100 stroke-[2] drop-shadow-md relative z-10" />
+                        <Trophy className="size-10 sm:size-14 text-slate-600 fill-slate-100 stroke-[2] drop-shadow-md relative z-10" />
                       </div>
                     </div>
                   </div>
@@ -332,13 +332,13 @@ export default function MultiLeaderboardTab({ currentProfile }) {
                   <div className="flex flex-col items-center z-20">
                     <div className="relative mb-2 flex flex-col items-center">
                       <div className="mb-[-22px] sm:mb-[-32px] z-20">
-                        <GoldenCrown className="h-24 w-24 sm:h-36 sm:w-36" />
+                        <GoldenCrown className="size-24 sm:size-36" />
                       </div>
-                      <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full border-4 border-amber-400 ring-4 ring-amber-300/40 shadow-2xl overflow-hidden bg-amber-50 flex items-center justify-center relative z-10">
+                      <div className="size-20 sm:size-24 rounded-full border-4 border-amber-400 ring-4 ring-amber-300/40 shadow-2xl overflow-hidden bg-amber-50 flex items-center justify-center relative z-10">
                         <img 
                           src={getAvatarUrl(top1)} 
                           alt={top1.name} 
-                          className="h-full w-full object-cover" 
+                          className="size-full object-cover" 
                           onError={(e) => {
                             e.currentTarget.onerror = null;
                             e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(top1.name || 'Student')}&background=6366f1&color=ffffff&bold=true&rounded=true`;
@@ -352,14 +352,14 @@ export default function MultiLeaderboardTab({ currentProfile }) {
                     </p>
 
                     <div className="flex items-center gap-1 text-sm sm:text-base font-black text-amber-500 my-1">
-                      <Star className="h-4 w-4 sm:h-5 sm:w-5 fill-amber-400 text-amber-400" />
+                      <Star className="size-4 sm:size-5 fill-amber-400 text-amber-400" />
                       <span>{top1.xp || top1.stars || 0}</span>
                     </div>
 
                     {/* Gold Block */}
                     <div className="w-28 sm:w-44 h-52 sm:h-60 rounded-3xl bg-gradient-to-b from-amber-300 via-amber-400 to-amber-500 dark:from-amber-500 dark:to-amber-600 shadow-xl border-t-4 border-amber-200 flex flex-col items-center justify-between p-3 relative overflow-hidden">
                       <div className="inline-flex items-center gap-1 rounded-full bg-white/95 dark:bg-slate-800 px-3 py-1 text-xs font-black text-emerald-600 shadow-sm border border-emerald-200 dark:border-emerald-900">
-                        <Shield className="h-3.5 w-3.5 text-emerald-500 fill-emerald-500" /> Lv {top1.level || 9}
+                        <Shield className="size-3.5 text-emerald-500 fill-emerald-500" /> Lv {top1.level || 9}
                       </div>
 
                       <span className="text-5xl sm:text-6xl font-black text-amber-900 dark:text-amber-950 tracking-tight my-1 drop-shadow-xs">
@@ -368,7 +368,7 @@ export default function MultiLeaderboardTab({ currentProfile }) {
 
                       <div className="relative flex items-center justify-center mb-1">
                         <div className="absolute inset-0 bg-amber-200/60 rounded-full blur-md" />
-                        <Trophy className="h-16 w-16 sm:h-20 sm:w-20 text-amber-700 fill-amber-200 stroke-[2] drop-shadow-lg relative z-10" />
+                        <Trophy className="size-16 sm:size-20 text-amber-700 fill-amber-200 stroke-[2] drop-shadow-lg relative z-10" />
                       </div>
                     </div>
                   </div>
@@ -378,11 +378,11 @@ export default function MultiLeaderboardTab({ currentProfile }) {
                 {top3 && (
                   <div className="flex flex-col items-center z-10">
                     <div className="relative mb-2 flex flex-col items-center">
-                      <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full border-4 border-orange-300 shadow-lg overflow-hidden bg-orange-50 flex items-center justify-center">
+                      <div className="size-16 sm:size-20 rounded-full border-4 border-orange-300 shadow-lg overflow-hidden bg-orange-50 flex items-center justify-center">
                         <img 
                           src={getAvatarUrl(top3)} 
                           alt={top3.name} 
-                          className="h-full w-full object-cover" 
+                          className="size-full object-cover" 
                           onError={(e) => {
                             e.currentTarget.onerror = null;
                             e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(top3.name || 'Student')}&background=6366f1&color=ffffff&bold=true&rounded=true`;
@@ -396,14 +396,14 @@ export default function MultiLeaderboardTab({ currentProfile }) {
                     </p>
 
                     <div className="flex items-center gap-1 text-xs sm:text-sm font-black text-amber-500 my-1">
-                      <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                      <Star className="size-3.5 fill-amber-400 text-amber-400" />
                       <span>{top3.xp || top3.stars || 0}</span>
                     </div>
 
                     {/* Peach Block */}
-                    <div className="w-24 sm:w-36 h-36 sm:h-44 rounded-3xl bg-gradient-to-b from-orange-200 via-orange-300 to-amber-300 dark:from-orange-800/60 dark:to-amber-900/60 shadow-md border-t-4 border-orange-200 dark:border-orange-700 flex flex-col items-center justify-between p-2.5 sm:p-3 relative overflow-hidden">
+                    <div className="w-24 sm:size-36 sm:h-44 rounded-3xl bg-gradient-to-b from-orange-200 via-orange-300 to-amber-300 dark:from-orange-800/60 dark:to-amber-900/60 shadow-md border-t-4 border-orange-200 dark:border-orange-700 flex flex-col items-center justify-between p-2.5 sm:p-3 relative overflow-hidden">
                       <div className="inline-flex items-center gap-1 rounded-full bg-white/95 dark:bg-slate-800 px-2.5 py-0.5 text-[10px] sm:text-xs font-black text-indigo-600 shadow-sm border border-indigo-200 dark:border-indigo-900">
-                        <Shield className="h-3 w-3 text-indigo-500 fill-indigo-500" /> Lv {top3.level || 7}
+                        <Shield className="size-3 text-indigo-500 fill-indigo-500" /> Lv {top3.level || 7}
                       </div>
 
                       <span className="text-3xl sm:text-4xl font-black text-orange-800 dark:text-orange-300 tracking-tight my-0.5 sm:my-1 drop-shadow-xs">
@@ -412,7 +412,7 @@ export default function MultiLeaderboardTab({ currentProfile }) {
 
                       <div className="relative flex items-center justify-center mb-1">
                         <div className="absolute inset-0 bg-orange-100/80 rounded-full blur-sm" />
-                        <Trophy className="h-9 w-9 sm:h-12 sm:w-12 text-orange-700 fill-orange-100 stroke-[2] drop-shadow-md relative z-10" />
+                        <Trophy className="size-9 sm:size-12 text-orange-700 fill-orange-100 stroke-[2] drop-shadow-md relative z-10" />
                       </div>
                     </div>
                   </div>
@@ -436,7 +436,7 @@ export default function MultiLeaderboardTab({ currentProfile }) {
                       className="flex items-center justify-between py-3.5 px-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/40 transition"
                     >
                       <div className="flex items-center gap-3.5">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full font-black text-xs bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        <div className="flex size-8 items-center justify-center rounded-full font-black text-xs bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                           {displayRank}
                         </div>
 
@@ -444,7 +444,7 @@ export default function MultiLeaderboardTab({ currentProfile }) {
                           <img 
                             src={getAvatarUrl(r)} 
                             alt={r.name} 
-                            className="h-8 w-8 rounded-full object-cover" 
+                            className="size-8 rounded-full object-cover" 
                             onError={(e) => {
                               e.currentTarget.onerror = null;
                               e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(r.name || 'Student')}&background=6366f1&color=ffffff&bold=true&rounded=true`;
@@ -457,7 +457,7 @@ export default function MultiLeaderboardTab({ currentProfile }) {
                               {r.streak !== undefined && (
                                 <>
                                   <span>•</span>
-                                  <span className="flex items-center gap-0.5"><Flame className="h-3 w-3 text-orange-500" /> {r.streak}d streak</span>
+                                  <span className="flex items-center gap-0.5"><Flame className="size-3 text-orange-500" /> {r.streak}d streak</span>
                                 </>
                               )}
                             </div>
@@ -468,7 +468,7 @@ export default function MultiLeaderboardTab({ currentProfile }) {
                       <div className="flex items-center gap-3">
                         <div className="text-right">
                           <div className="flex items-center gap-1 text-sm font-black text-slate-900 dark:text-white">
-                            <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
+                            <Star className="size-4 fill-amber-500 text-amber-500" />
                             {r.xp || r.stars || 0} XP
                           </div>
                           {r.tier && <span className="text-[10px] font-bold text-slate-400">{r.tier}</span>}

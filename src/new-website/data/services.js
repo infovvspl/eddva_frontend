@@ -7,7 +7,7 @@
 // but which modules belong to the school vs institute pitch is my inference —
 // have it confirmed.
 
-import { Users, BookUser, UserRound, ShieldCheck } from "lucide-react";
+import { UserCog, BookUser, UserRound, Users } from "lucide-react";
 import { SchoolGlyph, CapGlyph, UniversityGlyph } from "../components/ServiceGlyphs";
 
 export const services = [
@@ -22,8 +22,8 @@ export const services = [
       "Parent communication and notices",
     ],
     Icon: SchoolGlyph,
-    color: "#1a56db",
-    bg: "#eff6ff",
+    color: "#ffffff",
+    bg: "linear-gradient(135deg, #60a5fa, #1d4ed8)",
   },
   {
     id: "nw-svc-institutes",
@@ -36,8 +36,8 @@ export const services = [
       "Leaderboards and performance analytics",
     ],
     Icon: CapGlyph,
-    color: "#7c3aed",
-    bg: "#f5f3ff",
+    color: "#ffffff",
+    bg: "linear-gradient(135deg, #c084fc, #7c3aed)",
   },
   {
     id: "nw-svc-universities",
@@ -50,8 +50,8 @@ export const services = [
       "Institution-wide analytics and reporting",
     ],
     Icon: UniversityGlyph,
-    color: "#c2410c",
-    bg: "#fff7ed",
+    color: "#ffffff",
+    bg: "linear-gradient(135deg, #fb923c, #c2410c)",
   },
 ];
 
@@ -62,7 +62,7 @@ export const stakeholders = [
     id: "nw-sh-admin",
     title: "Institute Admin",
     desc: "Streamlined operations, data & decision-making.",
-    Icon: ShieldCheck,
+    Icon: UserCog,
     color: "#dc2626",
     bg: "#fff1f2",
   },
@@ -78,7 +78,7 @@ export const stakeholders = [
     id: "nw-sh-students",
     title: "Students",
     desc: "Personalized learning paths, progress tracking & more.",
-    Icon: Users,
+    Icon: UserRound,
     color: "#1a56db",
     bg: "#eff6ff",
   },
@@ -86,7 +86,7 @@ export const stakeholders = [
     id: "nw-sh-parents",
     title: "Parents",
     desc: "Real-time updates, communication & performance reports.",
-    Icon: UserRound,
+    Icon: Users,
     color: "#16a34a",
     bg: "#f0fdf4",
   },

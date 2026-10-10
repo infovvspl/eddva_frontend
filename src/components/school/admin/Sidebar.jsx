@@ -13,7 +13,6 @@ import {
   BookOpen,
   Building2,
   CalendarDays,
-  ChevronDown,
   ClipboardCheck,
   ClipboardList,
   FileText,
@@ -30,6 +29,7 @@ import {
   Sparkles,
   Ticket,
   ToggleRight,
+  Trophy,
   Users,
   Video,
   Radio,
@@ -43,6 +43,7 @@ const superAdminGroups = [
       { path: '/school/super-admin/institutes', label: 'Schools', icon: Building2 },
       { path: '/school/super-admin/users', label: 'User Management', icon: Users },
       { path: '/school/super-admin/erp-modules', label: 'ERP Modules', icon: BookOpen },
+      { path: '/school/super-admin/competitive-prep', label: 'Competitive Exam Prep', icon: Trophy },
     ],
   },
   {
@@ -72,15 +73,17 @@ const superAdminGroups = [
   },
 ];
 
-function buildInstituteGroups(mods) {
+function buildInstituteGroups(mods, aiFeats) {
   const chatEnabled = isModuleEnabled(mods, 'chat');
-  const liveEnabled = isModuleEnabled(mods, 'live_classes');
   const calendarEnabled = isModuleEnabled(mods, 'academic_calendar');
   const timetableEnabled = isModuleEnabled(mods, 'timetable');
   const reportsEnabled = isModuleEnabled(mods, 'reports');
   const meetingsEnabled = isModuleEnabled(mods, 'meetings');
   const syllabusPlannerEnabled = isModuleEnabled(mods, 'syllabus') && isModuleEnabled(mods, 'admin_syllabus_planner');
   const syllabusTrackerEnabled = isModuleEnabled(mods, 'syllabus') && isModuleEnabled(mods, 'admin_syllabus_tracker');
+  // competitive_exams lives in the AI-features registry (aiEnabled + per-key
+  // aiFeatures), not the module-flags one — the whole vertical is AI-driven.
+  const competitiveEnabled = aiFeats?.competitive_exams === true;
 
   return [
     {
@@ -90,8 +93,9 @@ function buildInstituteGroups(mods) {
         { path: '/school/admin/students', label: 'Students', icon: GraduationCap },
         { path: '/school/admin/teachers', label: 'Teachers', icon: Users },
         { path: '/school/admin/admins', label: 'Administrators', icon: Shield },
-        { path: '/school/admin/academics', label: 'Classes & Curriculum', icon: Building2 },
+        { path: '/school/admin/academics', label: 'Class & Sections', icon: Building2 },
         { path: '/school/admin/subjects', label: 'Subjects', icon: BookOpen },
+        competitiveEnabled && { path: '/school/admin/competitive-subjects', label: 'Competitive Exam Prep', icon: Trophy },
         syllabusPlannerEnabled && { path: '/school/admin/syllabus-planner', label: 'Syllabus Planner', icon: FileText },
         syllabusTrackerEnabled && { path: '/school/admin/syllabus-tracker', label: 'Syllabus Tracker', icon: BarChart3 },
       ].filter(Boolean),
@@ -100,7 +104,7 @@ function buildInstituteGroups(mods) {
       heading: 'Operations',
       items: [
         { path: '/school/admin/attendance', label: 'Attendance', icon: BarChart3 },
-        timetableEnabled && { path: '/school/admin/timetable', label: liveEnabled ? 'Timetable & Live Classes' : 'Timetable', icon: CalendarDays },
+        timetableEnabled && { path: '/school/admin/timetable', label: 'Timetable and Roster', icon: CalendarDays },
         calendarEnabled && { path: '/school/admin/calendar', label: 'Academic Calendar', icon: CalendarDays },
       ].filter(Boolean),
     },
@@ -146,6 +150,7 @@ function buildTeacherGroups(mods, aiFeats) {
   const meetingsEnabled = isModuleEnabled(mods, 'meetings');
   const doubtsEnabled = aiFeats?.ai_doubt_solver !== false;
   const teachingPlanEnabled = isModuleEnabled(mods, 'syllabus') && isModuleEnabled(mods, 'teacher_teaching_plan');
+  const competitiveEnabled = aiFeats?.competitive_exams === true;
 
   return [
     {
@@ -153,8 +158,9 @@ function buildTeacherGroups(mods, aiFeats) {
       items: [
         { path: '/school/teacher', label: 'Dashboard', icon: LayoutDashboard, end: true },
         teachingPlanEnabled && { path: '/school/teacher/teaching-plan', label: 'My Teaching Plan', icon: ClipboardList },
-        liveEnabled && { path: '/school/teacher/classes', label: 'My Schedule', icon: Video },
+        liveEnabled && { path: '/school/teacher/classes', label: 'Live & Recorded Video', icon: Video },
         { path: '/school/teacher/course-content', label: 'Course Content', icon: BookOpen },
+        competitiveEnabled && { path: '/school/teacher/competitive-prep', label: 'Competitive Exam Prep', icon: Trophy },
         { path: '/school/teacher/students', label: 'Students', icon: GraduationCap },
         { path: '/school/teacher/attendance', label: 'Attendance', icon: ClipboardCheck },
         timetableEnabled && { path: '/school/teacher/timetable', label: 'Timetable', icon: CalendarDays },
@@ -206,15 +212,14 @@ export default function Sidebar({ open, onClose }) {
   const isTeacher = !isInstitute && (user?.role === 'TEACHER' || (isTeacherPath && hasTeacherRole));
   const isSuperAdmin = user?.role === 'SUPER_ADMIN' || hasSuperAdminRole;
   const useTeacherFallback = !isSuperAdmin && !isInstitute;
-  
+
   const aiFeats = institute?.aiEnabled ? institute.aiFeatures : { ai_doubt_solver: false };
   const teacherGroups = isTeacher || useTeacherFallback ? buildTeacherGroups(institute?.modulesPermissions, aiFeats) : null;
-  const adminGroups = isInstitute ? buildInstituteGroups(institute?.modulesPermissions) : null;
-  
+  const adminGroups = isInstitute ? buildInstituteGroups(institute?.modulesPermissions, aiFeats) : null;
+
   const groups = isSuperAdmin ? superAdminGroups : isInstitute ? adminGroups : teacherGroups;
+  // Open by default; the toggle collapses it to the icon rail.
   const [collapsed, setCollapsed] = useState(false);
-  const roleLabel = isSuperAdmin ? 'Super Admin' : isInstitute ? 'Institute Admin' : 'Teacher Workspace';
-  const workspaceName = isSuperAdmin ? 'EDDVA HQ' : isInstitute ? institute?.name || 'Institute' : user?.name || 'Teacher';
 
   const handleAction = (action) => {
     if (action === 'logout') {
@@ -232,27 +237,15 @@ export default function Sidebar({ open, onClose }) {
       onMobileClose={onClose}
       logo={
         !isSuperAdmin ? (
-          <div className="flex flex-row items-center gap-3 w-full px-4 pt-4 pb-1 text-left">
-            <SchoolLogo src={institute?.logo} alt={institute?.name} size="navbar" className="w-[42px] h-[42px] shrink-0" />
-            <div className="flex flex-col min-w-0">
-              <h2 className="text-xs font-black tracking-tight text-slate-800 dark:text-white uppercase leading-tight line-clamp-2">
-                {institute?.name || 'Army Public School'}
-              </h2>
-              <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5 truncate">
-                {institute?.state || institute?.location || 'State'}
-              </p>
-            </div>
-          </div>
+          <SchoolLogo src={institute?.logo} alt={institute?.name} size="navbar" className="h-10 w-auto max-w-full object-contain" />
         ) : (
-          <div className="px-2 pt-2">
-            <EddvaLogo />
-          </div>
+          <EddvaLogo className="h-8" />
         )
       }
       logoCollapsed={
         !isSuperAdmin ? (
           <div className="flex items-center justify-center p-2">
-            <SchoolLogo src={institute?.logo} alt={institute?.name} size="navbar" className="w-[36px] max-h-[36px]" />
+            <SchoolLogo src={institute?.logo} alt={institute?.name} size="navbar" className="h-9 w-auto max-w-full object-contain" />
           </div>
         ) : (
           <div className="flex items-center justify-center p-2">
@@ -262,47 +255,7 @@ export default function Sidebar({ open, onClose }) {
       }
       onNavClick={() => onClose?.()}
       onAction={handleAction}
-      profileCard={(isCollapsed) => (
-        !isSuperAdmin ? (
-          <div className={cn(
-            "transition-all duration-200 py-1 px-1 bg-transparent flex items-center justify-between group",
-            isCollapsed ? "justify-center" : "w-full"
-          )}>
-            {isCollapsed ? (
-              <div className="h-9 w-9 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center font-extrabold text-xs border border-blue-100 dark:border-blue-900/40 shadow-xs">
-                {(user?.name || 'A').charAt(0).toUpperCase()}
-              </div>
-            ) : (
-              <div className="flex items-center gap-3 w-full justify-between">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="h-9 w-9 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center font-extrabold text-xs border border-blue-100 dark:border-blue-900/40 shrink-0 shadow-xs">
-                    {(user?.name || 'A').substring(0, 2).toUpperCase()}
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <p className="text-[13px] font-extrabold leading-tight truncate text-blue-600 dark:text-blue-400 max-w-[140px]">
-                      {institute?.name || user?.name || 'Army Public School'}
-                    </p>
-                    <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mt-0.5 truncate">
-                      {roleLabel}
-                    </p>
-                  </div>
-                </div>
-                <ChevronDown className="h-4 w-4 text-slate-400 dark:text-slate-500 shrink-0 group-hover:text-blue-600 transition-colors" />
-              </div>
-            )}
-          </div>
-        ) : (
-          isCollapsed ? (
-            <div className="flex items-center justify-center h-9 w-9 rounded-xl bg-blue-50 text-blue-600 dark:bg-slate-900 dark:text-blue-400 font-extrabold text-[10px] select-none" title="Super Admin">
-              SA
-            </div>
-          ) : (
-            <div className="py-1 px-1 w-full flex items-center justify-between">
-              <p className="text-[13px] font-extrabold text-blue-600 dark:text-blue-400">Super Admin Console</p>
-            </div>
-          )
-        )
-      )}
     />
   );
 }
+

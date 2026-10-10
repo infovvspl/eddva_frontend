@@ -364,8 +364,8 @@ function AttemptHistory({ sessions, totalMarks, onViewResult }: {
                   )}>
                     {score.toFixed(0)}/{totalMarks} ({pct}%)
                   </span>
-                  <span className="text-xs text-slate-400">
-                    ✓{s.correctCount ?? 0} ✗{s.wrongCount ?? 0} —{s.skippedCount ?? 0}
+                  <span className="text-xs text-slate-400 inline-flex items-center gap-1">
+                    <Check className="size-3 shrink-0" />{s.correctCount ?? 0} <X className="size-3 shrink-0" />{s.wrongCount ?? 0} —{s.skippedCount ?? 0}
                   </span>
                   {timeSpent && (
                     <span className="flex items-center gap-1 text-[10px] font-semibold text-indigo-500 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded-md">
@@ -498,7 +498,7 @@ function ResultsScreen({
           {(result.totalScore ?? 0).toFixed(0)} / {totalMarks}
         </h2>
         <p className={cn("text-base font-semibold", passed ? "text-emerald-600" : "text-red-500")}>
-          {pct.toFixed(1)}% accuracy · {passed ? "Passed ✓" : "Keep practising"}
+          {pct.toFixed(1)}% accuracy · {passed ? <span className="inline-flex items-center gap-1">Passed <Check className="size-3.5 shrink-0" /></span> : "Keep practising"}
         </p>
       </div>
 

@@ -90,7 +90,7 @@ export default function CareerQuizResult() {
         <div className="mt-6 flex flex-col gap-2 sm:flex-row">
           <button onClick={() => navigate('/school/student/career/report')}
             className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700">
-            <Sparkles className="h-4 w-4" /> Generate My Career Report <ChevronRight className="h-4 w-4" />
+            <Sparkles className="size-4" /> Generate My Career Report <ChevronRight className="size-4" />
           </button>
           <button onClick={() => navigate('/school/student/career')}
             className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50">

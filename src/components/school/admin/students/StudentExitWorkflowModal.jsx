@@ -131,7 +131,7 @@ export default function StudentExitWorkflowModal({ student, isOpen, onClose, onS
         {/* Header */}
         <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 px-6 py-5 flex items-center justify-between text-white shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center">
+            <div className="size-10 rounded-2xl bg-white/20 flex items-center justify-center">
               <UserX size={20} />
             </div>
             <div>
@@ -139,7 +139,7 @@ export default function StudentExitWorkflowModal({ student, isOpen, onClose, onS
               <p className="text-xs font-semibold text-amber-100">{student?.name} ({student?.studentProfile?.enrollmentNo || '—'})</p>
             </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center hover:bg-white/30 transition-all">
+          <button onClick={onClose} className="size-8 rounded-xl bg-white/20 flex items-center justify-center hover:bg-white/30 transition-all">
             <X size={18} />
           </button>
         </div>

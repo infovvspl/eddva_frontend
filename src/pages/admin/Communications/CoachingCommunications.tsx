@@ -42,6 +42,7 @@ import { getApiOrigin } from '@/lib/api-config';
 import { getUploadUrl, uploadToS3 } from '@/lib/upload';
 import { useConfirm } from '@/context/ConfirmContext';
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 const EMOJIS = [
   '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇',
@@ -1421,58 +1422,42 @@ export default function CoachingCommunications({ heightClass = 'h-[calc(100dvh-1
       </div>
 
       {/* PDF Modal Viewer */}
-      {pdfPreviewUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
-          <div className="flex h-[90vh] w-full max-w-4xl flex-col rounded-3xl bg-white shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-              <h3 className="text-xs font-bold text-slate-900">PDF Document Viewer</h3>
-              <button
-                onClick={() => setPdfPreviewUrl(null)}
-                className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="flex-1 bg-slate-100">
-              <iframe src={pdfPreviewUrl} className="h-full w-full" title="pdf-viewer" />
-            </div>
+      <Dialog open={!!pdfPreviewUrl} onOpenChange={(o) => { if (!o) setPdfPreviewUrl(null); }}>
+        <DialogContent className="max-w-4xl p-0 h-[90vh] flex flex-col overflow-hidden">
+          <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+            <DialogTitle className="text-xs font-bold text-slate-900">PDF Document Viewer</DialogTitle>
           </div>
-        </div>
-      )}
+          <div className="flex-1 bg-slate-100">
+            {pdfPreviewUrl && <iframe src={pdfPreviewUrl} className="h-full w-full" title="pdf-viewer" />}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Forward Message Modal */}
-      {forwardMessage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-xs font-black text-slate-900">Forward Message</h3>
-              <button
-                onClick={() => setForwardMessage(null)}
-                className="rounded-full p-1.5 hover:bg-slate-100"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="mt-4 max-h-[300px] overflow-y-auto space-y-2">
-              {mergedList.map((contact) => (
-                <button
-                  key={contact.id}
-                  onClick={() => handleForwardMessage(contact)}
-                  className="flex w-full items-center gap-3 rounded-2xl p-2.5 text-left hover:bg-slate-50 transition"
-                >
-                  <div className="grid h-9 w-9 place-items-center rounded-xl bg-blue-100 text-xs font-bold text-blue-700">
-                    {(contact.name || 'U').slice(0, 1).toUpperCase()}
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-slate-900">{contact.name}</p>
-                    <p className="text-[10px] text-slate-400 uppercase font-black">{contact.role}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
+      <Dialog open={!!forwardMessage} onOpenChange={(o) => { if (!o) setForwardMessage(null); }}>
+        <DialogContent className="max-w-md rounded-[2rem] p-6">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <DialogTitle className="text-xs font-black text-slate-900">Forward Message</DialogTitle>
           </div>
-        </div>
-      )}
+          <div className="mt-4 max-h-[300px] overflow-y-auto space-y-2">
+            {mergedList.map((contact) => (
+              <button
+                key={contact.id}
+                onClick={() => handleForwardMessage(contact)}
+                className="flex w-full items-center gap-3 rounded-2xl p-2.5 text-left hover:bg-slate-50 transition"
+              >
+                <div className="grid h-9 w-9 place-items-center rounded-xl bg-blue-100 text-xs font-bold text-blue-700">
+                  {(contact.name || 'U').slice(0, 1).toUpperCase()}
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-900">{contact.name}</p>
+                  <p className="text-[10px] text-slate-400 uppercase font-black">{contact.role}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
       {/* Right-click Context Menu */}
       {contextMenu && (
         <div
@@ -1660,23 +1645,11 @@ export default function CoachingCommunications({ heightClass = 'h-[calc(100dvh-1
       </AnimatePresence>
 
       {/* Video Meet Creator Modal */}
-      <AnimatePresence>
-        {showVideoMeetModal && selectedUser && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl"
-            >
+      <Dialog open={showVideoMeetModal && !!selectedUser} onOpenChange={(o) => { if (!o) setShowVideoMeetModal(false); }}>
+        {selectedUser && (
+        <DialogContent className="max-w-md rounded-[2rem] p-6">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-black text-slate-900 uppercase">Schedule Meeting</h3>
-                <button
-                  onClick={() => setShowVideoMeetModal(false)}
-                  className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+                <DialogTitle className="text-sm font-black text-slate-900 uppercase">Schedule Meeting</DialogTitle>
               </div>
 
               <div className="mt-4 space-y-4 text-xs font-semibold text-slate-700">
@@ -1821,28 +1794,14 @@ export default function CoachingCommunications({ heightClass = 'h-[calc(100dvh-1
                   Cancel
                 </button>
               </div>
-            </motion.div>
-          </div>
+        </DialogContent>
         )}
-      </AnimatePresence>
+      </Dialog>
 
-      <AnimatePresence>
-        {showBulkMeetModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-lg rounded-[2rem] bg-white p-6 shadow-2xl"
-            >
+      <Dialog open={showBulkMeetModal} onOpenChange={(o) => { if (!o) setShowBulkMeetModal(false); }}>
+        <DialogContent className="max-w-lg rounded-[2rem] p-6">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-black text-slate-900 uppercase">Bulk Meeting Scheduler</h3>
-                <button
-                  onClick={() => setShowBulkMeetModal(false)}
-                  className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+                <DialogTitle className="text-sm font-black text-slate-900 uppercase">Bulk Meeting Scheduler</DialogTitle>
               </div>
 
               <div className="mt-4 space-y-4 text-xs font-semibold text-slate-700">
@@ -2021,29 +1980,14 @@ export default function CoachingCommunications({ heightClass = 'h-[calc(100dvh-1
                   Cancel
                 </button>
               </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+        </DialogContent>
+      </Dialog>
 
       {/* More Options Settings Modal */}
-      <AnimatePresence>
-        {showMoreOptions && selectedUser && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl overflow-hidden"
-            >
+      <Dialog open={showMoreOptions && !!selectedUser} onOpenChange={(o) => { if (!o) setShowMoreOptions(false); }}>
+        <DialogContent className="max-w-md rounded-[2rem] p-6 overflow-hidden">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-                <h3 className="text-sm font-black text-slate-900 uppercase">Conversation Settings</h3>
-                <button
-                  onClick={() => setShowMoreOptions(false)}
-                  className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+                <DialogTitle className="text-sm font-black text-slate-900 uppercase">Conversation Settings</DialogTitle>
               </div>
 
               <div className="space-y-4 text-xs font-semibold text-slate-700">
@@ -2088,29 +2032,14 @@ export default function CoachingCommunications({ heightClass = 'h-[calc(100dvh-1
                   </button>
                 </div>
               </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+        </DialogContent>
+      </Dialog>
 
       {/* Shared Files Viewer Modal */}
-      <AnimatePresence>
-        {showSharedFilesModal && selectedUser && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-xl rounded-[2rem] bg-white p-6 shadow-2xl flex flex-col h-[70vh]"
-            >
+      <Dialog open={showSharedFilesModal && !!selectedUser} onOpenChange={(o) => { if (!o) setShowSharedFilesModal(false); }}>
+        <DialogContent className="max-w-xl rounded-[2rem] p-6 flex flex-col h-[70vh]">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4 shrink-0">
-                <h3 className="text-sm font-black text-slate-900 uppercase">Shared Documents ({sharedFiles.length})</h3>
-                <button
-                  onClick={() => setShowSharedFilesModal(false)}
-                  className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
-                >
-                  <X size={18} />
-                </button>
+                <DialogTitle className="text-sm font-black text-slate-900 uppercase">Shared Documents ({sharedFiles.length})</DialogTitle>
               </div>
 
               <div className="flex-1 overflow-y-auto space-y-3 pr-1 text-slate-700">
@@ -2155,29 +2084,14 @@ export default function CoachingCommunications({ heightClass = 'h-[calc(100dvh-1
                   </div>
                 )}
               </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+        </DialogContent>
+      </Dialog>
 
       {/* Media Gallery Lightbox Modal */}
-      <AnimatePresence>
-        {showMediaGalleryModal && selectedUser && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-2xl rounded-[2rem] bg-white p-6 shadow-2xl flex flex-col h-[75vh]"
-            >
+      <Dialog open={showMediaGalleryModal && !!selectedUser} onOpenChange={(o) => { if (!o) setShowMediaGalleryModal(false); }}>
+        <DialogContent className="max-w-2xl rounded-[2rem] p-6 flex flex-col h-[75vh]">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4 shrink-0">
-                <h3 className="text-sm font-black text-slate-900 uppercase">Shared Media</h3>
-                <button
-                  onClick={() => setShowMediaGalleryModal(false)}
-                  className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
-                >
-                  <X size={18} />
-                </button>
+                <DialogTitle className="text-sm font-black text-slate-900 uppercase">Shared Media</DialogTitle>
               </div>
 
               <div className="flex-1 overflow-y-auto grid grid-cols-3 sm:grid-cols-4 gap-3">
@@ -2203,10 +2117,8 @@ export default function CoachingCommunications({ heightClass = 'h-[calc(100dvh-1
                   </div>
                 )}
               </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+        </DialogContent>
+      </Dialog>
 
       {/* Full-screen Media Lightbox Viewer */}
       <AnimatePresence>

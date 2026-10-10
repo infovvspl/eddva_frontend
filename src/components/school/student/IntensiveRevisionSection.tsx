@@ -178,7 +178,7 @@ function PhaseBanner({ phase, days }: { phase: Phase; days: number | null }) {
   return (
     <div className={`rounded-2xl border-2 ${m.border} ${m.bg} p-4`}>
       <div className="flex items-center gap-3">
-        <Flame className={`w-5 h-5 shrink-0 ${m.color}`} />
+        <Flame className={`size-5 shrink-0 ${m.color}`} />
         <div className="flex-1 min-w-0">
           <p className={`text-sm font-bold ${m.color}`}>{m.label}</p>
           <p className="text-xs text-gray-500 mt-0.5">{m.sublabel}</p>
@@ -191,7 +191,7 @@ function PhaseBanner({ phase, days }: { phase: Phase; days: number | null }) {
         )}
       </div>
       <p className="mt-2.5 text-xs text-gray-600 bg-white/70 rounded-lg px-3 py-1.5 border border-white/80">
-        <Sparkles className="w-3 h-3 inline mr-1 text-indigo-400" />
+        <Sparkles className="size-3 inline mr-1 text-indigo-400" />
         {m.sessionNote}
       </p>
     </div>
@@ -203,7 +203,7 @@ function SurvivalSchedule({ days }: { days: number }) {
   return (
     <div className="bg-white rounded-2xl border border-red-200 overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border-b border-red-100">
-        <AlertTriangle className="w-4 h-4 text-red-600" />
+        <AlertTriangle className="size-4 text-red-600" />
         <span className="text-sm font-bold text-red-700">Survival Mode Schedule</span>
       </div>
       <div className="divide-y divide-gray-50">
@@ -235,7 +235,7 @@ function AuditSummary({
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
       <div className="flex items-center gap-2">
-        <BarChart2 className="w-4 h-4 text-indigo-600" />
+        <BarChart2 className="size-4 text-indigo-600" />
         <span className="text-sm font-bold text-gray-900">Syllabus Audit</span>
         <span className="ml-auto text-xs text-gray-400">{total} topics total</span>
       </div>
@@ -311,7 +311,7 @@ function TopicRow({
             ? "bg-teal-100 text-teal-700 hover:bg-teal-200"
             : "bg-orange-600 text-white hover:bg-orange-700"}`}
       >
-        {isFlash ? <Zap className="w-2.5 h-2.5" /> : <Play className="w-2.5 h-2.5" />}
+        {isFlash ? <Zap className="size-2.5" /> : <Play className="size-2.5" />}
         {isFlash ? "Flash" : "Start"}
       </button>
     </div>
@@ -336,7 +336,7 @@ function SubjectGroup({
         onClick={() => setOpen(o => !o)}
         className="w-full flex items-center gap-3 px-3 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
       >
-        <Brain className="w-4 h-4 text-indigo-500 shrink-0" />
+        <Brain className="size-4 text-indigo-500 shrink-0" />
         <span className="font-bold text-sm text-gray-900 flex-1">{subjectName}</span>
         <span className="text-xs text-gray-400">{topics.length} topics</span>
         {p1Count > 0 && (
@@ -345,7 +345,7 @@ function SubjectGroup({
         {p2Count > 0 && (
           <span className="text-[10px] font-bold px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded-full">{p2Count} high</span>
         )}
-        {open ? <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" /> : <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />}
+        {open ? <ChevronDown className="size-4 text-gray-400 shrink-0" /> : <ChevronRight className="size-4 text-gray-400 shrink-0" />}
       </button>
       {open && (
         <div className="divide-y divide-gray-50">
@@ -432,7 +432,7 @@ export default function IntensiveRevisionSection({
   if (allTopics.length === 0) {
     return (
       <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-8 text-center">
-        <BookOpen className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+        <BookOpen className="size-10 text-gray-200 mx-auto mb-3" />
         <p className="text-gray-500 font-medium">No topic data available yet</p>
         <p className="text-xs text-gray-400 mt-1">Complete some topics to populate the intensive revision engine.</p>
       </div>
@@ -460,7 +460,7 @@ export default function IntensiveRevisionSection({
 
       {/* Phase rules info */}
       <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-100 rounded-xl text-xs text-amber-800">
-        <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-500" />
+        <AlertTriangle className="size-3.5 shrink-0 mt-0.5 text-amber-500" />
         <span>
           <strong>{phase === "D" ? "Survival: P1 only." : `Phase ${phase} shows ${phaseMeta.allowedPriorities.join(", ")}.`}</strong>
           {" "}
@@ -474,7 +474,7 @@ export default function IntensiveRevisionSection({
       {/* Topic list grouped by subject */}
       {visibleTopics.length === 0 ? (
         <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-6 text-center">
-          <CheckCircle2 className="w-8 h-8 text-green-400 mx-auto mb-2" />
+          <CheckCircle2 className="size-8 text-green-400 mx-auto mb-2" />
           <p className="text-sm font-medium text-gray-600">
             {selectedTier
               ? `No ${TIER_META[selectedTier].label} topics in Phase ${phase}`

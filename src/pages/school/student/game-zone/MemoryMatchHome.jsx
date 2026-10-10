@@ -158,14 +158,14 @@ export default function MemoryMatchHome({ onStart, onViewLeaderboard }) {
           to="/school/student/gamification"
           className="inline-flex items-center gap-1.5 text-xs font-black text-slate-500 hover:text-slate-800 dark:hover:text-white transition uppercase tracking-wider"
         >
-          <ArrowLeft className="h-3 w-3" /> Back to Gamification Center
+          <ArrowLeft className="size-3" /> Back to Gamification Center
         </Link>
       </div>
 
       {/* Header */}
       <div className="text-center space-y-2">
-        <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
-          <Brain className="h-6 w-6 animate-pulse" />
+        <div className="inline-flex size-12 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
+          <Brain className="size-6 animate-pulse" />
         </div>
         <h1 className="text-3xl font-black text-slate-900 dark:text-white">Memory Match</h1>
         <p className="text-sm font-medium text-slate-500">NCERT Fact Recall. Match terms, definitions, symbols, or historical events!</p>
@@ -174,7 +174,7 @@ export default function MemoryMatchHome({ onStart, onViewLeaderboard }) {
       {/* Rules Board */}
       <section className="rounded-2xl border border-slate-200 bg-gradient-to-r from-emerald-50/50 to-white p-5 dark:border-slate-800 dark:from-slate-900/50 dark:to-slate-950 shadow-sm">
         <h2 className="text-sm font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400 flex items-center gap-2">
-          <Award className="h-4 w-4 animate-bounce" /> Memory Match Mechanics
+          <Award className="size-4 animate-bounce" /> Memory Match Mechanics
         </h2>
         <ul className="mt-3 space-y-2.5 text-xs font-semibold text-slate-600 dark:text-slate-400">
           <li className="flex items-start gap-2">
@@ -200,7 +200,7 @@ export default function MemoryMatchHome({ onStart, onViewLeaderboard }) {
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-5">
         {loading ? (
           <div className="flex h-40 items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+            <Loader2 className="size-8 animate-spin text-emerald-500" />
           </div>
         ) : step === 'deck' ? (
           <>
@@ -396,10 +396,10 @@ export default function MemoryMatchHome({ onStart, onViewLeaderboard }) {
                           <span className="text-xs font-bold text-slate-400 whitespace-nowrap bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">
                             {deck.pairsCount * 2} Cards
                           </span>
-                          <div className={`h-5 w-5 rounded-full border flex items-center justify-center transition-all ${
+                          <div className={`size-5 rounded-full border flex items-center justify-center transition-all ${
                             isSelected ? 'border-sky-500 bg-sky-500 text-white' : 'border-slate-300 dark:border-slate-700'
                           }`}>
-                            {isSelected && <Check className="h-3.5 w-3.5 stroke-[3]" />}
+                            {isSelected && <Check className="size-3.5 stroke-[3]" />}
                           </div>
                         </div>
                       </div>
@@ -407,7 +407,7 @@ export default function MemoryMatchHome({ onStart, onViewLeaderboard }) {
                       {isSelected && (
                         <div className="mt-3 pt-3 border-t border-sky-200/60 dark:border-sky-800/40" onClick={(e) => e.stopPropagation()}>
                           <label className="text-[10px] font-black uppercase tracking-widest text-sky-600 dark:text-sky-400 flex items-center gap-1 mb-1.5">
-                            <HelpCircle className="h-3 w-3 text-sky-500" /> Target Chapter
+                            <HelpCircle className="size-3 text-sky-500" /> Target Chapter
                           </label>
                           <select
                             value={selectedChapterId}
@@ -438,9 +438,9 @@ export default function MemoryMatchHome({ onStart, onViewLeaderboard }) {
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-sky-600 py-3 text-sm font-black text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-700 disabled:opacity-50"
               >
                 {mode === 'ranked' ? (
-                  starting ? <><Loader2 className="h-4 w-4 animate-spin" /> Starting...</> : <><Play className="h-4 w-4 fill-current" /> Start Memory Match</>
+                  starting ? <><Loader2 className="size-4 animate-spin" /> Starting...</> : <><Play className="size-4 fill-current" /> Start Memory Match</>
                 ) : (
-                  <>{starting ? 'Preparing...' : 'Choose Difficulty'} <ChevronRight className="h-4 w-4" /></>
+                  <>{starting ? 'Preparing...' : 'Choose Difficulty'} <ChevronRight className="size-4" /></>
                 )}
               </button>
               <button
@@ -448,7 +448,7 @@ export default function MemoryMatchHome({ onStart, onViewLeaderboard }) {
                 onClick={onViewLeaderboard}
                 className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 py-3 text-sm font-black text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-950 transition"
               >
-                <Trophy className="h-4 w-4 text-amber-500" /> Rankings Leaderboard
+                <Trophy className="size-4 text-amber-500" /> Rankings Leaderboard
               </button>
             </div>
           </>
@@ -486,8 +486,8 @@ export default function MemoryMatchHome({ onStart, onViewLeaderboard }) {
                           : 'border-slate-100 bg-slate-50/50 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900'
                       }`}
                     >
-                      <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${bg}`}>
-                        <Icon className={`h-5 w-5 ${color}`} />
+                      <div className={`size-10 rounded-xl flex items-center justify-center shrink-0 ${bg}`}>
+                        <Icon className={`size-5 ${color}`} />
                       </div>
                       <div className="flex-1 space-y-0.5">
                         <div className="flex items-center gap-2">
@@ -498,10 +498,10 @@ export default function MemoryMatchHome({ onStart, onViewLeaderboard }) {
                         </div>
                         <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{desc}</p>
                       </div>
-                      <div className={`h-5 w-5 rounded-full border flex items-center justify-center transition-all shrink-0 ${
+                      <div className={`size-5 rounded-full border flex items-center justify-center transition-all shrink-0 ${
                         isSelected ? `${selectedBorder} bg-emerald-500 border-emerald-500 text-white` : 'border-slate-300 dark:border-slate-700'
                       }`}>
-                        {isSelected && <Check className="h-3.5 w-3.5 stroke-[3]" />}
+                        {isSelected && <Check className="size-3.5 stroke-[3]" />}
                       </div>
                     </button>
                   );
@@ -518,11 +518,11 @@ export default function MemoryMatchHome({ onStart, onViewLeaderboard }) {
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-black text-white shadow-lg shadow-emerald-500/10 transition hover:bg-emerald-700 disabled:opacity-50"
               >
                 {starting ? (
-                  <><Loader2 className="h-4 w-4 animate-spin" /> Preparing card board...</>
+                  <><Loader2 className="size-4 animate-spin" /> Preparing card board...</>
                 ) : !hasGameQuizzes ? (
                   <>Locked (AI disabled)</>
                 ) : (
-                  <><Play className="h-4 w-4 fill-current" /> Start Memory Match</>
+                  <><Play className="size-4 fill-current" /> Start Memory Match</>
                 )}
               </button>
               <button
@@ -530,7 +530,7 @@ export default function MemoryMatchHome({ onStart, onViewLeaderboard }) {
                 onClick={handleBack}
                 className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 py-3 text-sm font-black text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-950 transition"
               >
-                <ArrowLeft className="h-4 w-4" /> Back to Theme Selection
+                <ArrowLeft className="size-4" /> Back to Theme Selection
               </button>
             </div>
           </>

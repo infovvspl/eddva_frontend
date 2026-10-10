@@ -2,26 +2,31 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  Users, BookOpen, HelpCircle, Loader2, ChevronRight,
-  Video, Sparkles, Radio, Plus, BarChart2, TrendingUp,
-  Activity, GraduationCap, Target, Calendar, ArrowRight
+  Users, BookOpen, HelpCircle, ChevronRight,
+  Video, Sparkles, Radio, Plus, ArrowRight, Calendar
 } from "lucide-react";
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
+  XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie
 } from 'recharts';
 import { useAuthStore } from "@/lib/auth-store";
 import { useAdminDashboard, useBatches } from "@/hooks/use-admin";
 import { useAdminPresenceStats } from "@/hooks/use-presence";
 import { cn } from "@/lib/utils";
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 // ─── Constants & Styles ──────────────────────────────────────────────────────
 
-const INDIGO = "#6366F1";
-const PURPLE = "#A855F7";
 const EMERALD = "#10B981";
 const AMBER = "#F59E0B";
-const BLUE = "#3B82F6";
 
 const EXAM_STYLES: Record<string, { from: string; to: string; badge: string }> = {
   jee: { from: "#1D4ED8", to: "#4F46E5", badge: "JEE" },
@@ -40,16 +45,20 @@ function GlassCard({ children, className = "", delay = 0, accentColor }: {
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.4 }}
-      className={cn(
-        "relative overflow-hidden rounded-[2rem] border border-slate-200/60 sm:border-slate-200 sm:bg-white sm:shadow-xl sm:shadow-slate-300/30 backdrop-blur-2xl sm:backdrop-blur-none",
-        className
-      )}
+      className="h-full"
     >
-      {accentColor && (
-        <div className={cn("hidden sm:block absolute top-0 left-0 right-0 h-1.5 z-20", accentColor)} />
-      )}
-      <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent pointer-events-none sm:hidden" />
-      <div className="relative z-10">{children}</div>
+      <Card
+        className={cn(
+          "relative overflow-hidden rounded-[2rem] border border-slate-200/60 sm:border-slate-200 bg-white/80 sm:bg-white shadow-xl shadow-slate-300/20 backdrop-blur-2xl sm:backdrop-blur-none h-full flex flex-col justify-between",
+          className
+        )}
+      >
+        {accentColor && (
+          <div className={cn("hidden sm:block absolute top-0 left-0 right-0 h-1.5 z-20", accentColor)} />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent pointer-events-none sm:hidden" />
+        <div className="relative z-10 h-full flex flex-col">{children}</div>
+      </Card>
     </motion.div>
   );
 }
@@ -77,12 +86,12 @@ function StatCard({ label, value, icon: Icon, color, accentColor, delay = 0, onC
         <Icon className="w-5 h-5 text-white hidden sm:block" />
         <div className="sm:hidden flex flex-col items-center justify-center w-full h-full">
           <Icon className="w-3.5 h-3.5 text-white/70 mb-0.5" />
-          <span className="text-white font-black text-[11px] leading-none px-1 text-center truncate w-full">{value}</span>
+          <span className="text-white font-semibold text-[11px] leading-none px-1 text-center truncate w-full">{value}</span>
         </div>
       </div>
       <div className="text-center sm:text-left w-full">
-        <h4 className="hidden sm:block text-xl sm:text-2xl font-black text-slate-900 tracking-tight">{value}</h4>
-        <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-600 sm:text-slate-400 mt-0 sm:mt-1 leading-tight sm:leading-normal">{label}</p>
+        <h4 className="hidden sm:block text-xl sm:text-2xl font-semibold text-slate-900 tracking-tight">{value}</h4>
+        <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-slate-600 sm:text-slate-400 mt-0 sm:mt-1 leading-tight sm:leading-normal">{label}</p>
       </div>
       {onClick && <ChevronRight className="hidden sm:block absolute top-4 right-4 w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" />}
     </motion.div>
@@ -100,7 +109,7 @@ function CourseThumbnail({ name, examTarget, imageUrl, className = "" }: { name:
         <img src={imageUrl} alt={name} className="w-full h-full object-cover" onError={() => setImgError(true)} />
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center">
-           <span className="text-white font-black text-xs leading-none">{initials}</span>
+           <span className="text-white font-semibold text-xs leading-none">{initials}</span>
         </div>
       )}
     </div>
@@ -114,13 +123,11 @@ const AdminDashboard = () => {
   const { data: batchesRaw } = useBatches();
   const { data: presence } = useAdminPresenceStats();
 
-  const courses = Array.isArray(batchesRaw) ? batchesRaw : [];
-
   if (isLoading || !data) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[500px] gap-3">
         <div className="w-12 h-12 rounded-full border-4 border-blue-50 border-t-blue-600 animate-spin" />
-        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Loading Intelligence...</p>
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Loading Intelligence...</p>
       </div>
     );
   }
@@ -140,7 +147,7 @@ const AdminDashboard = () => {
   ];
 
   return (
-    <div className="w-full space-y-7 sm:space-y-8">
+    <div className="w-full space-y-7 sm:space-y-8 font-semibold">
       
       {/* ─── Header Section ─── */}
       <section 
@@ -160,19 +167,19 @@ const AdminDashboard = () => {
 
         <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="relative z-10 flex flex-col justify-between py-1 flex-1 min-w-0 w-full">
           <div className="flex flex-col items-start gap-1.5 min-w-0 w-full">
-            <h1 className="font-display text-2xl sm:text-3xl lg:text-[2rem] font-black text-white tracking-tight leading-snug break-words">
+            <h1 className="font-display text-2xl sm:text-3xl lg:text-[2rem] font-semibold text-white tracking-tight leading-snug break-words">
               Welcome, {user?.name || user?.fullName}
             </h1>
             <p className="text-sm sm:text-base font-semibold text-blue-100/80 mt-1 flex items-center gap-2">
-              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-blue-200/60" /> {today} <span className="hidden sm:inline text-blue-300/60">•</span> <span className="hidden sm:inline text-white font-bold">{user?.tenantName}</span>
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-blue-200/60" /> {today} <span className="hidden sm:inline text-blue-300/60">•</span> <span className="hidden sm:inline text-white font-semibold">{user?.tenantName}</span>
             </p>
           </div>
           
           <div className="mt-6 sm:mt-8 flex flex-row items-center gap-3 sm:gap-5 flex-wrap">
-            <div className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full bg-white/10 border border-white/20 px-3 py-2 sm:px-5 sm:py-2.5 backdrop-blur-md shadow-sm shrink-0">
+            <Badge variant="outline" className="bg-white/10 text-white border-white/20 px-3 py-1.5 sm:px-4 sm:py-2 backdrop-blur-md font-semibold text-[10px] sm:text-xs tracking-wider uppercase gap-1.5 rounded-full">
               <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-200 shrink-0" />
-              <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-white">Real-time Analytics</span>
-            </div>
+              Real-time Analytics
+            </Badge>
             
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }} 
@@ -182,18 +189,18 @@ const AdminDashboard = () => {
               <div className="flex items-center justify-center gap-1.5 sm:gap-3 w-11 h-11 sm:w-auto sm:h-auto sm:px-5 sm:py-3.5 rounded-full sm:rounded-2xl bg-white/10 border border-white/20 shadow-sm backdrop-blur-md shrink-0">
                 <div className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
                 <div className="hidden sm:block">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-blue-100/70 leading-none">Online Students</p>
-                  <p className="text-xl font-black text-white leading-none mt-1.5">{presence?.studentsOnline ?? 0}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-100/70 leading-none">Online Students</p>
+                  <p className="text-xl font-semibold text-white leading-none mt-1.5">{presence?.studentsOnline ?? 0}</p>
                 </div>
-                <span className="sm:hidden text-xs font-black text-white">{presence?.studentsOnline ?? 0}</span>
+                <span className="sm:hidden text-xs font-semibold text-white">{presence?.studentsOnline ?? 0}</span>
               </div>
               <div className="flex items-center justify-center gap-1.5 sm:gap-3 w-11 h-11 sm:w-auto sm:h-auto sm:px-5 sm:py-3.5 rounded-full sm:rounded-2xl bg-blue-600/80 border border-blue-400/30 text-white shadow-xl shadow-blue-900/50 backdrop-blur-md shrink-0">
                 <Radio className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 text-blue-200" />
                 <div className="hidden sm:block">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-blue-100/70 leading-none">Live Classes</p>
-                  <p className="text-xl font-black leading-none mt-1.5">{presence?.liveClassesRunning ?? 0}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-100/70 leading-none">Live Classes</p>
+                  <p className="text-xl font-semibold leading-none mt-1.5">{presence?.liveClassesRunning ?? 0}</p>
                 </div>
-                <span className="sm:hidden text-xs font-black text-white">{presence?.liveClassesRunning ?? 0}</span>
+                <span className="sm:hidden text-xs font-semibold text-white">{presence?.liveClassesRunning ?? 0}</span>
               </div>
             </motion.div>
           </div>
@@ -212,89 +219,97 @@ const AdminDashboard = () => {
       <section className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         
         {/* Batch Distribution Chart */}
-        <GlassCard className="xl:col-span-2 p-5 sm:p-8" accentColor="bg-blue-600" delay={0.4}>
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-lg font-black text-slate-900">Batch Enrollment</h3>
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Real-time student distribution</span>
-          </div>
-          
-          <div className="h-[180px] sm:h-[240px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={enrollmentData}>
-                <defs>
-                  <linearGradient id="vibrantGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.9}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.9}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" strokeOpacity={0.4} />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 700, fill: '#64748b' }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 700, fill: '#64748b' }} dx={-10} />
-                <Tooltip 
-                  cursor={{ fill: '#f8fafc', opacity: 0.5 }}
-                  content={({ active, payload, label }) => {
-                    if (active && payload && payload.length) {
-                      return (
-                        <div className="bg-white/80 backdrop-blur-xl border border-white/50 shadow-xl shadow-indigo-500/10 p-4 rounded-3xl">
-                          <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">{label}</p>
-                          <p className="text-lg font-black text-slate-900">
-                            {payload[0].value} <span className="text-sm text-slate-500 font-semibold">Students</span>
-                          </p>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-                <Bar dataKey="students" fill="url(#vibrantGradient)" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+        <GlassCard className="xl:col-span-2" accentColor="bg-blue-600" delay={0.4}>
+          <CardHeader className="p-5 sm:p-8 pb-3 sm:pb-4 flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-lg font-semibold text-slate-900">Batch Enrollment</CardTitle>
+              <CardDescription className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mt-1">Real-time student distribution</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="p-5 sm:p-8 pt-0">
+            <div className="h-[180px] sm:h-[240px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={enrollmentData}>
+                  <defs>
+                    <linearGradient id="vibrantGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.9}/>
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.9}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" strokeOpacity={0.4} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 600, fill: '#64748b' }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 600, fill: '#64748b' }} dx={-10} />
+                  <Tooltip 
+                    cursor={{ fill: '#f8fafc', opacity: 0.5 }}
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="bg-white/90 backdrop-blur-xl border border-slate-200/80 shadow-xl p-4 rounded-2xl font-semibold">
+                            <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-1">{label}</p>
+                            <p className="text-lg font-semibold text-slate-900">
+                              {payload[0].value} <span className="text-sm text-slate-500 font-semibold">Students</span>
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Bar dataKey="students" fill="url(#vibrantGradient)" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
         </GlassCard>
 
         {/* Teacher Status Chart */}
-        <GlassCard className="p-5 sm:p-8" accentColor="bg-emerald-500" delay={0.5}>
-          <h3 className="text-lg font-black text-slate-900 mb-8">Teacher Network</h3>
-          
-          <div className="h-[140px] sm:h-[180px] w-full flex items-center justify-center relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={teacherData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius="70%"
-                  outerRadius="95%"
-                  paddingAngle={8}
-                  dataKey="value"
-                >
-                  {teacherData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-               <p className="text-xl font-black text-slate-900 leading-none">{stats.totalTeachers}</p>
-               <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mt-1">Teachers</p>
-            </div>
-          </div>
-
-          <div className="mt-8 space-y-2.5">
-            {teacherData.map((item) => (
-              <div 
-                key={item.name} 
-                className="flex items-center justify-between text-xs font-black uppercase tracking-wider py-2.5 px-3 bg-slate-50 border border-slate-100 rounded-xl"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                  <span className="text-slate-600">{item.name}</span>
-                </div>
-                <span className="text-slate-900">{item.value}</span>
+        <GlassCard accentColor="bg-emerald-500" delay={0.5}>
+          <CardHeader className="p-5 sm:p-8 pb-3 sm:pb-4">
+            <CardTitle className="text-lg font-semibold text-slate-900">Teacher Network</CardTitle>
+          </CardHeader>
+          <CardContent className="p-5 sm:p-8 pt-0">
+            <div className="h-[140px] sm:h-[180px] w-full flex items-center justify-center relative">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={teacherData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius="70%"
+                    outerRadius="95%"
+                    paddingAngle={8}
+                    dataKey="value"
+                  >
+                    {teacherData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                 <p className="text-xl font-semibold text-slate-900 leading-none">{stats.totalTeachers}</p>
+                 <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 mt-1">Teachers</p>
               </div>
-            ))}
-          </div>
+            </div>
+
+            <Separator className="my-4" />
+
+            <div className="space-y-2.5">
+              {teacherData.map((item) => (
+                <div 
+                  key={item.name} 
+                  className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider py-2.5 px-3 bg-slate-50 border border-slate-100 rounded-xl"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                    <span className="text-slate-600 font-semibold">{item.name}</span>
+                  </div>
+                  <span className="text-slate-900 font-semibold">{item.value}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
         </GlassCard>
       </section>
 
@@ -303,71 +318,75 @@ const AdminDashboard = () => {
         
         {/* Course Directory (8/12) */}
         <div className="xl:col-span-8">
-          <GlassCard className="p-5 sm:p-8 h-full flex flex-col" accentColor="bg-indigo-600">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-black text-slate-900">Recent Batches</h3>
+          <GlassCard accentColor="bg-indigo-600">
+            <CardHeader className="p-5 sm:p-8 pb-4 flex flex-row items-center justify-between">
+              <CardTitle className="text-lg font-semibold text-slate-900">Recent Batches</CardTitle>
               <motion.button
                 whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                 onClick={() => navigate("/admin/batches?new=true")}
-                className="flex px-3 py-1.5 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl bg-slate-900 text-white text-[9px] sm:text-[11px] font-black uppercase tracking-widest items-center gap-1.5 sm:gap-2 shadow-xl shrink-0"
+                className="flex px-3 py-1.5 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl bg-slate-900 text-white text-[9px] sm:text-[11px] font-semibold uppercase tracking-widest items-center gap-1.5 sm:gap-2 shadow-xl shrink-0"
               >
                 <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">New Batch</span><span className="sm:hidden">New</span>
               </motion.button>
-            </div>
+            </CardHeader>
 
-          <div className="grid grid-cols-2 gap-2.5 sm:gap-6">
-            {recentBatches.slice(0, 4).map((course, i) => (
-              <motion.div
-                key={course.id}
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 + (i * 0.05) }}
-                onClick={() => navigate(`/admin/batches/${course.id}`)}
-                className="group relative flex flex-col sm:flex-row items-center sm:items-center justify-center sm:justify-start gap-1.5 sm:gap-5 p-3 sm:p-5 rounded-2xl sm:rounded-3xl bg-white border border-slate-100 hover:border-blue-200 hover:shadow-2xl transition-all cursor-pointer text-center sm:text-left lg:border-slate-200 lg:bg-slate-50/40 lg:hover:bg-white lg:hover:border-blue-400 lg:shadow-xs lg:hover:shadow-xl"
-              >
-                <CourseThumbnail name={course.name} examTarget={course.examTarget} imageUrl={course.thumbnailUrl} className="w-10 h-10 sm:w-14 sm:h-14 mb-1 sm:mb-0" />
-                <div className="flex-1 min-w-0 w-full px-1">
-                  <h4 className="text-xs sm:text-base font-black text-slate-900 truncate group-hover:text-blue-600 transition-colors">{course.name}</h4>
-                  <p className="text-[8px] sm:text-[10px] font-black text-slate-500 uppercase tracking-wider mt-0.5 sm:mt-1 truncate">{course.examTarget} · {course.studentCount} Students</p>
-                </div>
-                <ArrowRight className="sm:hidden absolute bottom-2 right-2 w-3.5 h-3.5 text-slate-300 group-hover:text-blue-500 transition-colors" />
-                <ChevronRight className="hidden sm:block w-5 h-5 shrink-0 text-slate-300 group-hover:text-blue-600 transition-colors" />
-              </motion.div>
-            ))}
-          </div>
-
-
+            <CardContent className="p-5 sm:p-8 pt-0">
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-6">
+                {recentBatches.slice(0, 4).map((course, i) => (
+                  <motion.div
+                    key={course.id}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 + (i * 0.05) }}
+                    onClick={() => navigate(`/admin/batches/${course.id}`)}
+                    className="group relative flex flex-col sm:flex-row items-center sm:items-center justify-center sm:justify-start gap-1.5 sm:gap-5 p-3 sm:p-5 rounded-2xl sm:rounded-3xl bg-white border border-slate-100 hover:border-blue-200 hover:shadow-2xl transition-all cursor-pointer text-center sm:text-left lg:border-slate-200 lg:bg-slate-50/40 lg:hover:bg-white lg:hover:border-blue-400 lg:shadow-xs lg:hover:shadow-xl"
+                  >
+                    <CourseThumbnail name={course.name} examTarget={course.examTarget} imageUrl={course.thumbnailUrl} className="w-10 h-10 sm:w-14 sm:h-14 mb-1 sm:mb-0" />
+                    <div className="flex-1 min-w-0 w-full px-1">
+                      <h4 className="text-xs sm:text-base font-semibold text-slate-900 truncate group-hover:text-blue-600 transition-colors">{course.name}</h4>
+                      <p className="text-[8px] sm:text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-0.5 sm:mt-1 truncate">{course.examTarget} · {course.studentCount} Students</p>
+                    </div>
+                    <ArrowRight className="sm:hidden absolute bottom-2 right-2 w-3.5 h-3.5 text-slate-300 group-hover:text-blue-500 transition-colors" />
+                    <ChevronRight className="hidden sm:block w-5 h-5 shrink-0 text-slate-300 group-hover:text-blue-600 transition-colors" />
+                  </motion.div>
+                ))}
+              </div>
+            </CardContent>
           </GlassCard>
         </div>
 
         {/* Doubts (4/12) */}
         <div className="xl:col-span-4">
-          <GlassCard className="p-5 sm:p-8 h-full" accentColor="bg-orange-500">
-            <div className="flex items-center justify-between mb-8">
-              <h3 className="text-lg font-black text-slate-900">Urgent Doubts</h3>
-              <button onClick={() => navigate("/teacher/doubts")} className="text-[10px] font-black uppercase tracking-widest text-blue-600 font-bold">View All</button>
-            </div>
+          <GlassCard accentColor="bg-orange-500">
+            <CardHeader className="p-5 sm:p-8 pb-4 flex flex-row items-center justify-between">
+              <CardTitle className="text-lg font-semibold text-slate-900">Urgent Doubts</CardTitle>
+              <button onClick={() => navigate("/teacher/doubts")} className="text-[10px] font-semibold uppercase tracking-widest text-blue-600">View All</button>
+            </CardHeader>
             
-            <div className="space-y-4">
-              {recentDoubts.slice(0, 4).map((d, i) => (
-                <div 
-                  key={d.id} 
-                  onClick={() => navigate("/teacher/doubts")}
-                  className={cn(
-                    "p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/70 shadow-sm hover:shadow-md hover:border-orange-200 transition-all cursor-pointer group lg:border-slate-200 lg:bg-slate-50/40 lg:hover:bg-white lg:hover:border-orange-300 lg:hover:shadow-md",
-                    i === 3 && "hidden sm:block"
-                  )}
-                >
-                  <p className="text-[15px] sm:text-sm font-bold text-slate-900 line-clamp-1 group-hover:text-orange-600 transition-colors">
-                    {d.questionText || d.topicName || "New Doubt Received"}
-                  </p>
-                  <div className="flex items-center justify-between mt-3.5 sm:mt-3">
-                     <span className="text-[11px] sm:text-[10px] font-bold text-slate-500 truncate max-w-[120px]">{d.studentName}</span>
-                     <span className="text-[9px] sm:text-[8px] font-black uppercase tracking-wider text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full">{d.status}</span>
+            <CardContent className="p-5 sm:p-8 pt-0">
+              <div className="space-y-4">
+                {recentDoubts.slice(0, 4).map((d, i) => (
+                  <div 
+                    key={d.id} 
+                    onClick={() => navigate("/teacher/doubts")}
+                    className={cn(
+                      "p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/70 shadow-sm hover:shadow-md hover:border-orange-200 transition-all cursor-pointer group lg:border-slate-200 lg:bg-slate-50/40 lg:hover:bg-white lg:hover:border-orange-300 lg:hover:shadow-md",
+                      i === 3 && "hidden sm:block"
+                    )}
+                  >
+                    <p className="text-[15px] sm:text-sm font-semibold text-slate-900 line-clamp-1 group-hover:text-orange-600 transition-colors">
+                      {d.questionText || d.topicName || "New Doubt Received"}
+                    </p>
+                    <div className="flex items-center justify-between mt-3.5 sm:mt-3">
+                       <span className="text-[11px] sm:text-[10px] font-semibold text-slate-500 truncate max-w-[120px]">{d.studentName}</span>
+                       <Badge variant="secondary" className="text-[9px] sm:text-[8px] font-semibold uppercase tracking-wider text-orange-600 bg-orange-50 hover:bg-orange-100 border-none px-2.5 py-0.5 rounded-full">
+                         {d.status}
+                       </Badge>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </CardContent>
           </GlassCard>
         </div>
       </section>
@@ -376,4 +395,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-

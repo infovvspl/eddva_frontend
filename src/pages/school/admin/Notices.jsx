@@ -118,7 +118,7 @@ export default function Notices() {
       <div className="grid w-full gap-4 xl:grid-cols-2 2xl:grid-cols-3">
         {notices.length === 0 ? (
           <div className="rounded-lg border border-surface-200 bg-white p-8 text-center xl:col-span-2 2xl:col-span-3">
-            <Bell className="mx-auto mb-3 h-10 w-10 text-surface-300" />
+            <Bell className="mx-auto mb-3 size-10 text-surface-300" />
             <p className="text-surface-500">No notices published yet</p>
           </div>
         ) : (
@@ -139,13 +139,13 @@ export default function Notices() {
                     onClick={() => handleEditClick(notice)}
                     className="rounded p-1 text-surface-500 hover:bg-surface-100 hover:text-brand-600"
                   >
-                    <Edit2 className="h-4 w-4" />
+                    <Edit2 className="size-4" />
                   </button>
                   <button 
                     onClick={() => handleDeleteClick(notice.id)}
                     className="rounded p-1 text-surface-500 hover:bg-red-50 hover:text-red-600"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="size-4" />
                   </button>
                 </div>
               </div>
@@ -215,14 +215,14 @@ export default function Notices() {
           aria-modal="true"
           onClick={() => setPreviewImage(null)}
         >
-          <div className="relative max-h-full w-full max-w-6xl" onClick={(event) => event.stopPropagation()}>
+          <div className="relative max-size-full max-w-6xl" onClick={(event) => event.stopPropagation()}>
             <button
               type="button"
               onClick={() => setPreviewImage(null)}
               className="absolute right-3 top-3 z-10 rounded-full bg-white/95 p-2 text-surface-700 shadow-lg hover:bg-white"
               aria-label="Close image preview"
             >
-              <X className="h-5 w-5" />
+              <X className="size-5" />
             </button>
             <img
               src={previewImage.src}

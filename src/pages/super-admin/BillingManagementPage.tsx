@@ -5,6 +5,9 @@ import { CreditCard, Users, Edit2, LogIn, Loader2, X, Save, AlertTriangle } from
 import { apiClient } from '@/lib/api/client';
 import { tokenStorage } from '@/lib/api/client';
 import { useNavigate } from 'react-router-dom';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+
+const MotionTableRow = motion(TableRow);
 
 function extract<T>(res: any): T {
   const d = res?.data;
@@ -208,56 +211,56 @@ export default function BillingManagementPage() {
 
       <div className="bg-white rounded-[28px] border border-slate-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/60">
+          <Table className="w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b border-slate-100 bg-slate-50/60 hover:bg-slate-50/60">
                 {['Institute', 'Plan', 'Status', 'Trial Ends', 'Plan Expires', 'Students', 'Teachers', 'Actions'].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap">{h}</th>
+                  <TableHead key={h} className="h-auto px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap">{h}</TableHead>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {isLoading ? (
-                <tr><td colSpan={8} className="py-16 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-indigo-300" /></td></tr>
+                <TableRow><TableCell colSpan={8} className="py-16 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-indigo-300" /></TableCell></TableRow>
               ) : tenants.length === 0 ? (
-                <tr><td colSpan={8} className="py-16 text-center text-slate-400">No tenants found</td></tr>
+                <TableRow><TableCell colSpan={8} className="py-16 text-center text-slate-400">No tenants found</TableCell></TableRow>
               ) : (
                 tenants.map((t, i) => {
                   const trialLeft = daysLeft(t.trialEndsAt);
                   const planLeft = daysLeft(t.planExpiresAt);
                   const isExpiringSoon = (trialLeft !== null && trialLeft <= 7 && trialLeft >= 0) || (planLeft !== null && planLeft <= 7 && planLeft >= 0);
                   return (
-                    <motion.tr key={t.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}
+                    <MotionTableRow key={t.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}
                       className={`border-b border-slate-50 last:border-0 ${isExpiringSoon ? 'bg-amber-50/30' : i % 2 !== 0 ? 'bg-slate-50/40' : ''}`}>
-                      <td className="px-4 py-3 font-medium text-slate-800 max-w-[180px] truncate whitespace-nowrap">
+                      <TableCell className="px-4 py-3 font-medium text-slate-800 max-w-[180px] truncate whitespace-nowrap">
                         {isExpiringSoon && <AlertTriangle className="w-3.5 h-3.5 text-amber-500 inline mr-1.5 mb-0.5" />}
                         {t.name}
-                      </td>
-                      <td className="px-4 py-3"><PlanBadge plan={t.plan} /></td>
-                      <td className="px-4 py-3"><StatusBadge status={t.status} /></td>
-                      <td className="px-4 py-3 text-xs whitespace-nowrap">
+                      </TableCell>
+                      <TableCell className="px-4 py-3"><PlanBadge plan={t.plan} /></TableCell>
+                      <TableCell className="px-4 py-3"><StatusBadge status={t.status} /></TableCell>
+                      <TableCell className="px-4 py-3 text-xs whitespace-nowrap">
                         {t.trialEndsAt ? (
                           <span className={trialLeft !== null && trialLeft <= 3 ? 'text-red-500 font-semibold' : 'text-slate-500'}>
                             {new Date(t.trialEndsAt).toLocaleDateString()}
                             {trialLeft !== null && <span className="ml-1 text-[10px]">({trialLeft}d)</span>}
                           </span>
                         ) : <span className="text-slate-300">—</span>}
-                      </td>
-                      <td className="px-4 py-3 text-xs whitespace-nowrap">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-xs whitespace-nowrap">
                         {t.planExpiresAt ? (
                           <span className={planLeft !== null && planLeft <= 7 ? 'text-amber-600 font-semibold' : 'text-slate-500'}>
                             {new Date(t.planExpiresAt).toLocaleDateString()}
                             {planLeft !== null && <span className="ml-1 text-[10px]">({planLeft}d)</span>}
                           </span>
                         ) : <span className="text-slate-300">—</span>}
-                      </td>
-                      <td className="px-4 py-3 text-slate-500 text-xs">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-slate-500 text-xs">
                         <span className="flex items-center gap-1"><Users className="w-3 h-3" />{t.maxStudents ?? '∞'}</span>
-                      </td>
-                      <td className="px-4 py-3 text-slate-500 text-xs">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-slate-500 text-xs">
                         <span className="flex items-center gap-1"><Users className="w-3 h-3" />{t.maxTeachers ?? '∞'}</span>
-                      </td>
-                      <td className="px-4 py-3">
+                      </TableCell>
+                      <TableCell className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <button onClick={() => setEditTenant(t)}
                             className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 text-xs font-medium hover:bg-indigo-100 transition">
@@ -269,13 +272,13 @@ export default function BillingManagementPage() {
                             Login As
                           </button>
                         </div>
-                      </td>
-                    </motion.tr>
+                      </TableCell>
+                    </MotionTableRow>
                   );
                 })
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
 

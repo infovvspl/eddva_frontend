@@ -21,7 +21,7 @@ function HollandModal({ onClose }: { onClose: () => void }) {
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
             <div className="rounded-xl bg-purple-100 p-2 text-purple-700">
-              <Brain className="h-5 w-5" />
+              <Brain className="size-5" />
             </div>
             <h3 className="text-lg font-black text-slate-900">What is Holland Match?</h3>
           </div>
@@ -90,7 +90,7 @@ function DynamicCareerDetail({ item, matchItem }: { item: CareerItem; matchItem:
   return (
     <div className="w-full space-y-5 p-1">
       <button onClick={() => navigate(-1)} className="inline-flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-slate-600">
-        <ArrowLeft className="h-3.5 w-3.5" /> Back
+        <ArrowLeft className="size-3.5" /> Back
       </button>
 
       {/* Header */}
@@ -98,7 +98,7 @@ function DynamicCareerDetail({ item, matchItem }: { item: CareerItem; matchItem:
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-violet-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-violet-700">
-              <Sparkles className="h-3 w-3" /> AI-Suggested Career
+              <Sparkles className="size-3" /> AI-Suggested Career
             </div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">{effectiveItem.title}</h1>
           </div>
@@ -117,14 +117,14 @@ function DynamicCareerDetail({ item, matchItem }: { item: CareerItem; matchItem:
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm flex flex-col justify-between">
           <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-            <Clock className="h-3.5 w-3.5 text-violet-500" /> Duration
+            <Clock className="size-3.5 text-violet-500" /> Duration
           </span>
           <p className="mt-2 text-sm md:text-base font-black text-slate-800">Flexible / Variable</p>
         </div>
 
         <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm flex flex-col justify-between">
           <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-            <IndianRupee className="h-3.5 w-3.5 text-violet-500" /> Salary Scale
+            <IndianRupee className="size-3.5 text-violet-500" /> Salary Scale
           </span>
           <p className="mt-2 text-sm md:text-base font-black text-slate-800">Market Standard</p>
         </div>
@@ -134,7 +134,7 @@ function DynamicCareerDetail({ item, matchItem }: { item: CareerItem; matchItem:
           className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm flex flex-col justify-between cursor-pointer hover:border-purple-200 hover:bg-purple-50/10 transition group"
         >
           <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5 group-hover:text-purple-600 transition-colors">
-            <Brain className="h-3.5 w-3.5 text-violet-500" /> Holland Match
+            <Brain className="size-3.5 text-violet-500" /> Holland Match
           </span>
           <p className="mt-2 text-sm md:text-base font-black text-slate-800 underline decoration-dotted decoration-slate-300 group-hover:text-purple-700 transition-colors">
             Learn More
@@ -143,7 +143,7 @@ function DynamicCareerDetail({ item, matchItem }: { item: CareerItem; matchItem:
 
         <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm flex flex-col justify-between">
           <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-            <Award className="h-3.5 w-3.5 text-violet-500" /> Stream
+            <Award className="size-3.5 text-violet-500" /> Stream
           </span>
           <p className="mt-2 text-sm md:text-base font-black text-slate-800">Agnostic / Custom</p>
         </div>
@@ -153,7 +153,7 @@ function DynamicCareerDetail({ item, matchItem }: { item: CareerItem; matchItem:
       {effectiveItem.focusAreas?.length > 0 && (
         <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
           <h2 className="mb-3 flex items-center gap-1.5 text-sm font-black uppercase tracking-wide text-slate-500">
-            <BookOpen className="h-4 w-4 text-blue-500" /> Focus Academically
+            <BookOpen className="size-4 text-blue-500" /> Focus Academically
           </h2>
           <div className="flex flex-wrap gap-2">
             {effectiveItem.focusAreas.map((f, i) => (
@@ -167,19 +167,19 @@ function DynamicCareerDetail({ item, matchItem }: { item: CareerItem; matchItem:
       {effectiveItem.actionPlan?.length > 0 && (
         <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
           <h2 className="mb-6 flex items-center gap-1.5 text-sm font-black uppercase tracking-wide text-slate-500">
-            <Compass className="h-4 w-4 text-blue-500" /> Your Next Steps &amp; Roadmap
+            <Compass className="size-4 text-blue-500" /> Your Next Steps &amp; Roadmap
           </h2>
           <div className="relative border-l border-blue-100 pl-8 ml-3 space-y-6">
             {effectiveItem.actionPlan.map((a, i) => (
               <div key={i} className="relative pl-2">
-                <span className="absolute -left-[44px] top-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs font-black text-blue-600 ring-4 ring-white">
+                <span className="absolute -left-[44px] top-0.5 flex size-6 items-center justify-center rounded-full bg-blue-100 text-xs font-black text-blue-600 ring-4 ring-white">
                   {i + 1}
                 </span>
                 <p className="text-sm font-medium leading-relaxed text-slate-600">{a}</p>
               </div>
             ))}
             <div className="relative pl-2">
-              <span className="absolute -left-[44px] top-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-xs font-black text-emerald-600 ring-4 ring-white">
+              <span className="absolute -left-[44px] top-0.5 flex size-6 items-center justify-center rounded-full bg-emerald-100 text-xs font-black text-emerald-600 ring-4 ring-white">
                 ★
               </span>
               <p className="text-sm font-bold leading-relaxed text-slate-800">Achieve Career Goals</p>
@@ -191,7 +191,7 @@ function DynamicCareerDetail({ item, matchItem }: { item: CareerItem; matchItem:
       {/* CTA */}
       <button onClick={() => navigate('/school/student/career/report')}
         className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700">
-        Back to My Report <ChevronRight className="h-4 w-4" />
+        Back to My Report <ChevronRight className="size-4" />
       </button>
 
       {showHollandInfo && <HollandModal onClose={() => setShowHollandInfo(false)} />}
@@ -295,7 +295,7 @@ export default function CareerDetail() {
   return (
     <div className="w-full space-y-6 p-1">
       <button onClick={() => navigate(-1)} className="inline-flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-slate-600">
-        <ArrowLeft className="h-3.5 w-3.5" /> Back
+        <ArrowLeft className="size-3.5" /> Back
       </button>
 
       {/* Header card with at-a-glance metrics */}
@@ -305,7 +305,7 @@ export default function CareerDetail() {
             {/* Custom/AI-generated career badge */}
             {!hasExams && !hasColleges && (
               <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-violet-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-violet-700">
-                <Sparkles className="h-3 w-3" /> AI-Suggested Career
+                <Sparkles className="size-3" /> AI-Suggested Career
               </div>
             )}
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">{career.title}</h1>
@@ -334,7 +334,7 @@ export default function CareerDetail() {
         {/* Card 1: Duration */}
         <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm flex flex-col justify-between">
           <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-            <Clock className="h-3.5 w-3.5 text-blue-500" /> Duration
+            <Clock className="size-3.5 text-blue-500" /> Duration
           </span>
           <p className="mt-2 text-sm md:text-base font-black text-slate-800">{career.duration || 'Variable'}</p>
         </div>
@@ -342,7 +342,7 @@ export default function CareerDetail() {
         {/* Card 2: Salary Range */}
         <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm flex flex-col justify-between">
           <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-            <IndianRupee className="h-3.5 w-3.5 text-emerald-500" /> Salary Range
+            <IndianRupee className="size-3.5 text-emerald-500" /> Salary Range
           </span>
           <p className="mt-2 text-sm md:text-base font-black text-slate-800">{career.salaryRange || 'N/A'}</p>
         </div>
@@ -353,7 +353,7 @@ export default function CareerDetail() {
           className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm flex flex-col justify-between cursor-pointer hover:border-purple-200 hover:bg-purple-50/10 transition group"
         >
           <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5 group-hover:text-purple-600 transition-colors">
-            <Brain className="h-3.5 w-3.5 text-purple-500" /> Holland Match
+            <Brain className="size-3.5 text-purple-500" /> Holland Match
           </span>
           <p className="mt-2 text-sm md:text-base font-black text-slate-800 underline decoration-dotted decoration-slate-300 group-hover:text-purple-700 transition-colors">
             {career.hollandMatch && career.hollandMatch.length > 0 
@@ -365,7 +365,7 @@ export default function CareerDetail() {
         {/* Card 4: Stream */}
         <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm flex flex-col justify-between">
           <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-            <Award className="h-3.5 w-3.5 text-amber-500" /> Stream
+            <Award className="size-3.5 text-amber-500" /> Stream
           </span>
           <p className="mt-2 text-sm md:text-base font-black uppercase text-slate-800">{career.stream}</p>
         </div>
@@ -378,7 +378,7 @@ export default function CareerDetail() {
           {(career.keySkills ?? []).length > 0 && (
             <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
               <h3 className="mb-3 flex items-center gap-1.5 text-sm font-black uppercase tracking-wide text-slate-500">
-                <Brain className="h-4 w-4 text-indigo-500" /> Essential Skills
+                <Brain className="size-4 text-indigo-500" /> Essential Skills
               </h3>
               <div className="flex flex-wrap gap-1.5">
                 {career.keySkills.map((skill) => (
@@ -394,7 +394,7 @@ export default function CareerDetail() {
           {(career.jobRoles ?? []).length > 0 && (
             <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
               <h3 className="mb-3 flex items-center gap-1.5 text-sm font-black uppercase tracking-wide text-slate-500">
-                <Briefcase className="h-4 w-4 text-amber-500" /> Job Profiles
+                <Briefcase className="size-4 text-amber-500" /> Job Profiles
               </h3>
               <div className="flex flex-wrap gap-1.5">
                 {career.jobRoles.map((role) => (
@@ -426,7 +426,7 @@ export default function CareerDetail() {
                         <span className="text-slate-400 text-xs">needs {minPct}%</span>
                         {cur != null ? (
                           <span className={`inline-flex items-center gap-1 font-bold ${ok ? 'text-emerald-600' : 'text-amber-600'}`}>
-                            you: {cur}% {ok ? <Check className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+                            you: {cur}% {ok ? <Check className="size-4" /> : <AlertTriangle className="size-4" />}
                           </span>
                         ) : <span className="text-xs text-slate-400">no data</span>}
                       </div>
@@ -441,13 +441,13 @@ export default function CareerDetail() {
           {timelineSteps.length > 0 ? (
             <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
               <h2 className="mb-6 flex items-center gap-1.5 text-sm font-black uppercase tracking-wide text-slate-500">
-                <Compass className="h-4 w-4 text-blue-500" /> Education Roadmap &amp; Milestones
+                <Compass className="size-4 text-blue-500" /> Education Roadmap &amp; Milestones
               </h2>
               <div className="relative border-l border-blue-100 pl-8 ml-3 space-y-6">
                 {timelineSteps.map((step, i) => (
                   <div key={i} className="relative pl-2">
                     {/* Dot */}
-                    <span className="absolute -left-[44px] top-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs font-black text-blue-600 ring-4 ring-white">
+                    <span className="absolute -left-[44px] top-0.5 flex size-6 items-center justify-center rounded-full bg-blue-100 text-xs font-black text-blue-600 ring-4 ring-white">
                       {i + 1}
                     </span>
                     <div>
@@ -456,7 +456,7 @@ export default function CareerDetail() {
                   </div>
                 ))}
                 <div className="relative pl-2">
-                  <span className="absolute -left-[44px] top-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-xs font-black text-emerald-600 ring-4 ring-white">
+                  <span className="absolute -left-[44px] top-0.5 flex size-6 items-center justify-center rounded-full bg-emerald-100 text-xs font-black text-emerald-600 ring-4 ring-white">
                     ★
                   </span>
                   <div>
@@ -473,7 +473,7 @@ export default function CareerDetail() {
       {matchItem?.focusAreas && matchItem.focusAreas.length > 0 && !career.keySkills && (
         <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
           <h2 className="mb-3 flex items-center gap-1.5 text-sm font-black uppercase tracking-wide text-slate-500">
-            <BookOpen className="h-4 w-4 text-blue-500" /> Focus Academically
+            <BookOpen className="size-4 text-blue-500" /> Focus Academically
           </h2>
           <div className="flex flex-wrap gap-2">
             {matchItem.focusAreas.map((f, i) => (
@@ -490,7 +490,7 @@ export default function CareerDetail() {
           {hasExams ? (
             <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
               <h2 className="mb-3 flex items-center gap-1.5 text-sm font-black uppercase tracking-wide text-slate-500">
-                <GraduationCap className="h-4 w-4 text-blue-500" /> Key Entrance Exams
+                <GraduationCap className="size-4 text-blue-500" /> Key Entrance Exams
               </h2>
               <div className="flex flex-wrap gap-2">
                 {career.exams.map((e) => (
@@ -504,12 +504,12 @@ export default function CareerDetail() {
           {hasColleges ? (
             <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
               <h2 className="mb-3 flex items-center gap-1.5 text-sm font-black uppercase tracking-wide text-slate-500">
-                <Building2 className="h-4 w-4 text-blue-500" /> Top Colleges &amp; Institutions
+                <Building2 className="size-4 text-blue-500" /> Top Colleges &amp; Institutions
               </h2>
               <ul className="space-y-2">
                 {career.topColleges.map((col) => (
                   <li key={col} className="flex items-center gap-2.5 text-sm text-slate-700">
-                    <span className="h-1.5 w-1.5 rounded-full bg-blue-500" /> {col}
+                    <span className="size-1.5 rounded-full bg-blue-500" /> {col}
                   </li>
                 ))}
               </ul>
@@ -525,12 +525,12 @@ export default function CareerDetail() {
           {career.prosCons.pros?.length > 0 && (
             <div className="rounded-2xl border border-emerald-100 bg-emerald-50/10 p-5 shadow-sm">
               <h3 className="mb-3 flex items-center gap-1.5 text-sm font-black uppercase tracking-wide text-emerald-600">
-                <CheckCircle2 className="h-4 w-4 text-emerald-500" /> Key Advantages
+                <CheckCircle2 className="size-4 text-emerald-500" /> Key Advantages
               </h3>
               <ul className="space-y-2.5">
                 {career.prosCons.pros.map((pro, idx) => (
                   <li key={idx} className="flex items-start gap-2 text-xs text-slate-600 leading-relaxed">
-                    <Check className="h-3.5 w-3.5 mt-0.5 shrink-0 text-emerald-500" />
+                    <Check className="size-3.5 mt-0.5 shrink-0 text-emerald-500" />
                     <span>{pro}</span>
                   </li>
                 ))}
@@ -542,12 +542,12 @@ export default function CareerDetail() {
           {career.prosCons.cons?.length > 0 && (
             <div className="rounded-2xl border border-rose-100 bg-rose-50/10 p-5 shadow-sm">
               <h3 className="mb-3 flex items-center gap-1.5 text-sm font-black uppercase tracking-wide text-rose-500">
-                <XCircle className="h-4 w-4 text-rose-500" /> Challenges &amp; Realities
+                <XCircle className="size-4 text-rose-500" /> Challenges &amp; Realities
               </h3>
               <ul className="space-y-2.5">
                 {career.prosCons.cons.map((con, idx) => (
                   <li key={idx} className="flex items-start gap-2 text-xs text-slate-600 leading-relaxed">
-                    <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-rose-400" />
+                    <AlertTriangle className="size-3.5 mt-0.5 shrink-0 text-rose-400" />
                     <span>{con}</span>
                   </li>
                 ))}
@@ -560,7 +560,7 @@ export default function CareerDetail() {
       {/* CTA */}
       <button onClick={() => navigate('/school/student/career/report')}
         className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700">
-        {matchItem ? 'Back to My Report' : 'See My Career Report'} <ChevronRight className="h-4 w-4" />
+        {matchItem ? 'Back to My Report' : 'See My Career Report'} <ChevronRight className="size-4" />
       </button>
 
       {showHollandInfo && <HollandModal onClose={() => setShowHollandInfo(false)} />}

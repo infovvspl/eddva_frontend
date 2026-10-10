@@ -43,13 +43,13 @@ export default function CareerExplorer() {
   return (
     <div className="w-full space-y-5 p-1">
       <div>
-        <button onClick={() => navigate('/school/student/career')} className="mb-1 inline-flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-slate-600"><ArrowLeft className="h-3.5 w-3.5" /> Career Home</button>
+        <button onClick={() => navigate('/school/student/career')} className="mb-1 inline-flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-slate-600"><ArrowLeft className="size-3.5" /> Career Home</button>
         <h1 className="text-2xl font-black text-slate-900">Explore Careers</h1>
       </div>
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search careers…"
           className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none focus:border-blue-400" />
       </div>
@@ -83,7 +83,7 @@ export default function CareerExplorer() {
               <div className="mt-2 flex flex-wrap gap-1">
                 {(c.exams ?? []).slice(0, 2).map((e) => <span key={e} className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">{e}</span>)}
               </div>
-              <span className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-blue-600">Learn More <ChevronRight className="h-3.5 w-3.5" /></span>
+              <span className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-blue-600">Learn More <ChevronRight className="size-3.5" /></span>
             </button>
           ))}
         </div>

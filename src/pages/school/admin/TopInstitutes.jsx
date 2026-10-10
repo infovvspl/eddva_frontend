@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api/school-client';
 import { InstituteLogo, SchoolLogo, StatusBadge } from '@/components/school/admin/Brand';
 import { Skeleton } from '@/components/school/admin/Skeleton';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 
 
 export default function TopInstitutes() {
@@ -86,13 +88,13 @@ export default function TopInstitutes() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/school/admin')}
-            className="grid h-10 w-10 place-items-center rounded-lg border border-surface-200 bg-white text-surface-600 transition hover:bg-surface-50 active:scale-95 dark:border-surface-800 dark:bg-slate-900 dark:text-slate-400"
+            className="grid size-10 place-items-center rounded-lg border border-surface-200 bg-white text-surface-600 transition hover:bg-surface-50 active:scale-95 dark:border-surface-800 dark:bg-slate-900 dark:text-slate-400"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="size-5" />
           </button>
           <div>
             <h1 className="font-display text-3xl font-bold text-surface-950 dark:text-white flex items-center gap-2">
-              Top Institutes <Award className="h-7 w-7 text-amber-500" />
+              Top Institutes <Award className="size-7 text-amber-500" />
             </h1>
             <p className="text-sm font-medium text-surface-500">
               Coaching institutes ranked by student enrollment and operational activity.
@@ -101,7 +103,7 @@ export default function TopInstitutes() {
         </div>
 
         <div className="relative lg:w-80">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-surface-400" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -136,7 +138,7 @@ export default function TopInstitutes() {
                 transition={{ duration: 0.4, delay: index * 0.1 }}
                 className={`relative overflow-hidden rounded-3xl border p-6 shadow-sm ${rankColors[index] || 'border-slate-100 bg-white'}`}
               >
-                <div className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white font-display text-xl font-bold shadow-sm dark:bg-slate-800">
+                <div className="absolute right-4 top-4 flex size-10 items-center justify-center rounded-full bg-white font-display text-xl font-bold shadow-sm dark:bg-slate-800">
                   <span className={medalColors[index] || 'text-slate-500'}>#{index + 1}</span>
                 </div>
 
@@ -175,51 +177,51 @@ export default function TopInstitutes() {
       <div className="glass-panel overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-950">
         {/* Desktop View */}
         <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-surface-50 text-xs font-bold uppercase text-surface-500 dark:bg-slate-900/50">
-                <th className="p-4 pl-6 w-20">Rank</th>
-                <th className="p-4">Institute</th>
-                <th className="p-4">Students</th>
-                <th className="p-4">Teachers</th>
-                <th className="p-4">Parents</th>
-                <th className="p-4">Total Users</th>
-                <th className="p-4">Status</th>
-                <th className="p-4 text-right pr-6">Growth</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="w-full text-left">
+            <TableHeader>
+              <TableRow className="bg-surface-50 text-xs font-bold uppercase text-surface-500 dark:bg-slate-900/50 hover:bg-surface-50 dark:hover:bg-slate-900/50 border-b-0">
+                <TableHead className="h-auto p-4 pl-6 w-20 text-surface-500">Rank</TableHead>
+                <TableHead className="h-auto p-4 text-surface-500">Institute</TableHead>
+                <TableHead className="h-auto p-4 text-surface-500">Students</TableHead>
+                <TableHead className="h-auto p-4 text-surface-500">Teachers</TableHead>
+                <TableHead className="h-auto p-4 text-surface-500">Parents</TableHead>
+                <TableHead className="h-auto p-4 text-surface-500">Total Users</TableHead>
+                <TableHead className="h-auto p-4 text-surface-500">Status</TableHead>
+                <TableHead className="h-auto p-4 text-right pr-6 text-surface-500">Growth</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {loading ? (
                 Array.from({ length: 5 }).map((_, index) => (
-                  <tr key={index} className="border-t border-surface-100 dark:border-slate-800">
-                    <td className="p-4 pl-6"><Skeleton className="h-6 w-8" /></td>
-                    <td className="p-4"><Skeleton className="h-11 w-64" /></td>
-                    <td className="p-4"><Skeleton className="h-6 w-12" /></td>
-                    <td className="p-4"><Skeleton className="h-6 w-12" /></td>
-                    <td className="p-4"><Skeleton className="h-6 w-12" /></td>
-                    <td className="p-4"><Skeleton className="h-6 w-16" /></td>
-                    <td className="p-4"><Skeleton className="h-6 w-20" /></td>
-                    <td className="p-4 text-right pr-6"><Skeleton className="ml-auto h-6 w-12" /></td>
-                  </tr>
+                  <TableRow key={index} className="border-t border-surface-100 dark:border-slate-800 border-b-0 hover:bg-transparent">
+                    <TableCell className="p-4 pl-6"><Skeleton className="h-6 w-8" /></TableCell>
+                    <TableCell className="p-4"><Skeleton className="h-11 w-64" /></TableCell>
+                    <TableCell className="p-4"><Skeleton className="h-6 w-12" /></TableCell>
+                    <TableCell className="p-4"><Skeleton className="h-6 w-12" /></TableCell>
+                    <TableCell className="p-4"><Skeleton className="h-6 w-12" /></TableCell>
+                    <TableCell className="p-4"><Skeleton className="h-6 w-16" /></TableCell>
+                    <TableCell className="p-4"><Skeleton className="h-6 w-20" /></TableCell>
+                    <TableCell className="p-4 text-right pr-6"><Skeleton className="ml-auto h-6 w-12" /></TableCell>
+                  </TableRow>
                 ))
               ) : filteredList.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="p-10 text-center text-sm font-semibold text-surface-500">
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan="8" className="p-10 text-center text-sm font-semibold text-surface-500">
                     No top performing institutes found.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : (
                 filteredList.map((item, index) => {
                   const displayRank = index + 1;
                   return (
-                    <tr
+                    <TableRow
                       key={item.id}
                       onClick={() => navigate('/school/admin/institutes')}
-                      className="cursor-pointer border-t border-surface-100 transition hover:bg-surface-50 dark:border-slate-800 dark:hover:bg-slate-900/40"
+                      className="cursor-pointer border-t border-surface-100 border-b-0 transition hover:bg-surface-50 dark:border-slate-800 dark:hover:bg-slate-900/40"
                     >
-                      <td className="p-4 pl-6 font-display text-sm font-bold text-surface-900 dark:text-slate-200">
+                      <TableCell className="p-4 pl-6 font-display text-sm font-bold text-surface-900 dark:text-slate-200">
                         {displayRank <= 3 ? (
-                          <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
+                          <span className={`inline-flex size-6 items-center justify-center rounded-full text-xs font-bold ${
                             displayRank === 1 ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' :
                             displayRank === 2 ? 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300' :
                             'bg-amber-200/50 text-amber-900 dark:bg-amber-900/40 dark:text-amber-400'
@@ -229,8 +231,8 @@ export default function TopInstitutes() {
                         ) : (
                           `#${displayRank}`
                         )}
-                      </td>
-                      <td className="p-4">
+                      </TableCell>
+                      <TableCell className="p-4">
                         <div className="flex items-center gap-3">
                           <SchoolLogo src={item.logo} alt={item.name} size="navbar" />
                           <div>
@@ -240,34 +242,34 @@ export default function TopInstitutes() {
                             </p>
                           </div>
                         </div>
-                      </td>
-                      <td className="p-4 text-sm font-bold text-surface-700 dark:text-slate-300">
+                      </TableCell>
+                      <TableCell className="p-4 text-sm font-bold text-surface-700 dark:text-slate-300">
                         {item.totalStudents.toLocaleString()}
-                      </td>
-                      <td className="p-4 text-sm font-bold text-surface-700 dark:text-slate-300">
+                      </TableCell>
+                      <TableCell className="p-4 text-sm font-bold text-surface-700 dark:text-slate-300">
                         {item.totalTeachers.toLocaleString()}
-                      </td>
-                      <td className="p-4 text-sm font-bold text-surface-700 dark:text-slate-300">
+                      </TableCell>
+                      <TableCell className="p-4 text-sm font-bold text-surface-700 dark:text-slate-300">
                         {item.totalParents.toLocaleString()}
-                      </td>
-                      <td className="p-4 text-sm font-display font-extrabold text-blue-600 dark:text-blue-400">
+                      </TableCell>
+                      <TableCell className="p-4 text-sm font-display font-extrabold text-blue-600 dark:text-blue-400">
                         {item.totalUsers.toLocaleString()}
-                      </td>
-                      <td className="p-4">
+                      </TableCell>
+                      <TableCell className="p-4">
                         <StatusBadge status={item.status} />
-                      </td>
-                      <td className="p-4 text-right pr-6">
-                        <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full">
-                          <TrendingUp className="h-3 w-3" />
+                      </TableCell>
+                      <TableCell className="p-4 text-right pr-6">
+                        <Badge variant="secondary" className="items-center gap-1 rounded-full border-transparent text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-50 dark:hover:bg-emerald-950/30">
+                          <TrendingUp className="size-3" />
                           High
-                        </span>
-                      </td>
-                    </tr>
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
                   );
                 })
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
 
         {/* Mobile View */}
@@ -296,7 +298,7 @@ export default function TopInstitutes() {
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="shrink-0 font-display text-sm font-bold text-surface-900 dark:text-slate-200">
                         {displayRank <= 3 ? (
-                          <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
+                          <span className={`inline-flex size-6 items-center justify-center rounded-full text-xs font-bold ${
                             displayRank === 1 ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' :
                             displayRank === 2 ? 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300' :
                             'bg-amber-200/50 text-amber-900 dark:bg-amber-900/40 dark:text-amber-400'
@@ -321,22 +323,22 @@ export default function TopInstitutes() {
                   </div>
 
                   <div className="flex flex-wrap gap-2 text-xs font-medium text-surface-500">
-                    <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-surface-700 dark:text-slate-300">
+                    <Badge variant="secondary" className="rounded-full border-transparent bg-slate-100 dark:bg-slate-800 text-surface-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
                       Students: {item.totalStudents.toLocaleString()}
-                    </span>
-                    <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-surface-700 dark:text-slate-300">
+                    </Badge>
+                    <Badge variant="secondary" className="rounded-full border-transparent bg-slate-100 dark:bg-slate-800 text-surface-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
                       Teachers: {item.totalTeachers.toLocaleString()}
-                    </span>
-                    <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-surface-700 dark:text-slate-300">
+                    </Badge>
+                    <Badge variant="secondary" className="rounded-full border-transparent bg-slate-100 dark:bg-slate-800 text-surface-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
                       Parents: {item.totalParents.toLocaleString()}
-                    </span>
-                    <span className="rounded-full bg-blue-50 dark:bg-blue-950/30 px-2 py-0.5 text-blue-600 dark:text-blue-400 font-bold">
+                    </Badge>
+                    <Badge variant="secondary" className="rounded-full border-transparent bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 font-bold hover:bg-blue-50 dark:hover:bg-blue-950/30">
                       Total: {item.totalUsers.toLocaleString()}
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full">
-                      <TrendingUp className="h-3 w-3" />
+                    </Badge>
+                    <Badge variant="secondary" className="items-center gap-1 rounded-full border-transparent text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-50 dark:hover:bg-emerald-950/30">
+                      <TrendingUp className="size-3" />
                       High Growth
-                    </span>
+                    </Badge>
                   </div>
                 </div>
               );

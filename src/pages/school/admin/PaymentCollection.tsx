@@ -76,7 +76,7 @@ export default function PaymentCollection() {
       </div>
 
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex items-center">
-        <Search className="w-5 h-5 text-gray-400 mr-2" />
+        <Search className="size-5 text-gray-400 mr-2" />
         <input
           type="text"
           placeholder="Search pending fees by student or title..."
@@ -95,8 +95,8 @@ export default function PaymentCollection() {
           {filteredFees.map(fee => (
             <div key={fee.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col hover:shadow-sm ring-1 ring-slate-100 transition-shadow">
               <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center text-green-600 mr-4">
-                  <DollarSign className="w-6 h-6" />
+                <div className="size-12 bg-green-50 rounded-full flex items-center justify-center text-green-600 mr-4">
+                  <DollarSign className="size-6" />
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">{fee.student?.user?.name || 'Unknown Student'}</h3>
@@ -123,7 +123,7 @@ export default function PaymentCollection() {
                 onClick={() => openPaymentModal(fee)}
                 className="mt-auto w-full py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex justify-center items-center font-medium"
               >
-                <CreditCard className="w-4 h-4 mr-2" />
+                <CreditCard className="size-4 mr-2" />
                 Collect Payment
               </button>
             </div>

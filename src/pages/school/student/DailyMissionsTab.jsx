@@ -47,7 +47,7 @@ export default function DailyMissionsTab({ onRefresh }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
         <div>
           <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-950/50 px-2.5 py-0.5 text-[10px] font-black uppercase text-amber-800 dark:text-amber-300">
-            <Sparkles className="h-3 w-3 text-amber-500" />
+            <Sparkles className="size-3 text-amber-500" />
             Resets Daily at Midnight
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1">Personalised Daily Missions</h2>
@@ -57,14 +57,14 @@ export default function DailyMissionsTab({ onRefresh }) {
           onClick={fetchMissions}
           className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 shrink-0 self-start sm:self-center"
         >
-          <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} /> Refresh
+          <RefreshCw className={`size-3.5 ${loading ? 'animate-spin' : ''}`} /> Refresh
         </button>
       </div>
 
       {/* Missions List */}
       {loading ? (
         <div className="py-12 text-center">
-          <RefreshCw className="mx-auto h-8 w-8 animate-spin text-amber-500" />
+          <RefreshCw className="mx-auto size-8 animate-spin text-amber-500" />
         </div>
       ) : missions.length === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -99,11 +99,11 @@ export default function DailyMissionsTab({ onRefresh }) {
 
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="inline-flex items-center gap-1 rounded-lg bg-amber-50 px-2 py-1 text-xs font-black text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
-                      <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
+                      <Star className="size-3.5 fill-amber-500 text-amber-500" />
                       +{m.reward_xp} XP
                     </span>
                     <span className="inline-flex items-center gap-1 rounded-lg bg-yellow-50 px-2 py-1 text-xs font-black text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-300">
-                      <Coins className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />
+                      <Coins className="size-3.5 fill-yellow-500 text-yellow-500" />
                       +{m.reward_coins}
                     </span>
                   </div>
@@ -124,7 +124,7 @@ export default function DailyMissionsTab({ onRefresh }) {
                 <div className="mt-4 flex justify-end">
                   {isClaimed ? (
                     <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                      <CheckCircle2 className="h-4 w-4" /> Reward Claimed
+                      <CheckCircle2 className="size-4" /> Reward Claimed
                     </span>
                   ) : isCompleted ? (
                     <button
@@ -133,10 +133,10 @@ export default function DailyMissionsTab({ onRefresh }) {
                       className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-xs font-black text-white shadow hover:bg-amber-600 transition disabled:opacity-50"
                     >
                       {claimingId === m.id ? (
-                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                        <RefreshCw className="size-3.5 animate-spin" />
                       ) : (
                         <>
-                          <Gift className="h-3.5 w-3.5" /> Claim Reward
+                          <Gift className="size-3.5" /> Claim Reward
                         </>
                       )}
                     </button>

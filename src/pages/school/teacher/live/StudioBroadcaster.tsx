@@ -12,6 +12,7 @@ import Whiteboard from '@/components/school/live/studio/Whiteboard';
 import SlidePresenter from '@/components/school/live/studio/SlidePresenter';
 import StudioLivePanel from '@/components/school/live/studio/StudioLivePanel';
 import DeviceSettings from '@/components/school/live/studio/DeviceSettings';
+import { useConfirm } from '@/context/ConfirmContext';
 
 function fmt(sec: number) {
   const h = Math.floor(sec / 3600);
@@ -25,6 +26,7 @@ function fmt(sec: number) {
 export default function StudioBroadcaster() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
+  const confirm = useConfirm();
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const [title, setTitle] = useState('Live Class');
@@ -130,11 +132,14 @@ export default function StudioBroadcaster() {
       return;
     }
     if (externalLive && !studio.isLive) {
-      const ok = window.confirm(
-        'This class already appears to be streaming (from OBS or another window). ' +
-        'Going live here as well can break the stream. Stop the other stream first.\n\n' +
-        'Go live from the Studio anyway?',
-      );
+      const ok = await confirm({
+        title: 'Already Streaming',
+        message:
+          'This class already appears to be streaming (from OBS or another window). ' +
+          'Going live here as well can break the stream. Stop the other stream first.\n\n' +
+          'Go live from the Studio anyway?',
+        confirmLabel: 'Go Live Anyway',
+      });
       if (!ok) return;
     }
     await studio.startBroadcast();
@@ -152,15 +157,18 @@ export default function StudioBroadcaster() {
     }
   };
 
-  const exit = () => {
-    if (studio.isLive && !window.confirm('You are live. Leave the Studio? This will stop your broadcast.')) return;
+  const exit = async () => {
+    if (studio.isLive) {
+      const ok = await confirm({ title: 'Leave Studio', message: 'You are live. Leave the Studio? This will stop your broadcast.' });
+      if (!ok) return;
+    }
     navigate('/school/teacher/live');
   };
 
   if (loading) {
     return (
       <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
+        <Loader2 className="size-8 animate-spin text-blue-400" />
       </div>
     );
   }
@@ -169,10 +177,10 @@ export default function StudioBroadcaster() {
     return (
       <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950 p-6">
         <div className="max-w-sm rounded-2xl border border-amber-500/30 bg-amber-500/10 p-6 text-center">
-          <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-amber-400" />
+          <AlertTriangle className="mx-auto mb-3 size-8 text-amber-400" />
           <p className="font-bold text-amber-200">{loadError || 'Live class unavailable'}</p>
           <button onClick={() => navigate('/school/teacher/live')} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-bold text-slate-900">
-            <ArrowLeft className="h-4 w-4" /> Back
+            <ArrowLeft className="size-4" /> Back
           </button>
         </div>
       </div>
@@ -184,8 +192,8 @@ export default function StudioBroadcaster() {
       {/* ── Top bar ─────────────────────────────────────────────────────── */}
       <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-white/10 px-3 sm:px-5">
         <div className="flex min-w-0 items-center gap-3">
-          <button onClick={exit} className="grid h-9 w-9 place-items-center rounded-xl text-slate-300 hover:bg-white/10" title="Leave Studio">
-            <ArrowLeft className="h-5 w-5" />
+          <button onClick={exit} className="grid size-9 place-items-center rounded-xl text-slate-300 hover:bg-white/10" title="Leave Studio">
+            <ArrowLeft className="size-5" />
           </button>
           <div className="min-w-0">
             <h1 className="truncate text-sm font-black leading-tight">{title}</h1>
@@ -196,13 +204,13 @@ export default function StudioBroadcaster() {
         <div className="flex items-center gap-2">
           {studio.isLive ? (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500 px-3 py-1.5 text-xs font-black">
-              <Circle className="h-2.5 w-2.5 animate-pulse fill-white text-white" /> REC · {fmt(studio.elapsedSec)}
+              <Circle className="size-2.5 animate-pulse fill-white text-white" /> REC · {fmt(studio.elapsedSec)}
             </span>
           ) : (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-black text-slate-300">NOT LIVE</span>
           )}
           <span className="hidden items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-slate-200 sm:inline-flex">
-            <Users className="h-3.5 w-3.5" /> {stats.viewers}
+            <Users className="size-3.5" /> {stats.viewers}
           </span>
           {/* Quality — locked once live (resolution can't change mid-stream). */}
           <div className="hidden items-center gap-0.5 rounded-full bg-white/10 p-0.5 sm:flex" title={studio.isLive ? 'Quality is locked while live' : 'Broadcast quality'}>
@@ -223,8 +231,8 @@ export default function StudioBroadcaster() {
             onMicChange={(d) => { setMicDeviceId(d); studio.setMicDeviceId(d); }}
             onCamChange={(d) => { setCamDeviceId(d); studio.setCamDeviceId(d); }}
           />
-          <button onClick={() => setPanelOpen((o) => !o)} className="grid h-9 w-9 place-items-center rounded-xl text-slate-300 hover:bg-white/10" title={panelOpen ? 'Hide panel' : 'Show panel'}>
-            {panelOpen ? <PanelRightClose className="h-5 w-5" /> : <PanelRightOpen className="h-5 w-5" />}
+          <button onClick={() => setPanelOpen((o) => !o)} className="grid size-9 place-items-center rounded-xl text-slate-300 hover:bg-white/10" title={panelOpen ? 'Hide panel' : 'Show panel'}>
+            {panelOpen ? <PanelRightClose className="size-5" /> : <PanelRightOpen className="size-5" />}
           </button>
         </div>
       </header>
@@ -234,7 +242,7 @@ export default function StudioBroadcaster() {
       {externalLive && !studio.isLive && (
         <div className="flex shrink-0 flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-amber-500/20 bg-amber-500/15 px-4 py-2 text-center text-xs font-bold text-amber-200">
           <span className="inline-flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <AlertTriangle className="size-4 shrink-0" />
             This class is marked LIVE. If you're streaming from OBS, don't also go live here. If nothing is actually streaming, it's safe to continue.
           </span>
           <button
@@ -319,7 +327,7 @@ export default function StudioBroadcaster() {
                     ? 'bg-red-500/15 text-red-200 ring-1 ring-red-500/30'
                     : 'bg-white/5 text-slate-400 ring-1 ring-white/10',
                 ].join(' ')}>
-                  <Circle className="h-2.5 w-2.5" />
+                  <Circle className="size-2.5" />
                   {canGoLive
                     ? 'You are NOT broadcasting yet — click “Go Live” so students can see this.'
                     : 'Pick a source (share screen, whiteboard, or slides), then click “Go Live”.'}
@@ -349,13 +357,13 @@ export default function StudioBroadcaster() {
                     'inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 text-sm font-black transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40',
                     canGoLive && studio.status === 'idle' ? 'animate-pulse ring-2 ring-red-400/70 ring-offset-2 ring-offset-slate-900' : '',
                   ].join(' ')}>
-                  {studio.status === 'starting' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Radio className="h-4 w-4" />}
+                  {studio.status === 'starting' ? <Loader2 className="size-4 animate-spin" /> : <Radio className="size-4" />}
                   {studio.status === 'starting' ? 'Going live…' : 'Go Live'}
                 </button>
               ) : (
                 <button onClick={handleEnd} disabled={ending}
                   className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-black text-slate-900 transition hover:bg-slate-200 disabled:opacity-60">
-                  {ending ? <Loader2 className="h-4 w-4 animate-spin" /> : <PhoneOff className="h-4 w-4" />}
+                  {ending ? <Loader2 className="size-4 animate-spin" /> : <PhoneOff className="size-4" />}
                   End Class
                 </button>
               )}
@@ -378,12 +386,12 @@ function StageHint({ icon: Icon, title, sub, action, footer }: { icon: React.Com
   return (
     <div className="pointer-events-none absolute inset-0 grid place-items-center px-6 text-center">
       <div className="pointer-events-auto">
-        <Icon className="mx-auto mb-3 h-12 w-12 text-slate-500" />
+        <Icon className="mx-auto mb-3 size-12 text-slate-500" />
         <p className="text-base font-black text-slate-100">{title}</p>
         <p className="mx-auto mt-1 max-w-xs text-sm text-slate-400">{sub}</p>
         {action && (
           <button onClick={action.onClick} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white transition hover:bg-blue-700">
-            <MonitorUp className="h-4 w-4" /> {action.label}
+            <MonitorUp className="size-4" /> {action.label}
           </button>
         )}
         {footer && <div className="mt-3">{footer}</div>}
@@ -405,7 +413,7 @@ function Ctrl({ active, onClick, icon: Icon, label, activeClass, disabled, title
         active ? `${activeClass} text-white` : 'text-slate-300 hover:bg-white/10',
       ].join(' ')}
     >
-      <Icon className="h-5 w-5" />
+      <Icon className="size-5" />
       <span>{label}</span>
     </button>
   );

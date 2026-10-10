@@ -34,6 +34,7 @@ import {
 import { useIsMobile } from '@/hooks/use-mobile';
 import { CourseTabs } from '@/components/student/lecture/CourseTabs';
 import { useSchoolFeature } from '@/hooks/use-school-feature';
+import { useConfirm } from '@/context/ConfirmContext';
 
 function isYouTubeUrl(url = '') {
   return /(?:youtube\.com\/|youtu\.be\/)/i.test(url);
@@ -63,6 +64,7 @@ function getAvatarColor(name = '') {
 
 export default function RecordedClassDetails() {
   const isMobile = useIsMobile();
+  const confirm = useConfirm();
   const navigate = useNavigate();
   const location = useLocation();
   const { recordingId } = useParams();
@@ -356,8 +358,9 @@ export default function RecordedClassDetails() {
     toast.success("Notes downloaded successfully!");
   };
 
-  const clearLiveNotes = () => {
-    if (window.confirm("Are you sure you want to clear your notes?")) {
+  const clearLiveNotes = async () => {
+    const ok = await confirm({ title: 'Clear Notes', message: "Are you sure you want to clear your notes?" });
+    if (ok) {
       setLiveNotes('');
       const key = recording?.lectureId ? `student_notes_${recording.lectureId}` : `student_notes_${recording?.id}`;
       if (key) {
@@ -528,7 +531,7 @@ export default function RecordedClassDetails() {
     if (!recording.video_url) {
       return (
         <div className="flex aspect-video w-full flex-col items-center justify-center rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 px-6 text-center">
-          <PlayCircle className="h-12 w-12 text-slate-400" />
+          <PlayCircle className="size-12 text-slate-400" />
           <h3 className="mt-4 text-xl font-black text-white">Video is not available</h3>
           <p className="mt-2 max-w-md text-sm leading-6 text-slate-300">
             The teacher has not attached a playable recording for this class yet.
@@ -540,7 +543,7 @@ export default function RecordedClassDetails() {
     if (playback.loading && !playback.src) {
       return (
         <div className="flex aspect-video w-full flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-950 text-center text-white">
-          <Loader2 className="h-10 w-10 animate-spin" />
+          <Loader2 className="size-10 animate-spin" />
           <p className="mt-3 text-sm font-bold">Preparing video...</p>
         </div>
       );
@@ -549,7 +552,7 @@ export default function RecordedClassDetails() {
     if (playback.error) {
       return (
         <div className="flex aspect-video w-full flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-950 px-6 text-center text-white">
-          <PlayCircle className="h-10 w-10 text-white/60" />
+          <PlayCircle className="size-10 text-white/60" />
           <h3 className="mt-4 text-lg font-bold">Video could not start</h3>
           <p className="mt-2 max-w-md text-sm text-white/70">{playback.error}</p>
           {playback.src && (
@@ -579,7 +582,7 @@ export default function RecordedClassDetails() {
         />
         {playback.loading && (
           <div className="pointer-events-none absolute right-4 top-4 inline-flex items-center gap-2 rounded-full bg-slate-950/80 px-3 py-1.5 text-xs font-bold text-white z-10">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <Loader2 className="size-3.5 animate-spin" />
             Preparing secure link
           </div>
         )}
@@ -590,10 +593,10 @@ export default function RecordedClassDetails() {
   const renderStudyPanel = () => {
     if (detailTab === 'my_notes') {
       return (
-        <div className="flex flex-col min-h-[300px] space-y-3">
+        <div className="flex flex-col min-h-[300px] gap-y-3">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-[13px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-              <FileText className="h-3.5 w-3.5 text-blue-600" />
+              <FileText className="size-3.5 text-blue-600" />
               Digital Notepad
             </h4>
             <span className="text-[11px] font-semibold text-slate-400">Saved locally</span>
@@ -611,14 +614,14 @@ export default function RecordedClassDetails() {
               onClick={downloadLiveNotes}
               className="flex-1 py-2 px-3 rounded-lg bg-blue-50 hover:bg-blue-100/80 text-blue-700 text-[13px] font-black transition flex items-center justify-center gap-1.5"
             >
-              <Download className="h-3.5 w-3.5" />
+              <Download className="size-3.5" />
               Download
             </button>
             <button
               onClick={clearLiveNotes}
               className="py-2 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-[13px] font-black transition flex items-center justify-center gap-1.5"
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 className="size-3.5" />
               Clear
             </button>
           </div>
@@ -630,7 +633,7 @@ export default function RecordedClassDetails() {
       if (loadingQuestions) {
         return (
           <div className="flex min-h-[260px] flex-col items-center justify-center text-center">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <Loader2 className="size-8 animate-spin text-blue-600" />
             <p className="mt-2 text-sm font-bold text-slate-500">Loading questions...</p>
           </div>
         );
@@ -639,7 +642,7 @@ export default function RecordedClassDetails() {
       if (!recording.lectureId) {
         return (
           <div className="flex min-h-[260px] flex-col items-center justify-center text-center px-4">
-            <HelpCircle className="h-10 w-10 text-slate-300 mb-2 animate-pulse" />
+            <HelpCircle className="size-10 text-slate-300 mb-2 animate-pulse" />
             <h3 className="text-sm font-bold text-slate-800">Q&A Not Available</h3>
             <p className="mt-1 text-xs text-slate-500 leading-relaxed max-w-xs">
               This class was uploaded as a pre-recorded lecture, so no live Q&A session is available.
@@ -649,7 +652,7 @@ export default function RecordedClassDetails() {
       }
 
       return (
-        <div className="flex flex-col min-h-[300px] bg-slate-50/50 p-2 rounded-2xl border border-slate-100 space-y-3">
+        <div className="flex flex-col min-h-[300px] bg-slate-50/50 p-2 rounded-2xl border border-slate-100 gap-y-3">
           <div className="flex items-center justify-between px-2 py-1">
             <h4 className="text-[13px] font-black uppercase tracking-wider text-slate-400">Class Q&A</h4>
             <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-black text-blue-700">
@@ -660,7 +663,7 @@ export default function RecordedClassDetails() {
           <div className="space-y-3 overflow-y-auto max-h-[450px] pr-1">
             {liveQuestions.length === 0 ? (
               <div className="py-12 text-center text-slate-405 bg-white border border-slate-200/50 rounded-xl p-4">
-                <HelpCircle className="h-8 w-8 mx-auto mb-2 text-slate-350" />
+                <HelpCircle className="size-8 mx-auto mb-2 text-slate-350" />
                 <p className="text-[13px] font-bold text-slate-500">No questions asked</p>
                 <p className="text-[12px] text-slate-400 mt-0.5">No student questions were asked during this class.</p>
               </div>
@@ -670,7 +673,7 @@ export default function RecordedClassDetails() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <div
-                        className="h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-white font-bold text-[12px] uppercase shadow-xs"
+                        className="size-7 shrink-0 rounded-full flex items-center justify-center text-white font-bold text-[12px] uppercase shadow-xs"
                         style={{ backgroundColor: getAvatarColor(q.userName) }}
                       >
                         {q.userName ? q.userName.charAt(0) : 'U'}
@@ -713,7 +716,7 @@ export default function RecordedClassDetails() {
               <div className="flex items-center gap-2 text-xs text-slate-500">
                 {imageCount > 0 ? (
                   <>
-                    <span className="flex h-5 w-5 items-center justify-center rounded-md bg-blue-100 text-blue-600">
+                    <span className="flex size-5 items-center justify-center rounded-md bg-blue-100 text-blue-600">
                       <ImagePlus size={11} />
                     </span>
                     <span className="font-semibold text-slate-700">{imageCount} visual{imageCount !== 1 ? 's' : ''} embedded</span>
@@ -721,7 +724,7 @@ export default function RecordedClassDetails() {
                   </>
                 ) : (
                   <>
-                    <span className="flex h-5 w-5 items-center justify-center rounded-md bg-slate-200 text-slate-400">
+                    <span className="flex size-5 items-center justify-center rounded-md bg-slate-200 text-slate-400">
                       <ImagePlus size={11} />
                     </span>
                     <span>No visuals yet</span>
@@ -770,7 +773,7 @@ export default function RecordedClassDetails() {
       if (['pending', 'processing'].includes(recording.notes_status)) {
         return (
           <div className="flex min-h-[260px] flex-col items-center justify-center text-center">
-            <Loader2 className="h-10 w-10 animate-spin text-emerald-600" />
+            <Loader2 className="size-10 animate-spin text-emerald-600" />
             <h3 className="mt-4 text-lg font-bold text-slate-900">AI notes are being prepared</h3>
             <p className="mt-1 max-w-md text-sm text-slate-500">
               The system is still generating structured notes for this lecture.
@@ -781,7 +784,7 @@ export default function RecordedClassDetails() {
 
       return (
         <div className="flex min-h-[260px] flex-col items-center justify-center text-center">
-          <Sparkles className="h-10 w-10 text-slate-300" />
+          <Sparkles className="size-10 text-slate-300" />
           <h3 className="mt-4 text-lg font-bold text-slate-900">Notes not ready yet</h3>
           <p className="mt-1 max-w-md text-sm text-slate-500">
             This lecture does not have published AI notes yet.
@@ -808,7 +811,7 @@ export default function RecordedClassDetails() {
       if (['pending', 'processing'].includes(recording.transcript_status)) {
         return (
           <div className="flex min-h-[260px] flex-col items-center justify-center text-center">
-            <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+            <Loader2 className="size-10 animate-spin text-blue-600" />
             <h3 className="mt-4 text-lg font-bold text-slate-900">Transcript is being generated</h3>
             <p className="mt-1 max-w-md text-sm text-slate-500">
               Speech-to-text is still running. Please check back shortly.
@@ -819,7 +822,7 @@ export default function RecordedClassDetails() {
 
       return (
         <div className="flex min-h-[260px] flex-col items-center justify-center text-center">
-          <FileText className="h-10 w-10 text-slate-300" />
+          <FileText className="size-10 text-slate-300" />
           <h3 className="mt-4 text-lg font-bold text-slate-900">Transcript not available</h3>
           <p className="mt-1 max-w-md text-sm text-slate-500">
             This lecture does not have a transcript yet.
@@ -837,7 +840,7 @@ export default function RecordedClassDetails() {
           {/* Header Action Bar for Quiz Tab */}
           <div className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-indigo-600" />
+              <Sparkles className="size-4 text-indigo-600" />
               <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200">
                 {checkpoints.length} Interactive Checkpoint{checkpoints.length !== 1 ? 's' : ''}
               </span>
@@ -857,8 +860,8 @@ export default function RecordedClassDetails() {
 
           {savedResponses.length > 0 && (
             <div className="flex items-center gap-4 p-4 bg-slate-900 rounded-2xl text-white">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
-                <Trophy className="w-5 h-5 text-amber-400" />
+              <div className="size-10 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
+                <Trophy className="size-5 text-amber-400" />
               </div>
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Accuracy</p>
@@ -872,8 +875,8 @@ export default function RecordedClassDetails() {
             </div>
           )}
           {checkpoints.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center space-y-3">
-              <Sparkles className="h-10 w-10 text-slate-300 dark:text-slate-700 animate-pulse" />
+            <div className="flex flex-col items-center justify-center py-12 text-center gap-y-3">
+              <Sparkles className="size-10 text-slate-300 dark:text-slate-700 animate-pulse" />
               <div>
                 <p className="text-sm font-extrabold text-slate-700 dark:text-slate-300">No quiz checkpoints yet</p>
                 <p className="text-xs text-slate-400 mt-1">Generate AI video checkpoints for student self-assessment.</p>
@@ -902,7 +905,7 @@ export default function RecordedClassDetails() {
                     className="p-4 rounded-2xl border bg-white border-slate-100 transition-all"
                   >
                     <div className="flex items-start gap-3">
-                      <span className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0 bg-slate-100 text-slate-400">
+                      <span className="size-7 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0 bg-slate-100 text-slate-400">
                         {i + 1}
                       </span>
                       <div className="flex-1 min-w-0">
@@ -915,7 +918,7 @@ export default function RecordedClassDetails() {
                           <MarkdownRenderer content={cp.questionText} className="prose-p:my-0 text-slate-800 font-bold" />
                         </div>
                         <span className="mt-2.5 flex items-center gap-1.5 text-[10px] font-semibold text-slate-350">
-                          <Lock className="w-3.5 h-3.5 text-slate-300" /> Not answered yet
+                          <Lock className="size-3.5 text-slate-300" /> Not answered yet
                         </span>
                       </div>
                     </div>
@@ -940,7 +943,7 @@ export default function RecordedClassDetails() {
                 >
                   <div className="flex items-start gap-3">
                     <span
-                      className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0 ${
+                      className={`size-7 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0 ${
                         response.isCorrect
                           ? "bg-emerald-500 text-white"
                           : "bg-rose-500 text-white"
@@ -980,7 +983,7 @@ export default function RecordedClassDetails() {
                                   }`}
                                 >
                                   <span
-                                    className={`w-5 h-5 rounded-md flex items-center justify-center text-[9px] font-black shrink-0 ${
+                                    className={`size-5 rounded-md flex items-center justify-center text-[9px] font-black shrink-0 ${
                                       isCorrectOption
                                         ? "bg-emerald-500 text-white"
                                         : isSelected
@@ -1001,14 +1004,14 @@ export default function RecordedClassDetails() {
                           {cp.explanation && (
                             <div className="p-3 bg-white/60 rounded-xl border border-slate-200/60 text-xs text-slate-550 leading-relaxed">
                               <p className="font-bold text-slate-700 mb-1 flex items-center gap-1">
-                                <Sparkles className="w-3.5 h-3.5 text-indigo-500" /> Explanation
+                                <Sparkles className="size-3.5 text-indigo-500" /> Explanation
                               </p>
                               <MarkdownRenderer content={cp.explanation} className="prose-p:my-0 text-slate-500" />
                             </div>
                           )}
 
                           <div className="flex items-center gap-2 text-xs font-semibold">
-                            <div className={`w-1.5 h-1.5 rounded-full ${response.isCorrect ? "bg-emerald-500" : "bg-rose-500"}`} />
+                            <div className={`size-1.5 rounded-full ${response.isCorrect ? "bg-emerald-500" : "bg-rose-500"}`} />
                             <span className={response.isCorrect ? "text-emerald-700" : "text-rose-600"}>
                               You answered Option {response.selectedOption}
                             </span>
@@ -1044,7 +1047,7 @@ export default function RecordedClassDetails() {
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <div className="size-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
       </div>
     );
   }
@@ -1061,7 +1064,7 @@ export default function RecordedClassDetails() {
         </Link>
 
         <div className="rounded-[2rem] border border-dashed border-slate-200 bg-white p-12 text-center shadow-sm">
-          <FileText className="mx-auto h-12 w-12 text-slate-300" />
+          <FileText className="mx-auto size-12 text-slate-300" />
           <h2 className="mt-4 text-xl font-bold text-slate-900">Lecture not found</h2>
           <p className="mt-1 text-sm text-slate-500">
             This recorded lecture is not available right now or may have been removed.
@@ -1077,7 +1080,7 @@ export default function RecordedClassDetails() {
         <div className="flex w-full items-center gap-3">
           <Link
             to={isTeacher ? "/school/teacher/classes" : "/school/student/recorded-classes"}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-blue-600 hover:text-white"
+            className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-blue-600 hover:text-white"
             aria-label="Back to recorded classes"
           >
             <ArrowLeft size={17} />
@@ -1102,7 +1105,7 @@ export default function RecordedClassDetails() {
 
       <div className="w-full px-4 py-5 sm:px-6 lg:px-8 lg:min-h-0 lg:flex-1">
         {isMobile ? (
-          <div className="flex flex-col space-y-4">
+          <div className="flex flex-col gap-y-4">
             {/* Video Player Container */}
             <div className="overflow-hidden rounded-2xl bg-black shadow-sm">
               {renderVideoPlayer()}

@@ -3931,8 +3931,18 @@ window.SlidePreview = {
       thumb.dataset.index = idx;
       thumb.title = `Slide ${idx + 1}: ${slide.title || ''}`;
 
-      // Mini preview styling
-      thumb.style.background = `linear-gradient(135deg, #${theme.bgGradient[0]}, #${theme.bgGradient[1]})`;
+      // Mini preview styling. A painted slide shows its picture, which
+      // already carries the title; anything else a tile in the theme colours.
+      const painted = slide.slideImage && (slide.slideImage.base64 || slide.slideImage.url);
+      if (painted) {
+        Object.assign(thumb.style, {
+          backgroundColor: '#fff',
+          backgroundImage: `url("${String(painted).replace(/"/g, '%22')}")`,
+          backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat',
+        });
+      } else {
+        thumb.style.background = `linear-gradient(135deg, #${theme.bgGradient[0]}, #${theme.bgGradient[1]})`;
+      }
 
       // Slide number badge
       const badge = this._el('span', {
@@ -3967,7 +3977,7 @@ window.SlidePreview = {
           textOverflow: 'ellipsis'
         }
       });
-      thumb.appendChild(miniTitle);
+      if (!painted) thumb.appendChild(miniTitle);
 
       // Click handler
       thumb.addEventListener('click', () => this.goToSlide(idx));

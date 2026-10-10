@@ -79,13 +79,13 @@ export default function QuizRushResult({ result, onPlayAgain, onViewLeaderboard 
           to="/school/student/gamification"
           className="qr-display inline-flex items-center gap-2 text-sm sm:text-base font-black uppercase tracking-[0.15em] text-slate-300 transition hover:text-cyan-300"
         >
-          <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" /> Gamification Center
+          <ArrowLeft className="size-4 sm:size-5" /> Gamification Center
         </Link>
 
         {/* ── Verdict ─────────────────────────────────────────────────── */}
         <div className="qr-rise py-4 text-center">
           <div
-            className={`qr-pop mx-auto flex h-20 w-20 items-center justify-center border ${
+            className={`qr-pop mx-auto flex size-20 items-center justify-center border ${
               strong
                 ? 'border-amber-400/40 bg-amber-400/10 text-amber-300'
                 : decent
@@ -94,7 +94,7 @@ export default function QuizRushResult({ result, onPlayAgain, onViewLeaderboard 
             }`}
             style={{ clipPath: 'polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)' }}
           >
-            <Trophy className="h-9 w-9" />
+            <Trophy className="size-9" />
           </div>
           <h1 className={`qr-display mt-4 text-4xl sm:text-5xl font-bold uppercase tracking-[0.06em] ${verdictTone} ${verdictGlow}`}>
             {verdict}
@@ -129,7 +129,7 @@ export default function QuizRushResult({ result, onPlayAgain, onViewLeaderboard 
         <div className="grid grid-cols-2 gap-4 sm:gap-6">
           <ArenaPanel className="p-6">
             <div className="flex items-center gap-2">
-              <Star className="h-4 w-4 fill-current text-amber-300" />
+              <Star className="size-4 fill-current text-amber-300" />
               <ArenaLabel tone="amber">XP Earned</ArenaLabel>
             </div>
             <p className="qr-display mt-2 text-4xl font-bold tabular-nums text-amber-300 qr-neon--amber">
@@ -139,7 +139,7 @@ export default function QuizRushResult({ result, onPlayAgain, onViewLeaderboard 
 
           <ArenaPanel tone="magenta" className="p-6">
             <div className="flex items-center gap-2">
-              <Coins className="h-4 w-4 fill-current text-fuchsia-300" />
+              <Coins className="size-4 fill-current text-fuchsia-300" />
               <ArenaLabel tone="magenta">Coins</ArenaLabel>
             </div>
             <p className="qr-display mt-2 text-4xl font-bold tabular-nums text-fuchsia-300 qr-neon--magenta">
@@ -157,7 +157,7 @@ export default function QuizRushResult({ result, onPlayAgain, onViewLeaderboard 
           ].map((s) => (
             <div key={s.label} className="flex items-center justify-between px-6 py-4">
               <span className="flex items-center gap-3">
-                <s.icon className={`h-4.5 w-4.5 ${s.tone}`} />
+                <s.icon className={`size-4.5 ${s.tone}`} />
                 <ArenaLabel tone="muted">{s.label}</ArenaLabel>
               </span>
               <span className="qr-display text-base font-bold tabular-nums text-white">{s.value}</span>
@@ -181,8 +181,8 @@ export default function QuizRushResult({ result, onPlayAgain, onViewLeaderboard 
         {/* ── Badge ───────────────────────────────────────────────────── */}
         {badgeUnlocked && (
           <ArenaPanel className="qr-pop border-lime-400/40 p-6 text-center">
-            <div className="qr-float mx-auto flex h-16 w-16 items-center justify-center border border-lime-400/40 bg-lime-400/10 text-lime-300">
-              <Award className="h-8 w-8" />
+            <div className="qr-float mx-auto flex size-16 items-center justify-center border border-lime-400/40 bg-lime-400/10 text-lime-300">
+              <Award className="size-8" />
             </div>
             <ArenaLabel tone="muted" className="mt-3 block">Badge Unlocked</ArenaLabel>
             <h2 className="qr-display mt-1 text-xl font-bold uppercase tracking-wider text-lime-300">
@@ -213,10 +213,10 @@ export default function QuizRushResult({ result, onPlayAgain, onViewLeaderboard 
         {/* ── Actions ─────────────────────────────────────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
           <ArenaButton type="button" onClick={onPlayAgain} tone="cyan" className="w-full py-4 text-base">
-            <RefreshCw className="h-5 w-5" /> Run It Back
+            <RefreshCw className="size-5" /> Run It Back
           </ArenaButton>
           <ArenaButton type="button" onClick={onViewLeaderboard} tone="ghost" className="w-full py-4 text-base">
-            <Trophy className="h-5 w-5 text-amber-300" /> Hall of Fame
+            <Trophy className="size-5 text-amber-300" /> Hall of Fame
           </ArenaButton>
         </div>
       </div>

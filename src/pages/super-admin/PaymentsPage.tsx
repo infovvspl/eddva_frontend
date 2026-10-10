@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { apiClient, extractData } from "@/lib/api/client";
 import { toast } from "sonner";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -272,56 +273,56 @@ const PaymentsPage = () => {
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border bg-muted/30">
+                <Table className="w-full text-sm">
+                  <TableHeader>
+                    <TableRow className="border-b border-border bg-muted/30 hover:bg-muted/30">
                       {["Date", "Student", "Course", "Institute", "Amount", "Commission", "Net", "Status", "Payment ID"].map(h => (
-                        <th key={h} className="text-left px-4 py-3 text-[11px] font-black text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                        <TableHead key={h} className="h-auto text-left px-4 py-3 text-[11px] font-black text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                           {h}
-                        </th>
+                        </TableHead>
                       ))}
-                    </tr>
-                  </thead>
-                  <tbody>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {data.data.map(tx => {
                       const sm = STATUS_META[tx.status] ?? STATUS_META.success;
                       return (
-                        <tr key={tx.id} className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors">
-                          <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                        <TableRow key={tx.id} className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors">
+                          <TableCell className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
                             {fmtDate(tx.createdAt)}
-                          </td>
-                          <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">
+                          </TableCell>
+                          <TableCell className="px-4 py-3 font-medium text-foreground whitespace-nowrap">
                             {tx.studentName ?? "—"}
-                          </td>
-                          <td className="px-4 py-3 text-foreground max-w-[180px] truncate">
+                          </TableCell>
+                          <TableCell className="px-4 py-3 text-foreground max-w-[180px] truncate">
                             {tx.batchName ?? "—"}
-                          </td>
-                          <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                          </TableCell>
+                          <TableCell className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                             {tx.instituteName ?? "—"}
-                          </td>
-                          <td className="px-4 py-3 font-black text-foreground whitespace-nowrap">
+                          </TableCell>
+                          <TableCell className="px-4 py-3 font-black text-foreground whitespace-nowrap">
                             {fmtINR(tx.amount)}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap">
+                          </TableCell>
+                          <TableCell className="px-4 py-3 whitespace-nowrap">
                             <span className="text-amber-600 font-bold">{fmtINR(tx.commissionAmount)}</span>
                             <span className="text-[10px] text-muted-foreground ml-1">({tx.commissionPercent}%)</span>
-                          </td>
-                          <td className="px-4 py-3 font-bold text-emerald-600 whitespace-nowrap">
+                          </TableCell>
+                          <TableCell className="px-4 py-3 font-bold text-emerald-600 whitespace-nowrap">
                             {fmtINR(tx.netAmount)}
-                          </td>
-                          <td className="px-4 py-3">
+                          </TableCell>
+                          <TableCell className="px-4 py-3">
                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold ${sm.cls}`}>
                               {sm.icon} {sm.label}
                             </span>
-                          </td>
-                          <td className="px-4 py-3 text-[11px] text-muted-foreground font-mono">
+                          </TableCell>
+                          <TableCell className="px-4 py-3 text-[11px] text-muted-foreground font-mono">
                             {tx.razorpayPaymentId ?? "—"}
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       );
                     })}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
 
               {/* Pagination */}

@@ -12,6 +12,7 @@ import { useTenant, useTenantStats, useSuspendTenant, useActivateTenant, useUpda
 import { toast } from "sonner";
 import { useConfirm } from "@/context/ConfirmContext";
 import InstituteErpModulesTab from "./components/InstituteErpModulesTab";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
 const AI_FEATURE_OPTIONS = [
   { key: "ai_study_assistant", label: "AI Study Assistant", desc: "AI tutor & interactive study sessions" },
@@ -367,44 +368,44 @@ const InstituteDetailPage = () => {
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="border-b border-slate-100">
-                          <th className="py-4 px-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Course Name</th>
-                          <th className="py-4 px-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center">Enrollments</th>
-                          <th className="py-4 px-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center">Live Classes</th>
-                          <th className="py-4 px-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-right">Revenue</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+                    <Table className="w-full text-left border-collapse">
+                      <TableHeader>
+                        <TableRow className="border-b border-slate-100 hover:bg-transparent">
+                          <TableHead className="h-auto py-4 px-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Course Name</TableHead>
+                          <TableHead className="h-auto py-4 px-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center">Enrollments</TableHead>
+                          <TableHead className="h-auto py-4 px-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center">Live Classes</TableHead>
+                          <TableHead className="h-auto py-4 px-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-right">Revenue</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
                         {detail.courseAnalytics.map((course: any) => (
-                          <tr
+                          <TableRow
                             key={course.batch_id}
                             onClick={() => navigate(`/super-admin/tenants/${id}/courses/${course.batch_id}`)}
                             className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors cursor-pointer group"
                           >
-                            <td className="py-4 px-4 relative">
+                            <TableCell className="py-4 px-4 relative">
                               <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                               <p className="text-sm font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">{course.course_name}</p>
                               <p className="text-[10px] text-slate-400 font-medium">ID: {course.batch_id.split('-')[0]}</p>
-                            </td>
-                            <td className="py-4 px-4 text-center">
+                            </TableCell>
+                            <TableCell className="py-4 px-4 text-center">
                               <span className="inline-flex items-center justify-center min-w-[3rem] px-2 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-bold">
                                 {course.enrollments.toLocaleString()}
                               </span>
-                            </td>
-                            <td className="py-4 px-4 text-center">
+                            </TableCell>
+                            <TableCell className="py-4 px-4 text-center">
                               <span className="inline-flex items-center justify-center min-w-[3rem] px-2 py-1 rounded-lg bg-rose-50 text-rose-700 text-xs font-bold">
                                 {course.live_classes.toLocaleString()}
                               </span>
-                            </td>
-                            <td className="py-4 px-4 text-right">
+                            </TableCell>
+                            <TableCell className="py-4 px-4 text-right">
                               <p className="text-sm font-bold text-emerald-600">₹{Number(course.revenue).toLocaleString()}</p>
-                            </td>
-                          </tr>
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
+                      </TableBody>
+                    </Table>
                   </div>
                 )}
               </div>

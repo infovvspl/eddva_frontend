@@ -93,8 +93,8 @@ export default function Reports() {
             onClick={() => setSelectedReport(report.title)}
             className="rounded-lg border border-surface-200 bg-white p-6 shadow-sm hover:border-brand-300 hover:shadow-sm ring-1 ring-slate-100 transition-all cursor-pointer hover:scale-105 h-full flex flex-col justify-between"
           >
-            <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-lg ${report.accent}`}>
-              <report.icon className="h-6 w-6" />
+            <div className={`mb-4 flex size-12 items-center justify-center rounded-lg ${report.accent}`}>
+              <report.icon className="size-6" />
             </div>
             <h3 className="font-bold text-surface-950">{report.title}</h3>
             <p className="mt-1 text-sm text-surface-500">{report.description}</p>
@@ -124,7 +124,7 @@ export default function Reports() {
               onClick={() => alert('Report will be downloaded as PDF')}
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 font-bold text-white shadow-sm hover:bg-brand-700"
             >
-              <Download className="h-4 w-4" />
+              <Download className="size-4" />
               Download PDF
             </button>
           </div>

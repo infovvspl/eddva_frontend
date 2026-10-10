@@ -4,15 +4,20 @@
 import { Sparkles } from "lucide-react";
 import aboutHome from "../assets/abouthome.png";
 import { aboutCards as cards } from "../data/about";
+import useInView from "../hooks/useInView";
 
 
 const AboutSection = () => {
+  const [leftRef, leftIn] = useInView({ threshold: 0.2 });
+  const [rightRef, rightIn] = useInView({ threshold: 0.2 });
+  const [cardsRef, cardsIn] = useInView({ threshold: 0.15 });
+
   return (
     <section className="nw-about" id="nw-about">
       <div className="nw-about__container">
 
         {/* LEFT — Text content */}
-        <div className="nw-about__left">
+        <div className={`nw-about__left${leftIn ? " nw-in" : ""}`} ref={leftRef}>
           <span className="nw-about__label" id="nw-about-label">
             <span className="nw-about__label-icon" aria-hidden="true">
               <Sparkles size={13} strokeWidth={2.2} />
@@ -40,7 +45,7 @@ const AboutSection = () => {
         </div>
 
         {/* RIGHT — Classroom render */}
-        <div className="nw-about__right">
+        <div className={`nw-about__right${rightIn ? " nw-in" : ""}`} ref={rightRef}>
           <figure className="nw-about__media">
             <img
               src={aboutHome}
@@ -51,13 +56,13 @@ const AboutSection = () => {
         </div>
 
         {/* FULL WIDTH — Feature cards span the whole container */}
-        <div className="nw-about__cards" id="nw-about-cards">
-          {cards.map(({ id, title, desc, Icon, color, bg }) => (
+        <div className={`nw-about__cards${cardsIn ? " nw-in" : ""}`} id="nw-about-cards" ref={cardsRef}>
+          {cards.map(({ id, title, desc, Icon, color, bg }, i) => (
             <div
               className="nw-about__card"
               key={id}
               id={id}
-              style={{ "--nw-about-accent": color }}
+              style={{ "--nw-about-accent": color, "--i": i }}
             >
               <div
                 className="nw-about__card-icon"

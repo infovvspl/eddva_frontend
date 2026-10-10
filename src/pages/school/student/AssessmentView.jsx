@@ -49,7 +49,7 @@ export default function AssessmentView() {
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="size-8 animate-spin text-blue-600" />
       </div>
     );
   }
@@ -57,7 +57,7 @@ export default function AssessmentView() {
   if (!assessment) {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center text-center">
-        <AlertTriangle className="mb-4 h-12 w-12 text-slate-300" />
+        <AlertTriangle className="mb-4 size-12 text-slate-300" />
         <h2 className="text-xl font-bold text-slate-900 dark:text-white">Assessment not found</h2>
         <Link to="/school/student/assessments" className="mt-4 text-sm font-bold text-blue-600 hover:underline">
           Back to Assessments
@@ -167,7 +167,7 @@ export default function AssessmentView() {
 
       <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="mb-5 flex items-center gap-2 border-b border-slate-100 pb-4 dark:border-slate-800">
-          <FileText className="h-5 w-5 text-blue-600" />
+          <FileText className="size-5 text-blue-600" />
           <h2 className="text-lg font-black text-slate-950 dark:text-white">Question Paper</h2>
         </div>
 

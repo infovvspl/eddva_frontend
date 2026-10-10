@@ -267,7 +267,7 @@ function GeometryForm({ spec, onChange, capabilities }: FormProps) {
                       <input
                         type="checkbox" checked={!!s.rightAngle} aria-label={`Shape ${i + 1} right angle`}
                         onChange={(e) => setShapes(shapes.map((t, j) => (j === i ? { ...t, rightAngle: e.target.checked } : t)))}
-                        className="h-4 w-4"
+                        className="size-4"
                       />
                     </Field>
                   ) : null}
@@ -343,7 +343,7 @@ function BarChartForm({ spec, onChange, capabilities }: FormProps) {
       <label className="flex items-center gap-2 text-sm text-gray-700">
         <input
           type="checkbox" checked={!!spec.showValues} aria-label="Show values above bars"
-          onChange={(e) => onChange({ ...spec, showValues: e.target.checked })} className="h-4 w-4"
+          onChange={(e) => onChange({ ...spec, showValues: e.target.checked })} className="size-4"
         />
         Print each value above its bar
       </label>
@@ -377,7 +377,7 @@ function RayDiagramForm({ spec, onChange, capabilities }: FormProps) {
       <label className="flex items-center gap-2 text-sm text-gray-700">
         <input
           type="checkbox" checked={spec.showPrincipalRays !== false} aria-label="Draw principal rays"
-          onChange={(e) => onChange({ ...spec, showPrincipalRays: e.target.checked })} className="h-4 w-4"
+          onChange={(e) => onChange({ ...spec, showPrincipalRays: e.target.checked })} className="size-4"
         />
         Draw the principal rays
       </label>
@@ -441,7 +441,7 @@ function ForceDiagramForm({ spec, onChange, capabilities }: FormProps) {
       <label className="flex items-center gap-2 text-sm text-gray-700">
         <input
           type="checkbox" checked={!!spec.showResultant} aria-label="Show resultant force"
-          onChange={(e) => onChange({ ...spec, showResultant: e.target.checked })} className="h-4 w-4"
+          onChange={(e) => onChange({ ...spec, showResultant: e.target.checked })} className="size-4"
         />
         Show the resultant
       </label>
@@ -498,7 +498,7 @@ function TemplateForm({ spec, onChange, capabilities }: FormProps) {
                         ? [...hidden, slot.id]
                         : hidden.filter((h) => h !== slot.id),
                     })}
-                    className="h-3.5 w-3.5"
+                    className="size-3.5"
                   />
                   hide
                 </label>

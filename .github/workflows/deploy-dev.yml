@@ -33,6 +33,8 @@ jobs:
           VITE_APP_ENV: development
           VITE_AGORA_APP_ID: ${{ secrets.VITE_AGORA_APP_ID }}
           VITE_SARVAM_API_KEY: ${{ secrets.VITE_SARVAM_API_KEY }}
+          VITE_ERP_FRONTEND_URL: https://dev-erp.eddva.in
+
 
       - name: Get runner IP and open EC2 security group
         env:
