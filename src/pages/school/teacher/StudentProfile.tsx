@@ -78,61 +78,12 @@ const StudentProfile: React.FC = () => {
 
   if (perfLoading) {
     return <div className="p-8 text-center text-slate-500 font-bold animate-pulse">Loading performance...</div>;
-  useEffect(() => {
-    const sectionId = student?.studentProfile?.sectionId || student?.section_id;
-    if (activeTab !== 'academic' || !sectionId) {
-      setTeachingMap(null);
-      return;
-    }
-    api.get(`/academic/sections/${sectionId}/teaching-map`)
-      .then((res) => setTeachingMap(res.data?.data ?? res.data))
-      .catch(() => setTeachingMap(null));
-  }, [activeTab, student]);
-
-  useEffect(() => {
-    if (activeTab !== 'attendance' || !student?.id) return;
-    const fetchAttendance = async () => {
-      setAttendanceLoading(true);
-      try {
-        const [year, month] = attendanceMonth.split('-');
-        const startDate = `${year}-${month}-01`;
-        const lastDay = new Date(Number(year), Number(month), 0).getDate();
-        const endDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
-        const res = await api.get('/attendance', { params: { userId: student.id, startDate, endDate } });
-        const list = res.data?.data ?? res.data ?? [];
-        setAttendance(Array.isArray(list) ? list : []);
-      } catch {
-        setAttendance([]);
-      } finally {
-        setAttendanceLoading(false);
-      }
-    };
-    fetchAttendance();
-  }, [activeTab, attendanceMonth, student?.id]);
-
-  const handleExportPDF = async () => {
-    setExporting(true);
-    try {
-      await exportToPDF('teacher-student-profile-content', `${student?.name || 'student'}-profile.pdf`);
-    } finally {
-      setExporting(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="w-full space-y-4 px-4 sm:px-0">
-        <Skeleton className="h-9 w-40" />
-        <Skeleton className="h-44 w-full rounded-3xl" />
-        <Skeleton className="h-72 w-full rounded-3xl" />
-      </div>
-    );
   }
 
   if (perfError || !perf) {
     return (
       <div className="p-4 text-center sm:p-12">
-        <Card className="mx-auto max-w-md rounded-3xl border-red-100 bg-red-50 p-8 shadow-xl shadow-red-200/20">
+        <div className="mx-auto max-w-md rounded-3xl border border-red-100 bg-red-50 p-8 shadow-xl shadow-red-200/20">
           <AlertCircle size={48} className="mx-auto mb-4 text-red-500" />
           <h2 className="text-xl font-bold tracking-tight text-red-900 mb-2">Student Not Available</h2>
           <p className="text-sm font-bold text-red-600 mb-6">{perfError || "We couldn't load this student's performance."}</p>
@@ -140,12 +91,9 @@ const StudentProfile: React.FC = () => {
             onClick={() => navigate(-1)}
             className="px-6 py-2 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 transition-all"
           >
-          <h2 className="mb-2 text-xl font-bold tracking-tight text-red-900">Student Not Found</h2>
-          <p className="mb-6 text-sm font-bold text-red-600">{error || "We couldn't find this student profile."}</p>
-          <Button onClick={() => navigate(-1)} className="rounded-xl bg-red-600 px-6 text-sm font-bold text-white hover:bg-red-700">
             Go Back
-          </Button>
-        </Card>
+          </button>
+        </div>
       </div>
     );
   }
@@ -191,7 +139,7 @@ const StudentProfile: React.FC = () => {
                 )}
               </div>
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-xs font-semibold text-blue-100">
-                <Badge variant="outline" className="bg-white/15 px-2.5 py-1 rounded-xl backdrop-blur-sm border-white/10 text-blue-100">
+                <span className="border bg-white/15 px-2.5 py-1 rounded-xl backdrop-blur-sm border-white/10 text-blue-100">
                   {className ? `${className.toLowerCase().startsWith('class') ? className : `Class ${className}`} / ${sectionName || '—'}` : '—'}
                 </span>
                 {student.rollNo && (
@@ -230,70 +178,6 @@ const StudentProfile: React.FC = () => {
                       {perf.insight.replace(/^Your overall score/, `${student.name}'s overall score`).replace(/\byour\b/gi, 'their')}
                     </div>
                   )}
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest mb-4">Contact Information</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <DetailItem label="Primary Email" value={student.email} icon={Mail} />
-                    <DetailItem label="Phone Number" value={student.phone} icon={Smartphone} />
-                    <DetailItem label="Address" value={[address, city, state, pinCode].filter(Boolean).join(', ')} icon={MapPin} className="sm:col-span-2" />
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-6">
-                <Card className="rounded-3xl border-0 bg-blue-600 p-6 text-white shadow-xl shadow-blue-600/20">
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-xs font-bold uppercase tracking-widest opacity-80">Medical Alert</h4>
-                    <AlertCircle size={20} />
-                  </div>
-                  <p className="text-sm font-bold leading-relaxed mb-4">
-                    {medicalConditions || 'No significant medical conditions reported.'}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="outline" className="rounded-lg border-transparent bg-white/20 px-2 py-1 text-[10px] font-bold uppercase text-white">Blood: {bloodGroup || '—'}</Badge>
-                    <Badge variant="outline" className="rounded-lg border-transparent bg-white/20 px-2 py-1 text-[10px] font-bold uppercase text-white">Allergy: {allergies || 'None'}</Badge>
-                  </div>
-                </Card>
-                <Card className="p-6 rounded-3xl bg-blue-50/60 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800 shadow-none">
-                  <h4 className="text-xs font-bold uppercase tracking-widest text-blue-800 dark:text-blue-200 mb-2 flex items-center gap-2">
-                    <CheckCircle size={16} /> Enrollment Status
-                  </h4>
-                  <p className="text-sm font-extrabold text-blue-950 dark:text-blue-100">
-                    {profile.status || ((student.isActive ?? student.is_active) ? 'ACTIVE' : 'INACTIVE')}
-                  </p>
-                </Card>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'family' && (
-            <div className="space-y-6">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest">Family & Guardian Details</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-800 space-y-4 shadow-none">
-                  <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center"><User size={20} /></div>
-                    <h4 className="font-bold text-slate-900 dark:text-white">Father's Details</h4>
-                  </div>
-                  <DetailItem label="Name" value={fatherName} />
-                  <DetailItem label="Phone Number" value={fatherPhone || parentPhone} />
-                </Card>
-                <Card className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-800 space-y-4 shadow-none">
-                  <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center"><User size={20} /></div>
-                    <h4 className="font-bold text-slate-900 dark:text-white">Mother's Details</h4>
-                  </div>
-                  <DetailItem label="Name" value={motherName} />
-                  <DetailItem label="Phone Number" value={motherPhone} />
-                </Card>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <DetailItem label="Parent Email" value={parentEmail} icon={Mail} />
-                <DetailItem label="Parent Occupation" value={parentOccupation} icon={User} />
-              </div>
-            </div>
-          )}
-
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Score trend */}
                     <Panel
@@ -477,7 +361,7 @@ const StudentProfile: React.FC = () => {
               );
           })()}
         </div>
-      </Card>
+      </div>
     </div>
   );
 };
