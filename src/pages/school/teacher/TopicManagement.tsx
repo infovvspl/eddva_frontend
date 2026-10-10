@@ -2524,7 +2524,7 @@ function AiGeneratePanel({
               <p className="truncate text-sm font-bold text-surface-900 dark:text-white">{topic.name}</p>
             </div>
           </div>
-          <Button variant={null} size={null} onClick={onClose} className="grid size-8 place-items-center rounded-xl bg-white/70 text-surface-500 dark:bg-surface-800"><X size={16} /></Button>
+          <Button variant={null} size={null} onClick={onClose} aria-label="Close" className="grid size-8 place-items-center rounded-xl bg-white/70 text-surface-500 hover:bg-white focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-surface-800"><X size={16} /></Button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-5">
@@ -2548,7 +2548,7 @@ function AiGeneratePanel({
               const active = typeId === t.id;
               return (
                 <Button variant={null} size={null} key={t.id} onClick={() => { if (t.id === 'presentation') { openPresentation(); return; } setTypeId(t.id); setContent(null); }}
-                  className={`rounded-2xl border-2 p-3 text-left transition-all ${active ? 'border-violet-400 bg-violet-50 dark:bg-violet-900/30' : 'border-surface-100 hover:border-surface-200 dark:border-surface-700'}`}>
+                  className={`h-auto w-full flex-col items-start justify-start gap-0 whitespace-normal rounded-2xl border-2 p-3 text-left font-normal transition-all ${active ? 'border-violet-400 bg-violet-50 dark:bg-violet-900/30' : 'border-surface-100 hover:border-surface-200 dark:border-surface-700'}`}>
                   <div className={`mb-1.5 inline-flex rounded-lg p-1.5 ${t.soft}`}><Icon size={16} className={t.text} /></div>
                   <p className="text-sm font-bold text-surface-900 dark:text-white">{t.label}</p>
                   <p className="mt-0.5 text-[11px] font-medium leading-snug text-surface-400">{t.desc}</p>
