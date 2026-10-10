@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { useSchoolFeature } from '@/hooks/use-school-feature';
 import { UnifiedSidebar, SidebarProfileCard } from '@/components/layout/UnifiedSidebar';
-import { EddvaLogo } from '@/components/school/admin/Brand';
+import { SchoolLogo } from '@/components/school/admin/Brand';
 import {
   BarChart3,
   BookOpen,
@@ -44,15 +44,17 @@ const allItems = [
 ];
 
 export default function Sidebar({ open, onClose }) {
-  const { user } = useAuth();
+  const { user, institute } = useAuth();
   const location = useLocation();
   const isGameRoute = location.pathname.includes('/game-zone');
   const isGamificationRoute = location.pathname.includes('/gamification') || isGameRoute;
 
   const prevIsGamificationRef = useRef(isGamificationRoute);
+  // Collapsed by default (icon rail) — hovering it peeks the full sidebar open
+  // without pushing page content; the toggle still pins it open if preferred.
   const [collapsed, setCollapsed] = useState(() => {
     const saved = sessionStorage.getItem('pre_gamification_sidebar');
-    return saved === 'true';
+    return saved === null ? true : saved === 'true';
   });
 
   useEffect(() => {
@@ -130,7 +132,8 @@ export default function Sidebar({ open, onClose }) {
       onToggleCollapse={handleToggleCollapse}
       mobileOpen={open}
       onMobileClose={onClose}
-      logo={<EddvaLogo />}
+      logo={<SchoolLogo src={institute?.logo} alt={institute?.name} size="navbar" className="h-10 w-auto max-w-full object-contain" />}
+      logoCollapsed={<SchoolLogo src={institute?.logo} alt={institute?.name} size="navbar" className="h-9 w-auto max-w-full object-contain" />}
       onNavClick={() => onClose?.()}
       profileCard={(isCollapsed) => (
         <SidebarProfileCard

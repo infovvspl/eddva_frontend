@@ -105,20 +105,16 @@ function StatBadge({ label, value, trend, trendValue, color = 'blue', formatter 
 }
 
 function KpiCard({ title, value, icon: Icon, subtext, trend, gradient, delay, formatter }) {
+  const safeGradient = Array.isArray(gradient) ? gradient : ['#2563eb', '#38bdf8', 'bg-gradient-to-br from-blue-600 to-sky-400'];
   const trendValue = typeof trend === 'number' ? trend : 0;
   const TrendIcon = trendValue >= 0 ? ArrowUpRight : ArrowDownRight;
   const trendText = `${trendValue >= 0 ? '+' : ''}${trendValue}%`;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, delay }}
-      className="group relative overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-100 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md dark:border-slate-800 dark:bg-slate-950 flex flex-col justify-between"
-    >
-      <div className="absolute inset-0 opacity-0 transition-all duration-300 group-hover:opacity-100 pointer-events-none" style={{ background: `linear-gradient(135deg, ${gradient[0]}15, ${gradient[1]}15)` }} />
+    <div className="group relative overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-100 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md dark:border-slate-800 dark:bg-slate-950 flex flex-col justify-between">
+      <div className="absolute inset-0 opacity-0 transition-all duration-300 group-hover:opacity-100 pointer-events-none" style={{ background: `linear-gradient(135deg, ${safeGradient[0]}15, ${safeGradient[1]}15)` }} />
       <div className="relative z-10 flex items-center justify-between gap-2 mb-2">
-        <div className={`size-11 sm:size-12 min-w-[44px] min-h-[44px] sm:min-w-[48px] sm:min-h-[48px] shrink-0 flex items-center justify-center rounded-2xl ${gradient[2]} text-white shadow-sm ring-1 ring-slate-100/50`}>
+        <div className={`size-11 sm:size-12 min-w-[44px] min-h-[44px] sm:min-w-[48px] sm:min-h-[48px] shrink-0 flex items-center justify-center rounded-2xl ${safeGradient[2]} text-white shadow-sm ring-1 ring-slate-100/50`}>
           <Icon className="size-5 sm:size-6 shrink-0 stroke-[2.5]" />
         </div>
         <Badge variant="secondary" className="items-center gap-0.5 rounded-full border-transparent bg-slate-100/80 text-[10px] font-bold text-slate-700 ring-1 ring-slate-200/60 dark:bg-slate-900 dark:text-slate-200 dark:ring-slate-700 shrink-0 whitespace-nowrap hover:bg-slate-100/80 dark:hover:bg-slate-900">
@@ -133,7 +129,7 @@ function KpiCard({ title, value, icon: Icon, subtext, trend, gradient, delay, fo
         </p>
         {subtext && <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">{subtext}</p>}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -308,19 +304,9 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
   }));
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.35 }}
-      className="space-y-6 pb-12"
-    >
+    <div className="space-y-6 pb-12">
       {/* Hero Section */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.05 }}
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-blue-700 p-4 sm:p-8 text-white shadow-lg"
-      >
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-blue-700 p-4 sm:p-8 text-white shadow-lg">
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white, transparent 50%)' }} />
         <div className="absolute -right-20 -top-20 size-64 rounded-full bg-white/10 blur-3xl" />
 
@@ -356,15 +342,10 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
             </div>
           </div>
         </div>
-      </motion.section>
+      </section>
 
       {/* KPI Cards Grid */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.15 }}
-        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 sm:gap-4"
-      >
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 sm:gap-4">
         <KpiCard
           title="Total Schools"
           value={stats?.totalInstitutes || 0}
@@ -438,14 +419,10 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
           gradient={['#0891b2', '#67e8f9', 'bg-gradient-to-br from-cyan-700 to-cyan-300']}
           delay={0.26}
         />
-      </motion.div>
+      </div>
 
       {/* Quick Actions */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.15 }}
-      >
+      <div>
         <div className="rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
           <h3 className="mb-4 font-display text-base sm:text-lg font-bold text-slate-950 dark:text-white">Quick Actions</h3>
           <div className="grid grid-cols-4 gap-1.5 sm:gap-3">
@@ -468,28 +445,18 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
             ))}
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* System Status Cards */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.2 }}
-        className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-4"
-      >
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatBadge label="System Health" value={stats?.systemHealth || 0} trend="up" trendValue={2.1} color="emerald" formatter={(value) => `${Number(value || 0).toFixed(1)}%`} />
         <StatBadge label="AI Requests Today" value={stats?.aiRequestsToday || 0} trend="up" trendValue={aiTrend} color="violet" />
         <StatBadge label="Storage Usage" value={storageUsageGb} trend="up" trendValue={8.2} color="amber" formatter={(value) => `${Number(value || 0).toFixed(1)} GB`} />
         <StatBadge label="Security Alerts" value={stats?.securityAlerts || 0} trend="down" trendValue={42.5} color="blue" />
-      </motion.div>
+      </div>
 
       {/* Management Tables */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.25 }}
-        className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
-      >
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {/* Recent Institute Registrations */}
         <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-950">
           <div className="flex items-start justify-between gap-3">
@@ -552,15 +519,10 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
             </button>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Analytics Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.3 }}
-        className="grid gap-4 lg:grid-cols-2"
-      >
+      <div className="grid gap-4 lg:grid-cols-2">
         <ChartShell
           title="User Growth"
           subtitle="Cumulative new and active accounts over the last 6 months"
@@ -593,34 +555,21 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
           emptyText="Onboard a school to start seeing registration and approval trends."
         >
           <ResponsiveContainer width="100%" height="100%">
-            <ScatterChart data={registrationBubbleData} margin={{ top: 10, right: 16, left: -18, bottom: 0 }}>
+            <BarChart data={instituteGrowthDisplayData} margin={{ top: 10, right: 16, left: -18, bottom: 0 }}>
               <CartesianGrid stroke={EDDVA[100]} strokeDasharray="4 6" vertical={false} />
-              <XAxis
-                dataKey="monthIndex"
-                type="number"
-                domain={[0.5, Math.max(6.5, registrationBubbleData.length + 0.5)]}
-                tickFormatter={(value) => registrationBubbleData[value - 1]?.name || ''}
-                axisLine={false}
-                tickLine={false}
-                stroke={EDDVA[400]}
-                style={CHART_AXIS_STYLE}
-              />
-              <YAxis dataKey="total" type="number" allowDecimals={false} axisLine={false} tickLine={false} stroke={EDDVA[400]} style={CHART_AXIS_STYLE} />
-              <ZAxis dataKey="bubbleSize" range={[90, 900]} />
-              <RechartsTooltip content={<BubbleTooltip />} />
-              <Scatter name="Registrations" data={registrationBubbleData} fill={EDDVA[600]} />
-            </ScatterChart>
+              <XAxis dataKey="name" axisLine={false} tickLine={false} stroke={EDDVA[400]} style={CHART_AXIS_STYLE} />
+              <YAxis allowDecimals={false} axisLine={false} tickLine={false} stroke={EDDVA[400]} style={CHART_AXIS_STYLE} />
+              <RechartsTooltip content={<ChartTooltip />} />
+              <Legend iconType="circle" />
+              <Bar dataKey="institutes" name="Registered" fill={EDDVA[600]} radius={[8, 8, 0, 0]} maxBarSize={26} />
+              <Bar dataKey="approved" name="Approved" fill={EDDVA[300]} radius={[8, 8, 0, 0]} maxBarSize={26} />
+            </BarChart>
           </ResponsiveContainer>
         </ChartShell>
-      </motion.div>
+      </div>
 
       {/* More Analytics */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.35 }}
-        className="grid gap-4 lg:grid-cols-2"
-      >
+      <div className="grid gap-4 lg:grid-cols-2">
         <ChartShell
           title="Revenue"
           subtitle="Billing trend from finance records"
@@ -672,8 +621,8 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
             </BarChart>
           </ResponsiveContainer>
         </ChartShell>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 }
 

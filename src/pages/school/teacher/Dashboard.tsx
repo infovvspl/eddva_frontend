@@ -6,6 +6,7 @@ import {
   BookOpen, Edit3, UploadCloud, Calendar, ArrowRight, Presentation
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from 'recharts';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import GlassCard from '@/components/school/GlassCard';
 import Badge from '@/components/school/Badge';
@@ -412,15 +413,15 @@ const Dashboard: React.FC = () => {
                     <p className="text-[10px] font-semibold text-slate-400 mt-1">vs last month</p>
                   </div>
                   <div className="h-40 w-full mt-16">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={performanceData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }} dy={10} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }} domain={[0, 100]} ticks={[0, 20, 40, 60, 80, 100]} tickFormatter={(val) => `${val}%`} />
-                        <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                        <Line type="monotone" dataKey="score" stroke="#2563EB" strokeWidth={3} dot={{ r: 4, fill: '#2563EB', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
+                    <ChartContainer config={{ score: { label: 'Avg score', color: 'hsl(var(--primary))' } }} className="h-full w-full aspect-auto">
+                      <LineChart data={performanceData} margin={{ top: 5, right: 8, left: -16, bottom: 0 }}>
+                        <CartesianGrid vertical={false} />
+                        <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} />
+                        <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} />
+                        <ChartTooltip content={<ChartTooltipContent formatter={(v) => `${v}%`} />} />
+                        <Line dataKey="score" type="monotone" stroke="var(--color-score)" strokeWidth={2.5} dot={{ r: 4, fill: 'var(--color-score)' }} activeDot={{ r: 6 }} />
                       </LineChart>
-                    </ResponsiveContainer>
+                    </ChartContainer>
                   </div>
                 </div>
 

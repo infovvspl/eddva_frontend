@@ -41,35 +41,6 @@ import { useSchoolNotification } from '@/context/SchoolNotificationContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { SchoolLogo } from '@/components/school/admin/Brand';
 
-const pageTitles = {
-  '/school/student': 'Dashboard',
-  '/school/student/live-classes': 'Live Classes',
-  '/school/student/recorded-classes': 'Recorded Classes',
-  '/school/student/classes': 'My Learning',
-  '/school/student/study-materials': 'Study Materials',
-  '/school/student/assignments': 'Assignments',
-  '/school/student/assessments': 'Assessments',
-  '/school/student/attendance': 'Attendance',
-  '/school/student/analytics': 'Performance Analytics',
-  '/school/student/doubts': 'My Doubts',
-  '/school/student/planner': 'AI Study Planner',
-  '/school/student/notifications': 'Notifications',
-  '/school/student/career': 'Career Guidance',
-  '/school/student/astro-profile': 'Astro Profile',
-  '/school/student/syllabus': 'Syllabus',
-  '/school/student/fees': 'Fees',
-  '/school/student/quiz': 'Quiz',
-
-  '/school/student/gamification': 'Gamification',
-  '/school/student/battle-arena': 'Battle Arena',
-  '/school/student/timetable': 'Timetable',
-  '/school/student/calendar': 'Calendar',
-  '/school/student/announcements': 'Announcements',
-  '/school/student/chat': 'Communication Center',
-  '/school/student/profile': 'Profile',
-  '/school/student/settings': 'Settings',
-};
-
 const studentPages = [
   { name: 'Dashboard', path: '/school/student', icon: Target, keywords: 'home overview academics notifications' },
   { name: 'Live Classes', path: '/school/student/live-classes', icon: Radio, keywords: 'join class attendance polls quizzes raise hand' },
@@ -88,27 +59,6 @@ const studentPages = [
   { name: 'Profile', path: '/school/student/profile', icon: UserCircle, keywords: 'student id roll class section parent security' },
   { name: 'Settings', path: '/school/student/settings', icon: Settings, keywords: 'password devices notification theme sessions' },
 ];
-
-function pageTitle(pathname, state) {
-  if (/^\/school\/student\/study-materials\/[^/]+$/.test(pathname)) return state?.materialTypeLabel || 'Material';
-  if (/^\/school\/student\/ai-study\/[^/]+$/.test(pathname)) return 'AI Study';
-  if (pageTitles[pathname]) return pageTitles[pathname];
-  const match = Object.entries(pageTitles)
-    // '/school/student' (the dashboard root) is a startsWith prefix of every
-    // route in this app — exclude it so an unlisted sub-route falls through
-    // to the titlecase default below instead of being mislabeled "Dashboard".
-    .filter(([path]) => path !== '/school/student')
-    .sort(([a], [b]) => b.length - a.length)
-    .find(([path]) => pathname.startsWith(`${path}/`));
-  if (match) return match[1];
-  return pathname
-    .split('/')
-    .filter(Boolean)
-    .pop()
-    ?.split('-')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ') || 'Student Portal';
-}
 
 const getStudentFallbackUrl = (n) => {
   if (n.actionUrl) return n.actionUrl;
@@ -141,7 +91,6 @@ export default function Navbar({ onMenuClick }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, institute, logout } = useAuth();
-  const title = pageTitle(location.pathname, location.state);
 
   const [theme, setTheme] = useState(() => localStorage.getItem('eddva-theme') || 'light');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -382,7 +331,7 @@ export default function Navbar({ onMenuClick }) {
                 </button>
               )}
               <h1 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
-                {title}
+                {institute?.name || 'EDDVA SCHOOL'}
               </h1>
             </>
           )}

@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { X } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
@@ -119,51 +120,6 @@ export default function SmartCalendar() {
     }
   };
 
-  const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
-  const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
-
-  const calendarGrid = useMemo(() => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    
-    // JS days: 0=Sun, 1=Mon, ..., 6=Sat
-    // We want Mon=1 to Sun=7. So shift index.
-    const startPadding = (firstDay.getDay() + 6) % 7; 
-    
-    const prevMonthLastDay = new Date(year, month, 0).getDate();
-    
-    const days = [];
-    
-    // Prev month overflow
-    for (let i = startPadding - 1; i >= 0; i--) {
-      days.push({
-        date: new Date(year, month - 1, prevMonthLastDay - i),
-        isCurrentMonth: false
-      });
-    }
-    
-    // Current month
-    for (let d = 1; d <= lastDay.getDate(); d++) {
-      days.push({
-        date: new Date(year, month, d),
-        isCurrentMonth: true
-      });
-    }
-    
-    // Next month overflow to complete 42 cells (6 rows * 7 cols)
-    let nextDays = 42 - days.length;
-    for (let d = 1; d <= nextDays; d++) {
-      days.push({
-        date: new Date(year, month + 1, d),
-        isCurrentMonth: false
-      });
-    }
-    
-    return days;
-  }, [currentDate]);
-
   const eventsByDate = useMemo(() => {
     const map = new Map();
     events.forEach(ev => {
@@ -183,8 +139,6 @@ export default function SmartCalendar() {
     return map;
   }, [events]);
 
-  const todayStr = getLocalYYYYMMDD(new Date());
-
   const handleDateClick = (dayEvents, date) => {
     if (dayEvents && dayEvents.length > 0) {
       setSelectedDateEvents({ date, events: dayEvents });
@@ -192,103 +146,52 @@ export default function SmartCalendar() {
     }
   };
 
-  return (
-    <div className="flex flex-col size-full py-0.5 overflow-hidden">
-      <div className="flex items-center justify-between mb-3 shrink-0 bg-blue-50/80 dark:bg-blue-900/20 p-1.5 rounded-xl border border-blue-100/50 dark:border-blue-900/30">
-        <h4 className="text-[11px] sm:text-xs font-black text-blue-900 dark:text-blue-100 uppercase tracking-widest pl-2">
-          {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-        </h4>
-        <div className="flex items-center gap-1">
-          <button onClick={prevMonth} className="p-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-blue-900 text-blue-600 dark:text-blue-400 shadow-[0_2px_10px_rgb(0,0,0,0.05)] transition-all hover:scale-105" aria-label="Previous month">
-            <ChevronLeft className="size-3.5" />
-          </button>
-          <button onClick={nextMonth} className="p-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-blue-900 text-blue-600 dark:text-blue-400 shadow-[0_2px_10px_rgb(0,0,0,0.05)] transition-all hover:scale-105" aria-label="Next month">
-            <ChevronRight className="size-3.5" />
-          </button>
+  const DayContent = ({ date }) => {
+    const dayEvents = eventsByDate.get(getLocalYYYYMMDD(date)) || [];
+    const cats = [...new Set(dayEvents.map((e) => e.category))];
+    const hasEmergency = cats.includes('EMERGENCY_NOTICE');
+    return (
+      <div className="flex flex-col items-center justify-center" title={dayEvents.map((e) => e.title).join(', ') || undefined}>
+        <span>{date.getDate()}</span>
+        <div className="flex items-center justify-center gap-0.5 min-h-[6px] mt-0.5">
+          {hasEmergency ? (
+            <span className="size-1.5 rounded-full bg-rose-600 animate-pulse" />
+          ) : (
+            cats.slice(0, 3).map((cat) => (
+              <span key={cat} className={`size-1 rounded-full ${(EVENT_INDICATORS[cat] || EVENT_INDICATORS.ACADEMIC).color}`} />
+            ))
+          )}
         </div>
       </div>
+    );
+  };
 
-      <div className="grid grid-cols-7 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2 shrink-0 gap-1">
-        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
-          <div key={d} className="py-1 bg-slate-50 dark:bg-slate-800/50 rounded-md border border-slate-100/50 dark:border-slate-800/50">{d}</div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-7 gap-0.5 flex-1 content-between relative">
-        {calendarGrid.map((cell, idx) => {
-          const dateStr = getLocalYYYYMMDD(cell.date);
-          const isToday = dateStr === todayStr;
-          const dayEvents = eventsByDate.get(dateStr) || [];
-          
-          // Deduplicate events by category for the dots
-          const uniqueCategories = [...new Set(dayEvents.map(e => e.category))];
-          const hasEmergency = uniqueCategories.includes('EMERGENCY_NOTICE');
-          
-          return (
-            <div 
-              key={idx}
-              onClick={() => handleDateClick(dayEvents, cell.date)}
-              className={`relative flex flex-col items-center justify-center py-1 rounded-xl cursor-pointer transition-all duration-200 group select-none
-                ${isToday 
-                  ? 'font-black text-white bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30 scale-105 z-10 border border-blue-400/50' 
-                  : (cell.isCurrentMonth 
-                      ? 'text-slate-700 dark:text-slate-300 font-bold hover:bg-blue-50/50 dark:hover:bg-slate-800/60 hover:text-blue-600 dark:hover:text-blue-400' 
-                      : 'text-slate-300 dark:text-slate-650 font-medium hover:bg-slate-50 dark:hover:bg-slate-800/40')
-                }
-              `}
-            >
-              <span className="text-[11px] leading-tight font-bold">
-                {cell.date.getDate()}
-              </span>
-              
-              {hasEmergency ? (
-                <div className="mt-0.5 flex justify-center">
-                  <div className="size-1.5 rounded-full bg-rose-600 animate-pulse" title="Emergency Notice" />
-                </div>
-              ) : (
-                <div className="flex flex-col items-center gap-0.5 mt-0.5 min-h-[6px]">
-                  {isToday && (
-                    <div className="size-1 rounded-full bg-white animate-pulse shadow-[0_0_8px_rgba(255,255,255,0.8)]" title="Today" />
-                  )}
-                  {uniqueCategories.length > 0 && (
-                    <div className="flex flex-wrap items-center justify-center gap-0.5 px-0.5">
-                      {uniqueCategories.slice(0, 3).map(cat => {
-                        const ind = EVENT_INDICATORS[cat] || EVENT_INDICATORS.ACADEMIC;
-                        return (
-                          <div 
-                            key={cat} 
-                            className={`size-1 rounded-full ${ind.color}`}
-                            title={ind.name}
-                          />
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Desktop Hover Tooltip */}
-              {dayEvents.length > 0 && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-max max-w-[200px] z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity hidden md:block">
-                  <div className="bg-slate-900 text-white text-[10px] p-2 rounded-lg shadow-xl border border-slate-700">
-                    <div className="font-bold mb-1 border-b border-slate-700 pb-1 text-slate-300">
-                      {cell.date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
-                    </div>
-                    <ul className="space-y-1 text-left">
-                      {dayEvents.slice(0, 3).map((e, i) => (
-                        <li key={i} className="truncate">• {e.title}</li>
-                      ))}
-                      {dayEvents.length > 3 && (
-                        <li className="text-slate-400 italic">+{dayEvents.length - 3} more...</li>
-                      )}
-                    </ul>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+  return (
+    <div className="flex flex-col size-full py-0.5 overflow-hidden">
+      <Calendar
+        mode="single"
+        weekStartsOn={1}
+        month={currentDate}
+        onMonthChange={setCurrentDate}
+        selected={new Date()}
+        onDayClick={(day) => handleDateClick(eventsByDate.get(getLocalYYYYMMDD(day)) || [], day)}
+        components={{ DayContent }}
+        className="w-full p-0"
+        classNames={{
+          months: 'w-full',
+          month: 'w-full space-y-3',
+          caption_label: 'text-sm font-semibold',
+          table: 'w-full border-collapse',
+          head_row: 'grid grid-cols-7',
+          head_cell: 'text-muted-foreground font-semibold text-[11px] text-center',
+          row: 'grid grid-cols-7 mt-1',
+          cell: 'h-11 text-center text-sm p-0 relative',
+          day: 'h-11 w-full rounded-xl p-0 font-semibold hover:bg-accent aria-selected:opacity-100',
+          day_selected: 'bg-primary text-primary-foreground hover:bg-primary',
+          day_today: 'bg-accent text-accent-foreground',
+          day_outside: 'text-muted-foreground opacity-40',
+        }}
+      />
 
       {/* Mobile/Click Popup */}
       <AnimatePresence>

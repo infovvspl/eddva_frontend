@@ -8,5 +8,5 @@ export function cn(...inputs) {
 }
 
 export function Skeleton({ className, ...props }) {
-  return <ShadcnSkeleton className={cn("bg-surface-200/60", className)} {...props} />;
+  return <ShadcnSkeleton className={cn("bg-slate-200/80 dark:bg-slate-800 animate-pulse", className)} {...props} />;
 }

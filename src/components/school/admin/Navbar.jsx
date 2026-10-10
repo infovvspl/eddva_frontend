@@ -41,31 +41,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { InstituteLogo } from './Brand';
 import logoUrl from '@/assets/eddva-logo.svg';
 
-function pageTitle(pathname, state) {
-  if (pathname === '/' || pathname.includes('dashboard')) return 'Dashboard';
-  if (pathname === '/school/teacher/classes') return 'My Schedule';
-  if (/^\/school\/(?:teacher|student)\/recorded-classes\/[^/]+$/.test(pathname)) return state?.recordingTitle || 'Recorded Class';
-  if (/^\/school\/(?:teacher|student)\/assessments\/[^/]+(?:\/(?:view|take))?$/.test(pathname)) return state?.assessmentTitle || 'Assessment';
-  if (/^\/school\/teacher\/course-content\/materials\/[^/]+$/.test(pathname)) return state?.materialTypeLabel || 'Material';
-  if (/^\/school\/teacher\/reports\/student\/[^/]+(?:\/report-card)?$/.test(pathname)) return 'Reports';
-  if (/\/school\/admin\/teachers\/[^/]+$/.test(pathname)) return 'Teacher Profile';
-  if (/\/school\/(?:admin|teacher)\/students\/[^/]+$/.test(pathname)) return 'Student Profile';
-  if (/^\/school\/(?:teacher|admin)\/syllabus-planner\/[^/]+$/.test(pathname)) return state?.subjectName || 'Syllabus Plan';
-  if (/^\/school\/admin\/syllabus-tracker\/[^/]+$/.test(pathname)) return state?.subjectName || 'Syllabus Tracker';
-  if (/^\/school\/teacher\/lesson-plans\/[^/]+$/.test(pathname)) return state?.subjectName || 'Lesson Plan';
-  if (/^\/school\/admin\/subjects\/[^/]+$/.test(pathname)) return state?.className ? `${state.className} Subjects` : 'Class Subjects';
-  if (/\/school\/(?:super-)?admin\/institutes\/[^/]+$/.test(pathname)) {
-    const id = pathname.split('/').pop();
-    if (id !== 'new') return 'School Detail';
-  }
-  return pathname
-    .split('/')
-    .pop()
-    .split('-')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
-}
-
 const getAdminFallbackUrl = (n, isTeacher) => {
   if (n.actionUrl) return n.actionUrl;
   const type = (n.type || '').toLowerCase();
@@ -114,7 +89,6 @@ export default function Navbar({ onMenuClick }) {
   const navigate = useNavigate();
   const { user, institute, logout } = useAuth();
   const isMobile = useIsMobile();
-  const title = pageTitle(location.pathname, location.state);
   const rawRole = String(user?.rawRole || user?.role || '')
     .toUpperCase()
     .trim();
@@ -433,6 +407,14 @@ export default function Navbar({ onMenuClick }) {
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifLoading, setNotifLoading] = useState(false);
+  const [notifTab, setNotifTab] = useState('all');
+  const matchesTab = (n, tab) => {
+    const cat = String(n.category || n.type || '').toUpperCase();
+    if (tab === 'live') return cat === 'LIVE';
+    if (tab === 'action') return cat === 'ACTION_REQUIRED';
+    return true;
+  };
+  const visibleNotifications = (notifications || []).filter((n) => matchesTab(n, notifTab));
 
   const searchRef = useRef(null);
   const profileRef = useRef(null);
@@ -655,16 +637,9 @@ export default function Navbar({ onMenuClick }) {
                   <Menu className="size-6" />
                 </Button>
               )}
-              {isSuperAdmin ? (
-                <img src={logoUrl} alt="EDDVA" className="h-9 w-auto object-contain shrink-0 dark:brightness-110" />
-              ) : (
-                <div className="h-10 w-10 rounded-lg overflow-hidden flex items-center justify-center bg-slate-50 shrink-0 border border-slate-100 dark:border-slate-800 dark:bg-slate-900">
-                  <InstituteLogo institute={institute} size="sm" className="h-10 w-10 object-contain" />
-                </div>
-              )}
-              <div className="flex flex-col min-w-0">
-                <h1 className="mt-0.5 text-lg font-bold tracking-tight leading-tight text-slate-900 dark:text-white truncate">{schoolName || title}</h1>
-              </div>
+              <h1 className="truncate text-xl font-semibold tracking-tight text-slate-900 dark:text-white">
+                {schoolName || (isSuperAdmin ? 'EDDVA Super Admin' : institute?.name || 'EDDVA Admin')}
+              </h1>
             </>
           )}
         </div>
@@ -1117,8 +1092,8 @@ export default function Navbar({ onMenuClick }) {
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-3 border-b border-slate-105 dark:border-slate-800">
                   <div>
-                    <h3 className="text-xs font-bold text-slate-900 dark:text-white">Notifications</h3>
-                    <p className="text-[9px] text-slate-400 dark:text-slate-550 font-semibold mt-0.5">
+                    <h3 className="text-base font-semibold text-slate-900 dark:text-white">Notifications</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-0.5">
                       {unreadCount} unread messages
                     </p>
                   </div>
@@ -1127,7 +1102,7 @@ export default function Navbar({ onMenuClick }) {
                       type="button"
                       variant="ghost"
                       onClick={handleMarkAllAsRead}
-                      className="flex items-center gap-1.5 h-auto rounded-lg px-2 py-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 [&_svg]:size-3"
+                      className="flex items-center gap-1.5 h-auto rounded-lg px-2 py-1 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 [&_svg]:size-3"
                     >
                       <CheckCheck size={12} />
                       Mark all read
@@ -1135,21 +1110,43 @@ export default function Navbar({ onMenuClick }) {
                   )}
                 </div>
 
+                {/* Tabs: All / Live / Action Required */}
+                <div className="flex items-center gap-1.5 px-5 py-2 border-b border-slate-100 dark:border-slate-800">
+                  {[['all', 'All'], ['live', 'Live'], ['action', 'Action Required']].map(([id, label]) => {
+                    const count = (notifications || []).filter((n) => matchesTab(n, id) && !n.isRead).length;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => setNotifTab(id)}
+                        className={cn(
+                          'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-colors',
+                          notifTab === id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
+                        )}
+                      >
+                        {id === 'live' && <span className="size-1.5 rounded-full bg-rose-500 animate-pulse" />}
+                        {label}
+                        {count > 0 && <span className={cn('rounded-full px-1.5 text-[10px]', notifTab === id ? 'bg-white/25' : 'bg-blue-100 text-blue-700')}>{count}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+
                 {/* Notifications List */}
                 <div className="max-h-[60vh] sm:max-h-[380px] overflow-y-auto custom-scrollbar">
                   {notifLoading ? (
                     <div className="flex flex-col items-center justify-center p-8 text-slate-400">
                       <Loader2 className="size-6 animate-spin text-blue-500 mb-2" />
-                      <p className="text-xs font-bold">Fetching updates...</p>
+                      <p className="text-sm font-semibold">Fetching updates...</p>
                     </div>
-                  ) : notifications.length === 0 ? (
+                  ) : visibleNotifications.length === 0 ? (
                     <div className="flex flex-col items-center justify-center p-8 text-center">
-                      <Inbox className="size-8 text-slate-305 dark:text-slate-700 mb-2" />
-                      <p className="text-xs font-bold text-slate-400">All caught up!</p>
-                      <p className="text-[10px] text-slate-400/80 mt-1">No new alerts found.</p>
+                      <Inbox className="size-9 text-slate-400 dark:text-slate-600 mb-2" />
+                      <p className="text-sm font-semibold text-slate-500">All caught up!</p>
+                      <p className="text-xs text-slate-400 mt-1">No new alerts found.</p>
                     </div>
                   ) : (
-                    notifications.map((n) => (
+                    visibleNotifications.map((n) => (
                       <div
                         key={n.id}
                         onClick={() => {
@@ -1175,7 +1172,7 @@ export default function Navbar({ onMenuClick }) {
                         {/* Icon based on type */}
                         <div className={cn(
                           "size-8 shrink-0 rounded-xl flex items-center justify-center text-xs font-bold",
-                          n.type === 'ALERT' || n.type === 'CRITICAL'
+                          n.type === 'ALERT' || n.type === 'CRITICAL' || String(n.category).toUpperCase() === 'ACTION_REQUIRED'
                             ? "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-450"
                             : n.type === 'SUCCESS'
                               ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-450"
@@ -1186,13 +1183,13 @@ export default function Navbar({ onMenuClick }) {
 
                         {/* Content */}
                         <div className="flex-1 min-w-0">
-                          <h4 className={cn("text-[11px] font-bold text-slate-900 dark:text-white truncate", !n.isRead && "font-extrabold")}>
+                          <h4 className={cn("text-sm font-semibold text-slate-900 dark:text-white truncate", !n.isRead && "font-semibold")}>
                             {n.title}
                           </h4>
-                          <p className="text-[10px] font-medium text-slate-500 dark:text-slate-450 mt-0.5 line-clamp-2 leading-relaxed">
+                          <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2 leading-relaxed">
                             {n.message}
                           </p>
-                          <span className="text-[8px] font-bold text-slate-405 dark:text-slate-500 tracking-tight uppercase block mt-1.5">
+                          <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 tracking-tight uppercase block mt-1.5">
                             {new Date(n.createdAt).toLocaleDateString(undefined, {
                               month: 'short',
                               day: 'numeric',

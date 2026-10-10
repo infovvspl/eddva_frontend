@@ -26,11 +26,13 @@ function getSchoolRoles(user: { role?: string; rawRole?: string } | null | undef
     .split(",")
     .map((role) => role.trim())
     .filter(Boolean);
+  const isSuper = primaryRole === "SUPER_ADMIN" || rawRole.includes("SUPER_ADMIN") || rawRole.includes("SUPER ADMIN");
   const derivedRoles = [
-    rawRole.includes("SUPER_ADMIN") || rawRole.includes("SUPER ADMIN") ? "SUPER_ADMIN" : "",
+    isSuper ? "SUPER_ADMIN" : "",
+    isSuper ? "INSTITUTE_ADMIN" : "",
+    isSuper ? "TEACHER" : "",
     rawRole.includes("TEACHER") ? "TEACHER" : "",
-    !rawRole.includes("SUPER_ADMIN") && !rawRole.includes("SUPER ADMIN") &&
-      (rawRole.includes("INSTITUTE_ADMIN") || rawRole.includes("INSTITUTE ADMIN") || /\bADMIN\b/.test(rawRole))
+    (rawRole.includes("INSTITUTE_ADMIN") || rawRole.includes("INSTITUTE ADMIN") || /\bADMIN\b/.test(rawRole))
       ? "INSTITUTE_ADMIN"
       : "",
   ];

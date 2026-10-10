@@ -14,7 +14,7 @@ import {
   BrainCircuit,
 } from "lucide-react";
 import {
-  useTodaysPlan, useWeeklyPlanGrouped, useGeneratePlan, useRegeneratePlan,
+  useTodaysPlan, useWeeklyPlanGrouped, useGeneratePlan,
   useStudentMe, useCompletePlanItem, useSkipPlanItem, useProgressReport,
   useMyCourses, useAllBatchLectures, useMockTests, useStudentSessions, useWeeklyActivity,
   useAiStudyHistory, useRevisionSpaced, useRevisionNotes, usePracticeHistory,
@@ -1630,7 +1630,6 @@ export default function SchoolStudentStudyPlanner() {
   const planLoading = todayPlanLoading || isCurriculumLoading;
 
   const generate = useGeneratePlan();
-  const regenerate = useRegeneratePlan();
   const complete = useCompletePlanItem(selectedCourseId ?? undefined);
   const skip = useSkipPlanItem(selectedCourseId ?? undefined);
 
@@ -2101,14 +2100,6 @@ export default function SchoolStudentStudyPlanner() {
     });
   };
 
-  const handleRegenerate = () =>
-    regenerate.mutate(selectedCourseId ?? undefined, {
-      onSuccess: () => toast.success("Plan regenerated!"),
-      onError: (err: any) => {
-        toast.error(err?.response?.data?.message || "Could not regenerate. Please try again.");
-      },
-    });
-
   const handleOpenPlanItem = (item: StudyPlanItem) => {
     const topicId = item.content?.topicId || item.refId;
     if (item.type === "practice" && topicId) {
@@ -2150,7 +2141,7 @@ export default function SchoolStudentStudyPlanner() {
     </div>
   );
 
-  if (generate.isPending || regenerate.isPending) return <GeneratingView />;
+  if (generate.isPending) return <GeneratingView />;
 
   const pendingTodayItems = todayItems.filter(item => item.status !== "completed");
   const nextUpItems = pendingTodayItems.slice(0, 3);
@@ -2159,11 +2150,6 @@ export default function SchoolStudentStudyPlanner() {
   const syllabusTotal = effectiveProgressReport?.summary?.totalTopics ?? 0;
   const syllabusDone = effectiveProgressReport?.summary?.completedTopics ?? 0;
   const syllabusPct = syllabusTotal > 0 ? Math.round((syllabusDone / syllabusTotal) * 100) : 0;
-  const attentionItems = [
-    { label: "Missed tasks", value: backlogPlanItems.length, icon: AlertTriangle, tone: "text-rose-600 bg-rose-50 border-rose-100", tab: "backlogs" as ActiveTab },
-    { label: "Weak topics", value: weakTopics.length, icon: TrendingDown, tone: "text-amber-600 bg-amber-50 border-amber-100", tab: "weakness" as ActiveTab },
-    { label: "Revision due", value: revisionTopics.length, icon: RefreshCw, tone: "text-blue-600 bg-blue-50 border-blue-100", tab: "revision" as ActiveTab },
-  ];
   const simpleNav = [
     { key: "today" as ActiveTab, label: "Today", icon: ListTodo, count: pendingTodayItems.length },
     { key: "backlogs" as ActiveTab, label: "Backlogs", icon: AlertTriangle, count: totalBacklogCount },
@@ -3131,43 +3117,6 @@ export default function SchoolStudentStudyPlanner() {
               </div>
             </section>
 
-            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="text-lg font-black text-slate-950">Needs attention</h2>
-              <div className="mt-4 grid gap-3">
-                {attentionItems.map(item => {
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.label}
-                      type="button"
-                      onClick={() => selectPlannerTab(item.tab)}
-                      className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition hover:brightness-95 ${item.tone}`}
-                    >
-                      <Icon className="size-5" />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-black text-slate-800">{item.label}</p>
-                      </div>
-                      <p className="text-xl font-black">{item.value}</p>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-
-            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="text-lg font-black text-slate-950">Plan settings</h2>
-              <div className="mt-4 space-y-3">
-                <button
-                  type="button"
-                  onClick={handleRegenerate}
-                  disabled={regenerate.isPending}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-black text-blue-700 transition hover:bg-blue-100 disabled:opacity-60"
-                >
-                  <RotateCcw className={`size-4 ${regenerate.isPending ? "animate-spin" : ""}`} />
-                  Regenerate Plan
-                </button>
-              </div>
-            </section>
           </aside>
         </div>
       </div>

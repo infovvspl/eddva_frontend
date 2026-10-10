@@ -72,6 +72,9 @@ export default function Assignments() {
   const [notes, setNotes] = useState('');
   const [submitFile, setSubmitFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [questions, setQuestions] = useState([]);
+  const [answers, setAnswers] = useState({});
+  const [reviewMode, setReviewMode] = useState(false);
   const fileInputRef = useRef(null);
 
   const fetchAssignments = async () => {
@@ -106,13 +109,43 @@ export default function Assignments() {
     setSubmitTarget(assignment);
     setNotes(assignment.mySubmission?.notes || '');
     setSubmitFile(null);
+    // Questions attached by the teacher (answers are never sent to students)
+    setQuestions([]);
+    setAnswers({});
+    setReviewMode(false);
+    if (Number(assignment.question_count) > 0) {
+      api
+        .get(`/assignments/${assignment.id || assignment.assignment_id}/questions`)
+        .then((res) => {
+          const list = res.data?.data || [];
+          setQuestions(list);
+          // Earlier answers come back so the student can edit and re-submit
+          setAnswers(Object.fromEntries(list.filter((q) => q.myAnswer).map((q) => [q.id, q.myAnswer])));
+          setReviewMode(res.data?.meta?.submissionStatus === 'graded');
+        })
+        .catch(() => {});
+    }
   };
 
   const closeSubmit = () => {
     setSubmitTarget(null);
     setNotes('');
     setSubmitFile(null);
+    setQuestions([]);
+    setAnswers({});
+    setReviewMode(false);
   };
+
+  // Multi-select answers are stored as "A,C"; single-choice and written answers as plain strings.
+  const setAnswer = (id, value) => setAnswers((prev) => ({ ...prev, [id]: value }));
+  const toggleMulti = (id, label) =>
+    setAnswers((prev) => {
+      const current = new Set(String(prev[id] || '').split(',').filter(Boolean));
+      if (current.has(label)) current.delete(label);
+      else current.add(label);
+      return { ...prev, [id]: Array.from(current).sort().join(',') };
+    });
+  const answeredCount = Object.values(answers).filter((v) => String(v || '').trim()).length;
 
   const handleSubmit = async () => {
     if (!submitTarget) return;
@@ -121,8 +154,8 @@ export default function Assignments() {
       toast.error('Assignment id is missing. Please refresh and try again.');
       return;
     }
-    if (!submitFile && !notes.trim()) {
-      toast.error('Upload a file or add notes');
+    if (!submitFile && !notes.trim() && answeredCount === 0) {
+      toast.error(questions.length ? 'Answer at least one question, or upload a file' : 'Upload a file or add notes');
       return;
     }
     setSubmitting(true);
@@ -130,6 +163,7 @@ export default function Assignments() {
       const data = new FormData();
       if (submitFile) data.append('file', submitFile);
       if (notes.trim()) data.append('notes', notes.trim());
+      if (questions.length) data.append('answers', JSON.stringify(answers));
       await api.post(`/assignments/${assignmentId}/submit`, data, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -306,6 +340,11 @@ export default function Assignments() {
                           {[assignment.subjectName, assignment.className, assignment.sectionName].filter(Boolean).join(' · ')}
                         </p>
                       )}
+                      {assignment.my_group_name && (
+                        <p className="mt-0.5 text-[11px] font-semibold text-indigo-600 truncate">
+                          Group assignment · {assignment.my_group_name}
+                        </p>
+                      )}
                     </div>
 
                     <div className="flex shrink-0 flex-col items-end gap-1">
@@ -400,7 +439,17 @@ export default function Assignments() {
                         <CheckCircle2 size={13} className="text-emerald-500" />
                         <span className="capitalize">{assignment.bucket}</span>
                       </div>
-                      {assignment.mySubmission?.id && (
+                      {Number(assignment.question_count) > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => openSubmit(assignment)}
+                          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-blue-50 py-1.5 text-xs font-bold text-blue-600 transition-colors hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/40"
+                        >
+                          <Eye size={13} />
+                          <span>{assignment.bucket === 'evaluated' ? 'View Results' : 'Edit Answers'}</span>
+                        </button>
+                      )}
+                      {assignment.mySubmission?.id && assignment.mySubmission?.filePath && (
                         <button
                           type="button"
                           onClick={() => openSubmissionFile(assignment.mySubmission.id).catch((e) => toast.error(e.message))}
@@ -450,6 +499,78 @@ export default function Assignments() {
             </div>
 
             <div className="erp-modal-body space-y-4">
+              {questions.length > 0 && (
+                <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3 space-y-4 max-h-80 overflow-y-auto">
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                    Questions ({questions.length}) · {questions.reduce((n, q) => n + Number(q.marks || 0), 0)} marks
+                    {!reviewMode && ` · ${answeredCount} answered`}
+                  </p>
+                  {questions.map((q) => {
+                    const hasOptions = Array.isArray(q.options) && q.options.length > 0;
+                    const multi = q.type === 'mcq_multiple';
+                    const picked = new Set(String(answers[q.id] || '').split(',').filter(Boolean));
+                    const keys = new Set(String(q.correctAnswer || '').split(',').filter(Boolean));
+                    return (
+                      <div key={q.id} className="text-xs text-slate-700 dark:text-slate-300 space-y-1.5">
+                        <p className="font-semibold">
+                          {q.position}. {q.text}{' '}
+                          <span className="font-normal text-slate-400">[{q.marks} {Number(q.marks) === 1 ? 'mark' : 'marks'}]</span>
+                          {reviewMode && q.marksAwarded != null && (
+                            <span className={cn('ml-2 font-bold', q.marksAwarded >= q.marks ? 'text-emerald-600' : q.marksAwarded > 0 ? 'text-amber-600' : 'text-rose-600')}>
+                              {q.marksAwarded}/{q.marks}
+                            </span>
+                          )}
+                        </p>
+                        {hasOptions ? (
+                          <div className="space-y-1">
+                            {q.options.map((o) => {
+                              const checked = picked.has(o.label);
+                              const isKey = reviewMode && keys.has(o.label);
+                              return (
+                                <label
+                                  key={o.label}
+                                  className={cn(
+                                    'flex items-center gap-2 rounded-lg border px-2.5 py-1.5',
+                                    reviewMode ? 'cursor-default' : 'cursor-pointer',
+                                    isKey ? 'border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20'
+                                      : reviewMode && checked ? 'border-rose-300 bg-rose-50 dark:bg-rose-950/20'
+                                      : checked ? 'border-blue-400 bg-blue-50 dark:bg-blue-950/20'
+                                      : 'border-slate-200 dark:border-slate-700',
+                                  )}
+                                >
+                                  <input
+                                    type={multi ? 'checkbox' : 'radio'}
+                                    name={`q-${q.id}`}
+                                    disabled={reviewMode}
+                                    checked={checked}
+                                    onChange={() => (multi ? toggleMulti(q.id, o.label) : setAnswer(q.id, o.label))}
+                                  />
+                                  <span>({o.label}) {o.text}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <textarea
+                            className="w-full rounded-lg border border-slate-200 p-2 text-xs outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-slate-50 dark:border-slate-700 dark:bg-slate-800"
+                            rows={3}
+                            disabled={reviewMode}
+                            value={answers[q.id] || ''}
+                            onChange={(e) => setAnswer(q.id, e.target.value)}
+                            placeholder="Type your answer..."
+                          />
+                        )}
+                        {reviewMode && !hasOptions && q.correctAnswer && (
+                          <p className="text-emerald-700">Model answer: {q.correctAnswer}</p>
+                        )}
+                        {reviewMode && q.explanation && (
+                          <p className="text-slate-500 italic">{q.explanation}</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -488,6 +609,7 @@ export default function Assignments() {
               >
                 Cancel
               </button>
+              {!reviewMode && (
               <button
                 type="button"
                 disabled={submitting}
@@ -496,6 +618,7 @@ export default function Assignments() {
               >
                 {submitting ? 'Uploading…' : 'Submit'}
               </button>
+              )}
             </div>
           </div>
         </div>

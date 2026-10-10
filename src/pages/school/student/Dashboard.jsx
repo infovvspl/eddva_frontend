@@ -29,6 +29,7 @@ import {
   PartyPopper
 } from 'lucide-react';
 import SmartCalendar from '@/components/school/SmartCalendar';
+import ScoreTrendChart, { scoreTrendDelta } from '@/components/school/student/ScoreTrendChart';
 import './Dashboard.css';
 
 function getSubjectConfig(name) {
@@ -365,6 +366,15 @@ export default function Dashboard() {
   const [notices, setNotices] = useState(initialCache?.notices ?? []);
   const [courses, setCourses] = useState(initialCache?.courses ?? []);
   const [weekEvents, setWeekEvents] = useState(initialCache?.weekEvents ?? []);
+  const [scoreTrend, setScoreTrend] = useState([]);
+
+  useEffect(() => {
+    let active = true;
+    api.get('/reports/my-analytics')
+      .then((res) => { if (active) setScoreTrend(res.data?.data?.scoreTrend ?? []); })
+      .catch(() => { if (active) setScoreTrend([]); });
+    return () => { active = false; };
+  }, []);
 
   const fetchData = async () => {
     try {
@@ -506,6 +516,20 @@ export default function Dashboard() {
           <SectionHeader title="Pending Assignments" action="View all" to="/school/student/assignments" />
           <PendingAssignmentsList assignments={pendingAssignments} />
         </div>
+      </div>
+
+      {/* Improvement Metrics */}
+      <div className="bg-white rounded-[1.5rem] p-5 shadow-sm border border-slate-100 flex flex-col">
+        <SectionHeader title="Improvement Metrics" action="View analytics" to="/school/student/analytics" />
+        {(() => {
+          const delta = scoreTrendDelta(scoreTrend);
+          return delta === null ? null : (
+            <p className={`mb-2 text-xs font-bold ${delta >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+              {delta >= 0 ? '+' : ''}{delta}% since your first result
+            </p>
+          );
+        })()}
+        <ScoreTrendChart data={scoreTrend} height={240} />
       </div>
 
       {/* Row 4: Subject Performance, Announcements */}
