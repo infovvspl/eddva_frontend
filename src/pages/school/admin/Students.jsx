@@ -686,7 +686,6 @@ export default function Students() {
             <TableHeader className="bg-slate-50/50 text-slate-500 dark:bg-slate-800/40 dark:text-slate-400">
               <TableRow className="hover:bg-transparent border-b-0">
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider sticky left-0 z-20 bg-slate-50 dark:bg-slate-850 shadow-sm text-slate-500 dark:text-slate-400">Student Name</TableHead>
-                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">School</TableHead>
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Enrollment No.</TableHead>
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Class/Section</TableHead>
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</TableHead>
@@ -696,7 +695,7 @@ export default function Students() {
             <TableBody className="divide-y divide-slate-100 dark:divide-slate-800 [&_tr]:border-b-0">
               {filtered.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan="6" className="px-5 py-12 text-center text-slate-400">
+                  <TableCell colSpan="5" className="px-5 py-12 text-center text-slate-400">
                     No students found.
                   </TableCell>
                 </TableRow>
@@ -717,7 +716,6 @@ export default function Students() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="p-4 px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{student.instituteName || '-'}</TableCell>
                     <TableCell className="p-4 px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{student.studentProfile?.enrollmentNo || '-'}</TableCell>
                     <TableCell className="p-4 px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">
                       {student.studentProfile?.section
@@ -815,10 +813,6 @@ export default function Students() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-xs text-slate-600 dark:text-slate-300 pt-1">
-                  <div>
-                    <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-black">School</span>
-                    <span className="font-bold">{student.instituteName || '-'}</span>
-                  </div>
                   <div>
                     <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-black">Enrollment No.</span>
                     <span className="font-bold">{student.studentProfile?.enrollmentNo || '-'}</span>
