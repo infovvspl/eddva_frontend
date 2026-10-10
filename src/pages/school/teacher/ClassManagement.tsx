@@ -19,6 +19,25 @@ type ThumbnailJob = {
   error?: string;
 };
 
+// Inline notice (icon + text) built on the shadcn Alert. Alert positions a leading svg absolutely;
+// these notices lay the icon out inline instead, so that is reset here.
+const DETAIL_TAB_META: Partial<Record<CourseTabId, { label: string; icon: React.ElementType }>> = {
+  notes: { label: 'AI Notes', icon: BookOpen },
+  transcript: { label: 'Transcript', icon: FileText },
+  quiz: { label: 'Quiz', icon: Sparkles },
+  overview: { label: 'Stats', icon: BarChart3 },
+  doubt: { label: 'Doubt', icon: MessageCircle },
+  my_notes: { label: 'My Notes', icon: FileText },
+  questions: { label: 'Questions', icon: HelpCircle },
+  doubts: { label: 'Student Doubts', icon: MessagesSquare },
+};
+
+const InfoAlert: React.FC<{ className?: string; children: React.ReactNode }> = ({ className, children }) => (
+  <Alert className={cn('flex items-start gap-2 [&>svg]:static [&>svg]:text-current [&>svg~*]:pl-0 [&>svg+div]:translate-y-0', className)}>
+    {children}
+  </Alert>
+);
+
 /**
  * Transcript/notes status pill for a recording card. While transcription (or
  * notes generation) is running, it shows a time-based estimated percentage with
@@ -47,9 +66,9 @@ const TranscriptStatusBadge: React.FC<{ rec: any; onView: () => void; onRetry: (
   if (!ts) {
     if (!hasNotesGen) return null;
     return (
-      <button onClick={onRetry} className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600 hover:bg-blue-100">
+      <Button variant={null} size={null} onClick={onRetry} className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600 hover:bg-blue-100">
         <Sparkles size={10} /> Generate Transcript
-      </button>
+      </Button>
     );
   }
 
@@ -63,9 +82,7 @@ const TranscriptStatusBadge: React.FC<{ rec: any; onView: () => void; onRetry: (
           <span className="inline-flex items-center gap-1"><Loader2 size={11} className="animate-spin" /> {label}</span>
           <span>{pct}%</span>
         </div>
-        <div className={`mt-1 h-1.5 w-full overflow-hidden rounded-full ${c.bg}`}>
-          <div className={`h-full rounded-full ${c.fill} transition-all`} style={{ width: `${pct}%` }} />
-        </div>
+        <Progress value={pct} className={`mt-1 h-1.5 ${c.bg}`} indicatorClassName={c.fill} />
       </div>
     );
   };
@@ -78,9 +95,9 @@ const TranscriptStatusBadge: React.FC<{ rec: any; onView: () => void; onRetry: (
     // Stuck for >10 min — show a retry button instead of spinning forever.
     if (elapsed > 600) {
       return (
-        <button onClick={onRetry} className="inline-flex items-center gap-1 rounded-md bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-600 hover:bg-rose-100">
+        <Button variant={null} size={null} onClick={onRetry} className="inline-flex items-center gap-1 rounded-md bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-600 hover:bg-rose-100">
           <RefreshCw size={10} /> Stuck — Retry Transcription
-        </button>
+        </Button>
       );
     }
     return progressBar('Transcribing…', pct, 'amber');
@@ -88,9 +105,9 @@ const TranscriptStatusBadge: React.FC<{ rec: any; onView: () => void; onRetry: (
   if (ts === 'failed') {
     if (!hasNotesGen) return null;
     return (
-      <button onClick={onRetry} className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600 hover:bg-blue-100">
+      <Button variant={null} size={null} onClick={onRetry} className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600 hover:bg-blue-100">
         <Sparkles size={10} /> Generate Transcript
-      </button>
+      </Button>
     );
   }
   if (notesGenerating) {
@@ -101,17 +118,17 @@ const TranscriptStatusBadge: React.FC<{ rec: any; onView: () => void; onRetry: (
   }
   return (
     <div className="inline-flex items-center gap-1">
-      <button onClick={onView} className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
+      <Button variant={null} size={null} onClick={onView} className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
         <Download size={11} /> Transcript Ready
-      </button>
+      </Button>
       {hasNotesGen && (
-        <button
+        <Button variant={null} size={null}
           onClick={onRetry}
           title="Transcript incorrect? Regenerate it"
           className="inline-flex size-5 items-center justify-center rounded-md bg-slate-100 text-slate-400 transition hover:bg-rose-50 hover:text-rose-500"
         >
           <RefreshCw size={9} />
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -120,18 +137,26 @@ const CredRow: React.FC<{ label: string; value: string; onCopy: () => void }> = 
   <div>
     <div className="mb-1 flex items-center justify-between">
       <span className="text-xs font-black uppercase tracking-wider text-slate-500">{label}</span>
-      <button onClick={onCopy} className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700">
+      <Button variant="ghost" size={null} onClick={onCopy} className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700">
         <Copy size={13} /> Copy
-      </button>
+      </Button>
     </div>
     <code className="block w-full overflow-x-auto rounded-xl bg-slate-100 px-3 py-2.5 font-mono text-sm text-slate-800">{value || '—'}</code>
   </div>
 );
 
-import Button from '@/components/school/Button';
-import Badge from '@/components/school/Badge';
-import Tabs from '@/components/school/Tabs';
+import SchoolBadge from '@/components/school/Badge';
 import Modal from '@/components/school/Modal';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
+import { Alert } from '@/components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import InputField from '@/components/school/InputField';
 import SelectField from '@/components/school/SelectField';
 import DataTable from '@/components/school/DataTable';
@@ -143,7 +168,7 @@ import { isModuleEnabled } from '@/lib/constants/moduleFeatures';
 import { useConfirm } from '@/context/ConfirmContext';
 
 import './ClassManagement.css';
-import { CourseTabs, CourseTabId } from '@/components/student/lecture/CourseTabs';
+import type { CourseTabId } from '@/components/student/lecture/CourseTabs';
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { resolveRecordingUpload, type UploadedVideo } from './recordingUpload';
 
@@ -463,13 +488,13 @@ const ClassManagement: React.FC = () => {
 
   const liveColumns = [
     { key: 'title', title: 'Class Title' },
-    { key: 'class', title: 'Class', render: (v: string) => <Badge variant="purple">{v}</Badge> },
+    { key: 'class', title: 'Class', render: (v: string) => <SchoolBadge variant="purple">{v}</SchoolBadge> },
     { key: 'date', title: 'Date' },
     { key: 'time', title: 'Time', render: (v: string) => <span className="class__time"><Clock size={14} /> {v}</span> },
     { key: 'duration', title: 'Duration' },
     {
       key: 'status', title: 'Status', render: (v: string) => (
-        <Badge variant={v === 'live' ? 'error' : 'info'}>{v === 'live' ? 'Live Now' : 'Scheduled'}</Badge>
+        <SchoolBadge variant={v === 'live' ? 'error' : 'info'}>{v === 'live' ? 'Live Now' : 'Scheduled'}</SchoolBadge>
       )
     },
     { key: 'attendees', title: 'Attendees', render: (v: number) => v > 0 ? <span className="class__attendees"><Users size={14} /> {v}</span> : '-' },
@@ -1350,8 +1375,8 @@ const ClassManagement: React.FC = () => {
     const duration = fmtDuration(lec.startedAt, lec.endedAt);
 
     return (
-      <div className={cn(
-        'rounded-2xl border bg-white p-4 transition-shadow',
+      <Card className={cn(
+        'rounded-2xl bg-white p-4 transition-shadow',
         isLive
           ? 'border-red-400/50 shadow-[0_0_24px_rgba(239,68,68,0.18)]'
           : 'border-slate-100 shadow-sm hover:shadow-md',
@@ -1371,13 +1396,13 @@ const ClassManagement: React.FC = () => {
               {(lec.className || lec.sectionName || lec.subjectName) && (
                 <div className="mt-1 flex flex-wrap gap-1">
                   {lec.className && (
-                    <span className="rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-blue-600">{lec.className}</span>
+                    <Badge variant="outline" className="rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-blue-600 border-transparent">{lec.className}</Badge>
                   )}
                   {lec.sectionName && (
-                    <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600">{lec.sectionName}</span>
+                    <Badge variant="outline" className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600 border-transparent">{lec.sectionName}</Badge>
                   )}
                   {lec.subjectName && (
-                    <span className="rounded-md bg-violet-50 px-1.5 py-0.5 text-[10px] font-bold text-violet-600">{lec.subjectName}</span>
+                    <Badge variant="outline" className="rounded-md bg-violet-50 px-1.5 py-0.5 text-[10px] font-bold text-violet-600 border-transparent">{lec.subjectName}</Badge>
                   )}
                 </div>
               )}
@@ -1399,108 +1424,108 @@ const ClassManagement: React.FC = () => {
 
           {/* Status badge */}
           {isLive ? (
-            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-black text-red-600">
+            <Badge variant="outline" className="shrink-0 gap-1.5 border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-black text-red-600">
               <span className="relative flex size-2">
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-red-400 opacity-75" />
                 <span className="relative inline-flex size-2 rounded-full bg-red-500" />
               </span>
               Live Now
-            </span>
+            </Badge>
           ) : isEnded ? (
             lec.status === 'PROCESSING_FAILED' ? (
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-black text-rose-600">
+              <Badge variant="outline" className="inline-flex shrink-0 items-center gap-1 rounded-full border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-black text-rose-600">
                 Processing failed
-              </span>
+              </Badge>
             ) : !lec.recordingUrl ? (
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-black text-amber-600">
+              <Badge variant="outline" className="inline-flex shrink-0 items-center gap-1 rounded-full border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-black text-amber-600">
                 <Loader2 size={11} className="animate-spin" /> Processing recording…
-              </span>
+              </Badge>
             ) : (
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-500">
+              <Badge variant="outline" className="inline-flex shrink-0 items-center gap-1 rounded-full border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-500">
                 Ended
-              </span>
+              </Badge>
             )
           ) : (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-black text-violet-600">
+            <Badge variant="outline" className="inline-flex shrink-0 items-center gap-1 rounded-full border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-black text-violet-600">
               <AlarmClock size={11} /> Scheduled
-            </span>
+            </Badge>
           )}
         </div>
 
         {/* OBS tip for scheduled classes */}
         {isScheduled && (
-          <div className="mt-3 flex items-start gap-2 rounded-xl border border-violet-100 bg-violet-50/60 px-3 py-2">
+          <InfoAlert className="mt-3 flex items-start gap-2 rounded-xl border-violet-100 bg-violet-50/60 px-3 py-2">
             <AlarmClock className="mt-0.5 size-3.5 shrink-0 text-violet-400" />
             <p className="text-[11px] font-medium text-violet-700">
               When ready, click <b>Stream Info</b> to get your OBS key, then start streaming — class goes live automatically.
             </p>
-          </div>
+          </InfoAlert>
         )}
 
         {/* Processing status after a class ends — keeps the teacher informed. */}
         {isEnded && lec.status !== 'PROCESSING_FAILED' && !lec.recordingUrl && (
-          <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-100 bg-amber-50/70 px-3 py-2">
+          <InfoAlert className="mt-3 flex items-start gap-2 rounded-xl border-amber-100 bg-amber-50/70 px-3 py-2">
             <Loader2 className="mt-0.5 size-3.5 shrink-0 animate-spin text-amber-500" />
             <p className="text-[11px] font-medium text-amber-700">
               Processing the recording — this usually takes a minute or two. AI notes & quiz are generated automatically once it's ready.
             </p>
-          </div>
+          </InfoAlert>
         )}
         {isEnded && lec.recordingUrl && (
           ((lec as any).notesStatus === 'processing' || (lec as any).notesStatus === 'pending' ||
            (lec as any).transcriptStatus === 'processing' || (lec as any).transcriptStatus === 'pending') && (
-            <div className="mt-3 flex items-start gap-2 rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2">
+            <InfoAlert className="mt-3 flex items-start gap-2 rounded-xl border-blue-100 bg-blue-50/70 px-3 py-2">
               <Loader2 className="mt-0.5 size-3.5 shrink-0 animate-spin text-blue-500" />
               <p className="text-[11px] font-medium text-blue-700">
                 Recording ready — generating AI notes & quiz from the lecture…
               </p>
-            </div>
+            </InfoAlert>
           )
         )}
 
         {/* Actions */}
         <div className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3">
-          <button
+          <Button variant="outline" size={null}
             onClick={() => { setCreatedLive(null); setCredsLecture(lec); setShowKey(false); setShowLiveModal(true); }}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:bg-gradient-to-r hover:from-blue-50 hover:to-sky-50 hover:text-blue-600 hover:border-blue-300"
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold hover:bg-gradient-to-r hover:from-blue-50 hover:to-sky-50 hover:text-blue-600 hover:border-blue-300"
           >
             <Eye size={13} /> Stream Info
-          </button>
+          </Button>
 
           {isEnded && lec.recordingUrl && (
-            <button
+            <Button variant="outline" size={null}
               onClick={() => {
                 const recId = lec.classRecordingId || lec.id;
                 navigate(`/school/teacher/recorded-classes/${recId}`);
               }}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-gradient-to-r hover:from-blue-50 hover:to-sky-50 hover:text-blue-600 hover:border-blue-300"
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold hover:bg-gradient-to-r hover:from-blue-50 hover:to-sky-50 hover:text-blue-600 hover:border-blue-300"
             >
               <PlayCircle size={13} /> Watch Video
-            </button>
+            </Button>
           )}
           {!isEnded && !isLive && (
-            <button
+            <Button variant="default" size={null}
               onClick={() => navigate(`/school/teacher/live/${lec.id}/studio`)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-black text-white transition hover:bg-blue-700"
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-black shadow-none"
               title="Go live from your browser — screen share, whiteboard, slides"
             >
               <Monitor size={13} /> Studio
-            </button>
+            </Button>
           )}
-          <button
+          <Button variant="outline" size={null}
             onClick={() => navigate(`/school/teacher/live/${lec.id}/dashboard`, { state: { showSummary: isEnded } })}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-gradient-to-r hover:from-blue-50 hover:to-sky-50 hover:text-blue-600 hover:border-blue-300"
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold hover:bg-gradient-to-r hover:from-blue-50 hover:to-sky-50 hover:text-blue-600 hover:border-blue-300"
           >
             {isLive ? <><Radio size={13} /> Open Live</>
               : isEnded ? <>View Summary <ArrowRight size={13} /></>
                 : <>Dashboard <ArrowRight size={13} /></>}
-          </button>
+          </Button>
 
-          <button onClick={() => deleteLiveClass(lec.id)} title="Delete" className="ml-auto text-slate-300 transition-colors hover:text-rose-500">
+          <Button variant="ghost" size={null} onClick={() => deleteLiveClass(lec.id)} title="Delete" className="ml-auto text-slate-300 transition-colors hover:text-rose-500">
             <Trash2 size={15} />
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
     );
   };
 
@@ -1624,15 +1649,12 @@ const ClassManagement: React.FC = () => {
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <span className="text-[11px] font-black uppercase tracking-widest text-slate-400 hidden sm:inline-block mr-1">Status</span>
         {liveStatusTabs.map((tab) => (
-          <button
+          <Button
             key={tab.id}
+            variant={liveStatusFilter === tab.id ? 'default' : 'outline'}
+            size={null}
             onClick={() => setLiveStatusFilter(tab.id)}
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all',
-              liveStatusFilter === tab.id
-                ? tab.activeColor
-                : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-            )}
+            className="gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold"
           >
             {tab.id === 'ongoing' && (
               <span className="relative flex size-2">
@@ -1647,18 +1669,18 @@ const ClassManagement: React.FC = () => {
             )}>
               {tab.count}
             </span>
-          </button>
+          </Button>
         ))}
       </div>
 
       {!canGoLive ? (
-        <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50 py-14 text-center">
+        <Card className="rounded-2xl border-dashed shadow-none border-amber-200 bg-amber-50 py-14 text-center">
           <Radio className="mx-auto mb-3 size-10 text-amber-300" />
           <h3 className="text-base font-black text-slate-900">Live Classes Disabled</h3>
           <p className="mt-1 text-sm text-slate-500">Live streaming is not enabled for your school. Contact the super admin to enable it.</p>
-        </div>
+        </Card>
       ) : filteredObsLectures.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 py-14 text-center">
+        <Card className="rounded-2xl border-dashed shadow-none border-slate-200 bg-slate-50 py-14 text-center">
           <Radio className="mx-auto mb-3 size-10 text-slate-300" />
           <h3 className="text-base font-black text-slate-900">
             {liveStatusFilter === 'ongoing'
@@ -1674,7 +1696,7 @@ const ClassManagement: React.FC = () => {
               ? 'Click Go Live (OBS) to create one and get your OBS stream key.'
               : 'Try selecting a different status filter or class filter above.'}
           </p>
-        </div>
+        </Card>
       ) : (
         <div className="space-y-3">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -1687,14 +1709,14 @@ const ClassManagement: React.FC = () => {
               <p className="text-xs text-slate-500">
                 Showing {Math.min(showAllObsLectures ? filteredObsLectures.length : 10, filteredObsLectures.length)} of {filteredObsLectures.length} live classes
               </p>
-              <button
+              <Button variant={null} size={null}
                 type="button"
                 onClick={() => setShowAllObsLectures((v) => !v)}
                 className="px-4 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors inline-flex items-center gap-1.5"
               >
                 <span>{showAllObsLectures ? "Show Less" : `Show ${filteredObsLectures.length - 10} more`}</span>
                 <ChevronRight className={cn("size-3.5 transition-transform", showAllObsLectures ? "-rotate-90" : "rotate-90")} />
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -1709,19 +1731,19 @@ const ClassManagement: React.FC = () => {
       {renderCurriculumFilters()}
 
       {uploadedRecordings.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-12 text-center">
+        <Card className="rounded-2xl border-dashed shadow-none border-slate-200 bg-slate-50/60 p-12 text-center">
           <Video size={36} className="mx-auto text-slate-300" />
           <p className="mt-3 text-sm font-bold text-slate-700">No recordings yet</p>
           <p className="mt-1 text-sm text-slate-400">Upload a recorded lecture or paste a YouTube link.</p>
-        </div>
+        </Card>
       ) : (
         <div className="space-y-3">
           {(showAllRecordedLectures ? uploadedRecordings : uploadedRecordings.slice(0, 10)).map((rec: any) => {
             const date = rec.recorded_date ? new Date(rec.recorded_date).toLocaleDateString('en-GB') : '';
             return (
-              <div key={rec.id} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:shadow-md">
+              <Card key={rec.id} className="rounded-2xl border-slate-100 bg-white p-4 shadow-sm transition hover:shadow-md">
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-3.5 sm:gap-4">
-                  <button onClick={() => navigate(`/school/teacher/recorded-classes/${rec.id}`)}
+                  <Button variant={null} size={null} onClick={() => navigate(`/school/teacher/recorded-classes/${rec.id}`)}
                     className="group/thumb relative h-36 w-full sm:h-16 sm:w-28 shrink-0 overflow-hidden rounded-xl bg-slate-900">
                     {rec.thumbnail_url ? (
                       <img src={rec.thumbnail_url} alt={rec.title} className="size-full object-cover transition-transform duration-300 group-hover/thumb:scale-105" loading="lazy" />
@@ -1738,7 +1760,7 @@ const ClassManagement: React.FC = () => {
                         {parseFloat(rec.duration) >= 1 ? `${Math.round(parseFloat(rec.duration))} min` : `${Math.round(parseFloat(rec.duration) * 60)}s`}
                       </span>
                     )}
-                  </button>
+                  </Button>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -1752,13 +1774,13 @@ const ClassManagement: React.FC = () => {
                         <p className="mt-0.5 truncate text-xs font-medium text-slate-500">
                           · {[rec.topic_name, rec.subject_name, rec.class_name].filter(Boolean)[0] || 'Lecture'} · {date}
                         </p>
-                        <button onClick={() => navigate(`/school/teacher/recorded-classes/${rec.id}`)}
+                        <Button variant="ghost" size={null} onClick={() => navigate(`/school/teacher/recorded-classes/${rec.id}`)}
                           className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:underline">
                           <ChevronRight size={13} /> Click to view details
-                        </button>
+                        </Button>
                       </div>
                       <div className="flex flex-row sm:flex-col items-center sm:items-end gap-1.5 mt-1.5 sm:mt-0 shrink-0">
-                        <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-black uppercase text-emerald-600">Published</span>
+                        <Badge variant="outline" className="rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-black uppercase text-emerald-600 border-transparent">Published</Badge>
                         <TranscriptStatusBadge
                           rec={rec}
                           onView={() => navigate(`/school/teacher/recorded-classes/${rec.id}`)}
@@ -1769,12 +1791,12 @@ const ClassManagement: React.FC = () => {
                     <div className="mt-3 flex items-start justify-between gap-3 border-t border-slate-100 pt-2">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <button onClick={() => navigate(`/school/teacher/recorded-classes/${rec.id}`, { state: { openTab: 'overview' } })}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50">
+                          <Button variant="outline" size={null} onClick={() => navigate(`/school/teacher/recorded-classes/${rec.id}`, { state: { openTab: 'overview' } })}
+                            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold">
                             <BarChart3 size={14} /> Live Stats
-                          </button>
+                          </Button>
                           {rec.source !== 'youtube' && (
-                            <button
+                            <Button variant={null} size={null}
                               onClick={() => handleGenerateThumbnail(rec)}
                               disabled={thumbnailJobs[String(rec.id)]?.status === 'processing'}
                               className="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
@@ -1783,33 +1805,33 @@ const ClassManagement: React.FC = () => {
                                 ? <Loader2 size={14} className="animate-spin" />
                                 : <ImageIcon size={14} />}
                               {rec.thumbnail_url ? 'Regenerate Thumbnail' : 'Generate Thumbnail'}
-                            </button>
+                            </Button>
                           )}
                           {rec.transcript_status === 'done' && rec.notes_status !== 'done' && (
-                            <button
+                            <Button variant={null} size={null}
                               onClick={() => handleRegenerateNotes(rec.id)}
                               disabled={regeneratingNotesIds.has(rec.id)}
                               className="inline-flex items-center gap-1.5 rounded-lg border border-amber-100 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               {regeneratingNotesIds.has(rec.id) ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
                               {regeneratingNotesIds.has(rec.id) ? 'Regenerating…' : 'Retry Notes'}
-                            </button>
+                            </Button>
                           )}
                         </div>
                         {renderThumbnailProgress(rec)}
                       </div>
                       <div className="flex items-center gap-2">
-                        <button onClick={() => openEditRecordingModal(rec)} className="text-slate-400 hover:text-blue-600 transition-colors" title="Edit Lecture Details">
+                        <Button variant="ghost" size={null} onClick={() => openEditRecordingModal(rec)} className="text-slate-400 hover:text-blue-600 transition-colors" title="Edit Lecture Details">
                           <Edit size={16} />
-                        </button>
-                        <button onClick={() => deleteRecording(rec.id)} className="text-slate-400 hover:text-rose-500 transition-colors" title="Delete Lecture">
+                        </Button>
+                        <Button variant="ghost" size={null} onClick={() => deleteRecording(rec.id)} className="text-slate-400 hover:text-rose-500 transition-colors" title="Delete Lecture">
                           <Trash2 size={16} />
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              </Card>
             );
           })}
           {uploadedRecordings.length > 10 && (
@@ -1817,14 +1839,14 @@ const ClassManagement: React.FC = () => {
               <p className="text-xs text-slate-500">
                 Showing {Math.min(showAllRecordedLectures ? uploadedRecordings.length : 10, uploadedRecordings.length)} of {uploadedRecordings.length} recorded lectures
               </p>
-              <button
+              <Button variant={null} size={null}
                 type="button"
                 onClick={() => setShowAllRecordedLectures((v) => !v)}
                 className="px-4 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors inline-flex items-center gap-1.5"
               >
                 <span>{showAllRecordedLectures ? "Show Less" : `Show ${uploadedRecordings.length - 10} more`}</span>
                 <ChevronRight className={cn("size-3.5 transition-transform", showAllRecordedLectures ? "-rotate-90" : "rotate-90")} />
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -1852,17 +1874,19 @@ const ClassManagement: React.FC = () => {
         </div>
         <div className="flex gap-2">
           {canGoLive && (
-            <Button variant="outline" icon={<Radio size={16} />} onClick={() => setShowScheduleLiveModal(true)}>Schedule Live Class</Button>
+            <Button variant="outline" onClick={() => setShowScheduleLiveModal(true)}><Radio size={16} /> Schedule Live Class</Button>
           )}
-          <Button icon={<Plus size={16} />} onClick={() => setShowRecordingModal(true)}>Upload Lecture</Button>
+          <Button onClick={() => setShowRecordingModal(true)}><Plus size={16} /> Upload Lecture</Button>
         </div>
       </div>
-      <Tabs
-        tabs={[
-          { id: 'recorded', label: 'Recorded', icon: <Video size={16} />, content: recordedContent },
-          { id: 'live', label: 'Live Classes', icon: <Radio size={16} />, content: liveContent },
-        ]}
-      />
+      <Tabs defaultValue="recorded" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="recorded" className="gap-2 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md"><Video size={16} /> Recorded</TabsTrigger>
+          <TabsTrigger value="live" className="gap-2 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md"><Radio size={16} /> Live Classes</TabsTrigger>
+        </TabsList>
+        <TabsContent value="recorded">{recordedContent}</TabsContent>
+        <TabsContent value="live">{liveContent}</TabsContent>
+      </Tabs>
 
       {/* Recorded lecture watch view */}
       {detailRec && (
@@ -1871,7 +1895,7 @@ const ClassManagement: React.FC = () => {
           <div className="min-size-full bg-slate-50 lg:flex lg:h-full lg:min-h-0 lg:flex-col">
             <div className="sticky top-0 z-10 border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6 lg:shrink-0">
               <div className="flex items-center justify-between gap-3">
-                <button onClick={() => setDetailRec(null)} className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-blue-600 hover:text-white" aria-label="Back to recorded lectures"><ArrowLeft size={17} /></button>
+                <Button variant={null} size={null} onClick={() => setDetailRec(null)} className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-blue-600 hover:text-white" aria-label="Back to recorded lectures"><ArrowLeft size={17} /></Button>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[11px] font-bold text-blue-600">
                     {detailRec.chapter_name || detailRec.subject_name || 'Recorded Class'}
@@ -1881,20 +1905,20 @@ const ClassManagement: React.FC = () => {
                 <div className="hidden shrink-0 sm:block">
                   <TranscriptStatusBadge rec={detailRec} onView={() => setDetailTab('transcript')} onRetry={() => handleRetryTranscript(detailRec.id)} />
                 </div>
-                <button
+                <Button variant="outline" size={null}
                   onClick={() => setDetailPanelOpen((open) => !open)}
-                  className="hidden items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 lg:flex"
+                  className="hidden items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold lg:flex"
                 >
                   {detailPanelOpen ? <PanelRightClose size={14} /> : <PanelRightOpen size={14} />}
                   <span>{detailPanelOpen ? 'Hide Panel' : 'Show Panel'}</span>
-                </button>
+                </Button>
               </div>
             </div>
 
             <div className="w-full px-4 py-5 sm:px-6 lg:px-8 lg:min-h-0 lg:flex-1">
               <div className={`grid gap-6 transition-all duration-300 lg:h-full lg:min-h-0 lg:grid-rows-[minmax(0,1fr)] ${detailPanelOpen ? 'lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]' : 'grid-cols-1'}`}>
                 <main className="min-w-0 space-y-4 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:pb-5 scrollbar-hide">
-                  <div className="overflow-hidden rounded-2xl border border-slate-200 bg-black shadow-sm">
+                  <Card className="overflow-hidden rounded-2xl border-slate-200 bg-black shadow-sm">
                     {detailRec.video_url ? (
                       <SchoolVideoPlayer
                         src={detailRec.video_url}
@@ -1906,20 +1930,20 @@ const ClassManagement: React.FC = () => {
                         Video unavailable
                       </div>
                     )}
-                  </div>
-                  <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                  </Card>
+                  <Card className="rounded-2xl border-slate-100 bg-white p-5 shadow-sm">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           {detailRec.subject_name && (
-                            <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-blue-700">
+                            <Badge variant="outline" className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-blue-700 border-transparent">
                               {detailRec.subject_name}
-                            </span>
+                            </Badge>
                           )}
                           {detailRec.class_name && (
-                            <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold text-slate-600">
+                            <Badge variant="outline" className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold text-slate-600 border-transparent">
                               {detailRec.class_name}
-                            </span>
+                            </Badge>
                           )}
                           <span className="sm:hidden">
                             <TranscriptStatusBadge rec={detailRec} onView={() => setDetailTab('transcript')} onRetry={() => handleRetryTranscript(detailRec.id)} />
@@ -1961,32 +1985,46 @@ const ClassManagement: React.FC = () => {
                         </span>
                       )}
                     </div>
-                  </section>
+                  </Card>
                 </main>
 
                 <aside className={`${detailPanelOpen ? 'block' : 'hidden'} min-w-0 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:pb-5 scrollbar-hide`}>
-                  <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-                    <CourseTabs
-                      activeTab={detailTab}
-                      onChange={setDetailTab}
-                      availableTabs={availableTabs}
-                    />
+                  <Card className="overflow-hidden rounded-2xl border-slate-100 bg-white shadow-sm">
+                    <Tabs value={detailTab} onValueChange={(v) => setDetailTab(v as CourseTabId)} className="w-full">
+                      <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-none border-b border-slate-100 bg-transparent px-2 py-1.5">
+                        {availableTabs.map((tabId: CourseTabId) => {
+                          const meta = DETAIL_TAB_META[tabId];
+                          if (!meta) return null;
+                          const TabIcon = meta.icon;
+                          return (
+                            <TabsTrigger
+                              key={tabId}
+                              value={tabId}
+                              className="shrink-0 gap-1.5 rounded-b-none rounded-t-xl border-b-2 border-transparent px-3 py-2.5 text-[11px] font-extrabold text-slate-500 data-[state=active]:border-blue-600 data-[state=active]:bg-blue-50/80 data-[state=active]:text-blue-700 data-[state=active]:shadow-none"
+                            >
+                              <TabIcon size={13} className="shrink-0" />
+                              {meta.label}
+                            </TabsTrigger>
+                          );
+                        })}
+                      </TabsList>
+                    </Tabs>
                     <div className="p-5">
                       {detailTab === 'overview' && (
                         <div className="space-y-4">
-                          <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
+                          <Alert className="rounded-2xl border-blue-100 bg-blue-50 p-4">
                             <p className="text-sm font-bold text-blue-800">Video preview is shown in the main watch area.</p>
                             <p className="mt-1 text-xs font-semibold text-blue-600">Use this panel for teacher stats, content details, transcript, notes, and quiz management.</p>
-                          </div>
+                          </Alert>
                           <div className="grid grid-cols-2 gap-3">
-                            <div className="rounded-xl border border-slate-100 p-3">
+                            <Card className="rounded-xl border-slate-100 p-3 shadow-none">
                               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Type</p>
                               <p className="mt-0.5 text-sm font-bold text-slate-800">{detailRec.source === 'youtube' ? 'YouTube' : 'Recorded'}</p>
-                            </div>
-                            <div className="rounded-xl border border-slate-100 p-3">
+                            </Card>
+                            <Card className="rounded-xl border-slate-100 p-3 shadow-none">
                               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Topic</p>
                               <p className="mt-0.5 truncate text-sm font-bold text-slate-800">{detailRec.topic_name || detailRec.subject_name || '—'}</p>
-                            </div>
+                            </Card>
                           </div>
                           <div>
                             <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Watch stats</p>
@@ -1997,18 +2035,18 @@ const ClassManagement: React.FC = () => {
                                 { label: 'Avg Watch', value: `${detailRec.avg_watch_percentage ?? 0}%` },
                                 { label: 'Confusion Spots', value: 0 },
                               ].map((s) => (
-                                <div key={s.label} className="rounded-xl border border-slate-100 p-3">
+                                <Card key={s.label} className="rounded-xl border-slate-100 p-3 shadow-none">
                                   <p className="text-xl font-black text-slate-900">{s.value}</p>
                                   <p className="text-xs font-medium text-slate-400">{s.label}</p>
-                                </div>
+                                </Card>
                               ))}
                             </div>
                           </div>
                           {detailRec.description && (
-                            <div className="rounded-xl border border-slate-100 p-3">
+                            <Card className="rounded-xl border-slate-100 p-3 shadow-none">
                               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Description</p>
                               <p className="mt-1 text-sm text-slate-700">{detailRec.description}</p>
-                            </div>
+                            </Card>
                           )}
                           {/* Video metadata */}
                           {(detailRec.resolution || detailRec.video_size) && (
@@ -2016,20 +2054,20 @@ const ClassManagement: React.FC = () => {
                               <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Video Info</p>
                               <div className="grid grid-cols-2 gap-3">
                                 {detailRec.resolution && (
-                                  <div className="rounded-xl border border-slate-100 p-3">
+                                  <Card className="rounded-xl border-slate-100 p-3 shadow-none">
                                     <p className="text-sm font-black text-slate-900">{detailRec.resolution}</p>
                                     <p className="text-xs font-medium text-slate-400">Resolution</p>
-                                  </div>
+                                  </Card>
                                 )}
                                 {detailRec.video_size && (
-                                  <div className="rounded-xl border border-slate-100 p-3">
+                                  <Card className="rounded-xl border-slate-100 p-3 shadow-none">
                                     <p className="text-sm font-black text-slate-900">
                                       {detailRec.video_size > 1024 * 1024 * 1024
                                         ? `${(detailRec.video_size / (1024 * 1024 * 1024)).toFixed(1)} GB`
                                         : `${Math.round(detailRec.video_size / (1024 * 1024))} MB`}
                                     </p>
                                     <p className="text-xs font-medium text-slate-400">File Size</p>
-                                  </div>
+                                  </Card>
                                 )}
                               </div>
                             </div>
@@ -2037,16 +2075,16 @@ const ClassManagement: React.FC = () => {
                           {/* Thumbnail actions */}
                           {detailRec.source !== 'youtube' && (
                             <div>
-                              <button
+                              <Button variant="outline" size={null}
                                 onClick={() => handleGenerateThumbnail(detailRec)}
                                 disabled={thumbnailJobs[String(detailRec.id)]?.status === 'processing'}
-                                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-60"
                               >
                                 {thumbnailJobs[String(detailRec.id)]?.status === 'processing'
                                   ? <Loader2 size={13} className="animate-spin" />
                                   : <ImageIcon size={13} />}
                                 {detailRec.thumbnail_url ? 'Regenerate Thumbnail' : 'Generate Thumbnail'}
-                              </button>
+                              </Button>
                               {renderThumbnailProgress(detailRec)}
                             </div>
                           )}
@@ -2058,8 +2096,8 @@ const ClassManagement: React.FC = () => {
                             <div className="relative">
                               {/* Floating delete tooltip — appears on highlight click */}
                               {deleteToolbar && (
-                                <div
-                                  className="fixed z-[260] flex items-center gap-2 rounded-2xl bg-white/95 backdrop-blur-md p-2 shadow-2xl border border-slate-200"
+                                <Card
+                                  className="fixed z-[260] flex items-center gap-2 rounded-2xl bg-white/95 backdrop-blur-md p-2 shadow-2xl border-slate-200"
                                   style={{
                                     top: Math.max(10, deleteToolbar.rect.top - 56) + 'px',
                                     left: Math.max(10, deleteToolbar.rect.left + deleteToolbar.rect.width / 2 - 80) + 'px',
@@ -2068,24 +2106,24 @@ const ClassManagement: React.FC = () => {
                                 >
                                   <span className="text-xs text-slate-500 px-1">Remove highlight?</span>
                                   <div className="w-px h-5 bg-slate-200" />
-                                  <button
+                                  <Button variant={null} size={null}
                                     className="flex items-center gap-1 px-3 py-1 rounded-xl text-xs font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
                                     onClick={handleDeleteHighlight}
                                   >
                                     <Trash2 className="size-3.5" /> Delete
-                                  </button>
-                                  <button
+                                  </Button>
+                                  <Button variant={null} size={null}
                                     className="flex items-center gap-1 px-3 py-1 rounded-xl text-xs font-medium bg-slate-50 text-slate-500 hover:bg-slate-100 transition-colors"
                                     onClick={() => setDeleteToolbar(null)}
                                   >
                                     Cancel
-                                  </button>
-                                </div>
+                                  </Button>
+                                </Card>
                               )}
                               {/* Floating highlight toolbar — appears on text selection */}
                               {notesToolbar && (
-                                <div
-                                  className="fixed z-[250] flex items-center gap-2 rounded-2xl bg-white/95 backdrop-blur-md p-2 shadow-2xl border border-slate-200"
+                                <Card
+                                  className="fixed z-[250] flex items-center gap-2 rounded-2xl bg-white/95 backdrop-blur-md p-2 shadow-2xl border-slate-200"
                                   style={{
                                     top: Math.max(10, notesToolbar.rect.top - 56) + "px",
                                     left: Math.max(10, notesToolbar.rect.left + notesToolbar.rect.width / 2 - 120) + "px",
@@ -2095,7 +2133,7 @@ const ClassManagement: React.FC = () => {
                                   {/* Color selector */}
                                   <div className="flex items-center gap-1.5 px-1">
                                     {(["#fef08a", "#bfdbfe", "#bbf7d0", "#fbcfe8", "#fed7aa"] as const).map(color => (
-                                      <button
+                                      <Button variant={null} size={null}
                                         key={color}
                                         type="button"
                                         onMouseDown={e => e.preventDefault()}
@@ -2111,19 +2149,19 @@ const ClassManagement: React.FC = () => {
                                   </div>
                                   <div className="w-px h-5 bg-slate-200" />
                                   {/* Save button */}
-                                  <button
+                                  <Button variant={null} size={null}
                                     type="button"
                                     onMouseDown={e => e.preventDefault()}
                                     onClick={e => { e.preventDefault(); handleSaveNotesHighlight(); }}
                                     className="rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-violet-700 transition-colors flex items-center gap-1.5"
                                   >
                                     <Save className="size-3.5" /> Save
-                                  </button>
+                                  </Button>
                                   {/* Clear all button — only shows when highlights exist */}
                                   {notesHighlights.length > 0 && (
                                     <>
                                       <div className="w-px h-5 bg-slate-200" />
-                                      <button
+                                      <Button variant="ghost" size={null}
                                         type="button"
                                         onMouseDown={e => e.preventDefault()}
                                         onClick={e => {
@@ -2136,10 +2174,10 @@ const ClassManagement: React.FC = () => {
                                         title="Clear all highlights"
                                       >
                                         Clear all
-                                      </button>
+                                      </Button>
                                     </>
                                   )}
-                                </div>
+                                </Card>
                               )}
 
                               {/* Notes header: status + actions */}
@@ -2151,49 +2189,49 @@ const ClassManagement: React.FC = () => {
                                 {(() => {
                                   const imgs = Array.isArray(detailRec.notes_images) ? detailRec.notes_images : [];
                                   return imgs.length > 0 ? (
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600">
+                                    <Badge variant="outline" className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600 border-transparent">
                                       <ImagePlus size={10} /> {imgs.length} visual{imgs.length !== 1 ? 's' : ''}
-                                    </span>
+                                    </Badge>
                                   ) : (
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-400">
+                                    <Badge variant="outline" className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-400 border-transparent">
                                       <ImagePlus size={10} /> No visuals
-                                    </span>
+                                    </Badge>
                                   );
                                 })()}
                                 <div className="ml-auto flex items-center gap-2">
                                   {/* Download notes as PDF */}
-                                  <button
+                                  <Button variant="outline" size={null}
                                     onClick={handleDownloadNotesPdf}
                                     disabled={downloadingPdf}
-                                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 disabled:opacity-60"
+                                    className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-bold hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 disabled:opacity-60"
                                   >
                                     {downloadingPdf ? <Loader2 size={11} className="animate-spin" /> : <Download size={11} />}
                                     {downloadingPdf ? 'Preparing…' : 'Download PDF'}
-                                  </button>
+                                  </Button>
                                   {/* Add / Refresh visuals */}
-                                  <button
+                                  <Button variant="default" size={null}
                                     onClick={() => handleAddVisuals(detailRec.id)}
                                     disabled={addingVisuals}
-                                    className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1 text-[11px] font-bold text-white transition hover:bg-blue-700 disabled:opacity-60"
+                                    className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-bold disabled:opacity-60 shadow-none"
                                   >
                                     {addingVisuals ? <Loader2 size={11} className="animate-spin" /> : <ImagePlus size={11} />}
                                     {Array.isArray(detailRec.notes_images) && detailRec.notes_images.length > 0
                                       ? 'Refresh visuals'
                                       : 'Add visuals'}
-                                  </button>
-                                  <button
+                                  </Button>
+                                  <Button variant="ghost" size={null}
                                     onClick={() => handleRegenerateNotes(detailRec.id)}
                                     disabled={regeneratingNotesIds.has(detailRec.id)}
                                     className="text-xs font-bold text-slate-400 hover:text-blue-600 hover:underline disabled:cursor-not-allowed disabled:opacity-60 disabled:no-underline"
                                   >
                                     {regeneratingNotesIds.has(detailRec.id) ? 'Regenerating…' : 'Regenerate notes'}
-                                  </button>
+                                  </Button>
                                 </div>
                               </div>
 
                               {/* Visuals info strip (when images exist) */}
                               {Array.isArray(detailRec.notes_images) && detailRec.notes_images.length > 0 && (
-                                <div className="mb-3 flex items-start gap-2 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2 text-xs text-blue-700">
+                                <InfoAlert className="mb-3 flex items-start gap-2 rounded-xl border-blue-100 bg-blue-50/60 px-3 py-2 text-xs text-blue-700">
                                   <ImagePlus size={13} className="mt-0.5 shrink-0 text-blue-500" />
                                   <span>
                                     <span className="font-bold">{detailRec.notes_images.length} educational image{detailRec.notes_images.length !== 1 ? 's' : ''}</span>
@@ -2205,7 +2243,7 @@ const ClassManagement: React.FC = () => {
                                       </span>
                                     ))}
                                   </span>
-                                </div>
+                                </InfoAlert>
                               )}
 
                               {/* Notes content — wrap MarkdownRenderer in a ref div */}
@@ -2223,10 +2261,10 @@ const ClassManagement: React.FC = () => {
                               {hasNotesGen ? (
                                 <>
                                   <Button
-                                    icon={regeneratingNotesIds.has(detailRec.id) ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
                                     disabled={regeneratingNotesIds.has(detailRec.id)}
                                     onClick={() => handleRegenerateNotes(detailRec.id)}
                                   >
+                                    {regeneratingNotesIds.has(detailRec.id) ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
                                     {regeneratingNotesIds.has(detailRec.id)
                                       ? 'Generating…'
                                       : detailRec.notes_status === 'failed' ? 'Retry notes generation' : 'Generate AI notes'}
@@ -2252,15 +2290,15 @@ const ClassManagement: React.FC = () => {
                                 <CheckCircle size={13} /> Transcript ready
                               </span>
                               {hasNotesGen && (
-                                <button
+                                <Button variant="outline" size={null}
                                   onClick={() => {
                                     handleRetranscribe(detailRec.id);
                                     setDetailRec((prev: any) => prev ? { ...prev, transcript_status: 'processing' } : prev);
                                   }}
-                                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+                                  className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-bold text-slate-500 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
                                 >
                                   <RefreshCw size={11} /> Regenerate transcript
-                                </button>
+                                </Button>
                               )}
                             </div>
                             <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{detailRec.transcript}</p>
@@ -2269,15 +2307,15 @@ const ClassManagement: React.FC = () => {
                           <div className="space-y-3">
                             <p className="text-sm text-slate-500">No transcript is available yet.</p>
                             {hasNotesGen ? (
-                              <button
+                              <Button variant="default" size={null}
                                 onClick={() => {
                                   handleRetranscribe(detailRec.id);
                                   setDetailRec((prev: any) => prev ? { ...prev, transcript_status: 'processing' } : prev);
                                 }}
-                                className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-700"
+                                className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold shadow-none"
                               >
                                 <Sparkles size={14} /> Generate Transcript
-                              </button>
+                              </Button>
                             ) : (
                               <p className="text-xs text-slate-400">AI Lecture Transcription is disabled for this institution.</p>
                             )}
@@ -2288,15 +2326,15 @@ const ClassManagement: React.FC = () => {
                           <div className="text-center py-6">
                             {hasNotesGen ? (
                               <>
-                                <button
+                                <Button variant="default" size={null}
                                   onClick={() => {
                                     handleRetranscribe(detailRec.id);
                                     setDetailRec((prev: any) => prev ? { ...prev, transcript_status: 'processing' } : prev);
                                   }}
-                                  className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-700"
+                                  className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold shadow-none"
                                 >
                                   <Sparkles size={16} /> Generate Transcript
-                                </button>
+                                </Button>
                                 <p className="mt-2 text-xs text-slate-400">Uses AI to generate a text transcript of this lecture (sarvam for Odia, Whisper for Hindi/English).</p>
                               </>
                             ) : (
@@ -2317,9 +2355,9 @@ const ClassManagement: React.FC = () => {
                               return (
                                 <div className="flex flex-col h-full gap-y-4">
                                   {quizAnalyticsError && (
-                                    <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
+                                    <Alert className="rounded-2xl border-amber-100 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
                                       {quizAnalyticsError}
-                                    </div>
+                                    </Alert>
                                   )}
                                   {/* Summary strip */}
                                   <div className="grid grid-cols-3 gap-3 p-4 border-b border-slate-100 bg-slate-50/50 rounded-2xl shrink-0">
@@ -2339,15 +2377,19 @@ const ClassManagement: React.FC = () => {
                                   </div>
 
                                   {/* Sub-tabs */}
-                                  <div className="flex border-b border-slate-100 shrink-0">
-                                    {(["questions", "students"] as const).map(k => (
-                                      <button key={k} onClick={() => setQuizSubTab(k)}
-                                        className={cn("px-4 py-2.5 text-xs font-bold border-b-2 transition-colors -mb-px capitalize",
-                                          quizSubTab === k ? "border-blue-600 text-blue-600" : "border-transparent text-slate-400 hover:text-slate-600")}>
-                                        {k === "questions" ? `Questions (${detailRec.quiz.length})` : `Student Results (${analytics?.students.length ?? 0})`}
-                                      </button>
-                                    ))}
-                                  </div>
+                                  <Tabs value={quizSubTab} onValueChange={(v) => setQuizSubTab(v as any)} className="shrink-0">
+                                    <TabsList className="h-auto w-full justify-start rounded-none border-b border-slate-100 bg-transparent p-0">
+                                      {(["questions", "students"] as const).map(k => (
+                                        <TabsTrigger
+                                          key={k}
+                                          value={k}
+                                          className="-mb-px rounded-none border-b-2 border-transparent px-4 py-2.5 text-xs font-bold capitalize text-slate-400 data-[state=active]:border-blue-600 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 data-[state=active]:shadow-none"
+                                        >
+                                          {k === "questions" ? `Questions (${detailRec.quiz.length})` : `Student Results (${analytics?.students.length ?? 0})`}
+                                        </TabsTrigger>
+                                      ))}
+                                    </TabsList>
+                                  </Tabs>
 
                                   <div className="flex-1 space-y-3 pt-2">
                                     {quizAnalyticsLoading && (
@@ -2371,8 +2413,8 @@ const ClassManagement: React.FC = () => {
                                       }
 
                                       return (
-                                        <div key={cp.id || `q-${i}`} className="border border-slate-100 rounded-2xl overflow-hidden bg-white shadow-sm">
-                                          <button
+                                        <Card key={cp.id || `q-${i}`} className="border-slate-100 rounded-2xl overflow-hidden bg-white shadow-sm">
+                                          <Button variant="ghost" size={null}
                                             type="button"
                                             onClick={() => setExpandedQuestion(isExpanded ? null : (cp.id || `q-${i}`))}
                                             className="w-full flex items-start gap-3 p-4 text-left hover:bg-slate-50 transition-colors"
@@ -2400,7 +2442,7 @@ const ClassManagement: React.FC = () => {
                                               )}
                                             </div>
                                             <ChevronRight className={cn("size-4 text-slate-400 shrink-0 mt-1 transition-transform", isExpanded && "rotate-90")} />
-                                          </button>
+                                          </Button>
 
                                           {isExpanded && (
                                             <div className="border-t border-slate-100 p-4 space-y-2.5 bg-slate-50/50">
@@ -2410,7 +2452,7 @@ const ClassManagement: React.FC = () => {
                                                 const pct = totalAnswered > 0 ? Math.round((count / totalAnswered) * 100) : 0;
                                                 const isCorrect = opt.label === cp.correctOption;
                                                 return (
-                                                  <div key={opt.label} className={cn("rounded-xl p-3 border", isCorrect ? "bg-emerald-50 border-emerald-100 text-emerald-800" : "bg-white border-slate-100 text-slate-700")}>
+                                                  <Card key={opt.label} className={cn("rounded-xl p-3 border", isCorrect ? "bg-emerald-50 border-emerald-100 text-emerald-800" : "bg-white border-slate-100 text-slate-700")}>
                                                     <div className="flex items-center gap-2 mb-1.5">
                                                       <span className={cn("size-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0",
                                                         isCorrect ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-500")}>{opt.label}</span>
@@ -2426,20 +2468,20 @@ const ClassManagement: React.FC = () => {
                                                         style={{ width: `${pct}%` }}
                                                       />
                                                     </div>
-                                                  </div>
+                                                  </Card>
                                                 );
                                               })}
                                               {cp.explanation && (
-                                                <div className="mt-3 flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-xl p-3">
+                                                <InfoAlert className="mt-3 flex items-start gap-2 bg-amber-50 border-amber-100 rounded-xl p-3">
                                                   <Sparkles className="size-3.5 text-amber-600 shrink-0 mt-0.5" />
                                                   <div className="text-xs text-amber-800 font-medium leading-relaxed">
                                                     <MarkdownRenderer content={cp.explanation} className="prose-p:my-0 text-amber-800 font-semibold" />
                                                   </div>
-                                                </div>
+                                                </InfoAlert>
                                               )}
                                             </div>
                                           )}
-                                        </div>
+                                        </Card>
                                       );
                                     })}
 
@@ -2456,7 +2498,7 @@ const ClassManagement: React.FC = () => {
                                             .filter(s => s.answeredCount > 0)
                                             .sort((a, b) => (b.quizScore ?? 0) - (a.quizScore ?? 0))
                                             .map((s, idx) => (
-                                              <div key={s.studentId} className="border border-slate-100 rounded-2xl overflow-hidden bg-white shadow-sm">
+                                              <Card key={s.studentId} className="border-slate-100 rounded-2xl overflow-hidden bg-white shadow-sm">
                                                 <div className="flex items-center gap-3 p-3">
                                                   <div className="size-8 rounded-full bg-blue-50 flex items-center justify-center text-xs font-black text-blue-600 shrink-0">
                                                     {s.studentName.charAt(0).toUpperCase()}
@@ -2497,7 +2539,7 @@ const ClassManagement: React.FC = () => {
                                                     })}
                                                   </div>
                                                 )}
-                                              </div>
+                                              </Card>
                                             ))}
                                         </div>
                                       )
@@ -2515,7 +2557,8 @@ const ClassManagement: React.FC = () => {
                               )}
                               {hasQuizGen ? (
                                 <>
-                                  <Button icon={<Sparkles size={16} />} onClick={() => handleGenerateQuiz(detailRec.id)}>
+                                  <Button onClick={() => handleGenerateQuiz(detailRec.id)}>
+                                    <Sparkles size={16} />
                                     {detailRec.quiz_status === 'failed' ? 'Retry quiz generation' : 'Generate in-video quiz'}
                                   </Button>
                                   <p className="mt-2 text-xs text-slate-400">Creates MCQ checkpoints from the lecture content that pop up at points during the video.</p>
@@ -2560,55 +2603,53 @@ const ClassManagement: React.FC = () => {
                                 <MessagesSquare size={15} className="text-blue-600" />
                                 <h4 className="text-[13px] font-black text-slate-800">Student Doubts</h4>
                                 {detailRec.subject_name && (
-                                  <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-black text-blue-700">{detailRec.subject_name}</span>
+                                  <Badge variant="outline" className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-black text-blue-700 border-transparent">{detailRec.subject_name}</Badge>
                                 )}
                               </div>
-                              <button
+                              <Button variant="outline" size={null}
                                 type="button"
                                 onClick={() => fetchRecordingDoubts(true)}
                                 disabled={recDoubtsLoading}
-                                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                                className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold disabled:opacity-50"
                               >
                                 <RefreshCw size={11} className={recDoubtsLoading ? 'animate-spin' : ''} />
                                 Refresh
-                              </button>
+                              </Button>
                             </div>
 
                             {/* Summary strip */}
                             <div className="grid grid-cols-3 gap-2">
-                              <div className="rounded-xl border border-amber-100 bg-amber-50 p-2.5 text-center">
+                              <Card className="rounded-xl border-amber-100 bg-amber-50 p-2.5 text-center shadow-none">
                                 <p className="text-base font-black text-amber-900">{pendingDoubts.length}</p>
                                 <p className="text-[10px] font-black uppercase tracking-widest text-amber-600">Pending</p>
-                              </div>
-                              <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-2.5 text-center">
+                              </Card>
+                              <Card className="rounded-xl border-emerald-100 bg-emerald-50 p-2.5 text-center shadow-none">
                                 <p className="text-base font-black text-emerald-900">{answeredDoubts.length}</p>
                                 <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Answered</p>
-                              </div>
-                              <div className="rounded-xl border border-slate-100 bg-white p-2.5 text-center">
+                              </Card>
+                              <Card className="rounded-xl border-slate-100 bg-white p-2.5 text-center shadow-none">
                                 <p className="text-base font-black text-slate-900">{recDoubts.length}</p>
                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Total</p>
-                              </div>
+                              </Card>
                             </div>
 
                             {/* Sub-tabs */}
-                            <div className="flex gap-1.5">
-                              {(['pending', 'answered', 'all'] as const).map((t) => (
-                                <button
-                                  key={t}
-                                  type="button"
-                                  onClick={() => setRecDoubtTab(t)}
-                                  className={cn(
-                                    'flex-1 rounded-lg px-2 py-1.5 text-[11px] font-black transition',
-                                    recDoubtTab === t ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
-                                  )}
-                                >
-                                  {t === 'pending' ? `Pending (${pendingDoubts.length})` : t === 'answered' ? `Answered (${answeredDoubts.length})` : `All (${recDoubts.length})`}
-                                </button>
-                              ))}
-                            </div>
+                            <Tabs value={recDoubtTab} onValueChange={(v) => setRecDoubtTab(v as any)}>
+                              <TabsList className="grid h-auto w-full grid-cols-3 gap-1.5 bg-transparent p-0">
+                                {(['pending', 'answered', 'all'] as const).map((t) => (
+                                  <TabsTrigger
+                                    key={t}
+                                    value={t}
+                                    className="rounded-lg bg-slate-100 px-2 py-1.5 text-[11px] font-black text-slate-600 hover:bg-slate-200 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm"
+                                  >
+                                    {t === 'pending' ? `Pending (${pendingDoubts.length})` : t === 'answered' ? `Answered (${answeredDoubts.length})` : `All (${recDoubts.length})`}
+                                  </TabsTrigger>
+                                ))}
+                              </TabsList>
+                            </Tabs>
 
                             {doubtError && (
-                              <p className="rounded-xl border border-rose-100 bg-rose-50 p-3 text-xs font-semibold text-rose-700">{doubtError}</p>
+                              <Alert className="rounded-xl border-rose-100 bg-rose-50 p-3 text-xs font-semibold text-rose-700">{doubtError}</Alert>
                             )}
 
                             {recDoubtsLoading ? (
@@ -2616,7 +2657,7 @@ const ClassManagement: React.FC = () => {
                                 <Loader2 className="size-7 animate-spin text-blue-500" />
                               </div>
                             ) : shownDoubts.length === 0 ? (
-                              <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 py-10 text-center">
+                              <Card className="flex flex-col items-center justify-center rounded-2xl border-dashed border-slate-200 bg-slate-50 py-10 text-center shadow-none">
                                 <HelpCircle className="size-8 text-slate-300" />
                                 <p className="mt-2 text-sm font-bold text-slate-700">
                                   {recDoubtTab === 'pending' ? 'No pending doubts' : recDoubtTab === 'answered' ? 'No answered doubts yet' : 'No doubts yet'}
@@ -2626,7 +2667,7 @@ const ClassManagement: React.FC = () => {
                                     ? 'All caught up! Check the Answered tab.'
                                     : 'When students ask doubts about this subject, they appear here.'}
                                 </p>
-                              </div>
+                              </Card>
                             ) : (
                               <div className="space-y-3">
                                 {shownDoubts.map((doubt: any) => {
@@ -2634,7 +2675,7 @@ const ClassManagement: React.FC = () => {
                                   const isPending = ['escalated', 'open', 'ai_answered'].includes(doubt.status);
                                   const isReplying = doubtReplyingId === doubt.id;
                                   return (
-                                    <article key={doubt.id} className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm space-y-3">
+                                    <Card key={doubt.id} className="rounded-xl border-slate-100 bg-white p-4 shadow-sm space-y-3">
                                       {/* Status + time */}
                                       <div className="flex items-start justify-between gap-2">
                                         <span className={cn('rounded px-1.5 py-0.5 text-[9px] font-black uppercase tracking-widest', meta.tone)}>
@@ -2665,26 +2706,26 @@ const ClassManagement: React.FC = () => {
 
                                       {/* AI response (collapsed preview) */}
                                       {doubt.aiExplanation && (
-                                        <div className="rounded-lg border border-indigo-100 bg-indigo-50/60 p-2.5">
+                                        <Card className="rounded-lg border-indigo-100 bg-indigo-50/60 p-2.5 shadow-none">
                                           <p className="text-[9px] font-black uppercase tracking-widest text-indigo-600 flex items-center gap-1">
                                             <Sparkles size={10} /> AI response
                                           </p>
                                           <p className="mt-1 text-[11px] font-medium text-slate-600 leading-relaxed line-clamp-3">{parseAiAnswer(doubt.aiExplanation)}</p>
-                                        </div>
+                                        </Card>
                                       )}
 
                                       {/* Teacher's existing answer */}
                                       {doubt.teacherResponse && (
-                                        <div className="rounded-lg border border-emerald-100 bg-emerald-50/60 p-2.5">
+                                        <Card className="rounded-lg border-emerald-100 bg-emerald-50/60 p-2.5 shadow-none">
                                           <p className="text-[9px] font-black uppercase tracking-widest text-emerald-700">Your answer</p>
                                           <p className="mt-1 text-[11px] font-medium text-slate-700 leading-relaxed">{doubt.teacherResponse}</p>
-                                        </div>
+                                        </Card>
                                       )}
 
                                       {/* Reply section */}
                                       {isPending && isReplying ? (
                                         <div className="space-y-2.5">
-                                          <button
+                                          <Button variant={null} size={null}
                                             type="button"
                                             disabled={doubtAiSuggesting || doubtSubmitting}
                                             onClick={() => aiSuggestDoubtReply(doubt.id)}
@@ -2692,43 +2733,43 @@ const ClassManagement: React.FC = () => {
                                           >
                                             {doubtAiSuggesting ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
                                             Draft with AI (edit before sending)
-                                          </button>
-                                          <textarea
+                                          </Button>
+                                          <Textarea
                                             value={doubtReplyText}
                                             onChange={(e) => setDoubtReplyText(e.target.value)}
                                             rows={4}
                                             placeholder="Write your answer for the student..."
-                                            className="w-full resize-none rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-xs font-medium text-slate-800 outline-none focus:border-blue-400"
+                                            className="min-h-0 w-full resize-none rounded-lg border-slate-200 bg-slate-50 p-2.5 text-xs font-medium text-slate-800"
                                           />
                                           <div className="flex gap-2">
-                                            <button
+                                            <Button variant="default" size={null}
                                               type="button"
                                               disabled={doubtSubmitting || doubtReplyText.trim().length < 5}
                                               onClick={() => submitDoubtReply(doubt.id)}
-                                              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-[11px] font-black text-white hover:bg-blue-700 disabled:opacity-50"
+                                              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-black disabled:opacity-50 shadow-none"
                                             >
                                               {doubtSubmitting ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
                                               Send
-                                            </button>
-                                            <button
+                                            </Button>
+                                            <Button variant="ghost" size={null}
                                               type="button"
                                               onClick={() => { setDoubtReplyingId(null); setDoubtReplyText(''); }}
                                               className="rounded-lg px-3 py-1.5 text-[11px] font-bold text-slate-500 hover:bg-slate-100"
                                             >
                                               Cancel
-                                            </button>
+                                            </Button>
                                           </div>
                                         </div>
                                       ) : isPending ? (
-                                        <button
+                                        <Button variant="default" size={null}
                                           type="button"
                                           onClick={() => { setDoubtReplyingId(doubt.id); setDoubtReplyText(''); }}
-                                          className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-[11px] font-black text-white hover:bg-blue-700"
+                                          className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-black shadow-none"
                                         >
                                           <MessageCircle size={11} /> Reply to student
-                                        </button>
+                                        </Button>
                                       ) : null}
-                                    </article>
+                                    </Card>
                                   );
                                 })}
                               </div>
@@ -2737,7 +2778,7 @@ const ClassManagement: React.FC = () => {
                         );
                       })()}
                     </div>
-                  </div>
+                  </Card>
                 </aside>
               </div>
             </div>
@@ -2745,33 +2786,24 @@ const ClassManagement: React.FC = () => {
         </div>
       )}
 
-      {/* ── Schedule Live Class modal (matches coaching panel design exactly) ── */}
-      {showScheduleLiveModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => { setShowScheduleLiveModal(false); resetSchedForm(); }} />
-          <div className="relative z-10 flex w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl" style={{ maxHeight: 'min(90vh, 800px)' }}>
-
-            {/* Header */}
-            <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-7">
-              <div className="flex items-center gap-3">
-                <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue-50">
-                  <Radio className="size-4 text-blue-600" />
-                </div>
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">Schedule Live Class</h2>
-                  <p className="mt-0.5 hidden text-xs text-slate-500 sm:block">Students will be notified and reminded automatically</p>
-                </div>
+      {/* ── Schedule Live Class modal ── */}
+      <Dialog open={showScheduleLiveModal} onOpenChange={(open) => { if (!open) { setShowScheduleLiveModal(false); resetSchedForm(); } }}>
+        <DialogContent className="flex w-full max-w-3xl flex-col gap-0 overflow-hidden rounded-2xl p-0" style={{ maxHeight: 'min(90vh, 800px)' }}>
+          {/* Header */}
+          <DialogHeader className="shrink-0 space-y-0 border-b border-slate-200 px-5 py-4 text-left sm:px-7">
+            <div className="flex items-center gap-3 pr-6">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue-50">
+                <Radio className="size-4 text-blue-600" />
               </div>
-              <button
-                onClick={() => { setShowScheduleLiveModal(false); resetSchedForm(); }}
-                className="ml-2 flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-900"
-              >
-                <X className="size-4" />
-              </button>
+              <div>
+                <DialogTitle className="text-base font-bold leading-normal tracking-normal text-slate-900">Schedule Live Class</DialogTitle>
+                <DialogDescription className="mt-0.5 hidden text-xs text-slate-500 sm:block">Students will be notified and reminded automatically</DialogDescription>
+              </div>
             </div>
+          </DialogHeader>
 
-            {/* Body */}
-            <form onSubmit={submitScheduleLive} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          {/* Body */}
+          <form onSubmit={submitScheduleLive} className="flex min-h-0 flex-1 flex-col overflow-hidden">
               <div className="min-h-0 flex-1 overflow-y-auto">
                 <div className="grid grid-cols-1 divide-y divide-slate-100 md:grid-cols-5 md:divide-x md:divide-y-0">
 
@@ -2780,7 +2812,7 @@ const ClassManagement: React.FC = () => {
                     <div className="grid grid-cols-2 gap-3 sm:gap-4">
                       {/* Class */}
                       <div className="col-span-2 space-y-1 sm:space-y-1.5">
-                        <label className="text-xs sm:text-sm font-semibold text-slate-700">Class *</label>
+                        <Label className="text-xs sm:text-sm font-semibold text-slate-700">Class *</Label>
                         <CustomSelect
                           value={schedLiveForm.classId}
                           onChange={(val) => setSchedLiveForm((prev) => ({ ...prev, classId: val, sectionId: '', subjectId: '' }))}
@@ -2794,7 +2826,7 @@ const ClassManagement: React.FC = () => {
 
                       {/* Section */}
                       <div className="space-y-1 sm:space-y-1.5">
-                        <label className="text-xs sm:text-sm font-semibold text-slate-700">Section *</label>
+                        <Label className="text-xs sm:text-sm font-semibold text-slate-700">Section *</Label>
                         <CustomSelect
                           value={schedLiveForm.sectionId}
                           onChange={(val) => setSchedLiveForm((prev) => ({ ...prev, sectionId: val, subjectId: '' }))}
@@ -2809,7 +2841,7 @@ const ClassManagement: React.FC = () => {
 
                       {/* Subject */}
                       <div className="space-y-1 sm:space-y-1.5">
-                        <label className="text-xs sm:text-sm font-semibold text-slate-700">Subject *</label>
+                        <Label className="text-xs sm:text-sm font-semibold text-slate-700">Subject *</Label>
                         <CustomSelect
                           value={schedLiveForm.subjectId}
                           onChange={(val) => setSchedLiveForm((prev) => ({ ...prev, subjectId: val }))}
@@ -2824,38 +2856,38 @@ const ClassManagement: React.FC = () => {
 
                       {/* Title */}
                       <div className="col-span-2 space-y-1 sm:space-y-1.5">
-                        <label className="text-xs sm:text-sm font-semibold text-slate-700">Class Title *</label>
-                        <input
+                        <Label className="text-xs sm:text-sm font-semibold text-slate-700">Class Title *</Label>
+                        <Input
                           required
                           type="text"
                           value={schedLiveForm.title}
                           onChange={(e) => setSchedLiveForm((p) => ({ ...p, title: e.target.value }))}
                           placeholder="e.g. Electrostatics — Doubt Session"
-                          className="h-9 sm:h-11 w-full rounded-lg sm:rounded-xl border border-slate-200 bg-slate-50 px-3 sm:px-4 text-xs sm:text-sm outline-none focus:border-blue-500"
+                          className="h-9 sm:h-11 w-full rounded-lg sm:rounded-xl border-slate-200 bg-slate-50 px-3 sm:px-4 text-xs sm:text-sm"
                         />
                       </div>
 
                       {/* Description */}
                       <div className="col-span-2 space-y-1 sm:space-y-1.5">
-                        <label className="text-xs sm:text-sm font-semibold text-slate-700">Description</label>
-                        <textarea
+                        <Label className="text-xs sm:text-sm font-semibold text-slate-700">Description</Label>
+                        <Textarea
                           rows={3}
                           value={schedLiveForm.description}
                           onChange={(e) => setSchedLiveForm((p) => ({ ...p, description: e.target.value }))}
                           placeholder="What topics will be covered? Any prerequisites?"
-                          className="w-full resize-none rounded-lg sm:rounded-xl border border-slate-200 bg-slate-50 p-2.5 sm:p-3 text-xs sm:text-sm outline-none focus:border-blue-500"
+                          className="min-h-0 w-full resize-none rounded-lg sm:rounded-xl border-slate-200 bg-slate-50 p-2.5 sm:p-3 text-xs sm:text-sm"
                         />
                       </div>
 
                       {/* Date & Time */}
                       <div className="col-span-2 space-y-1 sm:space-y-1.5">
-                        <label className="text-xs sm:text-sm font-semibold text-slate-700">Date &amp; Time *</label>
-                        <input
+                        <Label className="text-xs sm:text-sm font-semibold text-slate-700">Date &amp; Time *</Label>
+                        <Input
                           required
                           type="datetime-local"
                           value={schedLiveForm.scheduledFor}
                           onChange={(e) => setSchedLiveForm((p) => ({ ...p, scheduledFor: e.target.value }))}
-                          className="h-9 sm:h-11 w-full rounded-lg sm:rounded-xl border border-slate-200 bg-slate-50 px-3 sm:px-4 text-xs sm:text-sm outline-none focus:border-blue-500"
+                          className="h-9 sm:h-11 w-full rounded-lg sm:rounded-xl border-slate-200 bg-slate-50 px-3 sm:px-4 text-xs sm:text-sm"
                         />
                       </div>
                     </div>
@@ -2902,24 +2934,22 @@ const ClassManagement: React.FC = () => {
               </div>
 
               {/* Footer */}
-              <div className="flex shrink-0 items-center justify-end gap-3 border-t border-slate-200 bg-white px-5 py-4 sm:px-7">
-                <button type="button" onClick={() => { setShowScheduleLiveModal(false); resetSchedForm(); }}
-                  className="rounded-lg sm:rounded-xl border border-slate-200 px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+              <DialogFooter className="shrink-0 items-center gap-3 border-t border-slate-200 bg-white px-5 py-4 sm:px-7 sm:space-x-0">
+                <Button type="button" variant="outline" onClick={() => { setShowScheduleLiveModal(false); resetSchedForm(); }}>
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
                   disabled={schedulingLive || !schedLiveForm.classId || !schedLiveForm.sectionId || !schedLiveForm.subjectId || !schedLiveForm.title || !schedLiveForm.scheduledFor}
-                  className="inline-flex items-center gap-2 rounded-lg sm:rounded-xl bg-blue-600 px-4 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-bold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+                  className="gap-2"
                 >
                   {schedulingLive ? <Loader2 className="size-4 animate-spin" /> : <Radio className="size-4" />}
                   Schedule Live Class
-                </button>
-              </div>
+                </Button>
+              </DialogFooter>
             </form>
-          </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {/* ── OBS Stream Credentials modal ─────────────────────────────────── */}
       <Modal isOpen={showLiveModal} onClose={() => { setShowLiveModal(false); setCreatedLive(null); setCredsLecture(null); }} title="Live Class — OBS Setup">
@@ -2936,12 +2966,12 @@ const ClassManagement: React.FC = () => {
               <div className="mb-1 flex items-center justify-between">
                 <span className="text-xs font-black uppercase tracking-wider text-slate-500">Stream Key</span>
                 <div className="flex gap-3">
-                  <button onClick={() => setShowKey((s) => !s)} className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-slate-700">
+                  <Button variant="ghost" size={null} onClick={() => setShowKey((s) => !s)} className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-slate-700">
                     {showKey ? <EyeOff size={13} /> : <Eye size={13} />} {showKey ? 'Hide' : 'Show'}
-                  </button>
-                  <button onClick={() => copyText(activeCreds.streamKey, 'Stream key')} className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700">
+                  </Button>
+                  <Button variant="ghost" size={null} onClick={() => copyText(activeCreds.streamKey, 'Stream key')} className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700">
                     <Copy size={13} /> Copy
-                  </button>
+                  </Button>
                 </div>
               </div>
               <code className="block w-full overflow-x-auto rounded-xl bg-slate-100 px-3 py-2.5 font-mono text-sm text-slate-800">
@@ -2958,8 +2988,8 @@ const ClassManagement: React.FC = () => {
 
             <div className="class__modal-actions">
               <Button variant="outline" onClick={() => { setShowLiveModal(false); setCreatedLive(null); setCredsLecture(null); }}>Close</Button>
-              <Button icon={<ArrowRight size={16} />} onClick={() => navigate(`/school/teacher/live/${activeCreds.lectureId}/dashboard`)}>
-                Open Live Dashboard
+              <Button onClick={() => navigate(`/school/teacher/live/${activeCreds.lectureId}/dashboard`)}>
+                Open Live Dashboard <ArrowRight size={16} />
               </Button>
             </div>
           </div>
@@ -3030,13 +3060,13 @@ const ClassManagement: React.FC = () => {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-semibold text-slate-600">Description</label>
-            <textarea
+            <Label className="mb-1 block text-sm font-semibold text-slate-600">Description</Label>
+            <Textarea
               rows={2}
               value={recordingForm.description}
               placeholder="Brief description for students…"
               onChange={(e) => setRecordingForm((prev) => ({ ...prev, description: e.target.value }))}
-              className="w-full resize-none rounded-xl border border-slate-200 p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+              className="min-h-0 w-full resize-none rounded-xl border-slate-200 p-2.5 text-sm"
             />
           </div>
 
@@ -3059,31 +3089,31 @@ const ClassManagement: React.FC = () => {
 
           {/* Video source toggle */}
           <div>
-            <label className="mb-1 block text-sm font-semibold text-slate-600">Video source</label>
+            <Label className="mb-1 block text-sm font-semibold text-slate-600">Video source</Label>
             <div className="grid grid-cols-2 gap-2">
               {([
                 { id: 'upload', label: 'Upload Video', icon: Upload },
                 { id: 'youtube', label: 'YouTube URL', icon: Youtube },
               ] as const).map((opt) => (
-                <button
+                <Button variant={null} size={null}
                   key={opt.id}
                   type="button"
                   onClick={() => setVideoSource(opt.id)}
                   className={`flex items-center justify-center gap-2 rounded-xl border-2 py-2.5 text-sm font-bold transition ${videoSource === opt.id ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}
                 >
                   <opt.icon size={16} /> {opt.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
 
           {videoSource === 'upload' ? (
             <div>
-              <input
+              <Input
                 type="file"
                 accept="video/*,audio/*"
                 onChange={(e) => { setRecordingFile(e.target.files?.[0] ?? null); setUploadedVideo(null); }}
-                className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
+                className="h-auto cursor-pointer border-0 p-0 shadow-none block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
               />
               {recordingFile && (
                 <p className="mt-1 text-xs text-emerald-600">{recordingFile.name} · {(recordingFile.size / 1024 / 1024).toFixed(1)} MB</p>
@@ -3101,12 +3131,12 @@ const ClassManagement: React.FC = () => {
 
           {/* Thumbnail (optional) */}
           <div>
-            <label className="mb-1 flex items-center gap-1.5 text-sm font-semibold text-slate-600"><ImageIcon size={14} /> Thumbnail (optional)</label>
-            <input
+            <Label className="mb-1 flex items-center gap-1.5 text-sm font-semibold text-slate-600"><ImageIcon size={14} /> Thumbnail (optional)</Label>
+            <Input
               type="file"
               accept="image/*"
               onChange={(e) => setThumbnailFile(e.target.files?.[0] ?? null)}
-              className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200"
+              className="h-auto cursor-pointer border-0 p-0 shadow-none block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200"
             />
             {thumbnailFile && <p className="mt-1 text-xs text-emerald-600">{thumbnailFile.name}</p>}
           </div>
@@ -3128,9 +3158,7 @@ const ClassManagement: React.FC = () => {
 
           {uploadingRecording && videoSource === 'upload' && (
             <div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
-                <div className="h-full rounded-full bg-blue-600 transition-all" style={{ width: `${uploadPct}%` }} />
-              </div>
+              <Progress value={uploadPct} className="h-2 bg-slate-100" indicatorClassName="bg-blue-600" />
               <p className="mt-1 text-center text-xs font-semibold text-slate-500">Uploading… {uploadPct}%</p>
             </div>
           )}
@@ -3208,13 +3236,13 @@ const ClassManagement: React.FC = () => {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-semibold text-slate-600">Description</label>
-            <textarea
+            <Label className="mb-1 block text-sm font-semibold text-slate-600">Description</Label>
+            <Textarea
               rows={2}
               value={editForm.description}
               placeholder="Brief description for students…"
               onChange={(e) => setEditForm((prev) => ({ ...prev, description: e.target.value }))}
-              className="w-full resize-none rounded-xl border border-slate-200 p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+              className="min-h-0 w-full resize-none rounded-xl border-slate-200 p-2.5 text-sm"
             />
           </div>
           <div className="class__modal-actions">

@@ -2,8 +2,16 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Download, Save, Sparkles, Flag, CheckCircle2 } from "lucide-react";
-import Button from "@/components/school/Button";
-import GlassCard from "@/components/school/GlassCard";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import AssessmentContentRenderer from "@/components/school/AssessmentContentRenderer";
 import api, { unwrapSchoolData, unwrapSchoolList } from "@/lib/api/school-client";
 import {
@@ -15,7 +23,6 @@ import {
 } from "./assessment-utils";
 import { StructuredAnswersView } from "./AssessmentDetails";
 import "./AssessmentSystem.css";
-import { CustomSelect } from "@/components/ui/CustomSelect";
 
 
 type AiCriterion = { criterion: string; maxMarks: number; awardedMarks: number; justification: string };
@@ -341,26 +348,42 @@ const AssessmentSubmissionReview: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="p-12 text-center text-gray-500">Loading submission...</div>;
+    return (
+      <div className="w-full space-y-6 p-4 sm:p-6">
+        <div className="space-y-2">
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-9 w-2/3 max-w-lg" />
+        </div>
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <Skeleton className="h-96 rounded-2xl" />
+          <Skeleton className="h-80 rounded-2xl" />
+        </div>
+      </div>
+    );
   }
 
   if (!assessment) {
-    return <div className="p-12 text-center text-red-500">Assessment not found</div>;
+    return (
+      <div className="w-full p-4 sm:p-6">
+        <Card className="rounded-2xl border-dashed border-red-200 bg-white p-12 text-center text-red-500 shadow-none">Assessment not found</Card>
+      </div>
+    );
   }
 
   return (
-    <div className="w-full space-y-6 p-6">
+    <div className="w-full space-y-6 p-4 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={backToAssessment}
-            className="mb-3 inline-flex items-center gap-2 text-sm font-bold text-brand-700 hover:text-brand-900"
+            className="mb-3 h-auto gap-2 p-0 text-sm font-bold text-brand-700 hover:bg-transparent hover:text-brand-900"
           >
             <ChevronLeft size={16} />
             Back to assessment
-          </button>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+          </Button>
+          <h1 className="font-display text-xl font-bold tracking-tight text-gray-900 sm:text-3xl">
             Review Submission - {studentName}
           </h1>
           <p className="mt-1 text-sm font-medium text-gray-500">
@@ -370,19 +393,16 @@ const AssessmentSubmissionReview: React.FC = () => {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <GlassCard className="min-w-0">
-          <div className="mb-3 flex items-center justify-between gap-3">
+        <Card className="min-w-0 rounded-2xl border-gray-100 bg-white p-4 shadow-sm sm:p-[18px]">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <h3 className="text-sm font-black uppercase tracking-wide text-gray-700">Student Submission</h3>
             {fileUrl && (
-              <a
-                href={fileUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-lg border border-brand-200 px-3 py-1.5 text-xs font-bold text-brand-700 hover:bg-brand-50"
-              >
-                <Download size={13} />
-                Open file
-              </a>
+              <Button asChild variant="outline" size="sm" className="gap-2 border-brand-200 text-xs font-bold text-brand-700 hover:bg-brand-50 hover:text-brand-700">
+                <a href={fileUrl} target="_blank" rel="noreferrer">
+                  <Download size={13} />
+                  Open file
+                </a>
+              </Button>
             )}
           </div>
           {structuredRows.length ? (
@@ -402,36 +422,37 @@ const AssessmentSubmissionReview: React.FC = () => {
                       const correctRaw = String(row.correctAnswer || "").trim().toLowerCase();
 
                       return (
-                        <div key={row.id} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                        <Card key={row.id} className="rounded-lg border-gray-200 bg-gray-50 p-4 shadow-none">
                           {/* Row Header */}
                           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                             <div className="flex flex-wrap items-center gap-2">
-                              <span className="rounded-md bg-white px-2.5 py-1 text-xs font-black text-gray-700 border border-gray-200">Q{row.number}</span>
-                              <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-blue-700">
+                              <Badge variant="outline" className="rounded-md border-gray-200 bg-white px-2.5 py-1 text-xs font-black text-gray-700">Q{row.number}</Badge>
+                              <Badge variant="outline" className="rounded-md border-transparent bg-blue-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-blue-700">
                                 {row.type.replace(/_/g, " ")}
-                              </span>
+                              </Badge>
                               {isSubjective && subjectiveQ.aiGrading?.flagForReview && (
-                                <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-black uppercase text-amber-800">
+                                <Badge variant="outline" className="shrink-0 gap-1 rounded-md border-transparent bg-amber-100 px-2 py-0.5 text-[10px] font-black uppercase text-amber-800">
                                   <Flag size={11} /> Flagged for review
-                                </span>
+                                </Badge>
                               )}
                             </div>
                             <div className="flex items-center gap-2">
                               {isSubjective ? (
-                                <span className={`rounded-md px-2 py-1 text-xs font-black transition-colors ${
+                                <Badge variant="outline" className={cn(
+                                  "rounded-md px-2 py-1 text-xs font-black transition-colors",
                                   subjectiveMarks[subjectiveQ.questionId] !== undefined && subjectiveMarks[subjectiveQ.questionId] !== ""
-                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                    : "bg-brand-50 text-brand-700"
-                                }`}>
+                                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                    : "border-transparent bg-brand-50 text-brand-700",
+                                )}>
                                   {subjectiveMarks[subjectiveQ.questionId] !== undefined && subjectiveMarks[subjectiveQ.questionId] !== ""
                                     ? `${subjectiveMarks[subjectiveQ.questionId]}/${subjectiveQ.maxMarks} marks`
                                     : `Subjective (Max ${subjectiveQ.maxMarks} marks)`}
-                                </span>
+                                </Badge>
                               ) : (
                                 row.marksAwarded !== undefined && row.marksTotal !== undefined && (
-                                  <span className="rounded-md bg-emerald-50 px-2 py-1 text-xs font-black text-emerald-700">
+                                  <Badge variant="outline" className="rounded-md border-transparent bg-emerald-50 px-2 py-1 text-xs font-black text-emerald-700">
                                     {row.marksAwarded}/{row.marksTotal} marks
-                                  </span>
+                                  </Badge>
                                 )
                               )}
                             </div>
@@ -445,30 +466,30 @@ const AssessmentSubmissionReview: React.FC = () => {
                           {/* Answers and Grading Details */}
                           {isSubjective ? (
                             <>
-                              <div className="rounded-md bg-white p-3 text-sm font-bold leading-6 text-gray-900 border border-gray-100">
+                              <Card className="rounded-md bg-white p-3 text-sm font-bold leading-6 text-gray-900 border-gray-100 shadow-none">
                                 {subjectiveQ.studentAnswer ? (
                                   <AssessmentContentRenderer>{subjectiveQ.studentAnswer}</AssessmentContentRenderer>
                                 ) : (
                                   <span className="font-normal italic text-gray-400">Not answered</span>
                                 )}
-                              </div>
+                              </Card>
 
                               {subjectiveQ.studentAnswerImage && (
-                                <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3">
+                                <Card className="mt-3 rounded-lg border-slate-200 bg-white p-3 shadow-none">
                                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Handwritten Answer Image</p>
                                   <a href={subjectiveQ.studentAnswerImage} target="_blank" rel="noopener noreferrer" className="inline-block group">
-                                    <img 
-                                      src={subjectiveQ.studentAnswerImage} 
-                                      alt="Handwritten answer" 
-                                      className="max-h-48 rounded-md border border-slate-200 object-contain hover:shadow-md transition-all group-hover:scale-[1.02]" 
+                                    <img
+                                      src={subjectiveQ.studentAnswerImage}
+                                      alt="Handwritten answer"
+                                      className="max-h-48 rounded-md border border-slate-200 object-contain hover:shadow-md transition-all group-hover:scale-[1.02]"
                                     />
                                   </a>
-                                </div>
+                                </Card>
                               )}
 
                               {/* AI Feedback Section */}
                               {subjectiveQ.aiGrading ? (
-                                <div className="mt-3 space-y-2 rounded-md border border-brand-100 bg-brand-50/60 p-3">
+                                <Card className="mt-3 space-y-2 rounded-md border-brand-100 bg-brand-50/60 p-3 shadow-none">
                                   <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-brand-700">
                                     <Sparkles size={13} />
                                     <span>AI Feedback & Suggested Marks: {subjectiveQ.currentMarks}/{subjectiveQ.maxMarks}</span>
@@ -514,7 +535,7 @@ const AssessmentSubmissionReview: React.FC = () => {
                                       )}
                                     </div>
                                   )}
-                                </div>
+                                </Card>
                               ) : (
                                 <p className="mt-3 text-xs font-semibold italic text-gray-400">
                                   AI grading unavailable for this answer — enter marks manually.
@@ -522,18 +543,18 @@ const AssessmentSubmissionReview: React.FC = () => {
                               )}
 
                               {/* Teacher Input Box */}
-                              <div className="mt-3 flex items-center gap-3">
+                              <div className="mt-3 flex flex-wrap items-center gap-3">
                                 <span className="text-xs font-bold uppercase tracking-wide text-gray-500">
                                   Final marks (out of {subjectiveQ.maxMarks}):
                                 </span>
-                                <input
+                                <Input
                                   type="number"
                                   min="0"
                                   max={subjectiveQ.maxMarks}
                                   step="0.5"
                                   value={subjectiveMarks[subjectiveQ.questionId] ?? ""}
                                   onChange={(event) => updateSubjectiveMark(subjectiveQ.questionId, event.target.value)}
-                                  className="w-24 rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-bold outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+                                  className="h-9 w-24 bg-white font-bold"
                                 />
                               </div>
                             </>
@@ -580,23 +601,23 @@ const AssessmentSubmissionReview: React.FC = () => {
                                   <AssessmentContentRenderer>{`Answer key: ${row.correctAnswer}`}</AssessmentContentRenderer>
                                 </div>
                               )}
-                              <div className="mt-3 flex items-center justify-between gap-3 border-t border-gray-100 pt-3">
+                              <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-3">
                                 <span className="text-xs font-bold uppercase tracking-wide text-gray-500">
                                   Awarded Marks (out of {row.marksTotal || 1}):
                                 </span>
-                                <input
+                                <Input
                                   type="number"
                                   min="0"
                                   max={row.marksTotal || 100}
                                   step="0.5"
                                   value={subjectiveMarks[row.id] ?? row.marksAwarded ?? ""}
                                   onChange={(event) => updateSubjectiveMark(row.id, event.target.value)}
-                                  className="w-24 rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-bold outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+                                  className="h-9 w-24 bg-white font-bold"
                                 />
                               </div>
                             </>
                           )}
-                        </div>
+                        </Card>
                       );
                     })}
                   </section>
@@ -610,58 +631,61 @@ const AssessmentSubmissionReview: React.FC = () => {
                   <span className="font-bold text-gray-700">{Math.min(endIndex, structuredRows.length)}</span> of{" "}
                   <span className="font-bold text-gray-700">{structuredRows.length}</span> questions
                 </div>
-                
-                <div className="flex items-center gap-4">
+
+                <div className="flex flex-wrap items-center gap-4">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold text-gray-500">Per page:</span>
-                    <CustomSelect
-                      onChange={setPageSize}
-                      value={pageSize}
-                      options={[
-                        { value: 3, label: "3" },
-                        { value: 5, label: "5" },
-                        { value: 10, label: "10" },
-                        { value: 20, label: "20" },
-                        { value: -1, label: "All" },
-                      ]}
-                      className="w-full"
-                    />
+                    <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+                      <SelectTrigger className="h-8 w-[84px] text-xs font-semibold"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {[3, 5, 10, 20, -1].map((n) => (
+                          <SelectItem key={n} value={String(n)}>{n === -1 ? "All" : n}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  
+
                   {totalPages > 1 && (
                     <div className="flex items-center gap-1">
-                      <button
+                      <Button
                         type="button"
+                        variant="outline"
+                        size="icon"
                         onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                         disabled={currentPage === 1}
-                        className="inline-flex size-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        className="size-8 rounded-lg"
                       >
                         <ChevronLeft size={16} />
-                      </button>
-                      
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                        <button
-                          key={page}
-                          type="button"
-                          onClick={() => setCurrentPage(page)}
-                          className={`inline-flex size-8 items-center justify-center rounded-lg text-xs font-black transition-colors ${
-                            currentPage === page
-                              ? "bg-brand-600 text-white shadow-sm"
-                              : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      ))}
-                      
-                      <button
+                      </Button>
+
+                      <div className="hidden items-center gap-1 sm:flex">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                          <Button
+                            key={page}
+                            type="button"
+                            variant={currentPage === page ? "default" : "outline"}
+                            size="icon"
+                            onClick={() => setCurrentPage(page)}
+                            className="size-8 rounded-lg text-xs font-black"
+                          >
+                            {page}
+                          </Button>
+                        ))}
+                      </div>
+                      <span className="px-2 text-xs font-semibold text-gray-500 sm:hidden">
+                        Page {currentPage} of {totalPages}
+                      </span>
+
+                      <Button
                         type="button"
+                        variant="outline"
+                        size="icon"
                         onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                         disabled={currentPage === totalPages}
-                        className="inline-flex size-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        className="size-8 rounded-lg"
                       >
                         <ChevronRight size={16} />
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -672,21 +696,24 @@ const AssessmentSubmissionReview: React.FC = () => {
               <AssessmentContentRenderer>{submission.answer_text}</AssessmentContentRenderer>
             </div>
           ) : (
-            <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-sm text-gray-500">
+            <Card className="rounded-lg border-dashed border-gray-200 bg-gray-50 p-8 text-center text-sm text-gray-500 shadow-none">
               No typed or selected answers were found. Use the uploaded file if available.
-            </div>
+            </Card>
           )}
-        </GlassCard>
+        </Card>
 
-        <GlassCard className="h-fit lg:sticky lg:top-6">
+        <Card className="h-fit rounded-2xl border-gray-100 bg-white p-4 shadow-sm sm:p-[18px] lg:sticky lg:top-6">
           <h3 className="text-base font-black text-gray-900">Grade This Submission</h3>
           <p className="mt-1 text-xs font-medium text-gray-500">
             Review the submission, then save marks and remarks.
           </p>
           <div className="mt-4 space-y-3">
-            <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">
-              Marks out of {totalMarks}
-              <input
+            <div className="space-y-1">
+              <Label htmlFor="grade-marks" className="text-xs font-bold uppercase tracking-wide text-gray-500">
+                Marks out of {totalMarks}
+              </Label>
+              <Input
+                id="grade-marks"
                 type="number"
                 min="0"
                 max={totalMarks}
@@ -700,51 +727,51 @@ const AssessmentSubmissionReview: React.FC = () => {
                     grade: marks === "" ? "" : gradeFromPercent(pct),
                   });
                 }}
-                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500 disabled:bg-gray-105 disabled:text-gray-600 disabled:cursor-not-allowed bg-white font-bold"
+                className="bg-white font-bold"
               />
-            </label>
+            </div>
 
-            <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">
-              Grade
-              <input
+            <div className="space-y-1">
+              <Label htmlFor="grade-grade" className="text-xs font-bold uppercase tracking-wide text-gray-500">Grade</Label>
+              <Input
+                id="grade-grade"
                 value={draft.grade}
                 disabled={!!reviewData?.subjectiveQuestions?.length}
                 onChange={(event) => updateDraft({ grade: event.target.value })}
-                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500 disabled:bg-gray-105 disabled:text-gray-600 disabled:cursor-not-allowed"
               />
-            </label>
+            </div>
 
-            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-              <input
-                type="checkbox"
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="grade-absent"
                 checked={draft.isAbsent}
-                onChange={(event) => updateDraft({ isAbsent: event.target.checked })}
-                className="size-4"
+                onCheckedChange={(checked) => updateDraft({ isAbsent: checked === true })}
               />
-              Mark absent
-            </label>
+              <Label htmlFor="grade-absent" className="text-sm font-semibold text-gray-700">Mark absent</Label>
+            </div>
 
-            <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">
-              Remarks
-              <textarea
+            <div className="space-y-1">
+              <Label htmlFor="grade-remarks" className="text-xs font-bold uppercase tracking-wide text-gray-500">Remarks</Label>
+              <Textarea
+                id="grade-remarks"
                 value={draft.remarks}
                 onChange={(event) => updateDraft({ remarks: event.target.value })}
                 rows={5}
                 placeholder="Add feedback or note questions checked manually."
-                className="mt-1 w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+                className="min-h-0 resize-none bg-white"
               />
-            </label>
+            </div>
 
             <Button
-              className="w-full justify-center"
-              icon={<Save size={16} />}
+              className="w-full justify-center gap-2"
               onClick={saveGrade}
               disabled={saving}
             >
+              <Save size={16} />
               {saving ? "Saving..." : "Save Grade & Publish"}
             </Button>
           </div>
-        </GlassCard>
+        </Card>
       </div>
     </div>
   );

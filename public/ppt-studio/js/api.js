@@ -22,6 +22,10 @@ window.PPT_CFG = (function () {
   return {
     base: base,
     institute: (p.get('institute') || '').trim(),
+    // The EDVA page this studio is open in (path + query), recorded with a deck
+    // so Course Content can open it there later; and a deck to resume.
+    page: (p.get('page') || '').trim(),
+    job: (p.get('job') || '').trim(),
     token: token,
     host: host,
     pptUrl: function (path) { return base + '/school/ppt' + path; },
@@ -49,6 +53,12 @@ function scopeFields(scope) {
   return out;
 }
 
+/** The studio theme for V2 and image decks. "Match the subject" is the
+ *  server's default, so it is sent as no theme at all. */
+function deckThemeField(deckTheme) {
+  return deckTheme && deckTheme !== 'subject' ? { deckTheme: deckTheme } : {};
+}
+
 window.API = {
 
   /** What can this deck's scope be generated from right now (before generating). */
@@ -67,13 +77,15 @@ window.API = {
     }
   },
 
-  async generatePresentation(topic, slideCount, theme, language, scope, sourceMode) {
+  async generatePresentation(topic, slideCount, theme, language, scope, sourceMode, pptVersion, deckTheme) {
     try {
       const response = await fetch(window.PPT_CFG.pptUrl('/generate'), {
         method: 'POST',
         headers: pptHeaders(),
         body: JSON.stringify({
           topic, slideCount, theme, language, sourceMode, ...scopeFields(scope),
+          ...(pptVersion ? { pptVersion } : {}),
+          ...deckThemeField(deckTheme),
         }),
       });
       if (!response.ok) {
@@ -89,6 +101,82 @@ window.API = {
       }
       throw error;
     }
+  },
+
+  /**
+   * Start a deck in the background. Resolves to the job id, or null when this
+   * backend has no job route yet (an older deployment) - the caller then uses
+   * the one-request generatePresentation instead.
+   */
+  /* options.fresh: make a new deck even when an identical one was made before
+   * (the AI service otherwise returns the kept one at once). */
+  // Pauses before the retries of a start that never reached the server.
+  START_RETRY_WAITS_MS: [1500, 3000],
+
+  async startPresentation(topic, slideCount, theme, language, scope, sourceMode, pptVersion, deckTheme,
+                          options = {}) {
+    const body = JSON.stringify({
+      topic, slideCount, theme, language, sourceMode, ...scopeFields(scope),
+      ...(pptVersion ? { pptVersion } : {}),
+      ...deckThemeField(deckTheme),
+      ...(options && options.fresh ? { fresh: true } : {}),
+      ...(window.PPT_CFG.page ? { pagePath: window.PPT_CFG.page } : {}),
+    });
+    // A blip on the way (no connection, a proxy saying 502/503) is retried: the
+    // request most likely never reached the server, so no deck was started.
+    // Anything else - a real answer, or a 504 that may have started one - is not,
+    // so a deck is never started twice.
+    const waits = this.START_RETRY_WAITS_MS || [];
+    let response;
+    for (let attempt = 0; ; attempt++) {
+      try {
+        response = await fetch(window.PPT_CFG.pptUrl('/generate/start'), {
+          method: 'POST', headers: pptHeaders(), body,
+        });
+        if ((response.status === 502 || response.status === 503) && attempt < waits.length) {
+          await new Promise((r) => setTimeout(r, waits[attempt]));
+          continue;
+        }
+        break;
+      } catch (err) {
+        if (attempt >= waits.length) throw new Error('Could not reach the server. Please check your connection and try again.');
+        await new Promise((r) => setTimeout(r, waits[attempt]));
+      }
+    }
+    if (response.status === 404) return null;
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error((errorData && (errorData.message || errorData.error))
+        || `Server responded with status ${response.status}`);
+    }
+    const data = await response.json();
+    return data.jobId || (data.data && data.data.jobId) || null;
+  },
+
+  /** Take a deck off the teacher's "in the background" list (it has been opened). */
+  async dismissJob(jobId) {
+    try {
+      await fetch(window.PPT_CFG.pptUrl('/jobs/' + encodeURIComponent(jobId) + '/dismiss'), {
+        method: 'POST', headers: pptHeaders(),
+      });
+    } catch (_e) { /* the list entry simply expires */ }
+  },
+
+  /** A background deck: { status, stage, done, total, partial, result, error }. */
+  async getPresentationStatus(jobId) {
+    const response = await fetch(window.PPT_CFG.pptUrl('/generate/status/' + encodeURIComponent(jobId)), {
+      method: 'GET',
+      headers: pptHeaders(),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      const err = new Error((errorData && (errorData.message || errorData.error))
+        || `Server responded with status ${response.status}`);
+      err.status = response.status;   // a 404 is a deck that is gone; the rest may pass
+      throw err;
+    }
+    const data = await response.json();
+    return data && data.status ? data : (data.data || data);
   },
 
   async regenerateSlide(slideIndex, topic, currentSlide, totalSlides, scope) {

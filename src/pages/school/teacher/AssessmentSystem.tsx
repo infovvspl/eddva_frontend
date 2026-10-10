@@ -5,27 +5,22 @@ import { useConfirm } from "@/context/ConfirmContext";
 import {
   FileText, Key, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target, Trophy, Clock, Pencil, Eye, Check, AlertTriangle
 } from "lucide-react";
-import AssessmentContentRenderer from "@/components/school/AssessmentContentRenderer";
-import GlassCard from "@/components/school/GlassCard";
-import Button from "@/components/school/Button";
-import Badge from "@/components/school/Badge";
-import Modal from "@/components/school/Modal";
-import InputField from "@/components/school/InputField";
-import SelectField from "@/components/school/SelectField";
-import SearchableMultiSelect from "@/components/school/admin/forms/SearchableMultiSelect";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Breadcrumb as UiBreadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import SearchBar from "@/components/school/SearchBar";
 import DataTable from "@/components/school/DataTable";
-import Tabs from "@/components/school/Tabs";
 import api, { unwrapSchoolList } from "@/lib/api/school-client";
 import { useAcademicStore } from "@/lib/academic-store";
 import "./AssessmentSystem.css";
-import { CustomSelect } from "@/components/ui/CustomSelect";
-import { toUtcIsoDateTime } from "./assessment-utils";
-import DiagramManager from "@/components/school/diagram/DiagramManager";
-import DiagramsButton from "@/components/school/diagram/DiagramsButton";
-import { insertMarkerAtCursor } from "@/components/school/diagram/marker-insert";
-import { diagramApi, type DiagramRecord } from "@/components/school/diagram/diagram-api";
-import { expandMarkersForPreview, type PreviewListState } from "@/components/school/diagram/expand-markers";
 
 function normaliseType(value: any) {
   const type = String(value || "topic").trim().toLowerCase();
@@ -34,77 +29,40 @@ function normaliseType(value: any) {
   return "topic";
 }
 
-// Question mark weights used by the AI generator (matches the backend's
-// hardcoded per-section values: MCQ/True-False/Fill-blank = 1 mark, Short
-// answer = 3 marks, Long answer = 5 marks).
-const QUESTION_MARK_WEIGHTS = { mcq: 1, trueFalse: 1, fillBlank: 1, short: 3, long: 5 } as const;
-
-function computeAiConfigTotal(counts: { mcqCount: number; trueFalseCount: number; fillBlankCount: number; shortCount: number; longCount: number }) {
-  return (
-    counts.mcqCount * QUESTION_MARK_WEIGHTS.mcq +
-    counts.trueFalseCount * QUESTION_MARK_WEIGHTS.trueFalse +
-    counts.fillBlankCount * QUESTION_MARK_WEIGHTS.fillBlank +
-    counts.shortCount * QUESTION_MARK_WEIGHTS.short +
-    counts.longCount * QUESTION_MARK_WEIGHTS.long
-  );
-}
-
-/**
- * Suggests question counts per section that sum EXACTLY to `total`, using a
- * sensible CBSE-style weightage (~30% long answer, ~25% short answer, the
- * remainder split evenly across the three 1-mark objective types). Any
- * rounding residue is absorbed by the 1-mark categories, which can always
- * make the sum land exactly on `total` since they have the finest granularity.
- */
-function distributeMarksForTotal(total: number) {
-  const t = Math.max(0, Math.round(total || 0));
-  if (t === 0) return { mcqCount: 0, trueFalseCount: 0, fillBlankCount: 0, shortCount: 0, longCount: 0 };
-
-  let longCount = Math.round((t * 0.3) / QUESTION_MARK_WEIGHTS.long);
-  let shortCount = Math.round((t * 0.25) / QUESTION_MARK_WEIGHTS.short);
-  let remaining = t - longCount * QUESTION_MARK_WEIGHTS.long - shortCount * QUESTION_MARK_WEIGHTS.short;
-
-  // Small totals: long/short weighting alone can overshoot — scale back
-  // before touching the 1-mark categories.
-  while (remaining < 0 && (longCount > 0 || shortCount > 0)) {
-    if (longCount > 0) { longCount -= 1; remaining += QUESTION_MARK_WEIGHTS.long; }
-    else { shortCount -= 1; remaining += QUESTION_MARK_WEIGHTS.short; }
-  }
-
-  const base = Math.floor(remaining / 3);
-  const leftover = remaining - base * 3;
-  const mcqCount = base + (leftover > 0 ? 1 : 0);
-  const trueFalseCount = base + (leftover > 1 ? 1 : 0);
-  const fillBlankCount = base;
-
-  return { mcqCount, trueFalseCount, fillBlankCount, shortCount, longCount };
-}
-
 function Breadcrumb({
   items,
 }: {
   items: { label: string; icon?: React.ReactNode; onClick: () => void; active: boolean }[];
 }) {
   return (
-    <nav className="mb-6 flex flex-wrap items-center gap-1.5 text-sm">
-      {items.map((item, index) => (
-        <React.Fragment key={`${item.label}-${index}`}>
-          {index > 0 && <ChevronRight size={14} className="text-gray-300" />}
-          <button
-            type="button"
-            onClick={item.onClick}
-            disabled={item.active}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-colors ${item.active
-              ? "bg-brand-50 text-brand-700"
-              : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
-              }`}
-          >
-            {item.icon}
-            {item.label}
-          </button>
-        </React.Fragment>
-      ))}
-    </nav>
+    <UiBreadcrumb className="mb-6">
+      <BreadcrumbList className="gap-1.5 text-sm sm:gap-1.5">
+        {items.map((item, index) => (
+          <React.Fragment key={`${item.label}-${index}`}>
+            {index > 0 && <BreadcrumbSeparator />}
+            <BreadcrumbItem>
+              {item.active ? (
+                <BreadcrumbPage className="inline-flex items-center gap-1.5 rounded-lg bg-brand-50 px-2.5 py-1 font-semibold text-brand-700">
+                  {item.icon}
+                  {item.label}
+                </BreadcrumbPage>
+              ) : (
+                <BreadcrumbLink asChild>
+                  <button
+                    type="button"
+                    onClick={item.onClick}
+                    className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                  >
+                    {item.icon}
+                    {item.label}
+                  </button>
+                </BreadcrumbLink>
+              )}
+            </BreadcrumbItem>
+          </React.Fragment>
+        ))}
+      </BreadcrumbList>
+    </UiBreadcrumb>
   );
 }
 
@@ -125,12 +83,26 @@ function NavCard({
 }) {
   const toneClasses =
     tone === "brand"
-      ? { soft: "bg-brand-100", icon: "text-brand-600" }
-      : { soft: "bg-emerald-100", icon: "text-emerald-600" };
+      ? { soft: "bg-brand-100", icon: "text-brand-600", border: "border-brand-200 hover:border-brand-500" }
+      : { soft: "bg-emerald-100", icon: "text-emerald-600", border: "border-emerald-200 hover:border-emerald-500" };
 
   return (
-    <GlassCard hover className="group cursor-pointer p-3.5 sm:p-5 transition-all flex flex-col justify-between h-full" onClick={onClick}>
-      <div>
+    <Card
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      className={cn(
+        "group flex h-full cursor-pointer flex-col justify-between rounded-2xl border bg-white shadow-none transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        toneClasses.border,
+      )}
+    >
+      <div className="p-3.5 pb-0 sm:p-5 sm:pb-0">
         <div className="flex items-start justify-between gap-2 sm:gap-3">
           <div className={`rounded-lg sm:rounded-xl p-2 sm:p-2.5 ${toneClasses.soft} ${toneClasses.icon} [&>svg]:w-5 [&>svg]:h-5 sm:[&>svg]:w-[22px] sm:[&>svg]:h-[22px]`}>{icon}</div>
         </div>
@@ -139,244 +111,63 @@ function NavCard({
           <Users size={14} className="shrink-0 size-3.5 sm:size-4" /> <span className="truncate">{meta}</span>
         </p>
       </div>
-      <div className="mt-3 sm:mt-4 flex items-center justify-between border-t border-gray-100 pt-2.5 sm:pt-3">
+      <div className="mx-3.5 mb-3.5 mt-3 flex items-center justify-between border-t border-gray-100 pt-2.5 sm:mx-5 sm:mb-5 sm:mt-4 sm:pt-3">
         <span className={`text-xs sm:text-sm font-semibold ${toneClasses.icon}`}>{actionLabel}</span>
         <ChevronRight size={16} className="text-gray-400 transition-transform group-hover:translate-x-0.5 shrink-0 hidden sm:block" />
       </div>
-    </GlassCard>
+    </Card>
   );
 }
 
-function ContentEditor({
-  questions,
-  onQuestionsChange,
-  answerKey,
-  onAnswerKeyChange,
-  assessmentId,
+// shadcn Select with the simple (value, onChange(val), options) shape used on this page.
+function SimpleSelect({
+  value,
+  onChange,
+  options,
+  className,
+  disabled,
 }: {
-  questions: string;
-  onQuestionsChange: (v: string) => void;
-  answerKey: string;
-  onAnswerKeyChange: (v: string) => void;
-  /** Present only for a saved assessment — diagrams belong to one. */
-  assessmentId?: string;
+  value: string;
+  onChange: (val: string) => void;
+  options: { value: string; label: string }[];
+  className?: string;
+  disabled?: boolean;
 }) {
-  const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
-  const [editorPage, setEditorPage] = useState<"questions" | "answerKey">("questions");
-  const [showDiagrams, setShowDiagrams] = useState(false);
-  const [diagramRecords, setDiagramRecords] = useState<DiagramRecord[]>([]);
-  const [diagramsState, setDiagramsState] = useState<PreviewListState>('loading');
-  const questionsRef = React.useRef<HTMLTextAreaElement | null>(null);
-
-  // The paper's diagrams, so the preview can show a figure where a marker sits
-  // instead of the marker's raw text. Refetched whenever the Diagrams panel
-  // closes, because that is when a teacher has just created, edited or
-  // approved one. A failure is silent on purpose: the preview then falls back
-  // to explaining that each marker resolved to nothing, which is exactly what
-  // it should say when the list could not be read.
-  const reloadDiagrams = React.useCallback(() => {
-    if (!assessmentId) {
-      // An unsaved test has no diagrams and never will until it is saved, so
-      // this is a settled answer rather than a missing one.
-      setDiagramRecords([]);
-      setDiagramsState('ready');
-      return;
-    }
-    setDiagramsState('loading');
-    diagramApi
-      .list(assessmentId)
-      .then((rows) => { setDiagramRecords(rows); setDiagramsState('ready'); })
-      .catch(() => { setDiagramRecords([]); setDiagramsState('failed'); });
-  }, [assessmentId]);
-
-  useEffect(() => { reloadDiagrams(); }, [reloadDiagrams]);
-
-  const closeDiagrams = () => {
-    setShowDiagrams(false);
-    reloadDiagrams();
-  };
-
-  // What a student would be served, plus an explanation wherever they would be
-  // served nothing. The server remains the authority on which diagrams reach a
-  // student; this only mirrors that decision so a teacher can see it.
-  // The list state travels with the records. Without it an empty list reads as
-  // "this marker is wrong" whether the request failed, is still in flight, or
-  // genuinely returned nothing — and only the last of those is the teacher's
-  // to act on.
-  const previewQuestions = useMemo(
-    () => expandMarkersForPreview(questions, diagramRecords, diagramsState).text,
-    [questions, diagramRecords, diagramsState],
-  );
-
-  // The marker lands on its own line after the line the cursor is in, so the
-  // teacher chooses the question rather than anything guessing it. The paper
-  // is spliced at a line boundary, so nothing else changes.
-  const handleInsertMarker = (marker: string) => {
-    const el = questionsRef.current;
-    const at = el ? el.selectionStart : questions.length;
-    const next = insertMarkerAtCursor(questions, at, marker);
-    onQuestionsChange(next.text);
-    closeDiagrams();
-    setEditorPage("questions");
-    setActiveTab("edit");
-    window.requestAnimationFrame(() => {
-      const box = questionsRef.current;
-      if (!box) return;
-      box.focus();
-      box.setSelectionRange(next.cursor, next.cursor);
-    });
-  };
-
   return (
-    <div className="space-y-4">
-      {/* Header Tabs & Navigation Buttons */}
-      <div className="flex flex-wrap items-center justify-between border-b border-gray-200 gap-2 pb-1">
-        <div className="flex border-b border-transparent">
-          <button
-            type="button"
-            onClick={() => setActiveTab("edit")}
-            className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${activeTab === "edit"
-              ? "border-brand-500 text-brand-600 font-extrabold"
-              : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
-          >
-            <Pencil className="inline size-3.5 mr-1 -mt-0.5" /> Edit Test
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("preview")}
-            className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${activeTab === "preview"
-              ? "border-brand-500 text-brand-600 font-extrabold"
-              : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
-          >
-            <Eye className="inline size-3.5 mr-1 -mt-0.5" /> Preview (Student View)
-          </button>
-        </div>
+    <Select value={value} onValueChange={onChange} disabled={disabled}>
+      <SelectTrigger className={className}><SelectValue /></SelectTrigger>
+      <SelectContent>
+        {options.map((o) => (
+          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
 
-        {/* Quick Page Switcher Buttons */}
-        <div className="flex items-center gap-2 pb-1">
-          {editorPage === "questions" ? (
-            <DiagramsButton assessmentId={assessmentId} onOpen={() => setShowDiagrams(true)} />
-          ) : null}
-          {editorPage === "questions" ? (
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 font-bold"
-              icon={<Key size={14} />}
-              onClick={() => setEditorPage("answerKey")}
-            >
-              Answer Key Page →
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="border-brand-300 bg-blue-50 text-brand-700 hover:bg-blue-100 font-bold"
-              icon={<FileText size={14} />}
-              onClick={() => setEditorPage("questions")}
-            >
-              ← Question Paper Page
-            </Button>
-          )}
-        </div>
-      </div>
+const TONE_BADGE: Record<string, string> = {
+  success: "bg-emerald-500/10 text-emerald-700",
+  info: "bg-blue-500/10 text-blue-700",
+  warning: "bg-amber-500/10 text-amber-700",
+  error: "bg-red-500/10 text-red-700",
+  purple: "bg-violet-500/10 text-violet-700",
+};
 
-      {activeTab === "edit" ? (
-        <div>
-          {editorPage === "questions" ? (
-            /* Question Paper Page */
-            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden flex flex-col">
-              <div className="flex items-center justify-between bg-blue-50 px-4 py-2.5 border-b border-blue-100">
-                <div className="flex items-center gap-2">
-                  <FileText size={16} className="text-blue-600" />
-                  <span className="text-xs font-bold uppercase tracking-wide text-blue-700">Question Paper Page</span>
-                  <span className="text-[10px] text-blue-400 font-medium hidden sm:inline">(Students will see this)</span>
-                </div>
-              </div>
-              <textarea
-                ref={questionsRef}
-                value={questions}
-                onChange={(e) => onQuestionsChange(e.target.value)}
-                placeholder="Type or paste the question paper here. Markdown supported (## Section A, 1. question, etc.)."
-                className="h-[45vh] w-full resize-none p-4 text-sm leading-6 outline-none focus:ring-2 focus:ring-brand-500"
-              />
-            </div>
-          ) : (
-            /* Answer Key Page */
-            <div className="rounded-xl border border-amber-200 bg-white overflow-hidden flex flex-col">
-              <div className="flex items-center justify-between bg-amber-50 px-4 py-2.5 border-b border-amber-100">
-                <div className="flex items-center gap-2">
-                  <Key size={16} className="text-amber-700" />
-                  <span className="text-xs font-bold uppercase tracking-wide text-amber-700">Answer Key Page</span>
-                  <span className="text-[10px] text-amber-500 font-medium hidden sm:inline">(Teacher only · hidden from students)</span>
-                </div>
-              </div>
-              <textarea
-                value={answerKey}
-                onChange={(e) => onAnswerKeyChange(e.target.value)}
-                placeholder="Type or paste the answer key here. E.g. Q1(a), Q2 True, Q3 ______"
-                className="h-[45vh] w-full resize-none p-4 text-sm leading-6 outline-none focus:ring-2 focus:ring-amber-400"
-              />
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 overflow-hidden">
-          {editorPage === "questions" ? (
-            <div>
-              <div className="mb-3 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-gray-500">
-                  <FileText size={14} />
-                  <span>Question Paper Preview (Student View)</span>
-                </div>
-              </div>
-              <div className="h-[45vh] overflow-y-auto rounded-lg bg-white p-6 border border-gray-100 shadow-inner">
-                {questions.trim() ? (
-                  <AssessmentContentRenderer>{previewQuestions}</AssessmentContentRenderer>
-                ) : (
-                  <p className="text-sm text-gray-400 text-center py-12">The rendered question paper will appear here once questions are added.</p>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div>
-              <div className="mb-3 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-amber-700">
-                  <Key size={14} />
-                  <span>Answer Key Preview (Teacher Only)</span>
-                </div>
-              </div>
-              <div className="h-[45vh] overflow-y-auto rounded-lg bg-white p-6 border border-amber-100 shadow-inner">
-                {answerKey.trim() ? (
-                  <AssessmentContentRenderer>{answerKey}</AssessmentContentRenderer>
-                ) : (
-                  <p className="text-sm text-gray-400 text-center py-12">The answer key preview will appear here once answers are added.</p>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+function ToneBadge({ tone, children }: { tone: string; children: React.ReactNode }) {
+  return (
+    <Badge variant="outline" className={cn("border-transparent capitalize", TONE_BADGE[tone] ?? TONE_BADGE.purple)}>
+      {children}
+    </Badge>
+  );
+}
 
-      {assessmentId && showDiagrams ? (
-        <Modal
-          isOpen
-          onClose={closeDiagrams}
-          title="Diagrams"
-          size="xl"
-        >
-          <DiagramManager
-            assessmentId={assessmentId}
-            onInsertMarker={handleInsertMarker}
-            onClose={closeDiagrams}
-          />
-        </Modal>
-      ) : null}
-    </div>
+// Inline notice (icon + text) on the shadcn Alert — Alert positions a leading svg absolutely,
+// these notices lay it out inline instead.
+function InfoAlert({ className, children }: { className?: string; children: React.ReactNode }) {
+  return (
+    <Alert className={cn("[&>svg]:static [&>svg]:text-current [&>svg~*]:pl-0 [&>svg+div]:translate-y-0", className)}>
+      {children}
+    </Alert>
   );
 }
 
@@ -403,82 +194,14 @@ const AssessmentSystem: React.FC = () => {
     if (restoredState.selectedClass) setSelectedClass(restoredState.selectedClass);
     if (restoredState.selectedSection) setSelectedSection(restoredState.selectedSection);
     if (restoredState.selectedSubject) setSelectedSubject(restoredState.selectedSubject);
+    const restoredTab = (location.state as any)?.assessmentTab;
+    if (restoredTab) setActiveTabId(restoredTab);
     setSearch('');
   }, [location.state]);
 
   // Assessment States
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [testsList, setTestsList] = useState<any[]>([]);
   const [loadingTests, setLoadingTests] = useState(false);
-  const [editingTest, setEditingTest] = useState<any>(null);
-  const [contentMode, setContentMode] = useState<"manual" | "upload" | "ai">("manual");
-  const [contentText, setContentText] = useState("");
-  const [answerKey, setAnswerKey] = useState("");
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [aiPrompt, setAiPrompt] = useState("");
-  const [generatingAi, setGeneratingAi] = useState(false);
-  const [aiLanguage, setAiLanguage] = useState("en");
-  const [aiConfig, setAiConfig] = useState({
-    mcqCount: 5,
-    trueFalseCount: 5,
-    fillBlankCount: 5,
-    shortCount: 3,
-    longCount: 2,
-    difficulty: "intermediate",
-  });
-
-  // Curriculum scope (optional) — chapter → topic for the selected subject
-  const [chapters, setChapters] = useState<any[]>([]);
-  const [topics, setTopics] = useState<any[]>([]);
-  const [selectedChapterId, setSelectedChapterId] = useState("");
-  // Multi-chapter selection for a "Chapter Test" (e.g. chapters 1–10 of a subject).
-  const [selectedChapterIds, setSelectedChapterIds] = useState<string[]>([]);
-  const [selectedTopicId, setSelectedTopicId] = useState("");
-  // Whether the last AI draft was grounded in the indexed textbook, and which
-  // selected chapters were not indexed (questions there used general knowledge).
-  const [aiGrounding, setAiGrounding] = useState<
-    { grounded?: boolean; groundedChapters?: string[]; ungroundedChapters?: string[] } | null
-  >(null);
-  // Generation timing shown in the UI: a live counter while generating, and the
-  // final duration once the question paper is ready.
-  const [genStartAt, setGenStartAt] = useState<number | null>(null);
-  const [genElapsedMs, setGenElapsedMs] = useState(0);
-  const [genDurationMs, setGenDurationMs] = useState<number | null>(null);
-  useEffect(() => {
-    if (!genStartAt) return;
-    const id = setInterval(() => setGenElapsedMs(Date.now() - genStartAt), 100);
-    return () => clearInterval(id);
-  }, [genStartAt]);
-  const fmtDuration = (ms: number) => (ms >= 10000 ? `${Math.round(ms / 1000)}s` : `${(ms / 1000).toFixed(1)}s`);
-
-  const getCalculatedEndTime = (dateStr: string, timeStr: string, durationMins: number) => {
-    if (!dateStr || !timeStr) return "";
-    const start = new Date(`${dateStr}T${timeStr}`);
-    if (isNaN(start.getTime())) return "";
-    const end = new Date(start.getTime() + (Number(durationMins) || 0) * 60 * 1000);
-    return end.toLocaleString([], {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
-  };
-
-  const [formData, setFormData] = useState({
-    title: "",
-    type: "topic",
-    total_marks: 100,
-    duration_minutes: 120,
-    scheduled_date: "",
-    start_time: "10:00",
-  });
-
-  // Keep AI question-type counts in sync with Total Marks so the generated
-  // paper's actual marks always match what the teacher set — editing a count
-  // by hand afterward is still possible, it just won't auto-recompute again
-  // until Total Marks itself changes.
-  useEffect(() => {
-    setAiConfig((current) => ({ ...current, ...distributeMarksForTotal(formData.total_marks) }));
-  }, [formData.total_marks]);
-
   const [workspaceSearch, setWorkspaceSearch] = useState("");
   const [workspaceStatusFilter, setWorkspaceStatusFilter] = useState("all");
   const [activeTabId, setActiveTabId] = useState("topic");
@@ -506,41 +229,6 @@ const AssessmentSystem: React.FC = () => {
     void load();
     return () => { cancelled = true; };
   }, [assignments.length, setAssignments]);
-
-  // Load chapters for the selected subject whenever the Create modal opens.
-  // When editing an existing chapter/topic test, preselect its saved chapter.
-  useEffect(() => {
-    if (!showCreateModal || !selectedSubject) return;
-    let cancelled = false;
-    setSelectedChapterId(editingTest?.raw?.chapter_id || "");
-    // Restore a saved multi-chapter selection (chapter_ids), else fall back to
-    // the single chapter_id so an older chapter test still shows its chapter.
-    const savedIds: string[] = Array.isArray(editingTest?.raw?.chapter_ids)
-      ? editingTest.raw.chapter_ids.map((x: any) => String(x))
-      : editingTest?.raw?.chapter_id
-        ? [String(editingTest.raw.chapter_id)]
-        : [];
-    setSelectedChapterIds(savedIds);
-    setTopics([]);
-    api.get(`/topics/chapters?subjectId=${selectedSubject.id}`)
-      .then((res) => { if (!cancelled) setChapters(res.data?.data || res.data || []); })
-      .catch(() => { if (!cancelled) setChapters([]); });
-    return () => { cancelled = true; };
-  }, [showCreateModal, selectedSubject, editingTest]);
-
-  // Load topics for the selected chapter.
-  // When editing an existing topic test whose chapter matches, preselect its saved topic.
-  useEffect(() => {
-    if (!selectedChapterId) { setTopics([]); setSelectedTopicId(""); return; }
-    setSelectedTopicId(
-      editingTest?.raw?.chapter_id === selectedChapterId ? (editingTest?.raw?.topic_id || "") : ""
-    );
-    let cancelled = false;
-    api.get(`/topics?chapterId=${selectedChapterId}`)
-      .then((res) => { if (!cancelled) setTopics(res.data?.data || res.data || []); })
-      .catch(() => { if (!cancelled) setTopics([]); });
-    return () => { cancelled = true; };
-  }, [selectedChapterId, editingTest]);
 
   // ── Derived hierarchies ──────────────────────────────────────────────────
   const classes = useMemo(() => {
@@ -651,233 +339,6 @@ const AssessmentSystem: React.FC = () => {
     }
   }, [level, selectedSubject, activeTabId]);
 
-  const [submittingTest, setSubmittingTest] = useState(false);
-
-  const handleCreateTest = async () => {
-    if (submittingTest) return;
-    if (!formData.title.trim()) {
-      alert("Please enter test title");
-      return;
-    }
-    if (!formData.scheduled_date) {
-      alert("Please select test date");
-      return;
-    }
-    if (formData.type === "chapter" && selectedChapterIds.length === 0) {
-      alert("Please select at least one chapter");
-      return;
-    }
-    if (formData.type === "topic" && !selectedChapterId) {
-      alert("Please select a chapter");
-      return;
-    }
-    if (formData.type === "topic" && !selectedTopicId) {
-      alert("Please select a topic");
-      return;
-    }
-
-    // Only carry chapter/topic scope for the test types that need it, even if a
-    // prior selection lingers in state from switching the Test Type dropdown.
-    const isChapterTest = formData.type === "chapter";
-    const needsChapter = formData.type === "chapter" || formData.type === "topic";
-    const needsTopic = formData.type === "topic";
-
-    setSubmittingTest(true);
-    try {
-      const scheduledDateTime = toUtcIsoDateTime(formData.scheduled_date, formData.start_time) || formData.scheduled_date || null;
-
-      const payload: Record<string, any> = {
-        title: formData.title,
-        type: formData.type,
-        assessmentType: formData.type,
-        subjectId: selectedSubject?.id,
-        class_id: selectedClass?.id,
-        sectionId: selectedSection?.id,
-        total_marks: formData.total_marks,
-        totalMarks: formData.total_marks,
-        duration_minutes: formData.duration_minutes,
-        durationMinutes: formData.duration_minutes,
-        scheduled_date: scheduledDateTime,
-        scheduledAt: scheduledDateTime,
-        contentText,
-        answerKey,
-        contentSource: contentMode,
-        // Chapter test carries the full selected set; topic test keeps its single chapter.
-        chapterIds: isChapterTest ? selectedChapterIds : undefined,
-        chapterId: isChapterTest
-          ? (selectedChapterIds[0] || undefined)
-          : (needsChapter ? selectedChapterId : undefined),
-        topicId: needsTopic ? selectedTopicId : undefined,
-        language: aiLanguage,
-      };
-
-      if (editingTest) {
-        await api.put(`/assessments/${editingTest.id}`, payload);
-      } else if (contentMode !== "upload" || !uploadFile) {
-        await api.post("/assessments", payload);
-      } else {
-        const data = new FormData();
-        Object.entries(payload).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) data.append(key, String(value));
-        });
-        data.append("file", uploadFile);
-        await api.post("/assessments", data);
-      }
-
-      await fetchTests();
-      setEditingTest(null);
-      setShowCreateModal(false);
-      setFormData({
-        title: "",
-        type: "topic",
-        total_marks: 100,
-        duration_minutes: 120,
-        scheduled_date: "",
-        start_time: "10:00",
-      });
-      setContentMode("manual");
-      setContentText("");
-      setAnswerKey("");
-      setUploadFile(null);
-      setAiPrompt("");
-      setAiLanguage("en");
-      setSelectedChapterIds([]);
-      setSelectedChapterId("");
-      setSelectedTopicId("");
-    } catch (err) {
-      console.error("Create assessment error:", err);
-    } finally {
-      setSubmittingTest(false);
-    }
-  };
-
-  const handleLanguageChange = async (newLang: string) => {
-    if (!hasTranslation) {
-      alert("AI Translation is disabled for this institution.");
-      return;
-    }
-    setAiLanguage(newLang);
-    if (!contentText.trim() && !answerKey.trim()) return;
-
-    const langLabel = newLang === 'hi' ? 'Hindi' : newLang === 'od' ? 'Odia' : 'English';
-    const confirmed = await confirm({
-      title: 'Translate Content',
-      message: `Do you want to translate the current question paper and answer key to ${langLabel}?`,
-      confirmLabel: 'Translate',
-      variant: 'default',
-    });
-    if (!confirmed) return;
-
-    setGeneratingAi(true);
-    try {
-      if (contentText.trim()) {
-        const resQ = await api.post("/assessments/translate", {
-          text: contentText,
-          language: newLang,
-        });
-        const translatedQ = resQ.data?.data?.translatedText || resQ.data?.translatedText || contentText;
-        setContentText(translatedQ);
-      }
-      if (answerKey.trim()) {
-        const resA = await api.post("/assessments/translate", {
-          text: answerKey,
-          language: newLang,
-        });
-        const translatedA = resA.data?.data?.translatedText || resA.data?.translatedText || answerKey;
-        setAnswerKey(translatedA);
-      }
-    } catch (err) {
-      console.error("Translation error:", err);
-      alert("Failed to translate the content. Please try again.");
-    } finally {
-      setGeneratingAi(false);
-    }
-  };
-
-  const handleAiGenerate = async () => {
-    // Guard against generating ungrounded content: for Chapter/Topic tests,
-    // the AI prompt is scoped by these names, so a missing selection here
-    // used to silently fall back to the class name / a generic string.
-    if (formData.type === "chapter" && selectedChapterIds.length === 0) {
-      alert("Please select at least one chapter above before generating questions.");
-      return;
-    }
-    if (formData.type === "topic" && !selectedChapterId) {
-      alert("Please select a chapter above before generating questions.");
-      return;
-    }
-    if (formData.type === "topic" && !selectedTopicId) {
-      alert("Please select a topic above before generating questions.");
-      return;
-    }
-
-    const start = Date.now();
-    setGeneratingAi(true);
-    setGenDurationMs(null);
-    setGenElapsedMs(0);
-    setGenStartAt(start);
-    try {
-      const isChapterTest = formData.type === "chapter";
-      const needsChapter = formData.type === "chapter" || formData.type === "topic";
-      const needsTopic = formData.type === "topic";
-      // Names ground the prompt. Chapter test sends the full list; topic test one.
-      const chapterNames = isChapterTest
-        ? selectedChapterIds
-            .map((id) => chapters.find((c: any) => String(c.id) === String(id))?.name)
-            .filter(Boolean)
-        : undefined;
-      const chapterName = isChapterTest
-        ? chapterNames?.[0]
-        : (needsChapter ? chapters.find((c: any) => c.id === selectedChapterId)?.name : undefined);
-      const topicName = needsTopic ? topics.find((t: any) => t.id === selectedTopicId)?.name : undefined;
-      const res = await api.post("/assessments/ai-generate", {
-        title: formData.title,
-        type: formData.type,
-        totalMarks: formData.total_marks,
-        durationMinutes: formData.duration_minutes,
-        classId: selectedClass?.id,
-        className: selectedClass?.name,
-        subjectId: selectedSubject?.id,
-        subjectName: selectedSubject?.name,
-        chapterIds: isChapterTest ? selectedChapterIds : undefined,
-        chapterNames,
-        chapterId: isChapterTest
-          ? (selectedChapterIds[0] || undefined)
-          : (needsChapter ? selectedChapterId : undefined),
-        chapterName,
-        topicId: needsTopic ? selectedTopicId : undefined,
-        topicName,
-        prompt: aiPrompt,
-        mcqCount: aiConfig.mcqCount,
-        trueFalseCount: aiConfig.trueFalseCount,
-        fillBlankCount: aiConfig.fillBlankCount,
-        shortCount: aiConfig.shortCount,
-        longCount: aiConfig.longCount,
-        difficulty: aiConfig.difficulty,
-        language: aiLanguage,
-      });
-      const draft = res.data?.data || res.data || {};
-      if (draft.title && !formData.title.trim()) {
-        setFormData((current) => ({ ...current, title: draft.title }));
-      }
-      setContentText(draft.contentText || draft.content_text || "");
-      setAnswerKey(draft.answerKey || draft.answer_key || "");
-      setAiGrounding({
-        grounded: draft.source?.grounded,
-        groundedChapters: draft.groundedChapters,
-        ungroundedChapters: draft.ungroundedChapters,
-      });
-      setContentMode("ai");
-      setGenDurationMs(Date.now() - start);
-    } catch (err) {
-      console.error("AI assessment generation error:", err);
-      alert("AI could not generate the assessment right now. Please use manual entry or upload.");
-    } finally {
-      setGeneratingAi(false);
-      setGenStartAt(null);
-    }
-  };
-
   const testColumns = [
     {
       key: "title",
@@ -919,9 +380,9 @@ const AssessmentSystem: React.FC = () => {
           final: "error",
         };
         return (
-          <Badge variant={variantMap[v] ?? "purple"}>
+          <ToneBadge tone={variantMap[v] ?? "purple"}>
             {labelMap[v] ?? v}
-          </Badge>
+          </ToneBadge>
         );
       },
     },
@@ -952,13 +413,13 @@ const AssessmentSystem: React.FC = () => {
       key: "status",
       title: "Status",
       render: (v: string) => (
-        <Badge
-          variant={
+        <ToneBadge
+          tone={
             v === "completed" ? "success" : v === "scheduled" || v === "upcoming" ? "info" : "warning"
           }
         >
           {v}
-        </Badge>
+        </ToneBadge>
       ),
     },
     {
@@ -969,39 +430,20 @@ const AssessmentSystem: React.FC = () => {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => {
-              const dateObj = row.rawDate ? new Date(row.rawDate) : null;
-              const dateStr = dateObj && !isNaN(dateObj.getTime())
-                ? `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`
-                : (row.rawDate ? String(row.rawDate).slice(0, 10) : "");
-              const timeStr = dateObj && !isNaN(dateObj.getTime())
-                ? `${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`
-                : "10:00";
-
-              setEditingTest(row);
-              setFormData({
-                title: row.title || "",
-                type: row.type || "topic",
-                total_marks: Number(row.totalMarks) || 100,
-                duration_minutes: Number(row.duration) || 120,
-                scheduled_date: dateStr,
-                start_time: timeStr,
-              });
-              setContentText(row.raw?.content_text || row.raw?.contentText || "");
-              setAnswerKey(row.raw?.answer_key || row.raw?.answerKey || "");
-              setContentMode(row.raw?.content_source === "upload" ? "upload" : row.raw?.content_source === "ai" ? "ai" : "manual");
-              setUploadFile(null);
-              setAiPrompt("");
-              setAiLanguage(row.raw?.language || "en");
-              setShowCreateModal(true);
-            }}
+            onClick={() => navigate(`/school/teacher/assessments/${row.id}/edit`, {
+              state: {
+                test: row,
+                assessmentWorkspace: { selectedClass, selectedSection, selectedSubject },
+                assessmentTab: activeTabId,
+                from: `${location.pathname}${location.search}`,
+              },
+            })}
           >
             Edit
           </Button>
           <Button
             size="sm"
             variant="outline"
-            icon={<Trash2 size={14} />}
             onClick={async () => {
               const confirmed = await confirm({
                 title: "Confirm Delete",
@@ -1019,6 +461,7 @@ const AssessmentSystem: React.FC = () => {
               }
             }}
           >
+<Trash2 size={14} />
             Delete
           </Button>
         </div>
@@ -1070,14 +513,16 @@ const AssessmentSystem: React.FC = () => {
     const data = afterSearch;
 
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden min-h-[280px]">
+      <Card className="bg-white rounded-xl shadow-sm border-gray-100 overflow-hidden min-h-[280px]">
         {loadingTests ? (
-          <div className="min-h-[280px] flex flex-col items-center justify-center gap-3">
-            <div className="size-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+          <div className="min-h-[280px] space-y-3 p-4">
             <p className="text-sm font-semibold text-gray-500">Fetching assessments...</p>
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
           </div>
         ) : data.length === 0 ? (
-          <div className="py-12 text-center bg-gray-50 border-dashed border-gray-200 min-h-[280px] flex flex-col justify-center items-center px-4">
+          <Card className="py-12 text-center bg-gray-50 border-dashed border-gray-200 min-h-[280px] flex flex-col justify-center items-center px-4 shadow-none">
             <Target size={40} className="mx-auto text-gray-300 mb-3" />
             <h3 className="text-base font-semibold text-gray-700">No assessments found</h3>
             <p className="text-gray-500 mt-1 text-xs">
@@ -1085,13 +530,37 @@ const AssessmentSystem: React.FC = () => {
                 ? `No results for "${workspaceSearch}" in this tab.`
                 : "Get started by creating your first test."}
             </p>
-          </div >
+          </Card>
         ) : (
           <div className="min-h-[280px]">
-            <DataTable columns={testColumns} data={data} />
+            {/* Mobile: one card per assessment */}
+            <div className="space-y-3 p-3 md:hidden">
+              {data.map((row: any) => {
+                const col = (key: string) => testColumns.find((c) => c.key === key)!;
+                return (
+                  <Card key={row.id} className="space-y-3 rounded-xl border-gray-100 p-4 shadow-none">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">{col("title").render!(row.title, row)}</div>
+                      {col("status").render!(row.status, row)}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs font-semibold text-gray-500">
+                      {col("type").render!(row.type, row)}
+                      <span>{row.totalMarks} marks</span>
+                      <span>{row.duration} mins</span>
+                    </div>
+                    {col("date").render!(null, row)}
+                    <div className="border-t border-gray-100 pt-3">{col("actions").render!(null, row)}</div>
+                  </Card>
+                );
+              })}
+            </div>
+            {/* Tablet / desktop table */}
+            <div className="hidden md:block">
+              <DataTable columns={testColumns} data={data} />
+            </div>
           </div>
         )}
-      </div >
+      </Card>
     );
   };
 
@@ -1109,7 +578,8 @@ const AssessmentSystem: React.FC = () => {
           </p>
         </div>
         {level !== 'classes' && (
-          <Button variant="outline" size="sm" icon={<ChevronLeft size={16} />} onClick={goBack}>
+          <Button variant="outline" size="sm" onClick={goBack}>
+<ChevronLeft size={16} />
             Back
           </Button>
         )}
@@ -1137,9 +607,9 @@ const AssessmentSystem: React.FC = () => {
         loadingContext ? (
           <div className="py-12 text-center text-gray-400">Loading your classes...</div>
         ) : filteredClasses.length === 0 ? (
-          <div className="py-12 text-center text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-xl">
+          <Card className="py-12 text-center text-gray-500 bg-gray-50 border-dashed border-gray-200 rounded-xl shadow-none">
             No classes assigned.
-          </div>
+          </Card>
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredClasses.map((c) => (
@@ -1160,9 +630,9 @@ const AssessmentSystem: React.FC = () => {
       {/* Level 2: Sections */}
       {level === 'sections' && (
         filteredSections.length === 0 ? (
-          <div className="py-12 text-center text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-xl">
+          <Card className="py-12 text-center text-gray-500 bg-gray-50 border-dashed border-gray-200 rounded-xl shadow-none">
             No sections assigned for this class.
-          </div>
+          </Card>
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredSections.map((s) => (
@@ -1183,9 +653,9 @@ const AssessmentSystem: React.FC = () => {
       {/* Level 3: Subjects */}
       {level === 'subjects' && (
         filteredSubjects.length === 0 ? (
-          <div className="py-12 text-center text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-xl">
+          <Card className="py-12 text-center text-gray-500 bg-gray-50 border-dashed border-gray-200 rounded-xl shadow-none">
             No subjects assigned for this class.
-          </div>
+          </Card>
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredSubjects.map((s) => (
@@ -1206,7 +676,7 @@ const AssessmentSystem: React.FC = () => {
       {/* Level 4: Workspace */}
       {level === 'workspace' && selectedClass && selectedSubject && (
         <div className="space-y-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4 bg-white p-3.5 sm:p-6 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100">
+          <Card className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4 bg-white p-3.5 sm:p-6 rounded-xl sm:rounded-2xl shadow-sm border-gray-100">
             <div>
               <h2 className="text-xl font-bold text-gray-900">Workspace</h2>
               <p className="text-sm text-gray-500 mt-1">
@@ -1215,15 +685,15 @@ const AssessmentSystem: React.FC = () => {
             </div>
 
             <div className="flex flex-row items-center gap-1.5 sm:gap-3 w-full sm:w-auto">
-              <input
+              <Input
                 id="workspace-search"
                 type="text"
                 placeholder="Search..."
                 value={workspaceSearch}
                 onChange={(e) => setWorkspaceSearch(e.target.value)}
-                className="px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-brand-500 outline-none flex-1 min-w-0 sm:w-auto sm:text-sm sm:px-3 sm:py-2 sm:min-w-[210px]"
+                className="h-9 min-w-0 flex-1 rounded-lg px-2.5 text-xs sm:w-auto sm:min-w-[210px] sm:flex-none sm:px-3 sm:text-sm"
               />
-              <CustomSelect
+              <SimpleSelect
                 value={workspaceStatusFilter}
                 onChange={(val) => setWorkspaceStatusFilter(val)}
                 options={[
@@ -1234,434 +704,46 @@ const AssessmentSystem: React.FC = () => {
                 className="w-[95px] sm:w-[150px] shrink-0"
               />
               <Button
-                icon={<Plus size={18} />}
-                onClick={() => {
-                  setFormData({ title: "", type: "topic", total_marks: 100, duration_minutes: 120, scheduled_date: "", start_time: "10:00" });
-                  setEditingTest(null);
-                  setContentMode("manual");
-                  setContentText("");
-                  setAnswerKey("");
-                  setUploadFile(null);
-                  setAiPrompt("");
-                  setAiLanguage("en");
-                  setShowCreateModal(true);
-                }}
-                className="!px-3 !min-h-[38px] !min-w-[38px] sm:!min-w-[auto] sm:!px-4 sm:!py-2 flex items-center justify-center shrink-0 shadow-sm"
+                aria-label="Create Test"
+                onClick={() => navigate("/school/teacher/assessments/new", {
+                  state: {
+                    assessmentWorkspace: { selectedClass, selectedSection, selectedSubject },
+                    assessmentTab: activeTabId,
+                    from: `${location.pathname}${location.search}`,
+                  },
+                })}
+                className="shrink-0 gap-2 px-3 shadow-sm sm:px-4"
               >
+<Plus size={18} />
                 <span className="hidden sm:inline">Create Test</span>
               </Button>
             </div>
-          </div>
+          </Card>
 
-          {/* Tab selection on mobile, Tabs on desktop */}
-          <div className="block sm:hidden">
-            <CustomSelect
-              value={activeTabId}
-              onChange={(val) => setActiveTabId(val)}
-              options={[
-                { value: "topic", label: "Topic Tests" },
-                { value: "chapter", label: "Chapter Tests" },
-                { value: "subject", label: "Subject Tests" },
-                { value: "mock", label: "Mock Tests" },
-                { value: "final", label: "Final Exams" },
-              ]}
-              className="w-full mb-4"
-            />
-            {activeTabId === "topic" && renderDataTable("topic")}
-            {activeTabId === "chapter" && renderDataTable("chapter")}
-            {activeTabId === "subject" && renderDataTable("subject")}
-            {activeTabId === "mock" && renderDataTable("mock")}
-            {activeTabId === "final" && renderDataTable("final")}
-          </div>
-
-          <div className="hidden sm:block">
-            <Tabs
-              activeTabId={activeTabId}
-              onChange={setActiveTabId}
-              tabs={[
-                {
-                  id: "topic",
-                  label: "Topic Tests",
-                  icon: <ClipboardList size={16} />,
-                  content: renderDataTable("topic"),
-                },
-                {
-                  id: "chapter",
-                  label: "Chapter Tests",
-                  icon: <BarChart3 size={16} />,
-                  content: renderDataTable("chapter"),
-                },
-                {
-                  id: "subject",
-                  label: "Subject Tests",
-                  icon: <BookOpen size={16} />,
-                  content: renderDataTable("subject"),
-                },
-                {
-                  id: "mock",
-                  label: "Mock Tests",
-                  icon: <Trophy size={16} />,
-                  content: renderDataTable("mock"),
-                },
-                {
-                  id: "final",
-                  label: "Final Exams",
-                  icon: <Target size={16} />,
-                  content: renderDataTable("final"),
-                },
-              ]}
-            />
-          </div>
+          <Tabs value={activeTabId} onValueChange={setActiveTabId}>
+            <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border border-gray-100 bg-white p-1.5 shadow-sm">
+              {[
+                { id: "topic", label: "Topic Tests", icon: <ClipboardList size={16} /> },
+                { id: "chapter", label: "Chapter Tests", icon: <BarChart3 size={16} /> },
+                { id: "subject", label: "Subject Tests", icon: <BookOpen size={16} /> },
+                { id: "mock", label: "Mock Tests", icon: <Trophy size={16} /> },
+                { id: "final", label: "Final Exams", icon: <Target size={16} /> },
+              ].map((t) => (
+                <TabsTrigger
+                  key={t.id}
+                  value={t.id}
+                  className="shrink-0 gap-2 rounded-lg px-3 py-2 text-xs font-bold text-gray-500 data-[state=active]:bg-brand-600 data-[state=active]:text-white data-[state=active]:shadow-sm sm:text-sm"
+                >
+                  {t.icon}
+                  {t.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+          {renderDataTable(activeTabId)}
         </div>
       )}
 
-      {/* Create Modal */}
-      {selectedClass && selectedSubject && (
-        <Modal
-          isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
-          title={editingTest ? "Update Test" : "Create New Test"}
-          size="full"
-        >
-          <div className="space-y-4 p-2">
-            <div className="bg-brand-50 text-brand-700 p-3 rounded-lg text-sm border border-brand-100 mb-4">
-              <strong>Context:</strong> Posting to {selectedClass.name}
-              {selectedSection ? ` / Section ${selectedSection.name}` : ""} ({selectedSubject.name})
-            </div>
-
-            <InputField
-              label="Test Title"
-              placeholder="Enter test title"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            />
-            <SelectField
-              label="Test Type"
-              value={formData.type}
-              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-              options={[
-                { value: "topic", label: "Topic Test" },
-                { value: "chapter", label: "Chapter Test" },
-                { value: "subject", label: "Subject Test" },
-                { value: "mock", label: "Mock Test" },
-                { value: "final", label: "Final Exam" },
-              ]}
-            />
-
-            {formData.type === "chapter" && (
-              <div>
-                <SearchableMultiSelect
-                  label="Chapters (select one or more — e.g. Chapter 1 to 10)"
-                  placeholder={chapters.length ? "Select chapters" : "No chapters found for this subject"}
-                  options={chapters.map((c: any) => ({ value: String(c.id), label: c.name }))}
-                  selectedValues={selectedChapterIds}
-                  onChange={(next: string[]) => setSelectedChapterIds(next)}
-                />
-                {chapters.length > 0 && (
-                  <div className="mt-1.5 flex items-center gap-3 text-[11px] font-semibold">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedChapterIds(chapters.map((c: any) => String(c.id)))}
-                      className="text-blue-600 hover:underline dark:text-sky-400"
-                    >
-                      Select all
-                    </button>
-                    {selectedChapterIds.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setSelectedChapterIds([])}
-                        className="text-gray-500 hover:underline"
-                      >
-                        Clear
-                      </button>
-                    )}
-                    <span className="ml-auto text-gray-400">
-                      {selectedChapterIds.length} of {chapters.length} selected
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {formData.type === "topic" && (
-              <SelectField
-                label="Chapter"
-                placeholder={chapters.length ? "Select chapter" : "No chapters found for this subject"}
-                value={selectedChapterId}
-                onChange={(e) => setSelectedChapterId(e.target.value)}
-                disabled={chapters.length === 0}
-                options={chapters.map((c: any) => ({ value: c.id, label: c.name }))}
-              />
-            )}
-
-            {formData.type === "topic" && (
-              <SelectField
-                label="Topic"
-                placeholder={
-                  !selectedChapterId
-                    ? "Select a chapter first"
-                    : topics.length
-                      ? "Select topic"
-                      : "No topics found for this chapter"
-                }
-                value={selectedTopicId}
-                onChange={(e) => setSelectedTopicId(e.target.value)}
-                disabled={!selectedChapterId || topics.length === 0}
-                options={topics.map((t: any) => ({ value: t.id, label: t.name }))}
-              />
-            )}
-
-            <InputField
-              label="Total Marks"
-              type="number"
-              placeholder="100"
-              value={formData.total_marks}
-              onChange={(e) => setFormData({ ...formData, total_marks: Number(e.target.value) })}
-            />
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <InputField
-                label="Date"
-                type="date"
-                value={formData.scheduled_date}
-                onChange={(e) => setFormData({ ...formData, scheduled_date: e.target.value })}
-              />
-              <InputField
-                label="Start Time"
-                type="time"
-                value={formData.start_time}
-                onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-              />
-              <InputField
-                label="Duration (mins)"
-                type="number"
-                placeholder="120"
-                value={formData.duration_minutes}
-                onChange={(e) => setFormData({ ...formData, duration_minutes: Number(e.target.value) })}
-              />
-            </div>
-
-            {formData.scheduled_date && formData.start_time && (
-              <div className="rounded-xl border border-blue-200 bg-blue-50/80 p-3 text-xs font-semibold text-blue-900 flex flex-wrap items-center justify-between gap-2 shadow-sm">
-                <div className="flex items-center gap-2">
-                  <Clock className="size-4 text-blue-600 shrink-0" />
-                  <span>Scheduled Test Window:</span>
-                </div>
-                <div className="font-bold text-blue-950 flex items-center gap-2 flex-wrap">
-                  <span>
-                    {new Date(`${formData.scheduled_date}T${formData.start_time}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                  <span className="text-blue-400">→</span>
-                  <span>
-                    {getCalculatedEndTime(formData.scheduled_date, formData.start_time, formData.duration_minutes)}
-                  </span>
-                  <span className="ml-1 rounded-md bg-blue-200/80 px-2 py-0.5 text-[10px] font-black uppercase text-blue-800">
-                    Auto Ends ({formData.duration_minutes} mins)
-                  </span>
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-3 rounded-xl border border-gray-100 bg-gray-50 p-3">
-              <label className="text-sm font-semibold text-gray-800">Assessment Content</label>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { id: "manual", label: "Manual", icon: <FileText size={14} /> },
-                  { id: "upload", label: "Upload", icon: <Upload size={14} /> },
-                  { id: "ai", label: "AI", icon: <Sparkles size={14} /> },
-                ].map((mode) => {
-                  return (
-                    <button
-                      key={mode.id}
-                      type="button"
-                      onClick={() => setContentMode(mode.id as "manual" | "upload" | "ai")}
-                      className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold transition ${contentMode === mode.id
-                        ? "border-brand-400 bg-white text-brand-700 shadow-sm"
-                        : "border-gray-200 bg-gray-100 text-gray-500 hover:bg-white"
-                        }`}
-                    >
-                      {mode.icon}
-                      {mode.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {contentMode === "manual" && (
-                <ContentEditor
-                  questions={contentText}
-                  onQuestionsChange={setContentText}
-                  answerKey={answerKey}
-                  onAnswerKeyChange={setAnswerKey}
-                  assessmentId={editingTest?.id}
-                />
-              )}
-
-              {contentMode === "upload" && (
-                <div className="space-y-3">
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.webp"
-                    onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-                    className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm"
-                  />
-                  {uploadFile ? (
-                    <p className="text-xs font-semibold text-emerald-600">{uploadFile.name} selected</p>
-                  ) : (
-                    <p className="text-xs text-gray-500">Upload a PDF, document, text file, or question-paper image.</p>
-                  )}
-                  <ContentEditor
-                    questions={contentText}
-                    onQuestionsChange={setContentText}
-                    answerKey={answerKey}
-                    onAnswerKeyChange={setAnswerKey}
-                    assessmentId={editingTest?.id}
-                  />
-                </div>
-              )}
-
-              {contentMode === "ai" && (
-                <div className="space-y-3">
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs font-semibold text-amber-800">
-                    AI scope: {selectedClass?.name} &rsaquo; {selectedSubject?.name}
-                    {formData.type === "chapter" && (
-                      <>
-                        {" "}&rsaquo;{" "}
-                        {selectedChapterIds.length === 0 ? (
-                          <span className="text-red-600">no chapters selected</span>
-                        ) : (
-                          <span>
-                            {selectedChapterIds.length} chapter{selectedChapterIds.length > 1 ? "s" : ""}:{" "}
-                            {selectedChapterIds
-                              .map((id) => chapters.find((c: any) => String(c.id) === String(id))?.name)
-                              .filter(Boolean)
-                              .join(", ")}
-                          </span>
-                        )}
-                      </>
-                    )}
-                    {formData.type === "topic" && (
-                      <>
-                        {" "}&rsaquo;{" "}
-                        {chapters.find((c: any) => c.id === selectedChapterId)?.name || (
-                          <span className="text-red-600">no chapter selected</span>
-                        )}
-                        {" "}&rsaquo;{" "}
-                        {topics.find((t: any) => t.id === selectedTopicId)?.name || (
-                          <span className="text-red-600">no topic selected</span>
-                        )}
-                      </>
-                    )}
-                    . Questions will be generated only from this scope.
-                  </div>
-                  <p className="text-xs font-bold uppercase tracking-wide text-gray-400">Question types &amp; counts</p>
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    {([
-                      { key: "mcqCount", label: "MCQ (1 mark)" },
-                      { key: "trueFalseCount", label: "True / False" },
-                      { key: "fillBlankCount", label: "Fill in blanks" },
-                      { key: "shortCount", label: "Short answer" },
-                      { key: "longCount", label: "Long answer" },
-                    ] as const).map((f) => (
-                      <label key={f.key} className="flex flex-col gap-1 text-xs font-semibold text-gray-600">
-                        {f.label}
-                        <input
-                          type="number"
-                          min={0}
-                          value={(aiConfig as any)[f.key]}
-                          onChange={(e) => setAiConfig((c) => ({ ...c, [f.key]: Math.max(0, Number(e.target.value) || 0) }))}
-                          className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-brand-500"
-                        />
-                      </label>
-                    ))}
-                    <label className="flex flex-col gap-1 text-xs font-semibold text-gray-600">
-                      Difficulty
-                      <CustomSelect
-                        value={aiConfig.difficulty}
-                        onChange={(val) => setAiConfig(prev => ({ ...prev, difficulty: val }))}
-                        options={[
-                          { value: "easy", label: "Easy" },
-                          { value: "intermediate", label: "Intermediate" },
-                          { value: "hard", label: "Hard" },
-                        ]}
-                        className="w-full"
-                      />
-                    </label>
-
-                  </div>
-                  {(() => {
-                    const computedTotal = computeAiConfigTotal(aiConfig);
-                    const matches = computedTotal === Number(formData.total_marks);
-                    return (
-                      <p className={`text-xs font-bold ${matches ? "text-emerald-600" : "text-amber-600"}`}>
-                        These counts total {computedTotal} mark{computedTotal === 1 ? "" : "s"}
-                        {matches
-                          ? ` — matches Total Marks (${formData.total_marks}).`
-                          : ` — does not match Total Marks (${formData.total_marks}). Adjust counts or Total Marks above.`}
-                      </p>
-                    );
-                  })()}
-                  <textarea
-                    value={aiPrompt}
-                    onChange={(e) => setAiPrompt(e.target.value)}
-                    rows={2}
-                    placeholder="Optional: extra instructions. Example: focus on French Revolution causes; include one map-based question."
-                    className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none focus:ring-2 focus:ring-brand-500"
-                  />
-                  <Button onClick={handleAiGenerate} disabled={generatingAi} icon={<Sparkles size={16} />}>
-                    {generatingAi ? `Generating… ${fmtDuration(genElapsedMs)}` : "Generate Question Paper"}
-                  </Button>
-                  {!generatingAi && contentText && genDurationMs != null && (
-                    <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-2 text-xs font-bold text-emerald-800">
-                      Generated in {fmtDuration(genDurationMs)}
-                    </div>
-                  )}
-                  {/* Grounding transparency: did the paper come strictly from the
-                      indexed textbook, or did some chapters fall back to general knowledge? */}
-                  {aiGrounding && contentText && (
-                    (aiGrounding.ungroundedChapters && aiGrounding.ungroundedChapters.length > 0) ? (
-                      <div className="rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-xs font-semibold text-amber-800 flex items-start gap-1.5">
-                        <AlertTriangle className="size-3.5 shrink-0 mt-0.5" />
-                        <span>Not from the textbook (used general knowledge) for: {aiGrounding.ungroundedChapters.join(", ")}.
-                        {aiGrounding.groundedChapters && aiGrounding.groundedChapters.length > 0 && (
-                          <> Grounded from the textbook for: {aiGrounding.groundedChapters.join(", ")}.</>
-                        )} Upload these chapters' PDFs under Textbook Coverage for book-only questions.</span>
-                      </div>
-                    ) : aiGrounding.grounded ? (
-                      <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-2.5 text-xs font-semibold text-emerald-800 flex items-center gap-1.5">
-                        <Check className="size-3.5 shrink-0" /> Generated strictly from your indexed textbook.
-                      </div>
-                    ) : (
-                      <div className="rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-xs font-semibold text-amber-800 flex items-start gap-1.5">
-                        <AlertTriangle className="size-3.5 shrink-0 mt-0.5" /> This chapter has no indexed textbook, so questions were written from general knowledge. Upload the chapter PDF under Textbook Coverage for book-only questions.
-                      </div>
-                    )
-                  )}
-                  {/* Show two-pane editor once AI has generated content */}
-                  {contentText && (
-                    <ContentEditor
-                      questions={contentText}
-                      onQuestionsChange={setContentText}
-                      answerKey={answerKey}
-                      onAnswerKeyChange={setAnswerKey}
-                      assessmentId={editingTest?.id}
-                    />
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-              <Button variant="outline" onClick={() => setShowCreateModal(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreateTest} disabled={submittingTest}>
-                {submittingTest ? "Saving..." : editingTest ? "Update Test" : "Create Test"}
-              </Button>
-            </div>
-          </div >
-        </Modal >
-      )}
     </div >
   );
 };

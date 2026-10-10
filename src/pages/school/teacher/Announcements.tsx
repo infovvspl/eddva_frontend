@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api/school-client';
-import { CustomSelect } from "@/components/ui/CustomSelect";
 import {
   Bell,
   CalendarDays,
@@ -11,8 +10,16 @@ import {
   Megaphone,
   MessageSquare,
   Search,
-  X
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface Notice {
   id: string | number;
@@ -67,16 +74,6 @@ export default function Announcements() {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [previewImage, setPreviewImage] = useState<Attachment | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 640);
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   useEffect(() => {
     const fetchAnnouncements = async () => {
@@ -109,11 +106,33 @@ export default function Announcements() {
 
   if (loading) {
     return (
-      <div className="flex h-[60vh] items-center justify-center">
-        <div className="size-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+      <div className="space-y-4 sm:space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-44" />
+          <Skeleton className="h-4 w-72 max-w-full" />
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 rounded-xl sm:h-28" />
+          ))}
+        </div>
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="space-y-4">
+            <Skeleton className="h-40 rounded-xl" />
+            <Skeleton className="h-40 rounded-xl" />
+          </div>
+          <Skeleton className="h-64 rounded-xl" />
+        </div>
       </div>
     );
   }
+
+  const stats = [
+    { label: 'New Notices', value: notices.length, icon: Megaphone, iconTone: 'text-blue-600', card: 'border-blue-100 bg-blue-50 dark:border-blue-900/40 dark:bg-blue-950/20', labelTone: 'text-blue-700 dark:text-blue-300' },
+    { label: 'Exam Notices', value: notices.filter((n) => n.category === 'EXAM').length, icon: ClipboardList, iconTone: 'text-rose-600', card: 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900', labelTone: 'text-slate-500' },
+    { label: 'Holiday Notices', value: notices.filter((n) => n.category === 'HOLIDAY').length, icon: CalendarDays, iconTone: 'text-emerald-600', card: 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900', labelTone: 'text-slate-500' },
+    { label: 'Notifications', value: notifications.length, icon: MessageSquare, iconTone: 'text-violet-600', card: 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900', labelTone: 'text-slate-500' },
+  ];
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -124,73 +143,48 @@ export default function Announcements() {
         </div>
         <div className="relative w-full lg:max-w-sm">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
-          <input
+          <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-4 text-xs font-bold text-slate-900 outline-none focus:border-blue-400 dark:border-slate-800 dark:bg-slate-900 dark:text-white sm:rounded-lg sm:py-3 sm:pl-10 sm:text-sm"
+            className="h-auto w-full rounded-xl border-slate-200 bg-white py-2.5 pl-9 pr-4 text-xs font-bold text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-white sm:rounded-lg sm:py-3 sm:pl-10 sm:text-sm"
             placeholder="Search notices..."
             type="search"
           />
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <div className="rounded-xl border border-blue-100 bg-blue-50 p-3.5 sm:p-5 dark:border-blue-900/40 dark:bg-blue-950/20">
-          <Megaphone className="size-5 sm:size-6 text-blue-600" />
-          <p className="mt-3 sm:mt-4 text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">New Notices</p>
-          <p className="mt-0.5 sm:mt-1 text-2xl sm:text-3xl font-black text-slate-950 dark:text-white">{notices.length}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-3.5 sm:p-5 dark:border-slate-800 dark:bg-slate-900">
-          <ClipboardList className="size-5 sm:size-6 text-rose-600" />
-          <p className="mt-3 sm:mt-4 text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-slate-500">Exam Notices</p>
-          <p className="mt-0.5 sm:mt-1 text-2xl sm:text-3xl font-black text-slate-950 dark:text-white">{notices.filter((n) => n.category === 'EXAM').length}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-3.5 sm:p-5 dark:border-slate-800 dark:bg-slate-900">
-          <CalendarDays className="size-5 sm:size-6 text-emerald-600" />
-          <p className="mt-3 sm:mt-4 text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-slate-500">Holiday Notices</p>
-          <p className="mt-0.5 sm:mt-1 text-2xl sm:text-3xl font-black text-slate-950 dark:text-white">{notices.filter((n) => n.category === 'HOLIDAY').length}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-3.5 sm:p-5 dark:border-slate-800 dark:bg-slate-900">
-          <MessageSquare className="size-5 sm:size-6 text-violet-600" />
-          <p className="mt-3 sm:mt-4 text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-slate-500">Notifications</p>
-          <p className="mt-0.5 sm:mt-1 text-2xl sm:text-3xl font-black text-slate-950 dark:text-white">{notifications.length}</p>
-        </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        {stats.map((item) => (
+          <Card key={item.label} className={cn('rounded-xl p-3.5 shadow-none sm:p-5', item.card)}>
+            <item.icon className={cn('size-5 sm:size-6', item.iconTone)} />
+            <p className={cn('mt-3 text-[9px] font-black uppercase tracking-widest sm:mt-4 sm:text-[11px]', item.labelTone)}>{item.label}</p>
+            <p className="mt-0.5 text-2xl font-black text-slate-950 dark:text-white sm:mt-1 sm:text-3xl">{item.value}</p>
+          </Card>
+        ))}
       </div>
 
-      {isMobile ? (
-        <CustomSelect
-          value={category}
-          onChange={(val) => setCategory(val)}
-          options={categories.map((c) => ({ value: c, label: c === 'All' ? 'All Categories' : c }))}
-          className="w-full"
-          triggerClassName="flex size-full items-center justify-between gap-1 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold outline-none text-slate-700 shadow-sm"
-        />
-      ) : (
-        <div className="flex gap-2 overflow-x-auto pb-1">
+      <Tabs value={category} onValueChange={setCategory}>
+        <TabsList className="h-auto w-full justify-start gap-2 overflow-x-auto bg-transparent p-0 pb-1">
           {categories.map((item) => (
-            <button
+            <TabsTrigger
               key={item}
-              type="button"
-              onClick={() => setCategory(item)}
-              className={`whitespace-nowrap rounded-lg px-4 py-2 text-xs font-black uppercase tracking-widest transition ${category === item
-                ? 'bg-blue-600 text-white dark:bg-blue-600 dark:text-white'
-                : 'bg-white text-slate-500 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800'
-                }`}
+              value={item}
+              className="shrink-0 rounded-lg bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-none dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
             >
-              {item}
-            </button>
+              {item === 'All' ? 'All Categories' : item}
+            </TabsTrigger>
           ))}
-        </div>
-      )}
+        </TabsList>
+      </Tabs>
 
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-4">
           {filteredNotices.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-slate-200 bg-white p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <Card className="rounded-lg border-dashed border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-12">
               <Megaphone className="mx-auto size-10 text-slate-300" />
               <h2 className="mt-3 text-sm font-black text-slate-900 dark:text-white">No notices found</h2>
               <p className="mt-1 text-sm text-slate-500">School announcements will appear here.</p>
-            </div>
+            </Card>
           ) : (
             filteredNotices.map((notice) => {
               const attachments = getNoticeAttachments(notice.attachments);
@@ -198,13 +192,14 @@ export default function Announcements() {
               const fileAttachments = attachments.filter((file) => !isImageAttachment(file));
 
               return (
-                <article key={notice.id} className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <Card key={notice.id} className="rounded-xl border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5">
                   <div className={`flex flex-col gap-4 sm:gap-5 ${imageAttachments.length > 0 ? 'xl:flex-row' : ''}`}>
                     {imageAttachments.length > 0 && (
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
                         onClick={() => setPreviewImage(imageAttachments[0])}
-                        className="group block w-full shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-50 text-left dark:border-slate-800 dark:bg-slate-950 xl:w-56"
+                        className="group block h-auto w-full shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-50 p-0 text-left hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 xl:w-56"
                         aria-label={`Open ${imageAttachments[0].name}`}
                       >
                         <img
@@ -212,119 +207,116 @@ export default function Announcements() {
                           alt={imageAttachments[0].name}
                           className="h-32 w-full object-cover transition duration-300 group-hover:scale-[1.03] sm:h-44 xl:h-36"
                         />
-                      </button>
+                      </Button>
                     )}
                     <div className="min-w-0 flex-1">
-                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
+                      <div className="flex flex-col justify-between gap-2.5 sm:flex-row sm:items-start">
                         <div>
                           <h2 className="text-sm sm:text-base font-black text-slate-950 dark:text-white leading-snug">{notice.title}</h2>
                           <p className="mt-1 text-[10px] sm:text-xs font-semibold text-slate-500">
                             {notice.postedDate ? new Date(notice.postedDate).toLocaleDateString() : 'Recently posted'}
                           </p>
                         </div>
-                        <div className="flex flex-wrap gap-1.5 shrink-0">
-                          <span className="rounded bg-slate-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        <div className="flex shrink-0 flex-wrap gap-1.5">
+                          <Badge variant="outline" className="rounded border-transparent bg-slate-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                             {notice.category || 'GENERAL'}
-                          </span>
-                          <span className={`rounded px-2 py-0.5 text-[9px] font-black uppercase tracking-wider ${priorityClass(notice.priority)}`}>
+                          </Badge>
+                          <Badge variant="outline" className={cn('rounded border-transparent px-2 py-0.5 text-[9px] font-black uppercase tracking-wider', priorityClass(notice.priority))}>
                             {notice.priority || 'NORMAL'}
-                          </span>
+                          </Badge>
                         </div>
                       </div>
                       <p className="mt-3 text-xs sm:text-sm font-medium leading-relaxed sm:leading-6 text-slate-600 dark:text-slate-300">{notice.content}</p>
 
                       {attachments.length > 0 && (
-                        <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
-                          {imageAttachments.slice(1).map((file) => (
-                            <a
-                              key={file.name}
-                              href={file.url}
-                              onClick={(event) => {
-                                event.preventDefault();
-                                setPreviewImage(file);
-                              }}
-                              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-2.5 py-1.5 text-[10px] sm:text-xs font-bold text-blue-700 hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-300"
-                            >
-                              <ImageIcon size={12} />
-                              <span className="max-w-[140px] sm:max-w-[180px] truncate">{file.name}</span>
-                              <ExternalLink size={10} />
-                            </a>
-                          ))}
-                          {fileAttachments.map((file) => (
-                            <a
-                              key={file.name}
-                              href={file.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              download={file.name}
-                              className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-[10px] sm:text-xs font-bold text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
-                            >
-                              <FileText size={12} />
-                              <span className="max-w-[140px] sm:max-w-[180px] truncate">{file.name}</span>
-                            </a>
-                          ))}
-                        </div>
+                        <>
+                          <Separator className="mt-4 bg-slate-100 dark:bg-slate-800" />
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            {imageAttachments.slice(1).map((file) => (
+                              <Button
+                                key={file.name}
+                                asChild
+                                variant="ghost"
+                                className="h-auto rounded-lg bg-blue-50 px-2.5 py-1.5 text-[10px] font-bold text-blue-700 hover:bg-blue-100 hover:text-blue-700 dark:bg-blue-950/30 dark:text-blue-300 sm:text-xs"
+                              >
+                                <a
+                                  href={file.url}
+                                  onClick={(event) => {
+                                    event.preventDefault();
+                                    setPreviewImage(file);
+                                  }}
+                                >
+                                  <ImageIcon size={12} />
+                                  <span className="max-w-[140px] truncate sm:max-w-[180px]">{file.name}</span>
+                                  <ExternalLink size={10} />
+                                </a>
+                              </Button>
+                            ))}
+                            {fileAttachments.map((file) => (
+                              <Button
+                                key={file.name}
+                                asChild
+                                variant="ghost"
+                                className="h-auto rounded-lg bg-slate-100 px-2.5 py-1.5 text-[10px] font-bold text-slate-700 hover:bg-slate-200 hover:text-slate-700 dark:bg-slate-800 dark:text-slate-300 sm:text-xs"
+                              >
+                                <a href={file.url} target="_blank" rel="noreferrer" download={file.name}>
+                                  <FileText size={12} />
+                                  <span className="max-w-[140px] truncate sm:max-w-[180px]">{file.name}</span>
+                                </a>
+                              </Button>
+                            ))}
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>
-                </article>
+                </Card>
               );
             })
           )}
         </div>
 
-        <aside className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-black text-slate-950 dark:text-white">Recent Notifications</h2>
+        <Card className="h-fit rounded-lg border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <CardHeader className="flex-row items-center justify-between space-y-0 p-5 pb-0">
+            <CardTitle className="text-base font-black leading-normal tracking-normal text-slate-950 dark:text-white">Recent Notifications</CardTitle>
             <Bell className="size-5 text-blue-600" />
-          </div>
-          <div className="mt-5 space-y-3">
+          </CardHeader>
+          <CardContent className="space-y-3 p-5 pt-5">
             {notifications.length === 0 ? (
               <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-5 text-center text-sm font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-950/50">
                 No unread updates.
               </p>
             ) : (
               notifications.slice(0, 8).map((note) => (
-                <div key={note.id} className="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
+                <Card key={note.id} className="rounded-lg border-slate-200 p-3 shadow-none dark:border-slate-800">
                   <p className="text-sm font-black text-slate-950 dark:text-white">{note.title}</p>
                   <p className="mt-1 text-xs font-medium text-slate-500">{note.message || note.createdAt || note.created_at || ''}</p>
-                </div>
+                </Card>
               ))
             )}
-          </div>
-        </aside>
+          </CardContent>
+        </Card>
       </section>
 
-      {previewImage && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-sm"
-          onClick={() => setPreviewImage(null)}
-        >
-          <div
-            className="relative max-h-[92vh] w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-950"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">
-              <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{previewImage.name}</p>
-              <button
-                type="button"
-                onClick={() => setPreviewImage(null)}
-                className="grid size-9 place-items-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
-                aria-label="Close image preview"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <div className="max-h-[calc(92vh-58px)] overflow-auto bg-slate-50 p-3 dark:bg-slate-900">
-              <img
-                src={previewImage.url}
-                alt={previewImage.name}
-                className="mx-auto max-h-[calc(92vh-88px)] w-auto max-w-full rounded-xl object-contain"
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog open={!!previewImage} onOpenChange={(open) => { if (!open) setPreviewImage(null); }}>
+        <DialogContent className="flex max-h-[92vh] w-[calc(100%-2rem)] max-w-4xl flex-col gap-0 overflow-hidden rounded-2xl bg-white p-0 shadow-2xl dark:bg-slate-950 sm:rounded-2xl">
+          {previewImage && (
+            <>
+              <DialogHeader className="border-b border-slate-100 px-4 py-3 pr-12 text-left dark:border-slate-800">
+                <DialogTitle className="truncate text-sm font-bold leading-normal tracking-normal text-slate-900 dark:text-white">{previewImage.name}</DialogTitle>
+                <DialogDescription className="sr-only">Image preview</DialogDescription>
+              </DialogHeader>
+              <div className="min-h-0 flex-1 overflow-auto bg-slate-50 p-3 dark:bg-slate-900">
+                <img
+                  src={previewImage.url}
+                  alt={previewImage.name}
+                  className="mx-auto max-h-[calc(92vh-88px)] w-auto max-w-full rounded-xl object-contain"
+                />
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

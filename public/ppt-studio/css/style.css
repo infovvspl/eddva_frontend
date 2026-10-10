@@ -477,6 +477,33 @@ body {
   transition: color var(--transition-fast);
 }
 
+/* The default card spans the row above the six named themes: it is a
+   different kind of choice (a palette per subject), and it keeps the six
+   in two even rows of three. */
+.theme-card--subject {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  flex-wrap: wrap;          /* on a phone the badge drops below, the name stays whole */
+  justify-content: center;
+  gap: 10px 14px;
+  padding: 12px 16px;
+}
+
+.theme-card--subject .theme-name {
+  white-space: nowrap;
+}
+
+.theme-tag {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--brand-700);
+  background: var(--bg-surface-active);
+  border: 1px solid var(--brand-500);
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+
 /* ─── Generate-from (source) picker ─────────────────────────────── */
 .source-mode-options {
   display: flex;
@@ -516,6 +543,57 @@ body {
   margin-top: 6px;
   font-size: 0.72rem;
   color: var(--text-muted);
+}
+
+/* ─── Background generation: finishing banner and placeholders ──── */
+.finishing-banner {
+  margin-left: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--bg-surface-active);
+  color: var(--brand-700);
+  font-size: 0.75rem;
+  font-weight: 700;
+  max-width: 460px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  animation: pptPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pptPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+/* ─── Slide style picker (designed vs image slides) ─────────────── */
+.slide-style-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.slide-style-btn {
+  padding: 8px 14px;
+  background: var(--bg-surface);
+  border: 2px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.slide-style-btn:hover {
+  border-color: var(--brand-500);
+}
+
+.slide-style-btn.selected {
+  border-color: var(--brand-600);
+  background: var(--bg-surface-active);
+  box-shadow: 0 0 0 3px var(--ring);
+  color: var(--brand-700);
 }
 
 /* ─── Presentation Style Picker ─────────────────────────────────── */
@@ -1185,6 +1263,154 @@ select option {
   color: var(--text-muted);
 }
 
+/* ─── Slide count: Automatic / Choose a number ─────────────────── */
+.count-mode-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.count-mode-btn {
+  padding: 8px 14px;
+  background: var(--bg-surface);
+  border: 2px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.count-mode-btn:hover {
+  border-color: var(--brand-500);
+}
+
+.count-mode-btn.selected {
+  border-color: var(--brand-600);
+  background: var(--bg-surface-active);
+  box-shadow: 0 0 0 3px var(--ring);
+  color: var(--brand-700);
+}
+
+.auto-count-info {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-active);
+  border: 1px solid var(--border-medium);
+  animation: fadeIn 0.3s var(--ease-out);
+}
+
+.auto-count-info[hidden] {
+  display: none;
+}
+
+.auto-count-icon {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gradient-primary);
+  color: #fff;
+}
+
+.auto-count-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  margin: 0 0 0.25rem;
+}
+
+.auto-count-text {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.range-wrapper[hidden] {
+  display: none;
+}
+
+/* ─── Live activity timeline (background generation) ───────────── */
+.loading-card.has-activity {
+  max-width: 520px;
+}
+
+.loading-activity {
+  list-style: none;
+  margin: 1.4rem 0 0;
+  padding: 1rem 0 0;
+  border-top: 1px solid #e6ecf6;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.loading-activity li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-size: 0.86rem;
+  line-height: 1.35;
+  color: var(--text-secondary);
+  animation: activityIn 0.35s var(--ease-out);
+}
+
+.loading-activity li.is-active {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.loading-activity li.is-older {
+  opacity: 0.6;
+}
+
+.activity-icon {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.activity-icon.is-done { background: #16a34a; }
+.activity-icon.is-warn { background: #d97706; }
+
+.activity-icon.is-active {
+  border: 2px solid #e6ecf6;
+  border-top-color: var(--brand-600);
+  animation: spin 0.8s linear infinite;
+}
+
+.activity-time {
+  margin-left: auto;
+  padding-left: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+@keyframes activityIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
 /* ─── Preview View ──────────────────────────────────────────────── */
 .preview-view {
   display: flex;
@@ -1263,13 +1489,18 @@ select option {
   /* Padding makes room for the nav arrow buttons so they
      never get clipped by the parent overflow:hidden */
   padding: 0 36px;
+  /* The canvas sizes itself from this box (cqw/cqh below). */
+  container-type: size;
 }
 
 .slide-canvas {
-  /* Use max height to fill wrapper keeping 16:9 ratio */
-  max-height: 100%;
+  /* The largest 16:9 box that fits the wrapper. width:100% with a
+     max-height let the height cap win while the width stayed full, so a
+     wide screen got a canvas wider than 16:9 and a painted slide sat in it
+     with white bars either side. */
   aspect-ratio: 16 / 9;
-  width: 100%;
+  width: min(100cqw, 100cqh * 16 / 9);
+  flex: none;
   background: linear-gradient(135deg, #1a1a2e, #16213e);
   border-radius: var(--radius-md);
   box-shadow: 0 22px 60px rgba(30, 64, 175, 0.18), 0 6px 18px rgba(15, 23, 42, 0.10);
@@ -1885,6 +2116,13 @@ img.edit-image-preview {
 
   .slide-canvas-wrapper {
     flex: none;
+    /* Stacked: the wrapper's height comes from the canvas, so it cannot
+       also be a size container. */
+    container-type: normal;
+  }
+
+  .slide-canvas {
+    width: 100%;
   }
 
   .edit-panel {
@@ -1996,8 +2234,10 @@ img.edit-image-preview {
     grid-template-areas:
       "hero    hero"
       "scope   scope"
+      "source  source"
+      "kind    theme"
       "topic   theme"
-      "slides  theme"
+      "slides  style"
       "lang    style"
       "cta     style";
     padding: 2.25rem 2.5rem 2.5rem;
@@ -2005,6 +2245,8 @@ img.edit-image-preview {
 
   .studio-hero   { grid-area: hero; }
   #scope-banner  { grid-area: scope; }
+  #sec-source-mode { grid-area: source; }
+  #sec-slide-style { grid-area: kind; }
   #sec-topic     { grid-area: topic; }
   #sec-slides    { grid-area: slides; }
   #sec-theme     { grid-area: theme; }
@@ -2039,6 +2281,22 @@ img.edit-image-preview {
   /* The pickers carry the column, so their trailing margin is not needed. */
   #sec-theme  { margin-bottom: 1.75rem; }
   #sec-style  { margin-bottom: 0; }
+
+  /* Designed and painted decks have no Presentation Style (app.js
+     _syncPresentationStyle), so the theme picker takes the whole right
+     column instead of leaving the bottom of it empty. */
+  .setup-card.no-style {
+    grid-template-areas:
+      "hero    hero"
+      "scope   scope"
+      "source  source"
+      "kind    theme"
+      "topic   theme"
+      "slides  theme"
+      "lang    theme"
+      "cta     theme";
+  }
+  .setup-card.no-style #sec-theme { margin-bottom: 0; }
 }
 
 /* A 1366x768 laptop is wide enough for the two-column layout but short
@@ -2145,3 +2403,658 @@ img.edit-image-preview {
 @media (max-width: 768px) {
   .source-badge { font-size: 0.66rem; padding: 3px 8px; }
 }
+
+/* ════════════════════════════════════════════════════════════════
+   PPT Studio setup screen (2026 design, v2: sectioned cards)
+   Everything is scoped under .ps-* so the older setup rules above
+   (grid areas, .theme-card, .slide-style-btn) cannot reach it.
+   ════════════════════════════════════════════════════════════════ */
+.ps-view {
+  max-width: 1180px;
+  padding: clamp(0.4rem, 1.6vh, 1.25rem) 2.5% clamp(1rem, 3vh, 2rem);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+/* Centred when the screen has room to spare; auto margins collapse to 0
+   when it does not, so nothing is ever cut off at the top. */
+.ps-view > .ps-card { margin-block: auto; flex-shrink: 0; }
+.ps-view::before {                      /* soft page blobs behind the card */
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(38rem 30rem at 0% 8%, rgba(255, 255, 255, 0.9), transparent 60%),
+    radial-gradient(34rem 26rem at 100% 34%, rgba(196, 181, 253, 0.28), transparent 62%),
+    radial-gradient(40rem 30rem at 0% 92%, rgba(255, 255, 255, 0.85), transparent 60%),
+    radial-gradient(36rem 28rem at 100% 100%, rgba(191, 219, 254, 0.35), transparent 60%),
+    #eef0f8;
+}
+
+.ps-card {
+  position: relative;
+  overflow: hidden;
+  background: #fbfbfe;
+  border: 1px solid #e6e9f4;
+  border-radius: 18px;
+  box-shadow: 0 18px 48px rgba(76, 81, 191, 0.10), 0 2px 6px rgba(15, 23, 42, 0.04);
+}
+
+/* The older wide-screen rules give these ids grid areas, margins and
+   padding; inside the new card they are ordinary sections. */
+.ps-card #sec-slides,
+.ps-card #sec-language,
+.ps-card #sec-slide-style,
+.ps-card #sec-source-mode,
+.ps-card #sec-style { grid-area: auto; }
+.ps-card #scope-banner { margin: 0; padding: 0 12px; grid-area: auto; }
+
+/* Header band */
+.ps-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: clamp(1rem, 1.4vw, 1.4rem);
+  min-height: clamp(80px, 12vh, 124px);
+  padding: clamp(0.7rem, 1.8vh, 1.4rem) clamp(1.25rem, 2.4vw, 2rem);
+  background:
+    radial-gradient(70% 140% at 100% 0%, rgba(167, 139, 250, 0.30), transparent 60%),
+    linear-gradient(90deg, #f3f2ff 0%, #ece9fe 55%, #e4defd 100%);
+  border-bottom: 1px solid #e6e3fb;
+  overflow: hidden;
+}
+.ps-head-icon {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: linear-gradient(140deg, #3b82f6 0%, #6d5bf5 55%, #8b5cf6 100%);
+  box-shadow: 0 10px 22px rgba(99, 102, 241, 0.35);
+}
+.ps-head-icon svg { width: 24px; height: 24px; }
+.ps-hero-text { position: relative; z-index: 1; min-width: 0; }
+.ps-title {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 1.65rem;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+.ps-title-accent {
+  background: linear-gradient(90deg, #2563eb 0%, #6d28d9 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.ps-sub {
+  margin-top: 0.3rem;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: #475569;
+}
+.ps-hero-art {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  height: 100%;
+  width: auto;
+  max-width: 46%;
+  pointer-events: none;
+}
+
+/* Body: sections as cards */
+.ps-body { padding: clamp(0.6rem, 2vh, 1.4rem) clamp(0.6rem, 1.6vw, 1.4rem); }
+.ps-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  column-gap: 14px;
+  align-items: start;
+  padding: clamp(8px, 1.5vh, 16px) clamp(14px, 1.4vw, 20px) clamp(10px, 1.8vh, 18px);
+  margin-bottom: clamp(0.5rem, 1.6vh, 1rem);
+  background: #fff;
+  border: 1px solid #e8ebf4;
+  border-radius: 12px;
+}
+.ps-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: #f1edfd;
+  color: #6d3df5;
+}
+.ps-icon svg { width: 17px; height: 17px; }
+.ps-field { min-width: 0; }
+.ps-label {
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 clamp(5px, 0.9vh, 9px);
+}
+.ps-optional { font-weight: 400; color: #64748b; }
+.ps-required { color: #ef4444; }
+.ps-visually-hidden {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+/* Inputs and selects */
+.ps-input,
+.ps-select {
+  width: 100%;
+  height: 34px;
+  border: 1px solid #dfe3ee;
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+  font: 500 0.78rem 'Inter', sans-serif;
+  padding: 0 12px;
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.ps-input:focus,
+.ps-select:focus-visible {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+.ps-input-wrap { position: relative; }
+.ps-input { padding-right: 60px; }
+.ps-count {
+  position: absolute;
+  right: 10px;
+  bottom: 3px;
+  font-size: 0.6rem;
+  color: #64748b;
+  pointer-events: none;
+}
+.ps-select-wrap { position: relative; }
+.ps-native {
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  padding-left: 34px;
+  padding-right: 34px;
+}
+.ps-select-icon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 15px;
+  height: 15px;
+  color: #4f46e5;
+  pointer-events: none;
+}
+.ps-chevron { width: 15px; height: 15px; color: #334155; flex-shrink: 0; }
+.ps-select-wrap .ps-chevron {
+  position: absolute;
+  right: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* Curriculum */
+.ps-curriculum-line {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.ps-scope {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  text-align: left;
+  font-weight: 500;
+}
+.ps-scope:hover { border-color: #c7d2fe; }
+.ps-scope-cap { width: 15px; height: 15px; color: #334155; flex-shrink: 0; }
+.ps-scope-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ps-scope-text > span { overflow: hidden; text-overflow: ellipsis; }
+.ps-scope-sep { width: 12px; height: 12px; color: #64748b; flex-shrink: 0; }
+.ps-scope.is-empty .ps-scope-text { color: #64748b; }
+.ps-scope.is-warn { border-color: #fbbf24; }
+.ps-scope[aria-expanded="true"] .ps-chevron { transform: rotate(180deg); }
+.ps-aligned {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 34px;
+  min-width: 170px;
+  padding: 0 16px;
+  border-radius: 8px;
+  background: #e8effd;
+  color: #1d4ed8;
+  font-weight: 600;
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+.ps-aligned svg { width: 15px; height: 15px; }
+.ps-aligned[hidden] { display: none; }
+.ps-scope-details {
+  margin-top: 8px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: #f8faff;
+  border: 1px solid #e5eaf7;
+  font-size: 0.74rem;
+  color: #334155;
+}
+.ps-scope-row { display: flex; gap: 12px; padding: 2px 0; }
+.ps-scope-row span { width: 64px; color: #64748b; }
+.ps-scope-kind { margin-top: 4px; color: #475569; }
+.ps-scope-warn { margin-top: 4px; color: #b45309; }
+
+/* Two sections side by side */
+.ps-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0 clamp(0.5rem, 1.6vh, 1rem);
+}
+.ps-pair--bottom { grid-template-columns: minmax(0, 0.72fr) minmax(0, 1fr); }
+
+/* Slide style cards */
+.ps-style-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(12px, 1.2vw, 18px);
+}
+/* One style on offer: it takes the whole row rather than half of it. */
+.ps-style-grid:has(> .ps-style:only-of-type) { grid-template-columns: 1fr; }
+.ps-style {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  padding: 6px 36px 6px 18px;
+  min-height: clamp(50px, 7vh, 66px);
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+}
+.ps-style:hover { border-color: #bfd0fb; }
+.ps-style.selected {
+  border: 1.5px solid #3b82f6;
+  background: #f4f7ff;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.12);
+}
+.ps-style:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
+.ps-style-icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 38px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+.ps-style-icon svg { width: 22px; height: 22px; }
+.ps-style.selected .ps-style-icon { background: #e3ebff; color: #2563eb; }
+.ps-style-text { display: flex; flex-direction: column; gap: 2px; }
+.ps-style-name { font-size: 0.76rem; font-weight: 700; color: #0f172a; }
+.ps-style.selected .ps-style-name { color: #1d4ed8; }
+.ps-style-desc { font-size: 0.68rem; font-weight: 400; line-height: 1.45; color: #475569; max-width: 170px; }
+.ps-check {
+  display: none;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #fff;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
+}
+.ps-check svg { width: 10px; height: 10px; }
+.ps-style .ps-check { position: absolute; top: 9px; right: 10px; }
+.ps-style.selected .ps-check { display: grid; }
+
+/* Theme chips (above) and thumbnails */
+.ps-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: clamp(8px, 1.4vh, 14px);
+}
+.ps-chip {
+  height: 26px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #334155;
+  font: 500 0.7rem 'Inter', sans-serif;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+.ps-chip:hover { border-color: #bfd0fb; }
+.ps-chip.selected {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.3);
+}
+.ps-theme-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: clamp(12px, 1.2vw, 18px);
+}
+.ps-card .theme-card.ps-theme {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  transform: none;
+  cursor: pointer;
+  outline: none;
+}
+.ps-card .theme-card.ps-theme[hidden] { display: none; }
+.ps-thumb {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 2.25 / 1;
+  border-radius: 7px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+.ps-thumb svg { display: block; width: 100%; height: 100%; }
+.ps-card .theme-card.ps-theme:hover .ps-thumb {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+}
+.ps-card .theme-card.ps-theme.selected .ps-thumb {
+  border: 2px solid #1d4ed8;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+.ps-card .theme-card.ps-theme:focus-visible .ps-thumb { box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3); }
+.ps-thumb .ps-check { position: absolute; top: 5px; right: 5px; }
+.ps-card .theme-card.ps-theme.selected .ps-check { display: grid; }
+.ps-theme-name {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #1e293b;
+  text-align: center;
+}
+
+/* The "Generate from" picker, when a lecture transcript exists */
+.ps-card #sec-source-mode {
+  padding: 10px 14px 12px 60px;
+  margin-bottom: 0.6rem;
+  background: #fff;
+  border: 1px solid #e8ebf4;
+  border-radius: 12px;
+}
+
+/* Note */
+.ps-note {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: clamp(0.5rem, 1.6vh, 1rem);
+  padding: clamp(8px, 1.5vh, 16px) clamp(16px, 1.6vw, 22px);
+  border-radius: 12px;
+  background: #eef3fd;
+  border: 1px solid #e0e8fb;
+}
+.ps-note-icon {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: #dfe8fc;
+  color: #2563eb;
+}
+.ps-note-icon svg { width: 18px; height: 18px; }
+.ps-note-title { font-size: 0.74rem; font-weight: 600; color: #1d4ed8; }
+.ps-note-text { font-size: 0.68rem; color: #475569; margin-top: 2px; }
+
+/* Generate */
+.ps-generate {
+  width: 100%;
+  height: clamp(40px, 5.6vh, 50px);
+  margin-top: clamp(0px, 0.6vh, 6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  color: #fff;
+  font: 600 0.92rem 'Inter', sans-serif;
+  letter-spacing: 0.01em;
+  background: linear-gradient(90deg, #2563eb 0%, #4f46e5 50%, #7c3aed 100%);
+  box-shadow: 0 12px 26px rgba(79, 70, 229, 0.30);
+  transition: transform var(--transition-fast), box-shadow var(--transition-base), filter var(--transition-fast);
+}
+.ps-generate svg { width: 18px; height: 18px; }
+.ps-generate:hover { transform: translateY(-1px); box-shadow: 0 16px 32px rgba(79, 70, 229, 0.38); filter: brightness(1.05); }
+.ps-generate:active { transform: translateY(0); }
+.ps-generate:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.35); }
+
+/* A short screen (a 1366x768 laptop) keeps the tight spacing, so the whole
+   form and the Generate button stay on one screen; taller screens get the
+   roomier, height-scaled spacing above. */
+@media (min-width: 901px) and (max-height: 780px) {
+  .ps-view { padding: 0.4rem 2.5% 1rem; }
+  .ps-hero { min-height: 80px; padding: 0.7rem 1.25rem; }
+  .ps-body { padding: 0.6rem; }
+  .ps-row { padding: 8px 14px 10px; margin-bottom: 0.5rem; }
+  .ps-label { margin-bottom: 5px; }
+  .ps-pair { gap: 0 0.5rem; }
+  .ps-style { min-height: 50px; }
+  .ps-chips { margin-bottom: 8px; }
+  .ps-note { margin-bottom: 0.5rem; padding: 8px 16px; }
+  .ps-generate { height: 40px; margin-top: 0; }
+}
+
+@media (max-width: 900px) {
+  .ps-theme-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ps-pair, .ps-pair--bottom { grid-template-columns: 1fr; }
+  .ps-hero-art { opacity: 0.45; }
+}
+@media (max-width: 640px) {
+  .ps-view { padding: 0.5rem 0.5rem 1.25rem; }
+  .ps-card { border-radius: 14px; }
+  .ps-hero { padding: 0.9rem 1rem; gap: 0.8rem; }
+  .ps-hero-art { display: none; }
+  .ps-head-icon { width: 44px; height: 44px; border-radius: 12px; }
+  .ps-title { font-size: 1.35rem; }
+  .ps-sub br { display: none; }
+  .ps-body { padding: 0.5rem; }
+  .ps-row { grid-template-columns: 30px minmax(0, 1fr); column-gap: 10px; padding: 10px 10px 12px; }
+  .ps-icon { width: 30px; height: 30px; }
+  .ps-curriculum-line { flex-direction: column; align-items: stretch; gap: 8px; }
+  .ps-aligned { align-self: flex-start; min-width: 0; }
+  .ps-scope { height: auto; min-height: 34px; padding-top: 7px; padding-bottom: 7px; }
+  .ps-scope-text { white-space: normal; flex-wrap: wrap; row-gap: 2px; }
+  .ps-style-grid { grid-template-columns: 1fr; }
+  .ps-style-desc { max-width: none; }
+  .ps-theme-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ps-card #sec-source-mode { padding-left: 50px; }
+}
+
+/* "Creating presentation for ..." in the loading card */
+.loading-scope {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  margin: -0.75rem 0 1.4rem;
+  padding: 12px 16px 13px;
+  border: 1px solid #dbe4ff;
+  border-radius: 14px;
+  background: #f5f8ff;
+}
+.loading-scope[hidden] { display: none; }
+.loading-scope-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+.loading-scope-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #0f172a;
+}
+.loading-scope-meta { font-size: 0.8rem; color: #475569; }
+.loading-scope-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #047857;
+}
+.loading-scope-check[hidden] { display: none; }
+.loading-scope.is-warn { border-color: #fdba74; background: #fffaf3; }
+.loading-scope-warn {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #9a3412;
+}
+
+/* Shown above a deck when the chosen style could not be made (app.js
+   _showFallbackNotice). */
+.fallback-notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 8px 16px 0;
+  padding: 9px 16px;
+  border: 1px solid #fdba74;
+  border-radius: 10px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+.fallback-notice[hidden] { display: none; }
+.fallback-retry {
+  flex-shrink: 0;
+  height: 30px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 8px;
+  background: #ea580c;
+  color: #fff;
+  font: 600 0.78rem 'Inter', sans-serif;
+  cursor: pointer;
+}
+.fallback-retry:hover { background: #c2410c; }
+/* "Continue in background" on the loading card. */
+.loading-background {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(148, 163, 184, 0.25);
+}
+.loading-background[hidden] { display: none; }
+.loading-background-btn {
+  height: 34px;
+  padding: 0 16px;
+  border: 1px solid #c7d2fe;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  font: 600 0.8rem 'Inter', sans-serif;
+  cursor: pointer;
+}
+.loading-background-btn:hover { background: #e0e7ff; }
+.loading-background-note { font-size: 0.72rem; color: #64748b; text-align: center; }
+
+/* Wide screens: the setup form is a two-column grid instead of one tall
+   column (user's request, 2026-10-10). The pairs dissolve into the grid so
+   every section lines up, and `order` sets the reading order:
+     Curriculum   | Topic
+     Generate from (whole row, when offered)
+     Slide style  | Language        (Number of slides joins in for designed decks)
+     Theme (whole row)
+     Note (whole row)
+     Generate (whole row)
+   Ids carry the placement: `.ps-card #sec-*` above resets grid-area. */
+@media (min-width: 901px) {
+  .ps-body {
+    display: grid;
+    /* Left wider: the curriculum path is the longest line on the form. */
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    column-gap: clamp(0.6rem, 1.4vw, 1.1rem);
+  }
+  .ps-body > .ps-pair { display: contents; }
+  .ps-card .ps-body > *,
+  .ps-card .ps-body > .ps-pair > * { grid-row: auto; grid-column: 1 / -1; }
+  /* grid-area, not grid-column: the old layout names a row for #sec-topic. */
+  .ps-card .ps-body #ps-curriculum,
+  .ps-card .ps-body #sec-topic,
+  .ps-card .ps-body #sec-slides,
+  .ps-card .ps-body #sec-slide-style,
+  .ps-card .ps-body #sec-language { grid-area: auto; }
+  .ps-card .ps-body #ps-curriculum { order: 1; }
+  .ps-card .ps-body #sec-topic { order: 2; }
+  .ps-card .ps-body #sec-source-mode { order: 3; }
+  .ps-card .ps-body #sec-slides { order: 4; }
+  .ps-card .ps-body #sec-slide-style { order: 5; }
+  .ps-card .ps-body #sec-language { order: 6; }
+  .ps-card .ps-body #ps-theme { order: 7; }
+  .ps-card .ps-body #sec-style { order: 8; }
+  .ps-card .ps-body .ps-note { order: 9; }
+  .ps-card .ps-body #generate-btn { order: 10; }
+  /* Half a row is too narrow for the scope and the "Curriculum aligned"
+     badge side by side: the scope gets the room (it shrinks with an
+     ellipsis rather than overflowing), and the badge shows just its book
+     icon - the words stay for screen readers and in the tooltip. */
+  .ps-card .ps-curriculum-line > .ps-scope { flex: 1; min-width: 0; }
+  .ps-card .ps-aligned { min-width: 0; width: 34px; padding: 0; font-size: 0; }
+}
+
+/* Image slides offer no slide count: the topic then takes the whole row. */
+.ps-pair > .ps-row[hidden] { display: none; }
+.ps-pair:has(> #sec-slides[hidden]) { grid-template-columns: 1fr; }
+/* The same bar for good news: a deck that came back at once (cached). */
+.fallback-notice.is-info { border-color: #93c5fd; background: #eff6ff; color: #1e3a8a; }
+.fallback-notice.is-info .fallback-retry { background: #2563eb; }
+.fallback-notice.is-info .fallback-retry:hover { background: #1d4ed8; }

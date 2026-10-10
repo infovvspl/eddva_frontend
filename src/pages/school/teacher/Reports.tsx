@@ -1,16 +1,66 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TrendingUp, TrendingDown, AlertTriangle, BarChart3, Users, Target, ChevronLeft, ChevronRight, ArrowRight, Search, ClipboardCheck, LineChart } from 'lucide-react';
-import GlassCard from '@/components/school/GlassCard';
 import StatCard from '@/components/school/StatCard';
-import Badge from '@/components/school/Badge';
-import ProgressBar from '@/components/school/ProgressBar';
-import Tabs from '@/components/school/Tabs';
+import { cn } from '@/lib/utils';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Alert } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import DataTable from '@/components/school/DataTable';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import api from '@/lib/api/school-client';
 import './Reports.css';
-import { CustomSelect } from "@/components/ui/CustomSelect";
+
+const TONE_BADGE: Record<string, string> = {
+  success: 'bg-emerald-500/10 text-emerald-700',
+  info: 'bg-blue-500/10 text-blue-700',
+  warning: 'bg-amber-500/10 text-amber-700',
+  error: 'bg-red-500/10 text-red-700',
+  purple: 'bg-violet-500/10 text-violet-700',
+};
+
+function ToneBadge({ tone, children }: { tone: string; children: React.ReactNode }) {
+  return (
+    <Badge variant="outline" className={cn('border-transparent', TONE_BADGE[tone] ?? TONE_BADGE.purple)}>
+      {children}
+    </Badge>
+  );
+}
+
+// shadcn Select with the simple (value, onChange(val), options) shape used on this page.
+function SimpleSelect({
+  id,
+  value,
+  onChange,
+  options,
+  disabled,
+  triggerClassName,
+}: {
+  id?: string;
+  value: string;
+  onChange: (val: string) => void;
+  options: { value: string; label: string }[];
+  disabled?: boolean;
+  triggerClassName?: string;
+}) {
+  return (
+    <Select value={value} onValueChange={onChange} disabled={disabled}>
+      <SelectTrigger id={id} className={cn('w-full', triggerClassName)}><SelectValue /></SelectTrigger>
+      <SelectContent>
+        {options.map((o) => (
+          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
 
 const truthyFlag = (value: any) => value === true || value === 'true' || value === 't' || value === 1 || value === '1';
 
@@ -110,16 +160,6 @@ const Reports: React.FC = () => {
   const [studentPage, setStudentPage] = useState(1);
   const [studentPageSize, setStudentPageSize] = useState(10);
   const [activeTab, setActiveTab] = useState<string>('students');
-  const [isMobile, setIsMobile] = useState<boolean>(false);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 640);
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const [selectedSection, setSelectedSection] = useState<string>('all');
@@ -239,7 +279,7 @@ const Reports: React.FC = () => {
   const classes = useMemo(() => {
     const map = new Map<string, string>();
     const assignments = Array.isArray(reportScope?.assignments) ? reportScope.assignments : [];
-    
+
     if (assignments.length > 0) {
       assignments.forEach((item: any) => {
         const classId = item.class_id || item.classId;
@@ -255,7 +295,7 @@ const Reports: React.FC = () => {
         }
       });
     }
-    
+
     return Array.from(map.entries())
       .map(([id, name]) => ({ id, name }))
       .sort((a, b) => a.name.localeCompare(b.name));
@@ -307,14 +347,14 @@ const Reports: React.FC = () => {
     return studentPerformance.filter((student) => {
       const matchesClass = selectedClass === 'all' || String(student.classId) === String(selectedClass);
       const matchesSection = selectedSection === 'all' || String(student.sectionId) === String(selectedSection);
-      const matchesSearch = studentSearchQuery.trim() === '' || 
+      const matchesSearch = studentSearchQuery.trim() === '' ||
         student.name?.toLowerCase().includes(studentSearchQuery.toLowerCase());
       return matchesClass && matchesSection && matchesSearch;
     });
   }, [studentPerformance, selectedClass, selectedSection, studentSearchQuery]);
 
   const totalStudentPages = Math.ceil(filteredStudents.length / studentPageSize);
-  
+
   useEffect(() => {
     if (studentPage > totalStudentPages && totalStudentPages > 0) {
       setStudentPage(1);
@@ -506,10 +546,10 @@ const Reports: React.FC = () => {
         </span>
       ),
     },
-    { key: 'class', title: 'Class', render: (v: string) => <Badge variant="purple">{v}</Badge> },
+    { key: 'class', title: 'Class', render: (v: string) => <ToneBadge tone="purple">{v}</ToneBadge> },
     {
       key: 'avgScore', title: 'Avg Score', render: (v: number) => (
-        <Badge variant={v >= 85 ? 'success' : v >= 70 ? 'info' : 'warning'}>{v}%</Badge>
+        <ToneBadge tone={v >= 85 ? 'success' : v >= 70 ? 'info' : 'warning'}>{v}%</ToneBadge>
       )
     },
     {
@@ -523,9 +563,9 @@ const Reports: React.FC = () => {
   ];
 
   const classColumns = [
-    { key: 'class', title: 'Class', render: (v: string) => <Badge variant="purple">{v}</Badge> },
+    { key: 'class', title: 'Class', render: (v: string) => <ToneBadge tone="purple">{v}</ToneBadge> },
     { key: 'avgScore', title: 'Avg Score', render: (v: number) => <span className="reports__score">{v}%</span> },
-    { key: 'passRate', title: 'Pass Rate', render: (v: number) => <Badge variant={v >= 90 ? 'success' : 'info'}>{v}%</Badge> },
+    { key: 'passRate', title: 'Pass Rate', render: (v: number) => <ToneBadge tone={v >= 90 ? 'success' : 'info'}>{v}%</ToneBadge> },
     { key: 'topSubject', title: 'Top Subject', render: (v: string) => v || <span className="text-gray-400">—</span> },
     { key: 'weakSubject', title: 'Weak Subject', render: (v: string) => v || <span className="text-gray-400">—</span> },
     { key: 'attendance', title: 'Attendance', render: (v: number) => <span className="reports__score">{v}%</span> },
@@ -553,8 +593,8 @@ const Reports: React.FC = () => {
     <div className="reports__section">
       <div className="reports__filters-row">
         <div className="reports__filter-group">
-          <label htmlFor="class-filter">Class</label>
-          <CustomSelect
+          <Label htmlFor="class-filter">Class</Label>
+          <SimpleSelect
             onChange={setSelectedClass}
             value={selectedClass}
             options={[
@@ -562,14 +602,13 @@ const Reports: React.FC = () => {
               ...classes.map((cls) => ({ value: cls.id, label: cls.name })),
             ]}
             id="class-filter"
-            className="w-full"
-            triggerClassName="flex size-full items-center justify-between gap-1 px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-lg border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 shadow-sm"
+            triggerClassName="h-auto rounded-lg border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm sm:px-4 sm:py-2.5 sm:text-sm"
           />
         </div>
 
         <div className="reports__filter-group">
-          <label htmlFor="section-filter">Section</label>
-          <CustomSelect
+          <Label htmlFor="section-filter">Section</Label>
+          <SimpleSelect
             onChange={setSelectedSection}
             value={selectedSection}
             options={[
@@ -578,16 +617,15 @@ const Reports: React.FC = () => {
             ]}
             id="section-filter"
             disabled={selectedClass === 'all' && sections.length === 0}
-            className="w-full"
-            triggerClassName="flex size-full items-center justify-between gap-1 px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-lg border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 shadow-sm"
+            triggerClassName="h-auto rounded-lg border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm sm:px-4 sm:py-2.5 sm:text-sm"
           />
         </div>
 
         <div className="reports__filter-group reports__filter-group--search">
-          <label htmlFor="student-search">Search Student</label>
+          <Label htmlFor="student-search">Search Student</Label>
           <div className="reports__search-wrapper">
             <Search size={16} className="reports__search-icon" />
-            <input
+            <Input
               id="student-search"
               type="text"
               placeholder="Search by name..."
@@ -596,89 +634,117 @@ const Reports: React.FC = () => {
                 setStudentSearchQuery(e.target.value);
                 setStudentPage(1);
               }}
-              className="reports__filter-input"
+              className="reports__filter-input h-auto"
             />
           </div>
         </div>
       </div>
 
       {!loading && !filteredStudents.length && (
-        <div className="reports__empty">No students found matching the selected filters.</div>
+        <Card className="reports__empty rounded-xl border-dashed shadow-none">No students found matching the selected filters.</Card>
       )}
-      
+
       {filteredStudents.length > 0 && (
     <>
-      <div className="w-full overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+      {/* Mobile: one card per student */}
+      <div className="space-y-3 md:hidden">
+        {paginatedStudents.map((row: any) => (
+          <Card key={row.id} className="space-y-2.5 rounded-xl border-slate-200 p-4 shadow-none">
+            <div className="flex items-start justify-between gap-2">
+              <span
+                onClick={() => navigate(`/school/teacher/reports/student/${row.id}`)}
+                className="min-w-0 cursor-pointer truncate font-bold text-blue-600 hover:underline dark:text-blue-400"
+              >
+                {row.name}
+              </span>
+              <ToneBadge tone={row.avgScore >= 85 ? 'success' : row.avgScore >= 70 ? 'info' : 'warning'}>{row.avgScore}%</ToneBadge>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <ToneBadge tone="purple">{row.class}</ToneBadge>
+              <span className={`reports__trend reports__trend--${row.trend}`}>
+                {row.trend === 'improving' ? <TrendingUp size={14} /> : row.trend === 'declining' ? <TrendingDown size={14} /> : <BarChart3 size={14} />}
+                {row.trend}
+              </span>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Tablet / desktop table */}
+      <div className="hidden w-full overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 md:block">
         <DataTable columns={studentColumns} data={paginatedStudents} />
       </div>
-      
+
       {/* Pagination controls */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 pt-4 mt-4">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 pt-4">
         <div className="text-xs font-semibold text-gray-500">
           Showing <span className="font-bold text-gray-700">{startIndex + 1}</span> to{" "}
           <span className="font-bold text-gray-700">{Math.min(endIndex, filteredStudents.length)}</span> of{" "}
           <span className="font-bold text-gray-700">{filteredStudents.length}</span> students
         </div>
-        
-        <div className="flex items-center gap-4">
+
+        <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-gray-500">Per page:</span>
-            <CustomSelect
-              onChange={setStudentPageSize}
-              value={studentPageSize}
-              options={[
-                { value: 5, label: "5" },
-                { value: 10, label: "10" },
-                { value: 20, label: "20" },
-                { value: 50, label: "50" },
-              ]}
-              className="w-full"
-              triggerClassName="flex size-full items-center justify-between gap-1 px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-xs font-semibold outline-none text-slate-700 shadow-sm"
-            />
+            <div className="w-[76px]">
+              <SimpleSelect
+                onChange={(v) => setStudentPageSize(Number(v))}
+                value={String(studentPageSize)}
+                options={[
+                  { value: '5', label: '5' },
+                  { value: '10', label: '10' },
+                  { value: '20', label: '20' },
+                  { value: '50', label: '50' },
+                ]}
+                triggerClassName="h-8 rounded-lg border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-sm"
+              />
+            </div>
           </div>
-          
+
           {totalStudentPages > 1 && (
             <div className="flex items-center gap-1">
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="icon"
                 onClick={() => setStudentPage((p) => Math.max(1, p - 1))}
                 disabled={studentPage === 1}
-                className="inline-flex size-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
+                className="size-8 shrink-0 rounded-lg"
               >
                 <ChevronLeft size={16} />
-              </button>
-              
-              {/* Desktop: Show all page numbers */}
-              <div className="hidden sm:flex items-center gap-1">
+              </Button>
+
+              {/* Desktop: show all page numbers */}
+              <div className="hidden items-center gap-1 sm:flex">
                 {Array.from({ length: totalStudentPages }, (_, i) => i + 1).map((page) => (
-                  <button
+                  <Button
                     key={page}
                     type="button"
+                    variant={studentPage === page ? 'default' : 'outline'}
+                    size="icon"
                     onClick={() => setStudentPage(page)}
-                    className={`inline-flex size-8 items-center justify-center rounded-lg text-xs font-black transition-colors ${
-                      studentPage === page
-                        ? "bg-brand-600 text-white shadow-sm"
-                        : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
-                    }`}
+                    className="size-8 rounded-lg text-xs font-black"
                   >
                     {page}
-                  </button>
+                  </Button>
                 ))}
               </div>
 
-              {/* Mobile: Show Page X of Y text */}
-              <span className="flex sm:hidden px-2 text-xs font-semibold text-gray-500">
+              {/* Mobile: Page X of Y */}
+              <span className="flex px-2 text-xs font-semibold text-gray-500 sm:hidden">
                 Page {studentPage} of {totalStudentPages}
               </span>
-              
-              <button
+
+              <Button
                 type="button"
+                variant="outline"
+                size="icon"
                 onClick={() => setStudentPage((p) => Math.min(totalStudentPages, p + 1))}
                 disabled={studentPage === totalStudentPages}
-                className="inline-flex size-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
+                className="size-8 shrink-0 rounded-lg"
               >
                 <ChevronRight size={16} />
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -691,22 +757,22 @@ const Reports: React.FC = () => {
   const weaknessContent = (
     <div className="reports__section">
       {!loading && !weaknessClassGroups.length && (
-        <div className="reports__empty">No assigned class or subject data is available for weakness analysis.</div>
+        <Card className="reports__empty rounded-xl border-dashed shadow-none">No assigned class or subject data is available for weakness analysis.</Card>
       )}
       {!loading && !reportAssignments.length && weaknessData.length > 0 && (
-        <div className="reports__error">
+        <Alert className="reports__error rounded-xl border-rose-200 bg-rose-50 text-sm font-semibold text-rose-700">
           Couldn't match this data to your specific classes/sections — showing it grouped generically below. Refresh the page, or contact an admin if this persists.
-        </div>
+        </Alert>
       )}
       <div className="reports__weakness-class-list">
         {weaknessClassGroups.map((classGroup: any) => (
-          <GlassCard key={classGroup.id} className="reports__weakness-class-card">
+          <Card key={classGroup.id} className="reports__weakness-class-card rounded-2xl border-slate-200 bg-white p-[18px] shadow-sm">
             <div className="reports__weakness-class-header">
               <div>
                 <span>Class</span>
                 <h3>{classGroup.name}</h3>
               </div>
-              <Badge variant="purple">{classGroup.sections.length} section{classGroup.sections.length === 1 ? '' : 's'}</Badge>
+              <ToneBadge tone="purple">{classGroup.sections.length} section{classGroup.sections.length === 1 ? '' : 's'}</ToneBadge>
             </div>
             <div className="reports__weakness-section-grid">
               {classGroup.sections.map((sectionGroup: any) => (
@@ -716,12 +782,12 @@ const Reports: React.FC = () => {
                       <span>Section</span>
                       <h4>{formatSectionName(sectionGroup.name)}</h4>
                     </div>
-                    <Badge variant={sectionGroup.isClassTeacher ? 'success' : 'info'}>
+                    <ToneBadge tone={sectionGroup.isClassTeacher ? 'success' : 'info'}>
                       {sectionGroup.isClassTeacher ? 'Class teacher' : 'Assigned subjects'}
-                    </Badge>
+                    </ToneBadge>
                   </div>
                   {!sectionGroup.subjects.length && (
-                    <div className="reports__empty">No subjects are assigned for this section.</div>
+                    <Card className="reports__empty rounded-xl border-dashed shadow-none">No subjects are assigned for this section.</Card>
                   )}
                   <div className="reports__weakness-grid reports__weakness-grid--nested">
                     {sectionGroup.subjects.map((subject: any) => {
@@ -732,10 +798,17 @@ const Reports: React.FC = () => {
                       );
 
                       return (
-                        <GlassCard
+                        <Card
                           key={subject.id || subject.name}
-                          hover
-                          className="reports__weakness-card"
+                          role="button"
+                          tabIndex={0}
+                          className="reports__weakness-card cursor-pointer rounded-xl border-slate-200 bg-white p-[18px] shadow-none transition-all hover:-translate-y-0.5 hover:border-amber-400 hover:shadow-md"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              (e.currentTarget as HTMLElement).click();
+                            }
+                          }}
                           onClick={() => navigate(`/school/teacher/reports/weakness/${encodeURIComponent(subject.name)}`, {
                             state: {
                               studentPerformance,
@@ -764,19 +837,19 @@ const Reports: React.FC = () => {
                               <span className="reports__weakness-value">{hasData ? `${classAverage}%` : 'No data yet'}</span>
                             </div>
                           </div>
-                          <ProgressBar value={hasData ? classAverage : 0} size="sm" color="var(--gradient-warm)" />
+                          <Progress value={hasData ? classAverage : 0} className="h-1.5 bg-slate-100" indicatorClassName="bg-gradient-to-r from-amber-400 to-orange-500" />
                           <div className="reports__weakness-footer">
                             <span>View struggling students</span>
                             <ArrowRight size={12} />
                           </div>
-                        </GlassCard>
+                        </Card>
                       );
                     })}
                   </div>
                 </div>
               ))}
             </div>
-          </GlassCard>
+          </Card>
         ))}
       </div>
     </div>
@@ -785,27 +858,27 @@ const Reports: React.FC = () => {
   const testContent = (
     <div className="reports__section">
       <div className="reports__weekly-stats">
-        <GlassCard className="reports__weekly-card">
+        <Card className="reports__weekly-card rounded-2xl border-slate-200 bg-white p-[18px] shadow-sm">
           <span className="reports__weekly-label">Weekly Average</span>
           <strong>{weeklyAnalysis.averageScore}%</strong>
-        </GlassCard>
-        <GlassCard className="reports__weekly-card">
+        </Card>
+        <Card className="reports__weekly-card rounded-2xl border-slate-200 bg-white p-[18px] shadow-sm">
           <span className="reports__weekly-label">Weekly Pass Rate</span>
           <strong>{weeklyAnalysis.passRate}%</strong>
-        </GlassCard>
-        <GlassCard className="reports__weekly-card">
+        </Card>
+        <Card className="reports__weekly-card rounded-2xl border-slate-200 bg-white p-[18px] shadow-sm">
           <span className="reports__weekly-label">Weekly At-Risk</span>
           <strong>{weeklyAnalysis.atRiskStudents}</strong>
-        </GlassCard>
-        <GlassCard className="reports__weekly-card">
+        </Card>
+        <Card className="reports__weekly-card rounded-2xl border-slate-200 bg-white p-[18px] shadow-sm">
           <span className="reports__weekly-label">Tests This Week</span>
           <strong>{weeklyAnalysis.assessments}</strong>
-        </GlassCard>
+        </Card>
       </div>
-      <GlassCard>
+      <Card className="rounded-2xl border-slate-200 bg-white p-[18px] shadow-sm">
         <h3 className="reports__chart-title">Weekly Performance</h3>
         {!loading && !weeklyDays.some((item: any) => item.avgScore > 0) && (
-          <div className="reports__empty">No weekly test performance is available yet.</div>
+          <Card className="reports__empty rounded-xl border-dashed shadow-none">No weekly test performance is available yet.</Card>
         )}
         <div className="reports__chart">
           {weeklyDays.map((item: any) => {
@@ -843,11 +916,11 @@ const Reports: React.FC = () => {
             Test Count (relative to busiest day — hover a bar for the exact number)
           </span>
         </div>
-      </GlassCard>
-      <GlassCard>
+      </Card>
+      <Card className="rounded-2xl border-slate-200 bg-white p-[18px] shadow-sm">
         <h3 className="reports__chart-title">Performance Over Time</h3>
         {!loading && !performanceChartData.length && (
-          <div className="reports__empty">No test performance history is available yet.</div>
+          <Card className="reports__empty rounded-xl border-dashed shadow-none">No test performance history is available yet.</Card>
         )}
         <div className="reports__chart">
           {performanceChartData.map((item) => (
@@ -878,39 +951,58 @@ const Reports: React.FC = () => {
             Attendance
           </span>
         </div>
-      </GlassCard>
+      </Card>
     </div>
   );
 
   const classContent = (
     <div className="reports__section">
       {!loading && !classAnalytics.length && (
-        <div className="reports__empty">No class analytics available yet.</div>
+        <Card className="reports__empty rounded-xl border-dashed shadow-none">No class analytics available yet.</Card>
       )}
       {classAnalytics.length > 0 && (
         <div className="reports__filters-row">
           <div className="reports__filter-group reports__filter-group--search">
-            <label htmlFor="class-analytics-search">Search Class</label>
+            <Label htmlFor="class-analytics-search">Search Class</Label>
             <div className="reports__search-wrapper">
               <Search size={16} className="reports__search-icon" />
-              <input
+              <Input
                 id="class-analytics-search"
                 type="text"
                 placeholder="Search by class or subject..."
                 value={classSearchQuery}
                 onChange={(e) => setClassSearchQuery(e.target.value)}
-                className="reports__filter-input"
+                className="reports__filter-input h-auto"
               />
             </div>
           </div>
         </div>
       )}
       {classAnalytics.length > 0 && !filteredClassAnalytics.length && (
-        <div className="reports__empty">No classes match that search.</div>
+        <Card className="reports__empty rounded-xl border-dashed shadow-none">No classes match that search.</Card>
       )}
       {filteredClassAnalytics.length > 0 && (
         <>
-          <div className="w-full overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+          {/* Mobile: one card per class */}
+          <div className="space-y-3 md:hidden">
+            {paginatedClassAnalytics.map((row: any, i: number) => (
+              <Card key={row.class || i} className="space-y-2.5 rounded-xl border-slate-200 p-4 shadow-none">
+                <div className="flex items-center justify-between gap-2">
+                  <ToneBadge tone="purple">{row.class}</ToneBadge>
+                  <ToneBadge tone={row.passRate >= 90 ? 'success' : 'info'}>Pass {row.passRate}%</ToneBadge>
+                </div>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs font-semibold text-slate-500">
+                  <span>Avg score: <b className="text-slate-800">{row.avgScore}%</b></span>
+                  <span>Attendance: <b className="text-slate-800">{row.attendance}%</b></span>
+                  <span>Top: <b className="text-slate-800">{row.topSubject || '—'}</b></span>
+                  <span>Weak: <b className="text-slate-800">{row.weakSubject || '—'}</b></span>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {/* Tablet / desktop table */}
+          <div className="hidden w-full overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 md:block">
             <DataTable columns={classColumns} data={paginatedClassAnalytics} />
           </div>
           <DataTablePagination
@@ -938,16 +1030,21 @@ const Reports: React.FC = () => {
 
   return (
     <div className="reports font-poppins">
-      {error && <div className="reports__error">{error}</div>}
-      {loading && <div className="reports__empty">Loading reports...</div>}
+      {error && <Alert className="reports__error rounded-xl border-rose-200 bg-rose-50 text-sm font-semibold text-rose-700">{error}</Alert>}
+      {loading && (
+        <div className="space-y-3" aria-busy="true">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-24 w-full rounded-xl" />
+        </div>
+      )}
       {scope?.isClassTeacherScope && (
-        <div className="reports__scope">
+        <Card className="reports__scope rounded-xl border-slate-200 shadow-none">
           <div>
             <span>Class Teacher View</span>
             <strong>{scopeLabel}</strong>
           </div>
-          <Badge variant="success">All subjects</Badge>
-        </div>
+          <ToneBadge tone="success">All subjects</ToneBadge>
+        </Card>
       )}
       <div className="reports__stats">
         <StatCard title="Class Average" value={`${summary.classAverage}%`} change={classAverageTone.label} changeType={classAverageTone.changeType} icon={<BarChart3 size={24} />} />
@@ -956,42 +1053,31 @@ const Reports: React.FC = () => {
         <StatCard title="Total Students" value={String(summary.totalStudents)} icon={<Users size={24} />} gradient="var(--gradient-accent)" />
       </div>
 
-      {/* Tab selection on mobile, Tabs on desktop */}
-      {isMobile ? (
-        <div className="block sm:hidden">
-          <CustomSelect
-            value={activeTab}
-            onChange={(val) => setActiveTab(val)}
-            options={[
-              { value: 'students', label: 'Student Performance' },
-              { value: 'weakness', label: 'Weakness Analysis' },
-              { value: 'tests', label: 'Test Analysis' },
-              { value: 'class', label: 'Class Analytics' },
-            ]}
-            className="w-full mb-4"
-            triggerClassName="flex size-full items-center justify-between gap-1 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold outline-none text-slate-700 shadow-sm"
-          />
-          <div className="mt-2">
-            {activeTab === 'students' && studentContent}
-            {activeTab === 'weakness' && weaknessContent}
-            {activeTab === 'tests' && testContent}
-            {activeTab === 'class' && classContent}
-          </div>
-        </div>
-      ) : (
-        <div className="hidden sm:block">
-          <Tabs
-            activeTabId={activeTab}
-            onChange={(val) => setActiveTab(val)}
-            tabs={[
-              { id: 'students', label: 'Student Performance', icon: <Users size={16} />, content: studentContent },
-              { id: 'weakness', label: 'Weakness Analysis', icon: <AlertTriangle size={16} />, content: weaknessContent },
-              { id: 'tests', label: 'Test Analysis', icon: <ClipboardCheck size={16} />, content: testContent },
-              { id: 'class', label: 'Class Analytics', icon: <LineChart size={16} />, content: classContent },
-            ]}
-          />
-        </div>
-      )}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border border-slate-100 bg-white p-1.5 shadow-sm">
+          {[
+            { id: 'students', label: 'Student Performance', icon: <Users size={16} /> },
+            { id: 'weakness', label: 'Weakness Analysis', icon: <AlertTriangle size={16} /> },
+            { id: 'tests', label: 'Test Analysis', icon: <ClipboardCheck size={16} /> },
+            { id: 'class', label: 'Class Analytics', icon: <LineChart size={16} /> },
+          ].map((t) => (
+            <TabsTrigger
+              key={t.id}
+              value={t.id}
+              className="shrink-0 gap-2 rounded-lg px-3 py-2 text-xs font-bold text-slate-500 data-[state=active]:bg-brand-600 data-[state=active]:text-white data-[state=active]:shadow-sm sm:text-sm"
+            >
+              {t.icon}
+              {t.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+      <div className="mt-4">
+        {activeTab === 'students' && studentContent}
+        {activeTab === 'weakness' && weaknessContent}
+        {activeTab === 'tests' && testContent}
+        {activeTab === 'class' && classContent}
+      </div>
     </div>
   );
 };

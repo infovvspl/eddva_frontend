@@ -1,18 +1,24 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { 
+import {
   UserCheck, UserX, Clock, Calendar, TrendingUp, Plus, Eye, Edit2,
   Download, RefreshCw, CheckCircle2, AlertCircle, Sparkles,
-  Users, X, Info, ChevronRight, Filter, Search, RotateCcw, Circle
+  Users, X, Info, ChevronRight, Filter, Search, RotateCcw, Circle, Loader2
 } from 'lucide-react';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import api from '@/lib/api/school-client';
-import Button from '@/components/school/Button';
-import Badge from '@/components/school/Badge';
-import GlassCard from '@/components/school/GlassCard';
-import InputField from '@/components/school/InputField';
-import SelectField from '@/components/school/SelectField';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import LoadingSpinner from '@/components/school/LoadingSpinner';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import { exportToPDF } from '@/lib/school/pdfExport';
@@ -34,6 +40,89 @@ interface DashboardStats {
   attendancePercentage: number;
   classesMarkedToday: number;
 }
+
+// Labelled date/text field on the shadcn Input.
+const FormInput: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label?: string }> = ({ label, className, ...props }) => (
+  <div className="flex flex-col gap-1.5">
+    {label && <Label className="text-[0.813rem] font-medium text-slate-700 dark:text-slate-300">{label}</Label>}
+    <Input className={className} {...props} />
+  </div>
+);
+
+// Labelled shadcn Select. An empty-string value (the "All …" option) is mapped to a sentinel,
+// and onChange keeps the `{ target: { value } }` shape the call sites already use.
+const NONE_VALUE = '__none__';
+const FormSelect: React.FC<{
+  label?: string;
+  value: string;
+  onChange: (e: { target: { value: string } }) => void;
+  options: { value: string; label: string }[];
+  disabled?: boolean;
+}> = ({ label, value, onChange, options, disabled }) => (
+  <div className="flex flex-col gap-1.5">
+    {label && <Label className="text-[0.813rem] font-medium text-slate-700 dark:text-slate-300">{label}</Label>}
+    <Select
+      value={value === '' || value == null ? NONE_VALUE : String(value)}
+      onValueChange={(v) => onChange({ target: { value: v === NONE_VALUE ? '' : v } })}
+      disabled={disabled}
+    >
+      <SelectTrigger className="w-full"><SelectValue placeholder="Select…" /></SelectTrigger>
+      <SelectContent>
+        {options.map((o) => (
+          <SelectItem key={`${o.value}`} value={o.value === '' ? NONE_VALUE : String(o.value)}>{o.label}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+);
+
+const STATUS_OPTIONS = [
+  { value: 'present', label: 'Present', dot: 'fill-emerald-500 text-emerald-500', on: 'data-[state=on]:bg-emerald-500' },
+  { value: 'absent', label: 'Absent', dot: 'fill-rose-500 text-rose-500', on: 'data-[state=on]:bg-rose-500' },
+  { value: 'late', label: 'Late', dot: 'fill-amber-500 text-amber-500', on: 'data-[state=on]:bg-amber-500' },
+  { value: 'leave', label: 'Leave', dot: 'fill-slate-400 text-slate-400', on: 'data-[state=on]:bg-slate-400 dark:data-[state=on]:bg-slate-600' },
+];
+
+type StatusValue = 'present' | 'absent' | 'late' | 'leave';
+const StatusToggle: React.FC<{ value: string; onChange: (v: StatusValue) => void; compact?: boolean }> = ({ value, onChange, compact }) => (
+  <ToggleGroup
+    type="single"
+    value={value}
+    onValueChange={(v) => { if (v) onChange(v as StatusValue); }}
+    className={compact
+      ? 'grid w-full grid-cols-2 gap-1.5 min-[380px]:grid-cols-4'
+      : 'inline-flex gap-2 rounded-2xl border border-slate-100 bg-slate-50 p-1.5 dark:border-slate-800 dark:bg-slate-950'}
+  >
+    {STATUS_OPTIONS.map((o) => (
+      <ToggleGroupItem
+        key={o.value}
+        value={o.value}
+        aria-label={o.label}
+        className={cn(
+          'h-auto gap-1 font-black text-slate-600 data-[state=on]:text-white data-[state=on]:shadow-sm dark:text-slate-400',
+          '[&[data-state=on]_svg]:fill-white [&[data-state=on]_svg]:text-white',
+          compact
+            ? 'justify-center rounded-lg border border-slate-100 bg-slate-50 py-2 text-[10px] dark:border-slate-800/80 dark:bg-slate-950'
+            : 'rounded-xl px-4 py-2 text-xs',
+          o.on,
+        )}
+      >
+        <Circle className={cn('size-2', o.dot)} /> {o.label}
+      </ToggleGroupItem>
+    ))}
+  </ToggleGroup>
+);
+
+const STATUS_PILL: Record<string, string> = {
+  present: 'border-emerald-100 bg-emerald-50 text-emerald-600',
+  absent: 'border-rose-100 bg-rose-50 text-rose-600',
+  late: 'border-amber-100 bg-amber-50 text-amber-600',
+};
+const STATUS_DOT: Record<string, string> = {
+  present: 'fill-emerald-500 text-emerald-500',
+  absent: 'fill-rose-500 text-rose-500',
+  late: 'fill-amber-500 text-amber-500',
+};
 
 const AttendanceSystem: React.FC = () => {
   const { user } = useAuth();
@@ -72,7 +161,7 @@ const AttendanceSystem: React.FC = () => {
 
   const selectedSubjectRef = useRef(selectedSubject);
   const selectedPeriodRef = useRef(selectedPeriod);
-  
+
   useEffect(() => { selectedSubjectRef.current = selectedSubject; }, [selectedSubject]);
   useEffect(() => { selectedPeriodRef.current = selectedPeriod; }, [selectedPeriod]);
 
@@ -171,11 +260,11 @@ const AttendanceSystem: React.FC = () => {
         try {
           const res = await api.get(`/academic/sections/${selectedSection}/teaching-map`);
           const rawAssignments = res.data?.data?.rawAssignments || [];
-          const myAssignments = rawAssignments.filter((a: any) => 
-            (a.teacherEmail && user?.email && a.teacherEmail.toLowerCase() === user.email.toLowerCase()) || 
+          const myAssignments = rawAssignments.filter((a: any) =>
+            (a.teacherEmail && user?.email && a.teacherEmail.toLowerCase() === user.email.toLowerCase()) ||
             (a.teacherUserId && user?.id && a.teacherUserId === user.id)
           );
-          
+
           const isClassTeacher = myAssignments.some((a: any) => a.isClassTeacher);
           const assignedSubjects = myAssignments
             .filter((a: any) => a.subjectId)
@@ -214,14 +303,14 @@ const AttendanceSystem: React.FC = () => {
         }
 
         const uniqueList = list.filter((v, i, a) => v.id && v.id !== 'all' && a.findIndex(t => (t.id === v.id)) === i);
-        
+
         if (editingSessionId && selectedSubjectRef.current && selectedSubjectRef.current !== 'all') {
             const exists = uniqueList.find(s => s.id === selectedSubjectRef.current);
             if (!exists) {
                 uniqueList.push({ id: selectedSubjectRef.current, name: 'Historical Subject' });
             }
         }
-        
+
         setSubjects(uniqueList);
 
         if (!editingSessionId) {
@@ -307,8 +396,8 @@ const AttendanceSystem: React.FC = () => {
 
         const timetableOptions = list.map((slot: any) => {
            const baseValue = `Period ${slot.periodNumber || 1} (${slot.startTime} - ${slot.endTime})`;
-           const baseLabel = slot.subject_name 
-               ? `${baseValue} - ${slot.subject_name}` 
+           const baseLabel = slot.subject_name
+               ? `${baseValue} - ${slot.subject_name}`
                : baseValue;
            return { value: baseValue, label: baseLabel };
         });
@@ -436,20 +525,20 @@ const AttendanceSystem: React.FC = () => {
       // Fetch ALL students at once (no server-side pagination)
       // We paginate the display client-side so attendanceData always has every student
       const res = await api.get('/attendance/students', {
-        params: { 
-          classId: selectedClass, 
+        params: {
+          classId: selectedClass,
           sectionId: selectedSection,
           page: 1,
           limit: 2000,  // fetch all — a class won't have more than 2000 students
           search: markingSearch
         }
       });
-      
+
       if (res.data?.success) {
         const list: Student[] = res.data.data;
         setStudents(list);
         setMarkingPage(1); // reset to first display page
-        
+
         // Preserve existing attendance marks for students already in state
         setAttendanceData(prev => {
           const updated: Record<string, 'present' | 'absent' | 'late' | 'leave'> = {};
@@ -539,8 +628,8 @@ const AttendanceSystem: React.FC = () => {
       else if (status === 'late') late++;
       else if (status === 'leave') leave++;
     });
-    const attendanceRate = total > 0 
-      ? Math.round(((present + late) / total) * 1000) / 10 
+    const attendanceRate = total > 0
+      ? Math.round(((present + late) / total) * 1000) / 10
       : 0;
     return { total, present, absent, late, leave, attendanceRate };
   }, [students, attendanceData]);
@@ -625,10 +714,10 @@ const AttendanceSystem: React.FC = () => {
           email: '',
           roll_no: r.rollNo || ''
         }));
-        
+
         const mappedStatus: Record<string, 'present' | 'absent' | 'late' | 'leave'> = {};
         const mappedRemarks: Record<string, string> = {};
-        
+
         records.forEach((r: any) => {
           mappedStatus[r.studentId] = r.status.toLowerCase() as any;
           mappedRemarks[r.studentId] = r.remarks || '';
@@ -637,7 +726,7 @@ const AttendanceSystem: React.FC = () => {
         setStudents(mappedStudents);
         setAttendanceData(mappedStatus);
         setRemarksData(mappedRemarks);
-        
+
         setActiveTab('entry');
         toast.success('Session loaded into editor');
       }
@@ -653,7 +742,7 @@ const AttendanceSystem: React.FC = () => {
       const res = await api.get(`/attendance/session/${sessionId}`);
       if (res.data?.success) {
         const { session, records } = res.data.data;
-        
+
         // Create a temporary element in document body to capture PDF
         const printContainer = document.createElement('div');
         printContainer.id = 'pdf-capture-element';
@@ -705,10 +794,10 @@ const AttendanceSystem: React.FC = () => {
         `;
 
         document.body.appendChild(printContainer);
-        
+
         await exportToPDF('pdf-capture-element', `Attendance_${className.replace(/\s+/g, '_')}_${secName}_${dateStr}.pdf`);
         toast.success('PDF report exported successfully!');
-        
+
         document.body.removeChild(printContainer);
       }
     } catch (err) {
@@ -755,51 +844,45 @@ const AttendanceSystem: React.FC = () => {
             Manage daily roll calls, track student presence, and review logs instantly.
           </p>
         </div>
-        <button 
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => {
             fetchDashboardStats();
             if (activeTab === 'history') fetchHistory();
             toast.success('Attendance data refreshed');
           }}
-          className="flex items-center gap-2 self-start md:self-auto px-4 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all duration-300 shadow-sm"
+          className="self-start gap-2 rounded-xl text-xs font-bold md:self-auto"
         >
           <RefreshCw className="size-3.5" />
           Refresh Stats
-        </button>
+        </Button>
       </div>
-
-
 
       {/* Tabs Menu Navigation Bar */}
-      <div className="tabs-navigation-bar flex gap-2 border-b border-slate-100 dark:border-slate-800 mb-6 bg-white dark:bg-slate-900 p-1.5 rounded-2xl shadow-sm max-w-md overflow-x-auto no-scrollbar">
-        <button
-          onClick={() => setActiveTab('entry')}
-          className={`flex-1 py-2.5 px-4 text-xs font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${
-            activeTab === 'entry'
-              ? 'bg-indigo-600 text-white shadow-sm'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-950'
-          }`}
-        >
-          <Plus className="size-4" />
-          Offline Attendance Entry
-        </button>
-        <button
-          onClick={() => setActiveTab('history')}
-          className={`flex-1 py-2.5 px-4 text-xs font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${
-            activeTab === 'history'
-              ? 'bg-indigo-600 text-white shadow-sm'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-950'
-          }`}
-        >
-          <Calendar className="size-4" />
-          Attendance History
-        </button>
-      </div>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'entry' | 'history')} className="mb-6">
+        <TabsList className="tabs-navigation-bar h-auto w-full max-w-md gap-2 rounded-2xl border border-slate-100 bg-white p-1.5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <TabsTrigger
+            value="entry"
+            className="flex-1 gap-2 rounded-xl px-2 py-2.5 text-xs font-bold text-slate-600 data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-sm dark:text-slate-400 sm:px-4"
+          >
+            <Plus className="size-4 shrink-0" />
+            <span className="truncate"><span className="hidden sm:inline">Offline </span>Attendance Entry</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="history"
+            className="flex-1 gap-2 rounded-xl px-2 py-2.5 text-xs font-bold text-slate-600 data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-sm dark:text-slate-400 sm:px-4"
+          >
+            <Calendar className="size-4 shrink-0" />
+            <span className="truncate">Attendance History</span>
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* Main Tab Area */}
       <AnimatePresence mode="wait">
         {activeTab === 'entry' ? (
-          <motion.div 
+          <motion.div
             key="entry"
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
@@ -809,7 +892,7 @@ const AttendanceSystem: React.FC = () => {
           >
             {/* Z-index controls for select dropdown layering */}
             {/* Header Control Form */}
-            <GlassCard className="p-6 attendance-filters-card">
+            <Card className="rounded-2xl border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 p-6 attendance-filters-card">
               <div className="flex items-center gap-2 mb-4 text-indigo-600 dark:text-indigo-400">
                 <Filter className="size-4" />
                 <h3 className="text-xs font-bold uppercase tracking-wider">Attendance Selector</h3>
@@ -817,18 +900,18 @@ const AttendanceSystem: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
                 {/* Date Picker */}
                 <div>
-                  <InputField 
-                    label="Attendance Date" 
-                    type="date" 
-                    value={date} 
-                    onChange={(e) => setDate(e.target.value)} 
+                  <FormInput
+                    label="Attendance Date"
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
                     disabled={editingSessionId !== null}
                   />
                 </div>
 
                 {/* Class Selection */}
                 <div>
-                  <SelectField
+                  <FormSelect
                     label="Class"
                     value={selectedClass}
                     onChange={(e) => setSelectedClass(e.target.value)}
@@ -839,7 +922,7 @@ const AttendanceSystem: React.FC = () => {
 
                 {/* Section Selection */}
                 <div>
-                  <SelectField
+                  <FormSelect
                     label="Section"
                     value={selectedSection}
                     onChange={(e) => setSelectedSection(e.target.value)}
@@ -850,7 +933,7 @@ const AttendanceSystem: React.FC = () => {
 
                 {/* Period Selection */}
                 <div>
-                  <SelectField
+                  <FormSelect
                     label="Period"
                     value={selectedPeriod}
                     onChange={(e) => setSelectedPeriod(e.target.value)}
@@ -860,12 +943,12 @@ const AttendanceSystem: React.FC = () => {
 
                 {/* Subject Selection */}
                 <div>
-                  <SelectField
+                  <FormSelect
                     label="Subject (Optional)"
                     value={selectedSubject}
                     onChange={(e) => setSelectedSubject(e.target.value)}
                     options={[
-                      { value: 'all', label: 'All Subjects (General)' }, 
+                      { value: 'all', label: 'All Subjects (General)' },
                       ...subjects.map(s => ({ value: s.id, label: s.name }))
                     ]}
                   />
@@ -874,23 +957,24 @@ const AttendanceSystem: React.FC = () => {
 
               <div className="mt-5 flex items-center justify-between flex-wrap gap-3">
                 {editingSessionId && (
-                  <Badge variant="purple" className="flex items-center gap-1.5 py-1.5 px-3">
+                  <Badge variant="outline" className="flex items-center gap-1.5 border-violet-200 bg-violet-50 px-3 py-1.5 text-violet-700 dark:border-violet-900 dark:bg-violet-950/30 dark:text-violet-300">
                     <Info className="size-3.5" /> Editing Session: Class {currentClassName} - {currentSectionName}
                   </Badge>
                 )}
-                <Button 
-                  onClick={handleLoadStudents} 
-                  loading={studentsLoading}
-                  className="bg-indigo-600 hover:bg-indigo-700 font-bold ml-auto"
+                <Button
+                  onClick={handleLoadStudents}
+                  disabled={studentsLoading}
+                  className="ml-auto gap-2 bg-indigo-600 font-bold hover:bg-indigo-700"
                 >
+                  {studentsLoading && <Loader2 className="size-4 animate-spin" />}
                   {editingSessionId ? 'Reset Changes' : 'Load Students'}
                 </Button>
               </div>
-            </GlassCard>
+            </Card>
 
             {/* Attendance Sheet content */}
             {duplicateSessionId ? (
-              <GlassCard className="p-8 border-2 border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-900/10 attendance-results-card">
+              <Card className="rounded-2xl border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 p-8 border-2 border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-900/10 attendance-results-card">
                 <div className="flex flex-col items-center justify-center text-center">
                   <div className="size-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mb-4">
                     <AlertCircle className="size-8 text-amber-600 dark:text-amber-500" />
@@ -902,41 +986,42 @@ const AttendanceSystem: React.FC = () => {
                     Attendance records have already been submitted for this session. Would you like to view or edit the existing records?
                   </p>
                   <div className="flex flex-wrap gap-4 justify-center">
-                    <Button 
+                    <Button
+                      variant="outline"
                       onClick={() => handleViewDetails(duplicateSessionId)}
-                      className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-700"
+                      className="bg-white font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                     >
                       <Eye className="size-4 mr-2" />
                       View Attendance
                     </Button>
-                    <Button 
+                    <Button
                       onClick={() => {
                         handleEditSession(duplicateSessionId);
                         setDuplicateSessionId(null);
                       }}
-                      className="bg-indigo-600 hover:bg-indigo-700 font-bold"
+                      className="bg-indigo-600 font-bold hover:bg-indigo-700"
                     >
                       <Edit2 className="size-4 mr-2" />
                       Edit Attendance
                     </Button>
                   </div>
                 </div>
-              </GlassCard>
+              </Card>
             ) : students.length > 0 ? (
               <div className="flex flex-col gap-6">
-                
+
                 {/* Main Attendance Sheet (Full width) */}
-                <GlassCard className="p-6 attendance-results-card">
+                <Card className="rounded-2xl border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 p-6 attendance-results-card">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 pb-4 border-b border-slate-100 dark:border-slate-800">
                       <div>
                         <h2 className="text-base font-bold text-slate-800 dark:text-white">Attendance Marking Sheet</h2>
                         <p className="text-slate-400 text-xs mt-0.5">Toggle student presence status. Default is Present.</p>
                       </div>
-                      
+
                       {/* Live Student Search */}
-                      <div className="relative min-w-[200px]">
+                      <div className="relative w-full sm:w-auto sm:min-w-[220px]">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                        <input
+                        <Input
                           type="text"
                           placeholder="Search student..."
                           value={markingSearch}
@@ -944,232 +1029,117 @@ const AttendanceSystem: React.FC = () => {
                             setMarkingSearch(e.target.value);
                             setMarkingPage(1);
                           }}
-                          className="w-full pl-9 pr-4 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-slate-100"
+                          className="h-9 w-full rounded-xl bg-slate-50 pl-9 pr-4 text-xs dark:bg-slate-950"
                         />
                       </div>
                     </div>
 
                     {/* Quick Action Buttons */}
-                    <div className="quick-actions-bar flex flex-wrap gap-2 mb-4 bg-slate-50 dark:bg-slate-950 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-800">
-                      <span className="text-xs font-bold text-slate-500 flex items-center mr-2">Quick Actions:</span>
-                      <button 
-                        onClick={() => handleMarkAll('present')}
-                        className="px-3 py-1.5 text-[10px] font-black rounded-lg bg-emerald-500/10 hover:bg-emerald-500 hover:text-white text-emerald-600 transition-all"
-                      >
+                    <div className="quick-actions-bar mb-4 flex flex-wrap gap-2 rounded-2xl border border-slate-100 bg-slate-50 p-2.5 dark:border-slate-800 dark:bg-slate-950">
+                      <span className="mr-2 flex items-center text-xs font-bold text-slate-500">Quick Actions:</span>
+                      <Button variant="ghost" size="sm" onClick={() => handleMarkAll('present')}
+                        className="h-auto rounded-lg bg-emerald-500/10 px-3 py-1.5 text-[10px] font-black text-emerald-600 hover:bg-emerald-500 hover:text-white">
                         Mark All Present
-                      </button>
-                      <button 
-                        onClick={() => handleMarkAll('absent')}
-                        className="px-3 py-1.5 text-[10px] font-black rounded-lg bg-rose-500/10 hover:bg-rose-50 hover:text-white text-rose-600 transition-all"
-                      >
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleMarkAll('absent')}
+                        className="h-auto rounded-lg bg-rose-500/10 px-3 py-1.5 text-[10px] font-black text-rose-600 hover:bg-rose-500 hover:text-white">
                         Mark All Absent
-                      </button>
-                      <button 
-                        onClick={() => handleMarkAll('leave')}
-                        className="px-3 py-1.5 text-[10px] font-black rounded-lg bg-slate-500/10 hover:bg-slate-500 hover:text-white text-slate-600 transition-all"
-                      >
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleMarkAll('leave')}
+                        className="h-auto rounded-lg bg-slate-500/10 px-3 py-1.5 text-[10px] font-black text-slate-600 hover:bg-slate-500 hover:text-white">
                         Mark All Leave
-                      </button>
-                      <button 
-                        onClick={handleResetAttendance}
-                        className="px-3 py-1.5 text-[10px] font-black rounded-lg bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-600 transition-all flex items-center gap-1.5 ml-auto"
-                      >
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={handleResetAttendance}
+                        className="ml-auto h-auto gap-1.5 rounded-lg bg-amber-500/10 px-3 py-1.5 text-[10px] font-black text-amber-600 hover:bg-amber-500 hover:text-white">
                         <RotateCcw className="size-3" />
                         Reset
-                      </button>
+                      </Button>
                     </div>
 
-                    {/* Desktop Table View */}
-                    <div className="hidden sm:block overflow-x-auto">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="border-b border-slate-100 dark:border-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                            <th className="py-3 px-3 w-[100px]">Roll No</th>
-                            <th className="py-3 px-3">Student Name</th>
-                            <th className="py-3 px-3 text-right">Attendance Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <AnimatePresence>
-                            {displayedStudents.map((s, index) => {
-                              const currentStatus = attendanceData[s.id] || 'present';
-                              return (
-                                <motion.tr 
-                                  initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  key={s.id}
-                                  className="border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors"
-                                >
-                                  {/* Roll No */}
-                                  <td className="py-4 px-3 text-sm font-bold text-slate-400">
-                                    {s.roll_no ? String(s.roll_no).padStart(2, '0') : '--'}
-                                  </td>
-                                  
-                                  {/* Name */}
-                                  <td className="py-4 px-3 text-sm font-bold text-slate-800 dark:text-slate-200">
-                                    {s.name}
-                                    <div className="mt-1 flex items-center gap-2">
-                                      <input
-                                        type="text"
-                                        placeholder="Add remarks..."
-                                        value={remarksData[s.id] || ''}
-                                        onChange={(e) => setRemarksData({ ...remarksData, [s.id]: e.target.value })}
-                                        className="bg-transparent border-b border-transparent hover:border-slate-200 focus:border-indigo-500 text-xs text-slate-400 focus:text-slate-700 outline-none w-full max-w-[250px] transition-all py-1"
-                                      />
-                                    </div>
-                                  </td>
-
-                                  {/* Status Toggles */}
-                                  <td className="py-4 px-3 text-right">
-                                    <div className="inline-flex gap-2 bg-slate-50 dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-100 dark:border-slate-800">
-                                      {/* Present Button */}
-                                      <button
-                                        onClick={() => setAttendanceData({ ...attendanceData, [s.id]: 'present' })}
-                                        className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${
-                                          currentStatus === 'present'
-                                            ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
-                                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900'
-                                        }`}
-                                      >
-                                        <Circle className="inline size-2 -mt-0.5 mr-1 fill-emerald-500 text-emerald-500" /> Present
-                                      </button>
-                                      
-                                      {/* Absent Button */}
-                                      <button
-                                        onClick={() => setAttendanceData({ ...attendanceData, [s.id]: 'absent' })}
-                                        className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${
-                                          currentStatus === 'absent'
-                                            ? 'bg-rose-500 text-white shadow-md shadow-rose-500/20'
-                                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900'
-                                        }`}
-                                      >
-                                        <Circle className="inline size-2 -mt-0.5 mr-1 fill-rose-500 text-rose-500" /> Absent
-                                      </button>
-
-                                      {/* Late Button */}
-                                      <button
-                                        onClick={() => setAttendanceData({ ...attendanceData, [s.id]: 'late' })}
-                                        className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${
-                                          currentStatus === 'late'
-                                            ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20'
-                                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900'
-                                        }`}
-                                      >
-                                        <Circle className="inline size-2 -mt-0.5 mr-1 fill-amber-500 text-amber-500" /> Late
-                                      </button>
-
-                                      {/* Leave Button */}
-                                      <button
-                                        onClick={() => setAttendanceData({ ...attendanceData, [s.id]: 'leave' })}
-                                        className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${
-                                          currentStatus === 'leave'
-                                            ? 'bg-slate-400 dark:bg-slate-600 text-white shadow-md'
-                                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900'
-                                        }`}
-                                      >
-                                        <Circle className="inline size-2 -mt-0.5 mr-1 fill-slate-400 text-slate-400" /> Leave
-                                      </button>
-                                    </div>
-                                  </td>
-                                </motion.tr>
-                              );
-                            })}
-                          </AnimatePresence>
+                    {/* Desktop / tablet table */}
+                    <div className="hidden overflow-hidden rounded-lg border border-slate-100 dark:border-slate-800 md:block">
+                      <Table>
+                        <TableHeader className="bg-slate-50/60 dark:bg-slate-900/40">
+                          <TableRow>
+                            <TableHead className="w-[100px] px-3 py-3 text-[10px] font-bold uppercase tracking-wider">Roll No</TableHead>
+                            <TableHead className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider">Student Name</TableHead>
+                            <TableHead className="px-3 py-3 text-right text-[10px] font-bold uppercase tracking-wider">Attendance Status</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {displayedStudents.map((s) => {
+                            const currentStatus = attendanceData[s.id] || 'present';
+                            return (
+                              <TableRow key={s.id}>
+                                <TableCell className="px-3 py-4 text-sm font-bold text-slate-400">
+                                  {s.roll_no ? String(s.roll_no).padStart(2, '0') : '--'}
+                                </TableCell>
+                                <TableCell className="px-3 py-4 text-sm font-bold text-slate-800 dark:text-slate-200">
+                                  {s.name}
+                                  <Input
+                                    type="text"
+                                    placeholder="Add remarks..."
+                                    value={remarksData[s.id] || ''}
+                                    onChange={(e) => setRemarksData({ ...remarksData, [s.id]: e.target.value })}
+                                    className="mt-1 h-7 w-full max-w-[250px] rounded-none border-0 border-b border-transparent bg-transparent px-0 py-1 text-xs font-normal text-slate-400 shadow-none hover:border-slate-200 focus-visible:border-indigo-500 focus-visible:text-slate-700 focus-visible:ring-0 focus-visible:ring-offset-0"
+                                  />
+                                </TableCell>
+                                <TableCell className="px-3 py-4 text-right">
+                                  <StatusToggle
+                                    value={currentStatus}
+                                    onChange={(st) => setAttendanceData({ ...attendanceData, [s.id]: st })}
+                                  />
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
                           {displayedStudents.length === 0 && (
-                            <tr>
-                              <td colSpan={3} className="text-center py-8 text-slate-400 text-xs font-semibold">
+                            <TableRow>
+                              <TableCell colSpan={3} className="py-8 text-center text-xs font-semibold text-slate-400">
                                 {students.length === 0 ? 'No students loaded.' : 'No students match your search.'}
-                              </td>
-                            </tr>
+                              </TableCell>
+                            </TableRow>
                           )}
-                        </tbody>
-                      </table>
+                        </TableBody>
+                      </Table>
                     </div>
 
-                    {/* Mobile Cards List View */}
-                    <div className="block sm:hidden space-y-3">
-                      <AnimatePresence>
-                        {displayedStudents.map((s, index) => {
-                          const currentStatus = attendanceData[s.id] || 'present';
-                          return (
-                            <motion.div 
-                              initial={{ opacity: 0, y: 8 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              key={s.id}
-                              className="p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/40 space-y-3 shadow-sm"
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-bold text-slate-400 bg-slate-50 dark:bg-slate-950 px-2 py-0.5 rounded">
-                                  Roll #{s.roll_no ? String(s.roll_no).padStart(2, '0') : '--'}
-                                </span>
-                                <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200">{s.name}</span>
-                              </div>
-                              
-                              <div className="grid grid-cols-4 gap-1.5">
-                                {/* Present */}
-                                <button
-                                  onClick={() => setAttendanceData({ ...attendanceData, [s.id]: 'present' })}
-                                  className={`py-2 rounded-lg text-[10px] font-black text-center transition-all ${
-                                    currentStatus === 'present'
-                                      ? 'bg-emerald-500 text-white shadow-sm'
-                                      : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-800/80'
-                                  }`}
-                                >
-                                  <Circle className="inline size-2 -mt-0.5 mr-1 fill-emerald-500 text-emerald-500" /> Present
-                                </button>
-                                {/* Absent */}
-                                <button
-                                  onClick={() => setAttendanceData({ ...attendanceData, [s.id]: 'absent' })}
-                                  className={`py-2 rounded-lg text-[10px] font-black text-center transition-all ${
-                                    currentStatus === 'absent'
-                                      ? 'bg-rose-500 text-white shadow-sm'
-                                      : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-800/80'
-                                  }`}
-                                >
-                                  <Circle className="inline size-2 -mt-0.5 mr-1 fill-rose-500 text-rose-500" /> Absent
-                                </button>
-                                {/* Late */}
-                                <button
-                                  onClick={() => setAttendanceData({ ...attendanceData, [s.id]: 'late' })}
-                                  className={`py-2 rounded-lg text-[10px] font-black text-center transition-all ${
-                                    currentStatus === 'late'
-                                      ? 'bg-amber-500 text-white shadow-sm'
-                                      : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-800/80'
-                                  }`}
-                                >
-                                  <Circle className="inline size-2 -mt-0.5 mr-1 fill-amber-500 text-amber-500" /> Late
-                                </button>
-                                {/* Leave */}
-                                <button
-                                  onClick={() => setAttendanceData({ ...attendanceData, [s.id]: 'leave' })}
-                                  className={`py-2 rounded-lg text-[10px] font-black text-center transition-all ${
-                                    currentStatus === 'leave'
-                                      ? 'bg-slate-400 dark:bg-slate-600 text-white shadow-sm'
-                                      : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-800/80'
-                                  }`}
-                                >
-                                  <Circle className="inline size-2 -mt-0.5 mr-1 fill-slate-400 text-slate-400" /> Leave
-                                </button>
-                              </div>
+                    {/* Mobile: one card per student */}
+                    <div className="block space-y-3 md:hidden">
+                      {displayedStudents.map((s) => {
+                        const currentStatus = attendanceData[s.id] || 'present';
+                        return (
+                          <Card key={s.id} className="space-y-3 rounded-xl border-slate-100 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
+                            <div className="flex items-center justify-between gap-2">
+                              <Badge variant="secondary" className="rounded bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-400 hover:bg-slate-50 dark:bg-slate-950">
+                                Roll #{s.roll_no ? String(s.roll_no).padStart(2, '0') : '--'}
+                              </Badge>
+                              <span className="truncate text-xs font-extrabold text-slate-800 dark:text-slate-200">{s.name}</span>
+                            </div>
 
-                              <input
-                                type="text"
-                                placeholder="Add remarks..."
-                                value={remarksData[s.id] || ''}
-                                onChange={(e) => setRemarksData({ ...remarksData, [s.id]: e.target.value })}
-                                className="w-full bg-slate-50/50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/80 rounded-lg px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-slate-900 transition-all"
-                              />
-                            </motion.div>
-                          );
-                        })}
-                      </AnimatePresence>
+                            <StatusToggle
+                              compact
+                              value={currentStatus}
+                              onChange={(st) => setAttendanceData({ ...attendanceData, [s.id]: st })}
+                            />
+
+                            <Input
+                              type="text"
+                              placeholder="Add remarks..."
+                              value={remarksData[s.id] || ''}
+                              onChange={(e) => setRemarksData({ ...remarksData, [s.id]: e.target.value })}
+                              className="h-9 w-full rounded-lg bg-slate-50/50 text-xs dark:bg-slate-950/40"
+                            />
+                          </Card>
+                        );
+                      })}
                       {displayedStudents.length === 0 && (
-                        <div className="text-center py-8 text-slate-400 text-xs font-semibold">
+                        <div className="py-8 text-center text-xs font-semibold text-slate-400">
                           {students.length === 0 ? 'No students loaded.' : 'No students match your search.'}
                         </div>
                       )}
                     </div>
-                    
+
                     {students.length > 0 && (
                       <div className="mt-4 border-t border-slate-100 dark:border-slate-800 pt-4">
                         <DataTablePagination
@@ -1182,10 +1152,10 @@ const AttendanceSystem: React.FC = () => {
                         />
                       </div>
                     )}
-                  </GlassCard>
+                  </Card>
 
                   {/* Live Summary Card */}
-                  <GlassCard className="p-6 shadow-sm border border-slate-100 dark:border-slate-800">
+                  <Card className="rounded-2xl border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 p-6 shadow-sm border border-slate-100 dark:border-slate-800">
                     <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
                       <TrendingUp className="size-4.5 text-indigo-600" />
                       <h3 className="text-sm font-bold text-slate-800 dark:text-white">Attendance Summary</h3>
@@ -1196,14 +1166,14 @@ const AttendanceSystem: React.FC = () => {
                       <div className="flex flex-col items-center justify-center py-2">
                         <div className="relative size-28 flex items-center justify-center">
                           <svg className="absolute size-full transform -rotate-90">
-                            <circle 
-                              cx="56" cy="56" r="46" 
-                              className="stroke-slate-100 dark:stroke-slate-800" 
+                            <circle
+                              cx="56" cy="56" r="46"
+                              className="stroke-slate-100 dark:stroke-slate-800"
                               strokeWidth="8" fill="none"
                             />
-                            <circle 
-                              cx="56" cy="56" r="46" 
-                              className="stroke-indigo-600 transition-all duration-500 ease-out" 
+                            <circle
+                              cx="56" cy="56" r="46"
+                              className="stroke-indigo-600 transition-all duration-500 ease-out"
                               strokeWidth="8" fill="none"
                               strokeDasharray={`${2 * Math.PI * 46}`}
                               strokeDashoffset={`${2 * Math.PI * 46 * (1 - liveStats.attendanceRate / 100)}`}
@@ -1241,29 +1211,29 @@ const AttendanceSystem: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                  </GlassCard>
+                  </Card>
 
                   {/* Save Attendance Actions */}
-                  <GlassCard className="p-6 shadow-sm border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    <Button 
-                      fullWidth 
+                  <Card className="rounded-2xl border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 p-6 shadow-sm border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+                    <Button
+                      size="lg"
                       onClick={() => handleSaveAttendance(true)}
-                      className="bg-indigo-600 hover:bg-indigo-700 font-bold py-3 rounded-2xl shadow-lg shadow-indigo-600/10 text-white"
+                      className="w-full rounded-2xl bg-indigo-600 font-bold text-white shadow-lg shadow-indigo-600/10 hover:bg-indigo-700"
                     >
                       Submit Attendance
                     </Button>
-                    <Button 
-                      fullWidth 
-                      variant="light"
+                    <Button
+                      size="lg"
+                      variant="outline"
                       onClick={() => handleSaveAttendance(false)}
-                      className="font-bold py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300"
+                      className="w-full rounded-2xl bg-white font-bold text-slate-700 dark:bg-slate-950 dark:text-slate-300"
                     >
                       Save Draft
                     </Button>
-                    <Button 
-                      fullWidth 
-                      variant="light"
+                    <Button
+                      size="lg"
+                      variant="ghost"
                       onClick={() => {
                         setStudents([]);
                         setAttendanceData({});
@@ -1271,16 +1241,16 @@ const AttendanceSystem: React.FC = () => {
                         setEditingSessionId(null);
                         toast.info('Marking flow cancelled');
                       }}
-                      className="font-bold py-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border-0 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+                      className="w-full rounded-2xl font-bold text-rose-500 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/20"
                     >
                       Cancel
                     </Button>
                     </div>
-                  </GlassCard>
+                  </Card>
               </div>
             ) : (
               // Empty State before loading students
-              <GlassCard className="p-12 text-center flex flex-col items-center justify-center">
+              <Card className="rounded-2xl border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 p-12 text-center flex flex-col items-center justify-center">
                 <div className="size-28 bg-indigo-50 dark:bg-indigo-950/30 rounded-full flex items-center justify-center mb-5 border border-indigo-100 dark:border-indigo-900/30 shadow-inner">
                   <Calendar className="size-12 text-indigo-600 dark:text-indigo-400" />
                 </div>
@@ -1288,12 +1258,12 @@ const AttendanceSystem: React.FC = () => {
                 <p className="text-slate-400 dark:text-slate-500 text-xs max-w-sm mt-2 leading-relaxed">
                   Select a date, class, and section above, then click <strong>Load Students</strong> to populate the attendance records.
                 </p>
-              </GlassCard>
+              </Card>
             )}
           </motion.div>
         ) : (
           /* History Page Panel */
-          <motion.div 
+          <motion.div
             key="history"
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1302,7 +1272,7 @@ const AttendanceSystem: React.FC = () => {
             className="space-y-6"
           >
             {/* Filters Row */}
-            <GlassCard className="p-5 attendance-filters-card">
+            <Card className="rounded-2xl border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 p-5 attendance-filters-card">
               <div className="flex items-center gap-2 mb-3 text-indigo-600 dark:text-indigo-400">
                 <Filter className="size-4" />
                 <h3 className="text-xs font-bold uppercase tracking-wider">Filter History Logs</h3>
@@ -1310,17 +1280,17 @@ const AttendanceSystem: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Date Filter */}
                 <div>
-                  <InputField 
-                    label="Date" 
-                    type="date" 
-                    value={historyFilterDate} 
-                    onChange={(e) => setHistoryFilterDate(e.target.value)} 
+                  <FormInput
+                    label="Date"
+                    type="date"
+                    value={historyFilterDate}
+                    onChange={(e) => setHistoryFilterDate(e.target.value)}
                   />
                 </div>
 
                 {/* Class Filter */}
                 <div>
-                  <SelectField
+                  <FormSelect
                     label="Class"
                     value={historyFilterClass}
                     onChange={(e) => setHistoryFilterClass(e.target.value)}
@@ -1330,7 +1300,7 @@ const AttendanceSystem: React.FC = () => {
 
                 {/* Section Filter */}
                 <div>
-                  <SelectField
+                  <FormSelect
                     label="Section"
                     value={historyFilterSection}
                     onChange={(e) => setHistoryFilterSection(e.target.value)}
@@ -1340,7 +1310,7 @@ const AttendanceSystem: React.FC = () => {
 
                 {/* Subject Filter */}
                 <div>
-                  <SelectField
+                  <FormSelect
                     label="Subject"
                     value={historyFilterSubject}
                     onChange={(e) => setHistoryFilterSubject(e.target.value)}
@@ -1352,7 +1322,9 @@ const AttendanceSystem: React.FC = () => {
               {/* Clear Filters */}
               {(historyFilterClass || historyFilterSection || historyFilterSubject || historyFilterDate) && (
                 <div className="mt-3 flex justify-end">
-                  <button 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => {
                       setHistoryFilterClass('');
                       setHistoryFilterSection('');
@@ -1360,87 +1332,117 @@ const AttendanceSystem: React.FC = () => {
                       setHistoryFilterDate('');
                       toast.info('History filters cleared');
                     }}
-                    className="text-xs text-rose-500 hover:text-rose-600 font-bold flex items-center gap-1"
+                    className="h-auto px-2 py-1 text-xs font-bold text-rose-500 hover:bg-transparent hover:text-rose-600"
                   >
                     Clear Filters
-                  </button>
+                  </Button>
                 </div>
               )}
-            </GlassCard>
+            </Card>
 
             {/* History Records Table */}
-            <GlassCard className="p-6 attendance-results-card">
+            <Card className="rounded-2xl border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 p-6 attendance-results-card">
               {historyLoading ? (
                 <div className="flex h-48 items-center justify-center">
                   <LoadingSpinner size="md" />
                 </div>
               ) : historyRecords.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-100 dark:border-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                        <th className="py-3 px-2">Date</th>
-                        <th className="py-3 px-2">Class</th>
-                        <th className="py-3 px-2">Section</th>
-                        <th className="py-3 px-2">Subject</th>
-                        <th className="py-3 px-2">Present</th>
-                        <th className="py-3 px-2">Absent</th>
-                        <th className="py-3 px-2">Status</th>
-                        <th className="py-3 px-2 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {historyRecords.map((item) => (
-                        <tr key={item.sessionId} className="border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
-                          <td className="py-4 px-2 text-xs font-bold text-slate-800 dark:text-slate-200">
-                            {item.date}
-                            <span className="block text-[9px] text-slate-400 font-medium">{item.period}</span>
-                          </td>
-                          <td className="py-4 px-2 text-xs font-bold text-slate-800 dark:text-slate-200">{item.className}</td>
-                          <td className="py-4 px-2 text-xs font-bold text-slate-800 dark:text-slate-200">{item.sectionName}</td>
-                          <td className="py-4 px-2 text-xs font-semibold text-slate-500">{item.subjectName}</td>
-                          <td className="py-4 px-2 text-xs font-bold text-emerald-600">{item.present}</td>
-                          <td className="py-4 px-2 text-xs font-bold text-rose-500">{item.absent}</td>
-                          <td className="py-4 px-2">
-                            <Badge variant={item.finalized ? 'success' : 'warning'}>
-                              {item.finalized ? 'Finalized' : 'Draft'}
-                            </Badge>
-                          </td>
-                          <td className="py-4 px-2 text-right">
-                            <div className="flex gap-1.5 justify-end">
-                              {/* View Button */}
-                              <button
-                                onClick={() => handleViewDetails(item.sessionId)}
-                                className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 text-slate-600 hover:text-indigo-600 transition-all hover:-translate-y-0.5"
-                                title="View Attendance"
+                <>
+                  {/* Mobile: one card per session */}
+                  <div className="space-y-3 md:hidden">
+                    {historyRecords.map((item) => (
+                      <Card key={item.sessionId} className="space-y-3 rounded-xl border-slate-100 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{item.date}</p>
+                            <p className="text-[10px] font-medium text-slate-400">{item.period}</p>
+                          </div>
+                          <Badge
+                            variant="outline"
+                            className={item.finalized
+                              ? 'border-transparent bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                              : 'border-transparent bg-amber-500/10 text-amber-700 dark:text-amber-400'}
+                          >
+                            {item.finalized ? 'Finalized' : 'Draft'}
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                          <span className="font-bold text-slate-800 dark:text-slate-200">{item.className} - {item.sectionName}</span>
+                          <span className="text-right font-semibold text-slate-500">{item.subjectName}</span>
+                          <span className="font-bold text-emerald-600">Present: {item.present}</span>
+                          <span className="text-right font-bold text-rose-500">Absent: {item.absent}</span>
+                        </div>
+                        <div className="flex justify-end gap-1.5 border-t border-slate-100 pt-3 dark:border-slate-800">
+                          <Button variant="outline" size="icon" title="View Attendance" onClick={() => handleViewDetails(item.sessionId)} className="size-9 rounded-xl text-slate-600 hover:text-indigo-600">
+                            <Eye className="size-4" />
+                          </Button>
+                          <Button variant="outline" size="icon" title="Edit Attendance" onClick={() => handleEditSession(item.sessionId)} className="size-9 rounded-xl text-slate-600 hover:text-amber-500">
+                            <Edit2 className="size-4" />
+                          </Button>
+                          <Button variant="outline" size="icon" title="Export PDF" onClick={() => handleExportPDF(item.sessionId, item.date, item.className, item.sectionName)} className="size-9 rounded-xl text-slate-600 hover:text-emerald-500">
+                            <Download className="size-4" />
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+
+                  {/* Tablet / desktop table */}
+                  <div className="hidden overflow-hidden rounded-lg border border-slate-100 dark:border-slate-800 md:block">
+                    <Table>
+                      <TableHeader className="bg-slate-50/60 dark:bg-slate-900/40">
+                        <TableRow>
+                          <TableHead className="px-2 py-3 text-[10px] font-bold uppercase tracking-wider">Date</TableHead>
+                          <TableHead className="px-2 py-3 text-[10px] font-bold uppercase tracking-wider">Class</TableHead>
+                          <TableHead className="px-2 py-3 text-[10px] font-bold uppercase tracking-wider">Section</TableHead>
+                          <TableHead className="px-2 py-3 text-[10px] font-bold uppercase tracking-wider">Subject</TableHead>
+                          <TableHead className="px-2 py-3 text-[10px] font-bold uppercase tracking-wider">Present</TableHead>
+                          <TableHead className="px-2 py-3 text-[10px] font-bold uppercase tracking-wider">Absent</TableHead>
+                          <TableHead className="px-2 py-3 text-[10px] font-bold uppercase tracking-wider">Status</TableHead>
+                          <TableHead className="px-2 py-3 text-right text-[10px] font-bold uppercase tracking-wider">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {historyRecords.map((item) => (
+                          <TableRow key={item.sessionId}>
+                            <TableCell className="px-2 py-4 text-xs font-bold text-slate-800 dark:text-slate-200">
+                              {item.date}
+                              <span className="block text-[9px] font-medium text-slate-400">{item.period}</span>
+                            </TableCell>
+                            <TableCell className="px-2 py-4 text-xs font-bold text-slate-800 dark:text-slate-200">{item.className}</TableCell>
+                            <TableCell className="px-2 py-4 text-xs font-bold text-slate-800 dark:text-slate-200">{item.sectionName}</TableCell>
+                            <TableCell className="px-2 py-4 text-xs font-semibold text-slate-500">{item.subjectName}</TableCell>
+                            <TableCell className="px-2 py-4 text-xs font-bold text-emerald-600">{item.present}</TableCell>
+                            <TableCell className="px-2 py-4 text-xs font-bold text-rose-500">{item.absent}</TableCell>
+                            <TableCell className="px-2 py-4">
+                              <Badge
+                                variant="outline"
+                                className={item.finalized
+                                  ? 'border-transparent bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                                  : 'border-transparent bg-amber-500/10 text-amber-700 dark:text-amber-400'}
                               >
-                                <Eye className="size-4" />
-                              </button>
-                              
-                              {/* Edit Button */}
-                              <button
-                                onClick={() => handleEditSession(item.sessionId)}
-                                className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 text-slate-600 hover:text-amber-500 transition-all hover:-translate-y-0.5"
-                                title="Edit Attendance"
-                              >
-                                <Edit2 className="size-4" />
-                              </button>
-                              
-                              {/* Export PDF Button */}
-                              <button
-                                onClick={() => handleExportPDF(item.sessionId, item.date, item.className, item.sectionName)}
-                                className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 text-slate-600 hover:text-emerald-500 transition-all hover:-translate-y-0.5"
-                                title="Export PDF"
-                              >
-                                <Download className="size-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                                {item.finalized ? 'Finalized' : 'Draft'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="px-2 py-4 text-right">
+                              <div className="flex justify-end gap-1.5">
+                                <Button variant="outline" size="icon" title="View Attendance" onClick={() => handleViewDetails(item.sessionId)} className="size-9 rounded-xl text-slate-600 hover:text-indigo-600">
+                                  <Eye className="size-4" />
+                                </Button>
+                                <Button variant="outline" size="icon" title="Edit Attendance" onClick={() => handleEditSession(item.sessionId)} className="size-9 rounded-xl text-slate-600 hover:text-amber-500">
+                                  <Edit2 className="size-4" />
+                                </Button>
+                                <Button variant="outline" size="icon" title="Export PDF" onClick={() => handleExportPDF(item.sessionId, item.date, item.className, item.sectionName)} className="size-9 rounded-xl text-slate-600 hover:text-emerald-500">
+                                  <Download className="size-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
               ) : (
                 /* Empty state when no sessions found */
                 <div className="py-12 text-center flex flex-col items-center justify-center">
@@ -1466,122 +1468,109 @@ const AttendanceSystem: React.FC = () => {
                   />
                 </div>
               )}
-            </GlassCard>
+            </Card>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Viewing details modal */}
-      <AnimatePresence>
-        {viewingSession && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-sm p-4">
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-3xl p-6 shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col"
-            >
+      <Dialog open={!!viewingSession} onOpenChange={(open) => { if (!open) setViewingSession(null); }}>
+        <DialogContent className="flex max-h-[85vh] w-[calc(100%-2rem)] max-w-2xl flex-col gap-0 rounded-3xl border-slate-200 bg-white p-4 shadow-2xl dark:border-slate-800 dark:bg-slate-950 sm:rounded-3xl sm:p-6">
+          {viewingSession && (
+            <>
               {/* Modal Header */}
-              <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
-                <div>
-                  <h2 className="text-base font-bold text-slate-800 dark:text-white">Attendance Logs</h2>
-                  <p className="text-xs text-slate-400 mt-0.5">Session details and student statuses.</p>
-                </div>
-                <button 
-                  onClick={() => setViewingSession(null)}
-                  className="size-8 rounded-xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors"
-                >
-                  <X className="size-4.5" />
-                </button>
-              </div>
+              <DialogHeader className="border-b border-slate-100 pb-4 text-left dark:border-slate-800">
+                <DialogTitle className="text-base font-bold leading-normal tracking-normal text-slate-800 dark:text-white">Attendance Logs</DialogTitle>
+                <DialogDescription className="text-xs text-slate-400">Session details and student statuses.</DialogDescription>
+              </DialogHeader>
 
               {/* Session Meta */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 my-4 text-xs font-semibold">
+              <div className="my-4 grid grid-cols-2 gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-xs font-semibold dark:border-slate-800 dark:bg-slate-900/40 sm:grid-cols-4">
                 <div>
-                  <span className="block text-[10px] text-slate-400 uppercase tracking-wide">Date</span>
-                  <span className="text-slate-700 dark:text-slate-350">{viewingSession.session.date}</span>
+                  <span className="block text-[10px] uppercase tracking-wide text-slate-400">Date</span>
+                  <span className="text-slate-700 dark:text-slate-300">{viewingSession.session.date}</span>
                 </div>
                 <div>
-                  <span className="block text-[10px] text-slate-400 uppercase tracking-wide">Class & Section</span>
-                  <span className="text-slate-700 dark:text-slate-350">{viewingSession.session.className} - {viewingSession.session.sectionName}</span>
+                  <span className="block text-[10px] uppercase tracking-wide text-slate-400">Class & Section</span>
+                  <span className="text-slate-700 dark:text-slate-300">{viewingSession.session.className} - {viewingSession.session.sectionName}</span>
                 </div>
                 <div>
-                  <span className="block text-[10px] text-slate-400 uppercase tracking-wide">Period</span>
-                  <span className="text-slate-700 dark:text-slate-350 truncate block" title={viewingSession.session.period}>{viewingSession.session.period || 'N/A'}</span>
+                  <span className="block text-[10px] uppercase tracking-wide text-slate-400">Period</span>
+                  <span className="block truncate text-slate-700 dark:text-slate-300" title={viewingSession.session.period}>{viewingSession.session.period || 'N/A'}</span>
                 </div>
                 <div>
-                  <span className="block text-[10px] text-slate-400 uppercase tracking-wide">Subject</span>
-                  <span className="text-slate-700 dark:text-slate-350">{viewingSession.session.subjectName || 'General'}</span>
+                  <span className="block text-[10px] uppercase tracking-wide text-slate-400">Subject</span>
+                  <span className="text-slate-700 dark:text-slate-300">{viewingSession.session.subjectName || 'General'}</span>
                 </div>
               </div>
 
               {/* Records List Table */}
-              <div className="overflow-y-auto flex-1 pr-1">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-100 dark:border-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                      <th className="py-2.5 px-2">Roll No</th>
-                      <th className="py-2.5 px-2">Student</th>
-                      <th className="py-2.5 px-2 text-right">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {viewingSession.records.map((r: any) => (
-                      <tr key={r.studentId} className="border-b border-slate-100 dark:border-slate-800 last:border-0 py-2.5">
-                        <td className="py-2.5 px-2 text-xs font-bold text-slate-400">
-                          {r.rollNo ? String(r.rollNo).padStart(2, '0') : '--'}
-                        </td>
-                        <td className="py-2.5 px-2 text-xs font-bold text-slate-800 dark:text-slate-200">
-                          {r.studentName}
-                          {r.remarks && (
-                            <span className="block text-[10px] font-medium text-slate-400 italic mt-0.5">Remarks: {r.remarks}</span>
-                          )}
-                        </td>
-                        <td className="py-2.5 px-2 text-right">
-                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase ${
-                            r.status.toLowerCase() === 'present' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
-                            r.status.toLowerCase() === 'absent' ? 'bg-rose-50 text-rose-600 border border-rose-100' :
-                            r.status.toLowerCase() === 'late' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-                            'bg-slate-50 text-slate-600 border border-slate-100'
-                          }`}>
-                            <Circle className={`size-2 ${
-                              r.status.toLowerCase() === 'present' ? 'fill-emerald-500 text-emerald-500' :
-                              r.status.toLowerCase() === 'absent' ? 'fill-rose-500 text-rose-500' :
-                              r.status.toLowerCase() === 'late' ? 'fill-amber-500 text-amber-500' : 'fill-slate-400 text-slate-400'
-                            }`} />
-                            {r.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="px-2 py-2.5 text-[10px] font-bold uppercase tracking-wider">Roll No</TableHead>
+                      <TableHead className="px-2 py-2.5 text-[10px] font-bold uppercase tracking-wider">Student</TableHead>
+                      <TableHead className="px-2 py-2.5 text-right text-[10px] font-bold uppercase tracking-wider">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {viewingSession.records.map((r: any) => {
+                      const st = String(r.status).toLowerCase();
+                      return (
+                        <TableRow key={r.studentId}>
+                          <TableCell className="px-2 py-2.5 text-xs font-bold text-slate-400">
+                            {r.rollNo ? String(r.rollNo).padStart(2, '0') : '--'}
+                          </TableCell>
+                          <TableCell className="px-2 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-200">
+                            {r.studentName}
+                            {r.remarks && (
+                              <span className="mt-0.5 block text-[10px] font-medium italic text-slate-400">Remarks: {r.remarks}</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="px-2 py-2.5 text-right">
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                'gap-1 rounded-lg px-2.5 py-1 text-[10px] font-black uppercase',
+                                STATUS_PILL[st] ?? 'border-slate-100 bg-slate-50 text-slate-600',
+                              )}
+                            >
+                              <Circle className={cn('size-2', STATUS_DOT[st] ?? 'fill-slate-400 text-slate-400')} />
+                              {r.status}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
               </div>
 
               {/* Close Footer */}
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2 mt-4">
-                <Button 
+              <DialogFooter className="mt-4 gap-2 border-t border-slate-100 pt-4 dark:border-slate-800 sm:space-x-0">
+                <Button
+                  variant="outline"
+                  onClick={() => setViewingSession(null)}
+                  className="font-bold"
+                >
+                  Close
+                </Button>
+                <Button
                   onClick={() => {
                     const { session } = viewingSession;
                     handleEditSession(session.id);
                     setViewingSession(null);
                   }}
-                  className="bg-indigo-600 hover:bg-indigo-700 font-bold"
+                  className="bg-indigo-600 font-bold hover:bg-indigo-700"
                 >
                   Edit Records
                 </Button>
-                <Button 
-                  variant="light" 
-                  onClick={() => setViewingSession(null)}
-                  className="font-bold border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300"
-                >
-                  Close
-                </Button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -30,15 +30,27 @@ import {
   Search,
   ArrowLeft
 } from 'lucide-react';
-import SearchBar from '@/components/school/SearchBar';
-import Tabs from '@/components/school/Tabs';
+import { cn } from '@/lib/utils';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import api from '@/lib/api/school-client';
 import { createChatSocket } from '@/lib/chat-socket';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { useConfirm } from '@/context/ConfirmContext';
 import { getUploadUrl, uploadToS3 } from '@/lib/upload';
 import './ChatSystem.css';
-import { CustomSelect } from "@/components/ui/CustomSelect";
 
 type Contact = {
   id: string;
@@ -279,7 +291,7 @@ const ChatSystem: React.FC = () => {
       if (/^(?:PLT|USR)-[A-Z0-9]{8}$/i.test(part)) {
         const ticketId = part.toUpperCase();
         return (
-          <button
+          <Button variant="ghost" size={null}
             key={`${ticketId}-${index}`}
             type="button"
             onClick={(event) => {
@@ -289,7 +301,7 @@ const ChatSystem: React.FC = () => {
             className="font-black text-blue-700 underline decoration-blue-300 underline-offset-2 hover:text-blue-900"
           >
             {ticketId}
-          </button>
+          </Button>
         );
       }
       return <React.Fragment key={index}>{part}</React.Fragment>;
@@ -849,26 +861,26 @@ const ChatSystem: React.FC = () => {
           const isClassExpanded = expandedClasses[className];
           return (
             <div key={className} className="space-y-1">
-              <button
+              <Button variant={null} size={null}
                 onClick={() => toggleClass(className)}
                 className="w-full flex items-center justify-between p-2 rounded-xl bg-white border border-blue-50 text-left text-xs font-bold text-slate-800"
               >
                 <span>Class: {className}</span>
                 {isClassExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-              </button>
+              </Button>
               {isClassExpanded && (
                 <div className="pl-3 space-y-1">
                   {Object.entries(sections).map(([sectionName, students]) => {
                     const isSecExpanded = expandedSections[`${className}-${sectionName}`];
                     return (
                       <div key={sectionName} className="space-y-1">
-                        <button
+                        <Button variant={null} size={null}
                           onClick={() => toggleSection(`${className}-${sectionName}`)}
                           className="w-full flex items-center justify-between p-1.5 rounded-lg bg-blue-50/40 text-left text-[11px] font-black text-slate-600"
                         >
                           <span>Section: {sectionName}</span>
                           {isSecExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                        </button>
+                        </Button>
                         {isSecExpanded && (
                           <div className="pl-2 space-y-1.5">
                             {students.map((student, studentIdx) => (
@@ -880,13 +892,13 @@ const ChatSystem: React.FC = () => {
                                   <p className="text-[11px] font-bold text-slate-800 truncate">Student: {student.student_name}</p>
                                   <p className="text-[10px] font-medium text-slate-400 truncate">Parent: {student.parent_name_user || student.parent_name}</p>
                                 </div>
-                                <button
+                                <Button variant="default" size={null}
                                   disabled={!student.parent_id}
                                   onClick={() => startChatFromDirectory(student)}
-                                  className="rounded-lg bg-blue-600 p-1.5 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-blue-700"
+                                  className="rounded-lg p-1.5 disabled:opacity-30 disabled:cursor-not-allowed shadow-none"
                                 >
                                   <Send size={12} />
-                                </button>
+                                </Button>
                               </div>
                             ))}
                           </div>
@@ -908,11 +920,11 @@ const ChatSystem: React.FC = () => {
       return (
         <div className="p-3 space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-100/60 shadow-xs animate-pulse">
-              <div className="size-10 bg-slate-100 rounded-xl" />
+            <div key={i} className="flex items-center gap-3 rounded-2xl border border-slate-100/60 bg-white p-3">
+              <Skeleton className="size-10 rounded-xl" />
               <div className="flex-1 space-y-2">
-                <div className="h-3 w-1/3 bg-slate-100 rounded" />
-                <div className="size-2/3 bg-slate-50 rounded" />
+                <Skeleton className="h-3 w-1/3" />
+                <Skeleton className="h-3 w-2/3" />
               </div>
             </div>
           ))}
@@ -933,7 +945,7 @@ const ChatSystem: React.FC = () => {
         {filtered.map((contact) => {
           const active = activeContact?.id === contact.id;
           return (
-            <button
+            <Button variant={null} size={null}
               key={contact.id}
               onClick={() => openConversation(contact)}
               className={`w-full flex items-center gap-3 rounded-2xl p-3 text-left transition ${active
@@ -941,8 +953,12 @@ const ChatSystem: React.FC = () => {
                   : "hover:bg-slate-50/60 border border-transparent"
                 }`}
             >
-              <div className="relative size-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white shadow-sm">
-                {contact.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+              <div className="relative shrink-0">
+                <Avatar className="size-10 rounded-2xl shadow-sm">
+                  <AvatarFallback className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white">
+                    {contact.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
                 {contact.online && (
                   <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border border-white bg-emerald-500" />
                 )}
@@ -961,7 +977,7 @@ const ChatSystem: React.FC = () => {
                   )}
                 </div>
               </div>
-            </button>
+            </Button>
           );
         })}
       </div>
@@ -972,12 +988,12 @@ const ChatSystem: React.FC = () => {
     const visibleMeetings = meetingInbox.slice(0, 4);
     return (
       <div className="p-3 pb-0">
-        <div className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
+        <Card className="rounded-2xl border-slate-100 bg-white p-3 shadow-sm">
           <div className="mb-2 flex items-center justify-between">
             <h4 className="text-[11px] font-black uppercase tracking-wider text-slate-500">Meeting Inbox</h4>
-            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-black text-blue-700">
+            <Badge variant="outline" className="border-transparent bg-blue-50 px-2 py-0.5 text-[10px] font-black text-blue-700">
               {meetingInbox.length}
-            </span>
+            </Badge>
           </div>
           {loadingMeetingInbox ? (
             <p className="text-[11px] font-semibold text-slate-400">Loading meetings...</p>
@@ -986,7 +1002,7 @@ const ChatSystem: React.FC = () => {
           ) : (
             <div className="space-y-2">
               {visibleMeetings.map((meeting) => (
-                <div key={meeting.id} className="rounded-xl border border-slate-100 bg-slate-50/70 p-2.5">
+                <Card key={meeting.id} className="rounded-xl border-slate-100 bg-slate-50/70 p-2.5 shadow-none">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="truncate text-[11px] font-bold text-slate-800">{meeting.title}</p>
@@ -994,14 +1010,14 @@ const ChatSystem: React.FC = () => {
                         {meeting.counterpartName} • {meeting.meetingDate || 'Date TBD'} {meeting.startTime ? `• ${meeting.startTime}` : ''}
                       </p>
                     </div>
-                    <span className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase ${meeting.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                    <Badge variant="outline" className={`border-transparent px-2 py-0.5 text-[9px] font-black uppercase ${meeting.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
                       }`}>
                       {meeting.status}
-                    </span>
+                    </Badge>
                   </div>
                   {meeting.status === 'pending' && meeting.isIncoming && (
                     <div className="mt-2 flex gap-2">
-                      <button
+                      <Button variant={null} size={null}
                         onClick={async () => {
                           await api.patch(`/meetings/${meeting.id}/status`, { status: 'accepted' });
                           await loadMeetingInbox();
@@ -1010,8 +1026,8 @@ const ChatSystem: React.FC = () => {
                         className="rounded-lg bg-emerald-600 px-2.5 py-1 text-[10px] font-black text-white"
                       >
                         Accept
-                      </button>
-                      <button
+                      </Button>
+                      <Button variant={null} size={null}
                         onClick={async () => {
                           await api.patch(`/meetings/${meeting.id}/status`, { status: 'rejected' });
                           await loadMeetingInbox();
@@ -1020,12 +1036,12 @@ const ChatSystem: React.FC = () => {
                         className="rounded-lg bg-red-100 px-2.5 py-1 text-[10px] font-black text-red-600"
                       >
                         Reject
-                      </button>
+                      </Button>
                     </div>
                   )}
                   {['accepted', 'scheduled'].includes(meeting.status) && (
                     <div className="mt-2 flex gap-2">
-                      <button
+                      <Button variant={null} size={null}
                         onClick={async () => {
                           await api.patch(`/meetings/${meeting.id}/status`, { status: 'completed' });
                           await loadMeetingInbox();
@@ -1034,14 +1050,14 @@ const ChatSystem: React.FC = () => {
                         className="rounded-lg bg-blue-100 px-2.5 py-1 text-[10px] font-black text-blue-700 hover:bg-blue-200 transition"
                       >
                         Complete
-                      </button>
+                      </Button>
                     </div>
                   )}
-                </div>
+                </Card>
               ))}
             </div>
           )}
-        </div>
+        </Card>
       </div>
     );
   };
@@ -1067,14 +1083,11 @@ const ChatSystem: React.FC = () => {
           <div><strong>Time:</strong> {dateTime}</div>
           <div><strong>Duration:</strong> {duration}</div>
         </div>
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block text-center rounded-xl bg-blue-600 py-1.5 text-[11px] font-bold text-white shadow-xs hover:bg-blue-700 transition"
-        >
-          Join Meeting
-        </a>
+        <Button asChild className="h-auto w-full rounded-xl bg-blue-600 py-1.5 text-[11px] font-bold text-white shadow-none hover:bg-blue-700">
+          <a href={url} target="_blank" rel="noopener noreferrer">
+            Join Meeting
+          </a>
+        </Button>
       </div>
     );
   };
@@ -1086,45 +1099,41 @@ const ChatSystem: React.FC = () => {
       <div className={`w-full md:w-[300px] lg:w-[340px] border-r border-slate-100 flex flex-col shrink-0 min-h-0 bg-slate-50/10 transition-all dark:border-slate-800 ${activeContact ? 'hidden md:flex' : 'flex'}`}>
         <div className="flex items-center justify-between p-4 border-b border-slate-100/60 bg-white shrink-0 dark:border-slate-800 dark:bg-slate-900">
           <h3 className="text-sm font-black text-slate-800 tracking-tight uppercase dark:text-white">Messages</h3>
-          <button className="rounded-xl p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition dark:hover:bg-slate-800" type="button" onClick={() => handleUnavailableAction('Chat options')}>
+          <Button variant="ghost" size={null} className="rounded-xl p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition dark:hover:bg-slate-800" type="button" onClick={() => handleUnavailableAction('Chat options')}>
             <MoreVertical size={16} />
-          </button>
+          </Button>
         </div>
         <div className="p-3 bg-white dark:bg-slate-900">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
-            <input
+            <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search conversations..."
-              className="w-full rounded-2xl border border-slate-100 bg-slate-50/50 py-2 pl-9 pr-3 text-xs font-semibold outline-none focus:border-blue-400 focus:bg-white transition dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+              className="h-auto w-full rounded-2xl border-slate-100 bg-slate-50/50 py-2 pl-9 pr-3 text-xs font-semibold focus-visible:border-blue-400 focus-visible:bg-white focus-visible:ring-0 focus-visible:ring-offset-0 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
             />
           </div>
         </div>
 
-        {/* Custom Tab Pills */}
-        <div className="flex gap-1.5 px-3 py-2 bg-slate-50/50 overflow-x-auto no-scrollbar border-b border-slate-100/60 dark:bg-slate-950/40 dark:border-slate-800">
-          {[
-            { id: 'parents', label: 'Parents', icon: <User size={12} /> },
-            { id: 'staff', label: 'Staff', icon: <Headphones size={12} /> },
-            { id: 'directory', label: 'Directory', icon: <Users size={12} /> },
-          ].map((tab) => {
-            const active = activeTab === tab.id;
-            return (
-              <button
+        {/* Tab pills */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="border-b border-slate-100/60 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-950/40">
+          <TabsList className="no-scrollbar h-auto w-full justify-start gap-1.5 overflow-x-auto bg-transparent px-3 py-2">
+            {[
+              { id: 'parents', label: 'Parents', icon: <User size={12} /> },
+              { id: 'staff', label: 'Staff', icon: <Headphones size={12} /> },
+              { id: 'directory', label: 'Directory', icon: <Users size={12} /> },
+            ].map((tab) => (
+              <TabsTrigger
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition whitespace-nowrap ${active
-                    ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25'
-                    : 'bg-white text-slate-500 hover:bg-slate-50 border border-slate-100 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800 dark:hover:bg-slate-850'
-                  }`}
+                value={tab.id}
+                className="gap-1 whitespace-nowrap rounded-full border border-slate-100 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-500 hover:bg-slate-50 data-[state=active]:border-blue-600 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:shadow-blue-500/25 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400"
               >
                 {tab.icon}
                 <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
 
         <div className="flex-1 overflow-y-auto">
           {activeTab === 'directory' ? renderParentDirectory() : renderContactList(contacts)}
@@ -1142,7 +1151,7 @@ const ChatSystem: React.FC = () => {
             {/* Conversation Header */}
             <div className="flex items-center justify-between p-3 sm:p-4 border-b border-slate-100 bg-white shrink-0 shadow-xs z-10 dark:border-slate-800 dark:bg-slate-900">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                <button
+                <Button variant={null} size={null}
                   type="button"
                   onClick={() => setActiveContact(null)}
                   className="flex md:hidden items-center justify-center size-9 shrink-0 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white hover:bg-slate-200 transition active:scale-95 -ml-1"
@@ -1150,21 +1159,25 @@ const ChatSystem: React.FC = () => {
                   title="Back to conversations"
                 >
                   <ArrowLeft className="size-5 stroke-[2.5]" />
-                </button>
-                <div className="relative size-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white shadow-sm">
-                  {activeContact.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
-                  {activeContact.online && (
+                </Button>
+                <div className="relative shrink-0">
+                <Avatar className="size-10 rounded-2xl shadow-sm">
+                  <AvatarFallback className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white">
+                    {activeContact.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                {activeContact.online && (
                     <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border border-white bg-emerald-500" />
                   )}
-                </div>
+              </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-slate-800 dark:text-white truncate">{activeContact.name}</span>
                     {activeContact.online ? (
-                      <span className="flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400">
+                      <Badge variant="outline" className="gap-0.5 rounded-full border-transparent bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400">
                         <span className="size-1 rounded-full bg-emerald-500" />
                         Online
-                      </span>
+                      </Badge>
                     ) : (
                       <span className="text-[10px] text-slate-400 font-semibold select-none">
                         Offline{activeContact.lastSeen ? ` • Last seen ${new Date(activeContact.lastSeen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
@@ -1176,10 +1189,10 @@ const ChatSystem: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-1">
-                <button onClick={() => handleUnavailableAction('Search in chat')} className="p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-xl transition dark:hover:bg-slate-800">
+                <Button variant="ghost" size={null} onClick={() => handleUnavailableAction('Search in chat')} className="p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-xl transition dark:hover:bg-slate-800">
                   <Search size={16} />
-                </button>
-                <button
+                </Button>
+                <Button variant={null} size={null}
                   onClick={() => {
                     if (window.innerWidth < 1280) {
                       setShowProfileDrawer(true);
@@ -1194,7 +1207,7 @@ const ChatSystem: React.FC = () => {
                   }`}
                 >
                   <Info size={16} />
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -1205,9 +1218,9 @@ const ChatSystem: React.FC = () => {
                   if (item.type === 'separator') {
                     return (
                       <div key={`sep-${idx}`} className="flex justify-center my-3">
-                        <span className="rounded-full bg-slate-100/80 px-3 py-0.5 text-[9px] font-bold uppercase text-slate-400 tracking-wider">
+                        <Badge variant="outline" className="rounded-full border-transparent bg-slate-100/80 px-3 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-400">
                           {item.label}
-                        </span>
+                        </Badge>
                       </div>
                     );
                   }
@@ -1260,12 +1273,12 @@ const ChatSystem: React.FC = () => {
                                 </div>
                                 <div className="flex gap-1 shrink-0">
                                   {msg.attachment_name?.toLowerCase().endsWith('.pdf') && (
-                                    <button
+                                    <Button variant={null} size={null}
                                       onClick={() => setPdfPreviewUrl(msg.attachment_url!)}
                                       className="rounded bg-blue-50 p-1 text-blue-600 hover:bg-blue-100"
                                     >
                                       <Eye size={12} />
-                                    </button>
+                                    </Button>
                                   )}
                                   <a
                                     href={msg.attachment_url}
@@ -1329,57 +1342,56 @@ const ChatSystem: React.FC = () => {
                   <ReplyIcon size={12} />
                   <span>Replying to: <strong>{replyingTo.text}</strong></span>
                 </div>
-                <button onClick={() => setReplyingTo(null)} className="text-slate-400 hover:text-slate-600">
+                <Button variant="ghost" size={null} onClick={() => setReplyingTo(null)} className="text-slate-400 hover:text-slate-600">
                   <X size={14} />
-                </button>
+                </Button>
               </div>
             )}
 
             {/* Input Composer Panel */}
             <div className="relative border-t border-slate-100 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-3 sm:px-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:pt-4 bg-white flex items-center gap-2 shrink-0 z-10">
-              {showEmojiPicker && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setShowEmojiPicker(false)} />
-                  <div className="absolute bottom-16 left-2 sm:left-4 z-50 max-w-[calc(100vw-2rem)] w-64 rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl">
-                    <div className="flex justify-between items-center mb-2 pb-1.5 border-b border-slate-100">
-                      <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Select Emoji</span>
-                      <button onClick={() => setShowEmojiPicker(false)} className="text-slate-400 hover:text-slate-650 text-xs">✕</button>
-                    </div>
-                    <div className="grid grid-cols-8 gap-1.5 max-h-48 overflow-y-auto no-scrollbar">
-                      {EMOJIS.map((emoji, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => setMessage(prev => prev + emoji)}
-                          className="text-lg hover:scale-125 transition duration-100 p-0.5 active:bg-slate-100 rounded"
-                        >
-                          {emoji}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
               {editingMessage ? (
                 <div className="flex w-full gap-2">
-                  <input
+                  <Input
                     type="text"
                     value={editText}
                     onChange={(e) => setEditText(e.target.value)}
-                    className="flex-1 rounded-2xl border border-blue-50 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-400"
+                    className="h-auto flex-1 rounded-2xl border-blue-50 px-4 py-2.5 text-xs font-semibold focus-visible:border-blue-400 focus-visible:ring-0 focus-visible:ring-offset-0"
                   />
-                  <button onClick={submitEdit} className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 transition">Save</button>
-                  <button onClick={() => setEditingMessage(null)} className="rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 transition">Cancel</button>
+                  <Button variant="default" size={null} onClick={submitEdit} className="rounded-xl px-4 py-2 text-xs font-bold shadow-none">Save</Button>
+                  <Button variant={null} size={null} onClick={() => setEditingMessage(null)} className="rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 transition">Cancel</Button>
                 </div>
               ) : (
                 <>
                   <div className="flex-1 flex items-center rounded-full border border-slate-200 bg-slate-50/50 px-4 py-1.5 transition-all focus-within:border-blue-300 focus-within:bg-white">
-                    <button className="text-slate-400 hover:text-slate-600 pr-2" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
-                      <Smile size={18} />
-                    </button>
-                    <input
+                    <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+                      <PopoverTrigger asChild>
+                        <Button type="button" variant="ghost" size="icon" className="size-8 shrink-0 text-slate-400 hover:bg-transparent hover:text-slate-600" aria-label="Insert emoji">
+                          <Smile size={18} />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent side="top" align="start" className="w-64 max-w-[calc(100vw-2rem)] rounded-2xl p-3">
+                        <div className="mb-2 flex items-center justify-between border-b border-slate-100 pb-1.5">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Select Emoji</span>
+                        </div>
+                        <div className="no-scrollbar grid max-h-48 grid-cols-8 gap-1.5 overflow-y-auto">
+                          {EMOJIS.map((emoji, idx) => (
+                            <Button
+                              key={idx}
+                              type="button"
+                              variant="ghost"
+                              onClick={() => setMessage(prev => prev + emoji)}
+                              className="h-auto rounded p-0.5 text-lg transition duration-100 hover:scale-125 hover:bg-transparent active:bg-slate-100"
+                            >
+                              {emoji}
+                            </Button>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    <Input
                       type="text"
-                      className="flex-1 border-none bg-transparent py-1 text-xs font-semibold outline-none text-slate-800 placeholder-slate-400"
+                      className="h-auto flex-1 rounded-none border-0 bg-transparent px-1 py-1 text-xs font-semibold text-slate-800 shadow-none placeholder:text-slate-400 focus-visible:ring-0 focus-visible:ring-offset-0"
                       placeholder="Type a message..."
                       value={message}
                       onChange={(e) => {
@@ -1393,13 +1405,13 @@ const ChatSystem: React.FC = () => {
                       <input type="file" className="hidden" onChange={handleFileUpload} />
                     </label>
                   </div>
-                  <button
+                  <Button variant={null} size={null}
                     disabled={!message.trim() || uploading}
                     onClick={handleSendMessage}
                     className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20 hover:brightness-110 disabled:opacity-40 transition"
                   >
                     <Send size={14} />
-                  </button>
+                  </Button>
                 </>
               )}
             </div>
@@ -1417,9 +1429,11 @@ const ChatSystem: React.FC = () => {
       {showDetails && activeContact && (
         <aside className="hidden xl:flex w-[280px] flex-col border-l border-slate-100 bg-slate-50/10 shrink-0">
           <div className="p-6 text-center border-b border-slate-100 bg-white shrink-0">
-            <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-base font-black text-white shadow-md">
-              {activeContact.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
-            </div>
+            <Avatar className="mx-auto size-16 shadow-md">
+              <AvatarFallback className="bg-gradient-to-br from-blue-600 to-indigo-600 text-base font-black text-white">
+                {activeContact.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
             <h4 className="mt-3 text-xs font-bold text-slate-900">{activeContact.name}</h4>
             <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider mt-0.5">{contactSub}</p>
           </div>
@@ -1431,12 +1445,12 @@ const ChatSystem: React.FC = () => {
               { label: 'Info', icon: <Info size={14} />, act: () => setShowDetails(true) },
               { label: 'More', icon: <MoreVertical size={14} />, act: () => setShowMoreOptions(true) },
             ].map((btn, idx) => (
-              <button key={idx} onClick={btn.act} className="flex flex-col items-center gap-1 hover:opacity-80 transition">
+              <Button variant="ghost" size={null} key={idx} onClick={btn.act} className="flex flex-col items-center gap-1 hover:opacity-80 transition">
                 <div className="flex size-8 items-center justify-center rounded-full bg-slate-50 border border-slate-100 text-slate-500 shadow-xs">
                   {btn.icon}
                 </div>
                 <span className="text-[9px] font-bold text-slate-400">{btn.label}</span>
-              </button>
+              </Button>
             ))}
           </div>
 
@@ -1467,14 +1481,14 @@ const ChatSystem: React.FC = () => {
           </div>
 
           <div className="p-4 border-b border-slate-100 bg-white shrink-0">
-            <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Search in Chat</label>
+            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Search in Chat</Label>
             <div className="relative mt-1.5">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
-              <input
+              <Input
                 value={inChatSearch}
                 onChange={(e) => setInChatSearch(e.target.value)}
                 placeholder="Search messages..."
-                className="w-full rounded-xl border border-slate-100 bg-slate-50/50 py-1.5 pl-8 pr-3 text-xs font-semibold outline-none focus:border-blue-400 focus:bg-white"
+                className="h-auto w-full rounded-xl border-slate-100 bg-slate-50/50 py-1.5 pl-8 pr-3 text-xs font-semibold focus-visible:border-blue-400 focus-visible:bg-white focus-visible:ring-0 focus-visible:ring-offset-0"
               />
             </div>
             {inChatSearch.trim() && (
@@ -1482,7 +1496,7 @@ const ChatSystem: React.FC = () => {
                 {messages
                   .filter((m) => (m.text || '').toLowerCase().includes(inChatSearch.toLowerCase()))
                   .map((m) => (
-                    <button
+                    <Button variant={null} size={null}
                       key={m.id}
                       onClick={() => {
                         const el = document.getElementById(`msg-${m.id}`);
@@ -1497,7 +1511,7 @@ const ChatSystem: React.FC = () => {
                     >
                       <span className="font-bold text-slate-400">{m.sender === 'me' ? 'Me: ' : 'Them: '}</span>
                       {m.text}
-                    </button>
+                    </Button>
                   ))}
                 {messages.filter((m) => (m.text || '').toLowerCase().includes(inChatSearch.toLowerCase())).length === 0 && (
                   <p className="text-[9px] text-slate-400 text-center py-1">No matches found</p>
@@ -1510,7 +1524,7 @@ const ChatSystem: React.FC = () => {
             <div>
               <div className="flex justify-between items-center mb-2">
                 <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Shared Files ({sharedFiles.length})</h5>
-                <button className="text-[9px] font-bold text-blue-600 hover:underline" onClick={() => setShowSharedFilesModal(true)}>View all</button>
+                <Button variant="ghost" size={null} className="text-[9px] font-bold text-blue-600 hover:underline" onClick={() => setShowSharedFilesModal(true)}>View all</Button>
               </div>
               <div className="space-y-2">
                 {sharedFiles.slice(0, 3).map((file) => (
@@ -1538,7 +1552,7 @@ const ChatSystem: React.FC = () => {
             <div>
               <div className="flex justify-between items-center mb-2">
                 <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Media</h5>
-                <button className="text-[9px] font-bold text-blue-600 hover:underline" onClick={() => setShowMediaGalleryModal(true)}>View all</button>
+                <Button variant="ghost" size={null} className="text-[9px] font-bold text-blue-600 hover:underline" onClick={() => setShowMediaGalleryModal(true)}>View all</Button>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 {sharedFiles
@@ -1560,8 +1574,8 @@ const ChatSystem: React.FC = () => {
 
       {/* Right-click Context Menu */}
       {contextMenu && (
-        <div
-          className="fixed z-50 rounded-2xl border border-slate-100 bg-white p-1.5 shadow-2xl w-40"
+        <Card
+          className="fixed z-50 w-40 rounded-2xl border-slate-100 bg-white p-1.5 shadow-2xl"
           style={{ top: contextMenu.y, left: contextMenu.x }}
         >
           {[
@@ -1600,54 +1614,51 @@ const ChatSystem: React.FC = () => {
               ]
               : [])
           ].map((action, actionIdx) => (
-            <button
+            <Button variant="ghost" size={null}
               key={actionIdx}
               onClick={action.act}
               className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-bold text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition"
             >
               <action.icon size={14} />
               {action.label}
-            </button>
+            </Button>
           ))}
-        </div>
+        </Card>
       )}
 
       {/* PDF Modal Viewer */}
       {pdfPreviewUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
-          <div className="flex h-[90vh] w-full max-w-4xl flex-col rounded-3xl bg-white shadow-2xl overflow-hidden">
+        <Dialog open onOpenChange={(open) => { if (!open) setPdfPreviewUrl(null); }}>
+<DialogContent className="flex h-[90vh] w-full max-w-4xl flex-col rounded-3xl bg-white shadow-2xl overflow-hidden gap-0 [&>button:last-child]:hidden sm:rounded-3xl">
+<DialogTitle className="sr-only">Dialog</DialogTitle>
+<DialogDescription className="sr-only">Dialog</DialogDescription>
+
             <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
               <h3 className="text-xs font-bold text-slate-900">PDF Document Viewer</h3>
-              <button
-                onClick={() => setPdfPreviewUrl(null)}
-                className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100"
-              >
-                <X size={18} />
-              </button>
+              
             </div>
             <div className="flex-1 bg-slate-100">
               <iframe src={pdfPreviewUrl} className="size-full" title="pdf-viewer" />
             </div>
-          </div>
-        </div>
+          
+</DialogContent>
+</Dialog>
       )}
 
       {/* Forward Message Modal */}
       {forwardMessage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl">
+        <Dialog open onOpenChange={(open) => { if (!open) setForwardMessage(null); }}>
+<DialogContent className="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl gap-0 [&>button:last-child]:hidden sm:rounded-[2rem]">
+<DialogTitle className="sr-only">Dialog</DialogTitle>
+<DialogDescription className="sr-only">Dialog</DialogDescription>
+
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-xs font-black text-slate-900">Forward Message</h3>
-              <button
-                onClick={() => setForwardMessage(null)}
-                className="rounded-full p-1.5 hover:bg-slate-100"
-              >
-                <X size={18} />
-              </button>
+              
             </div>
             <div className="mt-4 max-h-[300px] overflow-y-auto space-y-2">
               {contacts.map((contact) => (
-                <button
+                <Button variant="ghost" size={null}
                   key={contact.id}
                   onClick={() => handleForwardMessage(contact)}
                   className="flex w-full items-center gap-3 rounded-2xl p-2.5 text-left hover:bg-slate-50 transition"
@@ -1658,48 +1669,29 @@ const ChatSystem: React.FC = () => {
                   <div>
                     <p className="text-xs font-bold text-slate-900">{contact.name}</p>
                   </div>
-                </button>
+                </Button>
               ))}
             </div>
-          </div>
-        </div>
+          
+</DialogContent>
+</Dialog>
       )}
 
-      {/* Profile Slide-over Drawer */}
-      <AnimatePresence>
-        {showProfileDrawer && activeContact && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowProfileDrawer(false)}
-              className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs"
-            />
-            {/* Drawer */}
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 z-50 size-full max-w-sm border-l border-slate-100 bg-white shadow-2xl flex flex-col"
-            >
-              <div className="flex items-center justify-between border-b border-slate-100 p-4 shrink-0">
-                <h3 className="text-sm font-black text-slate-800 tracking-tight uppercase">User Profile</h3>
-                <button
-                  onClick={() => setShowProfileDrawer(false)}
-                  className="rounded-full p-1.5 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      {/* Profile drawer */}
+      <Sheet open={showProfileDrawer && !!activeContact} onOpenChange={setShowProfileDrawer}>
+        <SheetContent side="right" className="flex w-full flex-col gap-0 border-l border-slate-100 bg-white p-0 sm:max-w-sm">
+          <SheetHeader className="shrink-0 border-b border-slate-100 p-4 pr-12 text-left">
+            <SheetTitle className="text-sm font-black uppercase tracking-tight text-slate-800">User Profile</SheetTitle>
+            <SheetDescription className="sr-only">Contact details and quick actions</SheetDescription>
+          </SheetHeader>
+          {activeContact && (
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 <div className="text-center">
-                  <div className="mx-auto flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-xl font-black text-white shadow-lg">
-                    {activeContact.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
-                  </div>
+                  <Avatar className="mx-auto size-20 shadow-lg">
+              <AvatarFallback className="bg-gradient-to-br from-blue-600 to-indigo-600 text-xl font-black text-white">
+                {activeContact.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
                   <h4 className="mt-4 text-sm font-bold text-slate-900">{activeContact.name}</h4>
                   <div className="mt-2 flex items-center justify-center gap-1.5">
                     <span className={`size-2 rounded-full ${activeContact.online ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
@@ -1752,7 +1744,7 @@ const ChatSystem: React.FC = () => {
                 <div className="space-y-4">
                   <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Quick Actions</h5>
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <button
+                    <Button variant={null} size={null}
                       onClick={() => {
                         setShowProfileDrawer(false);
                         const inp = document.querySelector('input[placeholder="Type a message..."]') as HTMLInputElement;
@@ -1762,8 +1754,8 @@ const ChatSystem: React.FC = () => {
                     >
                       <Send size={12} className="text-blue-500" />
                       Send Message
-                    </button>
-                    <button
+                    </Button>
+                    <Button variant={null} size={null}
                       onClick={() => {
                         setShowProfileDrawer(false);
                         setShowSharedFilesModal(true);
@@ -1772,144 +1764,134 @@ const ChatSystem: React.FC = () => {
                     >
                       <FileText size={12} className="text-indigo-500" />
                       Shared Files
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+          )}
+        </SheetContent>
+      </Sheet>
 
       {/* Video Meet Creator Modal */}
       <AnimatePresence>
         {showVideoMeetModal && activeContact && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl"
-            >
+          <Dialog open onOpenChange={(open) => { if (!open) setShowVideoMeetModal(false); }}>
+<DialogContent className="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl gap-0 [&>button:last-child]:hidden sm:rounded-[2rem]">
+<DialogTitle className="sr-only">Dialog</DialogTitle>
+<DialogDescription className="sr-only">Dialog</DialogDescription>
+
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="text-sm font-black text-slate-900 uppercase">Schedule Meeting</h3>
-                <button
-                  onClick={() => setShowVideoMeetModal(false)}
-                  className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
-                >
-                  <X className="size-5" />
-                </button>
+                
               </div>
 
               <div className="mt-4 space-y-4 text-xs font-semibold">
                 <div className="space-y-1">
-                  <label className="text-slate-400">Meeting Title</label>
-                  <input
+                  <Label className="text-slate-400">Meeting Title</Label>
+                  <Input
                     type="text"
                     value={meetTitle}
                     onChange={(e) => setMeetTitle(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                    className="h-auto w-full rounded-xl border-slate-200 p-2.5 focus-visible:border-blue-400 focus-visible:ring-0 focus-visible:ring-offset-0"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-slate-400">Meeting Description</label>
-                  <textarea
+                  <Label className="text-slate-400">Meeting Description</Label>
+                  <Textarea
                     value={meetDesc}
                     onChange={(e) => setMeetDesc(e.target.value)}
                     rows={2}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400 resize-none"
+                    className="min-h-0 w-full resize-none rounded-xl border-slate-200 p-2.5 focus-visible:border-blue-400 focus-visible:ring-0 focus-visible:ring-offset-0"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-slate-400">Meeting Type</label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <Label className="text-slate-400">Meeting Type</Label>
+                  <ToggleGroup
+                    type="single"
+                    value={meetMode}
+                    onValueChange={(mode) => { if (mode) setMeetMode(mode as 'online' | 'offline'); }}
+                    className="grid grid-cols-2 gap-2"
+                  >
                     {(['online', 'offline'] as const).map((mode) => (
-                      <button
+                      <ToggleGroupItem
                         key={mode}
-                        type="button"
-                        onClick={() => setMeetMode(mode)}
-                        className={`rounded-xl border px-3 py-2 text-xs font-black capitalize transition ${meetMode === mode
-                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                            : 'border-slate-200 text-slate-500'
-                          }`}
+                        value={mode}
+                        className="h-auto rounded-xl border border-slate-200 px-3 py-2 text-xs font-black capitalize text-slate-500 data-[state=on]:border-blue-500 data-[state=on]:bg-blue-50 data-[state=on]:text-blue-700"
                       >
                         {mode}
-                      </button>
+                      </ToggleGroupItem>
                     ))}
-                  </div>
+                  </ToggleGroup>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-slate-400">Meeting Date</label>
-                    <input
+                    <Label className="text-slate-400">Meeting Date</Label>
+                    <Input
                       type="date"
                       value={meetDate}
                       onChange={(e) => setMeetDate(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                      className="h-auto w-full rounded-xl border-slate-200 p-2.5 focus-visible:border-blue-400 focus-visible:ring-0 focus-visible:ring-offset-0"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-slate-400">Start Time</label>
-                    <input
+                    <Label className="text-slate-400">Start Time</Label>
+                    <Input
                       type="time"
                       value={meetTime}
                       onChange={(e) => setMeetTime(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                      className="h-auto w-full rounded-xl border-slate-200 p-2.5 focus-visible:border-blue-400 focus-visible:ring-0 focus-visible:ring-offset-0"
                     />
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-slate-400">Duration</label>
-                  <CustomSelect
-          onChange={setMeetDuration}
-                    value={meetDuration}
-                    options={[
-                    { value: "15 mins", label: "15 mins" },
-                    { value: "30 mins", label: "30 mins" },
-                    { value: "60 mins", label: "60 mins" },
-                    { value: "90 mins", label: "90 mins" },
-                  ]}
-                    className="w-full"
-                  />
+                  <Label className="text-slate-400">Duration</Label>
+                  <Select value={meetDuration} onValueChange={setMeetDuration}>
+                    <SelectTrigger className="w-full rounded-xl border-slate-200"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {['15 mins', '30 mins', '60 mins', '90 mins'].map((d) => (
+                        <SelectItem key={d} value={d}>{d}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 {meetMode === 'online' ? (
                   <>
                     <div className="space-y-1">
-                      <label className="text-slate-400">Meeting Platform</label>
-                      <input
+                      <Label className="text-slate-400">Meeting Platform</Label>
+                      <Input
                         type="text"
                         value={meetPlatform}
                         onChange={(e) => setMeetPlatform(e.target.value)}
-                        className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                        className="h-auto w-full rounded-xl border-slate-200 p-2.5 focus-visible:border-blue-400 focus-visible:ring-0 focus-visible:ring-offset-0"
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-slate-400">Meeting Link</label>
-                      <input
+                      <Label className="text-slate-400">Meeting Link</Label>
+                      <Input
                         type="url"
                         value={meetLink}
                         onChange={(e) => setMeetLink(e.target.value)}
                         placeholder="https://meet.google.com/..."
-                        className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                        className="h-auto w-full rounded-xl border-slate-200 p-2.5 focus-visible:border-blue-400 focus-visible:ring-0 focus-visible:ring-offset-0"
                       />
                     </div>
                   </>
                 ) : (
                   <div className="space-y-1">
-                    <label className="text-slate-400">Meeting Location</label>
-                    <input
+                    <Label className="text-slate-400">Meeting Location</Label>
+                    <Input
                       type="text"
                       value={meetLocation}
                       onChange={(e) => setMeetLocation(e.target.value)}
                       placeholder="School campus / classroom / office"
-                      className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                      className="h-auto w-full rounded-xl border-slate-200 p-2.5 focus-visible:border-blue-400 focus-visible:ring-0 focus-visible:ring-offset-0"
                     />
                   </div>
                 )}
               </div>
 
               <div className="mt-6 flex gap-2">
-                <button
+                <Button variant="default" size={null}
                   onClick={async () => {
                     try {
                       await api.post('/meetings', {
@@ -1931,47 +1913,41 @@ const ChatSystem: React.FC = () => {
                       showToast('Failed to create meeting request', 'error');
                     }
                   }}
-                  className="flex-1 rounded-xl bg-blue-600 py-2.5 text-xs font-bold text-white shadow-md hover:bg-blue-700 transition"
+                  className="flex-1 rounded-xl py-2.5 text-xs font-bold shadow-md shadow-none"
                 >
                   Save Meeting
-                </button>
-                <button
+                </Button>
+                <Button variant={null} size={null}
                   onClick={() => {
                     setShowVideoMeetModal(false);
                   }}
                   className="flex-1 rounded-xl bg-slate-100 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-200 transition"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
-            </motion.div>
-          </div>
+            
+</DialogContent>
+</Dialog>
         )}
       </AnimatePresence>
 
       {/* More Options Settings Modal */}
       <AnimatePresence>
         {showMoreOptions && activeContact && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl overflow-hidden"
-            >
+          <Dialog open onOpenChange={(open) => { if (!open) setShowMoreOptions(false); }}>
+<DialogContent className="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl overflow-hidden gap-0 [&>button:last-child]:hidden sm:rounded-[2rem]">
+<DialogTitle className="sr-only">Dialog</DialogTitle>
+<DialogDescription className="sr-only">Dialog</DialogDescription>
+
               <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
                 <h3 className="text-sm font-black text-slate-900 uppercase">Conversation Settings</h3>
-                <button
-                  onClick={() => setShowMoreOptions(false)}
-                  className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
-                >
-                  <X className="size-5" />
-                </button>
+                
               </div>
 
               <div className="space-y-4 text-xs font-semibold">
                 <div className="grid grid-cols-2 gap-2">
-                  <button
+                  <Button variant={null} size={null}
                     onClick={() => {
                       setShowMoreOptions(false);
                       setShowProfileDrawer(true);
@@ -1979,8 +1955,8 @@ const ChatSystem: React.FC = () => {
                     className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
                   >
                     <User size={14} className="text-blue-500" /> View Profile
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant={null} size={null}
                     onClick={() => {
                       setShowMoreOptions(false);
                       setShowSharedFilesModal(true);
@@ -1988,8 +1964,8 @@ const ChatSystem: React.FC = () => {
                     className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
                   >
                     <FileText size={14} className="text-indigo-500" /> Shared Files
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant={null} size={null}
                     onClick={async () => {
                       if (!activeContact) return;
                       await api.patch(`/chat/messages/${activeContact.id}/read`).catch(() => { });
@@ -1999,8 +1975,8 @@ const ChatSystem: React.FC = () => {
                     className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
                   >
                     <CheckCheck size={14} className="text-emerald-500" /> Mark as Read
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant={null} size={null}
                     onClick={() => {
                       setShowMoreOptions(false);
                       setShowDetails(true);
@@ -2008,32 +1984,26 @@ const ChatSystem: React.FC = () => {
                     className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
                   >
                     <Info size={14} className="text-slate-500" /> Conversation Info
-                  </button>
+                  </Button>
                 </div>
               </div>
-            </motion.div>
-          </div>
+            
+</DialogContent>
+</Dialog>
         )}
       </AnimatePresence>
 
       {/* Shared Files Viewer Modal */}
       <AnimatePresence>
         {showSharedFilesModal && activeContact && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-xl rounded-[2rem] bg-white p-6 shadow-2xl flex flex-col h-[70vh]"
-            >
+          <Dialog open onOpenChange={(open) => { if (!open) setShowSharedFilesModal(false); }}>
+<DialogContent className="w-full max-w-xl rounded-[2rem] bg-white p-6 shadow-2xl flex flex-col h-[70vh] gap-0 [&>button:last-child]:hidden sm:rounded-[2rem]">
+<DialogTitle className="sr-only">Dialog</DialogTitle>
+<DialogDescription className="sr-only">Dialog</DialogDescription>
+
               <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4 shrink-0">
                 <h3 className="text-sm font-black text-slate-900 uppercase">Shared Documents ({sharedFiles.length})</h3>
-                <button
-                  onClick={() => setShowSharedFilesModal(false)}
-                  className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
-                >
-                  <X className="size-5" />
-                </button>
+                
               </div>
 
               <div className="flex-1 overflow-y-auto space-y-3 pr-1">
@@ -2050,7 +2020,7 @@ const ChatSystem: React.FC = () => {
                     </div>
                     <div className="flex gap-2">
                       {file.attachment_name?.toLowerCase().endsWith('.pdf') && (
-                        <button
+                        <Button variant={null} size={null}
                           onClick={() => {
                             setPdfPreviewUrl(file.attachment_url!);
                             setShowSharedFilesModal(false);
@@ -2058,7 +2028,7 @@ const ChatSystem: React.FC = () => {
                           className="rounded-xl bg-blue-50 p-2 text-xs font-bold text-blue-600 hover:bg-blue-100 transition"
                         >
                           Preview
-                        </button>
+                        </Button>
                       )}
                       <a
                         href={file.attachment_url}
@@ -2078,29 +2048,23 @@ const ChatSystem: React.FC = () => {
                   </div>
                 )}
               </div>
-            </motion.div>
-          </div>
+            
+</DialogContent>
+</Dialog>
         )}
       </AnimatePresence>
 
       {/* Media Gallery Lightbox Modal */}
       <AnimatePresence>
         {showMediaGalleryModal && activeContact && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-2xl rounded-[2rem] bg-white p-6 shadow-2xl flex flex-col h-[75vh]"
-            >
+          <Dialog open onOpenChange={(open) => { if (!open) setShowMediaGalleryModal(false); }}>
+<DialogContent className="w-full max-w-2xl rounded-[2rem] bg-white p-6 shadow-2xl flex flex-col h-[75vh] gap-0 [&>button:last-child]:hidden sm:rounded-[2rem]">
+<DialogTitle className="sr-only">Dialog</DialogTitle>
+<DialogDescription className="sr-only">Dialog</DialogDescription>
+
               <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4 shrink-0">
                 <h3 className="text-sm font-black text-slate-900 uppercase">Shared Media</h3>
-                <button
-                  onClick={() => setShowMediaGalleryModal(false)}
-                  className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
-                >
-                  <X className="size-5" />
-                </button>
+                
               </div>
 
               <div className="flex-1 overflow-y-auto grid grid-cols-3 sm:grid-cols-4 gap-3">
@@ -2126,21 +2090,21 @@ const ChatSystem: React.FC = () => {
                   </div>
                 )}
               </div>
-            </motion.div>
-          </div>
+            
+</DialogContent>
+</Dialog>
         )}
       </AnimatePresence>
 
       {/* Full-screen Media Lightbox Viewer */}
       <AnimatePresence>
         {mediaLightboxUrl && (
-          <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/90 p-4">
-            <button
-              onClick={() => setMediaLightboxUrl(null)}
-              className="absolute top-4 right-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition"
-            >
-              <X size={20} />
-            </button>
+          <Dialog open onOpenChange={(open) => { if (!open) setMediaLightboxUrl(null); }}>
+<DialogContent className="max-w-none w-auto gap-0 border-0 bg-transparent p-0 shadow-none sm:rounded-none flex flex-col items-center [&>button]:text-white">
+<DialogTitle className="sr-only">Dialog</DialogTitle>
+<DialogDescription className="sr-only">Dialog</DialogDescription>
+
+            
             <img
               src={mediaLightboxUrl}
               alt="lightbox"
@@ -2155,7 +2119,9 @@ const ChatSystem: React.FC = () => {
                 <Download size={14} /> Download Image
               </a>
             </div>
-          </div>
+          
+</DialogContent>
+</Dialog>
         )}
       </AnimatePresence>
 

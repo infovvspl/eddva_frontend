@@ -17,6 +17,7 @@ import { ConfirmProvider } from "@/context/ConfirmContext";
 import { useModuleAccess } from "@/hooks/use-module-access";
 import { useAuthStore, roleRedirectPath } from "@/lib/auth-store";
 import { apiClient, extractData } from "@/lib/api/client";
+import { useIdleLogout } from "@/hooks/use-idle-logout";
 
 function CoachingFontManager() {
   const location = useLocation();
@@ -30,6 +31,13 @@ function CoachingFontManager() {
     }
   }, [location.pathname, tenantType]);
 
+  return null;
+}
+
+/** Mounted once, app-wide: auto-logs-out an idle school session (see
+ * useIdleLogout). No-ops whenever there's no active session. */
+function IdleLogoutWatcher() {
+  useIdleLogout();
   return null;
 }
 
@@ -257,6 +265,9 @@ const SchoolTeacherStudents = lazy(() => import("./pages/school/teacher/Students
 const SchoolTeacherStudentProfile = lazy(() => import("./pages/school/teacher/StudentProfile"));
 const SchoolTopicManagement = lazy(() => import("./pages/school/teacher/TopicManagement"));
 const SchoolTeacherCompetitivePrep = lazy(() => import("./pages/school/teacher/CompetitivePrep"));
+const SchoolPptStudioPage = lazy(() => import("./pages/school/teacher/PptStudioPage"));
+// Says when a deck generated in the background is ready, on any teacher page.
+const SchoolPptJobsNotifier = lazy(() => import("./components/school/teacher/PptJobsNotifier"));
 const SchoolTextbookCoverage = lazy(() => import("./pages/school/teacher/TextbookCoverage"));
 const SchoolClassManagement = lazy(() => import("./pages/school/teacher/ClassManagement"));
 const SchoolTeacherRecordedClassDetails = lazy(() => import("./pages/school/teacher/RecordedClassDetails"));
@@ -265,6 +276,7 @@ const SchoolAttendanceSystem = lazy(() => import("./pages/school/teacher/Attenda
 const SchoolAssignmentManagement = lazy(() => import("./pages/school/teacher/AssignmentManagement"));
 const SchoolAssessmentSystem = lazy(() => import("./pages/school/teacher/AssessmentSystem"));
 const SchoolAssessmentDetails = lazy(() => import("./pages/school/teacher/AssessmentDetails"));
+const SchoolAssessmentForm = lazy(() => import("./pages/school/teacher/AssessmentForm"));
 const SchoolAssessmentSubmissionReview = lazy(() => import("./pages/school/teacher/AssessmentSubmissionReview"));
 const SchoolTeacherReports = lazy(() => import("./pages/school/teacher/Reports"));
 const SchoolTeacherStudentClasses = lazy(() => import("./pages/school/teacher/StudentReportClasses"));
@@ -577,10 +589,21 @@ const SchoolRoutes = () => (
       <Route path="competitive-prep" element={<SuperAdminCompetitivePrepPage />} />
     </Route>
 
+    {/* PPT Studio: a page of its own, outside the panel layout (no sidebar). */}
+    <Route
+      path="/school/teacher/ppt-studio"
+      element={<SchoolGuard roles={["TEACHER"]}><SchoolPptStudioPage /></SchoolGuard>}
+    />
+
     {/* School Teacher */}
     <Route
       path="/school/teacher"
-      element={<SchoolGuard roles={["TEACHER"]}><SchoolTeacherLayout /></SchoolGuard>}
+      element={
+        <SchoolGuard roles={["TEACHER"]}>
+          <Suspense fallback={null}><SchoolPptJobsNotifier /></Suspense>
+          <SchoolTeacherLayout />
+        </SchoolGuard>
+      }
     >
       <Route index element={<SchoolTeacherDashboard />} />
       <Route path="students" element={<SchoolTeacherStudents />} />
@@ -608,6 +631,8 @@ const SchoolRoutes = () => (
       <Route path="assignments" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'assignments' }}><SchoolAssignmentManagement /></SchoolGuard>} />
       <Route path="assessments" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'assessments' }}><SchoolAssessmentSystem /></SchoolGuard>} />
       <Route path="assessments/:id/submissions/:studentId/review" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'assessments' }}><SchoolAssessmentSubmissionReview /></SchoolGuard>} />
+      <Route path="assessments/new" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'assessments' }}><SchoolAssessmentForm /></SchoolGuard>} />
+      <Route path="assessments/:id/edit" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'assessments' }}><SchoolAssessmentForm /></SchoolGuard>} />
       <Route path="assessments/:id" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'assessments' }}><SchoolAssessmentDetails /></SchoolGuard>} />
       <Route path="reports" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'reports' }}><SchoolTeacherReports /></SchoolGuard>} />
       <Route path="reports/student/:id" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'reports' }}><SchoolTeacherStudentClasses /></SchoolGuard>} />
@@ -954,6 +979,7 @@ const App = () => {
               <BrowserRouter>
                 <NotificationProvider>
                   <CoachingFontManager />
+                  <IdleLogoutWatcher />
                   <Suspense fallback={<RouteLoading />}>
                     <MaintenanceGate>
                       {isTenant ? <TenantRoutes /> : <PlatformRoutes />}

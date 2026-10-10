@@ -18,7 +18,14 @@ import {
   User,
   Zap,
 } from 'lucide-react';
-import { cn } from '@/components/school/admin/Skeleton';
+import { cn } from '@/lib/utils';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { Alert } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { isAnswerPlaceholder } from '@/lib/doubt-answer';
@@ -93,11 +100,11 @@ function DoubtCard({
   const [viewMode, setViewMode] = useState('brief');
 
   return (
-    <article className="rounded-xl sm:rounded-2xl border border-slate-100 bg-white p-3.5 sm:p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <Card className="rounded-xl sm:rounded-2xl border-slate-100 bg-white p-3.5 sm:p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div className="flex items-start justify-between gap-2">
-        <span className={cn('rounded px-1.5 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-widest', meta.tone)}>
+        <Badge variant="outline" className={cn('rounded border-transparent px-1.5 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-widest', meta.tone)}>
           {meta.label}
-        </span>
+        </Badge>
         <time className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-slate-400">
           {doubt.createdAt ? new Date(doubt.createdAt).toLocaleString() : ''}
         </time>
@@ -107,14 +114,14 @@ function DoubtCard({
         <User className="size-3.5 shrink-0" />
         <span className="truncate max-w-[120px] sm:max-w-none">{doubt.studentName || 'Student'}</span>
         {(doubt.className || doubt.sectionName) && (
-          <span className="rounded bg-slate-100 px-1.5 py-0.5 dark:bg-slate-800 shrink-0">
+          <Badge variant="outline" className="shrink-0 rounded border-transparent bg-slate-100 px-1.5 py-0.5 text-[11px] sm:text-xs font-bold text-slate-500 dark:bg-slate-800">
             {[doubt.className, doubt.sectionName && `Sec ${doubt.sectionName}`].filter(Boolean).join(' · ')}
-          </span>
+          </Badge>
         )}
         {doubt.subjectName && (
-          <span className="rounded bg-blue-50 px-1.5 py-0.5 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 shrink-0">
+          <Badge variant="outline" className="shrink-0 rounded border-transparent bg-blue-50 px-1.5 py-0.5 text-[11px] sm:text-xs font-bold text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
             {doubt.subjectName}
-          </span>
+          </Badge>
         )}
       </div>
 
@@ -128,38 +135,28 @@ function DoubtCard({
       )}
 
       {doubt.aiExplanation && (
-        <div className="mt-2.5 sm:mt-3 rounded-lg sm:rounded-xl border border-indigo-100 bg-indigo-50/60 p-2.5 sm:p-3 dark:border-indigo-900/40 dark:bg-indigo-950/20">
+        <Card className="mt-2.5 sm:mt-3 rounded-lg sm:rounded-xl border-indigo-100 bg-indigo-50/60 p-2.5 sm:p-3 dark:border-indigo-900/40 dark:bg-indigo-950/20 shadow-none">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
             <p className="flex items-center gap-1 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
               <Sparkles size={11} className="size-3 sm:size-3.5 shrink-0" /> AI response (student may escalate)
             </p>
             {parsedAi && (
-              <div className="flex items-center gap-1 rounded-lg bg-indigo-100/50 p-0.5 dark:bg-indigo-900/30">
-                <button
-                  type="button"
-                  onClick={() => setViewMode('brief')}
-                  className={cn(
-                    'rounded-md px-2 py-1 text-[10px] sm:text-xs font-bold transition-all',
-                    viewMode === 'brief'
-                      ? 'bg-white text-indigo-700 shadow-sm dark:bg-indigo-800 dark:text-white'
-                      : 'text-indigo-600 hover:bg-white/50 dark:text-indigo-300 dark:hover:bg-indigo-800/50',
-                  )}
-                >
-                  <Zap className="inline size-3 mr-1 -mt-0.5" /> Brief
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode('detailed')}
-                  className={cn(
-                    'rounded-md px-2 py-1 text-[10px] sm:text-xs font-bold transition-all',
-                    viewMode === 'detailed'
-                      ? 'bg-white text-indigo-700 shadow-sm dark:bg-indigo-800 dark:text-white'
-                      : 'text-indigo-600 hover:bg-white/50 dark:text-indigo-300 dark:hover:bg-indigo-800/50',
-                  )}
-                >
-                  <BookOpen className="inline size-3 mr-1 -mt-0.5" /> Detailed
-                </button>
-              </div>
+              <Tabs value={viewMode} onValueChange={setViewMode}>
+                <TabsList className="h-auto gap-1 rounded-lg bg-indigo-100/50 p-0.5 dark:bg-indigo-900/30">
+                  {[
+                    { id: 'brief', label: 'Brief', icon: Zap },
+                    { id: 'detailed', label: 'Detailed', icon: BookOpen },
+                  ].map(({ id, label, icon: Icon }) => (
+                    <TabsTrigger
+                      key={id}
+                      value={id}
+                      className="rounded-md px-2 py-1 text-[10px] sm:text-xs font-bold text-indigo-600 hover:bg-white/50 data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm dark:text-indigo-300 dark:hover:bg-indigo-800/50 dark:data-[state=active]:bg-indigo-800 dark:data-[state=active]:text-white"
+                    >
+                      <Icon className="mr-1 size-3 shrink-0" /> {label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
             )}
           </div>
 
@@ -179,22 +176,22 @@ function DoubtCard({
                       className="prose-slate max-w-none prose-sm"
                     />
                     {parsedAi.detailed?.final_answer && (
-                      <div className="mt-3 rounded-xl border border-indigo-200 bg-indigo-50/80 p-3 dark:border-indigo-800 dark:bg-indigo-900/40">
+                      <Card className="mt-3 rounded-xl border-indigo-200 bg-indigo-50/80 p-3 dark:border-indigo-800 dark:bg-indigo-900/40 shadow-none">
                         <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 mb-1 flex items-center gap-1"><CheckCircle2 className="size-3 shrink-0" /> Final Answer</h4>
                         <MarkdownRenderer content={parsedAi.detailed.final_answer} className="prose-slate max-w-none prose-sm" />
-                      </div>
+                      </Card>
                     )}
                     {parsedAi.detailed?.verification && !isAnswerPlaceholder(parsedAi.detailed.verification) && (
-                      <div className="mt-2 rounded-xl border border-slate-200 bg-white/60 p-3 dark:border-slate-700 dark:bg-slate-800/60">
+                      <Card className="mt-2 rounded-xl border-slate-200 bg-white/60 p-3 dark:border-slate-700 dark:bg-slate-800/60 shadow-none">
                         <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1"><Check className="size-3 shrink-0" /> Verification</h4>
                         <MarkdownRenderer content={parsedAi.detailed.verification} className="prose-slate max-w-none prose-sm" />
-                      </div>
+                      </Card>
                     )}
                     {parsedAi.detailed?.key_concept && !isAnswerPlaceholder(parsedAi.detailed.key_concept) && (
-                      <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50/60 p-3 dark:border-amber-900/30 dark:bg-amber-950/20">
+                      <Card className="mt-2 rounded-xl border-amber-200 bg-amber-50/60 p-3 dark:border-amber-900/30 dark:bg-amber-950/20 shadow-none">
                         <h4 className="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-1 flex items-center gap-1"><Lightbulb className="size-3 shrink-0" /> Key Concept</h4>
                         <MarkdownRenderer content={parsedAi.detailed.key_concept} className="prose-slate max-w-none prose-sm" />
-                      </div>
+                      </Card>
                     )}
                   </>
                 )}
@@ -203,11 +200,11 @@ function DoubtCard({
               <MarkdownRenderer content={doubt.aiExplanation} className="prose-slate max-w-none prose-sm" />
             )}
           </div>
-        </div>
+        </Card>
       )}
 
       {doubt.teacherResponse && (
-        <div className="mt-2.5 sm:mt-3 rounded-lg sm:rounded-xl border border-emerald-100 bg-emerald-50/60 p-2.5 sm:p-3 dark:border-emerald-900/40 dark:bg-emerald-950/20">
+        <Card className="mt-2.5 sm:mt-3 rounded-lg sm:rounded-xl border-emerald-100 bg-emerald-50/60 p-2.5 sm:p-3 dark:border-emerald-900/40 dark:bg-emerald-950/20 shadow-none">
           <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
             Your answer
           </p>
@@ -221,28 +218,29 @@ function DoubtCard({
               <DoubtImagePreview url={doubt.teacherResponseImageUrl} alt="Your answer" />
             </div>
           )}
-        </div>
+        </Card>
       )}
 
       {isPending && replyingId === doubt.id ? (
         <div className="mt-3.5 sm:mt-4 space-y-3">
           {hasDoubtSolver && (
-            <button
+            <Button
               type="button"
+              variant="outline"
               disabled={aiSuggesting || submitting}
               onClick={() => onAiSuggest(doubt.id)}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-lg sm:rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-[11px] sm:text-xs font-black text-indigo-700 hover:bg-indigo-100 disabled:opacity-50 dark:border-indigo-900/50 dark:bg-indigo-950/30 dark:text-indigo-300"
+              className="h-auto w-full gap-2 rounded-lg sm:rounded-xl border-indigo-200 bg-indigo-50 px-3 py-2 text-[11px] sm:text-xs font-black text-indigo-700 hover:bg-indigo-100 hover:text-indigo-700 dark:border-indigo-900/50 dark:bg-indigo-950/30 dark:text-indigo-300"
             >
               {aiSuggesting ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}
               Draft with AI (edit before sending)
-            </button>
+            </Button>
           )}
-          <textarea
+          <Textarea
             value={replyText}
             onChange={(e) => setReplyText(e.target.value)}
             rows={4}
             placeholder="Write or edit your answer for the student..."
-            className="w-full resize-none rounded-lg sm:rounded-xl border border-slate-200 bg-slate-50 p-2.5 sm:p-3 text-xs sm:text-sm font-medium dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+            className="min-h-0 w-full resize-none rounded-lg sm:rounded-xl border-slate-200 bg-slate-50 p-2.5 sm:p-3 text-xs sm:text-sm font-medium dark:border-slate-700 dark:bg-slate-950 dark:text-white"
           />
           <DoubtImageAttach
             label="Attach answer image"
@@ -253,32 +251,33 @@ function DoubtCard({
               setReplyImagePreview(preview);
             }}
           />
-          <div className="flex flex-row gap-2">
-            <button
+          <div className="flex flex-col-reverse gap-2 sm:flex-row">
+            <Button
               type="button"
               disabled={submitting || (replyText.trim().length < 5 && !replyImageUrl)}
               onClick={() => onSubmitReply(doubt.id)}
-              className="inline-flex items-center gap-1.5 rounded-lg sm:rounded-xl bg-blue-600 px-3.5 py-2 text-[11px] sm:text-xs font-black text-white hover:bg-blue-700 disabled:opacity-50"
+              className="h-auto gap-1.5 rounded-lg sm:rounded-xl px-3.5 py-2 text-[11px] sm:text-xs font-black"
             >
               {submitting ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5" />}
               Send to student
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="ghost"
               onClick={() => {
                 setReplyingId(null);
                 setReplyText('');
                 setReplyImageUrl(null);
                 setReplyImagePreview(null);
               }}
-              className="rounded-lg sm:rounded-xl px-3.5 py-2 text-[11px] sm:text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="h-auto rounded-lg sm:rounded-xl px-3.5 py-2 text-[11px] sm:text-xs font-bold"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       ) : isPending ? (
-        <button
+        <Button
           type="button"
           onClick={() => {
             setReplyingId(doubt.id);
@@ -286,13 +285,13 @@ function DoubtCard({
             setReplyImageUrl(null);
             setReplyImagePreview(null);
           }}
-          className="mt-3 sm:mt-4 inline-flex items-center gap-1.5 rounded-lg sm:rounded-xl bg-blue-600 px-3.5 py-2 text-[11px] sm:text-xs font-black text-white hover:bg-blue-700"
+          className="mt-3 h-auto w-full gap-1.5 rounded-lg px-3.5 py-2 text-[11px] font-black sm:mt-4 sm:w-auto sm:rounded-xl sm:text-xs"
         >
           <MessageSquare className="size-3.5" />
           Reply to student
-        </button>
+        </Button>
       ) : null}
-    </article>
+    </Card>
   );
 }
 
@@ -382,8 +381,18 @@ export default function DoubtQueue() {
 
   if (loading && doubts.length === 0) {
     return (
-      <div className="flex h-[60vh] items-center justify-center">
-        <Loader2 className="size-8 animate-spin text-blue-600" />
+      <div className="space-y-4 sm:space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-48" />
+          <Skeleton className="h-4 w-72 max-w-full" />
+        </div>
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <Skeleton className="h-16 rounded-xl sm:h-20 sm:rounded-2xl" />
+          <Skeleton className="h-16 rounded-xl sm:h-20 sm:rounded-2xl" />
+          <Skeleton className="h-16 rounded-xl sm:h-20 sm:rounded-2xl" />
+        </div>
+        <Skeleton className="h-40 rounded-2xl" />
+        <Skeleton className="h-40 rounded-2xl" />
       </div>
     );
   }
@@ -397,63 +406,60 @@ export default function DoubtQueue() {
             Answer questions from students in your assigned classes and subjects.
           </p>
         </div>
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={() => load(true)}
-          className="inline-flex items-center gap-1 sm:gap-2 rounded-lg sm:rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 sm:px-4 sm:py-2.5 text-[11px] sm:text-xs font-black text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 shrink-0 shadow-sm"
+          className="h-auto shrink-0 gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-black shadow-sm sm:gap-2 sm:rounded-xl sm:px-4 sm:py-2.5 sm:text-xs"
         >
           <RefreshCw className={cn('size-3.5 sm:size-4', loading && 'animate-spin')} />
           <span>Refresh</span>
-        </button>
+        </Button>
       </div>
 
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
-        <div className="rounded-xl sm:rounded-2xl border border-amber-200 bg-amber-50 p-2.5 sm:p-4 dark:border-amber-900/50 dark:bg-amber-950/30">
+        <Card className="rounded-xl sm:rounded-2xl border-amber-200 bg-amber-50 p-2.5 sm:p-4 dark:border-amber-900/50 dark:bg-amber-950/30 shadow-none">
           <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-300">Pending</p>
           <p className="mt-0.5 sm:mt-1 text-lg sm:text-2xl font-black text-amber-900 dark:text-amber-100">{pendingList.length}</p>
-        </div>
-        <div className="rounded-xl sm:rounded-2xl border border-emerald-200 bg-emerald-50 p-2.5 sm:p-4 dark:border-emerald-900/50 dark:bg-emerald-950/30">
+        </Card>
+        <Card className="rounded-xl sm:rounded-2xl border-emerald-200 bg-emerald-50 p-2.5 sm:p-4 dark:border-emerald-900/50 dark:bg-emerald-950/30 shadow-none">
           <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-300">Answered</p>
           <p className="mt-0.5 sm:mt-1 text-lg sm:text-2xl font-black text-emerald-900 dark:text-emerald-100">{answeredList.length}</p>
-        </div>
-        <div className="rounded-xl sm:rounded-2xl border border-slate-200 bg-white p-2.5 sm:p-4 dark:border-slate-800 dark:bg-slate-900">
+        </Card>
+        <Card className="rounded-xl sm:rounded-2xl border-slate-200 bg-white p-2.5 sm:p-4 dark:border-slate-800 dark:bg-slate-900 shadow-none">
           <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500">All in queue</p>
           <p className="mt-0.5 sm:mt-1 text-lg sm:text-2xl font-black text-slate-900 dark:text-white">{doubts.length}</p>
-        </div>
+        </Card>
       </div>
 
-      <div className="flex flex-row flex-nowrap gap-1.5 sm:gap-2">
-        {[
-          { id: 'pending', label: 'Pending', icon: Clock, count: pendingList.length },
-          { id: 'answered', label: 'Answered', icon: CheckCircle2, count: answeredList.length },
-          { id: 'all', label: 'All', icon: HelpCircle, count: doubts.length },
-        ].map(({ id, label, icon: Icon, count }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setTab(id)}
-            className={cn(
-              'inline-flex items-center gap-1 sm:gap-2 rounded-lg sm:rounded-xl px-2.5 py-1.5 sm:px-4 sm:py-2 text-[11px] sm:text-xs font-black transition shrink-0',
-              tab === id
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300',
-            )}
-          >
-            <Icon className="size-3.5 sm:size-4 shrink-0" />
-            <span>{label}</span>
-            <span className="rounded bg-white/20 px-1 py-0.2 text-[9px] sm:text-[10px] font-bold">{count}</span>
-          </button>
-        ))}
-      </div>
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList className="grid h-auto w-full grid-cols-3 gap-1.5 bg-transparent p-0 sm:inline-flex sm:w-auto sm:gap-2">
+          {[
+            { id: 'pending', label: 'Pending', icon: Clock, count: pendingList.length },
+            { id: 'answered', label: 'Answered', icon: CheckCircle2, count: answeredList.length },
+            { id: 'all', label: 'All', icon: HelpCircle, count: doubts.length },
+          ].map(({ id, label, icon: Icon, count }) => (
+            <TabsTrigger
+              key={id}
+              value={id}
+              className="gap-1 rounded-lg bg-slate-100 px-2.5 py-1.5 text-[11px] font-black text-slate-600 hover:bg-slate-200 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-600/20 dark:bg-slate-800 dark:text-slate-300 sm:gap-2 sm:rounded-xl sm:px-4 sm:py-2 sm:text-xs"
+            >
+              <Icon className="size-3.5 shrink-0 sm:size-4" />
+              <span>{label}</span>
+              <span className="rounded bg-white/20 px-1 text-[9px] font-bold sm:text-[10px]">{count}</span>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
       {error && (
-        <p className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-300">
+        <Alert className="rounded-xl border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-300">
           {error}
-        </p>
+        </Alert>
       )}
 
       {shown.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
+        <Card className="rounded-2xl border-dashed border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900 shadow-none">
           <HelpCircle className="mx-auto size-10 text-slate-300" />
           <h3 className="mt-3 text-sm font-black text-slate-900 dark:text-white">
             {tab === 'pending' ? 'No pending doubts' : tab === 'answered' ? 'No answered doubts yet' : 'No doubts yet'}
@@ -473,7 +479,7 @@ export default function DoubtQueue() {
                   </>
                 )}
           </p>
-        </div>
+        </Card>
       ) : (
         <div className="space-y-4">
             {shown.map((d) => (

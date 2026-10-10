@@ -3,8 +3,14 @@ import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { SchoolVideoPlayer } from '@/components/school/SchoolVideoPlayer';
 import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
-import Button from '@/components/school/Button';
-import { CourseTabs } from '@/components/student/lecture/CourseTabs';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { Alert } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSchoolFeature } from '@/hooks/use-school-feature';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -31,7 +37,30 @@ import {
   MessageCircle,
   Send,
   HelpCircle,
+  BookOpen,
+  BarChart3,
 } from 'lucide-react';
+
+const DETAIL_TAB_META = {
+  notes: { label: 'AI Notes', icon: BookOpen },
+  transcript: { label: 'Transcript', icon: FileText },
+  quiz: { label: 'Quiz', icon: Sparkles },
+  overview: { label: 'Stats', icon: BarChart3 },
+  doubt: { label: 'Doubt', icon: MessageCircle },
+  my_notes: { label: 'My Notes', icon: FileText },
+  questions: { label: 'Questions', icon: HelpCircle },
+  doubts: { label: 'Student Doubts', icon: MessagesSquare },
+};
+
+// Inline notice (icon + text) on the shadcn Alert — Alert positions a leading svg absolutely,
+// these notices lay it out inline instead.
+function InfoAlert({ className, children }) {
+  return (
+    <Alert className={cn('[&>svg]:static [&>svg]:text-current [&>svg~*]:pl-0 [&>svg+div]:translate-y-0', className)}>
+      {children}
+    </Alert>
+  );
+}
 
 function isYouTubeUrl(url = '') {
   return /(?:youtube\.com\/|youtu\.be\/)/i.test(url);
@@ -47,7 +76,7 @@ const DOUBT_STATUS_META = {
 // A plain count — no upper bound, so it reads as a stat tile rather than a meter.
 function StatTile({ label, value, icon: Icon }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4">
+    <Card className="flex items-center gap-3 rounded-2xl border-slate-100 bg-white p-4 shadow-none">
       <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-50">
         <Icon className="size-5 text-blue-600" />
       </span>
@@ -55,7 +84,7 @@ function StatTile({ label, value, icon: Icon }) {
         <p className="text-xl font-black leading-none text-slate-900">{value}</p>
         <p className="mt-1 text-[11px] font-semibold text-slate-500">{label}</p>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -69,7 +98,7 @@ function StatMeter({ label, value, icon: Icon }) {
   const toneFill = { emerald: 'bg-emerald-500', amber: 'bg-amber-500', rose: 'bg-rose-500' }[tone];
 
   return (
-    <div className="rounded-2xl border border-slate-100 bg-white p-4">
+    <Card className="rounded-2xl border-slate-100 bg-white p-4 shadow-none">
       <div className="mb-3 flex items-center gap-2.5">
         <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-50">
           <Icon className="size-4 text-slate-500" />
@@ -77,10 +106,8 @@ function StatMeter({ label, value, icon: Icon }) {
         <p className="flex-1 truncate text-[11px] font-semibold text-slate-500">{label}</p>
         <p className={cn('shrink-0 text-lg font-black', toneText)}>{pct}%</p>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-        <div className={cn('h-full rounded-full transition-all', toneFill)} style={{ width: `${pct}%` }} />
-      </div>
-    </div>
+      <Progress value={pct} className="h-2 bg-slate-100" indicatorClassName={toneFill} />
+    </Card>
   );
 }
 
@@ -437,32 +464,32 @@ export default function TeacherRecordedClassDetails() {
   const renderVideoPlayer = () => {
     if (!recording.video_url) {
       return (
-        <div className="flex aspect-video w-full flex-col items-center justify-center rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 px-6 text-center">
+        <Card className="flex aspect-video w-full flex-col items-center justify-center rounded-2xl border-slate-200 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 px-6 text-center shadow-none">
           <PlayCircle className="size-12 text-slate-400" />
           <h3 className="mt-4 text-xl font-black text-white">Video is not available</h3>
           <p className="mt-2 max-w-md text-sm leading-6 text-slate-300">
             No playable recording has been attached to this class yet.
           </p>
-        </div>
+        </Card>
       );
     }
 
     if (playback.loading && !playback.src) {
       return (
-        <div className="flex aspect-video w-full flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-950 text-center text-white">
+        <Card className="flex aspect-video w-full flex-col items-center justify-center rounded-2xl border-slate-200 bg-slate-950 text-center text-white shadow-none">
           <Loader2 className="size-10 animate-spin" />
           <p className="mt-3 text-sm font-bold">Preparing video...</p>
-        </div>
+        </Card>
       );
     }
 
     if (playback.error) {
       return (
-        <div className="flex aspect-video w-full flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-950 px-6 text-center text-white">
+        <Card className="flex aspect-video w-full flex-col items-center justify-center rounded-2xl border-slate-200 bg-slate-950 px-6 text-center text-white shadow-none">
           <PlayCircle className="size-10 text-white/60" />
           <h3 className="mt-4 text-lg font-bold">Video could not start</h3>
           <p className="mt-2 max-w-md text-sm text-white/70">{playback.error}</p>
-        </div>
+        </Card>
       );
     }
 
@@ -484,7 +511,7 @@ export default function TeacherRecordedClassDetails() {
       const imageCount = Array.isArray(recording.notes_images) ? recording.notes_images.length : 0;
       return (
         <div className="space-y-4">
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3.5 py-2.5">
+          <Card className="flex items-center justify-between gap-3 rounded-xl border-slate-100 bg-slate-50 px-3.5 py-2.5 shadow-none">
             <div className="flex items-center gap-2 text-xs text-slate-500">
               {imageCount > 0 ? (
                 <>
@@ -503,26 +530,26 @@ export default function TeacherRecordedClassDetails() {
               )}
             </div>
             <div className="flex items-center gap-2">
-              <button
+              <Button variant="outline" size={null}
                 type="button"
                 onClick={handleDownloadNotesPdf}
                 disabled={downloadingPdf}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 disabled:opacity-60"
               >
                 {downloadingPdf ? <Loader2 size={11} className="animate-spin" /> : <Download size={11} />}
                 {downloadingPdf ? 'Preparing…' : 'Download PDF'}
-              </button>
-              <button
+              </Button>
+              <Button variant="default" size={null}
                 type="button"
                 onClick={handleAddVisuals}
                 disabled={addingVisuals}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-blue-700 disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold disabled:opacity-60 shadow-none"
               >
                 {addingVisuals ? <Loader2 size={11} className="animate-spin" /> : <ImagePlus size={11} />}
                 {imageCount > 0 ? 'Refresh visuals' : 'Add visuals'}
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
 
           <MarkdownRenderer content={recording.notes} className="prose-slate" imageMap={notesImageMap} />
         </div>
@@ -546,15 +573,15 @@ export default function TeacherRecordedClassDetails() {
         {hasNotesGen ? (
           <>
             <p className="mt-1 max-w-md text-sm text-slate-500">Generate AI notes once the transcript is ready.</p>
-            <button
+            <Button variant="default" size={null}
               type="button"
               onClick={handleRegenerateNotes}
               disabled={regeneratingNotes || recording.transcript_status !== 'done'}
-              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-extrabold text-white shadow-md transition hover:bg-blue-700 disabled:opacity-50"
+              className="mt-4 inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-extrabold disabled:opacity-50 shadow-none"
             >
               {regeneratingNotes ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
               {recording.notes_status === 'failed' ? 'Retry notes generation' : 'Generate AI notes'}
-            </button>
+            </Button>
           </>
         ) : (
           <p className="mt-1 max-w-md text-sm text-slate-500">AI notes generation is disabled for this institution.</p>
@@ -593,15 +620,15 @@ export default function TeacherRecordedClassDetails() {
         <h3 className="mt-4 text-lg font-bold text-slate-900">
           {recording.transcript_status === 'failed' ? 'Transcription failed' : 'Transcript not available'}
         </h3>
-        <button
+        <Button variant="default" size={null}
           type="button"
           onClick={handleRetranscribe}
           disabled={retranscribing}
-          className="mt-4 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-extrabold text-white shadow-md transition hover:bg-blue-700 disabled:opacity-50"
+          className="mt-4 inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-extrabold disabled:opacity-50 shadow-none"
         >
           {retranscribing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
           {recording.transcript_status === 'failed' ? 'Retry transcription' : 'Generate transcript'}
-        </button>
+        </Button>
       </div>
     );
   };
@@ -619,7 +646,8 @@ export default function TeacherRecordedClassDetails() {
             {recording.quiz_status === 'failed' && <p className="mb-3 text-sm text-rose-500">Quiz generation failed. Try again.</p>}
             {hasQuizGen ? (
               <>
-                <Button icon={<Sparkles size={16} />} onClick={handleGenerateQuiz} loading={generatingQuiz}>
+                <Button onClick={handleGenerateQuiz} disabled={generatingQuiz}>
+                  {generatingQuiz ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
                   {recording.quiz_status === 'failed' ? 'Retry quiz generation' : 'Generate in-video quiz'}
                 </Button>
                 <p className="mt-2 text-xs text-slate-400">Creates MCQ checkpoints from the lecture content that pop up at points during the video.</p>
@@ -642,9 +670,9 @@ export default function TeacherRecordedClassDetails() {
     return (
       <div className="flex flex-col gap-y-4">
         {quizAnalyticsError && (
-          <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
+          <Alert className="rounded-2xl border-amber-100 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
             {quizAnalyticsError}
-          </div>
+          </Alert>
         )}
 
         <div className="grid grid-cols-3 gap-3 rounded-2xl border-b border-slate-100 bg-slate-50/50 p-4">
@@ -663,21 +691,19 @@ export default function TeacherRecordedClassDetails() {
           ))}
         </div>
 
-        <div className="flex border-b border-slate-100">
-          {['questions', 'students'].map((k) => (
-            <button
-              key={k}
-              type="button"
-              onClick={() => setQuizSubTab(k)}
-              className={cn(
-                '-mb-px px-4 py-2.5 text-xs font-bold capitalize transition-colors border-b-2',
-                quizSubTab === k ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600',
-              )}
-            >
-              {k === 'questions' ? `Questions (${quiz.length})` : `Student Results (${analytics.students.length ?? 0})`}
-            </button>
-          ))}
-        </div>
+        <Tabs value={quizSubTab} onValueChange={setQuizSubTab}>
+          <TabsList className="h-auto w-full justify-start rounded-none border-b border-slate-100 bg-transparent p-0">
+            {['questions', 'students'].map((k) => (
+              <TabsTrigger
+                key={k}
+                value={k}
+                className="-mb-px rounded-none border-b-2 border-transparent px-4 py-2.5 text-xs font-bold capitalize text-slate-400 data-[state=active]:border-blue-600 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 data-[state=active]:shadow-none"
+              >
+                {k === 'questions' ? `Questions (${quiz.length})` : `Student Results (${analytics.students.length ?? 0})`}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
 
         <div className="flex-1 space-y-3 pt-2">
           {quizAnalyticsLoading && (
@@ -700,8 +726,8 @@ export default function TeacherRecordedClassDetails() {
             });
 
             return (
-              <div key={qKey} className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-                <button
+              <Card key={qKey} className="overflow-hidden rounded-2xl border-slate-100 bg-white shadow-sm">
+                <Button variant="ghost" size={null}
                   type="button"
                   onClick={() => setExpandedQuestion(isExpanded ? null : qKey)}
                   className="flex w-full items-start gap-3 p-4 text-left transition-colors hover:bg-slate-50"
@@ -728,7 +754,7 @@ export default function TeacherRecordedClassDetails() {
                     )}
                   </div>
                   <ChevronRight className={cn('mt-1 size-4 shrink-0 text-slate-400 transition-transform', isExpanded && 'rotate-90')} />
-                </button>
+                </Button>
 
                 {isExpanded && (
                   <div className="space-y-2.5 border-t border-slate-100 bg-slate-50/50 p-4">
@@ -738,7 +764,7 @@ export default function TeacherRecordedClassDetails() {
                       const pct = totalAnswered > 0 ? Math.round((count / totalAnswered) * 100) : 0;
                       const isCorrect = opt.label === cp.correctOption;
                       return (
-                        <div key={opt.label} className={cn('rounded-xl border p-3', isCorrect ? 'border-emerald-100 bg-emerald-50 text-emerald-800' : 'border-slate-100 bg-white text-slate-700')}>
+                        <Card key={opt.label} className={cn('rounded-xl p-3 shadow-none', isCorrect ? 'border-emerald-100 bg-emerald-50 text-emerald-800' : 'border-slate-100 bg-white text-slate-700')}>
                           <div className="mb-1.5 flex items-center gap-2">
                             <span className={cn('flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-black', isCorrect ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-500')}>{opt.label}</span>
                             <div className={cn('flex-1 pointer-events-none text-xs', isCorrect ? 'font-bold text-emerald-800' : 'text-slate-700')}>
@@ -750,20 +776,20 @@ export default function TeacherRecordedClassDetails() {
                           <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
                             <div className={cn('h-full rounded-full transition-all', isCorrect ? 'bg-emerald-500' : 'bg-slate-300')} style={{ width: `${pct}%` }} />
                           </div>
-                        </div>
+                        </Card>
                       );
                     })}
                     {cp.explanation && (
-                      <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-100 bg-amber-50 p-3">
+                      <InfoAlert className="mt-3 flex items-start gap-2 rounded-xl border-amber-100 bg-amber-50 p-3">
                         <Sparkles className="mt-0.5 size-3.5 shrink-0 text-amber-600" />
                         <div className="text-xs font-medium leading-relaxed text-amber-800">
                           <MarkdownRenderer content={cp.explanation} className="prose-p:my-0 text-amber-800 font-semibold" />
                         </div>
-                      </div>
+                      </InfoAlert>
                     )}
                   </div>
                 )}
-              </div>
+              </Card>
             );
           })}
 
@@ -779,7 +805,7 @@ export default function TeacherRecordedClassDetails() {
                   .filter((s) => s.answeredCount > 0)
                   .sort((a, b) => (b.quizScore ?? 0) - (a.quizScore ?? 0))
                   .map((s) => (
-                    <div key={s.studentId} className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+                    <Card key={s.studentId} className="overflow-hidden rounded-2xl border-slate-100 bg-white shadow-sm">
                       <div className="flex items-center gap-3 p-3">
                         <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-black text-blue-600">
                           {s.studentName.charAt(0).toUpperCase()}
@@ -820,7 +846,7 @@ export default function TeacherRecordedClassDetails() {
                           );
                         })}
                       </div>
-                    </div>
+                    </Card>
                   ))}
               </div>
             )
@@ -843,33 +869,33 @@ export default function TeacherRecordedClassDetails() {
         </div>
 
         {recording.description && (
-          <div className="rounded-2xl border border-slate-100 bg-white p-4">
+          <Card className="rounded-2xl border-slate-100 bg-white p-4 shadow-none">
             <p className="mb-1.5 text-[10px] font-black uppercase tracking-wider text-slate-400">Description</p>
             <p className="text-sm leading-relaxed text-slate-700">{recording.description}</p>
-          </div>
+          </Card>
         )}
 
         {(recording.resolution || recording.video_size || recording.source) && (
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+            <Card className="rounded-xl border-slate-100 bg-slate-50 p-3 shadow-none">
               <p className="text-[10px] font-bold text-slate-400">Format</p>
               <p className="text-sm font-black text-slate-900">{recording.source === 'youtube' ? 'YouTube' : 'Recorded'}</p>
-            </div>
+            </Card>
             {recording.resolution && (
-              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+              <Card className="rounded-xl border-slate-100 bg-slate-50 p-3 shadow-none">
                 <p className="text-[10px] font-bold text-slate-400">Resolution</p>
                 <p className="text-sm font-black text-slate-900">{recording.resolution}</p>
-              </div>
+              </Card>
             )}
             {recording.video_size && (
-              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+              <Card className="rounded-xl border-slate-100 bg-slate-50 p-3 shadow-none">
                 <p className="text-[10px] font-bold text-slate-400">File Size</p>
                 <p className="text-sm font-black text-slate-900">
                   {recording.video_size > 1024 * 1024 * 1024
                     ? `${(recording.video_size / (1024 * 1024 * 1024)).toFixed(1)} GB`
                     : `${Math.round(recording.video_size / (1024 * 1024))} MB`}
                 </p>
-              </div>
+              </Card>
             )}
           </div>
         )}
@@ -891,53 +917,51 @@ export default function TeacherRecordedClassDetails() {
             <MessagesSquare size={15} className="text-blue-600" />
             <h4 className="text-[13px] font-black text-slate-800">Student Doubts</h4>
             {recording.subject_name && (
-              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-black text-blue-700">{recording.subject_name}</span>
+              <Badge variant="outline" className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-black text-blue-700 border-transparent">{recording.subject_name}</Badge>
             )}
           </div>
-          <button
+          <Button variant="outline" size={null}
             type="button"
             onClick={() => fetchRecordingDoubts(true)}
             disabled={recDoubtsLoading}
-            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold disabled:opacity-50"
           >
             <RefreshCw size={11} className={recDoubtsLoading ? 'animate-spin' : ''} />
             Refresh
-          </button>
+          </Button>
         </div>
 
         <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-xl border border-amber-100 bg-amber-50 p-2.5 text-center">
+          <Card className="rounded-xl border-amber-100 bg-amber-50 p-2.5 text-center shadow-none">
             <p className="text-base font-black text-amber-900">{pendingDoubts.length}</p>
             <p className="text-[10px] font-black uppercase tracking-widest text-amber-600">Pending</p>
-          </div>
-          <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-2.5 text-center">
+          </Card>
+          <Card className="rounded-xl border-emerald-100 bg-emerald-50 p-2.5 text-center shadow-none">
             <p className="text-base font-black text-emerald-900">{answeredDoubts.length}</p>
             <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Answered</p>
-          </div>
-          <div className="rounded-xl border border-slate-100 bg-white p-2.5 text-center">
+          </Card>
+          <Card className="rounded-xl border-slate-100 bg-white p-2.5 text-center shadow-none">
             <p className="text-base font-black text-slate-900">{recDoubts.length}</p>
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Total</p>
-          </div>
+          </Card>
         </div>
 
-        <div className="flex gap-1.5">
-          {['pending', 'answered', 'all'].map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setRecDoubtTab(t)}
-              className={cn(
-                'flex-1 rounded-lg px-2 py-1.5 text-[11px] font-black transition',
-                recDoubtTab === t ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
-              )}
-            >
-              {t === 'pending' ? `Pending (${pendingDoubts.length})` : t === 'answered' ? `Answered (${answeredDoubts.length})` : `All (${recDoubts.length})`}
-            </button>
-          ))}
-        </div>
+        <Tabs value={recDoubtTab} onValueChange={setRecDoubtTab}>
+          <TabsList className="grid h-auto w-full grid-cols-3 gap-1.5 bg-transparent p-0">
+            {['pending', 'answered', 'all'].map((t) => (
+              <TabsTrigger
+                key={t}
+                value={t}
+                className="rounded-lg bg-slate-100 px-2 py-1.5 text-[11px] font-black text-slate-600 hover:bg-slate-200 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm"
+              >
+                {t === 'pending' ? `Pending (${pendingDoubts.length})` : t === 'answered' ? `Answered (${answeredDoubts.length})` : `All (${recDoubts.length})`}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
 
         {doubtError && (
-          <p className="rounded-xl border border-rose-100 bg-rose-50 p-3 text-xs font-semibold text-rose-700">{doubtError}</p>
+          <Alert className="rounded-xl border-rose-100 bg-rose-50 p-3 text-xs font-semibold text-rose-700">{doubtError}</Alert>
         )}
 
         {recDoubtsLoading ? (
@@ -945,7 +969,7 @@ export default function TeacherRecordedClassDetails() {
             <Loader2 className="size-7 animate-spin text-blue-500" />
           </div>
         ) : shownDoubts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 py-10 text-center">
+          <Card className="flex flex-col items-center justify-center rounded-2xl border-dashed border-slate-200 bg-slate-50 py-10 text-center shadow-none">
             <HelpCircle className="size-8 text-slate-300" />
             <p className="mt-2 text-sm font-bold text-slate-700">
               {recDoubtTab === 'pending' ? 'No pending doubts' : recDoubtTab === 'answered' ? 'No answered doubts yet' : 'No doubts yet'}
@@ -955,7 +979,7 @@ export default function TeacherRecordedClassDetails() {
                 ? 'All caught up! Check the Answered tab.'
                 : 'When students ask doubts about this subject, they appear here.'}
             </p>
-          </div>
+          </Card>
         ) : (
           <div className="space-y-3">
             {shownDoubts.map((doubt) => {
@@ -963,11 +987,11 @@ export default function TeacherRecordedClassDetails() {
               const isPending = ['escalated', 'open', 'ai_answered'].includes(doubt.status);
               const isReplying = doubtReplyingId === doubt.id;
               return (
-                <article key={doubt.id} className="space-y-3 rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+                <Card key={doubt.id} className="space-y-3 rounded-xl border-slate-100 bg-white p-4 shadow-sm">
                   <div className="flex items-start justify-between gap-2">
-                    <span className={cn('rounded px-1.5 py-0.5 text-[9px] font-black uppercase tracking-widest', meta.tone)}>
+                    <Badge variant="outline" className={cn('rounded border-transparent px-1.5 py-0.5 text-[9px] font-black uppercase tracking-widest', meta.tone)}>
                       {meta.label}
-                    </span>
+                    </Badge>
                     <time className="text-[9px] font-bold uppercase tracking-widest text-slate-400">
                       {doubt.createdAt ? new Date(doubt.createdAt).toLocaleString() : ''}
                     </time>
@@ -979,9 +1003,9 @@ export default function TeacherRecordedClassDetails() {
                     </div>
                     <span className="max-w-[110px] truncate">{doubt.studentName || 'Student'}</span>
                     {(doubt.className || doubt.sectionName) && (
-                      <span className="rounded bg-slate-100 px-1.5 py-0.5">
+                      <Badge variant="outline" className="rounded bg-slate-100 px-1.5 py-0.5 border-transparent">
                         {[doubt.className, doubt.sectionName && `Sec ${doubt.sectionName}`].filter(Boolean).join(' · ')}
-                      </span>
+                      </Badge>
                     )}
                   </div>
 
@@ -990,24 +1014,24 @@ export default function TeacherRecordedClassDetails() {
                   )}
 
                   {doubt.aiExplanation && (
-                    <div className="rounded-lg border border-indigo-100 bg-indigo-50/60 p-2.5">
+                    <Card className="rounded-lg border-indigo-100 bg-indigo-50/60 p-2.5 shadow-none">
                       <p className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-indigo-600">
                         <Sparkles size={10} /> AI response
                       </p>
                       <p className="mt-1 line-clamp-3 text-[11px] font-medium leading-relaxed text-slate-600">{parseAiDoubtAnswer(doubt.aiExplanation)}</p>
-                    </div>
+                    </Card>
                   )}
 
                   {doubt.teacherResponse && (
-                    <div className="rounded-lg border border-emerald-100 bg-emerald-50/60 p-2.5">
+                    <Card className="rounded-lg border-emerald-100 bg-emerald-50/60 p-2.5 shadow-none">
                       <p className="text-[9px] font-black uppercase tracking-widest text-emerald-700">Your answer</p>
                       <p className="mt-1 text-[11px] font-medium leading-relaxed text-slate-700">{doubt.teacherResponse}</p>
-                    </div>
+                    </Card>
                   )}
 
                   {isPending && isReplying ? (
                     <div className="space-y-2.5">
-                      <button
+                      <Button variant={null} size={null}
                         type="button"
                         disabled={doubtAiSuggesting || doubtSubmitting}
                         onClick={() => aiSuggestDoubtReply(doubt.id)}
@@ -1015,43 +1039,43 @@ export default function TeacherRecordedClassDetails() {
                       >
                         {doubtAiSuggesting ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
                         Draft with AI (edit before sending)
-                      </button>
-                      <textarea
+                      </Button>
+                      <Textarea
                         value={doubtReplyText}
                         onChange={(e) => setDoubtReplyText(e.target.value)}
                         rows={4}
                         placeholder="Write your answer for the student..."
-                        className="w-full resize-none rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-xs font-medium text-slate-800 outline-none focus:border-blue-400"
+                        className="min-h-0 w-full resize-none rounded-lg border-slate-200 bg-slate-50 p-2.5 text-xs font-medium text-slate-800"
                       />
                       <div className="flex gap-2">
-                        <button
+                        <Button variant="default" size={null}
                           type="button"
                           disabled={doubtSubmitting || doubtReplyText.trim().length < 5}
                           onClick={() => submitDoubtReply(doubt.id)}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-[11px] font-black text-white hover:bg-blue-700 disabled:opacity-50"
+                          className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-black disabled:opacity-50 shadow-none"
                         >
                           {doubtSubmitting ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
                           Send
-                        </button>
-                        <button
+                        </Button>
+                        <Button variant="ghost" size={null}
                           type="button"
                           onClick={() => { setDoubtReplyingId(null); setDoubtReplyText(''); }}
                           className="rounded-lg px-3 py-1.5 text-[11px] font-bold text-slate-500 hover:bg-slate-100"
                         >
                           Cancel
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ) : isPending ? (
-                    <button
+                    <Button variant="default" size={null}
                       type="button"
                       onClick={() => { setDoubtReplyingId(doubt.id); setDoubtReplyText(''); }}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-[11px] font-black text-white hover:bg-blue-700"
+                      className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-black shadow-none"
                     >
                       <MessageCircle size={11} /> Reply to student
-                    </button>
+                    </Button>
                   ) : null}
-                </article>
+                </Card>
               );
             })}
           </div>
@@ -1071,8 +1095,10 @@ export default function TeacherRecordedClassDetails() {
 
   if (loading) {
     return (
-      <div className="flex h-[60vh] items-center justify-center">
-        <div className="size-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+      <div className="space-y-4 p-4">
+        <Skeleton className="h-8 w-1/2" />
+        <Skeleton className="aspect-video w-full rounded-2xl" />
+        <Skeleton className="h-24 w-full rounded-2xl" />
       </div>
     );
   }
@@ -1080,15 +1106,17 @@ export default function TeacherRecordedClassDetails() {
   if (!recording) {
     return (
       <div className="space-y-6">
-        <Link to="/school/teacher/classes" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-blue-600">
-          <ArrowLeft size={16} />
-          Back to Recorded Classes
-        </Link>
-        <div className="rounded-[2rem] border border-dashed border-slate-200 bg-white p-12 text-center shadow-sm">
+        <Button asChild variant="ghost" className="h-auto gap-2 p-0 text-sm font-bold text-slate-500 hover:bg-transparent hover:text-blue-600">
+          <Link to="/school/teacher/classes">
+            <ArrowLeft size={16} />
+            Back to Recorded Classes
+          </Link>
+        </Button>
+        <Card className="rounded-[2rem] border-dashed border-slate-200 bg-white p-12 text-center shadow-sm">
           <FileText className="mx-auto size-12 text-slate-300" />
           <h2 className="mt-4 text-xl font-bold text-slate-900">Lecture not found</h2>
           <p className="mt-1 text-sm text-slate-500">This recorded lecture is not available right now or may have been removed.</p>
-        </div>
+        </Card>
       </div>
     );
   }
@@ -1097,25 +1125,28 @@ export default function TeacherRecordedClassDetails() {
     <div className="-mx-3 -mb-3 min-h-[calc(100vh-76px)] bg-slate-50 sm:-mx-5 sm:-mb-5 lg:-mx-6 lg:-mb-6 lg:flex lg:h-[calc(100vh-76px)] lg:min-h-0 lg:flex-col lg:overflow-hidden">
       <div className="border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6 lg:shrink-0">
         <div className="flex w-full items-center gap-3">
-          <Link
-            to="/school/teacher/classes"
-            className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-blue-600 hover:text-white"
-            aria-label="Back to recorded classes"
+          <Button
+            asChild
+            variant="secondary"
+            size="icon"
+            className="size-9 shrink-0 rounded-xl border-0 bg-slate-100 text-slate-600 hover:bg-blue-600 hover:text-white"
           >
-            <ArrowLeft size={17} />
-          </Link>
+            <Link to="/school/teacher/classes" aria-label="Back to recorded classes">
+              <ArrowLeft size={17} />
+            </Link>
+          </Button>
           <div className="min-w-0 flex-1">
             <p className="truncate text-[11px] font-bold text-blue-600">{recording.chapter_name || recording.subject_name || 'Recorded Class'}</p>
             <h1 className="truncate text-sm font-black leading-tight text-slate-900">{recording.title}</h1>
           </div>
-          <button
+          <Button variant="outline" size={null}
             type="button"
             onClick={fetchRecordings}
-            className="hidden shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 sm:flex"
+            className="hidden shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold sm:flex"
           >
             <RefreshCw size={13} />
             Refresh
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -1124,44 +1155,62 @@ export default function TeacherRecordedClassDetails() {
           <main className="min-w-0 space-y-4 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:pb-5 scrollbar-hide">
             {renderVideoPlayer()}
 
-            <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+            <Card className="rounded-2xl border-slate-100 bg-white p-5 shadow-sm">
               <div className="flex flex-wrap items-center gap-2">
                 {recording.subject_name && (
-                  <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-blue-700">{recording.subject_name}</span>
+                  <Badge variant="outline" className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-blue-700 border-transparent">{recording.subject_name}</Badge>
                 )}
                 {recording.class_name && (
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold text-slate-600">{recording.class_name}</span>
+                  <Badge variant="outline" className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold text-slate-600 border-transparent">{recording.class_name}</Badge>
                 )}
               </div>
               <h2 className="mt-3 text-xl font-black text-slate-950">{recording.title}</h2>
               {recording.description && <p className="mt-2 text-sm leading-6 text-slate-500">{recording.description}</p>}
 
               <div className="mt-5 flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
-                <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
+                <Badge variant="outline" className="inline-flex items-center gap-1.5 rounded-xl border-slate-100 bg-slate-50 px-3 py-1.5">
                   <CalendarDays size={13} />
                   {dateLabel(recording.recorded_date)}
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
+                </Badge>
+                <Badge variant="outline" className="inline-flex items-center gap-1.5 rounded-xl border-slate-100 bg-slate-50 px-3 py-1.5">
                   <Clock3 size={13} />
                   {recording.duration
                     ? (parseFloat(recording.duration) >= 1 ? `${Math.round(parseFloat(recording.duration))} mins` : `${Math.round(parseFloat(recording.duration) * 60)}s`)
                     : 'Duration pending'}
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
+                </Badge>
+                <Badge variant="outline" className="inline-flex items-center gap-1.5 rounded-xl border-slate-100 bg-slate-50 px-3 py-1.5">
                   <Tag size={13} />
                   {recording.topic_name || recording.chapter_name || 'General topic'}
-                </span>
+                </Badge>
               </div>
-            </section>
+            </Card>
           </main>
 
           <aside className="min-w-0 lg:h-full lg:min-h-0">
-            <section className="flex h-[600px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:h-[calc(100vh-140px)]">
+            <Card className="flex h-[600px] flex-col overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm lg:h-[calc(100vh-140px)]">
               <div className="w-full min-w-0 shrink-0 overflow-hidden">
-                <CourseTabs activeTab={detailTab} onChange={setDetailTab} availableTabs={availableTabs} />
+                <Tabs value={detailTab} onValueChange={setDetailTab} className="w-full">
+                  <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-none border-b border-slate-100 bg-transparent px-2 py-1.5">
+                    {availableTabs.map((tabId) => {
+                      const meta = DETAIL_TAB_META[tabId];
+                      if (!meta) return null;
+                      const TabIcon = meta.icon;
+                      return (
+                        <TabsTrigger
+                          key={tabId}
+                          value={tabId}
+                          className="shrink-0 gap-1.5 rounded-b-none rounded-t-xl border-b-2 border-transparent px-3 py-2.5 text-[11px] font-extrabold text-slate-500 data-[state=active]:border-blue-600 data-[state=active]:bg-blue-50/80 data-[state=active]:text-blue-700 data-[state=active]:shadow-none"
+                        >
+                          <TabIcon size={13} className="shrink-0" />
+                          {meta.label}
+                        </TabsTrigger>
+                      );
+                    })}
+                  </TabsList>
+                </Tabs>
               </div>
               <div className="flex-1 overflow-y-auto p-5 scrollbar-hide">{renderStudyPanel()}</div>
-            </section>
+            </Card>
           </aside>
         </div>
       </div>

@@ -17,17 +17,65 @@ import {
   Trophy,
   Users,
 } from "lucide-react";
-import GlassCard from "@/components/school/GlassCard";
-import Button from "@/components/school/Button";
-import Badge from "@/components/school/Badge";
-import Modal from "@/components/school/Modal";
-import Tabs from "@/components/school/Tabs";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import StatCard from "@/components/school/StatCard";
 import DataTable from "@/components/school/DataTable";
 import AssessmentContentRenderer from "@/components/school/AssessmentContentRenderer";
 import api, { unwrapSchoolData, unwrapSchoolList } from "@/lib/api/school-client";
 import "./AssessmentSystem.css";
-import { CustomSelect } from "@/components/ui/CustomSelect";
+
+const TONE_BADGE: Record<string, string> = {
+  success: "bg-emerald-500/10 text-emerald-700",
+  warning: "bg-amber-500/10 text-amber-700",
+  purple: "bg-violet-500/10 text-violet-700",
+};
+
+function ToneBadge({ tone, className, children }: { tone: string; className?: string; children: React.ReactNode }) {
+  return (
+    <Badge variant="outline" className={cn("border-transparent", TONE_BADGE[tone] ?? TONE_BADGE.purple, className)}>
+      {children}
+    </Badge>
+  );
+}
+
+// shadcn Select for the numeric "per page" pickers.
+function PerPageSelect({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+  return (
+    <Select value={String(value)} onValueChange={(v) => onChange(Number(v))}>
+      <SelectTrigger className="w-full sm:w-36"><SelectValue /></SelectTrigger>
+      <SelectContent>
+        {[5, 10, 20, 50].map((n) => (
+          <SelectItem key={n} value={String(n)}>{n} per page</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function PageControls({ page, totalPages, onPage }: { page: number; totalPages: number; onPage: (fn: (p: number) => number) => void }) {
+  return (
+    <div className="flex items-center gap-2">
+      <Button type="button" variant="outline" size="icon" className="size-8 rounded-lg" disabled={page === 1} onClick={() => onPage((p) => Math.max(1, p - 1))}>
+        <ChevronLeft size={16} />
+      </Button>
+      <span className="px-2 text-xs font-bold text-gray-700">Page {page} of {totalPages}</span>
+      <Button type="button" variant="outline" size="icon" className="size-8 rounded-lg" disabled={page === totalPages} onClick={() => onPage((p) => Math.min(totalPages, p + 1))}>
+        <ChevronRight size={16} />
+      </Button>
+    </div>
+  );
+}
 import {
   DraftResult,
   StructuredAnswerRow,
@@ -55,9 +103,9 @@ export function StructuredAnswersView({
 }) {
   if (!rows.length) {
     return (
-      <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-sm text-gray-500">
+      <Card className="rounded-lg border-dashed border-gray-200 bg-gray-50 p-8 text-center text-sm text-gray-500 shadow-none">
         {emptyText}
-      </div>
+      </Card>
     );
   }
 
@@ -84,18 +132,18 @@ export function StructuredAnswersView({
             const submittedRaw = row.answerText.split(".")[0]?.trim().toLowerCase();
             const correctRaw = String(row.correctAnswer || "").trim().toLowerCase();
             return (
-              <div key={row.id} className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+              <Card key={row.id} className="rounded-lg border-gray-200 bg-gray-50 p-3 shadow-none">
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-md bg-white px-2 py-0.5 text-xs font-black text-gray-700">Q{row.number}</span>
-                    <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-blue-700">
+                    <Badge variant="outline" className="rounded-md border-transparent bg-white px-2 py-0.5 text-xs font-black text-gray-700">Q{row.number}</Badge>
+                    <Badge variant="outline" className="rounded-md border-transparent bg-blue-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-blue-700">
                       {row.type.replace(/_/g, " ")}
-                    </span>
+                    </Badge>
                   </div>
                   {row.marksAwarded !== undefined && row.marksTotal !== undefined && (
-                    <span className="rounded-md bg-emerald-50 px-2 py-1 text-xs font-black text-emerald-700">
+                    <Badge variant="outline" className="rounded-md border-transparent bg-emerald-50 px-2 py-1 text-xs font-black text-emerald-700">
                       {row.marksAwarded}/{row.marksTotal} marks
-                    </span>
+                    </Badge>
                   )}
                 </div>
                 <div className="text-xs font-semibold leading-5 text-gray-700">
@@ -139,7 +187,7 @@ export function StructuredAnswersView({
                     <AssessmentContentRenderer className="min-w-0 flex-1 [&_p]:my-0">{row.correctAnswer}</AssessmentContentRenderer>
                   </div>
                 )}
-              </div>
+              </Card>
             );
           })}
         </section>
@@ -522,11 +570,24 @@ const AssessmentDetails: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="p-12 text-center text-gray-500">Loading assessment...</div>;
+    return (
+      <div className="w-full space-y-6 p-4 sm:p-6">
+        <div className="space-y-2">
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-9 w-2/3 max-w-lg" />
+        </div>
+        <Skeleton className="h-11 w-full rounded-xl" />
+        <Skeleton className="h-72 w-full rounded-2xl" />
+      </div>
+    );
   }
 
   if (!assessment) {
-    return <div className="p-12 text-center text-red-500">Assessment not found</div>;
+    return (
+      <div className="w-full p-4 sm:p-6">
+        <Card className="rounded-2xl border-dashed border-red-200 bg-white p-12 text-center text-red-500 shadow-none">Assessment not found</Card>
+      </div>
+    );
   }
 
   const attemptsColumns = [
@@ -547,7 +608,7 @@ const AssessmentDetails: React.FC = () => {
       title: "Submission",
       render: (_: any, student: any) => {
         const hasSubmission = submissionMap.has(String(student.id));
-        return hasSubmission ? <Badge variant="success">Submitted</Badge> : <Badge variant="warning">No upload</Badge>;
+        return hasSubmission ? <ToneBadge tone="success">Submitted</ToneBadge> : <ToneBadge tone="warning">No upload</ToneBadge>;
       },
     },
     {
@@ -556,7 +617,7 @@ const AssessmentDetails: React.FC = () => {
       render: (_: any, student: any) => {
         const draft = drafts[student.id];
         return (
-          <input
+          <Input
             type="number"
             min="0"
             max={totalMarks}
@@ -568,7 +629,7 @@ const AssessmentDetails: React.FC = () => {
               const pct = percentage(Number(marks || 0), totalMarks);
               updateDraft(student.id, { marksObtained: marks, grade: marks === "" ? "" : gradeFromPercent(pct) });
             }}
-            className="w-24 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500 disabled:bg-gray-100"
+            className="h-9 w-full md:w-24"
           />
         );
       },
@@ -577,10 +638,10 @@ const AssessmentDetails: React.FC = () => {
       key: "grade",
       title: "Grade",
       render: (_: any, student: any) => (
-        <input
+        <Input
           value={drafts[student.id]?.grade || ""}
           onChange={(event) => updateDraft(student.id, { grade: event.target.value })}
-          className="w-20 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+          className="h-9 w-full md:w-20"
         />
       ),
     },
@@ -588,11 +649,10 @@ const AssessmentDetails: React.FC = () => {
       key: "absent",
       title: "Absent",
       render: (_: any, student: any) => (
-        <input
-          type="checkbox"
+        <Checkbox
           checked={Boolean(drafts[student.id]?.isAbsent)}
-          onChange={(event) => updateDraft(student.id, { isAbsent: event.target.checked })}
-          className="size-4"
+          onCheckedChange={(checked) => updateDraft(student.id, { isAbsent: checked === true })}
+          aria-label="Absent"
         />
       ),
     },
@@ -600,11 +660,11 @@ const AssessmentDetails: React.FC = () => {
       key: "remarks",
       title: "Remarks",
       render: (_: any, student: any) => (
-        <input
+        <Input
           value={drafts[student.id]?.remarks || ""}
           onChange={(event) => updateDraft(student.id, { remarks: event.target.value })}
           placeholder="Optional"
-          className="min-w-48 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+          className="h-9 w-full md:min-w-48"
         />
       ),
     },
@@ -613,8 +673,8 @@ const AssessmentDetails: React.FC = () => {
       title: "Status",
       render: (_: any, student: any) => (
         resultMap.has(String(student.id))
-          ? <Badge variant="success">Saved</Badge>
-          : <Badge variant="warning">Pending</Badge>
+          ? <ToneBadge tone="success">Saved</ToneBadge>
+          : <ToneBadge tone="warning">Pending</ToneBadge>
       ),
     },
     {
@@ -622,20 +682,12 @@ const AssessmentDetails: React.FC = () => {
       title: "Actions",
       render: (_: any, student: any) => (
         <div className="flex flex-wrap gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            icon={<Eye size={14} />}
-            onClick={() => openSubmissionReview(student)}
-          >
+          <Button size="sm" variant="outline" className="gap-1.5" onClick={() => openSubmissionReview(student)}>
+            <Eye size={14} />
             Open
           </Button>
-          <Button
-            size="sm"
-            icon={<Save size={14} />}
-            onClick={() => saveStudentResult(student)}
-            disabled={savingId === student.id}
-          >
+          <Button size="sm" className="gap-1.5" onClick={() => saveStudentResult(student)} disabled={savingId === student.id}>
+            <Save size={14} />
             {savingId === student.id ? "Saving..." : "Save"}
           </Button>
         </div>
@@ -643,39 +695,35 @@ const AssessmentDetails: React.FC = () => {
     },
   ];
 
+  const emptyBox = (text: string, extra = "") => (
+    <Card className={cn("rounded-xl border-dashed border-gray-200 bg-gray-50 p-8 text-center text-gray-500 shadow-none sm:p-10", extra)}>
+      {text}
+    </Card>
+  );
+
   const attemptsContent = (
-    <GlassCard>
-      <div className="mb-5 flex flex-col gap-4 border-b border-gray-100 pb-5 sm:flex-row sm:items-center sm:justify-between">
+    <Card className="rounded-2xl border-gray-100 bg-white p-4 shadow-sm sm:p-[18px]">
+      <div className="mb-5 flex flex-col gap-4 border-b border-gray-100 pb-5 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h3 className="text-lg font-bold text-gray-900">Marks Entry</h3>
           <p className="text-sm text-gray-500">
             {filteredStudents.length} of {students.length} student{students.length === 1 ? "" : "s"} in this roster.
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+        <div className="flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-center lg:w-auto">
           {students.length > 0 && (
             <>
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
-                <input
+                <Input
                   type="text"
                   value={marksSearch}
                   onChange={(e) => setMarksSearch(e.target.value)}
                   placeholder="Search by student name or roll..."
-                  className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-4 text-xs font-semibold outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                  className="h-9 w-full bg-white pl-9 pr-4 text-xs font-semibold"
                 />
               </div>
-              <CustomSelect
-                onChange={setMarksLimit}
-                value={marksLimit}
-                options={[
-                  { value: 5, label: "5 per page" },
-                  { value: 10, label: "10 per page" },
-                  { value: 20, label: "20 per page" },
-                  { value: 50, label: "50 per page" },
-                ]}
-                className="w-full sm:w-36"
-              />
+              <PerPageSelect value={marksLimit} onChange={setMarksLimit} />
             </>
           )}
           <Button variant="outline" onClick={() => markAssessmentStatus("completed")} className="w-full sm:w-auto">
@@ -686,51 +734,66 @@ const AssessmentDetails: React.FC = () => {
       {students.length ? (
         filteredStudents.length ? (
           <div className="space-y-4">
-            <DataTable columns={attemptsColumns} data={paginatedStudents} />
+            {/* Phones: one card per student */}
+            <div className="space-y-3 md:hidden">
+              {paginatedStudents.map((student: any) => {
+                const col = (key: string) => attemptsColumns.find((c) => c.key === key)!;
+                return (
+                  <Card key={student.id} className="space-y-3 rounded-xl border-gray-100 p-4 shadow-none">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">{col("name").render!(null, student)}</div>
+                      {col("status").render!(null, student)}
+                    </div>
+                    <div>{col("submission").render!(null, student)}</div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-[11px] font-bold uppercase tracking-wide text-gray-500">Marks</Label>
+                        {col("marks").render!(null, student)}
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[11px] font-bold uppercase tracking-wide text-gray-500">Grade</Label>
+                        {col("grade").render!(null, student)}
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px] font-bold uppercase tracking-wide text-gray-500">Remarks</Label>
+                      {col("remarks").render!(null, student)}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {col("absent").render!(null, student)}
+                      <Label className="text-xs font-bold text-gray-600">Mark absent</Label>
+                    </div>
+                    <div className="border-t border-gray-100 pt-3">{col("actions").render!(null, student)}</div>
+                  </Card>
+                );
+              })}
+            </div>
 
-            {/* Pagination Controls */}
+            {/* Tablet / desktop table */}
+            <div className="hidden md:block">
+              <DataTable columns={attemptsColumns} data={paginatedStudents} />
+            </div>
+
             {totalMarksPages > 1 && (
-              <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-4">
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-4">
                 <p className="text-xs font-semibold text-gray-500">
                   Showing <span className="font-bold text-gray-800">{Math.min(marksPage * marksLimit, filteredStudents.length)}</span> of <span className="font-bold text-gray-800">{filteredStudents.length}</span> students
                 </p>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setMarksPage((p) => Math.max(1, p - 1))}
-                    disabled={marksPage === 1}
-                    className="flex size-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white transition"
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
-                  <span className="text-xs font-bold text-gray-700 px-2">
-                    Page {marksPage} of {totalMarksPages}
-                  </span>
-                  <button
-                    onClick={() => setMarksPage((p) => Math.min(totalMarksPages, p + 1))}
-                    disabled={marksPage === totalMarksPages}
-                    className="flex size-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white transition"
-                  >
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
+                <PageControls page={marksPage} totalPages={totalMarksPages} onPage={setMarksPage} />
               </div>
             )}
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-10 text-center text-gray-500">
-            No students found matching your search.
-          </div>
+          emptyBox("No students found matching your search.")
         )
       ) : (
-        <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-10 text-center text-gray-500">
-          No students found for this assessment class or section.
-        </div>
+        emptyBox("No students found for this assessment class or section.")
       )}
-    </GlassCard>
+    </Card>
   );
 
   const leaderboardContent = (
-    <GlassCard>
+    <Card className="rounded-2xl border-gray-100 bg-white p-4 shadow-sm sm:p-[18px]">
       <div className="mb-6 flex items-center gap-2">
         <Trophy size={20} className="text-yellow-500" />
         <h3 className="text-lg font-bold text-gray-900">Leaderboard</h3>
@@ -751,12 +814,10 @@ const AssessmentDetails: React.FC = () => {
             </div>
           ))
         ) : (
-          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-gray-500">
-            Save marks to build the leaderboard.
-          </div>
+          emptyBox("Save marks to build the leaderboard.")
         )}
       </div>
-    </GlassCard>
+    </Card>
   );
 
   const analyticsContent = (
@@ -768,9 +829,9 @@ const AssessmentDetails: React.FC = () => {
         <StatCard title="Distinction Rate" value={`${analytics.distinctionRate}%`} icon={<Trophy size={24} />} gradient="var(--gradient-secondary)" />
       </div>
 
-      <GlassCard>
+      <Card className="rounded-2xl border-gray-100 bg-white p-4 shadow-sm sm:p-[18px]">
         <h3 className="assessment__grade-title">Grade Distribution</h3>
-        <div className="assessment__grade-chart mt-6">
+        <div className="assessment__grade-chart mt-6 overflow-x-auto">
           {analytics.gradeDistribution.map((grade) => (
             <div key={grade.grade} className="assessment__grade-bar-wrapper">
               <div className="assessment__grade-bar" style={{ height: `${Math.max(grade.count, 1) * 24}px` }} />
@@ -779,95 +840,86 @@ const AssessmentDetails: React.FC = () => {
             </div>
           ))}
         </div>
-      </GlassCard>
+      </Card>
     </div>
   );
 
   const questionPaperContent = (
-    <div className="space-y-5">
-      <GlassCard className="flex flex-col h-full">
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-gray-100 pb-4">
-          <div>
-            <h3 className="text-lg font-bold text-gray-900">Question Paper & Instructions</h3>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Source: {assessment.content_source || "metadata only"} | Scheduled: {assessment.scheduled_date ? new Date(assessment.scheduled_date).toLocaleDateString() : "Not scheduled"}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            {resolveUploadUrl(assessment.file_path) && (
-              <a
-                href={resolveUploadUrl(assessment.file_path) || "#"}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-lg border border-brand-200 px-3.5 py-2 text-xs font-bold text-brand-700 hover:bg-brand-50 transition"
-              >
+    <Card className="flex h-full flex-col rounded-2xl border-gray-100 bg-white p-4 shadow-sm sm:p-[18px]">
+      <div className="mb-6 flex flex-col gap-4 border-b border-gray-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="text-lg font-bold text-gray-900">Question Paper &amp; Instructions</h3>
+          <p className="mt-0.5 text-xs text-gray-500">
+            Source: {assessment.content_source || "metadata only"} | Scheduled: {assessment.scheduled_date ? new Date(assessment.scheduled_date).toLocaleDateString() : "Not scheduled"}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          {resolveUploadUrl(assessment.file_path) && (
+            <Button asChild variant="outline" size="sm" className="gap-2 border-brand-200 font-bold text-brand-700 hover:bg-brand-50 hover:text-brand-700">
+              <a href={resolveUploadUrl(assessment.file_path) || "#"} target="_blank" rel="noreferrer">
                 <Download size={14} />
                 Open uploaded file
               </a>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-amber-300 bg-amber-50/20 text-amber-800 hover:bg-amber-100/50 font-bold"
-              icon={<Key size={14} />}
-              onClick={() => setActiveTabId("answer-key")}
-            >
-              Answer Key
             </Button>
-          </div>
-        </div>
-
-        {assessment.content_text ? (
-          <div className="rounded-xl bg-gray-50 p-6 text-sm leading-7 text-gray-800 border border-gray-105 shadow-sm font-sans select-none">
-            <AssessmentContentRenderer>{assessment.content_text}</AssessmentContentRenderer>
-          </div>
-        ) : (
-          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-12 text-center text-gray-500 flex-1 flex items-center justify-center">
-            No manual or AI text was added for this assessment.
-          </div>
-        )}
-      </GlassCard>
-    </div>
-  );
-
-  const answerKeyContent = (
-    <div className="space-y-5">
-      <GlassCard className="flex flex-col h-full border border-amber-200/60 bg-amber-50/5">
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-amber-100 pb-4">
-          <div>
-            <h3 className="text-lg font-bold text-amber-950 flex items-center gap-2">
-              <Key className="size-5 text-amber-600" />
-              Answer Key & Marking Scheme
-            </h3>
-            <p className="text-xs text-amber-700/80 mt-0.5">Reference solutions & evaluation guide for teachers only</p>
-          </div>
+          )}
           <Button
             variant="outline"
             size="sm"
-            className="border-brand-200 bg-white text-brand-700 hover:bg-brand-50 font-bold"
-            icon={<FileText size={14} />}
-            onClick={() => setActiveTabId("questions")}
+            className="gap-1.5 border-amber-300 bg-amber-50/20 font-bold text-amber-800 hover:bg-amber-100/50 hover:text-amber-800"
+            onClick={() => setActiveTabId("answer-key")}
           >
-            Questions
+            <Key size={14} />
+            Answer Key
           </Button>
         </div>
+      </div>
 
-        {assessment.answer_key ? (
-          <div className="rounded-xl bg-white p-6 text-sm leading-7 text-gray-800 border border-amber-100 shadow-sm font-sans select-none">
-            <AssessmentContentRenderer>{assessment.answer_key}</AssessmentContentRenderer>
-          </div>
-        ) : (
-          <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/20 p-12 text-center text-amber-800 flex-1 flex items-center justify-center">
-            No answer key has been provided for this assessment.
-          </div>
-        )}
-      </GlassCard>
-    </div>
+      {assessment.content_text ? (
+        <div className="select-none rounded-xl border border-gray-100 bg-gray-50 p-4 font-sans text-sm leading-7 text-gray-800 shadow-sm sm:p-6">
+          <AssessmentContentRenderer>{assessment.content_text}</AssessmentContentRenderer>
+        </div>
+      ) : (
+        emptyBox("No manual or AI text was added for this assessment.", "flex flex-1 items-center justify-center")
+      )}
+    </Card>
+  );
+
+  const answerKeyContent = (
+    <Card className="flex h-full flex-col rounded-2xl border-amber-200/60 bg-amber-50/5 p-4 shadow-sm sm:p-[18px]">
+      <div className="mb-6 flex flex-col gap-4 border-b border-amber-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="flex items-center gap-2 text-lg font-bold text-amber-950">
+            <Key className="size-5 text-amber-600" />
+            Answer Key &amp; Marking Scheme
+          </h3>
+          <p className="mt-0.5 text-xs text-amber-700/80">Reference solutions &amp; evaluation guide for teachers only</p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5 border-brand-200 bg-white font-bold text-brand-700 hover:bg-brand-50 hover:text-brand-700"
+          onClick={() => setActiveTabId("questions")}
+        >
+          <FileText size={14} />
+          Questions
+        </Button>
+      </div>
+
+      {assessment.answer_key ? (
+        <div className="select-none rounded-xl border border-amber-100 bg-white p-4 font-sans text-sm leading-7 text-gray-800 shadow-sm sm:p-6">
+          <AssessmentContentRenderer>{assessment.answer_key}</AssessmentContentRenderer>
+        </div>
+      ) : (
+        <Card className="flex flex-1 items-center justify-center rounded-xl border-dashed border-amber-200 bg-amber-50/20 p-12 text-center text-amber-800 shadow-none">
+          No answer key has been provided for this assessment.
+        </Card>
+      )}
+    </Card>
   );
 
   const submissionsContent = (
-    <GlassCard>
-      <div className="mb-5 flex flex-col gap-4 border-b border-gray-100 pb-5 sm:flex-row sm:items-center sm:justify-between">
+    <Card className="rounded-2xl border-gray-100 bg-white p-4 shadow-sm sm:p-[18px]">
+      <div className="mb-5 flex flex-col gap-4 border-b border-gray-100 pb-5 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h3 className="text-lg font-bold text-gray-900">Student Submissions</h3>
           <p className="text-sm text-gray-500">
@@ -875,28 +927,18 @@ const AssessmentDetails: React.FC = () => {
           </p>
         </div>
         {submissions.length > 0 && (
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          <div className="flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-center lg:w-auto">
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
-              <input
+              <Input
                 type="text"
                 value={submissionsSearch}
                 onChange={(e) => setSubmissionsSearch(e.target.value)}
                 placeholder="Search by student name..."
-                className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-4 text-xs font-semibold outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                className="h-9 w-full bg-white pl-9 pr-4 text-xs font-semibold"
               />
             </div>
-            <CustomSelect
-              onChange={setSubmissionsLimit}
-              value={submissionsLimit}
-              options={[
-                { value: 5, label: "5 per page" },
-                { value: 10, label: "10 per page" },
-                { value: 20, label: "20 per page" },
-                { value: 50, label: "50 per page" },
-              ]}
-              className="w-full sm:w-36"
-            />
+            <PerPageSelect value={submissionsLimit} onChange={setSubmissionsLimit} />
           </div>
         )}
       </div>
@@ -908,7 +950,7 @@ const AssessmentDetails: React.FC = () => {
               const structuredRows = getStructuredAnswerRows(assessment, submission);
               const hasAnswerText = Boolean(submission.answer_text?.trim());
               return (
-                <div key={submission.id} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+                <Card key={submission.id} className="rounded-xl border-gray-100 bg-white p-4 shadow-sm">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <p className="font-semibold text-gray-900">{submission.student_name || "Student"}</p>
@@ -929,7 +971,7 @@ const AssessmentDetails: React.FC = () => {
                       <Button
                         size="sm"
                         variant="outline"
-                        icon={<Eye size={14} />}
+                        className="gap-1.5"
                         onClick={() => openSubmissionReview({
                           id: submission.student_user_id,
                           name: submission.student_name || "Student",
@@ -939,64 +981,39 @@ const AssessmentDetails: React.FC = () => {
                           },
                         })}
                       >
+                        <Eye size={14} />
                         Review
                       </Button>
                       {fileUrl && (
-                        <a
-                          href={fileUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-brand-200 px-4 py-2 text-sm font-bold text-brand-700 hover:bg-brand-50"
-                        >
-                          <Download size={14} />
-                          Open file
-                        </a>
+                        <Button asChild variant="outline" size="sm" className="gap-2 border-brand-200 font-bold text-brand-700 hover:bg-brand-50 hover:text-brand-700">
+                          <a href={fileUrl} target="_blank" rel="noreferrer">
+                            <Download size={14} />
+                            Open file
+                          </a>
+                        </Button>
                       )}
                     </div>
                   </div>
-                </div>
+                </Card>
               );
             })}
 
-            {/* Pagination Controls */}
             {totalSubmissionsPages > 1 && (
-              <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-4">
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-4">
                 <p className="text-xs font-semibold text-gray-500">
                   Showing <span className="font-bold text-gray-800">{paginatedSubmissions.length}</span> of <span className="font-bold text-gray-800">{filteredSubmissions.length}</span> submissions
                 </p>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setSubmissionsPage((p) => Math.max(1, p - 1))}
-                    disabled={submissionsPage === 1}
-                    className="flex size-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white transition"
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
-                  <span className="text-xs font-bold text-gray-700 px-2">
-                    Page {submissionsPage} of {totalSubmissionsPages}
-                  </span>
-                  <button
-                    onClick={() => setSubmissionsPage((p) => Math.min(totalSubmissionsPages, p + 1))}
-                    disabled={submissionsPage === totalSubmissionsPages}
-                    className="flex size-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white transition"
-                  >
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
+                <PageControls page={submissionsPage} totalPages={totalSubmissionsPages} onPage={setSubmissionsPage} />
               </div>
             )}
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-10 text-center text-gray-500">
-            No submissions found matching your search.
-          </div>
+          emptyBox("No submissions found matching your search.")
         )
       ) : (
-        <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-10 text-center text-gray-500">
-          No students have submitted this assessment online yet.
-        </div>
+        emptyBox("No students have submitted this assessment online yet.")
       )}
-    </GlassCard>
+    </Card>
   );
 
   const reviewSubmission = reviewStudent ? submissionMap.get(String(reviewStudent.id)) : null;
@@ -1004,150 +1021,177 @@ const AssessmentDetails: React.FC = () => {
   const reviewFileUrl = resolveUploadUrl(reviewSubmission?.file_path || reviewSubmission?.filePath);
   const reviewStructuredRows = getStructuredAnswerRows(assessment, reviewSubmission, { includeBlank: true });
 
+  const activeTab = activeTabId === "overview" ? "questions" : activeTabId;
+  const tabContent: Record<string, React.ReactNode> = {
+    questions: questionPaperContent,
+    "answer-key": answerKeyContent,
+    submissions: submissionsContent,
+    attempts: attemptsContent,
+    leaderboard: leaderboardContent,
+    analytics: analyticsContent,
+  };
+
   return (
-    <div className="w-full space-y-6 p-6">
+    <div className="w-full space-y-6 p-4 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <div className="mb-2 flex items-center gap-3">
-            <Badge variant="purple">{String(assessment.type || assessment.assessment_type || "Test").toUpperCase()}</Badge>
-            <Badge variant={assessment.status === "completed" ? "success" : "warning"}>{assessment.status || "Draft"}</Badge>
+        <div className="min-w-0">
+          <div className="mb-2 flex flex-wrap items-center gap-2 sm:gap-3">
+            <ToneBadge tone="purple">{String(assessment.type || assessment.assessment_type || "Test").toUpperCase()}</ToneBadge>
+            <ToneBadge tone={assessment.status === "completed" ? "success" : "warning"}>{assessment.status || "Draft"}</ToneBadge>
           </div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">{assessment.title}</h1>
-          <p className="mt-1 flex items-center gap-3 text-sm font-medium text-gray-500">
+          <h1 className="font-display text-xl font-bold tracking-tight text-gray-900 sm:text-3xl">{assessment.title}</h1>
+          <p className="mt-1 flex flex-wrap items-center gap-x-3 text-sm font-medium text-gray-500">
             <span>Total Marks: {totalMarks}</span>
-            <span>|</span>
+            <span className="hidden sm:inline">|</span>
             <span>Duration: {assessment.duration_minutes || 60} mins</span>
           </p>
         </div>
-        <Button variant="outline" size="sm" icon={<ChevronLeft size={16} />} onClick={goBackToPreviousPage}>
+        <Button variant="outline" size="sm" className="gap-1.5 self-start sm:self-auto" onClick={goBackToPreviousPage}>
+          <ChevronLeft size={16} />
           Back to Assessments
         </Button>
       </div>
 
       <Tabs
-        activeTabId={activeTabId === "overview" ? "questions" : activeTabId}
-        onChange={(tabId) => {
+        value={activeTab}
+        onValueChange={(tabId) => {
           setActiveTabId(tabId);
           setMarksSearch("");
         }}
-        tabs={[
-          { id: "questions", label: "Questions", icon: <FileText size={16} />, content: questionPaperContent },
-          { id: "answer-key", label: "Answer Key", icon: <Key size={16} />, content: answerKeyContent },
-          { id: "submissions", label: "Submissions", icon: <FileText size={16} />, content: submissionsContent },
-          { id: "attempts", label: "Marks Entry", icon: <Users size={16} />, content: attemptsContent },
-          { id: "leaderboard", label: "Leaderboard", icon: <Trophy size={16} />, content: leaderboardContent },
-          { id: "analytics", label: "Analytics", icon: <BarChart3 size={16} />, content: analyticsContent },
-        ]}
-      />
-
-      <Modal
-        isOpen={Boolean(reviewStudent)}
-        onClose={() => setReviewStudent(null)}
-        title={`Review Submission - ${reviewStudent?.name || reviewSubmission?.student_name || "Student"}`}
-        size="full"
       >
-        {reviewStudent && (
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-            <div className="rounded-xl border border-gray-200 bg-white p-4">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <h3 className="text-sm font-black uppercase tracking-wide text-gray-700">Student Submission</h3>
-                {reviewFileUrl && (
-                  <a
-                    href={reviewFileUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-lg border border-brand-200 px-3 py-1.5 text-xs font-bold text-brand-700 hover:bg-brand-50"
-                  >
-                    <Download size={13} />
-                    Open file
-                  </a>
-                )}
+        <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border border-gray-100 bg-white p-1.5 shadow-sm">
+          {[
+            { id: "questions", label: "Questions", icon: <FileText size={16} /> },
+            { id: "answer-key", label: "Answer Key", icon: <Key size={16} /> },
+            { id: "submissions", label: "Submissions", icon: <FileText size={16} /> },
+            { id: "attempts", label: "Marks Entry", icon: <Users size={16} /> },
+            { id: "leaderboard", label: "Leaderboard", icon: <Trophy size={16} /> },
+            { id: "analytics", label: "Analytics", icon: <BarChart3 size={16} /> },
+          ].map((t) => (
+            <TabsTrigger
+              key={t.id}
+              value={t.id}
+              className="shrink-0 gap-2 rounded-lg px-3 py-2 text-xs font-bold text-gray-500 data-[state=active]:bg-brand-600 data-[state=active]:text-white data-[state=active]:shadow-sm sm:text-sm"
+            >
+              {t.icon}
+              {t.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+      <div>{tabContent[activeTab]}</div>
+
+      <Dialog open={Boolean(reviewStudent)} onOpenChange={(open) => { if (!open) setReviewStudent(null); }}>
+        <DialogContent className="flex h-[92vh] w-[calc(100%-1rem)] max-w-6xl flex-col gap-0 overflow-hidden rounded-2xl p-0 sm:rounded-2xl">
+          <DialogHeader className="shrink-0 border-b border-gray-100 p-4 pr-12 text-left sm:p-5 sm:pr-14">
+            <DialogTitle className="text-base font-bold leading-normal tracking-normal sm:text-lg">
+              Review Submission - {reviewStudent?.name || reviewSubmission?.student_name || "Student"}
+            </DialogTitle>
+            <DialogDescription className="sr-only">Read the submission, then save marks and remarks.</DialogDescription>
+          </DialogHeader>
+
+          <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+            {reviewStudent && (
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+                <Card className="min-w-0 rounded-xl border-gray-200 bg-white p-4 shadow-none">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                    <h3 className="text-sm font-black uppercase tracking-wide text-gray-700">Student Submission</h3>
+                    {reviewFileUrl && (
+                      <Button asChild variant="outline" size="sm" className="gap-2 border-brand-200 text-xs font-bold text-brand-700 hover:bg-brand-50 hover:text-brand-700">
+                        <a href={reviewFileUrl} target="_blank" rel="noreferrer">
+                          <Download size={13} />
+                          Open file
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                  {reviewSubmission?.answer_text ? (
+                    <div className="max-h-[70vh] overflow-auto rounded-lg bg-gray-50 p-4 text-sm leading-6 text-gray-800">
+                      <AssessmentContentRenderer>{reviewSubmission.answer_text}</AssessmentContentRenderer>
+                    </div>
+                  ) : reviewStructuredRows.length ? (
+                    <div className="max-h-[70vh] overflow-auto rounded-lg bg-white p-1">
+                      <StructuredAnswersView rows={reviewStructuredRows} />
+                    </div>
+                  ) : (
+                    emptyBox("No typed or selected answers were found. Use the uploaded file if available.", "p-8 text-sm")
+                  )}
+                </Card>
+
+                <Card className="h-fit rounded-xl border-gray-200 bg-white p-4 shadow-sm">
+                  <h3 className="text-base font-black text-gray-900">Grade This Submission</h3>
+                  <p className="mt-1 text-xs font-medium text-gray-500">
+                    Review the submission, then save marks and remarks.
+                  </p>
+                  <div className="mt-4 space-y-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="review-marks" className="text-xs font-bold uppercase tracking-wide text-gray-500">
+                        Marks out of {totalMarks}
+                      </Label>
+                      <Input
+                        id="review-marks"
+                        type="number"
+                        min="0"
+                        max={totalMarks}
+                        value={reviewDraft?.marksObtained || ""}
+                        disabled={reviewDraft?.isAbsent}
+                        onChange={(event) => {
+                          const raw = event.target.value;
+                          const marks = raw === "" ? "" : String(clampMarks(Number(raw), totalMarks));
+                          const pct = percentage(Number(marks || 0), totalMarks);
+                          updateDraft(reviewStudent.id, {
+                            marksObtained: marks,
+                            grade: marks === "" ? "" : gradeFromPercent(pct),
+                          });
+                        }}
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="review-grade" className="text-xs font-bold uppercase tracking-wide text-gray-500">Grade</Label>
+                      <Input
+                        id="review-grade"
+                        value={reviewDraft?.grade || ""}
+                        onChange={(event) => updateDraft(reviewStudent.id, { grade: event.target.value })}
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="review-absent"
+                        checked={Boolean(reviewDraft?.isAbsent)}
+                        onCheckedChange={(checked) => updateDraft(reviewStudent.id, { isAbsent: checked === true })}
+                      />
+                      <Label htmlFor="review-absent" className="text-sm font-semibold text-gray-700">Mark absent</Label>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="review-remarks" className="text-xs font-bold uppercase tracking-wide text-gray-500">Remarks</Label>
+                      <Textarea
+                        id="review-remarks"
+                        value={reviewDraft?.remarks || ""}
+                        onChange={(event) => updateDraft(reviewStudent.id, { remarks: event.target.value })}
+                        rows={5}
+                        placeholder="Add feedback or note questions checked manually."
+                        className="min-h-0 resize-none"
+                      />
+                    </div>
+
+                    <Button
+                      className="w-full justify-center gap-2"
+                      onClick={() => saveStudentResult(reviewStudent)}
+                      disabled={savingId === reviewStudent.id}
+                    >
+                      <Save size={16} />
+                      {savingId === reviewStudent.id ? "Saving..." : "Save Grade"}
+                    </Button>
+                  </div>
+                </Card>
               </div>
-              {reviewSubmission?.answer_text ? (
-                <div className="max-h-[70vh] overflow-auto rounded-lg bg-gray-50 p-4 text-sm leading-6 text-gray-800">
-                  <AssessmentContentRenderer>{reviewSubmission.answer_text}</AssessmentContentRenderer>
-                </div>
-              ) : reviewStructuredRows.length ? (
-                <div className="max-h-[70vh] overflow-auto rounded-lg bg-white p-1">
-                  <StructuredAnswersView rows={reviewStructuredRows} />
-                </div>
-              ) : (
-                <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-sm text-gray-500">
-                  No typed or selected answers were found. Use the uploaded file if available.
-                </div>
-              )}
-            </div>
-
-            <div className="h-fit rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-              <h3 className="text-base font-black text-gray-900">Grade This Submission</h3>
-              <p className="mt-1 text-xs font-medium text-gray-500">
-                Review the submission, then save marks and remarks.
-              </p>
-              <div className="mt-4 space-y-3">
-                <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">
-                  Marks out of {totalMarks}
-                  <input
-                    type="number"
-                    min="0"
-                    max={totalMarks}
-                    value={reviewDraft?.marksObtained || ""}
-                    disabled={reviewDraft?.isAbsent}
-                    onChange={(event) => {
-                      const raw = event.target.value;
-                      const marks = raw === "" ? "" : String(clampMarks(Number(raw), totalMarks));
-                      const pct = percentage(Number(marks || 0), totalMarks);
-                      updateDraft(reviewStudent.id, {
-                        marksObtained: marks,
-                        grade: marks === "" ? "" : gradeFromPercent(pct),
-                      });
-                    }}
-                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500 disabled:bg-gray-100"
-                  />
-                </label>
-
-                <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">
-                  Grade
-                  <input
-                    value={reviewDraft?.grade || ""}
-                    onChange={(event) => updateDraft(reviewStudent.id, { grade: event.target.value })}
-                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500"
-                  />
-                </label>
-
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(reviewDraft?.isAbsent)}
-                    onChange={(event) => updateDraft(reviewStudent.id, { isAbsent: event.target.checked })}
-                    className="size-4"
-                  />
-                  Mark absent
-                </label>
-
-                <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">
-                  Remarks
-                  <textarea
-                    value={reviewDraft?.remarks || ""}
-                    onChange={(event) => updateDraft(reviewStudent.id, { remarks: event.target.value })}
-                    rows={5}
-                    placeholder="Add feedback or note questions checked manually."
-                    className="mt-1 w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500"
-                  />
-                </label>
-
-                <Button
-                  className="w-full justify-center"
-                  icon={<Save size={16} />}
-                  onClick={() => saveStudentResult(reviewStudent)}
-                  disabled={savingId === reviewStudent.id}
-                >
-                  {savingId === reviewStudent.id ? "Saving..." : "Save Grade"}
-                </Button>
-              </div>
-            </div>
+            )}
           </div>
-        )}
-      </Modal>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

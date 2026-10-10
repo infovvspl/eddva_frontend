@@ -7,6 +7,15 @@ import {
 import api from '@/lib/api/school-client';
 import { exportToPDF } from '@/lib/school/pdfExport';
 import { cn } from '@/lib/utils';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 /**
  * Read-only student detail view for teachers — same underlying data as the
@@ -124,23 +133,26 @@ const StudentProfile: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="p-8 text-center text-slate-500 font-bold animate-pulse">Loading Profile...</div>;
+    return (
+      <div className="w-full space-y-4 px-4 sm:px-0">
+        <Skeleton className="h-9 w-40" />
+        <Skeleton className="h-44 w-full rounded-3xl" />
+        <Skeleton className="h-72 w-full rounded-3xl" />
+      </div>
+    );
   }
 
   if (!student || error) {
     return (
-      <div className="p-12 text-center">
-        <div className="max-w-md mx-auto p-8 rounded-3xl bg-red-50 border border-red-100 shadow-xl shadow-red-200/20">
+      <div className="p-4 text-center sm:p-12">
+        <Card className="mx-auto max-w-md rounded-3xl border-red-100 bg-red-50 p-8 shadow-xl shadow-red-200/20">
           <AlertCircle size={48} className="mx-auto mb-4 text-red-500" />
-          <h2 className="text-xl font-bold tracking-tight text-red-900 mb-2">Student Not Found</h2>
-          <p className="text-sm font-bold text-red-600 mb-6">{error || "We couldn't find this student profile."}</p>
-          <button
-            onClick={() => navigate(-1)}
-            className="px-6 py-2 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 transition-all"
-          >
+          <h2 className="mb-2 text-xl font-bold tracking-tight text-red-900">Student Not Found</h2>
+          <p className="mb-6 text-sm font-bold text-red-600">{error || "We couldn't find this student profile."}</p>
+          <Button onClick={() => navigate(-1)} className="rounded-xl bg-red-600 px-6 text-sm font-bold text-white hover:bg-red-700">
             Go Back
-          </button>
-        </div>
+          </Button>
+        </Card>
       </div>
     );
   }
@@ -175,79 +187,78 @@ const StudentProfile: React.FC = () => {
   return (
     <div className="w-full pb-24 sm:pb-36">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-0">
-        <button
+        <Button
+          variant="ghost"
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold transition-colors text-sm self-start"
+          className="h-auto gap-2 self-start p-0 text-sm font-bold text-slate-500 hover:bg-transparent hover:text-slate-900"
         >
           <ArrowLeft size={18} /> Back to Students
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="outline"
           onClick={handleExportPDF}
           disabled={exporting}
-          className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-100 text-slate-600 font-bold text-sm hover:bg-slate-50 transition-all disabled:opacity-50"
+          className="gap-1.5 rounded-xl text-sm font-bold text-slate-600"
         >
           {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
           Export PDF
-        </button>
+        </Button>
       </div>
 
-      <div id="teacher-student-profile-content" className="bg-white dark:bg-slate-950 rounded-3xl sm:rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 overflow-hidden mb-8">
+      <Card id="teacher-student-profile-content" className="bg-white dark:bg-slate-950 rounded-3xl sm:rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-none border-slate-100 dark:border-slate-800 overflow-hidden mb-8">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 p-6 sm:p-8 text-white relative">
           <div className="flex flex-col sm:flex-row items-center sm:items-end gap-5">
-            <div className="size-24 sm:size-28 rounded-3xl border-4 border-white/30 bg-white/10 backdrop-blur-md overflow-hidden shadow-xl shrink-0 flex items-center justify-center">
-              {student.profileImage ? (
-                <img src={student.profileImage} alt={student.name} className="size-full object-cover" />
-              ) : (
-                <div className="size-full flex items-center justify-center text-3xl font-black text-white">
-                  {getInitials(student.name)}
-                </div>
-              )}
-            </div>
+            <Avatar className="size-24 shrink-0 rounded-3xl border-4 border-white/30 bg-white/10 shadow-xl backdrop-blur-md sm:size-28">
+              {student.profileImage && <AvatarImage src={student.profileImage} alt={student.name} className="object-cover" />}
+              <AvatarFallback className="rounded-none bg-transparent text-3xl font-black text-white">
+                {getInitials(student.name)}
+              </AvatarFallback>
+            </Avatar>
             <div className="flex-1 min-w-0 text-center sm:text-left space-y-2">
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
                 <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight break-words">{student.name}</h1>
-                <span className={cn(
-                  'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-black uppercase tracking-wider',
-                  (student.isActive ?? student.is_active) ? 'bg-emerald-500/90 border-emerald-400' : 'bg-slate-800/90 border-slate-600 text-slate-200',
-                )}>
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    'gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-wider text-white',
+                    (student.isActive ?? student.is_active) ? 'border-emerald-400 bg-emerald-500/90' : 'border-slate-600 bg-slate-800/90 text-slate-200',
+                  )}
+                >
                   {(student.isActive ?? student.is_active) ? 'Active' : 'Inactive'}
-                </span>
+                </Badge>
               </div>
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-xs font-semibold text-blue-100">
-                <span className="bg-white/15 px-2.5 py-1 rounded-xl backdrop-blur-sm border border-white/10">
+                <Badge variant="outline" className="bg-white/15 px-2.5 py-1 rounded-xl backdrop-blur-sm border-white/10 text-blue-100">
                   {className ? `${className.toLowerCase().startsWith('class') ? className : `Class ${className}`} / ${sectionName || '—'}` : '—'}
-                </span>
-                {student.email && <span className="bg-white/15 px-2.5 py-1 rounded-xl backdrop-blur-sm border border-white/10 truncate max-w-[220px]">{student.email}</span>}
+                </Badge>
+                {student.email && <Badge variant="outline" className="bg-white/15 px-2.5 py-1 rounded-xl backdrop-blur-sm border-white/10 text-blue-100 truncate max-w-[220px]">{student.email}</Badge>}
               </div>
             </div>
             {enrollmentNo && (
-              <div className="text-center sm:text-right shrink-0 bg-white/10 p-3 rounded-2xl backdrop-blur-sm border border-white/10">
+              <Card className="text-center sm:text-right shrink-0 bg-white/10 p-3 rounded-2xl backdrop-blur-sm border-white/10 text-white shadow-none">
                 <div className="text-[9px] font-bold tracking-widest text-blue-200 uppercase mb-0.5">Enrollment No</div>
                 <div className="text-base font-black tracking-tight">{enrollmentNo}</div>
-              </div>
+              </Card>
             )}
           </div>
         </div>
 
         {/* Tabs */}
         <div className="px-4 sm:px-10 pt-6 pb-10 sm:pb-14">
-          <div className="flex flex-nowrap gap-2 border-b border-slate-100 dark:border-slate-800 mb-6 pb-4 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            {TABS.map(({ id: tabId, label, icon: Icon }) => (
-              <button
-                key={tabId}
-                onClick={() => setActiveTab(tabId)}
-                className={cn(
-                  'flex items-center gap-1.5 rounded-2xl border px-4 py-2.5 text-sm font-bold transition-all whitespace-nowrap shrink-0',
-                  activeTab === tabId
-                    ? 'border-blue-600 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/20'
-                    : 'border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-900/70 dark:hover:text-white',
-                )}
-              >
-                <Icon size={16} /> {label}
-              </button>
-            ))}
-          </div>
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as (typeof TABS)[number]['id'])} className="mb-6">
+            <TabsList className="h-auto w-full justify-start gap-2 overflow-x-auto rounded-none border-b border-slate-100 bg-transparent p-0 pb-4 dark:border-slate-800 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {TABS.map(({ id: tabId, label, icon: Icon }) => (
+                <TabsTrigger
+                  key={tabId}
+                  value={tabId}
+                  className="shrink-0 gap-1.5 whitespace-nowrap rounded-2xl border border-transparent px-4 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 hover:text-slate-900 data-[state=active]:border-blue-600 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-600/20 dark:hover:bg-slate-900/70 dark:hover:text-white"
+                >
+                  <Icon size={16} /> {label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
 
           {activeTab === 'personal' && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -273,7 +284,7 @@ const StudentProfile: React.FC = () => {
                 </div>
               </div>
               <div className="space-y-6">
-                <div className="p-6 rounded-3xl bg-blue-600 text-white shadow-xl shadow-blue-600/20">
+                <Card className="rounded-3xl border-0 bg-blue-600 p-6 text-white shadow-xl shadow-blue-600/20">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-xs font-bold uppercase tracking-widest opacity-80">Medical Alert</h4>
                     <AlertCircle size={20} />
@@ -282,18 +293,18 @@ const StudentProfile: React.FC = () => {
                     {medicalConditions || 'No significant medical conditions reported.'}
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    <span className="px-2 py-1 rounded-lg bg-white/20 text-[10px] font-bold uppercase">Blood: {bloodGroup || '—'}</span>
-                    <span className="px-2 py-1 rounded-lg bg-white/20 text-[10px] font-bold uppercase">Allergy: {allergies || 'None'}</span>
+                    <Badge variant="outline" className="rounded-lg border-transparent bg-white/20 px-2 py-1 text-[10px] font-bold uppercase text-white">Blood: {bloodGroup || '—'}</Badge>
+                    <Badge variant="outline" className="rounded-lg border-transparent bg-white/20 px-2 py-1 text-[10px] font-bold uppercase text-white">Allergy: {allergies || 'None'}</Badge>
                   </div>
-                </div>
-                <div className="p-6 rounded-3xl bg-blue-50/60 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
+                </Card>
+                <Card className="p-6 rounded-3xl bg-blue-50/60 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800 shadow-none">
                   <h4 className="text-xs font-bold uppercase tracking-widest text-blue-800 dark:text-blue-200 mb-2 flex items-center gap-2">
                     <CheckCircle size={16} /> Enrollment Status
                   </h4>
                   <p className="text-sm font-extrabold text-blue-950 dark:text-blue-100">
                     {profile.status || ((student.isActive ?? student.is_active) ? 'ACTIVE' : 'INACTIVE')}
                   </p>
-                </div>
+                </Card>
               </div>
             </div>
           )}
@@ -302,22 +313,22 @@ const StudentProfile: React.FC = () => {
             <div className="space-y-6">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest">Family & Guardian Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 space-y-4">
+                <Card className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-800 space-y-4 shadow-none">
                   <div className="flex items-center gap-3">
                     <div className="size-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center"><User size={20} /></div>
                     <h4 className="font-bold text-slate-900 dark:text-white">Father's Details</h4>
                   </div>
                   <DetailItem label="Name" value={fatherName} />
                   <DetailItem label="Phone Number" value={fatherPhone || parentPhone} />
-                </div>
-                <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 space-y-4">
+                </Card>
+                <Card className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-800 space-y-4 shadow-none">
                   <div className="flex items-center gap-3">
                     <div className="size-10 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center"><User size={20} /></div>
                     <h4 className="font-bold text-slate-900 dark:text-white">Mother's Details</h4>
                   </div>
                   <DetailItem label="Name" value={motherName} />
                   <DetailItem label="Phone Number" value={motherPhone} />
-                </div>
+                </Card>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <DetailItem label="Parent Email" value={parentEmail} icon={Mail} />
@@ -364,12 +375,13 @@ const StudentProfile: React.FC = () => {
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest">Attendance Record</h3>
                 <div className="flex items-center gap-3">
-                  <label className="text-xs font-bold text-slate-400 uppercase">Month</label>
-                  <input
+                  <Label htmlFor="attendance-month" className="text-xs font-bold uppercase text-slate-400">Month</Label>
+                  <Input
+                    id="attendance-month"
                     type="month"
                     value={attendanceMonth}
                     onChange={(e) => setAttendanceMonth(e.target.value)}
-                    className="rounded-xl border-2 border-slate-100 dark:border-slate-700 px-3 py-2 text-sm font-bold text-slate-700 dark:text-white bg-white dark:bg-slate-900 outline-none focus:border-blue-500"
+                    className="h-10 w-auto rounded-xl border-2 border-slate-100 bg-white text-sm font-bold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                   />
                 </div>
               </div>
@@ -404,71 +416,97 @@ const StudentProfile: React.FC = () => {
                 return (
                   <>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                      <div className="p-6 rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-center">
+                      <Card className="p-6 rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-800 text-center shadow-none">
                         <div className={`text-2xl sm:text-4xl font-bold tracking-tight mb-1 ${getPctColor(pct)}`}>{total > 0 ? `${pct}%` : '—'}</div>
                         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attendance %</div>
-                      </div>
-                      <div className="p-6 rounded-[2rem] bg-emerald-500/10 border border-emerald-500/20 text-center text-emerald-600">
+                      </Card>
+                      <Card className="p-6 rounded-[2rem] bg-emerald-500/10 border-emerald-500/20 text-center text-emerald-600 shadow-none">
                         <div className="text-2xl sm:text-4xl font-bold tracking-tight mb-1">{present}</div>
                         <div className="text-[10px] font-bold uppercase tracking-widest">Present</div>
-                      </div>
-                      <div className="p-6 rounded-[2rem] bg-red-500/10 border border-red-500/20 text-center text-red-500">
+                      </Card>
+                      <Card className="p-6 rounded-[2rem] bg-red-500/10 border-red-500/20 text-center text-red-500 shadow-none">
                         <div className="text-2xl sm:text-4xl font-bold tracking-tight mb-1">{absent}</div>
                         <div className="text-[10px] font-bold uppercase tracking-widest">Absent</div>
-                      </div>
-                      <div className="p-6 rounded-[2rem] bg-amber-400/10 border border-amber-400/20 text-center text-amber-600">
+                      </Card>
+                      <Card className="p-6 rounded-[2rem] bg-amber-400/10 border-amber-400/20 text-center text-amber-600 shadow-none">
                         <div className="text-2xl sm:text-4xl font-bold tracking-tight mb-1">{leave}</div>
                         <div className="text-[10px] font-bold uppercase tracking-widest">Leave</div>
-                      </div>
-                      <div className="p-6 rounded-[2rem] bg-slate-100 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800 text-center text-slate-600 dark:text-slate-400">
+                      </Card>
+                      <Card className="p-6 rounded-[2rem] bg-slate-100 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800 text-center text-slate-600 dark:text-slate-400 shadow-none">
                         <div className="text-2xl sm:text-4xl font-bold tracking-tight mb-1">{total}</div>
                         <div className="text-[10px] font-bold uppercase tracking-widest">Total Classes</div>
-                      </div>
+                      </Card>
                     </div>
 
-                    <div className="rounded-3xl border border-slate-100 dark:border-slate-800 overflow-hidden overflow-x-auto w-full">
-                      <table className="w-full text-left min-w-[600px]">
-                        <thead className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800">
-                          <tr>
-                            <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date</th>
-                            <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Day</th>
-                            <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
-                            <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Remarks</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50 dark:divide-slate-800 text-sm">
-                          {attendance.length === 0 ? (
-                            <tr>
-                              <td colSpan={4} className="p-10 text-center text-slate-400 font-bold">
-                                No attendance records for this month.
-                              </td>
-                            </tr>
-                          ) : (
-                            [...attendance]
-                              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                              .map((record, i) => {
-                                const d = new Date(record.date);
-                                return (
-                                  <tr key={record.id || i} className="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
-                                    <td className="p-4 font-bold text-slate-700 dark:text-slate-200">
+                    {(() => {
+                      const sorted = [...attendance].sort((x, y) => new Date(y.date).getTime() - new Date(x.date).getTime());
+                      if (sorted.length === 0) {
+                        return (
+                          <Card className="rounded-3xl border-slate-100 p-10 text-center font-bold text-slate-400 shadow-none dark:border-slate-800">
+                            No attendance records for this month.
+                          </Card>
+                        );
+                      }
+                      return (
+                        <>
+                          {/* Phones: one card per day */}
+                          <div className="space-y-2 md:hidden">
+                            {sorted.map((record, i) => {
+                              const d = new Date(record.date);
+                              return (
+                                <Card key={record.id || i} className="flex items-center justify-between gap-3 rounded-2xl border-slate-100 p-4 shadow-none dark:border-slate-800">
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
                                       {d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                    </td>
-                                    <td className="p-4 font-bold text-slate-400">
-                                      {d.toLocaleDateString('en-IN', { weekday: 'short' })}
-                                    </td>
-                                    <td className="p-4">
-                                      <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${statusStyle(record.status)}`}>
-                                        {record.status || 'Unknown'}
-                                      </span>
-                                    </td>
-                                    <td className="p-4 text-slate-400 font-bold">{record.remarks || '—'}</td>
-                                  </tr>
-                                );
-                              })
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
+                                      <span className="ml-2 text-xs font-bold text-slate-400">{d.toLocaleDateString('en-IN', { weekday: 'short' })}</span>
+                                    </p>
+                                    {record.remarks && <p className="mt-0.5 truncate text-xs font-semibold text-slate-400">{record.remarks}</p>}
+                                  </div>
+                                  <Badge variant="outline" className={`shrink-0 rounded-lg border-transparent px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${statusStyle(record.status)}`}>
+                                    {record.status || 'Unknown'}
+                                  </Badge>
+                                </Card>
+                              );
+                            })}
+                          </div>
+
+                          {/* Tablet / desktop table */}
+                          <div className="hidden w-full overflow-hidden rounded-3xl border border-slate-100 dark:border-slate-800 md:block">
+                            <Table>
+                              <TableHeader className="bg-slate-50 dark:bg-slate-900/60">
+                                <TableRow>
+                                  <TableHead className="p-4 text-[10px] font-bold uppercase tracking-widest">Date</TableHead>
+                                  <TableHead className="p-4 text-[10px] font-bold uppercase tracking-widest">Day</TableHead>
+                                  <TableHead className="p-4 text-[10px] font-bold uppercase tracking-widest">Status</TableHead>
+                                  <TableHead className="p-4 text-[10px] font-bold uppercase tracking-widest">Remarks</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody className="text-sm">
+                                {sorted.map((record, i) => {
+                                  const d = new Date(record.date);
+                                  return (
+                                    <TableRow key={record.id || i}>
+                                      <TableCell className="p-4 font-bold text-slate-700 dark:text-slate-200">
+                                        {d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                      </TableCell>
+                                      <TableCell className="p-4 font-bold text-slate-400">
+                                        {d.toLocaleDateString('en-IN', { weekday: 'short' })}
+                                      </TableCell>
+                                      <TableCell className="p-4">
+                                        <Badge variant="outline" className={`rounded-lg border-transparent px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${statusStyle(record.status)}`}>
+                                          {record.status || 'Unknown'}
+                                        </Badge>
+                                      </TableCell>
+                                      <TableCell className="p-4 font-bold text-slate-400">{record.remarks || '—'}</TableCell>
+                                    </TableRow>
+                                  );
+                                })}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </>
                 );
               })()}
@@ -481,31 +519,36 @@ const StudentProfile: React.FC = () => {
                 const docUrl = documents[docName] || documents[docName.replace(/\s+/g, '_')];
                 const verInfo = documentVerification[docName] || { status: 'PENDING' };
                 return (
-                  <div key={docName} className="p-5 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm space-y-3">
+                  <Card key={docName} className="p-5 rounded-3xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm space-y-3">
                     <div className="flex items-center justify-between gap-2">
                       <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider truncate">{docName}</h4>
-                      <span className={cn(
-                        'px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0',
-                        verInfo.status === 'VERIFIED' ? 'bg-emerald-100 text-emerald-700' :
-                        verInfo.status === 'REJECTED' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-800',
-                      )}>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          'shrink-0 rounded-full border-transparent px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+                          verInfo.status === 'VERIFIED' ? 'bg-emerald-100 text-emerald-700' :
+                          verInfo.status === 'REJECTED' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-800',
+                        )}
+                      >
                         {verInfo.status || 'PENDING'}
-                      </span>
+                      </Badge>
                     </div>
                     {docUrl ? (
-                      <a href={docUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1">
-                        <FileText size={14} /> View File
-                      </a>
+                      <Button asChild variant="link" className="h-auto gap-1 p-0 text-xs font-bold text-blue-600">
+                        <a href={docUrl} target="_blank" rel="noopener noreferrer">
+                          <FileText size={14} /> View File
+                        </a>
+                      </Button>
                     ) : (
                       <p className="text-xs font-semibold text-slate-400 italic">Not Uploaded</p>
                     )}
-                  </div>
+                  </Card>
                 );
               })}
             </div>
           )}
         </div>
-      </div>
+      </Card>
     </div>
   );
 };
