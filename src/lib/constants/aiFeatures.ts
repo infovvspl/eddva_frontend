@@ -126,4 +126,13 @@ export const AI_FEATURES: AiFeature[] = [
     defaultEnabled: false,
     icon: 'FileSearch',
   },
+  {
+    key: 'competitive_exams',
+    label: 'Competitive Exam Prep',
+    description: 'JEE/NEET-style AI practice questions — teachers generate them grounded in the school\'s own textbooks and a trained PYQ bank, students see them for their class. Institute Admin only assigns which teacher/class; the feature itself is shared between teacher and student.',
+    category: 'shared_teacher_student',
+    uiType: 'full_page',
+    defaultEnabled: false,
+    icon: 'Trophy',
+  },
 ];

@@ -33,6 +33,7 @@ const allItems = [
   { group: 'Academic Work', path: '/school/student/attendance', label: 'Attendance', icon: UserCheck },
   { group: 'Academic Work', path: '/school/student/analytics', label: 'Performance Analytics', icon: BarChart3, featType: 'module', featKey: 'reports' },
   { group: 'Growth', path: '/school/student/doubts', label: 'My Doubts', icon: HelpCircle, featType: 'ai', featKey: 'ai_doubt_solver' },
+  { group: 'Growth', path: '/school/student/competitive-prep', label: 'Competitive Exam Prep', icon: Trophy, featType: 'ai', featKey: 'competitive_exams' },
   { group: 'Growth', path: '/school/student/career', label: 'Career Guidance', icon: Compass, badge: 'New', featType: 'ai', featKey: 'ai_career_guidance' },
   // Demonstration feature — shares the career-guidance flag so it appears and
   // disappears with the section it belongs to.
@@ -95,6 +96,7 @@ export default function Sidebar({ open, onClose }) {
   const hasDoubts = useSchoolFeature('ai', 'ai_doubt_solver');
   const hasCareer = useSchoolFeature('ai', 'ai_career_guidance');
   const hasAstro = useSchoolFeature('ai', 'ai_astro_profile');
+  const hasCompetitiveExams = useSchoolFeature('ai', 'competitive_exams');
 
   if (isGamificationRoute) {
     return null;
@@ -120,6 +122,7 @@ export default function Sidebar({ open, onClose }) {
     if (item.featType === 'ai' && item.featKey === 'ai_doubt_solver' && !hasDoubts) return;
     if (item.featType === 'ai' && item.featKey === 'ai_career_guidance' && !hasCareer) return;
     if (item.featType === 'ai' && item.featKey === 'ai_astro_profile' && !hasAstro) return;
+    if (item.featType === 'ai' && item.featKey === 'competitive_exams' && !hasCompetitiveExams) return;
 
     const group = filteredGroups.find(g => g.heading === item.group);
     if (group) group.items.push(item);

@@ -29,6 +29,7 @@ import {
   Sparkles,
   Ticket,
   ToggleRight,
+  Trophy,
   Users,
   Video,
   Radio,
@@ -42,6 +43,7 @@ const superAdminGroups = [
       { path: '/school/super-admin/institutes', label: 'Schools', icon: Building2 },
       { path: '/school/super-admin/users', label: 'User Management', icon: Users },
       { path: '/school/super-admin/erp-modules', label: 'ERP Modules', icon: BookOpen },
+      { path: '/school/super-admin/competitive-prep', label: 'Competitive Exam Prep', icon: Trophy },
     ],
   },
   {
@@ -71,7 +73,7 @@ const superAdminGroups = [
   },
 ];
 
-function buildInstituteGroups(mods) {
+function buildInstituteGroups(mods, aiFeats) {
   const chatEnabled = isModuleEnabled(mods, 'chat');
   const calendarEnabled = isModuleEnabled(mods, 'academic_calendar');
   const timetableEnabled = isModuleEnabled(mods, 'timetable');
@@ -79,6 +81,9 @@ function buildInstituteGroups(mods) {
   const meetingsEnabled = isModuleEnabled(mods, 'meetings');
   const syllabusPlannerEnabled = isModuleEnabled(mods, 'syllabus') && isModuleEnabled(mods, 'admin_syllabus_planner');
   const syllabusTrackerEnabled = isModuleEnabled(mods, 'syllabus') && isModuleEnabled(mods, 'admin_syllabus_tracker');
+  // competitive_exams lives in the AI-features registry (aiEnabled + per-key
+  // aiFeatures), not the module-flags one — the whole vertical is AI-driven.
+  const competitiveEnabled = aiFeats?.competitive_exams === true;
 
   return [
     {
@@ -90,6 +95,7 @@ function buildInstituteGroups(mods) {
         { path: '/school/admin/admins', label: 'Administrators', icon: Shield },
         { path: '/school/admin/academics', label: 'Class & Sections', icon: Building2 },
         { path: '/school/admin/subjects', label: 'Subjects', icon: BookOpen },
+        competitiveEnabled && { path: '/school/admin/competitive-subjects', label: 'Competitive Exam Prep', icon: Trophy },
         syllabusPlannerEnabled && { path: '/school/admin/syllabus-planner', label: 'Syllabus Planner', icon: FileText },
         syllabusTrackerEnabled && { path: '/school/admin/syllabus-tracker', label: 'Syllabus Tracker', icon: BarChart3 },
       ].filter(Boolean),
@@ -144,6 +150,7 @@ function buildTeacherGroups(mods, aiFeats) {
   const meetingsEnabled = isModuleEnabled(mods, 'meetings');
   const doubtsEnabled = aiFeats?.ai_doubt_solver !== false;
   const teachingPlanEnabled = isModuleEnabled(mods, 'syllabus') && isModuleEnabled(mods, 'teacher_teaching_plan');
+  const competitiveEnabled = aiFeats?.competitive_exams === true;
 
   return [
     {
@@ -153,6 +160,7 @@ function buildTeacherGroups(mods, aiFeats) {
         teachingPlanEnabled && { path: '/school/teacher/teaching-plan', label: 'My Teaching Plan', icon: ClipboardList },
         liveEnabled && { path: '/school/teacher/classes', label: 'Live & Recorded Video', icon: Video },
         { path: '/school/teacher/course-content', label: 'Course Content', icon: BookOpen },
+        competitiveEnabled && { path: '/school/teacher/competitive-prep', label: 'Competitive Exam Prep', icon: Trophy },
         { path: '/school/teacher/students', label: 'Students', icon: GraduationCap },
         { path: '/school/teacher/attendance', label: 'Attendance', icon: ClipboardCheck },
         timetableEnabled && { path: '/school/teacher/timetable', label: 'Timetable', icon: CalendarDays },
@@ -207,7 +215,7 @@ export default function Sidebar({ open, onClose }) {
 
   const aiFeats = institute?.aiEnabled ? institute.aiFeatures : { ai_doubt_solver: false };
   const teacherGroups = isTeacher || useTeacherFallback ? buildTeacherGroups(institute?.modulesPermissions, aiFeats) : null;
-  const adminGroups = isInstitute ? buildInstituteGroups(institute?.modulesPermissions) : null;
+  const adminGroups = isInstitute ? buildInstituteGroups(institute?.modulesPermissions, aiFeats) : null;
 
   const groups = isSuperAdmin ? superAdminGroups : isInstitute ? adminGroups : teacherGroups;
   // Collapsed by default (icon rail) — hovering it peeks the full sidebar open
