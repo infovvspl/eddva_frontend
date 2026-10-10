@@ -1123,15 +1123,6 @@ function ChapterNode({
           <span className={`min-w-0 flex-1 truncate text-left text-sm font-bold leading-tight ${open ? 'text-brand-700 dark:text-brand-300' : 'text-surface-800 dark:text-surface-100'}`}>
             {chapter.name}
           </span>
-          {chapter.indexed && (
-            <span
-              title="This chapter's textbook is trained — AI content (notes, PPT, papers) can be grounded in the book."
-              className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
-            >
-              <span className="size-1 rounded-full bg-current" />
-              Trained
-            </span>
-          )}
         </Button>
         {canEdit && (
           <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
@@ -1952,7 +1943,7 @@ function SlideDeck({ slides, height = 460, topic = '' }: { slides: Slide[]; heig
         <div className="flex gap-2 overflow-x-auto pb-1 pt-0.5">
           {slides.map((s, i) => (
             <Button variant={null} size={null} key={i} type="button" onClick={() => setIdx(i)}
-              className={`flex-shrink-0 rounded-lg border-2 px-3 py-2 text-left transition-all ${i === safeIdx ? 'border-rose-400 bg-rose-50 dark:bg-rose-900/20' : 'border-surface-200 bg-white hover:border-rose-200 dark:border-surface-700 dark:bg-surface-800'}`}
+              className={`h-auto flex-shrink-0 flex-col items-stretch justify-start gap-0 rounded-lg border-2 px-3 py-2 text-left font-normal transition-all ${i === safeIdx ? 'border-rose-400 bg-rose-50 dark:bg-rose-900/20' : 'border-surface-200 bg-white hover:border-rose-200 dark:border-surface-700 dark:bg-surface-800'}`}
               style={{ minWidth: 120, maxWidth: 150 }}>
               <p className="truncate text-[9px] font-black uppercase tracking-wide text-rose-500">{i + 1}</p>
               <p className="truncate text-[10px] font-semibold text-surface-700 dark:text-surface-200">{s.title}</p>
@@ -2635,7 +2626,7 @@ function AiGeneratePanel({
               const active = typeId === t.id;
               return (
                 <Button variant={null} size={null} key={t.id} onClick={() => { if (t.id === 'presentation') { onOpenPptStudio(); return; } setTypeId(t.id); setContent(null); }}
-                  className={`rounded-2xl border-2 p-3 text-left transition-all ${active ? 'border-violet-400 bg-violet-50 dark:bg-violet-900/30' : 'border-surface-100 hover:border-surface-200 dark:border-surface-700'}`}>
+                  className={`h-auto w-full flex-col items-start justify-start gap-0 whitespace-normal rounded-2xl border-2 p-3 text-left font-normal transition-all ${active ? 'border-violet-400 bg-violet-50 dark:bg-violet-900/30' : 'border-surface-100 hover:border-surface-200 dark:border-surface-700'}`}>
                   <div className={`mb-1.5 inline-flex rounded-lg p-1.5 ${t.soft}`}><Icon size={16} className={t.text} /></div>
                   <p className="text-sm font-bold text-surface-900 dark:text-white">{t.label}</p>
                   <p className="mt-0.5 text-[11px] font-medium leading-snug text-surface-400">{t.desc}</p>
