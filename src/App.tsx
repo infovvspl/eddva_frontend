@@ -17,6 +17,7 @@ import { ConfirmProvider } from "@/context/ConfirmContext";
 import { useModuleAccess } from "@/hooks/use-module-access";
 import { useAuthStore, roleRedirectPath } from "@/lib/auth-store";
 import { apiClient, extractData } from "@/lib/api/client";
+import { useIdleLogout } from "@/hooks/use-idle-logout";
 
 function CoachingFontManager() {
   const location = useLocation();
@@ -30,6 +31,13 @@ function CoachingFontManager() {
     }
   }, [location.pathname, tenantType]);
 
+  return null;
+}
+
+/** Mounted once, app-wide: auto-logs-out an idle school session (see
+ * useIdleLogout). No-ops whenever there's no active session. */
+function IdleLogoutWatcher() {
+  useIdleLogout();
   return null;
 }
 
@@ -89,6 +97,7 @@ const SystemHealthPage = lazy(() => import("./pages/super-admin/SystemHealthPage
 const BillingManagementPage = lazy(() => import("./pages/super-admin/BillingManagementPage"));
 const SettingsPage = lazy(() => import("./pages/super-admin/SettingsPage"));
 const SuperAdminErpModulesPage = lazy(() => import("./pages/super-admin/SuperAdminErpModulesPage"));
+const SuperAdminCompetitivePrepPage = lazy(() => import("./pages/super-admin/CompetitivePrepPage"));
 
 const EnrollmentsPage = lazy(() => import("./pages/super-admin/EnrollmentsPage"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
@@ -216,6 +225,7 @@ const SchoolCommunications = lazy(() => import("./pages/school/admin/Communicati
 const SchoolAuditLogs = lazy(() => import("./pages/school/admin/AuditLogs"));
 const SchoolSecurity = lazy(() => import("./pages/school/admin/SecurityCenter"));
 const SchoolSubjects = lazy(() => import("./pages/school/admin/Subjects"));
+const SchoolCompetitiveSubjects = lazy(() => import("./pages/school/admin/CompetitiveSubjects"));
 const SchoolClassSubjects = lazy(() => import("./pages/school/admin/ClassSubjects"));
 const SchoolAssignments = lazy(() => import("./pages/school/admin/Assignments"));
 const SchoolStudyMaterials = lazy(() => import("./pages/school/admin/StudyMaterials"));
@@ -254,6 +264,10 @@ const SchoolTeacherDashboard = lazy(() => import("./pages/school/teacher/Dashboa
 const SchoolTeacherStudents = lazy(() => import("./pages/school/teacher/Students"));
 const SchoolTeacherStudentProfile = lazy(() => import("./pages/school/teacher/StudentProfile"));
 const SchoolTopicManagement = lazy(() => import("./pages/school/teacher/TopicManagement"));
+const SchoolTeacherCompetitivePrep = lazy(() => import("./pages/school/teacher/CompetitivePrep"));
+const SchoolPptStudioPage = lazy(() => import("./pages/school/teacher/PptStudioPage"));
+// Says when a deck generated in the background is ready, on any teacher page.
+const SchoolPptJobsNotifier = lazy(() => import("./components/school/teacher/PptJobsNotifier"));
 const SchoolTextbookCoverage = lazy(() => import("./pages/school/teacher/TextbookCoverage"));
 const SchoolClassManagement = lazy(() => import("./pages/school/teacher/ClassManagement"));
 const SchoolTeacherRecordedClassDetails = lazy(() => import("./pages/school/teacher/RecordedClassDetails"));
@@ -285,6 +299,7 @@ const SchoolMaterialViewPage = lazy(() => import("./pages/school/MaterialViewPag
 // ——————————————————————————————————————————————————————————————————————————— School student pages ———————————————————————————————————————————————————————————————————————————
 const SchoolStudentLayout = lazy(() => import("./components/school/student/Layout"));
 const SchoolStudentDashboard = lazy(() => import("./pages/school/student/Dashboard"));
+const SchoolStudentCompetitivePrep = lazy(() => import("./pages/school/student/CompetitivePrep"));
 const SchoolStudentClasses = lazy(() => import("./pages/school/student/Classes"));
 const SchoolStudentRecordedClassDetails = lazy(() => import("./pages/school/student/RecordedClassDetails"));
 const SchoolStudentClassDetails = lazy(() => import("./pages/school/student/ClassDetails"));
@@ -531,6 +546,7 @@ const SchoolRoutes = () => (
       <Route path="institute-profile" element={<SchoolInstituteProfile />} />
       <Route path="security" element={<SchoolSecurity />} />
       <Route path="subjects" element={<SchoolSubjects />} />
+      <Route path="competitive-subjects" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'ai', key: 'competitive_exams' }}><SchoolCompetitiveSubjects /></SchoolGuard>} />
       <Route path="subjects/:classId" element={<SchoolClassSubjects />} />
       <Route path="message-logs" element={<SchoolMessageLogs />} />
       <Route path="gamification" element={<SchoolAdminGamification />} />
@@ -570,12 +586,24 @@ const SchoolRoutes = () => (
       <Route path="notifications" element={<SchoolAdminNotifications />} />
       <Route path="storage" element={<SchoolStorageUsage />} />
       <Route path="erp-modules" element={<SuperAdminErpModulesPage />} />
+      <Route path="competitive-prep" element={<SuperAdminCompetitivePrepPage />} />
     </Route>
+
+    {/* PPT Studio: a page of its own, outside the panel layout (no sidebar). */}
+    <Route
+      path="/school/teacher/ppt-studio"
+      element={<SchoolGuard roles={["TEACHER"]}><SchoolPptStudioPage /></SchoolGuard>}
+    />
 
     {/* School Teacher */}
     <Route
       path="/school/teacher"
-      element={<SchoolGuard roles={["TEACHER"]}><SchoolTeacherLayout /></SchoolGuard>}
+      element={
+        <SchoolGuard roles={["TEACHER"]}>
+          <Suspense fallback={null}><SchoolPptJobsNotifier /></Suspense>
+          <SchoolTeacherLayout />
+        </SchoolGuard>
+      }
     >
       <Route index element={<SchoolTeacherDashboard />} />
       <Route path="students" element={<SchoolTeacherStudents />} />
@@ -586,6 +614,7 @@ const SchoolRoutes = () => (
       <Route path="announcements" element={<SchoolTeacherAnnouncements />} />
       <Route path="timetable" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'timetable' }}><SchoolTeacherTimetable /></SchoolGuard>} />
       <Route path="course-content" element={<SchoolTopicManagement />} />
+      <Route path="competitive-prep" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'ai', key: 'competitive_exams' }}><SchoolTeacherCompetitivePrep /></SchoolGuard>} />
       <Route path="textbook-coverage" element={<Navigate to="/school/teacher/course-content" replace />} />
       <Route path="course-content/materials/:materialId" element={<SchoolMaterialViewPage />} />
       <Route path="live" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'live_classes' }}><SchoolTeacherCreateLive /></SchoolGuard>} />
@@ -638,6 +667,7 @@ const SchoolRoutes = () => (
       <Route path="assessments/:id" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'module', key: 'assessments' }}><SchoolStudentSessionResult /></SchoolGuard>} />
       <Route path="notifications" element={<SchoolStudentNotifications />} />
       <Route path="doubts" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_doubt_solver' }}><SchoolStudentDoubts /></SchoolGuard>} />
+      <Route path="competitive-prep" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'competitive_exams' }}><SchoolStudentCompetitivePrep /></SchoolGuard>} />
       <Route path="battle-arena" element={<SchoolStudentBattleArena />} />
       <Route path="gamification" element={<SchoolStudentGamification />} />
       <Route path="planner" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_study_planner' }}><SchoolStudentStudyPlanner /></SchoolGuard>} />
@@ -949,6 +979,7 @@ const App = () => {
               <BrowserRouter>
                 <NotificationProvider>
                   <CoachingFontManager />
+                  <IdleLogoutWatcher />
                   <Suspense fallback={<RouteLoading />}>
                     <MaintenanceGate>
                       {isTenant ? <TenantRoutes /> : <PlatformRoutes />}

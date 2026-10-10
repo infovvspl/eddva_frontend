@@ -105,6 +105,58 @@ window.SlidePreview = {
     const width = canvas.offsetWidth || 800;
     canvas.style.fontSize = `${Math.max(8, (width / 800) * 16)}px`;
 
+    // An image slide still being painted: say so, with its title.
+    if (slideData.slideImagePending && !slideData.slideImage) {
+      canvas.style.background = '#FFFFFF';
+      const card = document.createElement('div');
+      Object.assign(card.style, {
+        position: 'absolute', inset: '0', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', gap: '0.6em',
+        color: '#334155', fontWeight: '700', textAlign: 'center', padding: '2em',
+      });
+      const title = document.createElement('div');
+      title.textContent = slideData.title || '';
+      title.style.fontSize = '1.6em';
+      const note = document.createElement('div');
+      note.textContent = 'Painting this slide…';
+      Object.assign(note.style, { fontSize: '0.95em', color: '#64748B',
+                                  animation: 'pptPulse 1.4s ease-in-out infinite' });
+      card.appendChild(title);
+      card.appendChild(note);
+      canvas.appendChild(card);
+      return;
+    }
+
+    // An image slide is one painted picture: show it whole, nothing on top.
+    const painted = slideData.slideImage;
+    if (painted && (painted.base64 || painted.url)) {
+      canvas.style.background = '#FFFFFF';
+      const img = document.createElement('img');
+      img.src = painted.base64 || painted.url;
+      img.alt = slideData.title || 'Slide';
+      Object.assign(img.style, {
+        position: 'absolute', left: '0', top: '0', width: '100%', height: '100%',
+        objectFit: 'contain', display: 'block',
+      });
+      canvas.appendChild(img);
+      return;
+    }
+
+    // V2 slides carry their own layout, theme and visual specification and
+    // are drawn by pptV2Preview.js from the same spec pptV2.js exports, so
+    // what the teacher sees here is what lands in the .pptx. Kept to a guard
+    // so V1 preview is untouched, and a V2 failure falls back to V1 rather
+    // than leaving a blank canvas.
+    if (window.PPTV2Preview && window.PPTV2Preview.isV2(slideData)) {
+      try {
+        window.PPTV2Preview.renderSlide(canvas, slideData);
+        return;
+      } catch (err) {
+        console.warn(`V2 preview failed on slide ${slideData.slideNumber || '?'}; using V1:`, err);
+        canvas.innerHTML = '';
+        canvas.style.background = `#${theme.bgGradient[0]}`;
+      }
+    }
 
     // Dispatch to the correct layout renderer
     switch (slideData.type) {
@@ -3879,8 +3931,18 @@ window.SlidePreview = {
       thumb.dataset.index = idx;
       thumb.title = `Slide ${idx + 1}: ${slide.title || ''}`;
 
-      // Mini preview styling
-      thumb.style.background = `linear-gradient(135deg, #${theme.bgGradient[0]}, #${theme.bgGradient[1]})`;
+      // Mini preview styling. A painted slide shows its picture, which
+      // already carries the title; anything else a tile in the theme colours.
+      const painted = slide.slideImage && (slide.slideImage.base64 || slide.slideImage.url);
+      if (painted) {
+        Object.assign(thumb.style, {
+          backgroundColor: '#fff',
+          backgroundImage: `url("${String(painted).replace(/"/g, '%22')}")`,
+          backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat',
+        });
+      } else {
+        thumb.style.background = `linear-gradient(135deg, #${theme.bgGradient[0]}, #${theme.bgGradient[1]})`;
+      }
 
       // Slide number badge
       const badge = this._el('span', {
@@ -3915,7 +3977,7 @@ window.SlidePreview = {
           textOverflow: 'ellipsis'
         }
       });
-      thumb.appendChild(miniTitle);
+      if (!painted) thumb.appendChild(miniTitle);
 
       // Click handler
       thumb.addEventListener('click', () => this.goToSlide(idx));

@@ -4,6 +4,7 @@ import { soundEngine } from '@/lib/audioManager';
 import { toast } from 'sonner';
 import { apiClient as api } from '@/lib/api/client';
 import { useConfirm } from '@/context/ConfirmContext';
+import HintPanel from './shared/HintPanel';
 
 export default function WordMasterPlay({ session, onFinish, onQuit }) {
   const confirm = useConfirm();
@@ -13,6 +14,13 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
   const [userAnswers, setUserAnswers] = useState([]); // Array<{ index, word }>
   const [inputValue, setInputValue] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [hintsUsedThisWord, setHintsUsedThisWord] = useState(0);
+  const hintsUsedThisWordRef = useRef(0);
+  hintsUsedThisWordRef.current = hintsUsedThisWord;
+  // Letters a hint has revealed, from the start of the word (e.g. "CO" for
+  // "CO______") — locked into the input and into their matching tiles, so
+  // the student can't type or click over what the hint already gave them.
+  const [lockedPrefix, setLockedPrefix] = useState('');
   
   // Game Stats
   const [correctCount, setCorrectCount] = useState(0);
@@ -112,9 +120,32 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
       }));
       setTiles(letters);
       setInputValue('');
+      setLockedPrefix('');
+      setHintsUsedThisWord(0);
       if (inputRef.current) inputRef.current.focus();
     }
   }, [currentIdx, currentWordData]);
+
+  // Marks tiles matching `prefix` as used, greedily left-to-right, leaving
+  // the rest available for the student to click. Reused both when a hint
+  // reveals a new letter and when Reset is pressed (which must re-lock the
+  // hinted prefix rather than clearing it).
+  const lockTilesForPrefix = (prefix, baseTiles) => {
+    const next = baseTiles.map((t) => ({ ...t, used: false }));
+    prefix.split('').forEach((char) => {
+      const match = next.find((t) => t.char === char && !t.used);
+      if (match) match.used = true;
+    });
+    return next;
+  };
+
+  const handleRevealPattern = (pattern) => {
+    const prefix = String(pattern || '').replace(/_/g, '');
+    if (!prefix || prefix.length <= lockedPrefix.length) return;
+    setLockedPrefix(prefix);
+    setInputValue(prefix);
+    setTiles((prev) => lockTilesForPrefix(prefix, prev));
+  };
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -136,10 +167,10 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
     setInputValue((prev) => prev + tile.char);
   };
 
-  // Backspace last letter
+  // Backspace last letter — can't erase past a hint-revealed prefix
   const handleBackspace = () => {
-    if (inputValue.length === 0) return;
-    
+    if (inputValue.length <= lockedPrefix.length) return;
+
     const lastChar = inputValue[inputValue.length - 1];
     setInputValue((prev) => prev.slice(0, -1));
 
@@ -154,15 +185,16 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
     setTiles(nextTiles);
   };
 
-  // Clear answer
+  // Clear answer — resets back to the hint-revealed prefix, not blank
   const handleClear = () => {
-    setInputValue('');
-    setTiles(tiles.map((t) => ({ ...t, used: false })));
+    setInputValue(lockedPrefix);
+    setTiles((prev) => lockTilesForPrefix(lockedPrefix, prev));
   };
 
-  // Monitor text input directly
+  // Monitor text input directly — a hint-revealed prefix can't be typed over
   const handleInputChange = (e) => {
     const text = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+    if (lockedPrefix && !text.startsWith(lockedPrefix)) return;
     setInputValue(text);
 
     // Update tile used status based on matching the characters in the text
@@ -182,7 +214,7 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
   const handleCheckWord = async (wordToSubmit) => {
     if (submitting) return;
     setSubmitting(true);
-    const answersList = [...userAnswers, { index: currentIdx, word: wordToSubmit }];
+    const answersList = [...userAnswers, { index: currentIdx, word: wordToSubmit, hintsUsed: hintsUsedThisWordRef.current }];
     setUserAnswers(answersList);
     
     try {
@@ -328,6 +360,18 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
           <div className="pt-2 text-xs font-bold text-slate-400">
             Length: {currentWordData?.length} letters
           </div>
+        </div>
+
+        {/* Extra help: reveals one more letter of the word per hint used */}
+        <div className="flex justify-center">
+          <HintPanel
+            sessionId={sessionId}
+            gameType="word_master"
+            wordIndex={currentIdx}
+            disabled={submitting}
+            onHintsUsedChange={setHintsUsedThisWord}
+            onRevealPattern={handleRevealPattern}
+          />
         </div>
 
         {/* Scrambled Letters Tiles */}

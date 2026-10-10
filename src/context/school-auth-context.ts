@@ -53,7 +53,7 @@ export interface SchoolAuthContextType {
     institute?: SchoolInstitute | null;
     tenantDomain?: string | null;
   }) => void;
-  logout: () => void;
+  logout: (reason?: 'manual' | 'idle_timeout') => void;
   isAuthenticated: boolean;
 }
 

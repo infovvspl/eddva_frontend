@@ -4,6 +4,7 @@ import { useAuth } from "@/context/SchoolAuthContext";
 import { tokenStorage } from "@/lib/api/client";
 import { useAuthStore } from "@/lib/auth-store";
 import { AI_FEATURES } from "@/lib/constants/aiFeatures";
+import { isModuleEnabled } from "@/lib/constants/moduleFeatures";
 
 interface SchoolGuardProps {
   children: React.ReactNode;
@@ -110,7 +111,10 @@ export function SchoolGuard({ children, roles, feature }: SchoolGuardProps) {
   if (feature && institute) {
     if (role !== 'SUPER_ADMIN') {
       if (feature.type === 'module') {
-        if (institute.modulesPermissions?.[feature.key] === false) {
+        // Delegates to isModuleEnabled so brand-new opt-in flags (e.g.
+        // competitive_exams) can default to OFF for a missing key, instead
+        // of this guard's historical fail-open "only block on === false".
+        if (!isModuleEnabled(institute.modulesPermissions, feature.key)) {
           return <Navigate to={SCHOOL_ROLE_PATHS[role] ?? "/login"} replace />;
         }
       } else if (feature.type === 'ai') {

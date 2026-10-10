@@ -13,6 +13,7 @@ import {
   ArenaStat,
   ArenaTimer,
 } from './quiz-rush/ArenaKit';
+import HintPanel from './shared/HintPanel';
 
 // Four fixed identities — colour, glyph and number key. Keeping shape and key
 // alongside the colour means the answer is still distinguishable to a
@@ -38,6 +39,9 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
   const [submitting, setSubmitting] = useState(false);
   const [tabSwitchesCount, setTabSwitchesCount] = useState(0);
   const [lives, setLives] = useState(3);
+  const [hintsUsedThisQuestion, setHintsUsedThisQuestion] = useState(0);
+  const hintsUsedThisQuestionRef = useRef(0);
+  hintsUsedThisQuestionRef.current = hintsUsedThisQuestion;
 
   // Presentation-only feedback: a colour wash on every answer, a shake on a
   // miss, and a combo callout on a milestone. None of it feeds the API.
@@ -129,6 +133,7 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
     setTimeLeft(30);
     updateHasAnswered(false);
     setSelectedOptionId(null);
+    setHintsUsedThisQuestion(0);
 
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
@@ -226,15 +231,20 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
         questionId: currentQuestion.id,
         selectedOptionId: '',
         timeTakenSeconds: timeTaken,
+        hintsUsed: hintsUsedThisQuestionRef.current,
       },
     ];
     setAnswers(newAnswers);
     setStreak(0);
 
-    // Auto-advance after 1.5 seconds
-    timeoutRef.current = setTimeout(() => {
-      handleNext(newAnswers);
-    }, 1500);
+    // Auto-advance after 1.5 seconds — but not if a hint is on screen for
+    // this question; give the student time to read it and advance manually
+    // via the Next/View Results button instead.
+    if (hintsUsedThisQuestionRef.current === 0) {
+      timeoutRef.current = setTimeout(() => {
+        handleNext(newAnswers);
+      }, 1500);
+    }
   };
 
   const handleSelectOption = (optionId) => {
@@ -277,14 +287,19 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
         questionId: currentQuestion.id,
         selectedOptionId: optionId,
         timeTakenSeconds: timeTaken,
+        hintsUsed: hintsUsedThisQuestionRef.current,
       },
     ];
     setAnswers(newAnswers);
 
-    // Auto-advance after 1.5 seconds
-    timeoutRef.current = setTimeout(() => {
-      handleNext(newAnswers);
-    }, 1500);
+    // Auto-advance after 1.5 seconds — but not if a hint is on screen for
+    // this question; give the student time to read it and advance manually
+    // via the Next/View Results button instead.
+    if (hintsUsedThisQuestionRef.current === 0) {
+      timeoutRef.current = setTimeout(() => {
+        handleNext(newAnswers);
+      }, 1500);
+    }
   };
 
   // Number keys pick an answer. Speed is the whole point of the mode, and
@@ -411,6 +426,13 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
                   />
                 </div>
               )}
+              <HintPanel
+                sessionId={sessionId}
+                gameType="quiz_rush"
+                questionId={currentQuestion.id}
+                disabled={hasAnswered}
+                onHintsUsedChange={setHintsUsedThisQuestion}
+              />
             </div>
             <ArenaTimer seconds={timeLeft} total={30} size={80} />
           </div>
