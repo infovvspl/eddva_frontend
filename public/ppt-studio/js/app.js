@@ -97,6 +97,7 @@ window.App = {
     this.initThemePicker();
     this.initStylePicker();
     this.initSourceModePicker();
+    this.initSlideStylePicker();
 
     // Initialize the editor module
     if (window.SlideEditor) {
@@ -119,14 +120,20 @@ window.App = {
           const theme = e.data.theme || 'clean-white';
           const design = e.data.design || 'executive';
 
-          const parsedSlides = this.parseMarkdownToSlides(markdown);
-          window.presentationData = {
-            title,
-            slides: parsedSlides,
-            theme,
-            design,
-            materialId: e.data.materialId
-          };
+          // A V2 deck saves its full specification alongside the markdown
+          // (see v2Deck.js); prefer it, or the deck reopens as V1 bullets.
+          // Decks saved before that, and V1 decks, still come from markdown.
+          const savedV2 = window.PPTV2Deck ? window.PPTV2Deck.extract(markdown) : null;
+          window.presentationData = savedV2
+            ? { ...savedV2, title: savedV2.title || title, theme, design,
+                materialId: e.data.materialId }
+            : {
+                title,
+                slides: this.parseMarkdownToSlides(markdown),
+                theme,
+                design,
+                materialId: e.data.materialId
+              };
 
           this.hideLoading();
           this.showPreview();
@@ -252,12 +259,16 @@ window.App = {
         topicName:   params.get('topicName')   || '',
       };
       this.renderScopeBanner();
+      this.renderSlideCountMode();
       this.loadSourceAvailability();
       const slides = parseInt(params.get('slides') || '', 10);
       if (Number.isFinite(slides)) {
+        // An explicit count in the link is a request for exactly that many.
         const slider = document.getElementById('slide-count-slider');
         const display = document.getElementById('slide-count-display');
         if (slider) { slider.value = String(slides); if (display) display.textContent = String(slides); }
+        this.slideCountAuto = false;
+        this.renderSlideCountMode();
       }
       const lang = params.get('lang');
       if (lang) {
@@ -320,6 +331,10 @@ window.App = {
     const section = document.getElementById('sec-source-mode');
     if (!section || !this.scope || (!this.scope.chapterId && !this.scope.topicId)) return;
     const availability = await API.getSourceAvailability(this.scope);
+    if (availability && typeof availability.ebookAvailable === 'boolean') {
+      this.ebookAvailable = availability.ebookAvailable;
+    }
+    this.renderSlideCountMode();
     const show = !!(availability && availability.lectureGroundingEnabled && availability.lectureAvailable);
     section.hidden = !show;
     if (!show) {
@@ -344,6 +359,35 @@ window.App = {
       both: 'Written from the chapter PDF and this topic’s recorded-lecture transcript(s).',
     };
     hint.textContent = HINTS[this.sourceMode] || '';
+  },
+
+  /* Slide style: 'v2' (designed, editable) or 'image' (each slide painted by
+   * an image model). Remembered per browser so a tester comparing the two
+   * does not have to re-pick it every time. */
+  _SLIDE_STYLE_HINTS: {
+    v2: 'Editable slides built from text, icons and one picture each.',
+    image: 'Each slide is painted as one AI image. Looks finished, but the text cannot be edited; it is kept in the speaker notes. Takes about 1–2 minutes.',
+  },
+
+  initSlideStylePicker() {
+    const buttons = document.querySelectorAll('.slide-style-btn');
+    if (!buttons.length) return;
+    let saved = '';
+    try { saved = localStorage.getItem('ppt_slide_style') || ''; } catch (_e) { /* private mode */ }
+    this.slideStyle = this._SLIDE_STYLE_HINTS[saved] ? saved : 'v2';
+    const apply = () => {
+      buttons.forEach((b) => b.classList.toggle('selected', b.dataset.slideStyle === this.slideStyle));
+      const hint = document.getElementById('slide-style-hint');
+      if (hint) hint.textContent = this._SLIDE_STYLE_HINTS[this.slideStyle] || '';
+    };
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        this.slideStyle = btn.dataset.slideStyle || 'v2';
+        try { localStorage.setItem('ppt_slide_style', this.slideStyle); } catch (_e) { /* ignore */ }
+        apply();
+      });
+    });
+    apply();
   },
 
   initSourceModePicker() {
@@ -422,7 +466,68 @@ window.App = {
    * Slider ↔ Display Sync
    * ======================================================== */
 
+  /* Slide count: Automatic (default) or a chosen number. Automatic means the
+   * topic's own textbook content decides the count, at generation time.
+   * The choice is remembered per browser. */
+  initSlideCountMode() {
+    let saved = null;
+    try { saved = localStorage.getItem('ppt_slide_count_mode'); } catch (_e) { /* private mode */ }
+    this.slideCountAuto = saved !== 'manual';
+    document.querySelectorAll('.count-mode-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        this.slideCountAuto = btn.dataset.countMode !== 'manual';
+        try {
+          localStorage.setItem('ppt_slide_count_mode', this.slideCountAuto ? 'auto' : 'manual');
+        } catch (_e) { /* ignore */ }
+        this.renderSlideCountMode();
+      });
+    });
+    this.renderSlideCountMode();
+  },
+
+  renderSlideCountMode() {
+    const auto = this.slideCountAuto !== false;
+    document.querySelectorAll('.count-mode-btn').forEach((btn) => {
+      btn.classList.toggle('selected', (btn.dataset.countMode === 'auto') === auto);
+    });
+    const info = document.getElementById('slide-count-auto-info');
+    const manual = document.getElementById('slide-count-manual');
+    if (info) info.hidden = !auto;
+    if (manual) manual.hidden = auto;
+    const text = document.getElementById('slide-count-auto-text');
+    if (text) text.textContent = this._autoCountExplanation();
+  },
+
+  /* What Automatic will do for this scope, in the teacher's terms. */
+  _autoCountExplanation() {
+    const s = this.scope || {};
+    const noBook = this.ebookAvailable === false;
+    if (noBook) {
+      return 'No textbook is indexed for this chapter yet, so the deck is sized to the topic itself, '
+        + 'usually 6 to 10 slides. You will see the exact number as soon as it is planned.';
+    }
+    if (s.topicName) {
+      return 'When you generate, the AI reads what your textbook says about ' + s.topicName
+        + ' and gives one slide to each idea it teaches, usually 5 to 10 slides, '
+        + 'never padded and never cramped. You will see the exact number as soon as it is planned.';
+    }
+    if (s.chapterName) {
+      return 'When you generate, the AI reads the ' + s.chapterName + ' chapter in your textbook and '
+        + 'gives one slide to each idea it teaches, from 5 slides for a short chapter up to 16 for a '
+        + 'long one. You will see the exact number as soon as it is planned.';
+    }
+    return 'When you generate, the AI decides how many slides this topic needs, one for each idea '
+      + 'it teaches. You will see the exact number as soon as it is planned.';
+  },
+
+  /* What to ask for: 'auto', or the number on the slider. */
+  slideCountRequest() {
+    if (this.slideCountAuto !== false) return 'auto';
+    return parseInt(document.getElementById('slide-count-slider').value, 10) || 8;
+  },
+
   initSliderSync() {
+    this.initSlideCountMode();
     const slider  = document.getElementById('slide-count-slider');
     const display = document.getElementById('slide-count-display');
     if (!slider || !display) return;
@@ -491,7 +596,7 @@ window.App = {
       return;
     }
 
-    const slideCount = parseInt(document.getElementById('slide-count-slider').value, 10) || 8;
+    const slideCount = this.slideCountRequest();
     const theme      = document.querySelector('.theme-card.selected')?.dataset.theme || 'dark-professional';
     const design     = document.querySelector('.style-card.selected')?.dataset.style || 'executive';
     const language   = document.getElementById('language-select').value || 'en';
@@ -511,7 +616,33 @@ window.App = {
       );
       this.updateProgress(20);
 
-      const result = await API.generatePresentation(topic, slideCount, theme, language, this.scope, this.sourceMode);
+      if (this.slideStyle === 'image') {
+        this.updateLoadingStatus(
+          'Painting your slides…',
+          'Each slide is drawn as one image — this takes 1–2 minutes.'
+        );
+      }
+      // A background job when the server has one: real progress, and the
+      // deck opens as soon as its text exists while pictures are still
+      // arriving. Otherwise the one-request call, exactly as before.
+      const jobId = await API.startPresentation(topic, slideCount, theme, language,
+                                                this.scope, this.sourceMode, this.slideStyle);
+      const result = jobId
+        ? await this._followJob(jobId, theme, design)
+        : await API.generatePresentation(topic, slideCount, theme, language,
+                                         this.scope, this.sourceMode, this.slideStyle);
+
+      if (window.presentationData && window.presentationData._partial) {
+        // Already on screen; finish it in place.
+        this._applyFinalDeck(result);
+        const took = this._loadStartAt ? (Date.now() - this._loadStartAt) : null;
+        if (result && result._incomplete) {
+          this.showToast('Your slides are ready, but some pictures could not be added.', 'info');
+        } else if (took != null) {
+          this.showToast('Presentation ready in ' + this._fmtDuration(took), 'success');
+        }
+        return;
+      }
 
       // Step 2 — Images (if the API handled it, just show progress)
       this.updateLoadingStatus(
@@ -551,6 +682,240 @@ window.App = {
       this.showToast(error.message || 'Failed to generate presentation. Please try again.', 'error');
       console.error('Generation error:', error);
     }
+  },
+
+  /* ========================================================
+   * Background generation
+   * ======================================================== */
+
+  _JOB_STAGES: {
+    queued: 'Starting…',
+    planning: 'Reading your chapter and planning the slides…',
+    writing: 'Writing the slides…',
+    composing: 'Laying out the slides…',
+    pictures: 'Adding pictures…',
+  },
+  _JOB_PROGRESS: { queued: 10, planning: 30, writing: 40, composing: 60, pictures: 75 },
+
+  /* Poll a background deck until it is done. Opens the deck as soon as its
+   * slides exist and keeps filling pictures in. Resolves to the finished
+   * deck data (or what exists, flagged _incomplete, if it failed late). */
+  async _followJob(jobId, theme, design) {
+    const started = Date.now();
+    let shown = false;
+    let last = null;
+    let failures = 0;
+    for (;;) {
+      await this._sleep(shown ? 2500 : 1500);
+      let job;
+      try {
+        job = await API.getPresentationStatus(jobId);
+        failures = 0;
+      } catch (err) {
+        // A dropped poll is not a failed deck; give the network a few tries.
+        if (++failures >= 5) throw err;
+        continue;
+      }
+      if (job.partial) last = job.partial;
+      if (job.status === 'done') {
+        const r = job.result || {};
+        return r.data || r;
+      }
+      if (job.status === 'failed') {
+        if (shown && last) return Object.assign({}, last, { _incomplete: true });
+        throw new Error(job.error || 'Generation failed. Please try again.');
+      }
+
+      const label = this._headline(job);
+      const count = job.total ? ` ${job.done || 0} of ${job.total}` : '';
+      const current = this._currentActivity(job.activity);
+      if (!shown) {
+        this.updateLoadingStatus(label, job.stage === 'pictures'
+          ? 'Pictures ready:' + count : 'This usually takes about a minute.');
+        this.updateProgress(this._jobPercent(job));
+        this.renderActivity(job.activity);
+        if (last && last.slides && last.slides.length) {
+          window.presentationData = Object.assign({}, last, { theme, design, _partial: true });
+          this.hideLoading();
+          this.showPreview();
+          // Whether the deck is from the book is only known when it is done;
+          // a "General knowledge" badge in the meantime would be wrong.
+          const badge = document.getElementById('source-badge');
+          if (badge) badge.hidden = true;
+          shown = true;
+        }
+      } else if (last) {
+        this._mergeVisuals(last);
+      }
+      if (shown) {
+        this._setFinishing((current ? current.text : label)
+                           + (job.total ? ` · ${job.done || 0} of ${job.total} pictures` : ''));
+      }
+      if (Date.now() - started > 8 * 60 * 1000) {
+        if (shown && last) return Object.assign({}, last, { _incomplete: true });
+        throw new Error('Generation is taking too long. Please try again.');
+      }
+    }
+  },
+
+  /* How far along a background deck is, from what it has reported. Each
+   * stage owns a band of the bar, and the band fills as its steps finish, so
+   * the bar never jumps back and never sits still while work is happening. */
+  _jobPercent(job) {
+    const feed = job.activity || [];
+    const done = (prefix) => feed.filter(e => e.key.indexOf(prefix) === 0 && e.state !== 'active').length;
+    const all = (prefix) => feed.filter(e => e.key.indexOf(prefix) === 0).length;
+    switch (job.stage) {
+      case 'queued': return 4;
+      case 'planning': {
+        const writes = all('write');
+        const outline = feed.some(e => e.key === 'outline' && e.state === 'done') ? 6 : 0;
+        return 8 + outline + (writes ? Math.round(26 * done('write') / writes) : 0);
+      }
+      case 'writing': return 40;
+      case 'composing': return 44;
+      case 'pictures':
+        return 48 + (job.total ? Math.round(48 * (job.done || 0) / job.total) : 0);
+      default: return 20;
+    }
+  },
+
+  /* The headline over the timeline: the phase the deck is actually in,
+   * read from its steps rather than only the coarse stage. */
+  _headline(job) {
+    const active = (job.activity || []).filter(e => e.state === 'active').map(e => e.key);
+    const has = (p) => active.some(k => k.indexOf(p) === 0);
+    if (has('write')) return 'Writing your slides…';
+    if (has('check')) return 'Checking the slides against your textbook…';
+    if (has('layout')) return 'Designing the slides…';
+    if (has('paint')) return 'Painting your slides…';
+    if (has('picture')) return 'Adding pictures…';
+    return this._JOB_STAGES[job.stage] || 'Working…';
+  },
+
+  /* The step being worked on right now: the newest one still in progress. */
+  _currentActivity(feed) {
+    const items = feed || [];
+    for (let i = items.length - 1; i >= 0; i--) {
+      if (items[i].state === 'active') return items[i];
+    }
+    return null;
+  },
+
+  /* The activity timeline in the loading card. Finished steps get a tick,
+   * fallbacks a warning, and steps in progress a spinner; the newest few are
+   * shown, so the list stays readable however long the deck runs. */
+  renderActivity(feed) {
+    const list = document.getElementById('loading-activity');
+    if (!list) return;
+    const card = list.closest('.loading-card');
+    const items = (feed || []).slice();
+    if (!items.length) {
+      list.hidden = true;
+      list.innerHTML = '';
+      if (card) card.classList.remove('has-activity');
+      return;
+    }
+    list.hidden = false;
+    if (card) card.classList.add('has-activity');
+    // In-progress steps first in time order, so what is happening now is
+    // always in view; then the most recent finished ones.
+    const active = items.filter(e => e.state === 'active');
+    const finished = items.filter(e => e.state !== 'active').slice(-Math.max(2, 7 - active.length));
+    const shown = finished.concat(active.slice(-5));
+    const known = new Set(Array.from(list.children).map(li => li.dataset.key));
+    list.innerHTML = '';
+    shown.forEach((e, i) => {
+      const li = document.createElement('li');
+      li.dataset.key = e.key;
+      li.className = (e.state === 'active' ? 'is-active' : '')
+        + (e.state !== 'active' && i < finished.length - 3 ? ' is-older' : '');
+      if (known.has(e.key)) li.style.animation = 'none';   // only new rows slide in
+      const icon = document.createElement('span');
+      icon.className = 'activity-icon is-' + (e.state || 'active');
+      icon.textContent = e.state === 'done' ? '✓' : (e.state === 'warn' ? '!' : '');
+      const text = document.createElement('span');
+      text.textContent = e.text || '';
+      li.appendChild(icon);
+      li.appendChild(text);
+      if (e.state !== 'active' && e.startedAt && e.at) {
+        const secs = Math.max(0, e.at - e.startedAt);
+        if (secs >= 1) {
+          const time = document.createElement('span');
+          time.className = 'activity-time';
+          time.textContent = secs < 60 ? Math.round(secs) + 's'
+            : Math.floor(secs / 60) + 'm ' + Math.round(secs % 60) + 's';
+          li.appendChild(time);
+        }
+      }
+      list.appendChild(li);
+    });
+  },
+
+  /* Bring newly arrived pictures into the deck on screen. Only the picture
+   * fields move: a teacher may already be editing the text. */
+  _mergeVisuals(next) {
+    const cur = window.presentationData;
+    if (!cur || !next || !Array.isArray(next.slides)) return;
+    if (!Array.isArray(cur.slides) || cur.slides.length !== next.slides.length) {
+      cur.slides = next.slides;
+    } else {
+      next.slides.forEach((n, i) => {
+        const s = cur.slides[i];
+        if (n.v2 && s.v2) s.v2.visual = n.v2.visual;
+        ['imageUrl', 'imageBase64', 'slideImage', 'slideImagePending', 'slideImageError']
+          .forEach((k) => { if (k in n) s[k] = n[k]; else delete s[k]; });
+      });
+    }
+    const idx = (window.SlidePreview && SlidePreview.currentSlideIndex) || 0;
+    if (cur.slides[idx]) SlidePreview.renderSlide(cur.slides[idx], cur.theme, cur.design);
+  },
+
+  _applyFinalDeck(result) {
+    const cur = window.presentationData;
+    if (!cur) return;
+    const was = cur.generation && cur.generation.version;
+    const now = result && result.generation && result.generation.version;
+    if (result && Array.isArray(result.slides) && was !== now) {
+      // The deck changed kind after it was shown (a late failure fell back to
+      // the plain generator): show the deck that was actually produced.
+      cur.slides = result.slides;
+    } else {
+      this._mergeVisuals(result || {});
+    }
+    ['generation', 'source', 'sourceMode', 'requestedSourceMode', 'sourceModeDowngraded']
+      .forEach((k) => { if (result && k in result) cur[k] = result[k]; });
+    (cur.slides || []).forEach((s) => {
+      if (s.v2 && s.v2.visual) delete s.v2.visual.pending;
+      delete s.slideImagePending;
+    });
+    delete cur._partial;
+    this.renderSourceBadge(cur.source);
+    const idx = (window.SlidePreview && SlidePreview.currentSlideIndex) || 0;
+    if (cur.slides && cur.slides[idx]) SlidePreview.renderSlide(cur.slides[idx], cur.theme, cur.design);
+    this._setFinishing(null);
+  },
+
+  /* "Adding pictures… 3 of 7" beside the title while the deck finishes.
+   * Download and Save wait for it: a file saved now would lack pictures. */
+  _setFinishing(text) {
+    let el = document.getElementById('finishing-banner');
+    if (!el) {
+      const anchor = document.getElementById('source-badge');
+      if (!anchor || !anchor.parentNode) return;
+      el = document.createElement('span');
+      el.id = 'finishing-banner';
+      el.className = 'finishing-banner';
+      anchor.parentNode.insertBefore(el, anchor.nextSibling);
+    }
+    el.hidden = !text;
+    el.textContent = text || '';
+    ['download-btn', 'save-edva-btn'].forEach((id) => {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      btn.disabled = !!text;
+      btn.title = text ? 'Finishing your slides…' : '';
+    });
   },
 
   /* ========================================================
@@ -717,12 +1082,18 @@ window.App = {
         markdownContent += '\n';
       });
 
+      // The markdown alone reopens as V1 bullets; a V2 deck also carries
+      // its full specification so the viewer can draw it as generated.
+      const savedMarkdown = window.PPTV2Deck
+        ? window.PPTV2Deck.embed(markdownContent.trim(), window.presentationData)
+        : markdownContent.trim();
+
       window.parent.postMessage({
         type: 'EDVA_PPT_SAVE',
         title: window.presentationData.title || 'Presentation',
         fileName,
         base64,
-        markdownContent: markdownContent.trim(),
+        markdownContent: savedMarkdown,
       }, '*');
       this.showToast('Saving to Course Content…', 'info');
       // Safety: re-enable the button if the parent never acks.
@@ -770,6 +1141,7 @@ window.App = {
   showLoading(status, step) {
     const overlay = document.getElementById('loading-overlay');
     if (overlay) overlay.classList.add('visible');
+    this.renderActivity(null);
     this.updateLoadingStatus(status, step);
     this.updateProgress(0);
 

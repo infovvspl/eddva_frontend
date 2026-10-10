@@ -30,6 +30,13 @@ window.PPTExport = {
   async _prefillBase64Images(presentationData) {
     if (!presentationData?.slides) return;
     for (const slide of presentationData.slides) {
+      // A painted slide is fetched into the file like any other picture, so
+      // the .pptx does not depend on the image server staying up.
+      const painted = slide.slideImage;
+      if (painted && painted.url && !painted.base64) {
+        const b64 = await this._urlToBase64(painted.url);
+        if (b64) painted.base64 = b64;
+      }
       if (slide.imageUrl && !slide.imageBase64) {
         const b64 = await this._urlToBase64(slide.imageUrl);
         if (b64) {
@@ -96,6 +103,32 @@ window.PPTExport = {
     // renders math with KaTeX; PptxGenJS cannot, so without this the exported
     // .pptx shows raw "$$...$$" markup.
     data = this._deLatexSlide(data);
+
+    // An image slide is one painted picture, placed full-bleed. Its words are
+    // in the speaker notes (added by the caller), not drawn again on top.
+    const painted = data.slideImage;
+    if (painted && (painted.base64 || painted.url)) {
+      slide.background = { color: 'FFFFFF' };
+      slide.addImage(Object.assign(
+        painted.base64 ? { data: painted.base64 } : { path: painted.url },
+        { x: 0, y: 0, w: 10, h: 5.625, altText: data.title || 'Slide' }));
+      return;
+    }
+
+    // V2 slides carry their own layout, theme and visual specification and are
+    // drawn by pptV2.js. Kept to a guard rather than folded into the design
+    // map below so V1 rendering is untouched and the two can be compared on
+    // the same input. A V2 failure falls through to V1: a plainer slide beats
+    // a lost one.
+    if (window.PPTV2 && window.PPTV2.isV2(data)) {
+      try {
+        window.PPTV2.renderSlide(slide, pptx, data, this);
+        return;
+      } catch (err) {
+        console.warn(`V2 render failed on slide ${data.slideNumber || '?'}; using V1:`, err);
+      }
+    }
+
     const type = (data.type || 'content').toLowerCase();
     const map  = {
       executive: { title: '_exec_title', content: '_exec_content', summary: '_exec_summary' },

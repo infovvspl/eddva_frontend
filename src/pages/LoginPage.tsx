@@ -114,7 +114,22 @@ const LoginPage = () => {
 
   const loginErrorMessage = (err: any, fallback: string) => {
     if (!err?.response) {
-      return "Cannot reach the server. Start the backend (npm run start:dev in eddva_backend).";
+      // No HTTP response reached the browser. Locally that usually means the
+      // backend is not running; on a deployed host it does not — it means the
+      // API is down or its error page was blocked by CORS. nginx's own 502
+      // page carries no Access-Control-Allow-Origin, so a dead upstream
+      // arrives here looking exactly like a network failure, and telling the
+      // teacher to run `npm run start:dev` sent them hunting the wrong thing.
+      if (import.meta.env.DEV) {
+        return "Cannot reach the server. Start the backend (npm run start:dev in eddva_backend).";
+      }
+      return "Cannot reach the server right now. This is usually a temporary outage — please try again in a few minutes, and tell your administrator if it continues.";
+    }
+    // 502/503/504 come from the proxy when the API itself is down, so they
+    // carry an HTML error page rather than a useful message.
+    const status = err.response?.status;
+    if (status === 502 || status === 503 || status === 504) {
+      return "The server is temporarily unavailable. Please try again in a few minutes.";
     }
     return err.response?.data?.message || fallback;
   };

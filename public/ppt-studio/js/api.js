@@ -67,13 +67,14 @@ window.API = {
     }
   },
 
-  async generatePresentation(topic, slideCount, theme, language, scope, sourceMode) {
+  async generatePresentation(topic, slideCount, theme, language, scope, sourceMode, pptVersion) {
     try {
       const response = await fetch(window.PPT_CFG.pptUrl('/generate'), {
         method: 'POST',
         headers: pptHeaders(),
         body: JSON.stringify({
           topic, slideCount, theme, language, sourceMode, ...scopeFields(scope),
+          ...(pptVersion ? { pptVersion } : {}),
         }),
       });
       if (!response.ok) {
@@ -89,6 +90,45 @@ window.API = {
       }
       throw error;
     }
+  },
+
+  /**
+   * Start a deck in the background. Resolves to the job id, or null when this
+   * backend has no job route yet (an older deployment) - the caller then uses
+   * the one-request generatePresentation instead.
+   */
+  async startPresentation(topic, slideCount, theme, language, scope, sourceMode, pptVersion) {
+    const response = await fetch(window.PPT_CFG.pptUrl('/generate/start'), {
+      method: 'POST',
+      headers: pptHeaders(),
+      body: JSON.stringify({
+        topic, slideCount, theme, language, sourceMode, ...scopeFields(scope),
+        ...(pptVersion ? { pptVersion } : {}),
+      }),
+    });
+    if (response.status === 404) return null;
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error((errorData && (errorData.message || errorData.error))
+        || `Server responded with status ${response.status}`);
+    }
+    const data = await response.json();
+    return data.jobId || (data.data && data.data.jobId) || null;
+  },
+
+  /** A background deck: { status, stage, done, total, partial, result, error }. */
+  async getPresentationStatus(jobId) {
+    const response = await fetch(window.PPT_CFG.pptUrl('/generate/status/' + encodeURIComponent(jobId)), {
+      method: 'GET',
+      headers: pptHeaders(),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error((errorData && (errorData.message || errorData.error))
+        || `Server responded with status ${response.status}`);
+    }
+    const data = await response.json();
+    return data && data.status ? data : (data.data || data);
   },
 
   async regenerateSlide(slideIndex, topic, currentSlide, totalSlides, scope) {
