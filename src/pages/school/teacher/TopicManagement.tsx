@@ -52,6 +52,7 @@ import {
   ZoomIn,
   Clapperboard,
   Play,
+  ScanLine,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -79,6 +80,10 @@ import { toast } from 'sonner';
 import { useConfirm } from '@/context/ConfirmContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSchoolFeature } from '@/hooks/use-school-feature';
+import { pptStudioPath } from './PptStudioPage';
+import PptJobsList from '@/components/school/teacher/PptJobsList';
+import { pptJobOpenPath, pptJobRetryPath } from '@/components/school/teacher/PptJobsNotifier';
+import { dismissPptJob, isGenerating, pptJobToResume, usePptJobs } from '@/lib/pptJobs';
 
 function formatSectionName(name: string | null | undefined) {
   const value = String(name || '').trim();
@@ -107,13 +112,11 @@ interface CourseContentReturnState {
   selectedTopic?: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' | 'subject' } | null;
 }
 
-// AI PPT Studio — served natively from the EDVA frontend (same origin), so nothing
-// separate needs to run. Override via VITE_PPT_STUDIO_URL only if hosted elsewhere.
-const PPT_STUDIO_URL = (import.meta.env.VITE_PPT_STUDIO_URL as string) || '/ppt-studio/index.html';
 
 const TopicManagement: React.FC = () => {
   const confirm = useConfirm();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
   const { assignments, setAssignments, activeAcademicContext, setActiveAcademicContext } = useAcademicStore();
   const canEditCurriculum =
@@ -159,7 +162,6 @@ const TopicManagement: React.FC = () => {
   // ── Curriculum (chapters / topics tree + selected topic) ───────────────────
   const [chaptersList, setChaptersList] = useState<any[]>([]);
   const [loadingChapters, setLoadingChapters] = useState(false);
-  const [pptStudioOpen, setPptStudioOpen] = useState(false);
   // Bumped after any topic mutation so open chapter nodes re-fetch their topics.
   const [curriculumVersion, setCurriculumVersion] = useState(0);
   // Bumped after a PPT (or other material) is saved so the open MaterialWorkspace re-fetches its list.
@@ -420,52 +422,6 @@ const TopicManagement: React.FC = () => {
   const filteredSubjects = subjects.filter((s) => s.name?.toLowerCase().includes(q));
 
   // ── Render ─────────────────────────────────────────────────────────────────
-  // Receive a generated .pptx from the embedded PPT Studio and save it to the
-  // open topic's Course Content materials, then acknowledge the iframe.
-  useEffect(() => {
-    const onMessage = async (e: MessageEvent) => {
-      const data = e.data as { type?: string; title?: string; fileName?: string; base64?: string; markdownContent?: string };
-      if (data?.type !== 'EDVA_PPT_SAVE') return;
-      const reply = (type: string, message?: string) =>
-        (e.source as Window | null)?.postMessage({ type, message }, '*');
-      try {
-        if (!selectedTopic) { toast.error('Open a topic first, then save the PPT to it.'); reply('EDVA_PPT_SAVE_ERROR', 'Open a topic first'); return; }
-        if (!data.base64) { reply('EDVA_PPT_SAVE_ERROR', 'No file data'); return; }
-        const bin = atob(data.base64);
-        const bytes = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-        const fileName = data.fileName || `${data.title || 'Presentation'}.pptx`;
-        const file = new File([bytes], fileName, {
-          type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-        });
-        const fileUrl = await schoolContent.uploadMaterialFile(file);
-        await schoolContent.createMaterial({
-          title: data.title || 'Presentation',
-          fileType: 'ppt',
-          fileUrl,
-          fileName,
-          fileSizeKb: Math.round(file.size / 1024),
-          // Save the slide markdown so KaTeX math renders when viewed
-          description: data.markdownContent || undefined,
-          topicId: selectedTopic.kind === 'topic' ? selectedTopic.id : undefined,
-          chapterId: selectedTopic.kind === 'subject' ? undefined : selectedTopic.chapterId,
-          subjectId: selectedSubject?.id,
-          classId: selectedClass?.id,
-          sectionId: selectedSection?.id,
-        });
-        toast.success('PPT saved to Course Content');
-        reply('EDVA_PPT_SAVED');
-        setMaterialsRefreshToken((v) => v + 1);
-        setPptStudioOpen(false);
-      } catch (err: unknown) {
-        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Save failed';
-        toast.error(msg);
-        reply('EDVA_PPT_SAVE_ERROR', msg);
-      }
-    };
-    window.addEventListener('message', onMessage);
-    return () => window.removeEventListener('message', onMessage);
-  }, [selectedTopic, selectedSubject, selectedClass, selectedSection]);
 
   return (
     <div className="space-y-6">
@@ -807,7 +763,10 @@ const TopicManagement: React.FC = () => {
                 sectionId={selectedSection?.id}
                 canEdit={canEditCurriculum}
                 returnState={{ selectedClass, selectedSection, selectedSubject, selectedTopic }}
-                onOpenPptStudio={() => setPptStudioOpen(true)}
+                onOpenPptStudio={() => navigate(pptStudioPath({
+                  topic: selectedTopic, subject: selectedSubject,
+                  klass: selectedClass, section: selectedSection,
+                }))}
                 refreshToken={materialsRefreshToken}
               />
             ) : (
@@ -856,69 +815,6 @@ const TopicManagement: React.FC = () => {
         </>
       )}
 
-      {/* ── AI PPT Studio (embedded ppt-generator) ──────────────────────── */}
-      {pptStudioOpen && (
-        <Dialog open onOpenChange={(open) => { if (!open) setPptStudioOpen(false); }}>
-  <DialogContent className="left-0 top-0 h-dvh w-screen max-w-none translate-x-0 translate-y-0 rounded-none border-0 sm:rounded-none bg-transparent gap-0 p-0 [&>button:last-child]:hidden">
-    <DialogTitle className="sr-only">AI PPT Studio</DialogTitle>
-    <DialogDescription className="sr-only">AI PPT Studio</DialogDescription>
-
-          {/* Floating close button */}
-          <Button variant={null} size={null}
-            onClick={() => setPptStudioOpen(false)}
-            className="absolute top-3 right-3 z-10 grid size-9 place-items-center rounded-lg bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/60"
-            title="Close PPT Studio"
-          >
-            <X size={18} />
-          </Button>
-          <iframe
-            title="AI PPT Studio"
-            src={(() => {
-              const q = new URLSearchParams();
-              q.set('api', getApiBaseUrl());
-              const inst = (user as any)?.instituteId || (user as any)?.tenantId;
-              if (inst) q.set('institute', String(inst));
-
-              // Forward the curriculum scope so the AI writes slides for THIS
-              // class/subject/chapter/topic. IDs are authoritative — the backend
-              // resolves the real names from them; the names below are only so the
-              // studio can show the scope banner without a round-trip.
-              if (selectedTopic) {
-                // A "subject" node's name is "<Subject> Materials", which is a
-                // useless prompt subject — fall back to the real subject name.
-                const topicLabel =
-                  selectedTopic.kind === 'subject'
-                    ? (selectedSubject?.name ?? selectedTopic.name)
-                    : selectedTopic.name;
-                q.set('topic', topicLabel);
-
-                if (selectedTopic.kind === 'topic') {
-                  q.set('topicId', selectedTopic.id);
-                  q.set('topicName', selectedTopic.name);
-                  if (selectedTopic.chapterId) q.set('chapterId', selectedTopic.chapterId);
-                } else if (selectedTopic.kind === 'chapter') {
-                  q.set('chapterId', selectedTopic.id);
-                  q.set('chapterName', selectedTopic.name);
-                }
-              }
-              if (selectedClass?.name) q.set('className', selectedClass.name);
-              if (selectedSubject?.name) q.set('subjectName', selectedSubject.name);
-              // subjectId lets the server resolve the class even when the subject
-              // is only reachable via its section or the teacher's assignment.
-              if (selectedSubject?.id) q.set('subjectId', selectedSubject.id);
-              if (selectedClass?.id) q.set('classId', selectedClass.id);
-
-              // Force browser to load the latest app.js code by cache-busting
-              q.set('cb', String(Date.now()));
-              return `${PPT_STUDIO_URL}?${q.toString()}`;
-            })()}
-            className="size-full border-0 bg-white block"
-            allow="clipboard-write; downloads"
-          />
-        
-  </DialogContent>
-</Dialog>
-      )}
     </div >
   );
 };
@@ -1280,6 +1176,8 @@ function MaterialWorkspace({
   const [showAdd, setShowAdd] = useState(false);
   const [addType, setAddType] = useState<SchoolMaterialType | undefined>(undefined);
   const [showAi, setShowAi] = useState(false);
+  // Presentations generating in the background (PPT Studio "Continue in background").
+  const { generating: pptGenerating } = usePptJobs();
   const [viewMaterial, setViewMaterial] = useState<SchoolMaterial | null>(null);
   const [editingFlashcards, setEditingFlashcards] = useState<SchoolMaterial | null>(null);
   const [editingChecklist, setEditingChecklist] = useState<SchoolMaterial | null>(null);
@@ -1399,9 +1297,16 @@ function MaterialWorkspace({
               {topic.kind !== 'subject' && (hasAiMaterials || hasPptGen) && (
                 <Button variant={null} size={null}
                   onClick={() => setShowAi(true)}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300"
+                  title={hasPptGen && pptGenerating.length ? 'A presentation is generating in the background' : undefined}
+                  className="relative inline-flex h-9 items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300"
                 >
                   <Sparkles size={15} /> AI Generate
+                  {hasPptGen && pptGenerating.length > 0 && (
+                    <span data-testid="ppt-generating-dot" className="absolute -right-1 -top-1 flex h-3 w-3">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
+                      <span className="relative inline-flex h-3 w-3 rounded-full bg-violet-600" />
+                    </span>
+                  )}
                 </Button>
               )}
               <Button size="sm" onClick={() => { setAddType(topic.kind === 'subject' ? 'ebook' : undefined); setShowAdd(true); }}>
@@ -2402,6 +2307,15 @@ function AiGeneratePanel({
   const scopeRef = topic.kind === 'subject' ? { subjectId: topic.id } : topic.kind === 'chapter' ? { chapterId: topic.id } : { topicId: topic.id };
   const hasAiMaterials = useSchoolFeature('ai', 'ai_content_generator_materials');
   const hasPptGen = useSchoolFeature('ai', 'ai_ppt_generator');
+  const navigate = useNavigate();
+  const { jobs: pptJobs } = usePptJobs();
+  // A deck already being made for this topic (or made and not opened yet):
+  // Presentation opens that, rather than a setup screen to generate it again.
+  const pptJobHere = pptJobToResume(pptJobs, topic);
+  const openPresentation = () => {
+    if (pptJobHere) { onClose(); navigate(pptJobOpenPath(pptJobHere)); return; }
+    onOpenPptStudio();
+  };
 
   const [typeId, setTypeId] = useState(() => {
     // Match production: default to a material type, never 'presentation'.
@@ -2623,6 +2537,14 @@ function AiGeneratePanel({
         </div>
 
         <div className="flex-1 overflow-y-auto p-5">
+          {hasPptGen && (
+            <PptJobsList
+              jobs={pptJobs}
+              onOpen={(job) => { onClose(); navigate(pptJobOpenPath(job)); }}
+              onRetry={(job) => { void dismissPptJob(job.jobId); onClose(); navigate(pptJobRetryPath(job)); }}
+              onDismiss={(job) => { void dismissPptJob(job.jobId); }}
+            />
+          )}
           <p className="mb-3 text-[11px] font-black uppercase tracking-wider text-surface-400">1 · Choose content type</p>
           <div className="grid grid-cols-2 gap-2.5">
             {AI_GEN_TYPES.map((t) => {
@@ -2634,11 +2556,22 @@ function AiGeneratePanel({
               const Icon = t.icon;
               const active = typeId === t.id;
               return (
-                <Button variant={null} size={null} key={t.id} onClick={() => { if (t.id === 'presentation') { onOpenPptStudio(); return; } setTypeId(t.id); setContent(null); }}
+                <Button variant={null} size={null} key={t.id} onClick={() => { if (t.id === 'presentation') { openPresentation(); return; } setTypeId(t.id); setContent(null); }}
                   className={`rounded-2xl border-2 p-3 text-left transition-all ${active ? 'border-violet-400 bg-violet-50 dark:bg-violet-900/30' : 'border-surface-100 hover:border-surface-200 dark:border-surface-700'}`}>
                   <div className={`mb-1.5 inline-flex rounded-lg p-1.5 ${t.soft}`}><Icon size={16} className={t.text} /></div>
                   <p className="text-sm font-bold text-surface-900 dark:text-white">{t.label}</p>
                   <p className="mt-0.5 text-[11px] font-medium leading-snug text-surface-400">{t.desc}</p>
+                  {t.id === 'presentation' && pptJobHere && (
+                    isGenerating(pptJobHere) ? (
+                      <p data-testid="ppt-card-state" className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
+                        <Loader2 size={10} className="animate-spin" /> Generating now · click to see progress
+                      </p>
+                    ) : (
+                      <p data-testid="ppt-card-state" className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                        Ready · click to open
+                      </p>
+                    )
+                  )}
                 </Button>
               );
             })}
@@ -3297,6 +3230,22 @@ function rowsFromCsv(text: string): ParsedRow[] {
   return out;
 }
 
+function csvField(value: string): string {
+  const v = String(value ?? '');
+  return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+}
+
+/** Turns the AI's chapter/topics read-out into the same two-column CSV the
+ * textarea already understands, so a scanned index page reuses every bit of
+ * the existing preview/edit/import flow instead of a parallel code path. */
+function csvFromScannedChapters(chapters: Array<{ chapter: string; topics: string[] }>): string {
+  const lines = ['Chapter,Topic'];
+  for (const ch of chapters) {
+    lines.push(`${csvField(ch.chapter)},${csvField((ch.topics || []).join(', '))}`);
+  }
+  return lines.join('\n');
+}
+
 const CSV_TEMPLATE =
   'Chapter,Topic\n' +
   'Real Numbers,Euclid’s Division Lemma\n' +
@@ -3312,7 +3261,9 @@ function BulkImportModal({
 }) {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const imageRef = useRef<HTMLInputElement>(null);
 
   const rows = useMemo(() => rowsFromCsv(text), [text]);
   const grouped = useMemo(() => {
@@ -3332,6 +3283,38 @@ function BulkImportModal({
   const onFile = async (f: File) => {
     const content = await f.text();
     setText(content);
+  };
+
+  const onScanImage = async (f: File) => {
+    setScanning(true);
+    try {
+      const fd = new FormData();
+      fd.append('image', f);
+      // The shared axios instance defaults every request to Content-Type:
+      // application/json, which — left in place — stops the browser from
+      // setting the multipart boundary header a FormData body needs; the
+      // server then sees no file. Same fix as uploadMaterialFile() in
+      // lib/api/school-content.ts.
+      const res = await api.post('/topics/bulk-import/parse-image', fd, {
+        transformRequest: [(data: any, headers: any) => {
+          delete headers['Content-Type'];
+          return data;
+        }],
+      });
+      const data = res.data?.data || res.data || {};
+      const chapters: Array<{ chapter: string; topics: string[] }> = data.chapters || [];
+      if (!chapters.length) {
+        toast.warning(data.warning || 'Could not read a chapter/topic structure from that image — try a clearer, flatter photo of the index page.');
+        return;
+      }
+      setText(csvFromScannedChapters(chapters));
+      const topicCount = chapters.reduce((n, c) => n + (c.topics?.length || 0), 0);
+      toast.success(`Read ${chapters.length} chapter(s), ${topicCount} topic(s) from the image — review below before importing.`);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Could not scan that image. Please try again or enter manually.');
+    } finally {
+      setScanning(false);
+    }
   };
 
   const downloadTemplate = () => {
@@ -3372,7 +3355,8 @@ function BulkImportModal({
         <div className="flex items-start justify-between gap-3">
           <p className="text-sm text-surface-500 dark:text-surface-300">
             Import chapters &amp; topics into <span className="font-semibold text-surface-700 dark:text-surface-100">{subjectName}</span>.
-            Use two columns — <b>Chapter</b>, <b>Topic</b>. Existing names are reused, not duplicated.
+            Upload a CSV, type two columns — <b>Chapter</b>, <b>Topic</b> — or scan a photo of the
+            book's index page and let AI fill it in. Existing names are reused, not duplicated.
           </p>
           <Button size="sm" variant="ghost" onClick={downloadTemplate}>
 <Download size={15} />Template</Button>
@@ -3383,9 +3367,20 @@ function BulkImportModal({
             onChange={(e) => { if (e.target.files?.[0]) void onFile(e.target.files[0]); e.target.value = ''; }} />
           <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()}>
 <FileSpreadsheet size={15} />Upload CSV</Button>
+          <input ref={imageRef} type="file" accept="image/*" className="hidden"
+            onChange={(e) => { if (e.target.files?.[0]) void onScanImage(e.target.files[0]); e.target.value = ''; }} />
+          <Button size="sm" variant="outline" disabled={scanning} onClick={() => imageRef.current?.click()}>
+            {scanning ? <Loader2 size={15} className="animate-spin" /> : <ScanLine size={15} />}
+            {scanning ? 'Scanning…' : 'Scan Book Index'}
+          </Button>
           {text && <Button size="sm" variant="ghost" onClick={() => setText('')}>
 <X size={15} />Clear</Button>}
         </div>
+        {scanning && (
+          <p className="text-xs text-surface-400">
+            Reading the chapter/topic structure from your photo — this can take up to ~20s.
+          </p>
+        )}
 
         <Textarea
           value={text}

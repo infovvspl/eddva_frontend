@@ -17,6 +17,7 @@ import { ConfirmProvider } from "@/context/ConfirmContext";
 import { useModuleAccess } from "@/hooks/use-module-access";
 import { useAuthStore, roleRedirectPath } from "@/lib/auth-store";
 import { apiClient, extractData } from "@/lib/api/client";
+import { useIdleLogout } from "@/hooks/use-idle-logout";
 
 function CoachingFontManager() {
   const location = useLocation();
@@ -30,6 +31,13 @@ function CoachingFontManager() {
     }
   }, [location.pathname, tenantType]);
 
+  return null;
+}
+
+/** Mounted once, app-wide: auto-logs-out an idle school session (see
+ * useIdleLogout). No-ops whenever there's no active session. */
+function IdleLogoutWatcher() {
+  useIdleLogout();
   return null;
 }
 
@@ -254,6 +262,9 @@ const SchoolTeacherDashboard = lazy(() => import("./pages/school/teacher/Dashboa
 const SchoolTeacherStudents = lazy(() => import("./pages/school/teacher/Students"));
 const SchoolTeacherStudentProfile = lazy(() => import("./pages/school/teacher/StudentProfile"));
 const SchoolTopicManagement = lazy(() => import("./pages/school/teacher/TopicManagement"));
+const SchoolPptStudioPage = lazy(() => import("./pages/school/teacher/PptStudioPage"));
+// Says when a deck generated in the background is ready, on any teacher page.
+const SchoolPptJobsNotifier = lazy(() => import("./components/school/teacher/PptJobsNotifier"));
 const SchoolTextbookCoverage = lazy(() => import("./pages/school/teacher/TextbookCoverage"));
 const SchoolClassManagement = lazy(() => import("./pages/school/teacher/ClassManagement"));
 const SchoolTeacherRecordedClassDetails = lazy(() => import("./pages/school/teacher/RecordedClassDetails"));
@@ -572,10 +583,21 @@ const SchoolRoutes = () => (
       <Route path="erp-modules" element={<SuperAdminErpModulesPage />} />
     </Route>
 
+    {/* PPT Studio: a page of its own, outside the panel layout (no sidebar). */}
+    <Route
+      path="/school/teacher/ppt-studio"
+      element={<SchoolGuard roles={["TEACHER"]}><SchoolPptStudioPage /></SchoolGuard>}
+    />
+
     {/* School Teacher */}
     <Route
       path="/school/teacher"
-      element={<SchoolGuard roles={["TEACHER"]}><SchoolTeacherLayout /></SchoolGuard>}
+      element={
+        <SchoolGuard roles={["TEACHER"]}>
+          <Suspense fallback={null}><SchoolPptJobsNotifier /></Suspense>
+          <SchoolTeacherLayout />
+        </SchoolGuard>
+      }
     >
       <Route index element={<SchoolTeacherDashboard />} />
       <Route path="students" element={<SchoolTeacherStudents />} />
@@ -949,6 +971,7 @@ const App = () => {
               <BrowserRouter>
                 <NotificationProvider>
                   <CoachingFontManager />
+                  <IdleLogoutWatcher />
                   <Suspense fallback={<RouteLoading />}>
                     <MaintenanceGate>
                       {isTenant ? <TenantRoutes /> : <PlatformRoutes />}

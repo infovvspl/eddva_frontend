@@ -39,8 +39,6 @@ type Row = {
   materialId: string | null;
   pages: number | null;
   passages: number | null;
-  /** Diagrams cropped from this chapter's PDF. Absent on an older backend. */
-  figures?: number | null;
   method: string | null;
   quality: string | null;
   fileName: string | null;
@@ -502,19 +500,6 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
                             const stats = r.indexed ? (
                               <span className="text-[11px] tabular-nums text-surface-400">
                                 {r.pages}p · {r.passages} passages{r.method === 'ocr' ? ' · scanned' : ''}
-                                {/* Figures are what a generated paper can illustrate a
-                                    question with. Shown because "Ready" alone cannot tell
-                                    a chapter whose book has no diagrams from one indexed
-                                    before figures were extracted at all — both look
-                                    identical, and both produce a paper with no images. */}
-                                {typeof r.figures === 'number' && (
-                                  <>
-                                    {' · '}
-                                    <span className={r.figures > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}>
-                                      {r.figures} figures
-                                    </span>
-                                  </>
-                                )}
                               </span>
                             ) : null;
                             return (
@@ -558,9 +543,8 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
                                   </Badge>
                                   {/* A chapter already marked Ready used to offer nothing but
                                       Replace, so refreshing one meant re-uploading its PDF.
-                                      Indexing improves over time — figure extraction is the
-                                      current example — and every chapter indexed before an
-                                      improvement stays stale until it is read again. */}
+                                      Indexing improves over time, and every chapter indexed
+                                      before an improvement stays stale until it is read again. */}
                                   {canIndex && (
                                     <Button
                                       size="sm"
@@ -571,7 +555,7 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
                                         st === 'stale'
                                           ? 'A newer file was uploaded since this was last read — index it to fix what the AI generates'
                                           : st === 'ready'
-                                          ? 'Read this book again — picks up figures and any other indexing improvements'
+                                          ? 'Read this book again — picks up any indexing improvements'
                                           : 'Read this book and index it'
                                       }
                                       className={`h-7 rounded-lg px-2 text-[11px] font-bold ${
