@@ -561,11 +561,11 @@ const TopicManagement: React.FC = () => {
                             <h3 className="text-xl font-black tracking-tight leading-tight drop-shadow-xs truncate text-white">
                               {c.name}
                             </h3>
-                            {c.isClassTeacher && (
+                            {/* {c.isClassTeacher && (
                               <span className="shrink-0 rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold tracking-wide text-white backdrop-blur-md ring-1 ring-white/30">
                                 ★ Incharge
                               </span>
-                            )}
+                            )} */}
                           </div>
                           <p className="text-xs font-medium text-white/80 mt-0.5">
                             {classSecs.length} {classSecs.length === 1 ? 'Section' : 'Sections'} • {totalClassSubjectsCount} {totalClassSubjectsCount === 1 ? 'Subject' : 'Subjects'}
