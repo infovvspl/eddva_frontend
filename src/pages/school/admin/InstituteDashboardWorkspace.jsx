@@ -25,6 +25,8 @@ import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import adminBanner from '@/assets/images/new_admin_banner.png';
 import {
+  LineChart,
+  Line,
   BarChart,
   Bar,
   XAxis,
@@ -44,6 +46,11 @@ import { Separator } from '@/components/ui/separator';
 import SmartCalendar from '@/components/school/SmartCalendar';
 import api from '@/lib/api/school-client';
 import { cn } from '@/lib/utils';
+
+const performanceChartConfig = {
+  score: { label: 'Avg score', color: '#2563EB' },
+  attendance: { label: 'Attendance', color: '#10B981' },
+};
 
 const attendanceChartConfig = {
   present: {
@@ -132,12 +139,15 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
   const [flags, setFlags] = useState([]);
   useEffect(() => {
     let alive = true;
-    api.get('/notifications', { params: { flagged: true, isRead: false, limit: 5 } })
+    api.get('/notifications', { params: { flagged: true, limit: 5 } })
       .then((res) => { const d = res.data?.data ?? res.data; if (alive) setFlags(Array.isArray(d) ? d : []); })
       .catch(() => {});
     return () => { alive = false; };
   }, []);
   const navigate = useNavigate();
+  // Live flags computed by the dashboard API; the stored notifications are only a fallback
+  // for an older backend that does not send them.
+  const attentionFlags = Array.isArray(stats?.attentionFlags) ? stats.attentionFlags : flags;
 
   const students = stats?.totalStudents ?? 150;
   const teachers = stats?.totalTeachers ?? 41;
@@ -165,7 +175,9 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
     return attendanceSeries.map((s) => ({
       name: s.name,
       present: s.att,
-      absent: s.att == null ? null : Math.max(0, 100 - s.att),
+      // `abs` is the share explicitly marked absent; days a student was never marked are left out.
+      // Older API responses have no `abs`, so fall back to the complement.
+      absent: s.att == null ? null : (s.abs ?? Math.max(0, 100 - s.att)),
     }));
   }, [attendanceSeries]);
 
@@ -274,7 +286,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
         
         {/* Attendance Overview (Span 7) */}
         <div className="lg:col-span-7 flex">
-          <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm rounded-3xl p-5 sm:p-6 w-full flex flex-col justify-between font-semibold">
+          <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm rounded-3xl p-5 sm:p-6 w-full flex flex-col font-semibold">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <CardTitle className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">Attendance Overview</CardTitle>
@@ -286,17 +298,55 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
               </Badge>
             </div>
 
-            <ChartContainer config={attendanceChartConfig} className="mt-4 min-h-[220px] w-full flex-1 aspect-auto">
-              <BarChart accessibilityLayer data={attendancePresentAbsentSeries} margin={{ top: 10, right: 12, left: -24, bottom: 0 }}>
+            <ChartContainer config={attendanceChartConfig} className="mt-4 h-[240px] w-full aspect-auto">
+              <BarChart accessibilityLayer data={attendancePresentAbsentSeries} barCategoryGap="22%" barGap={3} margin={{ top: 10, right: 12, left: -24, bottom: 0 }}>
                 <CartesianGrid vertical={false} />
                 <XAxis dataKey="name" tickLine={false} tickMargin={10} axisLine={false} />
                 <YAxis axisLine={false} tickLine={false} domain={[0, 100]} unit="%" />
                 <ChartTooltip content={<ChartTooltipContent />} />
                 <ChartLegend content={<ChartLegendContent />} />
-                <Bar dataKey="present" fill="var(--color-present)" radius={4} />
-                <Bar dataKey="absent" fill="var(--color-absent)" radius={4} />
+                <Bar dataKey="present" fill="var(--color-present)" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="absent" fill="var(--color-absent)" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ChartContainer>
+
+            {(stats?.performanceTrend || []).length > 1 && (
+              <div className="mt-6">
+                <div className="mb-2">
+                  <p className="text-sm text-slate-900 dark:text-white">Performance Analysis</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Average assessment score and attendance, last 6 months</p>
+                </div>
+                <ChartContainer config={performanceChartConfig} className="h-[200px] w-full aspect-auto">
+                  <LineChart accessibilityLayer data={stats.performanceTrend} margin={{ top: 8, right: 12, left: -24, bottom: 0 }}>
+                    <CartesianGrid vertical={false} />
+                    <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} />
+                    <YAxis domain={[0, 100]} tickLine={false} axisLine={false} unit="%" />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <ChartLegend content={<ChartLegendContent />} />
+                    <Line dataKey="score" type="monotone" stroke="var(--color-score)" strokeWidth={2.5} dot={{ r: 3 }} />
+                    <Line dataKey="attendance" type="monotone" stroke="var(--color-attendance)" strokeWidth={2.5} dot={{ r: 3 }} />
+                  </LineChart>
+                </ChartContainer>
+              </div>
+            )}
+
+            {(() => {
+              const days = (attendancePresentAbsentSeries || []).filter((d) => d.present != null && (d.present + (d.absent || 0)) > 0);
+              if (!days.length) return null;
+              const best = days.reduce((a, b) => (b.present > a.present ? b : a));
+              const low = days.reduce((a, b) => (b.present < a.present ? b : a));
+              const avg = Math.round(days.reduce((t, d) => t + d.present, 0) / days.length);
+              return (
+                <div className="mt-auto grid grid-cols-3 gap-3 pt-5">
+                  {[['Weekly average', `${avg}%`], ['Best day', `${best.name} · ${Math.round(best.present)}%`], ['Lowest day', `${low.name} · ${Math.round(low.present)}%`]].map(([label, value]) => (
+                    <div key={label} className="rounded-2xl bg-slate-50 dark:bg-slate-800/50 px-4 py-3">
+                      <p className="text-[11px] uppercase tracking-wider text-slate-400">{label}</p>
+                      <p className="text-base text-slate-900 dark:text-white">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </Card>
         </div>
 
@@ -315,9 +365,9 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
               </button>
             </div>
             
-            {flags.length > 0 ? (
+            {attentionFlags.length > 0 ? (
               <ul className="space-y-2">
-                {flags.map((fl) => (
+                {attentionFlags.map((fl) => (
                   <li key={fl.id}>
                     <button
                       type="button"

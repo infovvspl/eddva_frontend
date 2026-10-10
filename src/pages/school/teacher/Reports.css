@@ -10,7 +10,7 @@
 }
 
 .reports * {
-  font-weight: 400 !important;
+  font-weight: 600 !important; /* same weight as the rest of the app (see index.css) */
 }
 
 .reports :is(
@@ -20,7 +20,7 @@
   .font-medium, .font-semibold, .font-bold, .font-extrabold, .font-black,
   .badge, [class$="__title"], [class$="__label"], [class$="__value"]
 ) {
-  font-weight: 500 !important;
+  font-weight: 600 !important;
 }
 
 .reports__stats {

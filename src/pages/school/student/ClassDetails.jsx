@@ -3,11 +3,13 @@ import { useParams, Link } from 'react-router-dom';
 import api, { unwrapSchoolData } from '@/lib/api/school-client';
 import { ChevronLeft, BookOpen, PlayCircle, FileText, CheckCircle2, Lock, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
+import { useSetBreadcrumbLabel } from '@/components/school/breadcrumbs/BreadcrumbContext';
 
 export default function ClassDetails() {
   const { id } = useParams();
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
+  useSetBreadcrumbLabel(course?.batch?.name);
   const [expandedSubject, setExpandedSubject] = useState(null);
   const [expandedChapter, setExpandedChapter] = useState(null);
 

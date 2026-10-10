@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   User, BookOpen, Calendar, BarChart2, Briefcase,
@@ -1226,13 +1228,13 @@ export default function TeacherProfile() {
                   );
                 }
 
-                const { rubric, topStrengths, areasForImprovement, classPerformance, recordingsAnalyzed } = benchmarkingData;
+                const { rubric, topStrengths, areasForImprovement, classPerformance, recordingsAnalyzed, monthlyTrend = [], instituteRubric } = benchmarkingData;
                 const rubricRows = [
-                  { label: 'Clarity', value: rubric.clarity },
-                  { label: 'Pacing', value: rubric.pacing },
-                  { label: 'Content Coverage', value: rubric.contentCoverage },
-                  { label: 'Student Engagement', value: rubric.studentEngagement },
-                  { label: 'Language Quality', value: rubric.languageQuality },
+                  { label: 'Clarity', value: rubric.clarity, peer: instituteRubric?.clarity },
+                  { label: 'Pacing', value: rubric.pacing, peer: instituteRubric?.pacing },
+                  { label: 'Content Coverage', value: rubric.contentCoverage, peer: instituteRubric?.contentCoverage },
+                  { label: 'Student Engagement', value: rubric.studentEngagement, peer: instituteRubric?.studentEngagement },
+                  { label: 'Language Quality', value: rubric.languageQuality, peer: instituteRubric?.languageQuality },
                 ];
 
                 return (
@@ -1253,16 +1255,40 @@ export default function TeacherProfile() {
                       </div>
                     </div>
 
+                    {monthlyTrend.length > 1 && (
+                      <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                        <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Overall Score Trend</h4>
+                        <ChartContainer config={{ overallScore: { label: 'Overall score', color: 'hsl(var(--primary))' } }} className="h-[200px] w-full aspect-auto">
+                          <LineChart data={monthlyTrend.map((m) => ({ ...m, label: new Date(`${m.month}-01`).toLocaleDateString(undefined, { month: 'short' }) }))} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
+                            <CartesianGrid vertical={false} />
+                            <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
+                            <YAxis domain={[0, 10]} tickLine={false} axisLine={false} />
+                            <ChartTooltip content={<ChartTooltipContent />} />
+                            <Line dataKey="overallScore" type="monotone" stroke="var(--color-overallScore)" strokeWidth={2.5} dot={{ r: 4, fill: 'var(--color-overallScore)' }} />
+                          </LineChart>
+                        </ChartContainer>
+                      </div>
+                    )}
+
                     <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
-                      <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">Teaching Methodology Rubric</h4>
+                      <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Teaching Methodology Rubric</h4>
+                      <p className="text-[11px] font-semibold text-slate-400 mb-4">Bar = this teacher · vertical marker = institute average · right = difference</p>
                       <div className="space-y-3">
                         {rubricRows.map((row) => (
                           <div key={row.label} className="flex items-center gap-3">
                             <span className="w-40 shrink-0 text-xs font-bold text-slate-600 dark:text-slate-400">{row.label}</span>
-                            <div className="flex-1 h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                            <div className="relative flex-1 h-2 rounded-full bg-slate-200 dark:bg-slate-800">
                               <div className="h-full bg-blue-500 rounded-full" style={{ width: `${row.value != null ? (row.value / 10) * 100 : 0}%` }} />
+                              {row.peer != null && (
+                                <span title={`Institute average ${row.peer}`} className="absolute -top-1 h-4 w-0.5 rounded bg-slate-700 dark:bg-slate-200" style={{ left: `${(row.peer / 10) * 100}%` }} />
+                              )}
                             </div>
                             <span className="w-10 text-right text-xs font-black text-slate-900 dark:text-white">{row.value ?? '—'}</span>
+                            {row.value != null && row.peer != null && (
+                              <span className={`w-12 text-right text-[11px] font-bold ${row.value >= row.peer ? 'text-emerald-600' : 'text-amber-600'}`}>
+                                {row.value >= row.peer ? '+' : ''}{(row.value - row.peer).toFixed(1)}
+                              </span>
+                            )}
                           </div>
                         ))}
                       </div>

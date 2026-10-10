@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useSetBreadcrumbLabel } from '@/components/school/breadcrumbs/BreadcrumbContext';
 import { ArrowLeft, Check, Download, ExternalLink, FileText, Loader2, Printer, X } from 'lucide-react';
 import FlashcardViewer from '@/components/resources/FlashcardViewer';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
@@ -350,6 +351,7 @@ export default function SchoolMaterialViewPage() {
       ? navigate(fromPath, { replace: true, state: { courseContentState: routeState?.courseContentState } })
       : navigate(-1);
   const [material, setMaterial] = useState<SchoolMaterial | null>(null);
+  useSetBreadcrumbLabel(material?.title);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

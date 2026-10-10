@@ -62,7 +62,7 @@ export default function ParentLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   // Collapsed by default (icon rail) — hovering it peeks the full sidebar open
   // without pushing page content; the toggle still pins it open if preferred.
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(false);
 
   const hasChat = useSchoolFeature('module', 'chat');
   const hasReports = useSchoolFeature('module', 'reports');

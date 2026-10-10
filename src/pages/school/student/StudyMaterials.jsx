@@ -558,61 +558,6 @@ export default function StudyMaterials() {
     }
   }, [loading, allMaterials]);
 
-  const handleNavigateBreadcrumb = (level) => {
-    setSelectedType('ALL');
-    if (level === 'subjects') {
-      setSearchParams({});
-    } else if (level === 'chapters') {
-      setSearchParams({ subject: selectedSubject });
-    } else if (level === 'topics') {
-      setSearchParams({ subject: selectedSubject, chapter: selectedChapter });
-    }
-  };
-
-  const renderBreadcrumbs = () => {
-    if (!selectedSubject) return null;
-    return (
-      <div className="mb-4 sm:mb-6 flex items-center gap-1.5 px-1 text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pb-1 shrink-0">
-        <button
-          onClick={() => handleNavigateBreadcrumb('subjects')}
-          className="transition-colors hover:text-blue-600"
-        >
-          All Subjects
-        </button>
-        <ChevronRight size={14} className="text-slate-400" />
-
-        {selectedChapter ? (
-          <>
-            <button
-              onClick={() => handleNavigateBreadcrumb('chapters')}
-              className="transition-colors hover:text-blue-600"
-            >
-              {selectedSubject}
-            </button>
-            <ChevronRight size={14} className="text-slate-400" />
-
-            {selectedTopic ? (
-              <>
-                <button
-                  onClick={() => handleNavigateBreadcrumb('topics')}
-                  className="transition-colors hover:text-blue-600"
-                >
-                  {selectedChapter}
-                </button>
-                <ChevronRight size={14} className="text-slate-400" />
-                <span className="font-bold text-slate-800 dark:text-slate-200">{selectedTopic}</span>
-              </>
-            ) : (
-              <span className="font-bold text-slate-800 dark:text-slate-200">{selectedChapter}</span>
-            )}
-          </>
-        ) : (
-          <span className="font-bold text-slate-800 dark:text-slate-200">{selectedSubject}</span>
-        )}
-      </div>
-    );
-  };
-
   const renderTopicDetails = () => {
     if (unfilteredTopicMaterials.length === 0) {
       return <EmptyMaterials schoolClassName={className} />;
@@ -888,8 +833,6 @@ export default function StudyMaterials() {
       )}
 
       <div>
-        {/* Interactive Breadcrumbs Bar inside content */}
-        {renderBreadcrumbs()}
 
         {!selectedSubject ? (
           /* Level 1: Subjects Grid */

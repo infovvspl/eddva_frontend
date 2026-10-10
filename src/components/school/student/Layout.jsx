@@ -5,6 +5,9 @@ import { Loader2 } from 'lucide-react';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import AiTutorWidget from './AiTutorWidget';
+import BreadcrumbBar from '@/components/school/breadcrumbs/BreadcrumbBar';
+import { BreadcrumbProvider } from '@/components/school/breadcrumbs/BreadcrumbContext';
+import { isNavItemActive } from '@/components/layout/nav-active';
 import { PageTransition } from '@/components/school/admin/PageTransition';
 import MaintenanceNotice from '@/components/shared/MaintenanceNotice';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -33,7 +36,7 @@ import {
 
 import { getPageLayoutConfig } from '@/config/layout-system';
 
-export default function Layout() {
+function StudentLayoutShell() {
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -64,19 +67,19 @@ export default function Layout() {
   const navItems = [
     { label: 'Dashboard', path: '/school/student', icon: LayoutDashboard },
     hasLiveClasses
-      ? { label: 'Live', path: '/school/student/live-classes', icon: MonitorPlay }
+      ? { label: 'Live', path: '/school/student/live-classes', matchPaths: ['/school/student/live'], icon: MonitorPlay }
       : { label: 'Recorded Classes', path: '/school/student/recorded-classes', icon: Video },
     hasAssignments
       ? { label: 'Assignments', path: '/school/student/assignments', icon: FileText }
-      : { label: 'Study Materials', path: '/school/student/study-materials', icon: BookOpen }
+      : { label: 'Study Materials', path: '/school/student/study-materials', matchPaths: ['/school/student/classes', '/school/student/syllabus'], icon: BookOpen }
   ];
 
   // All possible more items mapped
   const allPossibleMoreItems = [
-    { label: 'Live Classes', path: '/school/student/live-classes', icon: MonitorPlay, color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/20', enabled: hasLiveClasses },
+    { label: 'Live Classes', path: '/school/student/live-classes', matchPaths: ['/school/student/live'], icon: MonitorPlay, color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/20', enabled: hasLiveClasses },
     { label: 'Recorded Classes', path: '/school/student/recorded-classes', icon: Video, color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20', enabled: true },
-    { label: 'Study Materials', path: '/school/student/study-materials', icon: BookOpen, color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/20', enabled: true },
-    { label: 'AI Planner', path: '/school/student/planner', icon: BrainCircuit, color: 'text-purple-500 bg-purple-50 dark:bg-purple-950/20', enabled: hasPlanner },
+    { label: 'Study Materials', path: '/school/student/study-materials', matchPaths: ['/school/student/classes', '/school/student/syllabus'], icon: BookOpen, color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/20', enabled: true },
+    { label: 'AI Planner', path: '/school/student/planner', matchPaths: ['/school/student/ai-study', '/school/student/quiz'], icon: BrainCircuit, color: 'text-purple-500 bg-purple-50 dark:bg-purple-950/20', enabled: hasPlanner },
     { label: 'Assignments', path: '/school/student/assignments', icon: FileText, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20', enabled: hasAssignments },
     { label: 'Assessments', path: '/school/student/assessments', icon: ClipboardList, color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/20', enabled: hasAssessments },
     { label: 'Attendance', path: '/school/student/attendance', icon: UserCheck, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20', enabled: true },
@@ -101,6 +104,7 @@ export default function Layout() {
         <Navbar />
 
         <MaintenanceNotice />
+        <BreadcrumbBar />
 
         {/* Scrollable Container */}
         <main className={`flex-1 min-h-0 ${layoutConfig.type === 'immersive' && !layoutConfig.isScrollable ? 'p-0 overflow-y-hidden' : 'p-0 overflow-y-auto'} scrollbar-none`}>
@@ -116,7 +120,7 @@ export default function Layout() {
         {/* Sticky Mobile Bottom Navigation Bar */}
         <nav className="relative z-40 flex h-16 w-full shrink-0 items-center justify-around border-t border-slate-100 bg-white/95 px-2 pb-safe shadow-lg dark:border-slate-800 dark:bg-slate-900/95 backdrop-blur-md">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive = isNavItemActive(location.pathname, { path: item.path, end: item.path === '/school/student', matchPaths: item.matchPaths });
             const Icon = item.icon;
             return (
               <Link
@@ -170,7 +174,7 @@ export default function Layout() {
               <div className="grid grid-cols-2 gap-3 mb-6">
                 {moreItems.map((item) => {
                   const Icon = item.icon;
-                  const isActive = location.pathname === item.path;
+                  const isActive = isNavItemActive(location.pathname, { path: item.path, matchPaths: item.matchPaths });
                   return (
                     <Link
                       key={item.label}
@@ -222,6 +226,7 @@ export default function Layout() {
       >
         <Navbar onMenuClick={() => setSidebarOpen(true)} />
         <MaintenanceNotice />
+        <BreadcrumbBar />
         <main className={`flex-1 overflow-x-hidden ${layoutConfig.isScrollable ? 'overflow-y-auto' : 'overflow-y-hidden'} ${layoutConfig.mainPaddingClass}`}>
           <AnimatePresence initial={false} mode="wait">
             <PageTransition key={location.pathname} duration={0.2}>
@@ -240,5 +245,13 @@ export default function Layout() {
       </div>
       {showTutor && <AiTutorWidget />}
     </div>
+  );
+}
+
+export default function Layout() {
+  return (
+    <BreadcrumbProvider>
+      <StudentLayoutShell />
+    </BreadcrumbProvider>
   );
 }

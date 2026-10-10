@@ -229,16 +229,18 @@ const Students: React.FC = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <div className="w-16 h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                          <div 
-                            className={`h-full rounded-full ${
-                              student.attendancePct >= 75 ? 'bg-emerald-500' : 
-                              student.attendancePct >= 60 ? 'bg-amber-500' : 'bg-red-500'
-                            }`} 
-                            style={{ width: `${student.attendancePct || 85}%` }} 
-                          />
+                          {student.attendancePct != null && (
+                            <div
+                              className={`h-full rounded-full ${
+                                student.attendancePct >= 75 ? 'bg-emerald-500' :
+                                student.attendancePct >= 60 ? 'bg-amber-500' : 'bg-red-500'
+                              }`}
+                              style={{ width: `${student.attendancePct}%` }}
+                            />
+                          )}
                         </div>
                         <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                          {student.attendancePct || 85}%
+                          {student.attendancePct != null ? `${student.attendancePct}%` : '—'}
                         </span>
                       </div>
                     </td>

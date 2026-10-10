@@ -927,6 +927,23 @@ b, strong, th, label, button, input, select, textarea,
   font-weight: 600 !important;
 }
 
+/* ── Admin portal: one page-title size ──
+   Admin page titles were set page by page (text-xl, 2xl, 3xl, 4xl, even 26px), so the same
+   kind of heading looked different from screen to screen. The admin layout's <main> carries
+   .admin-page, and this gives every page title in it the same size and spacing. Colour and
+   weight are left alone (weight is already fixed above; banners keep their own colour). */
+.admin-page h1 {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  letter-spacing: -0.01em;
+}
+@media (min-width: 640px) {
+  .admin-page h1 {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+  }
+}
+
 code, kbd, pre, samp,
 [class*="font-mono"] {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;

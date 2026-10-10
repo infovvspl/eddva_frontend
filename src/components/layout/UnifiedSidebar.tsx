@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import { isNavItemActive } from "./nav-active";
 import { ChevronLeft, LogOut, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,8 @@ export interface SidebarNavItem {
   icon: React.ComponentType<{ className?: string }>;
   /** If true, the item is active only on an exact path match */
   end?: boolean;
+  /** Extra route prefixes that keep this item highlighted (pages that live under it conceptually) */
+  matchPaths?: string[];
   /** Badge text (e.g. "New", count) */
   badge?: string | number;
   /** If set, the item fires an action instead of navigating */
@@ -153,9 +156,7 @@ function NavItem({
     );
   }
 
-  const isActive = item.end
-    ? pathname === item.path
-    : pathname === item.path || pathname.startsWith(`${item.path}/`);
+  const isActive = isNavItemActive(pathname, item);
 
   return (
     <SidebarMenuItem>

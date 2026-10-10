@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api, { unwrapSchoolData } from '@/lib/api/school-client';
 import { ChevronLeft, PlayCircle, FileText, CheckCircle2, MonitorPlay, FileDown, ExternalLink } from 'lucide-react';
+import { useSetBreadcrumbLabel } from '@/components/school/breadcrumbs/BreadcrumbContext';
 
 export default function TopicDetails() {
   const { batchId, topicId } = useParams();
   const [topicData, setTopicData] = useState(null);
   const [loading, setLoading] = useState(true);
+  useSetBreadcrumbLabel(topicData?.topic?.name);
 
   useEffect(() => {
     const fetchTopic = async () => {

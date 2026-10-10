@@ -210,9 +210,8 @@ export default function Sidebar({ open, onClose }) {
   const adminGroups = isInstitute ? buildInstituteGroups(institute?.modulesPermissions) : null;
 
   const groups = isSuperAdmin ? superAdminGroups : isInstitute ? adminGroups : teacherGroups;
-  // Collapsed by default (icon rail) — hovering it peeks the full sidebar open
-  // without pushing page content; the toggle still pins it open if preferred.
-  const [collapsed, setCollapsed] = useState(true);
+  // Open by default; the toggle collapses it to the icon rail.
+  const [collapsed, setCollapsed] = useState(false);
 
   const handleAction = (action) => {
     if (action === 'logout') {

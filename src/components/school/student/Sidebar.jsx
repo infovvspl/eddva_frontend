@@ -24,10 +24,10 @@ import {
 
 const allItems = [
   { group: 'Home', path: '/school/student', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { group: 'My Learning', path: '/school/student/live-classes', label: 'Live Classes', icon: MonitorPlay, featType: 'module', featKey: 'live_classes' },
+  { group: 'My Learning', path: '/school/student/live-classes', matchPaths: ['/school/student/live'], label: 'Live Classes', icon: MonitorPlay, featType: 'module', featKey: 'live_classes' },
   { group: 'My Learning', path: '/school/student/recorded-classes', label: 'Recorded Classes', icon: Video },
-  { group: 'My Learning', path: '/school/student/study-materials', label: 'Study Materials', icon: BookOpen },
-  { group: 'My Learning', path: '/school/student/planner', label: 'AI Study Planner', icon: BrainCircuit, featType: 'ai', featKey: 'ai_study_planner' },
+  { group: 'My Learning', path: '/school/student/study-materials', matchPaths: ['/school/student/classes', '/school/student/syllabus'], label: 'Study Materials', icon: BookOpen },
+  { group: 'My Learning', path: '/school/student/planner', matchPaths: ['/school/student/ai-study', '/school/student/quiz'], label: 'AI Study Planner', icon: BrainCircuit, featType: 'ai', featKey: 'ai_study_planner' },
   { group: 'Academic Work', path: '/school/student/assignments', label: 'Assignments', icon: FileText, featType: 'module', featKey: 'assignments' },
   { group: 'Academic Work', path: '/school/student/assessments', label: 'Assessments', icon: ClipboardList, featType: 'module', featKey: 'assessments' },
   { group: 'Academic Work', path: '/school/student/attendance', label: 'Attendance', icon: UserCheck },
@@ -50,11 +50,10 @@ export default function Sidebar({ open, onClose }) {
   const isGamificationRoute = location.pathname.includes('/gamification') || isGameRoute;
 
   const prevIsGamificationRef = useRef(isGamificationRoute);
-  // Collapsed by default (icon rail) — hovering it peeks the full sidebar open
-  // without pushing page content; the toggle still pins it open if preferred.
+  // Open by default; the toggle collapses it to the icon rail.
   const [collapsed, setCollapsed] = useState(() => {
     const saved = sessionStorage.getItem('pre_gamification_sidebar');
-    return saved === null ? true : saved === 'true';
+    return saved === null ? false : saved === 'true';
   });
 
   useEffect(() => {

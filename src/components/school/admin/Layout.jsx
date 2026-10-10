@@ -38,8 +38,11 @@ import {
 } from 'lucide-react';
 import logoUrl from '@/assets/eddva-logo.svg';
 import { InstituteLogo } from './Brand';
+import BreadcrumbBar from '@/components/school/breadcrumbs/BreadcrumbBar';
+import { BreadcrumbProvider } from '@/components/school/breadcrumbs/BreadcrumbContext';
+import { isNavItemActive } from '@/components/layout/nav-active';
 
-export default function Layout() {
+function AdminLayoutShell() {
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -183,9 +186,10 @@ export default function Layout() {
         <Navbar />
 
         <MaintenanceNotice />
+        <BreadcrumbBar />
 
         {/* Scrollable Container */}
-        <main className={`flex-1 min-h-0 ${isFullWidthPage ? 'p-0' : 'px-4 sm:px-4 pt-4 pb-4'} ${isFixedPage ? 'overflow-y-hidden' : 'overflow-y-auto'} scrollbar-none`}>
+        <main className={`admin-page flex-1 min-h-0 ${isFullWidthPage ? 'p-0' : 'px-4 sm:px-4 pt-4 pb-4'} ${isFixedPage ? 'overflow-y-hidden' : 'overflow-y-auto'} scrollbar-none`}>
           <div className="w-full h-full min-h-full flex flex-col">
               <div className="w-full h-full min-h-full flex flex-col">
                 <Outlet />
@@ -196,7 +200,7 @@ export default function Layout() {
         {/* Sticky Mobile Bottom Navigation Bar */}
         <nav className="relative z-40 flex h-16 w-full shrink-0 items-center justify-around border-t border-slate-100 bg-white/95 px-2 pb-safe shadow-lg dark:border-slate-800 dark:bg-slate-900/95 backdrop-blur-md">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive = isNavItemActive(location.pathname, { path: item.path, end: item.path === '/school/admin' || item.path === '/school/teacher' || item.path === '/school/super-admin' });
             const Icon = item.icon;
             return (
               <Link
@@ -248,7 +252,7 @@ export default function Layout() {
               <div className="grid grid-cols-2 gap-3 mb-6">
                 {moreItems.map((item) => {
                   const Icon = item.icon;
-                  const isActive = location.pathname === item.path;
+                  const isActive = isNavItemActive(location.pathname, { path: item.path });
                   return (
                     <Link
                       key={item.label}
@@ -301,7 +305,8 @@ export default function Layout() {
       >
         <Navbar onMenuClick={() => setSidebarOpen(true)} />
         <MaintenanceNotice />
-        <main className={`flex-1 relative overflow-x-hidden ${isFullWidthPage ? 'p-0 overflow-y-auto' : 'px-3 sm:px-5 lg:px-6 py-4 lg:py-6 overflow-y-auto'}`}>
+        <BreadcrumbBar />
+        <main className={`admin-page flex-1 relative overflow-x-hidden ${isFullWidthPage ? 'p-0 overflow-y-auto' : 'px-3 sm:px-5 lg:px-6 py-4 lg:py-6 overflow-y-auto'}`}>
           <div className="w-full h-full min-h-full flex flex-col">
               <div className="w-full h-full min-h-full flex flex-col">
                 <Suspense fallback={
@@ -321,3 +326,10 @@ export default function Layout() {
   );
 }
 
+export default function Layout() {
+  return (
+    <BreadcrumbProvider>
+      <AdminLayoutShell />
+    </BreadcrumbProvider>
+  );
+}
