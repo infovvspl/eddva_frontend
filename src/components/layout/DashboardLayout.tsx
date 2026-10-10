@@ -894,6 +894,16 @@ const DashboardLayout = () => {
 
 
   const section = sectionLabels[user.role];
+  const sidebarGroups = [
+    {
+      heading: section?.main ?? "Navigation",
+      items: navItems.map((item) => ({
+        ...item,
+        end: item.path === roleRedirectPath[user.role],
+      })),
+    },
+  ];
+  const usesUnifiedSidebar = ["super_admin", "institute_admin", "teacher", "student"].includes(user.role);
 
   const handleLogout = () => {
     logout();
@@ -1125,9 +1135,9 @@ const DashboardLayout = () => {
       {!lightDashboardShell && <AeroBackground />}
 
       {/* â”€â”€ Sidebar (UnifiedSidebar for Super Admin, legacy for others) â”€â”€ */}
-      {user.role === "super_admin" ? (
+      {usesUnifiedSidebar ? (
         <UnifiedSidebar
-          groups={superAdminGroups}
+          groups={user.role === "super_admin" ? superAdminGroups : sidebarGroups}
           collapsed={!sidebarOpen}
           onToggleCollapse={() => setSidebarOpen((v) => !v)}
           showCollapseToggle={false}
@@ -1152,8 +1162,8 @@ const DashboardLayout = () => {
                   <User className="w-4 h-4 text-indigo-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-slate-900 truncate">{user.name || "Super Admin"}</p>
-                  <p className="text-[10px] font-semibold text-slate-500 capitalize truncate mt-0.5">Super Admin</p>
+                  <p className="text-xs font-bold text-slate-900 truncate">{user.name || "User"}</p>
+                  <p className="text-[10px] font-semibold text-slate-500 capitalize truncate mt-0.5">{user.role.replace("_", " ")}</p>
                 </div>
                 <button
                   onClick={handleLogout}

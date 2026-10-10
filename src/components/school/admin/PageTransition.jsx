@@ -8,7 +8,7 @@ export function PageTransition({ children, duration = 0.4 }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: duration <= 0.25 ? -4 : -15 }}
       transition={{ duration, ease: [0.22, 1, 0.36, 1] }}
-      className="size-full"
+      className="w-full h-full min-h-full"
     >
       {children}
     </motion.div>

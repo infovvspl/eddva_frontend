@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis, PieChart, Pie } from 'recharts';
 import { Building2, Users, LifeBuoy, TrendingUp, Calendar, CalendarDays, CalendarRange, UserCheck, UserCog, UserSquare2, CheckCircle2, AlertCircle } from 'lucide-react';
 import api from '@/lib/api/school-client';
@@ -125,15 +126,15 @@ export default function Analytics() {
             <p className="text-xs sm:text-sm font-medium text-surface-500">Users registered per institute</p>
           </div>
           <div className="h-60 sm:h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={users?.instituteActivity || []} margin={{ top: 10, right: 10, left: -22, bottom: 0 }} barSize={40}>
-                <CartesianGrid stroke="#D8E7FA" strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6887A8', fontSize: 12 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6887A8', fontSize: 12 }} />
-                <Tooltip cursor={{ fill: '#EFF8FF' }} contentStyle={{ borderRadius: 8, border: '1px solid #D8E7FA' }} />
-                <Bar dataKey="userCount" name="Users" radius={[6, 6, 0, 0]} fill="#3b82f6" />
+            <ChartContainer config={{ userCount: { label: 'Users', color: 'hsl(var(--primary))' } }} className="h-full w-full aspect-auto">
+              <BarChart data={users?.instituteActivity || []} margin={{ top: 10, right: 10, left: -16, bottom: 0 }}>
+                <CartesianGrid vertical={false} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tickMargin={8} />
+                <YAxis axisLine={false} tickLine={false} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Bar dataKey="userCount" fill="var(--color-userCount)" radius={6} />
               </BarChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           </div>
         </div>
       </section>

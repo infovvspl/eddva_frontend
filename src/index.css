@@ -377,7 +377,7 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground font-sans antialiased font-semibold;
     transition: background-color 200ms ease, color 200ms ease;
     overscroll-behavior-x: none;
     -webkit-tap-highlight-color: transparent;
@@ -539,22 +539,6 @@
 
   .card-surface-elevated {
     @apply bg-surface-2 border border-border rounded-xl;
-  }
-
-  /* ── Institute admin panel: all bold weights → medium (500) ── */
-  .font-poppins .font-bold,
-  .font-poppins .font-semibold,
-  .font-poppins .font-black,
-  .font-poppins .font-extrabold,
-  .font-poppins h1,
-  .font-poppins h2,
-  .font-poppins h3,
-  .font-poppins h4,
-  .font-poppins h5,
-  .font-poppins h6,
-  .font-poppins b,
-  .font-poppins strong {
-    font-weight: 500;
   }
 
   .glass-panel {
@@ -914,4 +898,36 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .erp-card {
     @apply rounded-2xl border border-border bg-card p-5 sm:p-6 transition-all duration-200 hover:shadow-md;
   }
+}
+
+/* ── Typography: Poppins at weight 600 everywhere ──
+   One family and one weight across the Admin, Teacher, Student and Parent
+   panels so text reads the same on every screen. Monospace is left alone. */
+html,
+body,
+button,
+input,
+select,
+textarea {
+  font-family: "Poppins", system-ui, sans-serif;
+}
+
+body,
+h1, h2, h3, h4, h5, h6,
+b, strong, th, label, button, input, select, textarea,
+[class*="font-thin"],
+[class*="font-extralight"],
+[class*="font-light"],
+[class*="font-normal"],
+[class*="font-medium"],
+[class*="font-semibold"],
+[class*="font-bold"],
+[class*="font-extrabold"],
+[class*="font-black"] {
+  font-weight: 600 !important;
+}
+
+code, kbd, pre, samp,
+[class*="font-mono"] {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }

@@ -290,8 +290,9 @@ const LoginPage = () => {
         }
       };
 
-      // On institute subdomains (e.g. odm.localhost), try school DB first
-      const schoolFirst = !!getSubdomainFromHost();
+      // Try school DB first on institute subdomains, school return routes, or school email formats
+      const isSchoolContext = (returnTo && returnTo.startsWith('/school')) || identifier.toLowerCase().includes('school') || identifier.toLowerCase().includes('@eddva.in');
+      const schoolFirst = !!getSubdomainFromHost() || !!isSchoolContext;
       let primaryErr = "";
       let fallbackErr = "";
 

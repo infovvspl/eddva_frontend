@@ -6,6 +6,7 @@ import { cn } from '@/components/school/admin/Skeleton';
 import { useIsMobile } from '@/hooks/use-mobile';
 import GlassCard from '@/components/school/GlassCard';
 import Badge from '@/components/school/Badge';
+import ScoreTrendChart, { scoreTrendDelta } from '@/components/school/student/ScoreTrendChart';
 import '@/pages/school/teacher/StudentReportClasses.css';
 
 export default function Analytics() {
@@ -370,6 +371,28 @@ export default function Analytics() {
               <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">Streak</p>
               <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-0.5">{performance?.streakDays || 0} days</p>
             </div>
+          </div>
+
+          {/* Improvement Metrics */}
+          <div className="md:col-span-3 rounded-2xl sm:rounded-[2rem] border border-slate-100 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="flex items-center gap-2 text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                <TrendingUp className="size-5 sm:size-6 text-emerald-600" /> Improvement Metrics
+              </h2>
+              {(() => {
+                const delta = scoreTrendDelta(performance?.scoreTrend);
+                if (delta === null) return null;
+                return (
+                  <span className={cn(
+                    'rounded-full px-3 py-1 text-xs font-black',
+                    delta >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+                  )}>
+                    {delta >= 0 ? '+' : ''}{delta}% since your first result
+                  </span>
+                );
+              })()}
+            </div>
+            <ScoreTrendChart data={performance?.scoreTrend} height={isMobile ? 220 : 280} />
           </div>
 
           <div className="md:col-span-2 space-y-4 sm:space-y-6">

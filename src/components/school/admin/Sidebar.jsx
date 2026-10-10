@@ -210,7 +210,9 @@ export default function Sidebar({ open, onClose }) {
   const adminGroups = isInstitute ? buildInstituteGroups(institute?.modulesPermissions) : null;
 
   const groups = isSuperAdmin ? superAdminGroups : isInstitute ? adminGroups : teacherGroups;
-  const [collapsed, setCollapsed] = useState(false);
+  // Collapsed by default (icon rail) — hovering it peeks the full sidebar open
+  // without pushing page content; the toggle still pins it open if preferred.
+  const [collapsed, setCollapsed] = useState(true);
 
   const handleAction = (action) => {
     if (action === 'logout') {
@@ -228,24 +230,15 @@ export default function Sidebar({ open, onClose }) {
       onMobileClose={onClose}
       logo={
         !isSuperAdmin ? (
-          <div className="min-w-0 flex-1 py-1">
-            <h2 className="truncate text-sm font-black tracking-tight text-slate-900 dark:text-white leading-snug">
-              {institute?.name || 'Army Public School'}
-            </h2>
-            <p className="truncate text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-              {institute?.state || institute?.location || 'State'}
-            </p>
-          </div>
+          <SchoolLogo src={institute?.logo} alt={institute?.name} size="navbar" className="h-10 w-auto max-w-full object-contain" />
         ) : (
-          <div className="px-2 pt-2 text-sm font-black tracking-tight text-slate-900 dark:text-white">
-            Super Admin
-          </div>
+          <EddvaLogo className="h-8" />
         )
       }
       logoCollapsed={
         !isSuperAdmin ? (
           <div className="flex items-center justify-center p-2">
-            <SchoolLogo src={institute?.logo} alt={institute?.name} size="navbar" className="w-[36px] max-h-[36px]" />
+            <SchoolLogo src={institute?.logo} alt={institute?.name} size="navbar" className="h-9 w-auto max-w-full object-contain" />
           </div>
         ) : (
           <div className="flex items-center justify-center p-2">
@@ -258,3 +251,4 @@ export default function Sidebar({ open, onClose }) {
     />
   );
 }
+

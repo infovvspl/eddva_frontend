@@ -96,7 +96,7 @@ export default function Layout() {
 
   if (isMobile) {
     return (
-      <div className="flex h-screen w-full flex-col bg-slate-50 font-poppins text-slate-850 dark:bg-slate-950 dark:text-slate-200 overflow-hidden">
+      <div className="school-platform flex h-screen w-full flex-col bg-slate-50 font-poppins text-slate-850 dark:bg-slate-950 dark:text-slate-200 overflow-hidden">
         {/* Sticky Mobile Header via Navbar (no hamburger menu triggers passed) */}
         <Navbar />
 
@@ -211,7 +211,7 @@ export default function Layout() {
   }
 
   return (
-    <div className="layout-fixed font-poppins relative flex h-screen w-full overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/15 to-indigo-50/25 dark:from-slate-950 dark:via-slate-900/30 dark:to-indigo-950/20">
+    <div className="school-platform layout-fixed font-poppins relative flex h-screen w-full overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/15 to-indigo-50/25 dark:from-slate-950 dark:via-slate-900/30 dark:to-indigo-950/20">
       {/* Decorative gradient blobs */}
       <div className="pointer-events-none absolute -left-40 -top-40 h-[600px] w-[600px] rounded-full bg-indigo-200/10 blur-[120px] dark:bg-indigo-900/5" />
       <div className="pointer-events-none absolute -right-40 -bottom-40 h-[600px] w-[600px] rounded-full bg-blue-200/10 blur-[120px] dark:bg-blue-900/5" />

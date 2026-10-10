@@ -8,9 +8,16 @@ import armyLogo from '@/assets/army_public_school_logo.png';
 import { getApiOrigin } from '@/lib/api-config';
 
 export function EddvaLogo({ compact = false, className }) {
+  if (compact) {
+    return (
+      <div className={cn('flex items-center justify-center w-9 h-9 rounded-xl bg-blue-600 text-white shadow-sm font-semibold text-xs shrink-0', className)}>
+        <BrainCircuit className="w-5 h-5 text-white" />
+      </div>
+    );
+  }
   return (
     <div className={cn('flex items-center', className)}>
-      <img src={logoUrl} alt="Eddva Logo" className={cn("object-contain", compact ? "h-8" : "h-11")} />
+      <img src={logoUrl} alt="Eddva Logo" className="object-contain h-11" />
     </div>
   );
 }

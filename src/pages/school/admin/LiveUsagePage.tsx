@@ -5,8 +5,9 @@ import {
   Radio, Building2, Users, Clock, TrendingUp, Loader2, CheckCircle2, ArrowUpRight, ChevronDown, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from 'recharts';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { getSchoolLiveUsage, type LiveUsageData } from '@/lib/api/live-usage-admin';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
@@ -182,25 +183,15 @@ export default function SchoolLiveUsagePage() {
               <Loader2 className="size-8 animate-spin text-indigo-400" />
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={260}>
+            <ChartContainer config={{ count: { label: 'Classes', color: 'hsl(var(--primary))' } }} className="h-[260px] w-full aspect-auto">
               <BarChart data={data?.dailyTrend ?? []} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis
-                  dataKey="day"
-                  tick={{ fontSize: 10, fill: '#94a3b8' }}
-                  tickFormatter={(v: string) => v.slice(5)}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', fontSize: 12 }}
-                  formatter={(v: number) => [v, 'Classes']}
-                  labelFormatter={(l: string) => `Date: ${l}`}
-                />
-                <Bar dataKey="count" fill="#818cf8" radius={[4, 4, 0, 0]} />
+                <CartesianGrid vertical={false} />
+                <XAxis dataKey="day" tickFormatter={(v: string) => v.slice(5)} axisLine={false} tickLine={false} tickMargin={8} />
+                <YAxis axisLine={false} tickLine={false} allowDecimals={false} />
+                <ChartTooltip content={<ChartTooltipContent labelFormatter={(l) => `Date: ${l}`} />} />
+                <Bar dataKey="count" fill="var(--color-count)" radius={4} />
               </BarChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           )}
         </div>
 

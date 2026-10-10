@@ -75,6 +75,18 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const rawRole = String(user?.rawRole || user?.role || '').toUpperCase();
+  const isSuperAdminPath = location.pathname.startsWith('/school/super-admin');
+  const hasInstituteAdminRole =
+    rawRole.includes('INSTITUTE_ADMIN') ||
+    rawRole.includes('INSTITUTE ADMIN') ||
+    /\bADMIN\b/.test(rawRole);
+  const isInstituteAdmin = !isSuperAdminPath && (
+    location.pathname.startsWith('/school/admin') ||
+    user?.role === 'INSTITUTE_ADMIN' ||
+    hasInstituteAdminRole
+  );
+
   async function loadStats() {
     try {
       const res = await api.get('/dashboard/stats', { params: { portal: isInstituteAdmin ? 'admin' : 'super-admin' } });
@@ -99,20 +111,9 @@ export default function Dashboard() {
       clearInterval(interval);
       window.removeEventListener('eddva:data-changed', loadStats);
     };
-  }, []);
+  }, [isInstituteAdmin]);
 
   const institute = stats?.currentInstitute || storedInstitute;
-  const rawRole = String(user?.rawRole || user?.role || '').toUpperCase();
-  const isSuperAdminPath = location.pathname.startsWith('/school/super-admin');
-  const hasInstituteAdminRole =
-    rawRole.includes('INSTITUTE_ADMIN') ||
-    rawRole.includes('INSTITUTE ADMIN') ||
-    /\bADMIN\b/.test(rawRole);
-  const isInstituteAdmin = !isSuperAdminPath && (
-    location.pathname.startsWith('/school/admin') ||
-    user?.role === 'INSTITUTE_ADMIN' ||
-    hasInstituteAdminRole
-  );
 
 
   const handleCardClick = (cardTitle) => {

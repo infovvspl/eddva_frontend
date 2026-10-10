@@ -25,8 +25,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/SchoolAuthContext";
 import { useSchoolFeature } from "@/hooks/use-school-feature";
-import { EddvaLogo } from "@/components/branding/EddvaLogo";
-import { InstituteLogo } from "@/components/school/admin/Brand";
+import { InstituteLogo, SchoolLogo } from "@/components/school/admin/Brand";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api/school-client";
 import { useSchoolNotification } from "@/context/SchoolNotificationContext";
@@ -61,7 +60,9 @@ export default function ParentLayout() {
   const { user, institute, logout } = useAuth();
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  // Collapsed by default (icon rail) — hovering it peeks the full sidebar open
+  // without pushing page content; the toggle still pins it open if preferred.
+  const [collapsed, setCollapsed] = useState(true);
 
   const hasChat = useSchoolFeature('module', 'chat');
   const hasReports = useSchoolFeature('module', 'reports');
@@ -240,18 +241,18 @@ export default function ParentLayout() {
     return '/school/parent/dashboard';
   };
 
-  const pageTitle = getPageTitle(location.pathname);
   const workspaceName = user?.tenantName || "School Parent Portal";
 
   return (
-    <div className="layout-fixed font-poppins relative flex h-screen w-full overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/15 to-indigo-50/25">
+    <div className="school-platform layout-fixed font-poppins relative flex h-screen w-full overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/15 to-indigo-50/25">
       <UnifiedSidebar
         groups={filteredNavGroups}
         collapsed={collapsed}
         onToggleCollapse={() => setCollapsed((v) => !v)}
         mobileOpen={sidebarOpen}
         onMobileClose={() => setSidebarOpen(false)}
-        logo={<EddvaLogo className="h-7" />}
+        logo={<SchoolLogo src={institute?.logo} alt={institute?.name} size="navbar" className="h-10 w-auto max-w-full object-contain" />}
+        logoCollapsed={<SchoolLogo src={institute?.logo} alt={institute?.name} size="navbar" className="h-9 w-auto max-w-full object-contain" />}
         onNavClick={() => setSidebarOpen(false)}
         badgeOverlay={
           unreadCount > 0
@@ -306,7 +307,7 @@ export default function ParentLayout() {
               ) : (
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Parent Workspace</p>
-                  <h1 className="truncate text-lg font-bold tracking-tight text-slate-950">{pageTitle}</h1>
+                  <h1 className="truncate text-lg font-bold tracking-tight text-slate-950">{user?.tenantName || institute?.name || 'EDDVA Parent'}</h1>
                 </div>
               )}
             </div>
@@ -761,15 +762,4 @@ export default function ParentLayout() {
       </div>
     </div>
   );
-}
-
-
-function getPageTitle(pathname: string) {
-  if (pathname.endsWith("/dashboard")) return "Dashboard";
-  if (pathname.endsWith("/child")) return "Child Report";
-  if (pathname.endsWith("/communication")) return "Communication";
-  if (pathname.endsWith("/announcements")) return "Notices";
-  if (pathname.endsWith("/notifications")) return "Alerts";
-  if (pathname.endsWith("/profile")) return "Profile";
-  return "Parent Portal";
 }

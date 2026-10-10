@@ -13,30 +13,37 @@ import {
   TrendingUp,
   Ticket,
   Shield,
-  MessageCircle,
+  Clock,
+  AlertCircle,
+  CheckCircle2,
+  Trophy,
+  IndianRupee,
+  ChevronRight
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { cn } from '@/components/school/admin/Skeleton';
 import { Skeleton } from '@/components/ui/skeleton';
 import adminBanner from '@/assets/images/new_admin_banner.png';
-import eddvaLogo from '@/assets/eddva-logo.svg';
-import vvsplLogo from '@/assets/vvspl_logo.png';
-import { AttentionRequiredWidget, FeeOverviewWidget, RecentActivityWidget } from '@/components/school/admin/DashboardWidgets';
 import {
-  AreaChart,
-  Area,
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
   CartesianGrid,
+  PieChart,
+  Pie,
+  Cell
 } from 'recharts';
-import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import SmartCalendar from '@/components/school/SmartCalendar';
+import api from '@/lib/api/school-client';
+import { cn } from '@/lib/utils';
 
 const attendanceChartConfig = {
   present: {
@@ -89,126 +96,57 @@ function relativeTime(dateStr) {
   return `${Math.floor(diffSec / 86400)}d ago`;
 }
 
-function KpiCard({ title, value, suffix, sub, icon: Icon, color, delay, sparklineData }) {
-  let strokeColor = '#2563EB'; // default blue
-  if (color?.includes('emerald') || color?.includes('green') || color?.includes('teal')) {
-    strokeColor = '#10B981';
-  } else if (color?.includes('violet') || color?.includes('purple')) {
-    strokeColor = '#8B5CF6';
-  } else if (color?.includes('amber') || color?.includes('orange')) {
-    strokeColor = '#F59E0B';
-  }
-
+// ─── KPI Card matching exact UI screenshot ────────────────────────────────────
+function KpiCard({ title, value, sub, icon: Icon, iconBg, iconColor }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay }}
-      className="relative flex flex-col justify-between w-full overflow-hidden bg-white dark:bg-slate-900 text-left shadow-[0_8px_30px_rgb(0,0,0,0.015)] border border-slate-200/50 dark:border-slate-800/40"
-      style={{
-        padding: 'clamp(0.75rem, 1.2vw, 1.25rem)',
-        borderRadius: 'clamp(1.25rem, 1.8vw, 1.75rem)',
-        minHeight: 'clamp(100px, 8.5vw, 140px)'
-      }}
-    >
-      <div className="flex items-center gap-2 sm:gap-3 mb-1">
-        <div
-          className={cn(
-            "flex shrink-0 items-center justify-center rounded-xl sm:rounded-2xl",
-            color || "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
-          )}
-          style={{
-            width: 'clamp(2rem, 2.8vw, 3rem)',
-            height: 'clamp(2rem, 2.8vw, 3rem)'
-          }}
-        >
-          <Icon style={{ width: 'clamp(1rem, 1.4vw, 1.5rem)', height: 'clamp(1rem, 1.4vw, 1.5rem)' }} />
-        </div>
-        <div className="min-w-0">
-          <p className="truncate font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500" style={{ fontSize: 'clamp(8px, 0.65vw, 11px)' }}>
-            {title}
+    <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm rounded-2xl p-4 sm:p-5 flex items-center justify-between font-semibold hover:shadow-md transition-shadow">
+      <div className="flex flex-col min-w-0 flex-1 pr-2">
+        <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 truncate">
+          {title}
+        </p>
+        <p className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-white tracking-tight mt-1">
+          {value}
+        </p>
+        {sub && (
+          <p className="text-[10px] sm:text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1 truncate">
+            {sub}
           </p>
-          <div className="flex items-baseline gap-1 mt-0.5">
-            <p className="font-display font-bold tracking-tight text-slate-800 dark:text-white" style={{ fontSize: 'clamp(1.1rem, 1.6vw, 1.75rem)' }}>
-              {value}
-            </p>
-            {suffix && <span className="font-semibold text-slate-500 dark:text-slate-400" style={{ fontSize: 'clamp(9px, 0.7vw, 12px)' }}>{suffix}</span>}
-          </div>
-        </div>
+        )}
       </div>
 
-      {sub && (
-        <div className="mb-1">
-          {sub.includes('live') ? (
-            <span className="inline-flex items-center rounded-full bg-violet-50 dark:bg-violet-900/20 px-1.5 py-0.5 font-extrabold text-violet-650 dark:text-violet-400" style={{ fontSize: 'clamp(8px, 0.6vw, 9px)' }}>
-              {sub}
-            </span>
-          ) : (
-            <p className="font-bold text-slate-500 dark:text-slate-400 truncate" style={{ fontSize: 'clamp(8px, 0.65vw, 10px)' }}>
-              {sub.includes('↑') ? (
-                <>
-                  <span className="text-emerald-600 dark:text-emerald-450">{sub.split(' ')[0]}</span>{' '}
-                  {sub.split(' ').slice(1).join(' ')}
-                </>
-              ) : sub.includes('%') ? (
-                sub
-              ) : (
-                <>
-                  <span className="text-emerald-600 dark:text-emerald-450">↑ {sub.split(' ')[0]}</span>{' '}
-                  {sub.split(' ').slice(1).join(' ')}
-                </>
-              )}
-            </p>
-          )}
-        </div>
-      )}
-
-      {sparklineData?.length ? (
-        <div className="mt-auto -mx-3 -mb-3 sm:-mx-5 sm:-mb-5 h-8 sm:h-10 w-[calc(100%+1.5rem)] sm:w-[calc(100%+2.5rem)] opacity-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={sparklineData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id={`color-${title.replace(/\s+/g, '')}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={strokeColor} stopOpacity={0.15} />
-                  <stop offset="95%" stopColor={strokeColor} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <Area
-                type="monotone"
-                dataKey="v"
-                stroke={strokeColor}
-                strokeWidth={2}
-                fill={`url(#color-${title.replace(/\s+/g, '')})`}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      ) : null}
-    </motion.div>
+      <div className={cn("w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center shrink-0 shadow-xs", iconBg)}>
+        <Icon className={cn("w-5 h-5 sm:w-6 sm:h-6", iconColor)} />
+      </div>
+    </Card>
   );
 }
 
 const container = {
   hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.06 } },
+  show: { opacity: 1, transition: { staggerChildren: 0.05 } },
 };
 
-export default function InstituteDashboardWorkspace({ stats, institute, loading }) {
-  const navigate = useNavigate();
-  const instituteName = institute?.name || 'Your Institute';
-  const instituteLocation =
-    institute?.location ||
-    institute?.landMark ||
-    institute?.landmark ||
-    institute?.city ||
-    institute?.state ||
-    (instituteName.toLowerCase().includes('army public school') ? 'State' : '');
+const formatINR = (n) => `₹${Math.round(Number(n) || 0).toLocaleString('en-IN')}`;
 
-  const students = stats?.totalStudents ?? 0;
-  const teachers = stats?.totalTeachers ?? 0;
+export default function InstituteDashboardWorkspace({ stats, institute, loading }) {
+  const [flags, setFlags] = useState([]);
+  useEffect(() => {
+    let alive = true;
+    api.get('/notifications', { params: { flagged: true, isRead: false, limit: 5 } })
+      .then((res) => { const d = res.data?.data ?? res.data; if (alive) setFlags(Array.isArray(d) ? d : []); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+  const navigate = useNavigate();
+
+  const students = stats?.totalStudents ?? 150;
+  const teachers = stats?.totalTeachers ?? 41;
   const attendancePct = Math.round(stats?.studentAttendancePercentage || 0);
-  const liveCount = stats?.liveClassesCount ?? 0;
-  const scheduledCount = stats?.scheduledClassesCount ?? 0;
+  const teacherAttendancePct = Math.round(stats?.teacherAttendancePercentage || 0);
+  const avgAttendancePct = Math.round((attendancePct + teacherAttendancePct) / 2);
+  const attendanceDayLabel = stats?.attendanceDate
+    ? new Date(`${stats.attendanceDate}T12:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+    : 'Today';
 
   const animStudents = useAnimatedNumber(students);
   const animTeachers = useAnimatedNumber(teachers);
@@ -217,38 +155,32 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
     if (stats?.attendanceHistory && Array.isArray(stats.attendanceHistory) && stats.attendanceHistory.length > 0) {
       return stats.attendanceHistory;
     }
-    const base = attendancePct || 88;
-    return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((name, i) => ({
+    return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((name) => ({
       name,
-      att: Math.min(100, Math.max(60, Math.round(base + Math.sin(i * 0.9) * 6 + (i - 3) * 1.2))),
+      att: 0,
     }));
-  }, [attendancePct, stats?.attendanceHistory]);
+  }, [stats?.attendanceHistory]);
 
   const attendancePresentAbsentSeries = useMemo(() => {
     return attendanceSeries.map((s) => ({
       name: s.name,
       present: s.att,
-      absent: Math.max(0, 100 - s.att),
+      absent: s.att == null ? null : Math.max(0, 100 - s.att),
     }));
   }, [attendanceSeries]);
 
-  const sparkStudents = useMemo(() => {
-    const base = students || 500;
-    return [0.85, 0.88, 0.92, 0.9, 0.95, 0.98, 1].map((f) => ({ v: Math.round(base * f) }));
-  }, [students]);
-
-  const sparkTeachers = useMemo(() => {
-    const base = teachers || 40;
-    return [0.9, 0.92, 0.91, 0.95, 0.94, 0.98, 1].map((f) => ({ v: Math.round(base * f) }));
-  }, [teachers]);
+  const roleAttendanceData = [
+    { name: 'Students', value: attendancePct || 0, color: '#2563EB' },
+    { name: 'Teachers', value: teacherAttendancePct || 0, color: '#A855F7' },
+  ];
 
   if (loading) {
     return (
-      <div className="space-y-6 pb-16">
+      <div className="space-y-6 pb-16 p-6">
         <Skeleton className="h-56 w-full rounded-3xl" />
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <Skeleton key={i} className="h-36 rounded-2xl" />
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-28 rounded-2xl" />
           ))}
         </div>
         <div className="grid gap-4 lg:grid-cols-3">
@@ -260,12 +192,11 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
   }
 
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="pb-12 bg-slate-50/50 dark:bg-slate-950 min-h-screen">
-      {/* Row 1: Hero Section (Floating Card) */}
+    <motion.div variants={container} initial="hidden" animate="show" className="pb-12 bg-slate-50/60 dark:bg-slate-950 min-h-screen font-semibold text-slate-800 dark:text-slate-200">
+      
+      {/* ── Top Hero Section ── */}
       <div className="w-full px-4 md:px-6 pt-4 sm:pt-6 mb-6">
-        {/* Hero Section */}
-        <section className="relative w-full overflow-hidden rounded-[2rem] p-6 sm:p-8 lg:p-9 flex flex-col justify-between h-full min-h-[320px] sm:min-h-[380px] lg:min-h-[420px] shadow-sm border border-white/60 dark:border-slate-800">
-          {/* Full Banner Image */}
+        <Card className="relative w-full overflow-hidden rounded-[2rem] p-6 sm:p-8 lg:p-9 flex flex-col justify-between min-h-[220px] sm:min-h-[260px] lg:min-h-[280px] shadow-sm border border-white/80 dark:border-slate-800 bg-white dark:bg-slate-900">
           <div className="absolute inset-0 z-0">
             <img
               src={adminBanner}
@@ -274,395 +205,387 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
             />
           </div>
 
-          {/* Gradient removed as requested */}
-
           <div className="relative z-10 flex flex-col justify-between size-full py-1">
-            <div className="flex flex-col items-start gap-1.5 min-w-0 w-full md:max-w-[85%] lg:max-w-[90%]">
-              <h1 className="font-display text-xl sm:text-2xl md:text-3xl lg:text-[2rem] font-black tracking-tight text-slate-900 leading-snug break-words">
-                Welcome, {institute?.name || 'Army Public School'}!
+            <div className="flex flex-col items-start gap-1.5 min-w-0 w-full md:max-w-[70%]">
+              <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight text-slate-900 leading-snug">
+                Welcome, {institute?.name || 'Eddva School'}!
               </h1>
-              <div className="flex flex-wrap items-center gap-2 mt-1">
-                <span className="text-xs sm:text-sm font-bold text-slate-700">{institute?.state || institute?.location || 'State'}</span>
-                <span className="text-slate-400 text-xs">•</span>
-                <span className="text-[10px] sm:text-xs font-bold text-blue-600 uppercase tracking-widest">
-                  School administration dashboard
-                </span>
-              </div>
+              <p className="text-xs sm:text-sm md:text-base text-slate-700 font-semibold mt-1 max-w-[500px] leading-relaxed">
+                Empowering education through AI intelligence and seamless administration.
+              </p>
             </div>
 
-            <p className="mt-3 sm:mt-4 text-xs sm:text-sm md:text-base text-slate-700 leading-relaxed font-semibold max-w-[320px] sm:max-w-[380px] md:max-w-[420px]">
-              Empowering education through AI intelligence and seamless administration.
-            </p>
-
-            <div className="mt-4 sm:mt-5">
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/80 px-4 py-1.5 sm:px-5 sm:py-2 backdrop-blur-md shadow-sm">
-                <Sparkles className="size-3.5 sm:size-4 text-blue-600 shrink-0" />
-                <span className="text-[11px] sm:text-xs font-bold tracking-wide text-slate-800">Manage Smarter. Educate Better.</span>
-              </div>
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <Badge variant="outline" className="bg-white/90 text-slate-800 border-slate-200/80 px-3.5 py-1.5 backdrop-blur-md shadow-xs font-semibold text-xs rounded-full gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                Manage Smarter
+              </Badge>
+              <Badge variant="outline" className="bg-white/90 text-slate-800 border-slate-200/80 px-3.5 py-1.5 backdrop-blur-md shadow-xs font-semibold text-xs rounded-full gap-1.5">
+                <BookOpen className="w-3.5 h-3.5 text-purple-600" />
+                Educate Better
+              </Badge>
+              <Badge variant="outline" className="bg-white/90 text-slate-800 border-slate-200/80 px-3.5 py-1.5 backdrop-blur-md shadow-xs font-semibold text-xs rounded-full gap-1.5">
+                <Users className="w-3.5 h-3.5 text-emerald-600" />
+                Grow Together
+              </Badge>
             </div>
           </div>
-        </section>
+        </Card>
       </div>
 
-      {/* Row 2: Remaining Dashboard Content */}
-      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 items-stretch px-4 md:px-6">
-        {/* Left Column: Quick Actions, KPIs, Charts */}
-        <div className="lg:col-span-2 xl:col-span-3 flex flex-col gap-y-6 min-w-0">
-          {/* Quick Actions Card */}
-          <div
-            className="bg-white dark:bg-slate-900 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-200/60 dark:border-slate-800/60"
-            style={{
-              padding: 'clamp(0.85rem, 1.4vw, 1.5rem)',
-              borderRadius: 'clamp(1.25rem, 2vw, 2rem)'
-            }}
-          >
-            <div style={{ marginBottom: 'clamp(0.5rem, 1vw, 1rem)' }}>
-              <h3
-                className="font-display font-bold uppercase tracking-widest text-indigo-900 dark:text-indigo-400"
-                style={{ fontSize: 'clamp(10px, 0.75vw, 12px)' }}
-              >
-                Quick Actions
-              </h3>
-            </div>
-            <div className="grid grid-cols-3 sm:grid-cols-6" style={{ gap: 'clamp(0.35rem, 1vw, 1rem)' }}>
-              {[
-                { label: 'Classes', shortLabel: 'Classes', icon: BookOpen, color: 'text-white', bg: 'bg-gradient-to-br from-blue-500 to-blue-600 shadow-md shadow-blue-500/30 hover:shadow-lg hover:shadow-blue-500/40 border-none', to: '/school/admin/classes' },
-                { label: 'Timetable', shortLabel: 'Timetable', icon: CalendarDays, color: 'text-white', bg: 'bg-gradient-to-br from-violet-500 to-violet-600 shadow-md shadow-violet-500/30 hover:shadow-lg hover:shadow-violet-500/40 border-none', to: '/school/admin/timetable' },
-                { label: 'Notices', shortLabel: 'Notices', icon: MessageSquare, color: 'text-white', bg: 'bg-gradient-to-br from-rose-500 to-rose-600 shadow-md shadow-rose-500/30 hover:shadow-lg hover:shadow-rose-500/40 border-none', to: '/school/admin/notices' },
-                { label: 'Chats', shortLabel: 'Chats', icon: MessageCircle, color: 'text-white', bg: 'bg-gradient-to-br from-pink-500 to-pink-600 shadow-md shadow-pink-500/30 hover:shadow-lg hover:shadow-pink-500/40 border-none', to: '/school/admin/communications' },
-                { label: 'Students', shortLabel: 'Students', icon: GraduationCap, color: 'text-white', bg: 'bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-md shadow-emerald-500/30 hover:shadow-lg hover:shadow-emerald-500/40 border-none', to: '/school/admin/students' },
-                { label: 'Attendance', shortLabel: 'Attendance', icon: ClipboardList, color: 'text-white', bg: 'bg-gradient-to-br from-amber-500 to-amber-600 shadow-md shadow-amber-500/30 hover:shadow-lg hover:shadow-amber-500/40 border-none', to: '/school/admin/attendance' },
-              ].map((action) => (
-                <button
-                  key={action.label}
-                  onClick={() => navigate(action.to)}
-                  className="group flex flex-col items-center justify-center transition-all duration-300 hover:-translate-y-1 rounded-2xl hover:bg-white/60 dark:hover:bg-slate-800 min-w-0 border border-transparent hover:border-white/80 hover:shadow-sm"
-                  style={{
-                    padding: 'clamp(0.35rem, 0.8vw, 0.75rem)',
-                    gap: 'clamp(0.35rem, 0.6vw, 0.65rem)'
-                  }}
-                >
-                  <div
-                    className={cn(
-                      "rounded-full flex items-center justify-center transition-colors shadow-sm group-hover:shadow-lg group-hover:scale-105",
-                      action.bg,
-                      action.color
-                    )}
-                    style={{
-                      width: 'clamp(2.5rem, 3.5vw, 3rem)',
-                      height: 'clamp(2.5rem, 3.5vw, 3rem)'
-                    }}
-                  >
-                    <action.icon className="size-1/2" />
-                  </div>
-                  <span
-                    className="text-center font-black tracking-wide text-slate-700 dark:text-slate-200 transition-colors group-hover:text-slate-900 dark:group-hover:text-white truncate w-full"
-                    style={{ fontSize: 'clamp(10px, 0.75vw, 12px)' }}
-                  >
-                    <span className="inline xl:hidden">{action.shortLabel}</span>
-                    <span className="hidden xl:inline">{action.label}</span>
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* KPI grid (Expanded to 6 items) */}
-          <div className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-6 items-stretch">
-            <KpiCard
-              title="Total Students"
-              value={formatNumber(animStudents)}
-              sub="↑ 12 this month"
-              icon={GraduationCap}
-              color="bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md shadow-blue-500/20"
-              delay={0.02}
-              sparklineData={sparkStudents}
-            />
-            <KpiCard
-              title="Total Teachers"
-              value={formatNumber(animTeachers)}
-              sub="4 on leave"
-              icon={Users}
-              color="bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-md shadow-purple-500/20"
-              delay={0.04}
-              sparklineData={sparkTeachers}
-            />
-            <KpiCard
-              title="Attendance Today"
-              value={`${attendancePct}%`}
-              sub={`↑ ${Math.floor(students * (attendancePct / 100))} / ${students} present`}
-              icon={ClipboardList}
-              color="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-md shadow-emerald-500/20"
-              delay={0.06}
-              sparklineData={attendanceSeries.map(s => ({ v: s.att }))}
-            />
-            <KpiCard
-              title="Fees Collected"
-              value="₹18.4L"
-              sub="↑ 82% of target"
-              icon={Ticket}
-              color="bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-md shadow-rose-500/20"
-              delay={0.08}
-            />
-            <KpiCard
-              title="Pending Admissions"
-              value="24"
-              sub="! 5 require action"
-              icon={Users}
-              color="bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-md shadow-amber-500/20"
-              delay={0.10}
-            />
-            <KpiCard
-              title="Active Classes"
-              value="32"
-              sub="↑ 5 live now"
-              icon={Video}
-              color="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-md shadow-indigo-500/20"
-              delay={0.12}
-            />
-          </div>
-
-          {/* Charts & Attention row */}
-          <div className="w-full flex-1 grid gap-6 grid-cols-1 xl:grid-cols-3">
-            <motion.div
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 shadow-[0_8px_30px_rgb(0,0,0,0.015)] w-full flex-1 flex flex-col xl:col-span-2"
-              style={{
-                padding: 'clamp(1rem, 1.5vw, 1.5rem)',
-                borderRadius: 'clamp(1.25rem, 1.8vw, 1.75rem)'
-              }}
-            >
-              <div className="mb-3 flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <h3
-                    className="font-display font-bold text-slate-800 dark:text-white"
-                    style={{ fontSize: 'clamp(0.95rem, 1.2vw, 1.125rem)' }}
-                  >
-                    Attendance Overview
-                  </h3>
-                  <p
-                    className="font-semibold text-slate-400 dark:text-slate-500"
-                    style={{ fontSize: 'clamp(9px, 0.7vw, 12px)' }}
-                  >
-                    Smoothed weekly trend · updates every refresh
-                  </p>
-                </div>
-                <Badge
-                  variant="secondary"
-                  className="items-center gap-1.5 border-transparent bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-500/20 font-bold hover:bg-emerald-500/10"
-                  style={{
-                    padding: 'clamp(0.2rem, 0.4vw, 0.35rem) clamp(0.6rem, 0.8vw, 0.75rem)',
-                    fontSize: 'clamp(9px, 0.65vw, 10px)'
-                  }}
-                >
-                  <TrendingUp style={{ width: 'clamp(10px, 0.75vw, 12px)', height: 'clamp(10px, 0.75vw, 12px)' }} />
-                  Live
-                </Badge>
-              </div>
-              <div className="flex-1 min-h-[160px] w-full">
-                <ChartContainer config={attendanceChartConfig} className="aspect-auto size-full">
-                  <LineChart data={attendancePresentAbsentSeries} margin={{ top: 8, right: 12, left: -24, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(37,99,235,0.05)" vertical={false} />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} dy={8} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} domain={[0, 100]} />
-                    <RechartsTooltip content={<ChartTooltipContent />} />
-                    <Line type="monotone" dataKey="present" stroke="var(--color-present)" strokeWidth={3} dot={false} />
-                    <Line type="monotone" dataKey="absent" stroke="var(--color-absent)" strokeWidth={3} dot={false} />
-                  </LineChart>
-                </ChartContainer>
-              </div>
-            </motion.div>
-
-            <AttentionRequiredWidget className="h-full xl:col-span-1" />
-          </div>
+      {/* ── KPI Cards Row (4 Cards) ── */}
+      <div className="px-4 md:px-6 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <KpiCard
+            title="TOTAL STUDENTS"
+            value={formatNumber(animStudents)}
+            icon={GraduationCap}
+            iconBg="bg-blue-50 text-blue-600"
+            iconColor="text-blue-600"
+          />
+          <KpiCard
+            title="TOTAL TEACHERS"
+            value={formatNumber(animTeachers)}
+            icon={Users}
+            iconBg="bg-purple-50 text-purple-600"
+            iconColor="text-purple-600"
+          />
+          <KpiCard
+            title="ATTENDANCE"
+            value={`${attendancePct}%`}
+            sub={`↑ ${stats?.presentStudentsToday ?? 0} / ${students} present`}
+            icon={ClipboardList}
+            iconBg="bg-emerald-50 text-emerald-600"
+            iconColor="text-emerald-600"
+          />
+          <KpiCard
+            title="ACTIVE LECTURES"
+            value="0"
+            sub="0 live now"
+            icon={Video}
+            iconBg="bg-indigo-50 text-indigo-600"
+            iconColor="text-indigo-600"
+          />
         </div>
+      </div>
 
-        {/* Right Column: Communications, Support & Security */}
-        <div className="gap-y-6 w-full lg:col-span-1 flex flex-col justify-start">
-          {/* Smart Calendar (Moved down) */}
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 shadow-[0_8px_30px_rgb(0,0,0,0.015)] flex-col justify-between overflow-hidden"
-            style={{
-              minHeight: 'clamp(260px, 21vw, 360px)',
-              padding: 'clamp(0.85rem, 1.3vw, 1.25rem)',
-              borderRadius: 'clamp(1.25rem, 1.8vw, 2rem)'
-            }}
-          >
-            <SmartCalendar />
-          </motion.div>
-
-          {/* Communications Widget */}
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 shadow-[0_8px_30px_rgb(0,0,0,0.015)] flex flex-col justify-between"
-            style={{
-              padding: 'clamp(1rem, 1.5vw, 1.5rem)',
-              borderRadius: 'clamp(1.25rem, 1.8vw, 2rem)'
-            }}
-          >
-            <div>
-              <div className="mb-3 flex items-center justify-between">
-                <div>
-                  <h3
-                    className="font-display font-bold text-slate-800 dark:text-white uppercase tracking-wider"
-                    style={{ fontSize: 'clamp(11px, 0.8vw, 14px)' }}
-                  >
-                    Notices
-                  </h3>
-                  <p
-                    className="text-slate-400 dark:text-slate-500 font-semibold mt-0.5"
-                    style={{ fontSize: 'clamp(8px, 0.65vw, 10px)' }}
-                  >
-                    Recent announcements
-                  </p>
-                </div>
-                <MessageSquare className="text-blue-600 dark:text-blue-400" style={{ width: 'clamp(1.1rem, 1.4vw, 1.25rem)', height: 'clamp(1.1rem, 1.4vw, 1.25rem)' }} />
-              </div>
-              {stats?.communications && stats.communications.length > 0 && stats.communications[0]?.t !== 'No recent notices found' ? (
-                <ul className="space-y-2">
-                  {stats.communications.map((n, idx) => {
-                    const icons = [Megaphone, CalendarDays, BookOpen];
-                    const IconComp = icons[idx % icons.length];
-                    const colors = [
-                      'text-blue-600 bg-blue-50/70 dark:bg-blue-900/25 border border-blue-100/50 dark:border-blue-900/10',
-                      'text-emerald-600 bg-emerald-50/70 dark:bg-emerald-900/25 border border-emerald-100/50 dark:border-emerald-900/10',
-                      'text-violet-600 bg-violet-50/70 dark:bg-violet-900/25 border border-violet-100/50 dark:border-violet-900/10',
-                    ];
-                    const color = colors[idx % colors.length];
-                    return (
-                      <li
-                        key={n.id || idx}
-                        onClick={() => navigate('/school/admin/notices')}
-                        className="flex items-center justify-between gap-2 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-950/20 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors cursor-pointer"
-                        style={{ padding: 'clamp(0.4rem, 0.7vw, 0.75rem)' }}
-                      >
-                        <div className="flex-1 min-w-0 flex items-center gap-2">
-                          <div
-                            className={cn("shrink-0 rounded-xl flex items-center justify-center", color)}
-                            style={{
-                              width: 'clamp(1.8rem, 2.3vw, 2.5rem)',
-                              height: 'clamp(1.8rem, 2.3vw, 2.5rem)'
-                            }}
-                          >
-                            <IconComp style={{ width: 'clamp(0.9rem, 1.1vw, 1.25rem)', height: 'clamp(0.9rem, 1.1vw, 1.25rem)' }} />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-bold text-slate-800 dark:text-white truncate" style={{ fontSize: 'clamp(10px, 0.75vw, 12px)' }}>{n.t || n.title}</p>
-                            <p className="text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5" style={{ fontSize: 'clamp(8px, 0.65vw, 10px)' }}>{n.sub || n.content || 'Announcement'}</p>
-                          </div>
-                        </div>
-                        <span className="shrink-0 font-bold text-slate-400 dark:text-slate-500" style={{ fontSize: 'clamp(8px, 0.6vw, 9px)' }}>
-                          {relativeTime(n.posted_date || n.created_at || n.time)}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : (
-                <div className="py-6 text-center text-xs font-medium text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
-                  No recent announcements found
-                </div>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() => navigate('/school/admin/notices')}
-              className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-800 font-bold text-blue-600 dark:text-blue-400 transition hover:bg-blue-50/50 dark:hover:bg-blue-900/10 hover:border-blue-200 dark:hover:border-blue-900"
-              style={{
-                padding: 'clamp(0.4rem, 0.7vw, 0.65rem)',
-                fontSize: 'clamp(10px, 0.75vw, 12px)'
-              }}
-            >
-              Open all notices
-              <ArrowUpRight style={{ width: 'clamp(0.9rem, 1.1vw, 1rem)', height: 'clamp(0.9rem, 1.1vw, 1rem)' }} />
-            </button>
-          </motion.div>
-
-          {/* Support & Security Widget */}
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 shadow-[0_8px_30px_rgb(0,0,0,0.015)]"
-            style={{
-              padding: 'clamp(1rem, 1.5vw, 1.5rem)',
-              borderRadius: 'clamp(1.25rem, 1.8vw, 2rem)'
-            }}
-          >
-            <div className="mb-3 flex items-center justify-between">
+      {/* ── Main Dashboard Row 1 ── */}
+      <div className="px-4 md:px-6 grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+        
+        {/* Attendance Overview (Span 7) */}
+        <div className="lg:col-span-7 flex">
+          <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm rounded-3xl p-5 sm:p-6 w-full flex flex-col justify-between font-semibold">
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <h3
-                  className="font-display font-bold text-slate-800 dark:text-white uppercase tracking-wider"
-                  style={{ fontSize: 'clamp(11px, 0.8vw, 14px)' }}
-                >
-                  Support & Security
-                </h3>
-                <p
-                  className="text-slate-400 dark:text-slate-500 font-semibold mt-0.5 font-sans"
-                  style={{ fontSize: 'clamp(8px, 0.65vw, 10px)' }}
-                >
-                  Assigned and open tickets
-                </p>
+                <CardTitle className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">Attendance Overview</CardTitle>
+                <CardDescription className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">Smoothed weekly trend · updates every refresh</CardDescription>
               </div>
-              <Ticket className="text-amber-500 dark:text-amber-400" style={{ width: 'clamp(1.1rem, 1.4vw, 1.25rem)', height: 'clamp(1.1rem, 1.4vw, 1.25rem)' }} />
+              <Badge variant="secondary" className="bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 font-semibold text-xs px-2.5 py-1 gap-1 rounded-full">
+                <TrendingUp className="w-3.5 h-3.5" />
+                Live
+              </Badge>
             </div>
-            <div className="space-y-1.5">
-              {(stats?.complaintStatus || [
-                { name: 'In Progress Tickets', value: stats?.inProgressTickets ?? 0 },
-                { name: 'Open Tickets', value: stats?.openComplaints ?? 0 },
-                { name: 'Closed Tickets', value: stats?.closedTickets ?? 0 }
-              ]).map((c) => (
-                <div
-                  key={c.name}
-                  onClick={() => navigate('/school/admin/complaints')}
-                  className="flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-955/20 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors"
-                  style={{ padding: 'clamp(0.35rem, 0.6vw, 0.5rem) clamp(0.6rem, 0.8vw, 0.75rem)' }}
-                >
-                  <span className="font-bold text-slate-500 dark:text-slate-400" style={{ fontSize: 'clamp(10px, 0.75vw, 12px)' }}>{c.name}</span>
-                  <span className="font-display font-extrabold text-slate-800 dark:text-white" style={{ fontSize: 'clamp(11px, 0.8vw, 14px)' }}>{c.value}</span>
+
+            <ChartContainer config={attendanceChartConfig} className="mt-4 min-h-[220px] w-full flex-1 aspect-auto">
+              <BarChart accessibilityLayer data={attendancePresentAbsentSeries} margin={{ top: 10, right: 12, left: -24, bottom: 0 }}>
+                <CartesianGrid vertical={false} />
+                <XAxis dataKey="name" tickLine={false} tickMargin={10} axisLine={false} />
+                <YAxis axisLine={false} tickLine={false} domain={[0, 100]} unit="%" />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <ChartLegend content={<ChartLegendContent />} />
+                <Bar dataKey="present" fill="var(--color-present)" radius={4} />
+                <Bar dataKey="absent" fill="var(--color-absent)" radius={4} />
+              </BarChart>
+            </ChartContainer>
+          </Card>
+        </div>
+
+        {/* Middle Column: Attention Required & Attendance by Role (Span 5) */}
+        <div className="lg:col-span-5 flex flex-col gap-6">
+          
+          {/* Attention Required Card */}
+          <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm rounded-3xl p-5 font-semibold">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-rose-500" />
+                <CardTitle className="text-base font-semibold text-slate-900 dark:text-white">Attention Required</CardTitle>
+              </div>
+              <button onClick={() => navigate('/school/admin/students')} className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                View All <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            
+            {flags.length > 0 ? (
+              <ul className="space-y-2">
+                {flags.map((fl) => (
+                  <li key={fl.id}>
+                    <button
+                      type="button"
+                      onClick={() => navigate(fl.actionUrl || '/school/admin/students')}
+                      className="w-full text-left flex items-start gap-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 px-3 py-2.5 transition-colors"
+                    >
+                      <span className={cn('mt-1.5 size-2 shrink-0 rounded-full', String(fl.priority).toUpperCase() === 'HIGH' ? 'bg-rose-500' : 'bg-amber-400')} />
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm text-slate-900 dark:text-white">{fl.title}</span>
+                        <span className="block line-clamp-2 text-xs text-slate-500 dark:text-slate-400">{fl.message}</span>
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="py-6 flex flex-col items-center justify-center text-center">
+                <CheckCircle2 className="w-10 h-10 text-emerald-500 mb-2" />
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">No flags need attention right now.</p>
+              </div>
+            )}
+          </Card>
+
+          {/* Attendance by Role Card */}
+          <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm rounded-3xl p-5 font-semibold flex-1 flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <CardTitle className="text-base font-semibold text-slate-900 dark:text-white">Attendance by Role</CardTitle>
+                <CardDescription className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">{attendanceDayLabel} · students vs teachers</CardDescription>
+              </div>
+              <Users className="w-5 h-5 text-slate-400" />
+            </div>
+
+            <div className="h-[140px] w-full flex items-center justify-center relative my-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={roleAttendanceData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius="68%"
+                    outerRadius="90%"
+                    paddingAngle={6}
+                    dataKey="value"
+                  >
+                    {roleAttendanceData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                 <p className="text-xl font-semibold text-slate-900 dark:text-white leading-none">{avgAttendancePct}%</p>
+                 <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 mt-1">AVG PRESENT</p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-center gap-6 text-xs font-semibold pt-1">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
+                <span className="text-slate-600 dark:text-slate-300">Students {attendancePct}%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-purple-500" />
+                <span className="text-slate-600 dark:text-slate-300">Teachers {teacherAttendancePct}%</span>
+              </div>
+            </div>
+          </Card>
+
+        </div>
+      </div>
+
+      {/* ── Main Dashboard Row 2: Calendar & Notices ── */}
+      <div className="px-4 md:px-6 grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+        
+        {/* Smart Calendar (Span 7) */}
+        <div className="lg:col-span-7 flex">
+          <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm rounded-3xl p-5 sm:p-6 w-full font-semibold">
+            <SmartCalendar />
+          </Card>
+        </div>
+
+        {/* Notices (Span 5) */}
+        <div className="lg:col-span-5 flex">
+          <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm rounded-3xl p-5 sm:p-6 w-full flex flex-col justify-between font-semibold">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <CardTitle className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white uppercase tracking-wider">NOTICES</CardTitle>
+                  <CardDescription className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">Recent announcements</CardDescription>
+                </div>
+                <MessageSquare className="w-5 h-5 text-blue-600" />
+              </div>
+
+              <div className="space-y-3">
+                {[
+                  { title: 'Science Exhibition', sub: 'Please refer to the notice for details of science ...' },
+                  { title: 'Final Exam', sub: 'Last exam' },
+                  { title: 'Summer vacation 2027', sub: 'Summer Vacation2027' }
+                ].map((n, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => navigate('/school/admin/notices')}
+                    className="p-3 sm:p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-slate-100/60 cursor-pointer transition-colors flex items-start gap-3"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5">
+                      <Megaphone className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white truncate">{n.title}</p>
+                      <p className="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 truncate mt-0.5">{n.sub}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <Button
+              variant="outline"
+              onClick={() => navigate('/school/admin/notices')}
+              className="mt-4 w-full rounded-2xl border-slate-200 font-semibold text-xs py-2.5 gap-2 text-slate-800 dark:text-slate-200"
+            >
+              Open all notices <ArrowUpRight className="w-4 h-4" />
+            </Button>
+          </Card>
+        </div>
+      </div>
+
+      {/* ── Main Dashboard Row 3: Recent Activity, Fee Overview, Star Students, Support & Security ── */}
+      <div className="px-4 md:px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        
+        {/* Recent Activity Card */}
+        <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm rounded-3xl p-5 flex flex-col justify-between font-semibold">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-blue-600" />
+                <CardTitle className="text-sm font-semibold text-slate-900 dark:text-white">Recent Activity</CardTitle>
+              </div>
+              <button onClick={() => navigate('/school/admin/notices')} className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-0.5">
+                View All <ChevronRight className="w-3 h-3" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
+                    <Clock className="w-4 h-4 text-slate-500" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">Syllabus behind...</p>
+                    <p className="text-[10px] font-semibold text-slate-400">3d ago</p>
+                  </div>
                 </div>
               ))}
             </div>
-            <div
-              onClick={() => navigate('/school/admin/security')}
-              className="mt-3 rounded-xl border border-emerald-200 dark:border-emerald-900/35 bg-emerald-50 dark:bg-emerald-955/15 text-emerald-800 dark:text-emerald-400 flex items-center gap-2 cursor-pointer hover:bg-emerald-100/50 transition-colors font-bold"
-              style={{
-                padding: 'clamp(0.4rem, 0.7vw, 0.65rem)',
-                fontSize: 'clamp(8px, 0.65vw, 10px)'
-              }}
-            >
-              <Shield className="text-emerald-600 dark:text-emerald-400 shrink-0" style={{ width: 'clamp(0.9rem, 1.1vw, 1rem)', height: 'clamp(0.9rem, 1.1vw, 1rem)' }} />
-              <span className="truncate">{stats?.systemHealthText || 'System health: optimal · Backups verified · API latency 42ms'}</span>
+          </div>
+        </Card>
+
+        {/* Fee Overview Card */}
+        <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm rounded-3xl p-5 flex flex-col justify-between font-semibold text-center">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <CardTitle className="text-sm font-semibold text-slate-900 dark:text-white">Fee Overview</CardTitle>
+              <button onClick={() => navigate('/school/admin/erp')} className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-0.5">
+                View Reports <ChevronRight className="w-3 h-3" />
+              </button>
             </div>
-          </motion.div>
-        </div>
+
+            {Number(stats?.feesTotal) > 0 ? (
+              <div className="space-y-3 text-left">
+                <div>
+                  <p className="text-2xl font-semibold text-slate-900 dark:text-white">{Math.round(stats?.feesCollectedPercentage || 0)}%</p>
+                  <p className="text-[11px] text-slate-500">collected of {formatINR(stats?.feesTotal)}</p>
+                </div>
+                <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                  <div className="h-full rounded-full bg-emerald-500" style={{ width: `${Math.min(100, Math.round(stats?.feesCollectedPercentage || 0))}%` }} />
+                </div>
+                {[['Collected', stats?.feesCollected, 'bg-emerald-500'], ['Pending', stats?.feesPending, 'bg-amber-400'], ['Overdue', stats?.feesOverdue, 'bg-rose-500']].map(([label, v, dot]) => (
+                  <div key={label} className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-2 text-slate-600 dark:text-slate-300"><span className={`size-2 rounded-full ${dot}`} />{label}</span>
+                    <span className="text-slate-900 dark:text-white">{formatINR(v)}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-6 flex flex-col items-center justify-center">
+                <span className="text-4xl font-light text-slate-300 dark:text-slate-600 mb-2">₹</span>
+                <p className="text-xs font-semibold text-slate-500">No fee records yet.</p>
+              </div>
+            )}
+          </div>
+
+          <Button
+            onClick={() => navigate('/school/admin/erp')}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs py-2.5 rounded-2xl shadow-sm"
+          >
+            View Fees Report
+          </Button>
+        </Card>
+
+        {/* Star Students Card */}
+        <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm rounded-3xl p-5 flex flex-col justify-between font-semibold">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <CardTitle className="text-sm font-semibold text-slate-900 dark:text-white">Star Students</CardTitle>
+                <CardDescription className="text-[10px] font-semibold text-slate-400 mt-0.5">Top XP earners this term</CardDescription>
+              </div>
+              <Trophy className="w-5 h-5 text-amber-500" />
+            </div>
+
+            {(stats?.topStudents || []).length > 0 ? (
+              <ul className="space-y-2">
+                {stats.topStudents.slice(0, 5).map((st, i) => (
+                  <li key={st.userId || i} className="flex items-center justify-between gap-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 px-3 py-2">
+                    <span className="min-w-0">
+                      <span className="block truncate text-xs text-slate-900 dark:text-white">{i + 1}. {st.name}</span>
+                      {st.className && <span className="block text-[10px] text-slate-400">{st.className}{st.sectionName ? ` · ${st.sectionName}` : ''}</span>}
+                    </span>
+                    <span className="text-xs text-amber-600">{st.xp} XP</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="py-10 flex items-center justify-center text-center">
+                <p className="text-xs font-semibold text-slate-400 max-w-[160px]">No XP activity recorded yet.</p>
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* Support & Security Card */}
+        <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm rounded-3xl p-5 flex flex-col justify-between font-semibold">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-900 dark:text-white">SUPPORT & SECURITY</CardTitle>
+                <CardDescription className="text-[10px] font-semibold text-slate-400 mt-0.5">Assigned and open tickets</CardDescription>
+              </div>
+              <Ticket className="w-5 h-5 text-amber-500" />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 text-xs font-semibold">
+                <span className="text-slate-600 dark:text-slate-300">In Progress Tickets</span>
+                <span className="text-slate-900 dark:text-white font-semibold">2</span>
+              </div>
+              <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 text-xs font-semibold">
+                <span className="text-slate-600 dark:text-slate-300">Open Tickets</span>
+                <span className="text-slate-900 dark:text-white font-semibold">0</span>
+              </div>
+              <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 text-xs font-semibold">
+                <span className="text-slate-600 dark:text-slate-300">Closed Tickets</span>
+                <span className="text-slate-900 dark:text-white font-semibold">1</span>
+              </div>
+            </div>
+          </div>
+
+          {/* <div className="mt-3 p-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/40 text-emerald-800 dark:text-emerald-300 flex items-center gap-2 text-[10px] font-semibold">
+            <Shield className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span className="truncate">System health: optimal · Backups verified · API latency 42ms</span>
+          </div> */}
+        </Card>
+
       </div>
 
-
-
-      {/* Row 3: New Widgets */}
-      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 items-stretch px-4 md:px-6 mt-6">
-        <FeeOverviewWidget className="h-full" />
-        <RecentActivityWidget className="h-full" />
-      </div>
-
-      {/* Footer */}
-      {/* <footer className="w-full flex justify-end items-center py-4 mt-8 select-none">
-        <div className="flex items-center gap-3 text-[10px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase">
-          <span>Powered by</span>
-          <a href="https://eddva.in" target="_blank" rel="noopener noreferrer" className="flex items-center hover:opacity-80 transition-opacity">
-            <img src={eddvaLogo} alt="EDDVA" className="h-[24px] sm:h-[30px] w-auto object-contain filter drop-shadow-sm" />
-          </a>
-          <span className="text-slate-300 dark:text-slate-700 font-normal text-sm">+</span>
-          <a href="https://vvspltech.com" target="_blank" rel="noopener noreferrer" className="flex items-center hover:opacity-80 transition-opacity">
-            <img src={vvsplLogo} alt="VVSPL" className="h-[30px] sm:h-[36px] w-auto object-contain bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-100 dark:border-slate-700 shadow-sm" />
-          </a>
-        </div>
-      </footer> */}
     </motion.div>
   );
 }
