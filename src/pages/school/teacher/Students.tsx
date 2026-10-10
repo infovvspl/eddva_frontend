@@ -252,45 +252,30 @@ const Students: React.FC = () => {
                           <p className="text-xs text-slate-500">Roll {student.studentProfile?.rollNo || '-'}</p>
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400">
-                      {student.studentProfile?.rollNo || '-'}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-slate-700 dark:text-slate-300">
-                          {student.studentProfile?.section?.class?.name || '-'}
-                        </span>
-                        <span className="text-slate-400 dark:text-slate-500">•</span>
-                        <span className="text-slate-600 dark:text-slate-400">
-                          Sec {student.studentProfile?.section?.name || '-'}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                      <Badge variant={student.isActive ? 'success' : 'error'} className="shrink-0">
+                        {student.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between gap-3 text-xs text-slate-600 dark:text-slate-400">
+                      <span>
+                        {student.studentProfile?.section?.class?.name || '-'} • Sec {student.studentProfile?.section?.name || '-'}
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <span className="h-2 w-16 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                           {student.attendancePct != null && (
-                            <div
-                              className={`h-full rounded-full ${
+                            <span
+                              className={`block h-full rounded-full ${
                                 student.attendancePct >= 75 ? 'bg-emerald-500' :
                                 student.attendancePct >= 60 ? 'bg-amber-500' : 'bg-red-500'
                               }`}
                               style={{ width: `${student.attendancePct}%` }}
                             />
                           )}
-                        </div>
-                        <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                          {student.attendancePct != null ? `${student.attendancePct}%` : '—'}
                         </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <Badge variant={student.isActive ? 'success' : 'error'}>
-                        {student.isActive ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </td>
-                  </tr>
+                        <span className="font-medium">{student.attendancePct != null ? `${student.attendancePct}%` : '—'}</span>
+                      </span>
+                    </div>
+                  </Card>
                 ))}
               </div>
 
