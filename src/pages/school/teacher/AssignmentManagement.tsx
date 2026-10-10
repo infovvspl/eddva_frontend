@@ -1598,17 +1598,7 @@ const AssignmentManagement: React.FC = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => {
-                              if (gradingId === sub.id) {
-                                setGradingId(null);
-                              } else {
-                                setGradingId(sub.id);
-                                setGradeForm({
-                                  marks: sub.marks != null ? String(sub.marks) : '',
-                                  feedback: sub.feedback || '',
-                                });
-                              }
-                            }}
+                            onClick={() => startGrading(sub, sub.assignment_id || sub.assignmentId)}
                             className="h-8 gap-1 text-xs text-blue-600 hover:bg-blue-50"
                           >
                             <PenLine className="size-3" />
@@ -1618,13 +1608,16 @@ const AssignmentManagement: React.FC = () => {
 
                         {gradingId === sub.id && (
                           <div className="flex flex-col gap-2 rounded-lg bg-slate-50 p-3">
-                            <Input
-                              type="number"
-                              placeholder="Marks"
-                              value={gradeForm.marks}
-                              onChange={(e) => setGradeForm((f) => ({ ...f, marks: e.target.value }))}
-                              className="h-9 bg-white text-xs"
-                            />
+                            {renderGrader()}
+                            {gradingAnswers.length === 0 && (
+                              <Input
+                                type="number"
+                                placeholder="Marks"
+                                value={gradeForm.marks}
+                                onChange={(e) => setGradeForm((f) => ({ ...f, marks: e.target.value }))}
+                                className="h-9 bg-white text-xs"
+                              />
+                            )}
                             <Input
                               type="text"
                               placeholder="Feedback (optional)"
@@ -1635,7 +1628,7 @@ const AssignmentManagement: React.FC = () => {
                             <div className="flex gap-2">
                               <Button
                                 size="sm"
-                                onClick={() => handleGradeSubmission(sub.id)}
+                                onClick={() => handleGradeSubmission(sub.id, sub.assignment_id || sub.assignmentId)}
                                 className="h-9 flex-1 text-xs font-semibold"
                               >
                                 Save Grade
@@ -1784,6 +1777,8 @@ const AssignmentManagement: React.FC = () => {
                     ))}
                   </TableBody>
                 </Table>
+              </div>
+              </>
               )}
             </CardContent>
           </Card>
