@@ -4,7 +4,7 @@ import { apiClient as api } from '@/lib/api/client';
 import schoolApi from '@/lib/api/school-client';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { useSchoolFeature } from '@/hooks/use-school-feature';
-import { Play, Trophy, ArrowLeft, Loader2, BookOpen, Star, Layers, Lock } from 'lucide-react';
+import { Play, Trophy, ArrowLeft, Loader2, BookOpen, Layers, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import './quiz-rush/arena.css';
@@ -31,8 +31,6 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
   const [subjects, setSubjects] = useState([]);
   const [selectedSubjectId, setSelectedSubjectId] = useState('');
   const [selectedChapterId, setSelectedChapterId] = useState('');
-  const [difficulty, setDifficulty] = useState('any');
-  const [mode, setMode] = useState('ranked');
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
 
@@ -94,8 +92,6 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
         params: {
           subjectId: selectedSubjectId,
           chapterId: selectedChapterId || 'any',
-          difficulty: mode === 'ranked' ? undefined : difficulty,
-          mode,
         },
       });
       const data = res.data?.data ?? res.data;
@@ -222,79 +218,6 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
               />
             </div>
           </div>
-
-          {/* Mode */}
-          <div className="space-y-2">
-            <label className="qr-display text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-300/70">
-              Game Mode
-            </label>
-            <div className="grid gap-2.5 sm:grid-cols-2">
-              {[
-                { id: 'ranked', label: 'Ranked', desc: 'Auto difficulty · affects your ELO', glyph: '⚔️' },
-                { id: 'free_play', label: 'Free Play', desc: 'Your difficulty · no rank change', glyph: '🎯' },
-              ].map((m) => {
-                const active = mode === m.id;
-                return (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => {
-                      setMode(m.id);
-                      if (m.id === 'ranked') setDifficulty('any');
-                    }}
-                    className={`qr-chip flex items-start gap-3 border p-3.5 text-left transition ${
-                      active
-                        ? 'border-cyan-400/60 bg-cyan-400/10 qr-glow-cyan'
-                        : 'border-white/10 bg-white/[0.02] hover:border-cyan-400/30'
-                    }`}
-                  >
-                    <span className="text-lg leading-none">{m.glyph}</span>
-                    <span className="min-w-0">
-                      <span className={`qr-display block text-xs font-bold uppercase tracking-wider ${active ? 'text-cyan-200' : 'text-slate-300'}`}>
-                        {m.label}
-                      </span>
-                      <span className="qr-read mt-0.5 block text-[10px] font-medium text-slate-500">
-                        {m.desc}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Difficulty — ranked picks this for you, so it only appears in free play */}
-          {mode === 'free_play' && (
-            <div className="qr-rise space-y-2">
-              <label className="qr-display flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-300/70">
-                <Star className="size-3.5" /> Difficulty
-              </label>
-              <div className="grid grid-cols-4 gap-2">
-                {[
-                  { id: 'any', label: 'Any' },
-                  { id: 'easy', label: 'Easy' },
-                  { id: 'medium', label: 'Med' },
-                  { id: 'hard', label: 'Hard' },
-                ].map((diff) => {
-                  const active = difficulty === diff.id;
-                  return (
-                    <button
-                      key={diff.id}
-                      type="button"
-                      onClick={() => setDifficulty(diff.id)}
-                      className={`qr-chip qr-display border py-2.5 text-[11px] font-bold uppercase tracking-wider transition ${
-                        active
-                          ? 'border-fuchsia-400/60 bg-fuchsia-400/15 text-fuchsia-200'
-                          : 'border-white/10 bg-white/[0.02] text-slate-400 hover:border-fuchsia-400/30'
-                      }`}
-                    >
-                      {diff.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </ArenaPanel>
 
         {/* ── Launch ──────────────────────────────────────────────────── */}

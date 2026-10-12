@@ -11,11 +11,9 @@ export default function MathSprint() {
   const [sessionData, setSessionData] = useState(null); // { sessionId, questions }
   const [resultData, setResultData] = useState(null); // submit API response
 
-  const handleStartGame = async (difficulty, mode = 'ranked') => {
+  const handleStartGame = async () => {
     try {
-      const res = await api.get('/school/gamification/math-sprint/start', {
-        params: { difficulty: mode === 'ranked' ? undefined : difficulty, mode },
-      });
+      const res = await api.get('/school/gamification/math-sprint/start');
       const data = res.data?.data ?? res.data;
       setSessionData(data);
       setStage('play');

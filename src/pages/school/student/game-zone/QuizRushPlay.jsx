@@ -165,7 +165,7 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
       setSubmitting(true);
       try {
         const res = await api.get('/school/gamification/quiz-rush/next-question', {
-          params: { sessionId, currentIdx }
+          params: { sessionId, currentIdx, answers: JSON.stringify(finalAnswers) }
         });
         const data = res.data?.data ?? res.data;
         setLocalQuestions((prev) => [...prev, data.question]);
@@ -183,7 +183,7 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
         setSubmitting(true);
         try {
           const res = await api.get('/school/gamification/quiz-rush/next-question', {
-            params: { sessionId, currentIdx }
+            params: { sessionId, currentIdx, answers: JSON.stringify(finalAnswers) }
           });
           const data = res.data?.data ?? res.data;
           setLocalQuestions((prev) => [...prev, data.question]);
