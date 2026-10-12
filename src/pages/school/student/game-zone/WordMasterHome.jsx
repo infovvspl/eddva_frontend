@@ -1,51 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Play, Trophy, ArrowLeft, Loader2, BookOpen, Award, Check, ChevronRight, Zap, Flame, Snowflake, HelpCircle } from 'lucide-react';
+import { Play, Trophy, ArrowLeft, Loader2, BookOpen, Award, Check, HelpCircle } from 'lucide-react';
 import { apiClient as api } from '@/lib/api/client';
 import schoolApi from '@/lib/api/school-client';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { useSchoolFeature } from '@/hooks/use-school-feature';
-import { CustomSelect } from "@/components/ui/CustomSelect";
 import { toast } from 'sonner';
-
-const DIFFICULTIES = [
-  {
-    key: 'easy',
-    label: 'Easy',
-    icon: Snowflake,
-    color: 'text-emerald-600 dark:text-emerald-400',
-    bg: 'bg-emerald-50 dark:bg-emerald-950/40',
-    border: 'border-emerald-300 dark:border-emerald-700',
-    selectedBorder: 'border-emerald-500',
-    selectedBg: 'bg-emerald-50/80 dark:bg-emerald-950/60',
-    badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300',
-    desc: '4–6 letter terms · Familiar vocabulary',
-  },
-  {
-    key: 'medium',
-    label: 'Medium',
-    icon: Zap,
-    color: 'text-amber-600 dark:text-amber-400',
-    bg: 'bg-amber-50 dark:bg-amber-950/40',
-    border: 'border-amber-300 dark:border-amber-700',
-    selectedBorder: 'border-amber-500',
-    selectedBg: 'bg-amber-50/80 dark:bg-amber-950/60',
-    badge: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
-    desc: '5–9 letter terms · Balanced challenge',
-  },
-  {
-    key: 'hard',
-    label: 'Hard',
-    icon: Flame,
-    color: 'text-rose-600 dark:text-rose-400',
-    bg: 'bg-rose-50 dark:bg-rose-950/40',
-    border: 'border-rose-300 dark:border-rose-700',
-    selectedBorder: 'border-rose-500',
-    selectedBg: 'bg-rose-50/80 dark:bg-rose-950/60',
-    badge: 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300',
-    desc: '7–12 letter terms · Advanced academic',
-  },
-];
 
 export default function WordMasterHome({ onStart, onViewLeaderboard }) {
   const { user } = useAuth();
@@ -56,9 +16,6 @@ export default function WordMasterHome({ onStart, onViewLeaderboard }) {
   const [selectedChapterId, setSelectedChapterId] = useState('');
   const [loading, setLoading] = useState(true);
   const [selectedDeckId, setSelectedDeckId] = useState('');
-  const [selectedDifficulty, setSelectedDifficulty] = useState('medium');
-  const [mode, setMode] = useState('ranked');
-  const [step, setStep] = useState('deck'); // 'deck' | 'difficulty'
   const [starting, setStarting] = useState(false);
 
   useEffect(() => {
@@ -117,35 +74,19 @@ export default function WordMasterHome({ onStart, onViewLeaderboard }) {
     fetchDecks();
   }, []);
 
-  const selectedDeck = decks.find((d) => d.id === selectedDeckId);
-
   const handleDeckSelect = (deckId) => {
     setSelectedDeckId(deckId);
     const deck = decks.find((d) => d.id === deckId);
-    setSelectedDifficulty(deck?.defaultDifficulty || 'medium');
     if (deck?.subjectId) {
       setSelectedSubjectId(deck.subjectId);
     }
-  };
-
-  const handleNext = () => {
-    if (!selectedDeckId) return;
-    if (mode === 'ranked') {
-      handleStart();
-    } else {
-      setStep('difficulty');
-    }
-  };
-
-  const handleBack = () => {
-    setStep('deck');
   };
 
   const handleStart = async () => {
     if (!selectedDeckId || starting) return;
     setStarting(true);
     try {
-      await onStart(selectedDeckId, selectedDifficulty, mode, selectedSubjectId, selectedChapterId);
+      await onStart(selectedDeckId, selectedSubjectId, selectedChapterId);
     } catch (err) {
       console.error(err);
     } finally {
@@ -204,45 +145,12 @@ export default function WordMasterHome({ onStart, onViewLeaderboard }) {
           <div className="flex h-40 items-center justify-center">
             <Loader2 className="size-8 animate-spin text-violet-500" />
           </div>
-        ) : step === 'deck' ? (
+        ) : (
           <>
-            {/* Step 1 – Deck Selection */}
             <div className="space-y-4">
-              {/* Mode Selector */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-black uppercase tracking-widest text-slate-400">
-                  🎮 Game Mode
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { id: 'ranked', label: 'Ranked Play', desc: 'Auto skill difficulty' },
-                    { id: 'free_play', label: 'Free Play', desc: 'Custom difficulty settings' },
-                  ].map((m) => (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => setMode(m.id)}
-                      className={`py-3 px-4 text-xs font-black rounded-lg border text-left transition flex flex-col gap-0.5 ${
-                        mode === m.id
-                          ? 'border-violet-500 bg-violet-50/20 text-violet-750 dark:bg-violet-950/20 dark:text-violet-300'
-                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400'
-                      }`}
-                    >
-                      <span>{m.label}</span>
-                      <span className="text-[9px] font-medium text-slate-455 dark:text-slate-500">{m.desc}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-2">
-                <label className="text-xs font-black uppercase tracking-widest text-slate-400">
-                  Select Vocabulary Theme
-                </label>
-                <span className="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
-                  Step 1 of 2
-                </span>
-              </div>
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400">
+                Select Vocabulary Theme
+              </label>
               <div className="grid gap-3">
                 {decks.map((deck) => {
                   const isSelected = selectedDeckId === deck.id;
@@ -435,88 +343,8 @@ export default function WordMasterHome({ onStart, onViewLeaderboard }) {
             <div className="pt-2 flex flex-col gap-2">
               <button
                 type="button"
-                onClick={handleNext}
-                disabled={!selectedDeckId || starting}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 py-3 text-sm font-black text-white shadow-lg shadow-violet-500/10 transition hover:bg-violet-700 disabled:opacity-50"
-              >
-                {mode === 'ranked' ? (
-                  starting ? <><Loader2 className="size-4 animate-spin" /> Starting...</> : <><Play className="size-4 fill-current" /> Start Word Master</>
-                ) : (
-                  <>{starting ? 'Preparing...' : 'Choose Difficulty'} <ChevronRight className="size-4" /></>
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={onViewLeaderboard}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 py-3 text-sm font-black text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-950 transition"
-              >
-                <Trophy className="size-4 text-amber-500" /> Rankings Leaderboard
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            {/* Step 2 – Difficulty Selection */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <label className="text-xs font-black uppercase tracking-widest text-slate-400">
-                    Choose Difficulty
-                  </label>
-                  {selectedDeck && (
-                    <p className="mt-0.5 text-sm font-black text-slate-700 dark:text-white">
-                      {selectedDeck.name}
-                    </p>
-                  )}
-                </div>
-                <span className="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
-                  Step 2 of 2
-                </span>
-              </div>
-
-              <div className="grid gap-3">
-                {DIFFICULTIES.map(({ key, label, icon: Icon, color, bg, border, selectedBorder, selectedBg, badge, desc }) => {
-                  const isSelected = selectedDifficulty === key;
-                  return (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => setSelectedDifficulty(key)}
-                      className={`flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all ${
-                        isSelected
-                          ? `${selectedBorder} ${selectedBg}`
-                          : `border-slate-100 bg-slate-50/50 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900`
-                      }`}
-                    >
-                      <div className={`size-10 rounded-xl flex items-center justify-center shrink-0 ${bg}`}>
-                        <Icon className={`size-5 ${color}`} />
-                      </div>
-                      <div className="flex-1 space-y-0.5">
-                        <div className="flex items-center gap-2">
-                          <span className="font-black text-sm text-slate-800 dark:text-white">{label}</span>
-                          <span className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider ${badge}`}>
-                            {key}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{desc}</p>
-                      </div>
-                      <div className={`size-5 rounded-full border flex items-center justify-center transition-all shrink-0 ${
-                        isSelected ? `${selectedBorder} bg-violet-500 border-violet-500 text-white` : 'border-slate-300 dark:border-slate-700'
-                      }`}>
-                        {isSelected && <Check className="size-3.5 stroke-[3]" />}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="pt-2 flex flex-col gap-2">
-              <button
-                type="button"
                 onClick={handleStart}
-                disabled={starting || !hasGameQuizzes}
+                disabled={!selectedDeckId || starting || !hasGameQuizzes}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 py-3 text-sm font-black text-white shadow-lg shadow-violet-500/10 transition hover:bg-violet-700 disabled:opacity-50"
               >
                 {starting ? (
@@ -529,10 +357,10 @@ export default function WordMasterHome({ onStart, onViewLeaderboard }) {
               </button>
               <button
                 type="button"
-                onClick={handleBack}
+                onClick={onViewLeaderboard}
                 className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 py-3 text-sm font-black text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-950 transition"
               >
-                <ArrowLeft className="size-4" /> Back to Theme Selection
+                <Trophy className="size-4 text-amber-500" /> Rankings Leaderboard
               </button>
             </div>
           </>

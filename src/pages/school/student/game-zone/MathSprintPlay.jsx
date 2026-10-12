@@ -117,10 +117,10 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
   // Continue button.
   const advanceRef = useRef(null);
 
-  const fetchNextQuestion = async () => {
+  const fetchNextQuestion = async (lastCorrect) => {
     try {
       const res = await api.get('/school/gamification/math-sprint/next-question', {
-        params: { sessionId, currentIdx }
+        params: { sessionId, currentIdx, lastCorrect }
       });
       const data = res.data?.data ?? res.data;
       setLocalQuestions((prev) => [...prev, data.question]);
@@ -149,7 +149,7 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
     const nextLives = livesRef.current - 1;
     setLives(nextLives);
 
-    const advance = () => (nextLives > 0 ? fetchNextQuestion() : handleSubmit(newAnswers));
+    const advance = () => (nextLives > 0 ? fetchNextQuestion(false) : handleSubmit(newAnswers));
     advanceRef.current = advance;
     if (hintsUsedThisQuestionRef.current === 0) {
       timeoutRef.current = setTimeout(advance, 600);
@@ -204,12 +204,12 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
     // and advance manually via the Continue button instead.
     const advance = async () => {
       if (isCorrect) {
-        await fetchNextQuestion();
+        await fetchNextQuestion(true);
       } else {
         const nextLives = livesRef.current - 1;
         setLives(nextLives);
         if (nextLives > 0) {
-          await fetchNextQuestion();
+          await fetchNextQuestion(false);
         } else {
           handleSubmit(newAnswers);
         }
