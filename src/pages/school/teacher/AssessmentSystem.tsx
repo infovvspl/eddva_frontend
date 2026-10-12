@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useConfirm } from "@/context/ConfirmContext";
 import {
-  FileText, Key, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target, Trophy, Clock, Pencil, Eye, Check, AlertTriangle
+  FileText, Key, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target, Trophy, Clock, Pencil, Eye, Check, AlertTriangle, Send
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -432,6 +432,30 @@ const AssessmentSystem: React.FC = () => {
       title: "Actions",
       render: (_: any, row: any) => (
         <div className="flex flex-wrap gap-2">
+          {row.status === "draft" && (
+            <Button
+              size="sm"
+              className="bg-emerald-600 text-white hover:bg-emerald-700"
+              onClick={async () => {
+                const confirmed = await confirm({
+                  title: "Publish test?",
+                  message: "Students in this class will be able to see and attempt this test once published.",
+                  confirmLabel: "Publish",
+                  cancelLabel: "Cancel",
+                });
+                if (!confirmed) return;
+                try {
+                  await api.post(`/assessments/${row.id}/publish`);
+                  fetchTests();
+                } catch (err) {
+                  console.error(err);
+                }
+              }}
+            >
+              <Send size={14} />
+              Publish
+            </Button>
+          )}
           <Button
             size="sm"
             variant="outline"
@@ -703,6 +727,7 @@ const AssessmentSystem: React.FC = () => {
                 onChange={(val) => setWorkspaceStatusFilter(val)}
                 options={[
                   { value: "all", label: "All Status" },
+                  { value: "draft", label: "Draft" },
                   { value: "upcoming", label: "Upcoming" },
                   { value: "completed", label: "Completed" },
                 ]}

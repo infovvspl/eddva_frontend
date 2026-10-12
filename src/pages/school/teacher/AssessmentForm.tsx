@@ -15,6 +15,7 @@ import {
   Printer,
   RefreshCw,
   Save,
+  Send,
   Sparkles,
   Upload,
 } from "lucide-react";
@@ -54,6 +55,20 @@ const TEST_TYPES = [
   { value: "mock", label: "Mock Test" },
   { value: "final", label: "Final Exam" },
 ];
+
+// Even three-way split of a question count, extra remainder going to the
+// easier buckets first — used both as the live preview for "Mix" and as the
+// starting point handed to the teacher when they switch into "Custom".
+function splitDifficultyEvenly(total: number) {
+  const t = Math.max(0, Math.round(total || 0));
+  const base = Math.floor(t / 3);
+  const remainder = t % 3;
+  return {
+    easy: base + (remainder > 0 ? 1 : 0),
+    medium: base + (remainder > 1 ? 1 : 0),
+    hard: base,
+  };
+}
 
 const LANGUAGES = [
   { value: "en", label: "English" },
@@ -368,6 +383,11 @@ export default function AssessmentForm() {
     shortCount: 3,
     longCount: 2,
     difficulty: "intermediate",
+    // Only used when difficulty === "custom" — how many of each difficulty
+    // the teacher wants, independent of the question-type counts above.
+    easyCount: 0,
+    mediumCount: 0,
+    hardCount: 0,
   });
   const [generatingAi, setGeneratingAi] = useState(false);
   const [aiGrounding, setAiGrounding] = useState<{ grounded?: boolean; groundedChapters?: string[]; ungroundedChapters?: string[] } | null>(null);
@@ -392,6 +412,7 @@ export default function AssessmentForm() {
     }
   };
   const [submitting, setSubmitting] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [chapters, setChapters] = useState<any[]>([]);
@@ -636,13 +657,31 @@ export default function AssessmentForm() {
         data.append("file", uploadFile);
         await api.post("/assessments", data);
       }
-      toast.success(editingTest ? "Test updated" : "Test created");
+      toast.success(editingTest ? "Test updated" : "Test saved as a draft — publish it when you're ready for students to see it.");
       await goBack(true);
     } catch (err: any) {
       console.error("Save assessment error:", err);
       toast.error(err?.response?.data?.message || "Could not save the test. Please try again.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // A test is a draft (hidden from students) until explicitly published — see
+  // the "status" column on the assessments table, defaulted to 'draft' on create.
+  const isDraft = (editingTest?.raw?.status || "scheduled") === "draft";
+
+  const handlePublish = async () => {
+    if (!editingTest || publishing) return;
+    setPublishing(true);
+    try {
+      await api.post(`/assessments/${editingTest.id}/publish`);
+      toast.success("Test published — students can now see it.");
+      setEditingTest((prev: any) => (prev ? { ...prev, raw: { ...prev.raw, status: "scheduled" } } : prev));
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Could not publish the test. Please try again.");
+    } finally {
+      setPublishing(false);
     }
   };
 
@@ -702,6 +741,12 @@ export default function AssessmentForm() {
       toast.error("Select a topic before generating questions.");
       return;
     }
+    if (aiConfig.difficulty === "custom" && !customDifficultyMatches) {
+      toast.error(
+        `Custom difficulty counts (${customDifficultyTotal}) must match the question types & counts total (${totalQuestionCount}) before generating.`,
+      );
+      return;
+    }
 
     const start = Date.now();
     setGeneratingAi(true);
@@ -740,6 +785,9 @@ export default function AssessmentForm() {
         shortCount: aiConfig.shortCount,
         longCount: aiConfig.longCount,
         difficulty: aiConfig.difficulty,
+        easyCount: aiConfig.easyCount,
+        mediumCount: aiConfig.mediumCount,
+        hardCount: aiConfig.hardCount,
         language: aiLanguage,
       });
       const draft = res.data?.data || res.data || {};
@@ -782,12 +830,24 @@ export default function AssessmentForm() {
   const computedTotal = computeAiConfigTotal(aiConfig);
   const aiTotalMatches = computedTotal === Number(formData.total_marks);
 
+  const totalQuestionCount =
+    aiConfig.mcqCount + aiConfig.trueFalseCount + aiConfig.fillBlankCount + aiConfig.shortCount + aiConfig.longCount;
+  const mixPreview = splitDifficultyEvenly(totalQuestionCount);
+  const customDifficultyTotal = aiConfig.easyCount + aiConfig.mediumCount + aiConfig.hardCount;
+  const customDifficultyMatches = customDifficultyTotal === totalQuestionCount;
+
   const actionButtons = (
     <>
       <Button type="button" onClick={submit} disabled={submitting} className="h-11 w-full gap-2 rounded-xl bg-blue-600 font-bold text-white hover:bg-blue-700 sm:h-10">
         {submitting ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
         {submitting ? "Saving…" : editingTest ? "Update Test" : "Create Test"}
       </Button>
+      {editingTest && isDraft && (
+        <Button type="button" onClick={handlePublish} disabled={publishing || submitting} className="h-11 w-full gap-2 rounded-xl bg-emerald-600 font-bold text-white hover:bg-emerald-700 sm:h-10">
+          {publishing ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+          {publishing ? "Publishing…" : "Publish to students"}
+        </Button>
+      )}
       <Button type="button" variant="outline" onClick={() => goBack()} disabled={submitting} className="h-11 w-full rounded-xl font-bold sm:h-10">
         Cancel
       </Button>
@@ -813,12 +873,27 @@ export default function AssessmentForm() {
         </div>
         {selectedClass && selectedSubject && (
           <div className="flex flex-wrap items-center gap-1.5">
+            {editingTest && (
+              <Badge variant="outline" className={isDraft ? "border-transparent bg-amber-50 text-amber-700" : "border-transparent bg-emerald-50 text-emerald-700"}>
+                {isDraft ? "Draft" : "Published"}
+              </Badge>
+            )}
             <Badge variant="outline" className="border-transparent bg-blue-50 text-blue-700">{selectedClass.name}</Badge>
             {selectedSection && <Badge variant="outline" className="border-transparent bg-emerald-50 text-emerald-700">{sectionLabel(selectedSection)}</Badge>}
             <Badge variant="outline" className="border-transparent bg-violet-50 text-violet-700">{selectedSubject.name}</Badge>
           </div>
         )}
       </div>
+
+      {editingTest && isDraft && (
+        <Alert className="flex flex-wrap items-center justify-between gap-3 rounded-xl border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-900 [&>svg]:static [&>svg]:text-amber-600 [&>svg~*]:pl-0 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+          <span>This test is a draft — students can't see it yet. Edit anything you like, then publish when it's ready.</span>
+          <Button type="button" size="sm" onClick={handlePublish} disabled={publishing} className="h-8 gap-1.5 rounded-lg bg-emerald-600 font-bold text-white hover:bg-emerald-700">
+            {publishing ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5" />}
+            {publishing ? "Publishing…" : "Publish now"}
+          </Button>
+        </Alert>
+      )}
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0 space-y-5">
@@ -1121,8 +1196,20 @@ export default function AssessmentForm() {
                             { value: "easy", label: "Easy" },
                             { value: "intermediate", label: "Intermediate" },
                             { value: "hard", label: "Hard" },
+                            { value: "mix", label: "Mix (equal easy/medium/hard)" },
+                            { value: "custom", label: "Custom" },
                           ]}
-                          onChange={(v) => setAiConfig((prev) => ({ ...prev, difficulty: v }))}
+                          onChange={(v) =>
+                            setAiConfig((prev) => {
+                              // Seed Custom with an even split the first time it's picked, so
+                              // the teacher edits numbers instead of starting from zero.
+                              if (v === "custom" && prev.difficulty !== "custom") {
+                                const split = splitDifficultyEvenly(totalQuestionCount);
+                                return { ...prev, difficulty: v, easyCount: split.easy, mediumCount: split.medium, hardCount: split.hard };
+                              }
+                              return { ...prev, difficulty: v };
+                            })
+                          }
                         />
                       </Field>
                       {hasTranslation && (
@@ -1137,6 +1224,57 @@ export default function AssessmentForm() {
                         ? ` — matches Total Marks (${formData.total_marks}).`
                         : ` — does not match Total Marks (${formData.total_marks}). Adjust the counts or Total Marks above.`}
                     </p>
+
+                    {aiConfig.difficulty === "mix" && (
+                      <p className="mt-2 text-xs font-semibold text-slate-500">
+                        Mix generates roughly equal shares of each difficulty: {mixPreview.easy} easy ·{" "}
+                        {mixPreview.medium} intermediate · {mixPreview.hard} hard, out of {totalQuestionCount} question
+                        {totalQuestionCount === 1 ? "" : "s"} total.
+                      </p>
+                    )}
+
+                    {aiConfig.difficulty === "custom" && (
+                      <div className="mt-3 space-y-2 rounded-xl border border-slate-200 p-3 dark:border-slate-800">
+                        <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                          How many of each difficulty?
+                        </p>
+                        <div className="grid grid-cols-3 gap-3">
+                          <Field label="Easy" htmlFor="ai-easyCount">
+                            <Input
+                              id="ai-easyCount"
+                              type="number"
+                              min={0}
+                              value={aiConfig.easyCount}
+                              onChange={(e) => setAiConfig((c) => ({ ...c, easyCount: Math.max(0, Number(e.target.value) || 0) }))}
+                            />
+                          </Field>
+                          <Field label="Intermediate" htmlFor="ai-mediumCount">
+                            <Input
+                              id="ai-mediumCount"
+                              type="number"
+                              min={0}
+                              value={aiConfig.mediumCount}
+                              onChange={(e) => setAiConfig((c) => ({ ...c, mediumCount: Math.max(0, Number(e.target.value) || 0) }))}
+                            />
+                          </Field>
+                          <Field label="Hard" htmlFor="ai-hardCount">
+                            <Input
+                              id="ai-hardCount"
+                              type="number"
+                              min={0}
+                              value={aiConfig.hardCount}
+                              onChange={(e) => setAiConfig((c) => ({ ...c, hardCount: Math.max(0, Number(e.target.value) || 0) }))}
+                            />
+                          </Field>
+                        </div>
+                        <p className={cn("text-xs font-bold", customDifficultyMatches ? "text-emerald-600" : "text-amber-600")}>
+                          These counts total {customDifficultyTotal} question{customDifficultyTotal === 1 ? "" : "s"}
+                          {customDifficultyMatches
+                            ? ` — matches the ${totalQuestionCount} questions above.`
+                            : ` — does not match the ${totalQuestionCount} questions above. Adjust the split or the question-type counts.`}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <Field label="Extra instructions (optional)" htmlFor="ai-prompt">
@@ -1150,29 +1288,46 @@ export default function AssessmentForm() {
                     />
                   </Field>
 
-                  <Button type="button" onClick={handleAiGenerate} disabled={generatingAi} className="h-11 w-full gap-2 rounded-xl font-bold sm:w-auto">
+                  <Button
+                    type="button"
+                    onClick={handleAiGenerate}
+                    disabled={generatingAi || (aiConfig.difficulty === "custom" && !customDifficultyMatches)}
+                    className="h-11 w-full gap-2 rounded-xl font-bold sm:w-auto"
+                  >
                     {generatingAi ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
                     {generatingAi ? `Generating… ${fmtDuration(genElapsedMs)}` : contentText ? "Regenerate question paper" : "Generate question paper"}
                   </Button>
 
                   {contentText && (
-                    <Card className="flex flex-col gap-3 rounded-xl border-emerald-200 bg-emerald-50/60 p-4 shadow-none sm:flex-row sm:items-center sm:justify-between dark:border-emerald-900/50 dark:bg-emerald-950/20">
-                      <div className="flex items-start gap-3">
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
-                          <Check className="size-4" />
-                        </span>
-                        <div>
-                          <p className="text-sm font-bold text-slate-900 dark:text-white">Question paper ready</p>
-                          <p className="text-xs font-medium text-slate-500">
-                            {genDurationMs != null ? `Generated in ${fmtDuration(genDurationMs)} · ` : ""}
-                            {answerKey.trim() ? "Answer key included" : "No answer key"}
-                          </p>
+                    <>
+                      <Card className="flex flex-col gap-3 rounded-xl border-emerald-200 bg-emerald-50/60 p-4 shadow-none sm:flex-row sm:items-center sm:justify-between dark:border-emerald-900/50 dark:bg-emerald-950/20">
+                        <div className="flex items-start gap-3">
+                          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                            <Check className="size-4" />
+                          </span>
+                          <div>
+                            <p className="text-sm font-bold text-slate-900 dark:text-white">Question paper ready</p>
+                            <p className="text-xs font-medium text-slate-500">
+                              {genDurationMs != null ? `Generated in ${fmtDuration(genDurationMs)} · ` : ""}
+                              {answerKey.trim() ? "Answer key included" : "No answer key"}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <Button type="button" variant="outline" onClick={() => setReviewOpen(true)} className="h-10 w-full gap-2 rounded-xl bg-white font-bold sm:w-auto">
-                        <Eye className="size-4" /> Review &amp; edit
-                      </Button>
-                    </Card>
+                        <Button type="button" variant="outline" onClick={() => setReviewOpen(true)} className="h-10 w-full gap-2 rounded-xl bg-white font-bold sm:w-auto">
+                          <Eye className="size-4" /> Open in full-screen review
+                        </Button>
+                      </Card>
+                      {/* Shown inline too — reopening an AI-generated test for edit used to show
+                          only this config panel, with the actual paper hidden behind the button
+                          above. It belongs right here, same as the Manual/Upload tabs. */}
+                      <ContentEditor
+                        questions={contentText}
+                        onQuestionsChange={setContentText}
+                        answerKey={answerKey}
+                        onAnswerKeyChange={setAnswerKey}
+                        assessmentId={editingTest?.id}
+                      />
+                    </>
                   )}
                 </div>
               )}
@@ -1224,6 +1379,12 @@ export default function AssessmentForm() {
             {submitting ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
             {submitting ? "Saving…" : editingTest ? "Update Test" : "Create Test"}
           </Button>
+          {editingTest && isDraft && (
+            <Button type="button" onClick={handlePublish} disabled={publishing || submitting} className="h-11 gap-2 rounded-xl bg-emerald-600 font-bold text-white hover:bg-emerald-700 sm:h-10">
+              {publishing ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+              {publishing ? "Publishing…" : "Publish"}
+            </Button>
+          )}
         </div>
       </div>
       {/* Review the AI-generated paper without leaving the form */}
@@ -1265,7 +1426,13 @@ export default function AssessmentForm() {
           </div>
 
           <DialogFooter className="shrink-0 flex-col-reverse gap-2 border-t border-slate-100 p-4 dark:border-slate-800 sm:flex-row sm:justify-between sm:space-x-0 sm:px-5">
-            <Button type="button" variant="outline" onClick={handleAiGenerate} disabled={generatingAi} className="h-10 gap-2 rounded-xl font-bold">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleAiGenerate}
+              disabled={generatingAi || (aiConfig.difficulty === "custom" && !customDifficultyMatches)}
+              className="h-10 gap-2 rounded-xl font-bold"
+            >
               {generatingAi ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
               Regenerate
             </Button>

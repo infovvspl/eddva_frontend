@@ -73,7 +73,12 @@ export function ContentEditor({
   /** Present only for a saved assessment — diagrams belong to one. */
   assessmentId?: string;
 }) {
-  const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
+  // A paper that already has content (an existing test being reopened, or one
+  // just AI-generated) should look the way it will to students the moment you
+  // land on it — same KaTeX-rendered formatting as the read-only preview —
+  // rather than defaulting to raw markdown source. A blank new test has
+  // nothing to preview yet, so that one still starts on Edit.
+  const [activeTab, setActiveTab] = useState<"edit" | "preview">(() => (questions.trim() ? "preview" : "edit"));
   const [editorPage, setEditorPage] = useState<"questions" | "answerKey">("questions");
   const [showDiagrams, setShowDiagrams] = useState(false);
   const [diagramRecords, setDiagramRecords] = useState<DiagramRecord[]>([]);
@@ -146,16 +151,16 @@ export function ContentEditor({
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "edit" | "preview")}>
           <TabsList className="h-auto gap-0 rounded-none bg-transparent p-0">
             <TabsTrigger
-              value="edit"
-              className="rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 data-[state=active]:border-brand-500 data-[state=active]:bg-transparent data-[state=active]:font-extrabold data-[state=active]:text-brand-600 data-[state=active]:shadow-none sm:px-4"
-            >
-              <Pencil className="mr-1 size-3.5" /> Edit Test
-            </TabsTrigger>
-            <TabsTrigger
               value="preview"
               className="rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 data-[state=active]:border-brand-500 data-[state=active]:bg-transparent data-[state=active]:font-extrabold data-[state=active]:text-brand-600 data-[state=active]:shadow-none sm:px-4"
             >
               <Eye className="mr-1 size-3.5" /> Preview<span className="hidden sm:inline">&nbsp;(Student View)</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="edit"
+              className="rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 data-[state=active]:border-brand-500 data-[state=active]:bg-transparent data-[state=active]:font-extrabold data-[state=active]:text-brand-600 data-[state=active]:shadow-none sm:px-4"
+            >
+              <Pencil className="mr-1 size-3.5" /> Edit Test
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -242,7 +247,10 @@ export function ContentEditor({
               </div>
               <div className="h-[45vh] overflow-y-auto rounded-lg bg-white p-6 border border-gray-100 shadow-inner">
                 {questions.trim() ? (
-                  <AssessmentContentRenderer>{previewQuestions}</AssessmentContentRenderer>
+                  // KaTeX's fraction/sub-size math (numerators, denominators) shrinks
+                  // further still on top of its own 1.21em multiplier — a bump here
+                  // keeps short glyphs like a unary minus legible at full-paper scale.
+                  <AssessmentContentRenderer className="[&_.katex]:text-[1.3em]">{previewQuestions}</AssessmentContentRenderer>
                 ) : (
                   <p className="text-sm text-gray-400 text-center py-12">The rendered question paper will appear here once questions are added.</p>
                 )}
@@ -258,7 +266,7 @@ export function ContentEditor({
               </div>
               <div className="h-[45vh] overflow-y-auto rounded-lg bg-white p-6 border border-amber-100 shadow-inner">
                 {answerKey.trim() ? (
-                  <AssessmentContentRenderer>{answerKey}</AssessmentContentRenderer>
+                  <AssessmentContentRenderer className="[&_.katex]:text-[1.3em]">{answerKey}</AssessmentContentRenderer>
                 ) : (
                   <p className="text-sm text-gray-400 text-center py-12">The answer key preview will appear here once answers are added.</p>
                 )}
