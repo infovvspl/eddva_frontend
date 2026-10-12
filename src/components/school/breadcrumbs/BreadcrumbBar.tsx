@@ -10,7 +10,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { buildTrail, isTrailHidden } from './trail';
-import { portalForPath } from './portals';
+import { TEACHER_PORTAL, portalForPath } from './portals';
 import { useBreadcrumbLabel } from './BreadcrumbContext';
 
 /**
@@ -25,6 +25,8 @@ export default function BreadcrumbBar() {
 
   const portal = portalForPath(pathname);
   if (!portal || isTrailHidden(portal, pathname)) return null;
+  // The teacher module doesn't use the shared trail — each page has its own back / navigation controls.
+  if (portal === TEACHER_PORTAL) return null;
 
   const crumbs = buildTrail(portal, pathname, new URLSearchParams(search), lastLabel);
   const parent = crumbs.length > 1 ? crumbs[crumbs.length - 2] : undefined;

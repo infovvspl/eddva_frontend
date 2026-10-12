@@ -421,7 +421,7 @@ export default function TeacherTeachingPlan() {
   const paginatedPlanTopics = displayPlanTopics.slice((safeTopicsPage - 1) * PAGE_SIZE, safeTopicsPage * PAGE_SIZE);
 
   return (
-    <div className="w-full px-4 py-6 sm:px-6 lg:px-8 space-y-6 font-poppins">
+    <div className="w-full space-y-6 font-poppins">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -659,9 +659,9 @@ export default function TeacherTeachingPlan() {
                         e.stopPropagation();
                         navigate(`/school/teacher/syllabus-planner/${plan.id}`, { state: { subjectName: plan.subject_name || plan.subjectName } });
                       }}
-                      className="w-full gap-1.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 text-white text-xs font-extrabold shadow-md shadow-blue-600/20"
+                      className="h-auto w-full gap-1.5 whitespace-normal rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2.5 text-center text-xs font-extrabold leading-snug text-white shadow-md shadow-blue-600/20 hover:brightness-110"
                     >
-                      <CheckSquare size={15} /> Update Progress & Execution Details →
+                      <CheckSquare size={15} className="shrink-0" /> <span>Update Progress & Execution Details →</span>
                     </Button>
                   </div>
                 </Card>

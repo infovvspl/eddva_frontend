@@ -103,12 +103,9 @@ function AdminLayoutShell() {
     '/live-usage',
     '/erp-modules',
     '/security',
-  ].some(p => location.pathname.endsWith(p)) || [
-    '/school/teacher/timetable',
-    '/school/teacher/calendar',
-    '/school/teacher/assignments',
-    '/school/teacher/assessments',
-  ].includes(location.pathname) || location.pathname.includes('/live/');
+  ].some(p => location.pathname.endsWith(p)) || location.pathname.includes('/live/');
+  // Teacher pages (timetable, calendar, assignments, assessments included) all take the same <main>
+  // padding as every other teacher page, so no teacher page is flush against the sidebar.
 
   const isFixedPage = [
     '/communication',

@@ -30,7 +30,7 @@ export default function CompetitivePrep() {
   if (loading) return <div className="p-10 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-indigo-500" /></div>;
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 w-full space-y-6">
+    <div className="w-full space-y-6">
       <div className="flex items-center gap-3">
         <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
           <Trophy className="w-6 h-6 text-white" />

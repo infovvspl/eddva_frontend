@@ -151,7 +151,7 @@ const Students: React.FC = () => {
   const openStudent = (id: string) => navigate(`/school/teacher/students/${id}`);
 
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6">
+    <div className="flex flex-col gap-6">
       <div className="flex items-center gap-3">
         <div className="grid size-11 shrink-0 place-items-center rounded-2xl bg-indigo-500/10 text-indigo-500">
           <User className="size-6" />

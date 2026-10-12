@@ -766,7 +766,7 @@ export default function AssessmentForm() {
   // ── Render ─────────────────────────────────────────────────────────────────
   if (loadingContext || loadingTest) {
     return (
-      <div className="mx-auto w-full max-w-6xl space-y-5 p-4 sm:p-6">
+      <div className="mx-auto w-full max-w-6xl space-y-5">
         <Skeleton className="h-9 w-64" />
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-5">
@@ -795,7 +795,7 @@ export default function AssessmentForm() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-5 p-4 sm:p-6">
+    <div className="mx-auto w-full max-w-6xl space-y-5">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 items-start gap-3">

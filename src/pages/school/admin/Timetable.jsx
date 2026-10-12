@@ -859,33 +859,33 @@ export default function Timetable() {
       )}
 
       <div className="grid grid-cols-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-2 sm:gap-4 mb-6">
-        <div className="rounded-xl sm:rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm flex flex-col justify-center items-center text-center">
+        <div className="rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm transition-colors hover:border-slate-500 dark:hover:border-slate-400 flex flex-col justify-center items-center text-center">
           <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">
             <span className="hidden sm:inline">Total Classes</span>
             <span className="inline sm:hidden">Classes</span>
           </p>
           <p className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white mt-0.5">{visibleTimetables.length}</p>
         </div>
-        <div className="rounded-xl sm:rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm flex flex-col justify-center items-center text-center">
+        <div className="rounded-xl sm:rounded-2xl border border-blue-200 dark:border-blue-900/50 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm transition-colors hover:border-blue-500 dark:hover:border-blue-500 flex flex-col justify-center items-center text-center">
           <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">Teachers</p>
           <p className="text-lg sm:text-2xl font-black text-blue-600 mt-0.5">{teachers.length}</p>
         </div>
-        <div className="rounded-xl sm:rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm flex flex-col justify-center items-center text-center">
+        <div className="rounded-xl sm:rounded-2xl border border-emerald-200 dark:border-emerald-900/50 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm transition-colors hover:border-emerald-500 dark:hover:border-emerald-500 flex flex-col justify-center items-center text-center">
           <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">Offline</p>
           <p className="text-lg sm:text-2xl font-black text-emerald-600 mt-0.5">{visibleTimetables.filter(t => t.type === 'offline').length}</p>
         </div>
-        <div className="rounded-xl sm:rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm flex flex-col justify-center items-center text-center">
+        <div className="rounded-xl sm:rounded-2xl border border-rose-200 dark:border-rose-900/50 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm transition-colors hover:border-rose-500 dark:hover:border-rose-500 flex flex-col justify-center items-center text-center">
           <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">Live</p>
           <p className="text-lg sm:text-2xl font-black text-rose-600 mt-0.5">{visibleTimetables.filter(t => t.type === 'live').length}</p>
         </div>
-        <div className="rounded-xl sm:rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm flex flex-col justify-center items-center text-center">
+        <div className="rounded-xl sm:rounded-2xl border border-purple-200 dark:border-purple-900/50 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm transition-colors hover:border-purple-500 dark:hover:border-purple-500 flex flex-col justify-center items-center text-center">
           <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">
             <span className="hidden sm:inline">Lab Sessions</span>
             <span className="inline sm:hidden">Labs</span>
           </p>
           <p className="text-lg sm:text-2xl font-black text-purple-600 mt-0.5">{visibleTimetables.filter(t => t.type === 'lab').length}</p>
         </div>
-        <div className="rounded-xl sm:rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm flex flex-col justify-center items-center text-center">
+        <div className="rounded-xl sm:rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm transition-colors hover:border-amber-500 dark:hover:border-amber-500 flex flex-col justify-center items-center text-center">
           <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">
             <span className="hidden sm:inline">Extra Classes</span>
             <span className="inline sm:hidden">Extras</span>
@@ -1312,14 +1312,14 @@ export default function Timetable() {
             </div>
           </div>
 
-          <div className="mt-5 overflow-x-auto w-full max-w-full">
-            <div className="flex min-w-max gap-2 rounded-2xl border border-slate-100 bg-slate-50 p-1 dark:border-slate-800 dark:bg-slate-950">
+          <div className="mt-5 w-full max-w-full overflow-x-auto">
+            <div className="flex min-w-[20rem] w-full gap-1 rounded-2xl border border-slate-100 bg-slate-50 p-1 dark:border-slate-800 dark:bg-slate-950 sm:w-fit sm:gap-2">
               {days.map((day) => (
                 <button
                   key={day}
                   type="button"
                   onClick={() => setActiveDay(day)}
-                  className={`rounded-xl px-4 py-2.5 text-xs font-black uppercase tracking-wider transition ${
+                  className={`flex-1 rounded-xl px-2 py-2.5 text-xs font-black uppercase tracking-wider transition sm:flex-none sm:px-4 ${
                     activeDay === day
                       ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
                       : 'text-slate-500 hover:bg-white hover:text-slate-900 dark:hover:bg-slate-900 dark:hover:text-white'

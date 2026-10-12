@@ -55,7 +55,7 @@ export default function LessonPlanDetails() {
 
   if (loading) {
     return (
-      <div className="w-full space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+      <div className="w-full space-y-6">
         <Skeleton className="h-5 w-48" />
         <Card className="space-y-4 rounded-3xl border-slate-200 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <Skeleton className="h-4 w-32" />
@@ -70,7 +70,7 @@ export default function LessonPlanDetails() {
 
   if (!lesson) {
     return (
-      <div className="w-full px-4 py-8 sm:px-6 lg:px-8">
+      <div className="w-full">
         <Card className="mx-auto max-w-md space-y-4 rounded-3xl border-dashed border-slate-200 p-8 text-center shadow-none dark:border-slate-800 dark:bg-slate-900">
           <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">Lesson Plan Not Found</h2>
           <Button
@@ -88,7 +88,7 @@ export default function LessonPlanDetails() {
   const details = DETAIL_FIELDS.filter(([, key]) => lesson[key]);
 
   return (
-    <div className="w-full space-y-6 px-4 py-6 font-poppins sm:px-6 lg:px-8">
+    <div className="w-full space-y-6 font-poppins">
       <Button
         variant="ghost"
         onClick={() => navigate('/school/teacher/teaching-plan')}
