@@ -549,7 +549,7 @@ export default function Attendance() {
                 {selectedRole === 'STUDENT' && <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Class / Section</TableHead>}
                 <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Date</TableHead>
                 <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Status</TableHead>
-                <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Remarks</TableHead>
+                <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Attendance %</TableHead>
                 <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -600,7 +600,7 @@ export default function Attendance() {
                       </Badge>
                     </TableCell>
                     <TableCell className="p-4 px-6 py-4 text-surface-600">
-                      {record.remarks || '-'}
+                      {typeof record.attendancePercentage === 'number' ? `${record.attendancePercentage}%` : '-'}
                     </TableCell>
                     <TableCell className="p-4 px-6 py-4">
                       <div className="flex gap-2">
@@ -684,8 +684,8 @@ export default function Attendance() {
                   <span className="font-semibold block mt-0.5">{new Date(record.date).toLocaleDateString()}</span>
                 </div>
                 <div>
-                  <span className="block text-[9px] uppercase tracking-wider text-surface-400 font-bold">Remarks</span>
-                  <span className="font-semibold block mt-0.5">{record.remarks || '-'}</span>
+                  <span className="block text-[9px] uppercase tracking-wider text-surface-400 font-bold">Attendance %</span>
+                  <span className="font-semibold block mt-0.5">{typeof record.attendancePercentage === 'number' ? `${record.attendancePercentage}%` : '-'}</span>
                 </div>
               </div>
 
