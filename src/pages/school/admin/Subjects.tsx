@@ -274,13 +274,6 @@ export default function Subjects() {
               className="h-10 w-full rounded-lg border border-surface-200 bg-white pl-9 pr-4 text-sm font-medium outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-surface-800 dark:bg-surface-950 dark:text-white"
             />
           </div>
-          <button
-            onClick={() => handleOpenModal()}
-            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-blue-500 bg-white px-3 text-xs font-bold text-blue-600 hover:bg-blue-50 dark:bg-surface-900 dark:hover:bg-blue-950/20 shrink-0"
-          >
-            <Plus className="size-4" />
-            <span>Add Subject</span>
-          </button>
         </div>
 
         {/* Desktop View */}

@@ -662,7 +662,6 @@ export default function Teachers() {
             <TableHeader className="bg-slate-50/50 text-slate-500 dark:bg-slate-800/40 dark:text-slate-400">
               <TableRow className="hover:bg-transparent border-b-0">
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider sticky left-0 z-20 bg-slate-50 dark:bg-slate-850 shadow-sm text-slate-500 dark:text-slate-400">Teacher Name</TableHead>
-                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">School</TableHead>
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Email</TableHead>
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Class</TableHead>
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Section</TableHead>
@@ -673,7 +672,7 @@ export default function Teachers() {
             <TableBody className="divide-y divide-slate-100 dark:divide-slate-800 [&_tr]:border-b-0">
               {filtered.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan="7" className="px-5 py-12 text-center text-slate-400">
+                  <TableCell colSpan="6" className="px-5 py-12 text-center text-slate-400">
                     No teachers found.
                   </TableCell>
                 </TableRow>
@@ -694,7 +693,6 @@ export default function Teachers() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="p-4 px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{teacher.instituteName || '-'}</TableCell>
                     <TableCell className="p-4 px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{teacher.email || '-'}</TableCell>
                     <TableCell className="p-4 px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">
                       <div className="flex flex-wrap gap-1">
@@ -807,10 +805,6 @@ export default function Teachers() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-xs text-slate-600 dark:text-slate-300 pt-1">
-                  <div>
-                    <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-black">School</span>
-                    <span className="font-bold">{teacher.instituteName || '-'}</span>
-                  </div>
                   <div className="min-w-0">
                     <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-black">Email</span>
                     <span className="font-bold truncate block">{teacher.email || '-'}</span>

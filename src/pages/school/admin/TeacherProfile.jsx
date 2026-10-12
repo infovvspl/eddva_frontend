@@ -383,7 +383,7 @@ export default function TeacherProfile() {
   };
 
   const profile = teacher?.teacherProfile || {};
-  const isTeacher = teacher?.role === 'TEACHER';
+  const isTeacher = (teacher?.role || '').includes('TEACHER');
   const docs = profile.docs || {};
   const teacherDetails = docs.teacherDetails || docs.profileDetails || {};
   const detailValue = (...values) => values.find((value) => value !== undefined && value !== null && value !== '');
