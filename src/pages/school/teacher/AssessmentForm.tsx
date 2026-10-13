@@ -13,6 +13,7 @@ import {
   FileText,
   Loader2,
   Printer,
+  Settings2,
   RefreshCw,
   Save,
   Send,
@@ -42,6 +43,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { downloadPaperPdf, printPaper, type PaperPart } from "@/lib/school/paperExport";
+import {
+  SCHOOL_DEFAULTS, clearSavedFormat, currentSession, formatPaperDate, formatTimeAllowed,
+  loadSavedFormat, saveFormatAsDefault, type PaperFormat,
+} from "@/lib/school/paperFormat";
+import PaperFormatDialog from "@/components/school/teacher/PaperFormatDialog";
+import PaperHeader from "@/components/school/teacher/PaperHeader";
+import { useAuth } from "@/context/SchoolAuthContext";
 import { toUtcIsoDateTime } from "./assessment-utils";
 import { ContentEditor, computeAiConfigTotal, distributeMarksForTotal } from "./AssessmentContentEditor";
 
@@ -361,12 +369,43 @@ export default function AssessmentForm() {
   const [selectedSection, setSelectedSection] = useState<Scope>(workspace.selectedSection || null);
   const [selectedSubject, setSelectedSubject] = useState<Scope>(workspace.selectedSubject || null);
 
+  // ── Question-paper format (school letterhead printed on the paper) ─────────
+  const { institute } = useAuth();
+  const [formatOpen, setFormatOpen] = useState(false);
+  const [formatOverrides, setFormatOverrides] = useState<Partial<PaperFormat>>(() => loadSavedFormat(institute?.id));
+  useEffect(() => { setFormatOverrides(loadSavedFormat(institute?.id)); }, [institute?.id]);
+
   // ── The test being edited (from the list, or fetched on a direct visit) ────
   const [editingTest, setEditingTest] = useState<any>(routeState.test || null);
   const [loadingTest, setLoadingTest] = useState(isEdit && !routeState.test);
 
   // ── Form state ─────────────────────────────────────────────────────────────
   const [formData, setFormData] = useState(() => formFromTest(routeState.test));
+
+  // The school-style header. Per-test fields follow the test; anything the teacher edits in the
+  // format dialog overrides them, and school-level fields can be saved as the school's default.
+  const paperFormat: PaperFormat = useMemo(() => ({
+    ...SCHOOL_DEFAULTS,
+    schoolName: institute?.name || "",
+    logo: institute?.logo || "",
+    session: currentSession(),
+    examTitle: formData.title || "",
+    className: selectedClass?.name || "",
+    sectionName: selectedSection?.name || "",
+    subjectName: selectedSubject?.name || "",
+    date: formatPaperDate(formData.scheduled_date),
+    timeAllowed: formatTimeAllowed(formData.duration_minutes),
+    maxMarks: formData.total_marks ? String(formData.total_marks) : "",
+    ...formatOverrides,
+  }), [institute?.name, institute?.logo, formData.title, formData.scheduled_date, formData.duration_minutes, formData.total_marks, selectedClass?.name, selectedSection?.name, selectedSubject?.name, formatOverrides]);
+
+  const changePaperFormat = (patch: Partial<PaperFormat>) => setFormatOverrides((prev) => ({ ...prev, ...patch }));
+  const resetPaperFormat = () => { clearSavedFormat(institute?.id); setFormatOverrides({}); toast.success("Paper format reset"); };
+  const savePaperFormatDefault = () => {
+    const ok = saveFormatAsDefault(institute?.id, paperFormat);
+    if (ok) toast.success("Saved as your school's default paper format");
+    else toast.error("Could not save — the logo may be too large for this browser");
+  };
   const [contentMode, setContentMode] = useState<ContentMode>(() => {
     const src = routeState.test?.raw?.content_source;
     return src === "upload" ? "upload" : src === "ai" ? "ai" : "manual";
@@ -400,10 +439,19 @@ export default function AssessmentForm() {
   const exportPaper = async (kind: "pdf" | "print", part: PaperPart) => {
     setExporting(true);
     try {
-      const input = { title: formData.title, questions: contentText, answerKey, part };
-      const ok = kind === "pdf" ? await downloadPaperPdf(input) : await printPaper(input);
-      if (!ok) toast.error("Nothing to export yet");
-      else if (kind === "pdf") toast.success("PDF downloaded");
+      const input = { title: formData.title, questions: contentText, answerKey, part, format: paperFormat };
+      if (kind === "print") {
+        const ok = await printPaper(input);
+        if (!ok) toast.error("Nothing to export yet");
+      } else {
+        const outcome = await downloadPaperPdf(input);
+        if (outcome === "empty") toast.error("Nothing to export yet");
+        else if (outcome === "unsupported") {
+          // Hindi / Odia etc. can't be drawn with the PDF's built-in font — print keeps them intact.
+          toast.info("This paper has non-English text. Opening Print — choose \"Save as PDF\" there.");
+          await printPaper(input);
+        } else toast.success("PDF downloaded");
+      }
     } catch (err) {
       console.error("Paper export failed:", err);
       toast.error(kind === "pdf" ? "Could not create the PDF" : "Could not open the print view");
@@ -1109,6 +1157,7 @@ export default function AssessmentForm() {
                   answerKey={answerKey}
                   onAnswerKeyChange={setAnswerKey}
                   assessmentId={editingTest?.id}
+                  previewHeader={<PaperHeader format={paperFormat} />}
                 />
               )}
 
@@ -1137,6 +1186,7 @@ export default function AssessmentForm() {
                     answerKey={answerKey}
                     onAnswerKeyChange={setAnswerKey}
                     assessmentId={editingTest?.id}
+                    previewHeader={<PaperHeader format={paperFormat} />}
                   />
                 </div>
               )}
@@ -1326,6 +1376,7 @@ export default function AssessmentForm() {
                         answerKey={answerKey}
                         onAnswerKeyChange={setAnswerKey}
                         assessmentId={editingTest?.id}
+                        previewHeader={<PaperHeader format={paperFormat} />}
                       />
                     </>
                   )}
@@ -1387,6 +1438,15 @@ export default function AssessmentForm() {
           )}
         </div>
       </div>
+      <PaperFormatDialog
+        open={formatOpen}
+        onOpenChange={setFormatOpen}
+        format={paperFormat}
+        onChange={changePaperFormat}
+        onReset={resetPaperFormat}
+        onSaveDefault={savePaperFormatDefault}
+      />
+
       {/* Review the AI-generated paper without leaving the form */}
       <Dialog open={reviewOpen} onOpenChange={setReviewOpen}>
         <DialogContent className="flex h-[92vh] w-[calc(100%-1rem)] max-w-6xl flex-col gap-0 overflow-hidden rounded-2xl p-0 sm:rounded-2xl">
@@ -1400,6 +1460,9 @@ export default function AssessmentForm() {
           <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-slate-100 bg-slate-50/60 px-4 py-2.5 dark:border-slate-800 dark:bg-slate-900/40 sm:px-5">
             <PaperExportMenu kind="pdf" hasQuestions={!!contentText.trim()} hasAnswers={!!answerKey.trim()} disabled={generatingAi || exporting} onPick={(part) => exportPaper("pdf", part)} />
             <PaperExportMenu kind="print" hasQuestions={!!contentText.trim()} hasAnswers={!!answerKey.trim()} disabled={generatingAi || exporting} onPick={(part) => exportPaper("print", part)} />
+            <Button type="button" variant="outline" size="sm" onClick={() => setFormatOpen(true)} className="h-9 flex-1 gap-1.5 rounded-xl font-bold sm:flex-none">
+              <Settings2 className="size-4" /> Paper format
+            </Button>
             <span className="w-full text-[11px] text-slate-500 sm:ml-auto sm:w-auto">For formulas and diagrams, use Print → Save as PDF.</span>
           </div>
 
@@ -1422,6 +1485,7 @@ export default function AssessmentForm() {
               answerKey={answerKey}
               onAnswerKeyChange={setAnswerKey}
               assessmentId={editingTest?.id}
+              previewHeader={<PaperHeader format={paperFormat} />}
             />
           </div>
 
