@@ -4,10 +4,18 @@ import { ArrowLeft, Printer, FileText, Loader2, GraduationCap, Settings, Eye, Ch
 import { toast } from 'sonner';
 import html2canvas from 'html2canvas';
 import api from '@/lib/api/school-client';
+import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 
 type ReportType = 'pre_primary' | 'primary' | 'middle' | 'high_school' | 'board_class';
+
+const REPORT_CARD_STATUS_TONE: Record<string, string> = {
+  DRAFT: 'bg-slate-500/10 text-slate-600',
+  PUBLISHED: 'bg-amber-500/10 text-amber-700',
+  APPROVED: 'bg-emerald-500/10 text-emerald-700',
+  REJECTED: 'bg-rose-500/10 text-rose-700',
+};
 
 export default function StudentReportCard() {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +27,7 @@ export default function StudentReportCard() {
   const isParentView = window.location.pathname.includes('/school/parent');
   const isTeacherReportView = window.location.pathname.includes('/school/teacher/reports/student/');
   const isViewerOnly = isStudentView || isParentView;
+  const isAdminView = !isViewerOnly && !isTeacherReportView;
 
   const [student, setStudent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -39,6 +48,21 @@ export default function StudentReportCard() {
   const [remarkSource, setRemarkSource] = useState<'TEACHER' | 'AI' | null>(null);
   const [remarksLoading, setRemarksLoading] = useState(false);
   const [savingRemarks, setSavingRemarks] = useState(false);
+
+  // Publish -> approve (-> reject) workflow + parent acknowledgement
+  const [reportCardStatus, setReportCardStatus] = useState<string | null>(null);
+  const [statusLoading, setStatusLoading] = useState(true);
+  const [statusMeta, setStatusMeta] = useState<{
+    publishedAt?: string | null; approvedAt?: string | null; rejectedAt?: string | null;
+    rejectionReason?: string | null; checkedByMe?: boolean;
+  }>({});
+  const [checkedList, setCheckedList] = useState<{ parentUserId: string; parentName: string; checkedAt: string }[]>([]);
+  const [publishing, setPublishing] = useState(false);
+  const [approving, setApproving] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [showRejectBox, setShowRejectBox] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
   const [coScholasticItems, setCoScholasticItems] = useState([
     { title: 'Work Education', grade: 'A' },
     { title: 'Art Education', grade: 'A' },
@@ -105,8 +129,11 @@ export default function StudentReportCard() {
     if (!student) return;
     const studentUserId = student?.id || student?.userId || id || searchParams.get('studentId');
     const profileForRemarks = student?.studentProfile || {};
-    const academicYear = profileForRemarks.section?.class?.academicYear || student?.academicYear || targetYear || '2025-2026';
-    const className = profileForRemarks.section?.class?.name || student?.className || targetClass || undefined;
+    // targetYear/targetClass (from the URL) reflect the specific report card being viewed —
+    // e.g. a past class — and must win over the student's current class profile, otherwise
+    // actions taken while viewing a historical report card silently apply to the current one.
+    const academicYear = targetYear || profileForRemarks.section?.class?.academicYear || student?.academicYear || '2025-2026';
+    const className = targetClass || profileForRemarks.section?.class?.name || student?.className || undefined;
     if (!studentUserId || !academicYear) return;
 
     (async () => {
@@ -124,11 +151,117 @@ export default function StudentReportCard() {
     })();
   }, [student, id, targetYear, targetClass]);
 
+  const getReportCardKey = () => {
+    const studentUserId = student?.id || student?.userId || id || searchParams.get('studentId');
+    const profileForRemarks = student?.studentProfile || {};
+    // See note above: targetYear/targetClass must win so workflow actions apply to the
+    // report card actually on screen, not the student's current class.
+    const academicYear = targetYear || profileForRemarks.section?.class?.academicYear || student?.academicYear || '2025-2026';
+    const className = targetClass || profileForRemarks.section?.class?.name || student?.className || undefined;
+    return { studentUserId, academicYear, className };
+  };
+
+  const fetchReportCardStatus = async () => {
+    const { studentUserId, academicYear, className } = getReportCardKey();
+    if (!studentUserId || !academicYear) return;
+    try {
+      setStatusLoading(true);
+      const res = await api.get('/reports/report-card-status', { params: { studentId: studentUserId, academicYear, className } });
+      const data = res.data?.data || res.data || {};
+      setReportCardStatus(data.status || null);
+      setStatusMeta(data);
+    } catch (err) {
+      console.error('Failed to load report card status', err);
+    } finally {
+      setStatusLoading(false);
+    }
+  };
+
+  const fetchCheckedStatus = async () => {
+    if (isViewerOnly) return;
+    const { studentUserId, academicYear } = getReportCardKey();
+    if (!studentUserId || !academicYear) return;
+    try {
+      const res = await api.get('/reports/report-card-check-status', { params: { studentId: studentUserId, academicYear } });
+      setCheckedList(res.data?.data || res.data || []);
+    } catch (err) {
+      console.error('Failed to load report card check status', err);
+    }
+  };
+
+  useEffect(() => {
+    if (!student) return;
+    fetchReportCardStatus();
+    fetchCheckedStatus();
+  }, [student, id, targetYear, targetClass]);
+
+  const handlePublish = async () => {
+    const { studentUserId, academicYear, className } = getReportCardKey();
+    if (!studentUserId || !academicYear) return;
+    try {
+      setPublishing(true);
+      await api.post('/reports/report-card-publish', { studentId: studentUserId, academicYear, className });
+      toast.success('Report card published — awaiting admin approval');
+      await fetchReportCardStatus();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to publish report card');
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const handleApprove = async () => {
+    const { studentUserId, academicYear } = getReportCardKey();
+    if (!studentUserId || !academicYear) return;
+    try {
+      setApproving(true);
+      await api.post('/reports/report-card-approve', { studentId: studentUserId, academicYear });
+      toast.success('Report card approved — now visible to the student and parent(s)');
+      await fetchReportCardStatus();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to approve report card');
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  const handleReject = async () => {
+    const { studentUserId, academicYear } = getReportCardKey();
+    if (!studentUserId || !academicYear) return;
+    try {
+      setRejecting(true);
+      await api.post('/reports/report-card-reject', { studentId: studentUserId, academicYear, reason: rejectReason });
+      toast.success('Report card sent back to the teacher');
+      setShowRejectBox(false);
+      setRejectReason('');
+      await fetchReportCardStatus();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to reject report card');
+    } finally {
+      setRejecting(false);
+    }
+  };
+
+  const handleMarkChecked = async () => {
+    const { studentUserId, academicYear } = getReportCardKey();
+    if (!studentUserId || !academicYear) return;
+    try {
+      setChecking(true);
+      await api.post('/reports/report-card-check', { studentId: studentUserId, academicYear });
+      toast.success('Marked as checked');
+      await fetchReportCardStatus();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to mark report card as checked');
+    } finally {
+      setChecking(false);
+    }
+  };
+
   const saveTeacherRemarks = async () => {
     const studentUserId = student?.id || student?.userId || id || searchParams.get('studentId');
     const profileForRemarks = student?.studentProfile || {};
-    const academicYear = profileForRemarks.section?.class?.academicYear || student?.academicYear || targetYear || '2025-2026';
-    const className = profileForRemarks.section?.class?.name || student?.className || targetClass || undefined;
+    const academicYear = targetYear || profileForRemarks.section?.class?.academicYear || student?.academicYear || '2025-2026';
+    const className = targetClass || profileForRemarks.section?.class?.name || student?.className || undefined;
     if (!studentUserId || !academicYear) return;
 
     try {
@@ -527,11 +660,28 @@ export default function StudentReportCard() {
     return Math.round((sum / validSubjects.length) * 100) / 100;
   }, [scholasticResults]);
 
-  if (loading) {
+  if (loading || (isViewerOnly && statusLoading)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
         <Loader2 className="size-8 animate-spin text-blue-600" />
         <p className="text-sm font-bold text-slate-500">Generating configurable report card...</p>
+      </div>
+    );
+  }
+
+  if (isViewerOnly && reportCardStatus && reportCardStatus !== 'APPROVED') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-3 text-center px-6">
+        <FileText className="size-10 text-slate-300" />
+        <h2 className="text-lg font-black text-slate-700 dark:text-slate-200">Report Card Not Yet Available</h2>
+        <p className="text-sm font-semibold text-slate-400 max-w-sm">
+          {reportCardStatus === 'PUBLISHED'
+            ? "Your class teacher has published this report card. It will appear here once the school admin approves it."
+            : reportCardStatus === 'REJECTED'
+              ? 'This report card is being revised by your class teacher. Please check back later.'
+              : "This report card hasn't been published yet. Please check back later."}
+        </p>
+        <button onClick={() => navigate(-1)} className="mt-2 px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-bold">Back</button>
       </div>
     );
   }
@@ -609,20 +759,37 @@ export default function StudentReportCard() {
             <ArrowLeft className="size-4" />
           </button>
           <div>
-            <h1 className="text-xl font-black text-slate-800 dark:text-white">
+            <h1 className="text-xl font-black text-slate-800 dark:text-white flex items-center gap-2">
               {isViewerOnly ? "Report Card" : "Report Card Template Configuration"}
+              {!isViewerOnly && reportCardStatus && (
+                <Badge variant="outline" className={cn('border-transparent text-[10px] font-black uppercase tracking-wider', REPORT_CARD_STATUS_TONE[reportCardStatus] || REPORT_CARD_STATUS_TONE.DRAFT)}>
+                  {reportCardStatus}
+                </Badge>
+              )}
             </h1>
             <p className="text-xs font-semibold text-slate-400">Student: {student?.name}</p>
           </div>
         </div>
-        <button 
-          onClick={handlePrint}
-          disabled={printing}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md shadow-blue-500/10 active:scale-98 transition-all disabled:opacity-50"
-        >
-          {printing ? <Loader2 className="size-4 animate-spin" /> : <Printer className="size-4" />}
-          {printing ? 'Preparing Print...' : 'Print Report Card'}
-        </button>
+        <div className="flex items-center gap-2">
+          {isParentView && reportCardStatus === 'APPROVED' && (
+            <button
+              onClick={handleMarkChecked}
+              disabled={checking || !!statusMeta.checkedByMe}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md shadow-emerald-500/10 active:scale-98 transition-all disabled:opacity-60"
+            >
+              {checking ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle className="size-4" />}
+              {statusMeta.checkedByMe ? 'Checked' : 'Mark as Checked'}
+            </button>
+          )}
+          <button
+            onClick={handlePrint}
+            disabled={printing}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md shadow-blue-500/10 active:scale-98 transition-all disabled:opacity-50"
+          >
+            {printing ? <Loader2 className="size-4 animate-spin" /> : <Printer className="size-4" />}
+            {printing ? 'Preparing Print...' : 'Print Report Card'}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -843,6 +1010,88 @@ export default function StudentReportCard() {
                     Save Remarks
                   </button>
                 </div>
+              </div>
+
+              {/* Publish -> Approve (-> Reject) workflow */}
+              <div className="space-y-2 border-t pt-4">
+                <div className="flex items-center justify-between gap-2">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Approval Status</label>
+                  {reportCardStatus && (
+                    <Badge variant="outline" className={cn('border-transparent font-black uppercase tracking-wider', REPORT_CARD_STATUS_TONE[reportCardStatus] || REPORT_CARD_STATUS_TONE.DRAFT)}>
+                      {reportCardStatus}
+                    </Badge>
+                  )}
+                </div>
+
+                {reportCardStatus === 'REJECTED' && statusMeta.rejectionReason && (
+                  <p className="text-xs text-rose-600 font-semibold bg-rose-50 dark:bg-rose-950/20 rounded-lg px-3 py-2">
+                    Sent back by admin: {statusMeta.rejectionReason}
+                  </p>
+                )}
+
+                <div className="flex flex-wrap gap-2">
+                  {(reportCardStatus === 'DRAFT' || reportCardStatus === 'REJECTED' || !reportCardStatus) && (
+                    <button
+                      type="button"
+                      onClick={handlePublish}
+                      disabled={publishing}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 text-xs font-bold disabled:opacity-60"
+                    >
+                      {publishing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                      {reportCardStatus === 'REJECTED' ? 'Re-Publish for Approval' : 'Publish for Approval'}
+                    </button>
+                  )}
+                  {isAdminView && reportCardStatus === 'PUBLISHED' && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleApprove}
+                        disabled={approving}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 text-xs font-bold disabled:opacity-60"
+                      >
+                        {approving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowRejectBox((v) => !v)}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/20 text-rose-600 px-3 py-1.5 text-xs font-bold"
+                      >
+                        Reject
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                {showRejectBox && (
+                  <div className="space-y-2">
+                    <textarea
+                      value={rejectReason}
+                      onChange={(e) => setRejectReason(e.target.value)}
+                      rows={2}
+                      placeholder="Reason for sending this back to the teacher..."
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button type="button" onClick={() => setShowRejectBox(false)} className="rounded-lg px-3 py-1.5 text-xs font-bold text-slate-500">Cancel</button>
+                      <button
+                        type="button"
+                        onClick={handleReject}
+                        disabled={rejecting}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 text-xs font-bold disabled:opacity-60"
+                      >
+                        {rejecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                        Confirm Reject
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {checkedList.length > 0 && (
+                  <p className="text-[11px] text-emerald-600 font-bold flex items-center gap-1">
+                    <CheckCircle className="size-3.5" /> Checked by: {checkedList.map((c) => c.parentName).join(', ')}
+                  </p>
+                )}
               </div>
             </div>
           </div>

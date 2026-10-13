@@ -19,6 +19,13 @@ import DataTable from '@/components/school/DataTable';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import './StudentReportClasses.css';
 
+const REPORT_CARD_STATUS_TONE: Record<string, string> = {
+  DRAFT: 'bg-slate-500/10 text-slate-600',
+  PUBLISHED: 'bg-amber-500/10 text-amber-700',
+  APPROVED: 'bg-emerald-500/10 text-emerald-700',
+  REJECTED: 'bg-rose-500/10 text-rose-700',
+};
+
 const TONE_BADGE: Record<string, string> = {
   success: 'bg-emerald-500/10 text-emerald-700',
   warning: 'bg-amber-500/10 text-amber-700',
@@ -610,6 +617,24 @@ export default function StudentReportClasses() {
     }
   }, [id]);
 
+  const [reportCardStatuses, setReportCardStatuses] = useState<Record<string, { status: string; rejectionReason?: string | null }>>({});
+  const [publishingKey, setPublishingKey] = useState<string | null>(null);
+
+  const handlePublishReportCard = async (classKey: string, classNameVal: string, academicYearVal: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!id || !academicYearVal) return;
+    try {
+      setPublishingKey(classKey);
+      await api.post('/reports/report-card-publish', { studentId: id, academicYear: academicYearVal, className: classNameVal });
+      toast.success('Report card published — awaiting admin approval');
+      setReportCardStatuses((prev) => ({ ...prev, [classKey]: { status: 'PUBLISHED' } }));
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to publish report card');
+    } finally {
+      setPublishingKey(null);
+    }
+  };
+
   const resultsByClass = useMemo(() => {
     if (!student) return {};
     const profile = student.studentProfile || {};
@@ -630,6 +655,26 @@ export default function StudentReportClasses() {
     });
     return grouped;
   }, [student]);
+
+  useEffect(() => {
+    const entries = Object.entries(resultsByClass);
+    if (!id || !entries.length) return;
+    (async () => {
+      const updates: Record<string, { status: string; rejectionReason?: string | null }> = {};
+      await Promise.all(entries.map(async ([classKey, results]) => {
+        const academicYearVal = (results as any[])[0]?.academicYear || '';
+        if (!academicYearVal) return;
+        try {
+          const res = await api.get('/reports/report-card-status', { params: { studentId: id, academicYear: academicYearVal } });
+          const data = res.data?.data || res.data || {};
+          updates[classKey] = { status: data.status || 'DRAFT', rejectionReason: data.rejectionReason || null };
+        } catch (err) {
+          console.error('Failed to load report card status', err);
+        }
+      }));
+      setReportCardStatuses((prev) => ({ ...prev, ...updates }));
+    })();
+  }, [resultsByClass, id]);
 
   if (loading) {
     return (
@@ -794,6 +839,8 @@ export default function StudentReportClasses() {
             const subjectsList = [...new Set(subjectResults.map((res) => res.subjectName).filter(Boolean))];
             const subjectsDisplay = subjectsList.length > 0 ? subjectsList.join(', ') : 'General / All Subjects';
             const overallPercentage = calculateReportCardPercentage(results, classNameVal);
+            const cardStatus = reportCardStatuses[classKey]?.status || 'DRAFT';
+            const isPublishingThis = publishingKey === classKey;
 
             return (
               <Card
@@ -811,9 +858,14 @@ export default function StudentReportClasses() {
               >
                 <div className="space-y-2">
                   <div className="flex justify-between items-start">
-                    <Badge variant="outline" className="rounded-xl border-transparent bg-blue-50 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-blue-600 dark:bg-blue-950/30 dark:text-blue-400">
-                      {academicYearVal || 'Academic Year'}
-                    </Badge>
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant="outline" className="rounded-xl border-transparent bg-blue-50 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-blue-600 dark:bg-blue-950/30 dark:text-blue-400">
+                        {academicYearVal || 'Academic Year'}
+                      </Badge>
+                      <Badge variant="outline" className={cn('rounded-xl border-transparent px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider', REPORT_CARD_STATUS_TONE[cardStatus] || REPORT_CARD_STATUS_TONE.DRAFT)}>
+                        {cardStatus}
+                      </Badge>
+                    </div>
                     <div className="flex items-center gap-2">
                       <Button
                         type="button"
@@ -848,9 +900,23 @@ export default function StudentReportClasses() {
                       {overallPercentage}%
                     </span>
                   </div>
-                  <span className="flex translate-x-0 items-center gap-1 text-xs font-extrabold text-blue-600 transition-all duration-300 dark:text-blue-400 md:translate-x-2 md:opacity-0 md:group-hover:translate-x-0 md:group-hover:opacity-100">
-                    View Report Card &rarr;
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {(cardStatus === 'DRAFT' || cardStatus === 'REJECTED') && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={isPublishingThis}
+                        onClick={(e) => handlePublishReportCard(classKey, classNameVal, academicYearVal, e)}
+                        className="h-7 rounded-lg px-2.5 text-[11px] font-bold"
+                      >
+                        {isPublishingThis ? <Loader2 size={12} className="animate-spin" /> : null}
+                        {cardStatus === 'REJECTED' ? 'Re-Publish' : 'Publish'}
+                      </Button>
+                    )}
+                    <span className="flex translate-x-0 items-center gap-1 text-xs font-extrabold text-blue-600 transition-all duration-300 dark:text-blue-400 md:translate-x-2 md:opacity-0 md:group-hover:translate-x-0 md:group-hover:opacity-100">
+                      View Report Card &rarr;
+                    </span>
+                  </div>
                 </div>
               </Card>
             );

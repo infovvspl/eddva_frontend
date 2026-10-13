@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Search, Download, Printer } from 'lucide-react';
+import { FileText, Search, Printer } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import api from '@/lib/api/school-client';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 export default function ReportCards() {
+  const navigate = useNavigate();
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,14 +30,8 @@ export default function ReportCards() {
     }
   };
 
-  const handleGenerate = async (studentId: string) => {
-    try {
-      toast.success('Generating report card...');
-      // In a real app, this might call a PDF generation endpoint
-      // await api.get(`/assessments/progress/report/student/${studentId}`);
-    } catch (err) {
-      toast.error('Failed to generate report card');
-    }
+  const viewReportCard = (studentId: string) => {
+    navigate(`/school/admin/students/${studentId}/report-card`);
   };
 
   const filteredStudents = students.filter(s => 
@@ -85,18 +81,11 @@ export default function ReportCards() {
               </div>
               <div className="mt-auto flex justify-end gap-x-2 border-t pt-4">
                 <button
-                  onClick={() => handleGenerate(student.id)}
-                  className="flex items-center px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
-                >
-                  <FileText className="size-4 mr-1" />
-                  View
-                </button>
-                <button
-                  onClick={() => handleGenerate(student.id)}
+                  onClick={() => viewReportCard(student.id)}
                   className="flex items-center px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
                 >
-                  <Download className="size-4 mr-1" />
-                  Download
+                  <FileText className="size-4 mr-1" />
+                  View Report Card
                 </button>
               </div>
             </div>
