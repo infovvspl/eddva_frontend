@@ -297,7 +297,13 @@ const AssignmentManagement: React.FC = () => {
     return () => { cancelled = true; };
   }, [assignments.length, setAssignments]);
 
-  // Derived Hierarchies
+  // Derived Hierarchies — always listed in natural order (Class 2 before Class 10, Section A before B)
+  const byName = (a: { name?: string }, b: { name?: string }) =>
+    String(a.name ?? '').replace(/[-_]/g, ' ').replace(/\s+/g, ' ').localeCompare(
+      String(b.name ?? '').replace(/[-_]/g, ' ').replace(/\s+/g, ' '),
+      undefined,
+      { numeric: true, sensitivity: 'base' },
+    );
   const classes = useMemo(() => {
     const map = new Map<string, { id: string; name: string; sections: Set<string>; subjects: Set<string> }>();
     assignments.forEach((a: any) => {
@@ -312,7 +318,7 @@ const AssignmentManagement: React.FC = () => {
       if (a.subjectId) entry.subjects.add(a.subjectId);
       map.set(a.classId, entry);
     });
-    return Array.from(map.values());
+    return Array.from(map.values()).sort(byName);
   }, [assignments]);
 
   const sections = useMemo(() => {
@@ -330,7 +336,7 @@ const AssignmentManagement: React.FC = () => {
         if (a.subjectId) entry.subjects.add(a.subjectId);
         map.set(a.sectionId, entry);
       });
-    return Array.from(map.values());
+    return Array.from(map.values()).sort(byName);
   }, [assignments, selectedClass]);
 
   const subjects = useMemo(() => {
@@ -341,7 +347,7 @@ const AssignmentManagement: React.FC = () => {
       .forEach((a: any) => {
         if (a.subjectId) map.set(a.subjectId, { id: a.subjectId, name: a.subjectName });
       });
-    return Array.from(map.values());
+    return Array.from(map.values()).sort(byName);
   }, [assignments, selectedClass, selectedSection]);
 
   const level: 'classes' | 'sections' | 'subjects' | 'workspace' =
@@ -1091,7 +1097,7 @@ const AssignmentManagement: React.FC = () => {
   const pendingSubmissionsCount = inboxItems.filter((s) => s.status !== 'graded').length;
 
   return (
-    <div className="w-full space-y-6 px-4 py-6 font-poppins sm:px-6 lg:px-8">
+    <div className="w-full space-y-6 font-poppins">
       {/* Page Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -1267,7 +1273,7 @@ const AssignmentManagement: React.FC = () => {
                   {classes.map((cls) => (
                     <Card
                       key={cls.id}
-                      className="group cursor-pointer rounded-2xl border-blue-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-500 hover:shadow-md dark:border-blue-900/50 dark:bg-slate-900 dark:hover:border-blue-500"
+                      className="group h-full cursor-pointer rounded-2xl border-blue-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-500 hover:shadow-md dark:border-blue-900/50 dark:bg-slate-900 dark:hover:border-blue-500"
                       onClick={() => {
                         setSelectedClass({ id: cls.id, name: cls.name });
                         setSelectedSection(null);
@@ -1309,7 +1315,7 @@ const AssignmentManagement: React.FC = () => {
                   {sections.map((sec) => (
                     <Card
                       key={sec.id}
-                      className="group cursor-pointer rounded-2xl border-violet-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-violet-500 hover:shadow-md dark:border-violet-900/50 dark:bg-slate-900 dark:hover:border-violet-500"
+                      className="group h-full cursor-pointer rounded-2xl border-violet-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-violet-500 hover:shadow-md dark:border-violet-900/50 dark:bg-slate-900 dark:hover:border-violet-500"
                       onClick={() => {
                         setSelectedSection({ id: sec.id, name: sec.name });
                         setSelectedSubject(null);
@@ -1345,7 +1351,7 @@ const AssignmentManagement: React.FC = () => {
                   {subjects.map((sub) => (
                     <Card
                       key={sub.id}
-                      className="group cursor-pointer rounded-2xl border-emerald-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-500 hover:shadow-md dark:border-emerald-900/50 dark:bg-slate-900 dark:hover:border-emerald-500"
+                      className="group h-full cursor-pointer rounded-2xl border-emerald-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-500 hover:shadow-md dark:border-emerald-900/50 dark:bg-slate-900 dark:hover:border-emerald-500"
                       onClick={() => {
                         setSelectedSubject(sub);
                       }}

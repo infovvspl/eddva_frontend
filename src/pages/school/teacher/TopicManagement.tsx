@@ -113,6 +113,24 @@ interface CourseContentReturnState {
 }
 
 
+/** Column count for the class cards: 1 on phones, 2 from md, 3 from xl (matches Tailwind breakpoints). */
+function useColumnCount() {
+  const pick = () => {
+    if (typeof window === 'undefined' || !window.matchMedia) return 1;
+    if (window.matchMedia('(min-width: 1280px)').matches) return 3;
+    if (window.matchMedia('(min-width: 768px)').matches) return 2;
+    return 1;
+  };
+  const [count, setCount] = useState(pick);
+  useEffect(() => {
+    const queries = [window.matchMedia('(min-width: 768px)'), window.matchMedia('(min-width: 1280px)')];
+    const update = () => setCount(pick());
+    queries.forEach((q) => q.addEventListener('change', update));
+    return () => queries.forEach((q) => q.removeEventListener('change', update));
+  }, []);
+  return count;
+}
+
 const TopicManagement: React.FC = () => {
   const confirm = useConfirm();
   const { user } = useAuth();
@@ -157,6 +175,7 @@ const TopicManagement: React.FC = () => {
   const [search, setSearch] = useState('');
   const [loadingAssignments, setLoadingAssignments] = useState(true);
   const [cardActiveSections, setCardActiveSections] = useState<Record<string, string>>({});
+  const columnCount = useColumnCount();
   const [expandedClasses, setExpandedClasses] = useState<Record<string, boolean>>({});
 
   // ── Curriculum (chapters / topics tree + selected topic) ───────────────────
@@ -424,7 +443,7 @@ const TopicManagement: React.FC = () => {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-2">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -435,15 +454,9 @@ const TopicManagement: React.FC = () => {
             Browse your assigned classes, drill into sections and subjects, and manage the curriculum.
           </p>
         </div>
-        {level !== 'classes' && (
-          <Button variant="outline" size="sm" onClick={goBack}>
-<ChevronLeft size={16} />
-            Back
-          </Button>
-        )}
       </div>
 
-      {/* Breadcrumb */}
+      {/* Breadcrumb — commented out; the Back button below replaces it.
       <Breadcrumb
         items={[
           { label: 'Classes', icon: <Home size={14} />, onClick: goToClasses, active: level === 'classes' },
@@ -452,6 +465,17 @@ const TopicManagement: React.FC = () => {
           ...(selectedSubject ? [{ label: selectedSubject.name, onClick: () => { }, active: true }] : []),
         ]}
       />
+      */}
+
+      {/* Back (top-left, where the breadcrumb used to be) */}
+      {level !== 'classes' && (
+        <div>
+          <Button variant="outline" size="sm" onClick={goBack} className="gap-1.5">
+            <ChevronLeft size={16} />
+            Back
+          </Button>
+        </div>
+      )}
 
       {/* Search (not on curriculum's topic side) */}
       {level !== 'curriculum' && (
@@ -472,11 +496,16 @@ const TopicManagement: React.FC = () => {
           <EmptyState icon={<GraduationCap size={40} />} title="No classes assigned" message="You haven't been assigned to any classes yet. Contact your administrator." />
         ) : (
           <Accordion
-            type="multiple"
-            defaultValue={filteredClasses.slice(0, 1).map((c) => c.id)}
-            className="grid grid-cols-1 items-start gap-6 md:grid-cols-2 xl:grid-cols-3"
+            type="single"
+            collapsible
+            defaultValue={filteredClasses[0]?.id}
+            className="grid items-start gap-4"
+            style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}
           >
-            {filteredClasses.map((c, classIdx) => {
+            {/* Cards are dealt into independent columns (1, 2, 3 across, then 4, 5, 6 underneath), so
+                opening one only grows its own column and never reflows the cards beside it. */}
+            {(() => {
+              const cards = filteredClasses.map((c) => {
               // 1. All sections for this class
               const classSecs: { id: string; name: string }[] = [];
               const secMap = new Map<string, string>();
@@ -508,75 +537,80 @@ const TopicManagement: React.FC = () => {
               // Pre-calculate all unique subjects for this class
               const totalClassSubjectsCount = new Set(all.filter((a) => a.classId === c.id && a.subjectId).map((a) => a.subjectId)).size;
 
-              // Card theme gradients per card index for rich visual variety
+              // Five calm hues. The colour comes from the class id (not its position in the list), so a
+              // class keeps the same colour when the list is filtered or reordered.
+              // Closed: white header. Open: the tinted header.
+              // Full class names on purpose — Tailwind can't see classes built from template strings.
               const cardThemes = [
                 {
-                  gradient: 'from-blue-600 via-indigo-600 to-violet-600',
-                  accentBg: 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
-                  badge: 'bg-blue-500/10 text-blue-600 border-blue-200/60 dark:bg-blue-400/10 dark:text-blue-300',
-                  glow: 'hover:border-blue-400/50 hover:shadow-blue-500/10',
+                  card: 'hover:border-blue-500 hover:shadow-md hover:shadow-blue-500/10 dark:hover:border-blue-500',
+                  header: 'bg-white hover:bg-blue-50 group-data-[state=open]:bg-blue-100/80 group-data-[state=open]:hover:bg-blue-100 dark:bg-surface-900 dark:hover:bg-blue-950/30 dark:group-data-[state=open]:bg-blue-950/40 dark:group-data-[state=open]:hover:bg-blue-950/60',
+                  tile: 'bg-blue-600 text-white shadow-sm shadow-blue-600/30',
+                  title: 'text-blue-900 dark:text-blue-50',
+                  sub: 'text-blue-700 dark:text-blue-300',
+                  chevron: 'text-blue-700 dark:text-blue-300',
                 },
                 {
-                  gradient: 'from-violet-600 via-purple-600 to-fuchsia-600',
-                  accentBg: 'bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300',
-                  badge: 'bg-purple-500/10 text-purple-600 border-purple-200/60 dark:bg-purple-400/10 dark:text-purple-300',
-                  glow: 'hover:border-purple-400/50 hover:shadow-purple-500/10',
+                  card: 'hover:border-indigo-500 hover:shadow-md hover:shadow-indigo-500/10 dark:hover:border-indigo-500',
+                  header: 'bg-white hover:bg-indigo-50 group-data-[state=open]:bg-indigo-100/80 group-data-[state=open]:hover:bg-indigo-100 dark:bg-surface-900 dark:hover:bg-indigo-950/30 dark:group-data-[state=open]:bg-indigo-950/40 dark:group-data-[state=open]:hover:bg-indigo-950/60',
+                  tile: 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30',
+                  title: 'text-indigo-900 dark:text-indigo-50',
+                  sub: 'text-indigo-700 dark:text-indigo-300',
+                  chevron: 'text-indigo-700 dark:text-indigo-300',
                 },
                 {
-                  gradient: 'from-emerald-600 via-teal-600 to-cyan-600',
-                  accentBg: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
-                  badge: 'bg-emerald-500/10 text-emerald-600 border-emerald-200/60 dark:bg-emerald-400/10 dark:text-emerald-300',
-                  glow: 'hover:border-emerald-400/50 hover:shadow-emerald-500/10',
+                  card: 'hover:border-teal-500 hover:shadow-md hover:shadow-teal-500/10 dark:hover:border-teal-500',
+                  header: 'bg-white hover:bg-teal-50 group-data-[state=open]:bg-teal-100/80 group-data-[state=open]:hover:bg-teal-100 dark:bg-surface-900 dark:hover:bg-teal-950/30 dark:group-data-[state=open]:bg-teal-950/40 dark:group-data-[state=open]:hover:bg-teal-950/60',
+                  tile: 'bg-teal-600 text-white shadow-sm shadow-teal-600/30',
+                  title: 'text-teal-900 dark:text-teal-50',
+                  sub: 'text-teal-700 dark:text-teal-300',
+                  chevron: 'text-teal-700 dark:text-teal-300',
                 },
                 {
-                  gradient: 'from-amber-500 via-orange-600 to-rose-600',
-                  accentBg: 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
-                  badge: 'bg-amber-500/10 text-amber-600 border-amber-200/60 dark:bg-amber-400/10 dark:text-amber-300',
-                  glow: 'hover:border-amber-400/50 hover:shadow-amber-500/10',
+                  card: 'hover:border-violet-500 hover:shadow-md hover:shadow-violet-500/10 dark:hover:border-violet-500',
+                  header: 'bg-white hover:bg-violet-50 group-data-[state=open]:bg-violet-100/80 group-data-[state=open]:hover:bg-violet-100 dark:bg-surface-900 dark:hover:bg-violet-950/30 dark:group-data-[state=open]:bg-violet-950/40 dark:group-data-[state=open]:hover:bg-violet-950/60',
+                  tile: 'bg-violet-600 text-white shadow-sm shadow-violet-600/30',
+                  title: 'text-violet-900 dark:text-violet-50',
+                  sub: 'text-violet-700 dark:text-violet-300',
+                  chevron: 'text-violet-700 dark:text-violet-300',
+                },
+                {
+                  card: 'hover:border-amber-500 hover:shadow-md hover:shadow-amber-500/10 dark:hover:border-amber-500',
+                  header: 'bg-white hover:bg-amber-50 group-data-[state=open]:bg-amber-100/80 group-data-[state=open]:hover:bg-amber-100 dark:bg-surface-900 dark:hover:bg-amber-950/30 dark:group-data-[state=open]:bg-amber-950/40 dark:group-data-[state=open]:hover:bg-amber-950/60',
+                  tile: 'bg-amber-600 text-white shadow-sm shadow-amber-600/30',
+                  title: 'text-amber-900 dark:text-amber-50',
+                  sub: 'text-amber-700 dark:text-amber-300',
+                  chevron: 'text-amber-700 dark:text-amber-300',
                 },
               ];
-              const theme = cardThemes[classIdx % cardThemes.length];
+              const theme = cardThemes[Array.from(String(c.id)).reduce((n, ch) => n + ch.charCodeAt(0), 0) % cardThemes.length];
 
               return (
                 <AccordionItem
                   key={c.id}
                   value={c.id}
-                  className={`group relative flex h-fit self-start flex-col justify-start overflow-hidden rounded-3xl border border-surface-200/80 bg-white shadow-xs transition-all duration-300 hover:shadow-lg dark:border-surface-800 dark:bg-surface-900 ${theme.glow}`}
+                  className={`group relative flex flex-col justify-start overflow-hidden rounded-2xl border border-surface-200 bg-white shadow-sm transition-all duration-200 dark:border-surface-800 dark:bg-surface-900 ${theme.card}`}
                 >
-                  {/* shadcn Accordion Trigger as the Card Hero Header */}
+                  {/* Accordion trigger as the card header — soft tint, coloured icon tile */}
                   <AccordionTrigger
-                    className={`relative w-full text-left overflow-hidden bg-gradient-to-r ${theme.gradient} px-5 py-4 text-white shadow-inner transition-all duration-200 hover:no-underline hover:brightness-105 [&[data-state=open]>svg]:rotate-180 [&>svg]:hidden`}
+                    className={`relative w-full overflow-hidden px-4 py-3.5 text-left transition-colors duration-200 hover:no-underline sm:px-5 [&>svg]:hidden ${theme.header}`}
                   >
-                    {/* Abstract background blur orbs */}
-                    <div className="pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-full bg-white/10 blur-xl transition-transform duration-500 group-hover:scale-150" />
-                    <div className="pointer-events-none absolute -left-6 -bottom-6 h-24 w-24 rounded-full bg-black/10 blur-lg" />
-
                     <div className="relative flex w-full items-center justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md ring-1 ring-white/30 shadow-xs transition-transform duration-300 group-hover:scale-105">
-                          <GraduationCap className="h-6 w-6 text-white" />
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${theme.tile}`}>
+                          <GraduationCap className="size-5" />
                         </div>
-                        <div className="truncate">
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-xl font-black tracking-tight leading-tight drop-shadow-xs truncate text-white">
-                              {c.name}
-                            </h3>
-                            {/* {c.isClassTeacher && (
-                              <span className="shrink-0 rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold tracking-wide text-white backdrop-blur-md ring-1 ring-white/30">
-                                ★ Incharge
-                              </span>
-                            )} */}
-                          </div>
-                          <p className="text-xs font-medium text-white/80 mt-0.5">
+                        <div className="min-w-0">
+                          <h3 className={`truncate text-lg font-bold leading-tight tracking-tight ${theme.title}`}>
+                            {c.name}
+                          </h3>
+                          <p className={`mt-0.5 truncate text-xs font-medium ${theme.sub}`}>
                             {classSecs.length} {classSecs.length === 1 ? 'Section' : 'Sections'} • {totalClassSubjectsCount} {totalClassSubjectsCount === 1 ? 'Subject' : 'Subjects'}
                           </p>
                         </div>
                       </div>
 
-                      {/* Styled indicator icon that rotates on data-state=open */}
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm ring-1 ring-white/25 transition-transform duration-300 group-hover:bg-white/25 group-data-[state=open]:rotate-180">
-                        <ChevronDown className="h-4 w-4 text-white" />
-                      </div>
+                      <ChevronDown className={`size-4 shrink-0 transition-transform duration-300 group-data-[state=open]:rotate-180 ${theme.chevron}`} />
                     </div>
                   </AccordionTrigger>
 
@@ -673,14 +707,20 @@ const TopicManagement: React.FC = () => {
                   </AccordionContent>
                 </AccordionItem>
               );
-            })}
+              });
+              return Array.from({ length: columnCount }, (_, col) => (
+                <div key={col} className="flex min-w-0 flex-col gap-4">
+                  {cards.filter((_, i) => i % columnCount === col)}
+                </div>
+              ));
+            })()}
           </Accordion>
         )
       )}
 
       {/* ── CURRICULUM (chapters + topics) ── */}
       {level === 'curriculum' && selectedSubject && (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(300px,380px)_1fr]">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
           {/* Curriculum tree: chapters → topics */}
           <Card className="self-start lg:sticky lg:top-6 rounded-2xl border-surface-100 bg-white dark:border-surface-700 dark:bg-surface-900/40 shadow-none">
             <div className="flex items-center justify-between border-b border-surface-100 p-4 dark:border-surface-700">
@@ -1269,7 +1309,7 @@ function MaterialWorkspace({
           <p className="text-[11px] font-bold uppercase tracking-wider text-surface-400">{isChapter ? 'Chapter' : 'Topic'}</p>
           <h3 className="truncate text-lg font-bold text-surface-900 dark:text-white">{topic.name}</h3>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex max-w-full flex-wrap items-center gap-2">
           <Badge variant="outline" className="rounded-lg border-surface-100 bg-surface-50 px-2.5 py-1 text-xs font-bold text-surface-500 dark:border-surface-700 dark:bg-surface-800">
             {materials.length} item{materials.length === 1 ? '' : 's'}
           </Badge>

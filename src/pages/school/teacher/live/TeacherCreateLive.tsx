@@ -50,7 +50,7 @@ export default function TeacherCreateLive() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl p-4 sm:p-6">
+    <div className="mx-auto max-w-2xl">
       <div className="mb-6 flex items-center gap-3">
         <div className="grid size-11 place-items-center rounded-2xl bg-red-500/10 text-red-500">
           <Radio className="size-6" />

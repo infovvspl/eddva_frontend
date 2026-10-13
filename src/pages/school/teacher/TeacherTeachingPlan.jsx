@@ -16,7 +16,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const PAGE_SIZE = 6;
@@ -161,7 +160,7 @@ export default function TeacherTeachingPlan() {
   const [selectedSubject, setSelectedSubject] = useState('ALL');
   const [selectedChapter, setSelectedChapter] = useState('ALL');
   const [selectedTopic, setSelectedTopic] = useState('ALL');
-  const [activeTab, setActiveTab] = useState('ALL');
+  const [activeTab] = useState('ALL'); // timeline tabs removed — the topics list is always unfiltered by tab
 
   // Per-section pagination
   const [annualPage, setAnnualPage] = useState(1);
@@ -326,6 +325,7 @@ export default function TeacherTeachingPlan() {
       return topics.map(t => ({
         ...t,
         planId: plan.id,
+        planEndDate: plan.planned_completion_date || plan.plannedCompletionDate || null,
         chapterId: ch.chapterId,
         chapterName: ch.chapterName,
         // IDs (not just display names) are required here — matchesFilter compares by ID
@@ -367,11 +367,19 @@ export default function TeacherTeachingPlan() {
       case 'TODAY': return filteredPlanTopics.filter(t => t.status === 'in_progress' || t.startDate === todayStr);
       case 'PENDING':   return filteredPlanTopics.filter(t => t.status === 'pending' || !t.status || t.status === 'in_progress');
       case 'COMPLETED': return filteredPlanTopics.filter(t => t.status === 'completed' || t.progress >= 100);
-      case 'DELAYED':   return filteredPlanTopics.filter(t => t.delayReason && t.status !== 'completed');
+      case 'DELAYED':   return filteredPlanTopics.filter(isTopicBehind);
       default:          return filteredPlanTopics;
     }
   };
   const displayPlanTopics = getDisplayPlanTopics();
+
+  // A topic is behind schedule when its plan's target date has passed and it isn't finished.
+  // Progress itself is computed server-side from conducted classes (no teacher-entered status).
+  const isTopicBehind = (t) =>
+    !!t.planEndDate &&
+    new Date(t.planEndDate).getTime() < Date.now() &&
+    t.status !== 'completed' &&
+    !(t.progress >= 100);
 
   // 1. Today's lessons / topics scheduled today or in_progress
   const todaysLessons = filteredPlanTopics.filter(t => t.status === 'in_progress' || t.startDate === todayStr);
@@ -383,7 +391,7 @@ export default function TeacherTeachingPlan() {
   const completedLessons = filteredPlanTopics.filter(t => t.status === 'completed' || t.progress >= 100);
 
   // 4. Delayed topics
-  const delayedLessons = filteredPlanTopics.filter(t => t.delayReason && t.status !== 'completed');
+  const delayedLessons = filteredPlanTopics.filter(isTopicBehind);
 
   // 5. Syllabus completion %
   const rawTotalTopicsCount = filteredPlanTopics.length;
@@ -421,7 +429,7 @@ export default function TeacherTeachingPlan() {
   const paginatedPlanTopics = displayPlanTopics.slice((safeTopicsPage - 1) * PAGE_SIZE, safeTopicsPage * PAGE_SIZE);
 
   return (
-    <div className="w-full px-4 py-6 sm:px-6 lg:px-8 space-y-6 font-poppins">
+    <div className="w-full space-y-6 font-poppins">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -439,8 +447,7 @@ export default function TeacherTeachingPlan() {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
         {/* 1. Today's lessons */}
         <Card
-          onClick={() => setActiveTab('TODAY')}
-          className="cursor-pointer rounded-2xl p-4 transition-colors shadow-xs border-slate-200 bg-white hover:border-blue-500 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-500"
+          className="rounded-2xl p-4 transition-colors shadow-xs border-slate-200 bg-white hover:border-blue-500 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-500"
         >
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">1. Today's Lessons</span>
@@ -454,8 +461,7 @@ export default function TeacherTeachingPlan() {
 
         {/* 2. Pending lessons */}
         <Card
-          onClick={() => setActiveTab('PENDING')}
-          className="cursor-pointer rounded-2xl p-4 transition-colors shadow-xs border-slate-200 bg-white hover:border-amber-500 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-amber-500"
+          className="rounded-2xl p-4 transition-colors shadow-xs border-slate-200 bg-white hover:border-amber-500 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-amber-500"
         >
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">2. Pending Lessons</span>
@@ -469,8 +475,7 @@ export default function TeacherTeachingPlan() {
 
         {/* 3. Completed lessons */}
         <Card
-          onClick={() => setActiveTab('COMPLETED')}
-          className="cursor-pointer rounded-2xl p-4 transition-colors shadow-xs border-slate-200 bg-white hover:border-emerald-500 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-emerald-500"
+          className="rounded-2xl p-4 transition-colors shadow-xs border-slate-200 bg-white hover:border-emerald-500 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-emerald-500"
         >
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">3. Completed Lessons</span>
@@ -500,8 +505,7 @@ export default function TeacherTeachingPlan() {
 
         {/* 5. Topics behind schedule */}
         <Card
-          onClick={() => setActiveTab('DELAYED')}
-          className="col-span-2 sm:col-span-1 xl:col-span-1 cursor-pointer rounded-2xl p-4 transition-colors shadow-xs border-rose-200 bg-rose-50/40 hover:border-rose-500 dark:border-rose-900/40 dark:bg-rose-950/20 dark:hover:border-rose-500"
+          className="col-span-2 sm:col-span-1 xl:col-span-1 rounded-2xl p-4 transition-colors shadow-xs border-rose-200 bg-rose-50/40 hover:border-rose-500 dark:border-rose-900/40 dark:bg-rose-950/20 dark:hover:border-rose-500"
         >
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-black uppercase tracking-wider text-rose-700 dark:text-rose-300">5. Topics Behind Schedule</span>
@@ -659,9 +663,9 @@ export default function TeacherTeachingPlan() {
                         e.stopPropagation();
                         navigate(`/school/teacher/syllabus-planner/${plan.id}`, { state: { subjectName: plan.subject_name || plan.subjectName } });
                       }}
-                      className="w-full gap-1.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 text-white text-xs font-extrabold shadow-md shadow-blue-600/20"
+                      className="h-auto w-full gap-1.5 whitespace-normal rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2.5 text-center text-xs font-extrabold leading-snug text-white shadow-md shadow-blue-600/20 hover:brightness-110"
                     >
-                      <CheckSquare size={15} /> Update Progress & Execution Details →
+                      <CheckSquare size={15} className="shrink-0" /> <span>View Plan & Progress →</span>
                     </Button>
                   </div>
                 </Card>
@@ -737,7 +741,7 @@ export default function TeacherTeachingPlan() {
             </div>
             <div>
               <CardTitle className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider leading-normal">Syllabus Topics — Progress Tracker</CardTitle>
-              <CardDescription className="text-xs text-slate-500">Topics from your assigned syllabus plan, with status and delay reason at a glance.</CardDescription>
+              <CardDescription className="text-xs text-slate-500">Topics from your assigned syllabus plan. Progress is worked out automatically from the classes you conduct.</CardDescription>
             </div>
           </div>
 
@@ -757,19 +761,6 @@ export default function TeacherTeachingPlan() {
               optionLabel={s => `Section ${s.name}`}
               className={INLINE_TRIGGER}
             />
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="h-auto flex-wrap gap-1 bg-transparent p-0">
-                {['ALL', 'TODAY', 'PENDING', 'COMPLETED', 'DELAYED'].map(tab => (
-                  <TabsTrigger
-                    key={tab}
-                    value={tab}
-                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-xs dark:bg-slate-800 dark:text-slate-300"
-                  >
-                    {tab}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
           </div>
         </CardHeader>
 
@@ -783,7 +774,7 @@ export default function TeacherTeachingPlan() {
               {paginatedPlanTopics.map((topic, idx) => {
                 const isDone = topic.status === 'completed' || topic.progress >= 100;
                 const isInProgress = topic.status === 'in_progress' && !isDone;
-                const hasDelay = !isDone && topic.delayReason;
+                const hasDelay = !isDone && isTopicBehind(topic);
                 return (
                   <Card
                     key={topic.topicId || idx}
@@ -834,10 +825,12 @@ export default function TeacherTeachingPlan() {
                     <CardFooter className="p-0 pt-2 border-t border-slate-100 dark:border-slate-800 block">
                       {hasDelay ? (
                         <p className="text-[10px] font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
-                          <AlertCircle size={12} className="shrink-0" /> {topic.delayReason}
+                          <AlertCircle size={12} className="shrink-0" /> Target date passed — {topic.actualPeriods ?? 0} of {topic.plannedPeriods ?? '—'} periods conducted
                         </p>
                       ) : (
-                        <p className="text-[10px] font-semibold text-slate-400">No delay reported.</p>
+                        <p className="text-[10px] font-semibold text-slate-400">
+                          {topic.actualPeriods ?? 0} of {topic.plannedPeriods ?? '—'} periods conducted
+                        </p>
                       )}
                     </CardFooter>
                   </Card>

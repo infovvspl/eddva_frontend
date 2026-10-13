@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useConfirm } from "@/context/ConfirmContext";
 import {
-  FileText, Key, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target, Trophy, Clock, Pencil, Eye, Check, AlertTriangle
+  FileText, Key, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target, Trophy, Clock, Pencil, Eye, Check, AlertTriangle, Send
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -231,6 +231,11 @@ const AssessmentSystem: React.FC = () => {
   }, [assignments.length, setAssignments]);
 
   // ── Derived hierarchies ──────────────────────────────────────────────────
+  // Always listed in natural order (Class 2 before Class 10, Section A before B)
+  const byName = (a: { name?: string }, b: { name?: string }) => {
+    const norm = (v?: string) => String(v ?? '').replace(/[-_]/g, ' ').replace(/\s+/g, ' ');
+    return norm(a.name).localeCompare(norm(b.name), undefined, { numeric: true, sensitivity: 'base' });
+  };
   const classes = useMemo(() => {
     const map = new Map<string, { id: string; name: string; sections: Set<string>; subjects: Set<string> }>();
     assignments.forEach((a: any) => {
@@ -240,7 +245,7 @@ const AssessmentSystem: React.FC = () => {
       if (a.subjectId) entry.subjects.add(a.subjectId);
       map.set(a.classId, entry);
     });
-    return Array.from(map.values());
+    return Array.from(map.values()).sort(byName);
   }, [assignments]);
 
   const sections = useMemo(() => {
@@ -254,7 +259,7 @@ const AssessmentSystem: React.FC = () => {
         if (a.subjectId) entry.subjects.add(a.subjectId);
         map.set(a.sectionId, entry);
       });
-    return Array.from(map.values());
+    return Array.from(map.values()).sort(byName);
   }, [assignments, selectedClass]);
 
   const subjects = useMemo(() => {
@@ -265,7 +270,7 @@ const AssessmentSystem: React.FC = () => {
       .forEach((a: any) => {
         if (a.subjectId) map.set(a.subjectId, { id: a.subjectId, name: a.subjectName });
       });
-    return Array.from(map.values());
+    return Array.from(map.values()).sort(byName);
   }, [assignments, selectedClass, selectedSection]);
 
   // ── Filtered Navigation ──────────────────────────────────────────────────
@@ -427,6 +432,30 @@ const AssessmentSystem: React.FC = () => {
       title: "Actions",
       render: (_: any, row: any) => (
         <div className="flex flex-wrap gap-2">
+          {row.status === "draft" && (
+            <Button
+              size="sm"
+              className="bg-emerald-600 text-white hover:bg-emerald-700"
+              onClick={async () => {
+                const confirmed = await confirm({
+                  title: "Publish test?",
+                  message: "Students in this class will be able to see and attempt this test once published.",
+                  confirmLabel: "Publish",
+                  cancelLabel: "Cancel",
+                });
+                if (!confirmed) return;
+                try {
+                  await api.post(`/assessments/${row.id}/publish`);
+                  fetchTests();
+                } catch (err) {
+                  console.error(err);
+                }
+              }}
+            >
+              <Send size={14} />
+              Publish
+            </Button>
+          )}
           <Button
             size="sm"
             variant="outline"
@@ -566,7 +595,7 @@ const AssessmentSystem: React.FC = () => {
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="w-full p-4 sm:p-6 space-y-6">
+    <div className="w-full space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -698,6 +727,7 @@ const AssessmentSystem: React.FC = () => {
                 onChange={(val) => setWorkspaceStatusFilter(val)}
                 options={[
                   { value: "all", label: "All Status" },
+                  { value: "draft", label: "Draft" },
                   { value: "upcoming", label: "Upcoming" },
                   { value: "completed", label: "Completed" },
                 ]}

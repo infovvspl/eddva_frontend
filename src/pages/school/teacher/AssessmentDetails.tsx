@@ -571,7 +571,7 @@ const AssessmentDetails: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="w-full space-y-6 p-4 sm:p-6">
+      <div className="w-full space-y-6">
         <div className="space-y-2">
           <Skeleton className="h-5 w-40" />
           <Skeleton className="h-9 w-2/3 max-w-lg" />
@@ -584,7 +584,7 @@ const AssessmentDetails: React.FC = () => {
 
   if (!assessment) {
     return (
-      <div className="w-full p-4 sm:p-6">
+      <div className="w-full">
         <Card className="rounded-2xl border-dashed border-red-200 bg-white p-12 text-center text-red-500 shadow-none">Assessment not found</Card>
       </div>
     );
@@ -876,7 +876,7 @@ const AssessmentDetails: React.FC = () => {
 
       {assessment.content_text ? (
         <div className="select-none rounded-xl border border-gray-100 bg-gray-50 p-4 font-sans text-sm leading-7 text-gray-800 shadow-sm sm:p-6">
-          <AssessmentContentRenderer>{assessment.content_text}</AssessmentContentRenderer>
+          <AssessmentContentRenderer className="[&_.katex]:text-[1.3em]">{assessment.content_text}</AssessmentContentRenderer>
         </div>
       ) : (
         emptyBox("No manual or AI text was added for this assessment.", "flex flex-1 items-center justify-center")
@@ -907,7 +907,7 @@ const AssessmentDetails: React.FC = () => {
 
       {assessment.answer_key ? (
         <div className="select-none rounded-xl border border-amber-100 bg-white p-4 font-sans text-sm leading-7 text-gray-800 shadow-sm sm:p-6">
-          <AssessmentContentRenderer>{assessment.answer_key}</AssessmentContentRenderer>
+          <AssessmentContentRenderer className="[&_.katex]:text-[1.3em]">{assessment.answer_key}</AssessmentContentRenderer>
         </div>
       ) : (
         <Card className="flex flex-1 items-center justify-center rounded-xl border-dashed border-amber-200 bg-amber-50/20 p-12 text-center text-amber-800 shadow-none">
@@ -1032,7 +1032,7 @@ const AssessmentDetails: React.FC = () => {
   };
 
   return (
-    <div className="w-full space-y-6 p-4 sm:p-6">
+    <div className="w-full space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <div className="mb-2 flex flex-wrap items-center gap-2 sm:gap-3">

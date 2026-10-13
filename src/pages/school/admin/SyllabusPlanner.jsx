@@ -627,7 +627,8 @@ export default function SyllabusPlanner() {
                 const topics = Array.isArray(ch.topics) && ch.topics.length > 0
                   ? ch.topics
                   : [{ topicId: `placeholder-${ch.chapterId || ch.chapterName}`, topicName: ch.chapterName, status: 'pending', progress: 0 }];
-                return topics;
+                // Carry the plan's target date so "behind schedule" can be worked out per topic.
+                return topics.map(t => ({ ...t, planEndDate: plan.planned_completion_date || plan.plannedCompletionDate || null }));
               });
             });
 
@@ -636,7 +637,10 @@ export default function SyllabusPlanner() {
             const inProgressLessons = allTopics.filter(t => t.status === 'in_progress');
             const pendingLessons = allTopics.filter(t => !t.status || t.status === 'pending');
             const completedLessons = allTopics.filter(t => t.status === 'completed' || t.progress >= 100);
-            const delayedLessons = allTopics.filter(t => t.delayReason && t.status !== 'completed');
+            // Behind schedule = the plan's target date has passed and the topic isn't finished.
+            // Progress is computed server-side from conducted classes, not entered by teachers.
+            const delayedLessons = allTopics.filter(t =>
+              !!t.planEndDate && new Date(t.planEndDate).getTime() < Date.now() && t.status !== 'completed' && !(t.progress >= 100));
             const totalCount = allTopics.length || 1;
             const completionPct = Math.round((completedLessons.length / totalCount) * 100);
 
