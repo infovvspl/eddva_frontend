@@ -239,6 +239,7 @@ const SchoolFeeStructures = lazy(() => import("./pages/school/admin/FeeStructure
 const SchoolPaymentCollection = lazy(() => import("./pages/school/admin/PaymentCollection"));
 const SchoolPaymentHistory = lazy(() => import("./pages/school/admin/PaymentHistory"));
 const SchoolFeeDefaulters = lazy(() => import("./pages/school/admin/FeeDefaulters"));
+const SchoolAttentionRequired = lazy(() => import("./pages/school/admin/AttentionRequiredPage"));
 const SchoolMessageLogs = lazy(() => import("./pages/school/admin/MessageLogs"));
 const SchoolAiInsights = lazy(() => import("./pages/school/admin/AiInsights"));
 const SchoolStudentPerformance = lazy(() => import("./pages/school/admin/StudentPerformance"));
@@ -289,6 +290,7 @@ const SchoolTeacherNotifications = lazy(() => import("./pages/school/teacher/Not
 const SchoolTeacherAnnouncements = lazy(() => import("./pages/school/teacher/Announcements"));
 const SchoolTeacherDoubtQueue = lazy(() => import("./pages/school/teacher/DoubtQueue"));
 const SchoolTeacherSettings = lazy(() => import("./pages/school/teacher/Settings"));
+const SchoolTeacherLeave = lazy(() => import("./pages/school/teacher/Leave"));
 const SchoolTeacherTimetable = lazy(() => import("./pages/school/teacher/Timetable"));
 const SchoolTeacherCreateLive = lazy(() => import("./pages/school/teacher/live/TeacherCreateLive"));
 const SchoolTeacherLiveDashboard = lazy(() => import("./pages/school/teacher/live/TeacherLiveDashboard"));
@@ -514,6 +516,8 @@ const SchoolRoutes = () => (
       <Route path="users" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]}><SchoolAdminUsers /></SchoolGuard>} />
       {/* <Route path="roles" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]}><SchoolAdminRoles /></SchoolGuard>} /> */}
       <Route path="erp" element={<SchoolGuard roles={["INSTITUTE_ADMIN", "STAFF"]} feature={{ type: 'module', key: 'erp' }}><SchoolAdminERP /></SchoolGuard>} />
+      <Route path="attention-required" element={<SchoolAttentionRequired />} />
+      <Route path="fee-defaulters" element={<SchoolFeeDefaulters />} />
       <Route path="students" element={<SchoolStudents />} />
       <Route path="students/new" element={<SchoolStudentRegistration />} />
       <Route path="students/:id/edit" element={<SchoolStudentRegistration />} />
@@ -639,6 +643,7 @@ const SchoolRoutes = () => (
       <Route path="reports/student/:id/report-card" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'reports' }}><SchoolAdminStudentReportCard /></SchoolGuard>} />
       <Route path="reports/weakness/:topic" element={<SchoolWeaknessDetails />} />
       <Route path="meetings" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'meetings' }}><SchoolTeacherMeetings /></SchoolGuard>} />
+      <Route path="leave" element={<SchoolTeacherLeave />} />
       <Route path="grievances" element={<SchoolGrievanceHandling />} />
       <Route path="chat" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'chat' }}><SchoolChatSystem /></SchoolGuard>} />
       <Route path="doubts" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'ai', key: 'ai_doubt_solver' }}><SchoolTeacherDoubtQueue /></SchoolGuard>} />

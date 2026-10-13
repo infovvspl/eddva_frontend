@@ -34,7 +34,8 @@ import {
   Video,
   ClipboardCheck,
   ClipboardList,
-  CalendarDays
+  CalendarDays,
+  CalendarClock
 } from 'lucide-react';
 import logoUrl from '@/assets/eddva-logo.svg';
 import { InstituteLogo } from './Brand';
@@ -163,6 +164,7 @@ function AdminLayoutShell() {
       calendarEnabled && { label: 'Calendar', path: '/school/teacher/calendar', icon: CalendarDays, color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/20' },
       { label: 'Announcements', path: '/school/teacher/announcements', icon: Megaphone, color: 'text-teal-500 bg-teal-50 dark:bg-teal-950/20' },
       chatEnabled && { label: 'Chat', path: '/school/teacher/chat', icon: MessageSquare, color: 'text-pink-500 bg-pink-50 dark:bg-pink-950/20' },
+      { label: 'My Leave', path: '/school/teacher/leave', icon: CalendarClock, color: 'text-orange-500 bg-orange-50 dark:bg-orange-950/20' },
       { label: 'Grievances', path: '/school/teacher/grievances', icon: AlertCircle, color: 'text-red-500 bg-red-50 dark:bg-red-950/20' },
       { label: 'Profile', path: '/school/teacher/profile', icon: User, color: 'text-sky-500 bg-sky-50 dark:bg-sky-950/20' },
       { label: 'Settings', path: '/school/teacher/settings', icon: SettingsIcon, color: 'text-slate-500 bg-slate-50 dark:bg-slate-800' },

@@ -24,6 +24,7 @@ import {
   Megaphone,
   MessageSquare,
   MessageSquareWarning,
+  CalendarClock,
   Settings as SettingsIcon,
   Shield,
   Sparkles,
@@ -187,6 +188,7 @@ function buildTeacherGroups(mods, aiFeats) {
     {
       heading: 'Tools',
       items: [
+        { path: '/school/teacher/leave', label: 'My Leave', icon: CalendarClock },
         { path: '/school/teacher/grievances', label: 'Grievances', icon: MessageSquareWarning },
       ],
     },

@@ -374,9 +374,12 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
   const generateEnrollmentNo = async () => {
     setIdLoading(true);
     try {
-      const res = await api.get('/students');
+      // `total` is the institute's real student count; the `data` array is
+      // just the current page (defaults to 10), so counting it instead
+      // under-counts past page 1 and keeps generating the same duplicate ID.
+      const res = await api.get('/students', { params: { limit: 1 } });
       const list = res.data?.data ?? res.data;
-      const count = Array.isArray(list) ? list.length : 0;
+      const count = typeof res.data?.total === 'number' ? res.data.total : (Array.isArray(list) ? list.length : 0);
       setFormData(prev => ({ ...prev, enrollmentNo: getScopedId(institute?.name, count) }));
     } catch (error) {
       console.error('Failed to generate student id:', error);

@@ -410,13 +410,13 @@ export default function Students() {
 
   const exportCsv = () => {
     const rows = [
-      ['Student Name', 'School', 'Enrollment No.', 'Class', 'Section', 'Status'],
+      ['Student Name', 'Enrollment No.', 'Class/Section', 'Status'],
       ...filtered.map((s) => [
         s.name || '-',
-        s.instituteName || '-',
         s.studentProfile?.enrollmentNo || '-',
-        s.studentProfile?.section?.class?.name || '-',
-        s.studentProfile?.section?.name || '-',
+        s.studentProfile?.section
+          ? `${s.studentProfile.section.class?.name || '-'} / ${s.studentProfile.section.name || '-'}`
+          : '-',
         s.isActive ? 'Active' : 'Inactive',
       ]),
     ];
