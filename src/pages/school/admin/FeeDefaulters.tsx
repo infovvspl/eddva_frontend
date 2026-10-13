@@ -17,14 +17,13 @@ export default function FeeDefaulters() {
   const fetchFees = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/finance/fees');
-      if (Array.isArray(res.data)) {
-        setFees(res.data.filter(f => f.status === 'overdue' || (f.status === 'pending' && new Date(f.dueDate) < new Date())));
-      } else if (res.data?.data) {
-        setFees(res.data.data.filter((f: any) => f.status === 'overdue' || (f.status === 'pending' && new Date(f.dueDate) < new Date())));
-      } else {
-        setFees([]);
-      }
+      const res = await api.get('/fees', { params: { limit: 200 } });
+      const rows = Array.isArray(res.data) ? res.data : (res.data?.data ?? []);
+      const now = new Date();
+      setFees(rows.filter((f: any) => {
+        const dueDate = f.due_date ? new Date(f.due_date) : null;
+        return String(f.status).toUpperCase() !== 'PAID' && dueDate && dueDate < now;
+      }));
     } catch (err) {
       toast.error('Failed to load defaulters');
       setFees([]);
@@ -41,9 +40,9 @@ export default function FeeDefaulters() {
     }
   };
 
-  const filteredFees = fees.filter(f => 
-    f.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    f.student?.user?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredFees = fees.filter(f =>
+    f.fee_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    f.student_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -91,18 +90,18 @@ export default function FeeDefaulters() {
                       <div className="flex items-center">
                         <Avatar className="size-8 mr-3 bg-red-100">
                           <AvatarFallback className="bg-red-100 text-red-600 font-bold">
-                            {fee.student?.user?.name?.charAt(0) || '?'}
+                            {fee.student_name?.charAt(0) || '?'}
                           </AvatarFallback>
                         </Avatar>
-                        <div className="text-sm font-medium text-gray-900">{fee.student?.user?.name || 'Unknown'}</div>
+                        <div className="text-sm font-medium text-gray-900">{fee.student_name || 'Unknown'}</div>
                       </div>
                     </TableCell>
-                    <TableCell className="p-4 px-6 py-4 whitespace-nowrap text-sm text-gray-500">{fee.title}</TableCell>
+                    <TableCell className="p-4 px-6 py-4 whitespace-nowrap text-sm text-gray-500">{fee.fee_type}</TableCell>
                     <TableCell className="p-4 px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">
-                      ${fee.amount - fee.amountPaid}
+                      ₹{Math.round(Number(fee.amount) || 0).toLocaleString('en-IN')}
                     </TableCell>
                     <TableCell className="p-4 px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(fee.dueDate).toLocaleDateString()}
+                      {fee.due_date ? new Date(fee.due_date).toLocaleDateString() : '—'}
                     </TableCell>
                     <TableCell className="p-4 px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button

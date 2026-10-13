@@ -5,7 +5,7 @@ import { Loader2 } from 'lucide-react';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import AiTutorWidget from './AiTutorWidget';
-import BreadcrumbBar from '@/components/school/breadcrumbs/BreadcrumbBar';
+// import BreadcrumbBar from '@/components/school/breadcrumbs/BreadcrumbBar';
 import { BreadcrumbProvider } from '@/components/school/breadcrumbs/BreadcrumbContext';
 import { isNavItemActive } from '@/components/layout/nav-active';
 import { PageTransition } from '@/components/school/admin/PageTransition';
@@ -104,7 +104,8 @@ function StudentLayoutShell() {
         <Navbar />
 
         <MaintenanceNotice />
-        <BreadcrumbBar />
+        {/* Breadcrumb hidden for the student module for now */}
+        {/* <BreadcrumbBar /> */}
 
         {/* Scrollable Container */}
         <main className={`flex-1 min-h-0 ${layoutConfig.type === 'immersive' && !layoutConfig.isScrollable ? 'p-0 overflow-y-hidden' : 'p-0 overflow-y-auto'} scrollbar-none`}>
@@ -226,7 +227,8 @@ function StudentLayoutShell() {
       >
         <Navbar onMenuClick={() => setSidebarOpen(true)} />
         <MaintenanceNotice />
-        <BreadcrumbBar />
+        {/* Breadcrumb hidden for the student module for now */}
+        {/* <BreadcrumbBar /> */}
         <main className={`flex-1 overflow-x-hidden ${layoutConfig.isScrollable ? 'overflow-y-auto' : 'overflow-y-hidden'} ${layoutConfig.mainPaddingClass}`}>
           <AnimatePresence initial={false} mode="wait">
             <PageTransition key={location.pathname} duration={0.2}>

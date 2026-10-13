@@ -3,7 +3,7 @@ import { DataTablePagination } from "@/components/ui/data-table-pagination";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Clock, Plus, Edit2, Trash2, MapPin, Users, Settings, AlertCircle, Search, ChevronDown } from 'lucide-react';
+import { Clock, Plus, Edit2, Trash2, MapPin, Users, Settings, AlertCircle, Search, ChevronDown, Coffee } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { getResponseList } from '@/lib/school/apiData';
 import Modal from '@/components/school/admin/Modal';
@@ -25,6 +25,131 @@ const dayShortNames = {
   SATURDAY: 'Sat',
   SUNDAY: 'Sun'
 };
+
+// Accent palettes for the Scheduled Timetable Slots cards. Full class names are
+// spelled out so Tailwind can see them. A subject always maps to the same palette.
+const SLOT_PALETTES = [
+  { bar: 'bg-blue-500', soft: 'border-blue-200 bg-blue-50/70 dark:border-blue-900/40 dark:bg-blue-950/20', glow: 'bg-blue-500/15', badge: 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/50', avatar: 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300', icon: 'text-blue-600 dark:text-blue-400', ring: 'hover:border-blue-300 dark:hover:border-blue-700' },
+  { bar: 'bg-emerald-500', soft: 'border-emerald-200 bg-emerald-50/70 dark:border-emerald-900/40 dark:bg-emerald-950/20', glow: 'bg-emerald-500/15', badge: 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/50', avatar: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300', icon: 'text-emerald-600 dark:text-emerald-400', ring: 'hover:border-emerald-300 dark:hover:border-emerald-700' },
+  { bar: 'bg-violet-500', soft: 'border-violet-200 bg-violet-50/70 dark:border-violet-900/40 dark:bg-violet-950/20', glow: 'bg-violet-500/15', badge: 'bg-violet-50 text-violet-700 border-violet-100 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-900/50', avatar: 'bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300', icon: 'text-violet-600 dark:text-violet-400', ring: 'hover:border-violet-300 dark:hover:border-violet-700' },
+  { bar: 'bg-rose-500', soft: 'border-rose-200 bg-rose-50/70 dark:border-rose-900/40 dark:bg-rose-950/20', glow: 'bg-rose-500/15', badge: 'bg-rose-50 text-rose-700 border-rose-100 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900/50', avatar: 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300', icon: 'text-rose-600 dark:text-rose-400', ring: 'hover:border-rose-300 dark:hover:border-rose-700' },
+  { bar: 'bg-amber-500', soft: 'border-amber-200 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-950/20', glow: 'bg-amber-500/15', badge: 'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/50', avatar: 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300', icon: 'text-amber-600 dark:text-amber-400', ring: 'hover:border-amber-300 dark:hover:border-amber-700' },
+  { bar: 'bg-cyan-500', soft: 'border-cyan-200 bg-cyan-50/70 dark:border-cyan-900/40 dark:bg-cyan-950/20', glow: 'bg-cyan-500/15', badge: 'bg-cyan-50 text-cyan-700 border-cyan-100 dark:bg-cyan-950/40 dark:text-cyan-300 dark:border-cyan-900/50', avatar: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950/60 dark:text-cyan-300', icon: 'text-cyan-600 dark:text-cyan-400', ring: 'hover:border-cyan-300 dark:hover:border-cyan-700' },
+  { bar: 'bg-pink-500', soft: 'border-pink-200 bg-pink-50/70 dark:border-pink-900/40 dark:bg-pink-950/20', glow: 'bg-pink-500/15', badge: 'bg-pink-50 text-pink-700 border-pink-100 dark:bg-pink-950/40 dark:text-pink-300 dark:border-pink-900/50', avatar: 'bg-pink-100 text-pink-700 dark:bg-pink-950/60 dark:text-pink-300', icon: 'text-pink-600 dark:text-pink-400', ring: 'hover:border-pink-300 dark:hover:border-pink-700' },
+  { bar: 'bg-indigo-500', soft: 'border-indigo-200 bg-indigo-50/70 dark:border-indigo-900/40 dark:bg-indigo-950/20', glow: 'bg-indigo-500/15', badge: 'bg-indigo-50 text-indigo-700 border-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-900/50', avatar: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300', icon: 'text-indigo-600 dark:text-indigo-400', ring: 'hover:border-indigo-300 dark:hover:border-indigo-700' },
+  { bar: 'bg-teal-500', soft: 'border-teal-200 bg-teal-50/70 dark:border-teal-900/40 dark:bg-teal-950/20', glow: 'bg-teal-500/15', badge: 'bg-teal-50 text-teal-700 border-teal-100 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-900/50', avatar: 'bg-teal-100 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300', icon: 'text-teal-600 dark:text-teal-400', ring: 'hover:border-teal-300 dark:hover:border-teal-700' },
+  { bar: 'bg-orange-500', soft: 'border-orange-200 bg-orange-50/70 dark:border-orange-900/40 dark:bg-orange-950/20', glow: 'bg-orange-500/15', badge: 'bg-orange-50 text-orange-700 border-orange-100 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-900/50', avatar: 'bg-orange-100 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300', icon: 'text-orange-600 dark:text-orange-400', ring: 'hover:border-orange-300 dark:hover:border-orange-700' },
+  { bar: 'bg-lime-600', soft: 'border-lime-200 bg-lime-50/70 dark:border-lime-900/40 dark:bg-lime-950/20', glow: 'bg-lime-500/15', badge: 'bg-lime-50 text-lime-700 border-lime-100 dark:bg-lime-950/40 dark:text-lime-300 dark:border-lime-900/50', avatar: 'bg-lime-100 text-lime-700 dark:bg-lime-950/60 dark:text-lime-300', icon: 'text-lime-600 dark:text-lime-400', ring: 'hover:border-lime-300 dark:hover:border-lime-700' },
+  { bar: 'bg-fuchsia-500', soft: 'border-fuchsia-200 bg-fuchsia-50/70 dark:border-fuchsia-900/40 dark:bg-fuchsia-950/20', glow: 'bg-fuchsia-500/15', badge: 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-100 dark:bg-fuchsia-950/40 dark:text-fuchsia-300 dark:border-fuchsia-900/50', avatar: 'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/60 dark:text-fuchsia-300', icon: 'text-fuchsia-600 dark:text-fuchsia-400', ring: 'hover:border-fuchsia-300 dark:hover:border-fuchsia-700' },
+  { bar: 'bg-sky-500', soft: 'border-sky-200 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20', glow: 'bg-sky-500/15', badge: 'bg-sky-50 text-sky-700 border-sky-100 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-900/50', avatar: 'bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300', icon: 'text-sky-600 dark:text-sky-400', ring: 'hover:border-sky-300 dark:hover:border-sky-700' },
+  { bar: 'bg-red-500', soft: 'border-red-200 bg-red-50/70 dark:border-red-900/40 dark:bg-red-950/20', glow: 'bg-red-500/15', badge: 'bg-red-50 text-red-700 border-red-100 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900/50', avatar: 'bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300', icon: 'text-red-600 dark:text-red-400', ring: 'hover:border-red-300 dark:hover:border-red-700' },
+  { bar: 'bg-yellow-600', soft: 'border-yellow-200 bg-yellow-50/70 dark:border-yellow-900/40 dark:bg-yellow-950/20', glow: 'bg-yellow-500/15', badge: 'bg-yellow-50 text-yellow-700 border-yellow-100 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-900/50', avatar: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950/60 dark:text-yellow-300', icon: 'text-yellow-600 dark:text-yellow-400', ring: 'hover:border-yellow-300 dark:hover:border-yellow-700' },
+  { bar: 'bg-purple-500', soft: 'border-purple-200 bg-purple-50/70 dark:border-purple-900/40 dark:bg-purple-950/20', glow: 'bg-purple-500/15', badge: 'bg-purple-50 text-purple-700 border-purple-100 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-900/50', avatar: 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300', icon: 'text-purple-600 dark:text-purple-400', ring: 'hover:border-purple-300 dark:hover:border-purple-700' },
+];
+const BREAK_PALETTE = { bar: 'bg-slate-400', soft: 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/40', glow: 'bg-slate-400/15', badge: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700', avatar: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300', icon: 'text-slate-500 dark:text-slate-400', ring: 'hover:border-slate-300 dark:hover:border-slate-600' };
+// colorMap: subject name -> unique index (see subjectColorMap in the page), so every
+// subject gets its own color until the palette runs out.
+const getSlotPalette = (slot, colorMap) => {
+  if (slot.type === 'break') return BREAK_PALETTE;
+  const name = String(slot.subject?.name || '');
+  const mapped = colorMap?.get(name);
+  if (mapped !== undefined) return SLOT_PALETTES[mapped % SLOT_PALETTES.length];
+  const seed = name || String(slot.subjectId || slot.id || '');
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  return SLOT_PALETTES[hash % SLOT_PALETTES.length];
+};
+const SLOT_TYPE_STYLES = {
+  offline: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300',
+  live: 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300',
+  lab: 'bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300',
+  extra: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
+  break: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+};
+
+const isBreakPeriod = (period) =>
+  period?.periodType === 'Break' || String(period?.periodName || '').toLowerCase().includes('break');
+
+// Read-only cell of the Weekly Class Timetable grid.
+// 'header' = solid colored title band, 'tint' = soft tinted card with initial tile.
+const WEEKLY_CELL_STYLE = 'header';
+function WeeklyGridSlotCard({ slot, subjectName, teacherName, colorMap, onEdit, onDelete }) {
+  const isBreak = slot.type === 'break';
+  const palette = getSlotPalette({ ...slot, subject: slot.subject || { name: subjectName } }, colorMap);
+  const type = slot.type || 'offline';
+  const title = isBreak ? (slot.remarks || 'Break') : subjectName;
+
+  if (WEEKLY_CELL_STYLE === 'header') {
+    return (
+      <div className="flex h-full min-h-[104px] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
+        <div className={`flex items-center justify-between gap-1.5 px-2.5 py-1.5 text-white ${palette.bar}`}>
+          <span className="line-clamp-1 text-xs font-black">{title}</span>
+          <span className="shrink-0 rounded-md bg-white/25 px-1.5 py-0.5 text-[9px] font-black uppercase">{type}</span>
+        </div>
+        <div className="flex flex-1 flex-col justify-between gap-2 p-2.5">
+          <div className="flex items-center gap-2">
+            <span className={`flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${palette.avatar}`}>
+              {isBreak ? <Coffee className="size-3" /> : teacherName.split(' ').map((p) => p[0]).join('').toUpperCase().slice(0, 2)}
+            </span>
+            <span className="line-clamp-1 text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+              {isBreak ? 'No teacher' : teacherName}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+              <MapPin className={`size-3 ${palette.icon}`} />
+              {slot.room ? slot.room : 'No room'}
+            </span>
+            <div className="flex gap-1 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100">
+              <button onClick={onEdit} title="Edit Slot" className="rounded-md bg-slate-100 p-1 text-slate-500 hover:text-blue-600 dark:bg-slate-800">
+                <Edit2 className="size-3" />
+              </button>
+              <button onClick={onDelete} title="Delete Slot" className="rounded-md bg-red-50 p-1 text-red-500 hover:text-red-600 dark:bg-red-950/40">
+                <Trash2 className="size-3" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`flex h-full min-h-[104px] flex-col justify-between rounded-2xl border p-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${palette.soft}`}>
+      <div className="flex items-start gap-2">
+        <span className={`flex size-8 shrink-0 items-center justify-center rounded-xl text-sm font-black text-white shadow-sm ${palette.bar}`}>
+          {isBreak ? <Coffee className="size-4" /> : title.charAt(0).toUpperCase()}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="line-clamp-1 text-xs font-black text-slate-900 dark:text-white">{title}</p>
+          <p className="mt-0.5 line-clamp-1 text-[11px] font-semibold text-slate-600 dark:text-slate-400">
+            {isBreak ? 'No teacher' : teacherName}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-2.5 flex items-center justify-between gap-1.5">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className={`shrink-0 rounded-full bg-white/80 px-1.5 py-0.5 text-[9px] font-black uppercase dark:bg-slate-900/60 ${palette.icon}`}>
+            {type}
+          </span>
+          <span className="inline-flex items-center gap-1 truncate text-[10px] font-bold text-slate-500 dark:text-slate-400">
+            <MapPin className="size-3 shrink-0" />
+            {slot.room ? slot.room : '—'}
+          </span>
+        </div>
+        <div className="flex shrink-0 gap-1 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100">
+          <button onClick={onEdit} title="Edit Slot" className="rounded-lg bg-white/80 p-1 text-slate-500 hover:text-blue-600 dark:bg-slate-900/60">
+            <Edit2 className="size-3" />
+          </button>
+          <button onClick={onDelete} title="Delete Slot" className="rounded-lg bg-white/80 p-1 text-red-500 hover:text-red-600 dark:bg-slate-900/60">
+            <Trash2 className="size-3" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Timetable() {
   const { user } = useAuth();
@@ -429,6 +554,15 @@ export default function Timetable() {
       return String(a.startTime || '').localeCompare(String(b.startTime || ''));
     });
   }, [allPeriods]);
+
+  // One stable, unique color per subject (alphabetical order), shared by the
+  // weekly grid and the daily slot cards.
+  const subjectColorMap = useMemo(() => {
+    const names = new Set();
+    allSubjects.forEach((sub) => sub.name && names.add(sub.name));
+    timetables.forEach((t) => t.subject?.name && names.add(t.subject.name));
+    return new Map(Array.from(names).sort((a, b) => a.localeCompare(b)).map((name, idx) => [name, idx]));
+  }, [allSubjects, timetables]);
 
   const getSubjectsForSection = (sectionId) => {
     const sec = sections.find(s => String(s.id) === String(sectionId));
@@ -859,33 +993,33 @@ export default function Timetable() {
       )}
 
       <div className="grid grid-cols-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-2 sm:gap-4 mb-6">
-        <div className="rounded-xl sm:rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm flex flex-col justify-center items-center text-center">
+        <div className="rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm transition-colors hover:border-slate-500 dark:hover:border-slate-400 flex flex-col justify-center items-center text-center">
           <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">
             <span className="hidden sm:inline">Total Classes</span>
             <span className="inline sm:hidden">Classes</span>
           </p>
           <p className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white mt-0.5">{visibleTimetables.length}</p>
         </div>
-        <div className="rounded-xl sm:rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm flex flex-col justify-center items-center text-center">
+        <div className="rounded-xl sm:rounded-2xl border border-blue-200 dark:border-blue-900/50 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm transition-colors hover:border-blue-500 dark:hover:border-blue-500 flex flex-col justify-center items-center text-center">
           <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">Teachers</p>
           <p className="text-lg sm:text-2xl font-black text-blue-600 mt-0.5">{teachers.length}</p>
         </div>
-        <div className="rounded-xl sm:rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm flex flex-col justify-center items-center text-center">
+        <div className="rounded-xl sm:rounded-2xl border border-emerald-200 dark:border-emerald-900/50 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm transition-colors hover:border-emerald-500 dark:hover:border-emerald-500 flex flex-col justify-center items-center text-center">
           <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">Offline</p>
           <p className="text-lg sm:text-2xl font-black text-emerald-600 mt-0.5">{visibleTimetables.filter(t => t.type === 'offline').length}</p>
         </div>
-        <div className="rounded-xl sm:rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm flex flex-col justify-center items-center text-center">
+        <div className="rounded-xl sm:rounded-2xl border border-rose-200 dark:border-rose-900/50 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm transition-colors hover:border-rose-500 dark:hover:border-rose-500 flex flex-col justify-center items-center text-center">
           <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">Live</p>
           <p className="text-lg sm:text-2xl font-black text-rose-600 mt-0.5">{visibleTimetables.filter(t => t.type === 'live').length}</p>
         </div>
-        <div className="rounded-xl sm:rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm flex flex-col justify-center items-center text-center">
+        <div className="rounded-xl sm:rounded-2xl border border-purple-200 dark:border-purple-900/50 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm transition-colors hover:border-purple-500 dark:hover:border-purple-500 flex flex-col justify-center items-center text-center">
           <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">
             <span className="hidden sm:inline">Lab Sessions</span>
             <span className="inline sm:hidden">Labs</span>
           </p>
           <p className="text-lg sm:text-2xl font-black text-purple-600 mt-0.5">{visibleTimetables.filter(t => t.type === 'lab').length}</p>
         </div>
-        <div className="rounded-xl sm:rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm flex flex-col justify-center items-center text-center">
+        <div className="rounded-xl sm:rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm transition-colors hover:border-amber-500 dark:hover:border-amber-500 flex flex-col justify-center items-center text-center">
           <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">
             <span className="hidden sm:inline">Extra Classes</span>
             <span className="inline sm:hidden">Extras</span>
@@ -896,7 +1030,7 @@ export default function Timetable() {
 
       {/* Class & Section Selection Grid Card */}
       {!isTeacher && activeView === 'timetable' && (
-        <div className="mb-8 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
+        <div className="mb-8 p-2 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="flex size-12 items-center justify-center rounded-2xl bg-blue-50 dark:bg-slate-800 text-blue-600">
@@ -1030,33 +1164,61 @@ export default function Timetable() {
               )}
 
               {/* Grid Table */}
-              <div className="overflow-x-auto w-full max-w-full rounded-2xl border border-slate-100 dark:border-slate-800">
-                <Table className="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-left border-collapse">
+              <div className="overflow-x-auto w-full max-w-full rounded-2xl border border-slate-200 shadow-md dark:border-slate-800">
+                <Table className="min-w-full text-left border-collapse">
                   <TableHeader>
-                    <TableRow className="bg-slate-50 dark:bg-slate-850 hover:bg-slate-50 dark:hover:bg-slate-850">
-                      <TableHead className="h-auto px-4 py-4 text-xs font-black uppercase tracking-wider text-slate-500 border-r border-slate-100 dark:border-slate-800 w-[120px] sticky left-0 top-0 z-40 bg-slate-50 dark:bg-slate-850 shadow-sm">
+                    <TableRow className="border-0 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-900 hover:bg-slate-900">
+                      <TableHead className="h-auto w-[104px] sticky left-0 top-0 z-40 bg-slate-900 px-3 py-4 text-xs font-black uppercase tracking-wider text-slate-300">
                         Day
                       </TableHead>
-                      {sortedPeriods.map(period => (
-                        <TableHead key={period.id} className="h-auto px-4 py-4 text-xs font-black uppercase tracking-wider text-slate-500 border-r border-slate-100 dark:border-slate-800 min-w-[200px]">
-                          <div>{period.periodName || `Period ${period.sequenceNo}`}</div>
-                          <div className="text-[10px] text-slate-400 font-semibold mt-0.5">{period.startTime} - {period.endTime}</div>
-                        </TableHead>
-                      ))}
+                      {sortedPeriods.map(period => {
+                        const brk = isBreakPeriod(period);
+                        return (
+                          <TableHead key={period.id} className={`h-auto min-w-[200px] border-l border-white/10 px-4 py-4 ${brk ? 'bg-amber-500/20' : ''}`}>
+                            <div className="flex items-center gap-2.5">
+                              <span className={`flex size-7 shrink-0 items-center justify-center rounded-lg text-[11px] font-black text-white ${brk ? 'bg-amber-500' : 'bg-white/15 ring-1 ring-white/20'}`}>
+                                {brk ? <Coffee className="size-3.5" /> : (period.sequenceNo || '-')}
+                              </span>
+                              <div className="min-w-0">
+                                <div className="truncate text-xs font-black uppercase tracking-wider text-white">{period.periodName || `Period ${period.sequenceNo}`}</div>
+                                <div className="mt-0.5 inline-flex items-center gap-1 text-[10px] font-semibold normal-case text-slate-300">
+                                  <Clock className="size-3" />
+                                  {period.startTime} - {period.endTime}
+                                </div>
+                              </div>
+                            </div>
+                          </TableHead>
+                        );
+                      })}
                     </TableRow>
                   </TableHeader>
-                  <TableBody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
-                    {days.map(day => (
-                      <TableRow key={day} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/20">
-                        <TableCell className="px-4 py-4 text-xs font-black uppercase text-slate-700 dark:text-slate-350 border-r border-slate-100 dark:border-slate-800 sticky left-0 z-20 bg-slate-50 dark:bg-slate-900">
-                          {day}
+                  <TableBody className="bg-white dark:bg-slate-900">
+                    {days.map((day, dayIdx) => (
+                      <TableRow key={day} className={`border-b border-slate-100 dark:border-slate-800 ${day === currentDay ? 'bg-blue-50/70 dark:bg-blue-950/20' : dayIdx % 2 === 1 ? 'bg-slate-50/70 dark:bg-slate-950/40' : 'bg-white dark:bg-slate-900'}`}>
+                        <TableCell className={`sticky left-0 z-20 w-[104px] border-b border-white/10 px-3 py-2 ${day === currentDay ? 'bg-indigo-900' : 'bg-slate-900'}`}>
+                          <div className="flex flex-col items-center gap-1 text-center">
+                            <span className={`flex size-8 shrink-0 items-center justify-center rounded-lg text-[11px] font-black text-white ${
+                              day === currentDay ? 'bg-blue-500 shadow-md shadow-blue-500/30' : 'bg-white/15 ring-1 ring-white/20'
+                            }`}>
+                              {dayShortNames[day]}
+                            </span>
+                            <div>
+                              <p className="text-[10px] font-black uppercase tracking-wider text-white">{day.charAt(0) + day.slice(1).toLowerCase()}</p>
+                              {day === currentDay && (
+                                <span className="mt-0.5 inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-blue-300">
+                                  <span className="size-1.5 animate-pulse rounded-full bg-blue-400" />
+                                  Today
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </TableCell>
                         {sortedPeriods.map(period => {
                           const slot = getSlotForGrid(day, period.id);
                           return (
                             <TableCell
                               key={period.id}
-                              className="px-3 py-3 border-r border-slate-100 dark:border-slate-800 align-top relative group"
+                              className="relative group align-top border-l border-dashed border-slate-200 p-2 dark:border-slate-800"
                               onDragOver={(e) => { if (isBulkEditMode) e.preventDefault(); }}
                               onDrop={(e) => { if (isBulkEditMode) handleDrop(e, day, period.id); }}
                             >
@@ -1175,105 +1337,28 @@ export default function Timetable() {
                               ) : (
                                 // Read-only view
                                 slot ? (
-                                  slot.type === 'break' ? (
-                                    <div className="p-2.5 rounded-xl border border-amber-100 bg-amber-50/30 dark:border-amber-950/20 dark:bg-amber-950/10 flex flex-col justify-between h-full min-h-[90px] transition duration-200 hover:shadow-sm">
-                                      <div>
-                                        <div className="flex items-center justify-between gap-1.5">
-                                          <span className="text-xs font-black text-amber-900 dark:text-amber-300 line-clamp-1">
-                                            {slot.remarks || 'Break'}
-                                          </span>
-                                          <span className="rounded bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-350 px-1.5 py-0.5 text-[9px] font-black uppercase">
-                                            BREAK
-                                          </span>
-                                        </div>
-                                        <div className="text-[11px] font-semibold text-slate-500 mt-1 line-clamp-1">
-                                          No Teacher
-                                        </div>
-                                      </div>
-                                      <div className="mt-2 pt-2 border-t border-slate-100/50 dark:border-slate-800/50 flex justify-between items-center text-[10px] font-bold text-slate-400">
-                                        <span>{slot.room ? `Room ${slot.room}` : 'No Room'}</span>
-                                        <div className="opacity-0 group-hover:opacity-100 transition flex gap-1">
-                                          <button
-                                            onClick={() => handleEditClick(slot)}
-                                            className="text-slate-500 hover:text-blue-600 bg-slate-100 dark:bg-slate-800 rounded p-1"
-                                            title="Edit Slot"
-                                          >
-                                            <Edit2 className="size-3" />
-                                          </button>
-                                          <button
-                                            onClick={() => handleDeleteClick(slot.id)}
-                                            className="text-red-500 hover:text-red-600 bg-red-50 dark:bg-red-950/40 rounded p-1"
-                                            title="Delete Slot"
-                                          >
-                                            <Trash2 className="size-3" />
-                                          </button>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <div className={`p-2.5 rounded-xl border flex flex-col justify-between h-full min-h-[90px] transition duration-200 hover:shadow-sm ${
-                                      slot.type === 'live'
-                                        ? 'border-rose-100 bg-rose-50/30 dark:border-rose-950/20 dark:bg-rose-950/10'
-                                        : slot.type === 'lab'
-                                        ? 'border-purple-100 bg-purple-50/30 dark:border-purple-950/20 dark:bg-purple-950/10'
-                                        : slot.type === 'extra'
-                                        ? 'border-amber-100 bg-amber-50/30 dark:border-amber-950/20 dark:bg-amber-950/10'
-                                        : 'border-blue-100 bg-blue-50/30 dark:border-blue-950/25 dark:bg-blue-950/10'
-                                    }`}>
-                                      <div>
-                                        <div className="flex items-center justify-between gap-1.5">
-                                          <span className="text-xs font-black text-slate-900 dark:text-white line-clamp-1">
-                                            {slot.subject?.name || allSubjects.find(s => s.id === slot.subjectId)?.name || 'Subject'}
-                                          </span>
-                                          <span className={`rounded px-1.5 py-0.5 text-[9px] font-black uppercase ${
-                                            slot.type === 'live'
-                                              ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-350'
-                                              : slot.type === 'lab'
-                                              ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-350'
-                                              : slot.type === 'extra'
-                                              ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-350'
-                                              : 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-350'
-                                          }`}>
-                                            {slot.type || 'offline'}
-                                          </span>
-                                        </div>
-                                        <div className="text-[11px] font-semibold text-slate-500 mt-1 line-clamp-1">
-                                          {formatTeacherName(slot.teacher) || allTeachers.find(t => t.teacherProfile?.id === slot.teacherId)?.name || 'Teacher'}
-                                        </div>
-                                      </div>
-                                      <div className="mt-2 pt-2 border-t border-slate-100/50 dark:border-slate-800/50 flex justify-between items-center text-[10px] font-bold text-slate-400">
-                                        <span>{slot.room ? `Room ${slot.room}` : 'No Room'}</span>
-                                        <div className="opacity-0 group-hover:opacity-100 transition flex gap-1">
-                                          <button
-                                            onClick={() => handleEditClick(slot)}
-                                            className="text-slate-500 hover:text-blue-600 bg-slate-100 dark:bg-slate-800 rounded p-1"
-                                            title="Edit Slot"
-                                          >
-                                            <Edit2 className="size-3" />
-                                          </button>
-                                          <button
-                                            onClick={() => handleDeleteClick(slot.id)}
-                                            className="text-red-500 hover:text-red-600 bg-red-50 dark:bg-red-950/40 rounded p-1"
-                                            title="Delete Slot"
-                                          >
-                                            <Trash2 className="size-3" />
-                                          </button>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )
-                                ) : (period.periodType === 'Break' || (period.periodName && period.periodName.toLowerCase().includes('break'))) ? (
-                                  <div className="h-full min-h-[90px] border border-amber-100 bg-amber-50/30 dark:border-amber-950/20 dark:bg-amber-950/10 rounded-xl flex flex-col items-center justify-center p-2.5">
-                                    <span className="text-xs font-black text-amber-700 dark:text-amber-300">
+                                  <WeeklyGridSlotCard
+                                    slot={slot}
+                                    subjectName={slot.subject?.name || allSubjects.find(s => s.id === slot.subjectId)?.name || 'Subject'}
+                                    teacherName={formatTeacherName(slot.teacher) || allTeachers.find(t => t.teacherProfile?.id === slot.teacherId)?.name || 'Teacher'}
+                                    colorMap={subjectColorMap}
+                                    onEdit={() => handleEditClick(slot)}
+                                    onDelete={() => handleDeleteClick(slot.id)}
+                                  />
+                                ) : isBreakPeriod(period) ? (
+                                  <div className="relative h-full min-h-[104px] overflow-hidden rounded-xl border border-amber-200/70 bg-gradient-to-br from-amber-50 to-orange-50 dark:border-amber-900/30 dark:from-amber-950/20 dark:to-orange-950/10 flex flex-col items-center justify-center gap-1 p-2.5">
+                                    <Coffee className="size-5 text-amber-500" />
+                                    <span className="text-xs font-black text-amber-800 dark:text-amber-300">
                                       {period.periodName || 'Break'}
                                     </span>
-                                    <span className="text-[10px] text-amber-500 font-bold mt-1">
+                                    <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">
                                       {period.startTime} - {period.endTime}
                                     </span>
                                   </div>
                                 ) : (
-                                  <div className="h-full min-h-[90px] border border-dashed border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center bg-slate-50/10 dark:bg-slate-900/10">
-                                    <span className="text-[10px] font-bold text-slate-400">Empty</span>
+                                  <div className="h-full min-h-[104px] rounded-xl border border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center gap-1 bg-slate-50/40 dark:bg-slate-900/30 text-slate-300 dark:text-slate-600">
+                                    <Plus className="size-4" />
+                                    <span className="text-[10px] font-bold uppercase tracking-wider">Free</span>
                                   </div>
                                 )
                               )}
@@ -1312,14 +1397,14 @@ export default function Timetable() {
             </div>
           </div>
 
-          <div className="mt-5 overflow-x-auto w-full max-w-full">
-            <div className="flex min-w-max gap-2 rounded-2xl border border-slate-100 bg-slate-50 p-1 dark:border-slate-800 dark:bg-slate-950">
+          <div className="mt-5 w-full max-w-full overflow-x-auto">
+            <div className="flex min-w-[20rem] w-full gap-1 rounded-2xl border border-slate-100 bg-slate-50 p-1 dark:border-slate-800 dark:bg-slate-950 sm:w-fit sm:gap-2">
               {days.map((day) => (
                 <button
                   key={day}
                   type="button"
                   onClick={() => setActiveDay(day)}
-                  className={`rounded-xl px-4 py-2.5 text-xs font-black uppercase tracking-wider transition ${
+                  className={`flex-1 rounded-xl px-2 py-2.5 text-xs font-black uppercase tracking-wider transition sm:flex-none sm:px-4 ${
                     activeDay === day
                       ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
                       : 'text-slate-500 hover:bg-white hover:text-slate-900 dark:hover:bg-slate-900 dark:hover:text-white'
@@ -1507,70 +1592,81 @@ export default function Timetable() {
             </div>
           ) : (
             <>
-            <div className="mt-5 grid gap-3 md:grid-cols-2 2xl:grid-cols-4 animate-fade-in">
+            <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 animate-fade-in">
               {paginatedLiveTeacherStatus.map((item) => {
-                  const activeSlot = item.activeSlot;
-                  const nextSlot = item.nextSlot;
-                  const isEngaged = Boolean(activeSlot);
-                  return (
-                    <div
-                      key={item.key}
-                      className={`rounded-2xl border p-4 transition-all duration-300 hover:shadow-md ${
-                        isEngaged
-                          ? 'border-emerald-250 bg-emerald-50/50 dark:border-emerald-900/50 dark:bg-emerald-950/20'
-                          : 'border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-850'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <div className={`flex size-10 items-center justify-center rounded-2xl ${
-                            isEngaged ? 'bg-emerald-100 text-emerald-700' : 'bg-white text-blue-600 dark:bg-slate-900'
-                          }`}>
-                            <Users className="size-5" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-black text-slate-950 dark:text-white">{item.teacherName}</p>
-                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">{item.totalSlots} total slot{item.totalSlots === 1 ? '' : 's'}</p>
-                          </div>
-                        </div>
-                        <span className={`rounded-full px-3 py-1 text-[11px] font-black uppercase ${
-                          isEngaged
-                            ? 'bg-emerald-600 text-white shadow-sm'
-                            : 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
-                        }`}>
-                          {isEngaged ? 'Engaged' : 'Free'}
+                const activeSlot = item.activeSlot;
+                const nextSlot = item.nextSlot;
+                const isEngaged = Boolean(activeSlot);
+                const palette = isEngaged ? getSlotPalette(activeSlot, subjectColorMap) : null;
+                const initials = item.teacherName.split(' ').map((p) => p[0]).join('').toUpperCase().slice(0, 2);
+                const sectionLabel = (slot) => `${formatClassName(slot.section) || 'Class'}${slot.section?.name ? ` - ${slot.section.name}` : ''}`;
+                const minutesLeft = activeSlot ? Math.max(0, minutesFromTime(activeSlot.endTime) - currentMinutes) : 0;
+                return (
+                  <div
+                    key={item.key}
+                    className="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900"
+                  >
+                    <div className={`flex items-center justify-between gap-2 px-3.5 py-2 text-white ${isEngaged ? palette.bar : 'bg-slate-700'}`}>
+                      <span className="line-clamp-1 text-xs font-black">
+                        {isEngaged ? (activeSlot.subject?.name || 'Subject') : 'In Staff Room'}
+                      </span>
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-white/25 px-1.5 py-0.5 text-[9px] font-black uppercase">
+                        {isEngaged && <span className="size-1.5 animate-pulse rounded-full bg-white" />}
+                        {isEngaged ? 'Engaged' : 'Free'}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-1 flex-col gap-3 p-3.5">
+                      <div className="flex items-center gap-2.5">
+                        <span className={`flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-black ${isEngaged ? palette.avatar : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>
+                          {initials}
                         </span>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-black text-slate-950 dark:text-white">{item.teacherName}</p>
+                          <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">{item.totalSlots} period{item.totalSlots === 1 ? '' : 's'} / week</p>
+                        </div>
                       </div>
 
-                      <div className="mt-4 space-y-2 text-xs font-semibold text-slate-650 dark:text-slate-350">
-                        {isEngaged ? (
-                          <>
-                            <p className="font-bold text-slate-800 dark:text-slate-200">
-                              Teaching: {formatClassName(activeSlot.section)}{activeSlot.section?.name ? ` - ${activeSlot.section.name}` : ''}
-                            </p>
-                            <p>{activeSlot.subject?.name || 'Subject'} ({activeSlot.startTime} to {activeSlot.endTime})</p>
-                            <p className="inline-flex items-center gap-1.5 text-slate-400">
-                              <MapPin className="size-3.5" />
-                              {activeSlot.room ? `Room ${activeSlot.room}` : 'Classroom'}
-                            </p>
-                          </>
-                        ) : (
-                          <>
-                            <p className="inline-flex items-center gap-1">
-                              <MapPin className="size-3.5 text-slate-400" />
+                      {isEngaged ? (
+                        <div className="space-y-2">
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Teaching {sectionLabel(activeSlot)}</p>
+                          <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                            <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 dark:bg-slate-800">
+                              <Clock className={`size-3 ${palette.icon}`} />
+                              {activeSlot.startTime} - {activeSlot.endTime}
+                            </span>
+                            <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 dark:bg-slate-800">
+                              <MapPin className={`size-3 ${palette.icon}`} />
+                              {activeSlot.room ? activeSlot.room : 'Classroom'}
+                            </span>
+                            <span className="rounded-md bg-slate-100 px-1.5 py-0.5 dark:bg-slate-800">{minutesLeft} min left</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                            {nextSlot
+                              ? `Next: ${nextSlot.subject?.name || 'Subject'} (${sectionLabel(nextSlot)})`
+                              : 'No more periods today'}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                            <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 dark:bg-slate-800">
+                              <MapPin className="size-3 text-slate-500" />
                               Staff Room
-                            </p>
-                            <p className="text-slate-450 dark:text-slate-500">
-                              {nextSlot
-                                ? `Next: ${nextSlot.subject?.name || 'Subject'} (${formatClassName(nextSlot.section)}${nextSlot.section?.name ? ` - ${nextSlot.section.name}` : ''}) at ${nextSlot.startTime}`
-                                : 'No more periods today'}
-                            </p>
-                          </>
-                        )}
-                      </div>
+                            </span>
+                            {nextSlot && (
+                              <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 dark:bg-slate-800">
+                                <Clock className="size-3 text-slate-500" />
+                                at {nextSlot.startTime}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  );
-                })}
+                  </div>
+                );
+              })}
             </div>
             <DataTablePagination
               page={safeLiveTeacherPage}
@@ -1833,63 +1929,89 @@ export default function Timetable() {
               </div>
             ) : (
               paginatedActiveDaySlots.map((slot) => {
-                const teacherName = formatTeacherName(slot.teacher) || 'Unnamed Teacher';
-                const initials = teacherName.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2);
+                const isBreak = slot.type === 'break';
+                const palette = getSlotPalette(slot, subjectColorMap);
+                const teacherName = isBreak ? 'No teacher' : (formatTeacherName(slot.teacher) || 'Unnamed Teacher');
+                const initials = isBreak ? '—' : teacherName.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2);
+                const title = isBreak ? (slot.remarks || 'Break') : (slot.subject?.name || 'Subject');
+                const isNow = slot.dayOfWeek === currentDay
+                  && currentMinutes >= minutesFromTime(slot.startTime)
+                  && currentMinutes < minutesFromTime(slot.endTime);
                 return (
                   <div
                     key={slot.id}
-                    className="relative overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm transition hover:shadow-md duration-200 flex flex-col justify-between"
+                    className={`group relative overflow-hidden rounded-2xl border bg-white dark:bg-slate-900 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg flex flex-col justify-between ${
+                      isNow ? 'border-emerald-300 ring-2 ring-emerald-200/70 dark:border-emerald-700 dark:ring-emerald-900/50' : `border-slate-100 dark:border-slate-800 ${palette.ring}`
+                    }`}
                   >
-                    <div>
-                      <div className="flex items-start justify-between gap-4">
-                        <span className="inline-flex rounded-lg bg-blue-50 dark:bg-slate-850 border border-blue-100 dark:border-slate-800 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:text-sky-300">
-                          {slot.subject?.name || 'Subject'}
-                        </span>
-                        <div className="flex gap-1">
+                    {/* Left accent bar + top-right corner glow */}
+                    <span aria-hidden className={`absolute inset-y-0 left-0 w-1.5 ${palette.bar}`} />
+                    <span aria-hidden className={`pointer-events-none absolute -right-8 -top-8 size-28 rounded-full ${palette.glow} transition-transform duration-300 group-hover:scale-125`} />
+
+                    <div className="relative p-4 pl-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <span className={`inline-flex max-w-full items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-black ${palette.badge}`}>
+                            <span className={`size-1.5 shrink-0 rounded-full ${palette.bar}`} />
+                            <span className="truncate">{title}</span>
+                          </span>
+                        </div>
+                        <div className="flex shrink-0 gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => handleEditClick(slot)}
-                            className="rounded-lg border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                            title="Edit Slot"
+                            className="rounded-lg border border-slate-100 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                           >
                             <Edit2 className="size-3.5" />
                           </button>
                           <button
                             onClick={() => handleDeleteClick(slot.id)}
-                            className="rounded-lg border border-red-100 dark:border-rose-950/40 bg-white dark:bg-slate-900 p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition"
+                            title="Delete Slot"
+                            className="rounded-lg border border-red-100 dark:border-rose-950/40 bg-white/90 dark:bg-slate-900/90 p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition"
                           >
                             <Trash2 className="size-3.5" />
                           </button>
                         </div>
                       </div>
 
-                      <h3 className="text-base font-bold text-slate-950 dark:text-white mt-3">
-                        {formatClassName(slot.section)}{slot.section?.name ? ` - ${slot.section?.name}` : ''}
-                      </h3>
-                    </div>
+                      <div className="mt-3 flex items-center gap-2">
+                        <h3 className="text-lg font-black leading-tight text-slate-950 dark:text-white">
+                          {formatClassName(slot.section)}{slot.section?.name ? ` - ${slot.section?.name}` : ''}
+                        </h3>
+                        {isNow && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[9px] font-black uppercase text-white">
+                            <span className="size-1.5 animate-pulse rounded-full bg-white" />
+                            Now
+                          </span>
+                        )}
+                      </div>
 
-                    <div className="mt-4 flex items-center justify-between border-t border-slate-50 dark:border-slate-850 pt-3">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="size-7 bg-slate-100 dark:bg-slate-800">
-                          <AvatarFallback className="bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-700 dark:text-slate-350">
+                      <div className="mt-3 flex items-center gap-2.5">
+                        <Avatar className="size-8">
+                          <AvatarFallback className={`text-[11px] font-black ${palette.avatar}`}>
                             {initials}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-xs font-semibold text-slate-650 dark:text-slate-400">{teacherName}</span>
+                        <span className="truncate text-sm font-semibold text-slate-700 dark:text-slate-300">{teacherName}</span>
                       </div>
-                      <div className="flex flex-col items-end gap-1 text-[10px] font-bold text-slate-500 dark:text-slate-450">
-                        <span className="inline-flex items-center gap-1">
-                          <Clock className="size-3.5 text-blue-600" />
-                          {slot.periodName || `Period ${slot.periodNumber || 1}`} • {slot.startTime} - {slot.endTime}
+                    </div>
+
+                    <div className="relative flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/70 px-4 py-2.5 pl-5 dark:border-slate-800 dark:bg-slate-950/40">
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                        <Clock className={`size-3.5 ${palette.icon}`} />
+                        {slot.periodName || `Period ${slot.periodNumber || 1}`}
+                        <span className="font-semibold text-slate-400">· {slot.startTime} - {slot.endTime}</span>
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-black uppercase ${SLOT_TYPE_STYLES[slot.type || 'offline'] || SLOT_TYPE_STYLES.offline}`}>
+                          {slot.type || 'offline'}
                         </span>
-                        <div className="flex items-center gap-1">
-                          <span className="rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 px-1.5 py-0.5 uppercase">
-                            {slot.type || 'OFFLINE'}
+                        {slot.room && (
+                          <span className="inline-flex items-center gap-1 rounded-md bg-white px-1.5 py-0.5 text-[10px] font-bold text-slate-500 border border-slate-100 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800">
+                            <MapPin className="size-3" />
+                            {slot.room}
                           </span>
-                          {slot.room && (
-                            <span className="rounded bg-slate-50 dark:bg-slate-850 px-1.5 py-0.5">
-                              Room {slot.room}
-                            </span>
-                          )}
-                        </div>
+                        )}
                       </div>
                     </div>
                   </div>

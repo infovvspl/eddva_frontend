@@ -140,7 +140,7 @@ const Profile: React.FC = () => {
   const initialsCard = "rounded-2xl border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900";
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 p-4 font-poppins sm:p-6">
+    <div className="mx-auto w-full max-w-6xl space-y-6 font-poppins">
       {/* Header */}
       <Card className={`${initialsCard} p-4 sm:p-6`}>
         <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">

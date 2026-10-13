@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Breadcrumb as UiBreadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import SearchBar from "@/components/school/SearchBar";
 import DataTable from "@/components/school/DataTable";
+import ClassCardPicker from "@/components/school/teacher/ClassCardPicker";
 import api, { unwrapSchoolList } from "@/lib/api/school-client";
 import { useAcademicStore } from "@/lib/academic-store";
 import "./AssessmentSystem.css";
@@ -63,59 +64,6 @@ function Breadcrumb({
         ))}
       </BreadcrumbList>
     </UiBreadcrumb>
-  );
-}
-
-function NavCard({
-  icon,
-  tone,
-  title,
-  meta,
-  actionLabel,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  tone: "brand" | "emerald";
-  title: string;
-  meta: string;
-  actionLabel: string;
-  onClick: () => void;
-}) {
-  const toneClasses =
-    tone === "brand"
-      ? { soft: "bg-brand-100", icon: "text-brand-600", border: "border-brand-200 hover:border-brand-500" }
-      : { soft: "bg-emerald-100", icon: "text-emerald-600", border: "border-emerald-200 hover:border-emerald-500" };
-
-  return (
-    <Card
-      role="button"
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onClick();
-        }
-      }}
-      className={cn(
-        "group flex h-full cursor-pointer flex-col justify-between rounded-2xl border bg-white shadow-none transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        toneClasses.border,
-      )}
-    >
-      <div className="p-3.5 pb-0 sm:p-5 sm:pb-0">
-        <div className="flex items-start justify-between gap-2 sm:gap-3">
-          <div className={`rounded-lg sm:rounded-xl p-2 sm:p-2.5 ${toneClasses.soft} ${toneClasses.icon} [&>svg]:w-5 [&>svg]:h-5 sm:[&>svg]:w-[22px] sm:[&>svg]:h-[22px]`}>{icon}</div>
-        </div>
-        <h4 className="mt-3 sm:mt-4 truncate text-sm sm:text-lg font-bold text-gray-900" title={title}>{title}</h4>
-        <p className="mt-1 flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm font-medium text-gray-500">
-          <Users size={14} className="shrink-0 size-3.5 sm:size-4" /> <span className="truncate">{meta}</span>
-        </p>
-      </div>
-      <div className="mx-3.5 mb-3.5 mt-3 flex items-center justify-between border-t border-gray-100 pt-2.5 sm:mx-5 sm:mb-5 sm:mt-4 sm:pt-3">
-        <span className={`text-xs sm:text-sm font-semibold ${toneClasses.icon}`}>{actionLabel}</span>
-        <ChevronRight size={16} className="text-gray-400 transition-transform group-hover:translate-x-0.5 shrink-0 hidden sm:block" />
-      </div>
-    </Card>
   );
 }
 
@@ -231,6 +179,11 @@ const AssessmentSystem: React.FC = () => {
   }, [assignments.length, setAssignments]);
 
   // ── Derived hierarchies ──────────────────────────────────────────────────
+  // Always listed in natural order (Class 2 before Class 10, Section A before B)
+  const byName = (a: { name?: string }, b: { name?: string }) => {
+    const norm = (v?: string) => String(v ?? '').replace(/[-_]/g, ' ').replace(/\s+/g, ' ');
+    return norm(a.name).localeCompare(norm(b.name), undefined, { numeric: true, sensitivity: 'base' });
+  };
   const classes = useMemo(() => {
     const map = new Map<string, { id: string; name: string; sections: Set<string>; subjects: Set<string> }>();
     assignments.forEach((a: any) => {
@@ -240,50 +193,18 @@ const AssessmentSystem: React.FC = () => {
       if (a.subjectId) entry.subjects.add(a.subjectId);
       map.set(a.classId, entry);
     });
-    return Array.from(map.values());
+    return Array.from(map.values()).sort(byName);
   }, [assignments]);
-
-  const sections = useMemo(() => {
-    if (!selectedClass) return [];
-    const map = new Map<string, { id: string; name: string; subjects: Set<string> }>();
-    assignments
-      .filter((a: any) => a.classId === selectedClass.id)
-      .forEach((a: any) => {
-        if (!a.sectionId) return;
-        const entry = map.get(a.sectionId) ?? { id: a.sectionId, name: a.sectionName, subjects: new Set() };
-        if (a.subjectId) entry.subjects.add(a.subjectId);
-        map.set(a.sectionId, entry);
-      });
-    return Array.from(map.values());
-  }, [assignments, selectedClass]);
-
-  const subjects = useMemo(() => {
-    if (!selectedClass || !selectedSection) return [];
-    const map = new Map<string, { id: string; name: string }>();
-    assignments
-      .filter((a: any) => a.classId === selectedClass.id && a.sectionId === selectedSection.id)
-      .forEach((a: any) => {
-        if (a.subjectId) map.set(a.subjectId, { id: a.subjectId, name: a.subjectName });
-      });
-    return Array.from(map.values());
-  }, [assignments, selectedClass, selectedSection]);
 
   // ── Filtered Navigation ──────────────────────────────────────────────────
   const q = search.trim().toLowerCase();
   const filteredClasses = classes.filter((c) => c.name?.toLowerCase().includes(q));
-  const filteredSections = sections.filter((s) => s.name?.toLowerCase().includes(q));
-  const filteredSubjects = subjects.filter((s) => s.name?.toLowerCase().includes(q));
 
-  const level = selectedSubject ? 'workspace' : selectedSection ? 'subjects' : selectedClass ? 'sections' : 'classes';
+  // Class → section → subject is chosen on one screen (the class cards), so there are only two levels.
+  const level = selectedSubject ? 'workspace' : 'classes';
 
   const goToClasses = () => { setSelectedClass(null); setSelectedSection(null); setSelectedSubject(null); setSearch(''); setWorkspaceSearch(''); };
-  const goToSections = () => { setSelectedSection(null); setSelectedSubject(null); setSearch(''); setWorkspaceSearch(''); };
-  const goToSubjects = () => { setSelectedSubject(null); setSearch(''); setWorkspaceSearch(''); };
-  const goBack = () => {
-    if (level === 'workspace') goToSubjects();
-    else if (level === 'subjects') goToSections();
-    else if (level === 'sections') goToClasses();
-  };
+  const goBack = () => { if (level === 'workspace') goToClasses(); };
 
   // ── Data Fetching for Workspace ──────────────────────────────────────────
   const fetchTests = async () => {
@@ -590,7 +511,7 @@ const AssessmentSystem: React.FC = () => {
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="w-full p-4 sm:p-6 space-y-6">
+    <div className="w-full space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -601,99 +522,62 @@ const AssessmentSystem: React.FC = () => {
             Navigate through your assigned classes to manage assessments.
           </p>
         </div>
-        {level !== 'classes' && (
-          <Button variant="outline" size="sm" onClick={goBack}>
-<ChevronLeft size={16} />
-            Back
-          </Button>
-        )}
       </div>
 
-      {/* Breadcrumbs */}
+      {/* Breadcrumb — commented out; the Back button below replaces it.
       <Breadcrumb
         items={[
           { label: 'Classes', icon: <Home size={14} />, onClick: goToClasses, active: level === 'classes' },
-          ...(selectedClass ? [{ label: selectedClass.name, onClick: goToSections, active: level === 'sections' }] : []),
-          ...(selectedSection ? [{ label: `Section ${selectedSection.name}`, onClick: goToSubjects, active: level === 'subjects' }] : []),
+          ...(selectedClass ? [{ label: selectedClass.name, onClick: goToClasses, active: false }] : []),
+          ...(selectedSection ? [{ label: `Section ${selectedSection.name}`, onClick: goToClasses, active: false }] : []),
           ...(selectedSubject ? [{ label: selectedSubject.name, onClick: () => { }, active: true }] : []),
         ]}
       />
+      */}
+
+      {/* Back (top-left, where the breadcrumb used to be) */}
+      {level !== 'classes' && (
+        <div>
+          <Button variant="outline" size="sm" onClick={goBack} className="gap-1.5">
+            <ChevronLeft size={16} />
+            Back
+          </Button>
+        </div>
+      )}
 
       {/* Search Bar for Navigation Levels */}
-      {level !== 'workspace' && (
-        <div className="max-w-md mb-6">
+      {level === 'classes' && (
+        <div className="mb-6 max-w-md">
           <SearchBar value={search} onChange={setSearch} placeholder={`Search ${level}...`} />
         </div>
       )}
 
-      {/* Level 1: Classes */}
+      {/* Class cards — pick class, section and subject on one screen */}
       {level === 'classes' && (
         loadingContext ? (
-          <div className="py-12 text-center text-gray-400">Loading your classes...</div>
-        ) : filteredClasses.length === 0 ? (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {[0, 1, 2].map((i) => <Skeleton key={i} className="h-20 rounded-2xl" />)}
+          </div>
+        ) : classes.length === 0 ? (
           <Card className="py-12 text-center text-gray-500 bg-gray-50 border-dashed border-gray-200 rounded-xl shadow-none">
             No classes assigned.
           </Card>
-        ) : (
-          <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredClasses.map((c) => (
-              <NavCard
-                key={c.id}
-                icon={<GraduationCap size={22} />}
-                tone="brand"
-                title={c.name}
-                meta={`${c.sections.size} section${c.sections.size === 1 ? '' : 's'} • ${c.subjects.size} subject${c.subjects.size === 1 ? '' : 's'}`}
-                actionLabel="View sections"
-                onClick={() => { setSelectedClass({ id: c.id, name: c.name }); setSearch(''); }}
-              />
-            ))}
-          </div>
-        )
-      )}
-
-      {/* Level 2: Sections */}
-      {level === 'sections' && (
-        filteredSections.length === 0 ? (
+        ) : filteredClasses.length === 0 ? (
           <Card className="py-12 text-center text-gray-500 bg-gray-50 border-dashed border-gray-200 rounded-xl shadow-none">
-            No sections assigned for this class.
+            No classes match “{search}”.
           </Card>
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredSections.map((s) => (
-              <NavCard
-                key={s.id}
-                icon={<Layers size={22} />}
-                tone="brand"
-                title={`Section ${s.name}`}
-                meta={`${s.subjects.size} subject${s.subjects.size === 1 ? '' : 's'}`}
-                actionLabel="View subjects"
-                onClick={() => { setSelectedSection({ id: s.id, name: s.name }); setSearch(''); }}
-              />
-            ))}
-          </div>
-        )
-      )}
-
-      {/* Level 3: Subjects */}
-      {level === 'subjects' && (
-        filteredSubjects.length === 0 ? (
-          <Card className="py-12 text-center text-gray-500 bg-gray-50 border-dashed border-gray-200 rounded-xl shadow-none">
-            No subjects assigned for this class.
-          </Card>
-        ) : (
-          <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredSubjects.map((s) => (
-              <NavCard
-                key={s.id}
-                icon={<BookOpen size={22} />}
-                tone="emerald"
-                title={s.name}
-                meta="Assessments Workspace"
-                actionLabel="Open workspace"
-                onClick={() => { setSelectedSubject({ id: s.id, name: s.name }); setSearch(''); }}
-              />
-            ))}
-          </div>
+          <ClassCardPicker
+            assignments={assignments as any}
+            search={search}
+            actionLabel="Open assessments"
+            onPick={(cls, sec, sub) => {
+              setSelectedClass(cls);
+              setSelectedSection(sec);
+              setSelectedSubject(sub);
+              setSearch('');
+            }}
+          />
         )
       )}
 

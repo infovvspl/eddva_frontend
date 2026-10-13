@@ -76,6 +76,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Separator } from "@/components/ui/separator";
 
 import api, { unwrapSchoolData } from "@/lib/api/school-client";
@@ -125,6 +126,24 @@ interface StudentGroup {
   id: string;
   name: string;
   members: StudentMember[];
+}
+
+/** Column count for the class cards: 1 on phones, 2 from md, 3 from xl (Tailwind breakpoints). */
+function useColumnCount() {
+  const pick = () => {
+    if (typeof window === 'undefined' || !window.matchMedia) return 1;
+    if (window.matchMedia('(min-width: 1280px)').matches) return 3;
+    if (window.matchMedia('(min-width: 768px)').matches) return 2;
+    return 1;
+  };
+  const [count, setCount] = useState(pick);
+  useEffect(() => {
+    const queries = [window.matchMedia('(min-width: 768px)'), window.matchMedia('(min-width: 1280px)')];
+    const update = () => setCount(pick());
+    queries.forEach((q) => q.addEventListener('change', update));
+    return () => queries.forEach((q) => q.removeEventListener('change', update));
+  }, []);
+  return count;
 }
 
 function formatSectionName(name: string | null | undefined) {
@@ -297,7 +316,13 @@ const AssignmentManagement: React.FC = () => {
     return () => { cancelled = true; };
   }, [assignments.length, setAssignments]);
 
-  // Derived Hierarchies
+  // Derived Hierarchies — always listed in natural order (Class 2 before Class 10, Section A before B)
+  const byName = (a: { name?: string }, b: { name?: string }) =>
+    String(a.name ?? '').replace(/[-_]/g, ' ').replace(/\s+/g, ' ').localeCompare(
+      String(b.name ?? '').replace(/[-_]/g, ' ').replace(/\s+/g, ' '),
+      undefined,
+      { numeric: true, sensitivity: 'base' },
+    );
   const classes = useMemo(() => {
     const map = new Map<string, { id: string; name: string; sections: Set<string>; subjects: Set<string> }>();
     assignments.forEach((a: any) => {
@@ -312,49 +337,38 @@ const AssignmentManagement: React.FC = () => {
       if (a.subjectId) entry.subjects.add(a.subjectId);
       map.set(a.classId, entry);
     });
-    return Array.from(map.values());
+    return Array.from(map.values()).sort(byName);
   }, [assignments]);
 
-  const sections = useMemo(() => {
-    if (!selectedClass) return [];
-    const map = new Map<string, { id: string; name: string; subjects: Set<string> }>();
-    assignments
-      .filter((a: any) => a.classId === selectedClass.id)
-      .forEach((a: any) => {
-        if (!a.sectionId) return;
-        const entry = map.get(a.sectionId) ?? {
-          id: a.sectionId,
-          name: formatSectionName(a.sectionName),
-          subjects: new Set<string>(),
-        };
-        if (a.subjectId) entry.subjects.add(a.subjectId);
-        map.set(a.sectionId, entry);
-      });
-    return Array.from(map.values());
-  }, [assignments, selectedClass]);
+  // Class -> section -> subject is chosen on one screen (the class cards), so only two levels remain.
+  // Per class: its sections, and each section's subjects (both in natural order).
+  const classCards = useMemo(() => {
+    return classes.map((cls) => {
+      const secMap = new Map<string, { id: string; name: string; subjects: Map<string, { id: string; name: string }> }>();
+      assignments
+        .filter((a: any) => a.classId === cls.id && a.sectionId)
+        .forEach((a: any) => {
+          const sec = secMap.get(a.sectionId) ?? { id: a.sectionId, name: formatSectionName(a.sectionName), subjects: new Map() };
+          if (a.subjectId) sec.subjects.set(a.subjectId, { id: a.subjectId, name: a.subjectName });
+          secMap.set(a.sectionId, sec);
+        });
+      const secs = Array.from(secMap.values())
+        .sort(byName)
+        .map((sec) => ({ id: sec.id, name: sec.name, subjects: Array.from(sec.subjects.values()).sort(byName) }));
+      return { id: cls.id, name: cls.name, subjectCount: cls.subjects.size, sections: secs };
+    });
+  }, [classes, assignments]);
 
-  const subjects = useMemo(() => {
-    if (!selectedClass || !selectedSection) return [];
-    const map = new Map<string, { id: string; name: string }>();
-    assignments
-      .filter((a: any) => a.classId === selectedClass.id && a.sectionId === selectedSection.id)
-      .forEach((a: any) => {
-        if (a.subjectId) map.set(a.subjectId, { id: a.subjectId, name: a.subjectName });
-      });
-    return Array.from(map.values());
-  }, [assignments, selectedClass, selectedSection]);
+  // Which section chip is active on each class card (defaults to the first).
+  const [cardSection, setCardSection] = useState<Record<string, string>>({});
+  // The class card whose subjects are showing (one at a time).
+  const [openClass, setOpenClass] = useState<string>('');
+  const columnCount = useColumnCount();
 
-  const level: 'classes' | 'sections' | 'subjects' | 'workspace' =
-    selectedSubject ? 'workspace' : selectedSection ? 'subjects' : selectedClass ? 'sections' : 'classes';
+  const level: 'classes' | 'workspace' = selectedSubject ? 'workspace' : 'classes';
 
   const goToClasses = () => { setSelectedClass(null); setSelectedSection(null); setSelectedSubject(null); setSearch(''); };
-  const goToSections = () => { setSelectedSection(null); setSelectedSubject(null); setSearch(''); };
-  const goToSubjects = () => { setSelectedSubject(null); setSearch(''); };
-  const goBack = () => {
-    if (level === 'workspace') goToSubjects();
-    else if (level === 'subjects') goToSections();
-    else if (level === 'sections') goToClasses();
-  };
+  const goBack = () => { if (level === 'workspace') goToClasses(); };
 
   // Fetch Workspace Assignments
   const fetchWorkspaceAssignments = async () => {
@@ -1091,7 +1105,7 @@ const AssignmentManagement: React.FC = () => {
   const pendingSubmissionsCount = inboxItems.filter((s) => s.status !== 'graded').length;
 
   return (
-    <div className="w-full space-y-6 px-4 py-6 font-poppins sm:px-6 lg:px-8">
+    <div className="w-full space-y-6 font-poppins">
       {/* Page Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -1210,163 +1224,160 @@ const AssignmentManagement: React.FC = () => {
         </TabsList>
 
         {/* TAB 1: MY ASSIGNMENTS */}
-        <TabsContent value="manage" className="space-y-6">
+        <TabsContent value="manage" className="space-y-6 p-2">
           {/* Workspace Hierarchy Navigation */}
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-4 dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-600">
-              <span className="text-slate-400">Context:</span>
-              <Button
-                variant={level === 'classes' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={goToClasses}
-                className="h-7 px-2.5 text-xs font-semibold"
-              >
-                Classes
-              </Button>
-              {selectedClass && (
-                <>
-                  <ChevronRight className="size-3.5 text-slate-400" />
-                  <Button
-                    variant={level === 'sections' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    onClick={goToSections}
-                    className="h-7 px-2.5 text-xs font-semibold"
-                  >
-                    {selectedClass.name}
-                  </Button>
-                </>
-              )}
-              {selectedSection && (
-                <>
-                  <ChevronRight className="size-3.5 text-slate-400" />
-                  <Button
-                    variant={level === 'subjects' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    onClick={goToSubjects}
-                    className="h-7 px-2.5 text-xs font-semibold"
-                  >
-                    {selectedSection.name}
-                  </Button>
-                </>
-              )}
-              {selectedSubject && (
-                <>
-                  <ChevronRight className="size-3.5 text-slate-400" />
-                  <Badge variant="default" className="h-6 bg-brand-600 px-2.5 text-xs font-semibold text-white hover:bg-brand-600">
-                    {selectedSubject.name}
-                  </Badge>
-                </>
-              )}
-            </div>
+            {level === 'workspace' && (
+              <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-600">
+                <span className="text-slate-400">Context:</span>
+                <Button variant="ghost" size="sm" onClick={goToClasses} className="h-7 px-2.5 text-xs font-semibold">
+                  Classes
+                </Button>
+                {selectedClass && (
+                  <>
+                    <ChevronRight className="size-3.5 text-slate-400" />
+                    <Badge variant="outline" className="h-6 border-blue-200 bg-blue-50 px-2.5 text-xs font-semibold text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300">
+                      {selectedClass.name}
+                    </Badge>
+                  </>
+                )}
+                {selectedSection && (
+                  <>
+                    <ChevronRight className="size-3.5 text-slate-400" />
+                    <Badge variant="outline" className="h-6 border-violet-200 bg-violet-50 px-2.5 text-xs font-semibold text-violet-700 dark:border-violet-900/50 dark:bg-violet-950/40 dark:text-violet-300">
+                      {selectedSection.name}
+                    </Badge>
+                  </>
+                )}
+                {selectedSubject && (
+                  <>
+                    <ChevronRight className="size-3.5 text-slate-400" />
+                    <Badge className="h-6 bg-emerald-600 px-2.5 text-xs font-semibold text-white hover:bg-emerald-600">
+                      {selectedSubject.name}
+                    </Badge>
+                  </>
+                )}
+              </div>
+            )}
 
-            {/* Level 1: Classes Grid */}
+            {/* Class cards - pick class, section and subject on one screen */}
             {level === 'classes' && (
               <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-slate-800">Select Class to Manage Assignments</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {classes.map((cls) => (
-                    <Card
-                      key={cls.id}
-                      className="group cursor-pointer rounded-2xl border-blue-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-500 hover:shadow-md dark:border-blue-900/50 dark:bg-slate-900 dark:hover:border-blue-500"
-                      onClick={() => {
-                        setSelectedClass({ id: cls.id, name: cls.name });
-                        setSelectedSection(null);
-                        setSelectedSubject(null);
-                      }}
-                    >
-                      <CardHeader className="p-4 pb-2">
-                        <div className="flex items-center gap-3">
-                          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 transition-colors group-hover:bg-blue-600 group-hover:text-white dark:bg-blue-950/60 dark:text-blue-300">
-                            <Layers className="size-5" />
-                          </span>
-                          <CardTitle className="min-w-0 flex-1 truncate text-base font-bold text-slate-900 dark:text-white">
-                            {cls.name}
-                          </CardTitle>
-                          <ChevronRight className="size-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-1 group-hover:text-blue-600" />
-                        </div>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-0 text-xs text-slate-500 flex items-center gap-3">
-                        <span className="flex items-center gap-1">
-                          <Layers className="size-3.5" />
-                          {cls.sections.size} Sections
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <BookOpen className="size-3.5" />
-                          {cls.subjects.size} Subjects
-                        </span>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            )}
+                <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Select a class, section and subject</h3>
+                {loadingAssignments ? (
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {[0, 1, 2].map((i) => <Skeleton key={i} className="h-44 rounded-2xl" />)}
+                  </div>
+                ) : classCards.length === 0 ? (
+                  <Card className="rounded-2xl border-2 border-dashed border-blue-200 bg-blue-50/40 p-8 text-center text-sm text-slate-500 shadow-none dark:border-blue-900/50 dark:bg-slate-900">
+                    No classes assigned to you yet.
+                  </Card>
+                ) : (
+                  <Accordion
+                    type="single"
+                    collapsible
+                    value={openClass}
+                    onValueChange={setOpenClass}
+                    className="grid items-start gap-4"
+                    style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}
+                  >
+                    {/* Cards are dealt into independent columns, so opening one only grows its own column. */}
+                    {(() => {
+                      const cards = classCards.map((cls) => {
+                        const activeSec = cls.sections.find((s) => s.id === cardSection[cls.id]) ?? cls.sections[0];
+                        return (
+                          <AccordionItem
+                            key={cls.id}
+                            value={cls.id}
+                            className="group overflow-hidden rounded-2xl border border-blue-200 bg-white shadow-sm transition-colors hover:border-blue-500 dark:border-blue-900/50 dark:bg-slate-900 dark:hover:border-blue-500"
+                          >
+                            {/* Header: class name — click to show its subjects */}
+                            <AccordionTrigger className="px-4 py-3.5 text-left hover:no-underline [&>svg]:hidden">
+                              <div className="flex w-full items-center gap-3">
+                                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 transition-colors group-hover:bg-blue-600 group-hover:text-white group-data-[state=open]:bg-blue-600 group-data-[state=open]:text-white dark:bg-blue-950/60 dark:text-blue-300">
+                                  <Layers className="size-5" />
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-base font-bold text-slate-900 dark:text-white">{cls.name}</p>
+                                  <p className="mt-0.5 truncate text-xs font-normal text-slate-500">
+                                    {cls.sections.length} {cls.sections.length === 1 ? 'Section' : 'Sections'} {'\u2022'} {cls.subjectCount} {cls.subjectCount === 1 ? 'Subject' : 'Subjects'}
+                                  </p>
+                                </div>
+                                <ChevronRight className="size-4 shrink-0 text-slate-400 transition-transform group-hover:text-blue-600 group-data-[state=open]:rotate-90 group-data-[state=open]:text-blue-600" />
+                              </div>
+                            </AccordionTrigger>
 
-            {/* Level 2: Sections Grid */}
-            {level === 'sections' && (
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-slate-800">Select Section for {selectedClass?.name}</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {sections.map((sec) => (
-                    <Card
-                      key={sec.id}
-                      className="group cursor-pointer rounded-2xl border-violet-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-violet-500 hover:shadow-md dark:border-violet-900/50 dark:bg-slate-900 dark:hover:border-violet-500"
-                      onClick={() => {
-                        setSelectedSection({ id: sec.id, name: sec.name });
-                        setSelectedSubject(null);
-                      }}
-                    >
-                      <CardHeader className="p-4 pb-2">
-                        <div className="flex items-center gap-3">
-                          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600 transition-colors group-hover:bg-violet-600 group-hover:text-white dark:bg-violet-950/60 dark:text-violet-300">
-                            <Users className="size-5" />
-                          </span>
-                          <CardTitle className="min-w-0 flex-1 truncate text-base font-bold text-slate-900 dark:text-white">
-                            {sec.name}
-                          </CardTitle>
-                          <ChevronRight className="size-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-1 group-hover:text-violet-600" />
-                        </div>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-0 text-xs text-slate-500">
-                        {sec.subjects.size} Enrolled Subjects
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            )}
+                            {/* Section chips: always visible, one line, so every card is the same height */}
+                            <div className="flex items-center gap-1.5 overflow-x-auto px-4 pb-3.5">
+                              {cls.sections.length === 0 ? (
+                                <span className="text-xs text-slate-400">No sections</span>
+                              ) : (
+                                cls.sections.map((sec) => {
+                                  const on = activeSec?.id === sec.id;
+                                  return (
+                                    <button
+                                      key={sec.id}
+                                      type="button"
+                                      onClick={() => {
+                                        setCardSection((prev) => ({ ...prev, [cls.id]: sec.id }));
+                                        setOpenClass(cls.id);
+                                      }}
+                                      className={`shrink-0 rounded-lg border px-3 py-1.5 text-xs font-bold transition-colors ${
+                                        on && openClass === cls.id
+                                          ? 'border-violet-600 bg-violet-600 text-white shadow-sm'
+                                          : 'border-violet-200 bg-violet-50 text-violet-700 hover:border-violet-500 dark:border-violet-900/50 dark:bg-violet-950/40 dark:text-violet-300'
+                                      }`}
+                                    >
+                                      {sec.name}
+                                    </button>
+                                  );
+                                })
+                              )}
+                            </div>
 
-            {/* Level 3: Subjects Grid */}
-            {level === 'subjects' && (
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-slate-800">
-                  Select Subject for {selectedClass?.name} - {selectedSection?.name}
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {subjects.map((sub) => (
-                    <Card
-                      key={sub.id}
-                      className="group cursor-pointer rounded-2xl border-emerald-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-500 hover:shadow-md dark:border-emerald-900/50 dark:bg-slate-900 dark:hover:border-emerald-500"
-                      onClick={() => {
-                        setSelectedSubject(sub);
-                      }}
-                    >
-                      <CardHeader className="p-4 pb-2">
-                        <div className="flex items-center gap-3">
-                          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 transition-colors group-hover:bg-emerald-600 group-hover:text-white dark:bg-emerald-950/60 dark:text-emerald-300">
-                            <BookOpen className="size-5" />
-                          </span>
-                          <CardTitle className="min-w-0 flex-1 truncate text-base font-bold text-slate-900 dark:text-white">
-                            {sub.name}
-                          </CardTitle>
-                          <ChevronRight className="size-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-1 group-hover:text-emerald-600" />
+                            {/* Subjects of the active section */}
+                            <AccordionContent className="border-t border-blue-100 bg-slate-50/60 p-4 pb-4 dark:border-blue-900/40 dark:bg-slate-950/40">
+                              <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                Subjects in {activeSec?.name || 'section'}
+                              </p>
+                              {!activeSec || activeSec.subjects.length === 0 ? (
+                                <p className="rounded-xl border border-dashed border-slate-200 p-3 text-center text-xs text-slate-400 dark:border-slate-800">
+                                  No subjects in this section.
+                                </p>
+                              ) : (
+                                <div className="grid grid-cols-1 gap-2">
+                                  {activeSec.subjects.map((sub) => (
+                                    <button
+                                      key={sub.id}
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedClass({ id: cls.id, name: cls.name });
+                                        setSelectedSection({ id: activeSec.id, name: activeSec.name });
+                                        setSelectedSubject({ id: sub.id, name: sub.name });
+                                      }}
+                                      className="group/sub flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-white p-2.5 text-left transition-all hover:border-emerald-500 hover:shadow-sm dark:border-emerald-900/50 dark:bg-slate-900 dark:hover:border-emerald-500"
+                                    >
+                                      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 transition-colors group-hover/sub:bg-emerald-600 group-hover/sub:text-white dark:bg-emerald-950/60 dark:text-emerald-300">
+                                        <BookOpen className="size-4" />
+                                      </span>
+                                      <span className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{sub.name}</span>
+                                      <ChevronRight className="size-4 shrink-0 text-slate-300 transition-transform group-hover/sub:translate-x-0.5 group-hover/sub:text-emerald-600" />
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </AccordionContent>
+                          </AccordionItem>
+                        );
+                      });
+                      return Array.from({ length: columnCount }, (_, col) => (
+                        <div key={col} className="flex min-w-0 flex-col gap-4">
+                          {cards.filter((_, i) => i % columnCount === col)}
                         </div>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-0 text-xs text-slate-500">
-                        Click to view assignment workspace
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                      ));
+                    })()}
+                  </Accordion>
+                )}
               </div>
             )}
 
