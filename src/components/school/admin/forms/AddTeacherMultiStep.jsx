@@ -448,9 +448,12 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
   const generateTeacherId = useCallback(async () => {
     setIdLoading(true);
     try {
-      const res = await api.get('/teachers');
+      // `total` is the institute's real teacher count; the `data` array is
+      // just the current page (defaults to 10), so counting it instead
+      // under-counts past page 1 and keeps generating the same duplicate ID.
+      const res = await api.get('/teachers', { params: { limit: 1 } });
       const list = res.data?.data ?? res.data;
-      const count = Array.isArray(list) ? list.length : 0;
+      const count = typeof res.data?.total === 'number' ? res.data.total : (Array.isArray(list) ? list.length : 0);
       setFormData(prev => ({ ...prev, employeeCode: getScopedId(institute?.name, count) }));
     } catch (error) {
       console.error('Failed to generate teacher id:', error);
@@ -460,9 +463,48 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
     }
   }, [institute?.name]);
 
+  const [idChecking, setIdChecking] = useState(false);
+
+  // Live-check the typed/generated Employee ID against the institute's
+  // existing teachers so a manually-typed ID can't silently collide with
+  // someone else's (the auto-generate button already avoids this; typing
+  // bypasses it).
+  useEffect(() => {
+    const code = formData.employeeCode?.trim();
+    if (!code) {
+      setIdChecking(false);
+      return;
+    }
+    setIdChecking(true);
+    const timeout = setTimeout(async () => {
+      try {
+        const res = await api.get('/teachers', { params: { search: code, limit: 25 } });
+        const list = res.data?.data ?? res.data;
+        const rows = Array.isArray(list) ? list : [];
+        const clash = rows.find(r => {
+          const empId = r.teacherProfile?.employeeId;
+          return empId && empId.toLowerCase() === code.toLowerCase() && r.id !== teacher?.id;
+        });
+        setErrors(prev => {
+          const next = { ...prev };
+          if (clash) next.employeeCode = `Already used by ${clash.name}`;
+          else delete next.employeeCode;
+          return next;
+        });
+      } catch (err) {
+        console.error('Failed to verify employee ID uniqueness:', err);
+      } finally {
+        setIdChecking(false);
+      }
+    }, 500);
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.employeeCode, teacher?.id]);
+
   // Validation
   const validateStep = (step) => {
     const tempErrors = {};
+    if (errors.employeeCode) tempErrors.employeeCode = errors.employeeCode;
     if (step === 1) {
       if (!formData.name?.trim()) tempErrors.name = 'Full name is required';
       if (!formData.email?.trim()) tempErrors.email = 'Email address is required';
@@ -913,7 +955,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
         <div className="md:col-span-2 flex gap-2">
           <div className="flex-1">
-            <FloatingInput label="Employee ID" name="employeeCode" value={formData.employeeCode} onChange={handleChange} icon={Shield} readOnly />
+            <FloatingInput label="Employee ID" name="employeeCode" value={formData.employeeCode} onChange={handleChange} icon={Shield} error={errors.employeeCode} />
           </div>
           <button
             type="button"
@@ -1362,15 +1404,16 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
             {currentStep < STEPS.length ? (
               <button
                 type="button"
+                disabled={currentStep === 4 && idChecking}
                 onClick={handleNext}
-                className={`${currentStep === 1 ? 'col-span-2 sm:col-span-1' : ''} inline-flex items-center justify-center gap-1.5 rounded-2xl bg-blue-600 px-4 py-2.5 text-xs font-black tracking-widest text-white shadow-lg shadow-blue-600/25 transition-all hover:bg-blue-700 sm:px-6 sm:py-3`}
+                className={`${currentStep === 1 ? 'col-span-2 sm:col-span-1' : ''} inline-flex items-center justify-center gap-1.5 rounded-2xl bg-blue-600 px-4 py-2.5 text-xs font-black tracking-widest text-white shadow-lg shadow-blue-600/25 transition-all hover:bg-blue-700 disabled:opacity-50 sm:px-6 sm:py-3`}
               >
-                Next <ChevronRight size={14} />
+                {currentStep === 4 && idChecking ? <Loader2 className="animate-spin" size={14} /> : <>Next <ChevronRight size={14} /></>}
               </button>
             ) : (
               <button
                 type="button"
-                disabled={isLoading}
+                disabled={isLoading || idChecking || !!errors.employeeCode}
                 onClick={handleSaveAssignments}
                 className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2.5 text-xs font-black tracking-widest text-white shadow-lg shadow-emerald-600/25 transition-all hover:brightness-110 disabled:opacity-50 sm:px-6 sm:py-3"
               >

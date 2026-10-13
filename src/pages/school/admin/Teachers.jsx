@@ -106,6 +106,22 @@ function parseCsv(text) {
   return records;
 }
 
+// One label per real class+section pairing (e.g. "Class 9 A"), not the separately
+// deduped class/section lists — those lose which section belongs to which class.
+function getClassSectionLabels(teacher) {
+  const assignments = teacher.teacherProfile?.assignments || [];
+  const seen = new Set();
+  const labels = [];
+  assignments.forEach((a) => {
+    if (!a.className && !a.sectionName) return;
+    const key = `${a.classId || ''}-${a.sectionId || ''}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    labels.push([a.className, a.sectionName].filter(Boolean).join(' '));
+  });
+  return labels;
+}
+
 function normalizeSections(value) {
   if (Array.isArray(value)) return value;
   if (typeof value === 'string') {
@@ -391,14 +407,12 @@ export default function Teachers() {
 
   const exportCsv = () => {
     const rows = [
-      ['Teacher Name', 'School', 'Email', 'Class', 'Section', 'Status'],
+      ['Teacher Name', 'Email', 'Class/Section', 'Status'],
       ...filtered.map((t) => [
         t.name || '-',
-        t.instituteName || '-',
         t.email || '-',
-        (t.classes || []).map(c => c.name).join(', ') || '-',
-        (t.sections || []).map(s => s.name).join(', ') || '-',
-        t.isActive ? 'Active' : 'Inactive'
+        getClassSectionLabels(t).join(', ') || '-',
+        t.isActive ? 'Active' : 'Inactive',
       ]),
     ];
     downloadCsv('eddva-teachers.csv', rows);
@@ -663,8 +677,7 @@ export default function Teachers() {
               <TableRow className="hover:bg-transparent border-b-0">
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider sticky left-0 z-20 bg-slate-50 dark:bg-slate-850 shadow-sm text-slate-500 dark:text-slate-400">Teacher Name</TableHead>
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Email</TableHead>
-                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Class</TableHead>
-                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Section</TableHead>
+                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Class/Section</TableHead>
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</TableHead>
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Actions</TableHead>
               </TableRow>
@@ -672,7 +685,7 @@ export default function Teachers() {
             <TableBody className="divide-y divide-slate-100 dark:divide-slate-800 [&_tr]:border-b-0">
               {filtered.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan="6" className="px-5 py-12 text-center text-slate-400">
+                  <TableCell colSpan="5" className="px-5 py-12 text-center text-slate-400">
                     No teachers found.
                   </TableCell>
                 </TableRow>
@@ -696,22 +709,12 @@ export default function Teachers() {
                     <TableCell className="p-4 px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{teacher.email || '-'}</TableCell>
                     <TableCell className="p-4 px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">
                       <div className="flex flex-wrap gap-1">
-                        {(teacher.classes || []).map(c => (
-                          <Badge key={c.id} variant="secondary" className="rounded-full px-2 bg-blue-50 dark:bg-blue-950/30 text-xs font-bold text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30">
-                            {c.name}
+                        {getClassSectionLabels(teacher).map((label) => (
+                          <Badge key={label} variant="secondary" className="rounded-full px-2 bg-blue-50 dark:bg-blue-950/30 text-xs font-bold text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30">
+                            {label}
                           </Badge>
                         ))}
-                        {(!teacher.classes || teacher.classes.length === 0) && <span className="text-slate-400">—</span>}
-                      </div>
-                    </TableCell>
-                    <TableCell className="p-4 px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">
-                      <div className="flex flex-wrap gap-1">
-                        {(teacher.sections || []).map(s => (
-                          <Badge key={s.id} variant="secondary" className="rounded-full px-2 bg-indigo-50 dark:bg-indigo-950/30 text-xs font-bold text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30">
-                            {s.name}
-                          </Badge>
-                        ))}
-                        {(!teacher.sections || teacher.sections.length === 0) && <span className="text-slate-400">—</span>}
+                        {getClassSectionLabels(teacher).length === 0 && <span className="text-slate-400">—</span>}
                       </div>
                     </TableCell>
                     <TableCell className="p-4 px-5 py-4">
@@ -810,25 +813,14 @@ export default function Teachers() {
                     <span className="font-bold truncate block">{teacher.email || '-'}</span>
                   </div>
                   <div>
-                    <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-black">Classes</span>
+                    <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-black">Class/Section</span>
                     <div className="flex flex-wrap gap-1 mt-0.5">
-                      {(teacher.classes || []).map(c => (
-                        <Badge key={c.id} variant="secondary" className="rounded-full px-2 bg-blue-50 dark:bg-blue-950/30 text-[10px] font-bold text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30">
-                          {c.name}
+                      {getClassSectionLabels(teacher).map((label) => (
+                        <Badge key={label} variant="secondary" className="rounded-full px-2 bg-blue-50 dark:bg-blue-950/30 text-[10px] font-bold text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30">
+                          {label}
                         </Badge>
                       ))}
-                      {(!teacher.classes || teacher.classes.length === 0) && <span className="text-slate-400">—</span>}
-                    </div>
-                  </div>
-                  <div>
-                    <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-black">Sections</span>
-                    <div className="flex flex-wrap gap-1 mt-0.5">
-                      {(teacher.sections || []).map(s => (
-                        <Badge key={s.id} variant="secondary" className="rounded-full px-2 bg-indigo-50 dark:bg-indigo-950/30 text-[10px] font-bold text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30">
-                          {s.name}
-                        </Badge>
-                      ))}
-                      {(!teacher.sections || teacher.sections.length === 0) && <span className="text-slate-400">—</span>}
+                      {getClassSectionLabels(teacher).length === 0 && <span className="text-slate-400">—</span>}
                     </div>
                   </div>
                   <div>

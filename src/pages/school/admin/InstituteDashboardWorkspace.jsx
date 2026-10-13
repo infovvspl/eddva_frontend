@@ -53,13 +53,13 @@ const performanceChartConfig = {
 };
 
 const attendanceChartConfig = {
-  present: {
-    label: 'Present',
+  studentPresent: {
+    label: 'Students',
     color: '#2563EB',
   },
-  absent: {
-    label: 'Absent',
-    color: '#F43F5E',
+  teacherPresent: {
+    label: 'Teachers',
+    color: '#A855F7',
   },
 };
 
@@ -171,13 +171,13 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
     }));
   }, [stats?.attendanceHistory]);
 
+  // One bar per role per day, so it's never ambiguous whether "attendance" means
+  // students, teachers, or both — hovering a bar shows that role's percentage.
   const attendancePresentAbsentSeries = useMemo(() => {
     return attendanceSeries.map((s) => ({
       name: s.name,
-      present: s.att,
-      // `abs` is the share explicitly marked absent; days a student was never marked are left out.
-      // Older API responses have no `abs`, so fall back to the complement.
-      absent: s.att == null ? null : (s.abs ?? Math.max(0, 100 - s.att)),
+      studentPresent: s.att,
+      teacherPresent: s.teacherAtt ?? null,
     }));
   }, [attendanceSeries]);
 
@@ -290,7 +290,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
             <div className="flex items-center justify-between mb-4">
               <div>
                 <CardTitle className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">Attendance Overview</CardTitle>
-                <CardDescription className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">Smoothed weekly trend · updates every refresh</CardDescription>
+                <CardDescription className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">Students vs teachers · % present each day</CardDescription>
               </div>
               <Badge variant="secondary" className="bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 font-semibold text-xs px-2.5 py-1 gap-1 rounded-full">
                 <TrendingUp className="w-3.5 h-3.5" />
@@ -303,10 +303,15 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
                 <CartesianGrid vertical={false} />
                 <XAxis dataKey="name" tickLine={false} tickMargin={10} axisLine={false} />
                 <YAxis axisLine={false} tickLine={false} domain={[0, 100]} unit="%" />
-                <ChartTooltip content={<ChartTooltipContent />} />
+                <ChartTooltip content={<ChartTooltipContent formatter={(value, name) => (
+                  <div className="flex w-full items-center justify-between gap-3">
+                    <span className="text-muted-foreground">{name}</span>
+                    <span className="font-mono font-medium tabular-nums text-foreground">{value}%</span>
+                  </div>
+                )} />} />
                 <ChartLegend content={<ChartLegendContent />} />
-                <Bar dataKey="present" fill="var(--color-present)" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="absent" fill="var(--color-absent)" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="studentPresent" name="Students" fill="var(--color-studentPresent)" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="teacherPresent" name="Teachers" fill="var(--color-teacherPresent)" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ChartContainer>
 
@@ -331,14 +336,14 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
             )}
 
             {(() => {
-              const days = (attendancePresentAbsentSeries || []).filter((d) => d.present != null && (d.present + (d.absent || 0)) > 0);
+              const days = (attendancePresentAbsentSeries || []).filter((d) => d.studentPresent != null);
               if (!days.length) return null;
-              const best = days.reduce((a, b) => (b.present > a.present ? b : a));
-              const low = days.reduce((a, b) => (b.present < a.present ? b : a));
-              const avg = Math.round(days.reduce((t, d) => t + d.present, 0) / days.length);
+              const best = days.reduce((a, b) => (b.studentPresent > a.studentPresent ? b : a));
+              const low = days.reduce((a, b) => (b.studentPresent < a.studentPresent ? b : a));
+              const avg = Math.round(days.reduce((t, d) => t + d.studentPresent, 0) / days.length);
               return (
                 <div className="mt-auto grid grid-cols-3 gap-3 pt-5">
-                  {[['Weekly average', `${avg}%`], ['Best day', `${best.name} · ${Math.round(best.present)}%`], ['Lowest day', `${low.name} · ${Math.round(low.present)}%`]].map(([label, value]) => (
+                  {[['Student weekly average', `${avg}%`], ['Best day', `${best.name} · ${Math.round(best.studentPresent)}%`], ['Lowest day', `${low.name} · ${Math.round(low.studentPresent)}%`]].map(([label, value]) => (
                     <div key={label} className="rounded-2xl bg-slate-50 dark:bg-slate-800/50 px-4 py-3">
                       <p className="text-[11px] uppercase tracking-wider text-slate-400">{label}</p>
                       <p className="text-base text-slate-900 dark:text-white">{value}</p>
@@ -360,11 +365,11 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
                 <AlertCircle className="w-5 h-5 text-rose-500" />
                 <CardTitle className="text-base font-semibold text-slate-900 dark:text-white">Attention Required</CardTitle>
               </div>
-              <button onClick={() => navigate('/school/admin/students')} className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1">
+              <button onClick={() => navigate('/school/admin/attention-required')} className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1">
                 View All <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
-            
+
             {attentionFlags.length > 0 ? (
               <ul className="space-y-2">
                 {attentionFlags.map((fl) => (
