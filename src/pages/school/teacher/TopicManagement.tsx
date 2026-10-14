@@ -313,11 +313,10 @@ const TopicManagement: React.FC = () => {
   const goToClasses = () => { updateUrlState({ class: null, section: null, subject: null, topic: null }); setSearch(''); };
   const goToSections = () => { updateUrlState({ section: null, subject: null, topic: null }); setSearch(''); };
   const goToSubjects = () => { updateUrlState({ subject: null, topic: null }); setSearch(''); };
-  const goBack = () => {
-    if (level === 'curriculum') goToSubjects();
-    else if (level === 'subjects') goToSections();
-    else if (level === 'sections') goToClasses();
-  };
+  // Class, section and subject are picked on the class cards in one go, so there is no section or
+  // subject screen to step back to: Back returns to the class cards and clears the whole selection
+  // (which also resets the breadcrumb to just "Classes").
+  const goBack = () => { if (level !== 'classes') goToClasses(); };
 
   // ── Chapter create / edit / delete ─────────────────────────────────────────
   const openCreateChapter = () => {
@@ -469,9 +468,10 @@ const TopicManagement: React.FC = () => {
       <Breadcrumb
         items={[
           { label: 'Classes', icon: <Home size={14} />, onClick: goToClasses, active: level === 'classes' },
-          ...(selectedClass ? [{ label: selectedClass.name, onClick: goToSections, active: level === 'sections' }] : []),
-          ...(selectedSection ? [{ label: selectedSection.name, onClick: goToSubjects, active: level === 'subjects' }] : []),
-          ...(selectedSubject ? [{ label: selectedSubject.name, onClick: () => { }, active: true }] : []),
+          // Only "Classes" is clickable; the rest just show where you are.
+          ...(selectedClass ? [{ label: selectedClass.name, active: false }] : []),
+          ...(selectedSection ? [{ label: selectedSection.name, active: false }] : []),
+          ...(selectedSubject ? [{ label: selectedSubject.name, active: true }] : []),
         ]}
       />
 
@@ -926,7 +926,7 @@ function IconButton({ children, label, danger, onClick }: { children: React.Reac
   );
 }
 
-function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode; onClick: () => void; active: boolean }[] }) {
+function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode; onClick?: () => void; active: boolean }[] }) {
   return (
     <UiBreadcrumb>
       <BreadcrumbList className="gap-1.5 text-sm sm:gap-1.5">
@@ -938,6 +938,11 @@ function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode;
                 <BreadcrumbPage className="inline-flex items-center gap-1.5 rounded-lg bg-brand-50 px-2.5 py-1 font-semibold text-brand-700 dark:bg-brand-900/30 dark:text-brand-300">
                   {it.icon}{it.label}
                 </BreadcrumbPage>
+              ) : !it.onClick ? (
+                // No click handler: shown as plain text, not a link.
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 font-semibold text-surface-500 dark:text-surface-400">
+                  {it.icon}{it.label}
+                </span>
               ) : (
                 <BreadcrumbLink asChild>
                   <Button variant="ghost" size={null}
