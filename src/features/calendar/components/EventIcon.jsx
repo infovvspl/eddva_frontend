@@ -95,22 +95,37 @@ export const EventIcon = ({ category, title, className = 'h-5 w-5', variant = 'o
   const cat = (category || '').toUpperCase();
   const holiday = HOLIDAY_ICON_CATEGORIES.includes(cat) ? getHolidayIcon(title) : null;
   const image = holiday?.icon || CATEGORY_IMAGES[cat];
-  // Dark single-colour icons are turned white on coloured cells; white cards keep them as-is.
-  const invert = Boolean(holiday?.invert) && variant !== 'solid';
 
   if (image) {
-    return (
+    const picture = (extraClass) => (
       <img
         src={image}
         alt=""
         aria-hidden="true"
         draggable={false}
+        className={cn('select-none object-contain', extraClass)}
+      />
+    );
+
+    // On white cards the picture is shown as-is; on coloured calendar cells it sits on a
+    // white badge so the flat icons stay readable whatever the cell colour.
+    if (variant === 'solid') {
+      return (
+        <span className={cn('inline-flex shrink-0 items-center justify-center transition-transform duration-200 group-hover:scale-110', className)}>
+          {picture('size-full')}
+        </span>
+      );
+    }
+
+    return (
+      <span
         className={cn(
-          'shrink-0 select-none object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.25)] transition-transform duration-200 group-hover:scale-110',
-          invert && 'brightness-0 invert',
+          'inline-flex shrink-0 items-center justify-center rounded-lg bg-white p-[3px] shadow-sm ring-1 ring-black/5 transition-transform duration-200 group-hover:scale-110',
           className
         )}
-      />
+      >
+        {picture('size-full')}
+      </span>
     );
   }
 

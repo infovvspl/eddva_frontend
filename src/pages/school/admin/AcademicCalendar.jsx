@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertTriangle,
@@ -201,6 +201,9 @@ export default function AcademicCalendar({
   const [subjects, setSubjects] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  // The full-page "Loading calendar view..." state is only for the very first load. Later
+  // refreshes (30s poll, data-changed event, category change) update events in place.
+  const hasLoadedEventsRef = useRef(false);
   const [metaLoading, setMetaLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
@@ -481,15 +484,17 @@ export default function AcademicCalendar({
   }
 
   async function loadEvents() {
+    const isInitialLoad = !hasLoadedEventsRef.current;
     try {
-      setLoading(true);
+      if (isInitialLoad) setLoading(true);
       const res = await api.get('/events', { params: category === 'All' ? undefined : { category } });
       const data = res.data?.data ?? res.data;
       setEvents(Array.isArray(data) ? data : []);
+      hasLoadedEventsRef.current = true;
     } catch {
-      toast.error('Failed to sync calendar');
+      if (isInitialLoad) toast.error('Failed to sync calendar');
     } finally {
-      setLoading(false);
+      if (isInitialLoad) setLoading(false);
     }
   }
 
@@ -1039,7 +1044,7 @@ export default function AcademicCalendar({
                                       }}
                                       className="p-0.5 hover:scale-110 transition-transform cursor-pointer"
                                     >
-                                      <EventIcon category={details.category} title={ev.title} className="h-8 w-8 sm:h-6 sm:w-6 filter drop-shadow-md" />
+                                      <EventIcon category={details.category} title={ev.title} className="h-8 w-8 sm:h-7 sm:w-7 filter drop-shadow-md" />
                                     </div>
                                   );
                                 })}
