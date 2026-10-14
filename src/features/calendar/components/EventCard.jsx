@@ -24,7 +24,7 @@ export const EventCard = ({ event, onViewEdit, onDelete, handleEventClick }) => 
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3 min-w-0 flex-1">
           {/* Large Left Icon Badge */}
-          <EventIcon category={details.category} className="h-10 w-10 shadow-xs shrink-0" />
+          <EventIcon category={details.category} title={event.title} variant="solid" className="h-10 w-10 shrink-0 rounded-xl" />
           
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">

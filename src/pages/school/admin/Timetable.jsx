@@ -26,8 +26,10 @@ const dayShortNames = {
   SUNDAY: 'Sun'
 };
 
-// Accent palettes for the Scheduled Timetable Slots cards. Full class names are
-// spelled out so Tailwind can see them. A subject always maps to the same palette.
+// Single accent palette shared by every class card (weekly grid, daily slots, live status).
+const SLOT_PALETTE = { bar: 'bg-blue-600', soft: 'border-blue-200 bg-blue-50/70 dark:border-blue-900/40 dark:bg-blue-950/20', glow: 'bg-blue-500/15', badge: 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/50', avatar: 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300', icon: 'text-blue-700 dark:text-blue-400', ring: 'hover:border-blue-300 dark:hover:border-blue-700' };
+const BREAK_PALETTE = { bar: 'bg-slate-400', soft: 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/40', glow: 'bg-slate-400/15', badge: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700', avatar: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300', icon: 'text-slate-500 dark:text-slate-400', ring: 'hover:border-slate-300 dark:hover:border-slate-600' };
+// Per-subject palettes, used only by the Daily Slots cards (Scheduled Timetable Slots).
 const SLOT_PALETTES = [
   { bar: 'bg-blue-500', soft: 'border-blue-200 bg-blue-50/70 dark:border-blue-900/40 dark:bg-blue-950/20', glow: 'bg-blue-500/15', badge: 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/50', avatar: 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300', icon: 'text-blue-600 dark:text-blue-400', ring: 'hover:border-blue-300 dark:hover:border-blue-700' },
   { bar: 'bg-emerald-500', soft: 'border-emerald-200 bg-emerald-50/70 dark:border-emerald-900/40 dark:bg-emerald-950/20', glow: 'bg-emerald-500/15', badge: 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/50', avatar: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300', icon: 'text-emerald-600 dark:text-emerald-400', ring: 'hover:border-emerald-300 dark:hover:border-emerald-700' },
@@ -46,10 +48,9 @@ const SLOT_PALETTES = [
   { bar: 'bg-yellow-600', soft: 'border-yellow-200 bg-yellow-50/70 dark:border-yellow-900/40 dark:bg-yellow-950/20', glow: 'bg-yellow-500/15', badge: 'bg-yellow-50 text-yellow-700 border-yellow-100 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-900/50', avatar: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950/60 dark:text-yellow-300', icon: 'text-yellow-600 dark:text-yellow-400', ring: 'hover:border-yellow-300 dark:hover:border-yellow-700' },
   { bar: 'bg-purple-500', soft: 'border-purple-200 bg-purple-50/70 dark:border-purple-900/40 dark:bg-purple-950/20', glow: 'bg-purple-500/15', badge: 'bg-purple-50 text-purple-700 border-purple-100 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-900/50', avatar: 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300', icon: 'text-purple-600 dark:text-purple-400', ring: 'hover:border-purple-300 dark:hover:border-purple-700' },
 ];
-const BREAK_PALETTE = { bar: 'bg-slate-400', soft: 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/40', glow: 'bg-slate-400/15', badge: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700', avatar: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300', icon: 'text-slate-500 dark:text-slate-400', ring: 'hover:border-slate-300 dark:hover:border-slate-600' };
 // colorMap: subject name -> unique index (see subjectColorMap in the page), so every
 // subject gets its own color until the palette runs out.
-const getSlotPalette = (slot, colorMap) => {
+const getSubjectPalette = (slot, colorMap) => {
   if (slot.type === 'break') return BREAK_PALETTE;
   const name = String(slot.subject?.name || '');
   const mapped = colorMap?.get(name);
@@ -59,6 +60,7 @@ const getSlotPalette = (slot, colorMap) => {
   for (let i = 0; i < seed.length; i += 1) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
   return SLOT_PALETTES[hash % SLOT_PALETTES.length];
 };
+const getSlotPalette = (slot) => (slot.type === 'break' ? BREAK_PALETTE : SLOT_PALETTE);
 const SLOT_TYPE_STYLES = {
   offline: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300',
   live: 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300',
@@ -73,9 +75,9 @@ const isBreakPeriod = (period) =>
 // Read-only cell of the Weekly Class Timetable grid.
 // 'header' = solid colored title band, 'tint' = soft tinted card with initial tile.
 const WEEKLY_CELL_STYLE = 'header';
-function WeeklyGridSlotCard({ slot, subjectName, teacherName, colorMap, onEdit, onDelete }) {
+function WeeklyGridSlotCard({ slot, subjectName, teacherName, onEdit, onDelete }) {
   const isBreak = slot.type === 'break';
-  const palette = getSlotPalette({ ...slot, subject: slot.subject || { name: subjectName } }, colorMap);
+  const palette = getSlotPalette(slot);
   const type = slot.type || 'offline';
   const title = isBreak ? (slot.remarks || 'Break') : subjectName;
 
@@ -555,8 +557,7 @@ export default function Timetable() {
     });
   }, [allPeriods]);
 
-  // One stable, unique color per subject (alphabetical order), shared by the
-  // weekly grid and the daily slot cards.
+  // One stable, unique color per subject (alphabetical order) for the Daily Slots cards.
   const subjectColorMap = useMemo(() => {
     const names = new Set();
     allSubjects.forEach((sub) => sub.name && names.add(sub.name));
@@ -1341,7 +1342,6 @@ export default function Timetable() {
                                     slot={slot}
                                     subjectName={slot.subject?.name || allSubjects.find(s => s.id === slot.subjectId)?.name || 'Subject'}
                                     teacherName={formatTeacherName(slot.teacher) || allTeachers.find(t => t.teacherProfile?.id === slot.teacherId)?.name || 'Teacher'}
-                                    colorMap={subjectColorMap}
                                     onEdit={() => handleEditClick(slot)}
                                     onDelete={() => handleDeleteClick(slot.id)}
                                   />
@@ -1597,7 +1597,7 @@ export default function Timetable() {
                 const activeSlot = item.activeSlot;
                 const nextSlot = item.nextSlot;
                 const isEngaged = Boolean(activeSlot);
-                const palette = isEngaged ? getSlotPalette(activeSlot, subjectColorMap) : null;
+                const palette = isEngaged ? getSlotPalette(activeSlot) : null;
                 const initials = item.teacherName.split(' ').map((p) => p[0]).join('').toUpperCase().slice(0, 2);
                 const sectionLabel = (slot) => `${formatClassName(slot.section) || 'Class'}${slot.section?.name ? ` - ${slot.section.name}` : ''}`;
                 const minutesLeft = activeSlot ? Math.max(0, minutesFromTime(activeSlot.endTime) - currentMinutes) : 0;
@@ -1930,7 +1930,7 @@ export default function Timetable() {
             ) : (
               paginatedActiveDaySlots.map((slot) => {
                 const isBreak = slot.type === 'break';
-                const palette = getSlotPalette(slot, subjectColorMap);
+                const palette = getSubjectPalette(slot, subjectColorMap);
                 const teacherName = isBreak ? 'No teacher' : (formatTeacherName(slot.teacher) || 'Unnamed Teacher');
                 const initials = isBreak ? '—' : teacherName.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2);
                 const title = isBreak ? (slot.remarks || 'Break') : (slot.subject?.name || 'Subject');
