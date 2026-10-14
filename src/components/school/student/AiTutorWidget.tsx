@@ -693,8 +693,9 @@ function MessageBubble({ message, conversationId, onMediaLoaded }: {
 
 // ─── Panels ───────────────────────────────────────────────────────────────────
 
-function NewChatPanel({ subjects, className, onStart, starting }: {
+function NewChatPanel({ subjects, subjectsLoading, className, onStart, starting }: {
   subjects: Subject[];
+  subjectsLoading: boolean;
   className: string;
   onStart: (scope: { subjectId?: string; chapterId?: string; topicId?: string }) => void;
   starting: boolean;
@@ -723,8 +724,13 @@ function NewChatPanel({ subjects, className, onStart, starting }: {
             <CustomSelect
               value={subjectId}
               onChange={(v: string) => { setSubjectId(v); setChapterId(""); setTopicId(""); }}
-              placeholder="Any subject"
-              options={[{ value: "", label: "Any subject" }, ...subjects.map((s) => ({ value: s.id, label: s.name }))]}
+              placeholder={subjectsLoading ? "Loading subjects…" : "Any subject"}
+              options={
+                subjectsLoading
+                  ? [{ value: "", label: "Loading subjects…" }]
+                  : [{ value: "", label: "Any subject" }, ...subjects.map((s) => ({ value: s.id, label: s.name }))]
+              }
+              disabled={subjectsLoading}
               searchable={subjects.length > 8}
               triggerClassName={PICKER_TRIGGER}
               menuClassName={ALL_BOLD}
@@ -880,6 +886,7 @@ function HistoryPanel({ conversations, loading, activeId, onOpen, onDelete, onNe
 function AiTutorChat({ onClose }: { onClose: () => void }) {
   const confirm = useConfirm();
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [subjectsLoading, setSubjectsLoading] = useState(true);
   const [className, setClassName] = useState("");
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [active, setActive] = useState<Conversation | null>(null);
@@ -943,7 +950,8 @@ function AiTutorChat({ onClose }: { onClose: () => void }) {
         setSubjects(data.subjects ?? []);
         setClassName(data.className ?? "");
       })
-      .catch(() => { /* the picker simply shows "Any subject" */ });
+      .catch(() => { /* the picker simply shows "Any subject" */ })
+      .finally(() => setSubjectsLoading(false));
   }, [loadConversations]);
 
   useEffect(() => {
@@ -1059,7 +1067,7 @@ function AiTutorChat({ onClose }: { onClose: () => void }) {
         <div className="flex flex-1 items-center justify-center"><Loader2 className="size-6 animate-spin text-slate-400" /></div>
       ) : !active ? (
         <div className="flex flex-1 items-center justify-center overflow-y-auto p-4">
-          <NewChatPanel subjects={subjects} className={className} starting={starting} onStart={startConversation} />
+          <NewChatPanel subjects={subjects} subjectsLoading={subjectsLoading} className={className} starting={starting} onStart={startConversation} />
         </div>
       ) : (
         <>

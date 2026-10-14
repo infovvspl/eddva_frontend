@@ -814,7 +814,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
             type="button"
             onClick={() => setFormData(prev => ({
               ...prev,
-              assignedRows: [...prev.assignedRows, { id: String(Date.now()), classId: '', sectionId: '', subjectIds: [], isClassTeacher: false }]
+              assignedRows: [{ id: String(Date.now()), classId: '', sectionId: '', subjectIds: [], isClassTeacher: false }, ...prev.assignedRows]
             }))}
             className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-bold text-white shadow-lg shadow-blue-600/20 hover:brightness-110"
           >
