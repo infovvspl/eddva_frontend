@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { SchoolVideoPlayer } from '@/components/school/SchoolVideoPlayer';
-import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Edit, Upload, Youtube, Image as ImageIcon, FileText, Loader2, BarChart3, Download, ChevronRight, X, Sparkles, TrendingUp, XCircle, CheckCircle, ListChecks, Trophy, Copy, Eye, EyeOff, ArrowLeft, ArrowRight, ImagePlus, RefreshCw, CalendarClock, AlarmClock, PanelRightClose, PanelRightOpen, CalendarDays, Clock3, Tag, BookOpen, MessageCircle, Send, MessagesSquare, HelpCircle, User, Monitor, Save, Bell, Check } from 'lucide-react';
+import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Edit, Upload, Youtube, Image as ImageIcon, FileText, Loader2, BarChart3, Download, ChevronRight, X, Sparkles, TrendingUp, XCircle, CheckCircle, ListChecks, Trophy, Copy, Eye, EyeOff, ArrowLeft, ArrowRight, ImagePlus, RefreshCw, CalendarClock, AlarmClock, PanelRightClose, PanelRightOpen, CalendarDays, Clock3, Tag, BookOpen, MessageCircle, Send, MessagesSquare, HelpCircle, User, Monitor, Save, Bell, Check, AlertTriangle } from 'lucide-react';
 import { schoolLive, type CreatedLecture, type LiveLecture } from '@/lib/api/school-live';
 import { Highlight } from '@/types/highlight';
 import { HighlightRenderer } from '@/lib/highlight-renderer';
@@ -1370,7 +1370,14 @@ const ClassManagement: React.FC = () => {
 
   const LiveClassCard: React.FC<{ lec: LiveLecture }> = ({ lec }) => {
     const isLive = lec.status === 'LIVE';
-    const isEnded = lec.status === 'ENDED' || lec.status === 'PROCESSED' || !!lec.recordingUrl || isExpiredScheduled(lec);
+    // A lecture that actually started (and either finished, failed processing,
+    // or already has a recording) is distinct from one that was merely
+    // SCHEDULED and whose time has simply passed without ever going live —
+    // the latter has no recording job queued and will never produce one, so
+    // it must never fall into the "processing" bucket below.
+    const isTerminal = lec.status === 'ENDED' || lec.status === 'PROCESSED' || lec.status === 'PROCESSING_FAILED' || !!lec.recordingUrl;
+    const isMissed = !isTerminal && isExpiredScheduled(lec);
+    const isEnded = isTerminal || isMissed;
     const isScheduled = !isLive && !isEnded;
     const duration = fmtDuration(lec.startedAt, lec.endedAt);
 
@@ -1436,6 +1443,10 @@ const ClassManagement: React.FC = () => {
               <Badge variant="outline" className="inline-flex shrink-0 items-center gap-1 rounded-full border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-black text-rose-600">
                 Processing failed
               </Badge>
+            ) : isMissed ? (
+              <Badge variant="outline" className="inline-flex shrink-0 items-center gap-1 rounded-full border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-500">
+                Missed
+              </Badge>
             ) : !lec.recordingUrl ? (
               <Badge variant="outline" className="inline-flex shrink-0 items-center gap-1 rounded-full border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-black text-amber-600">
                 <Loader2 size={11} className="animate-spin" /> Processing recording…
@@ -1463,11 +1474,27 @@ const ClassManagement: React.FC = () => {
         )}
 
         {/* Processing status after a class ends — keeps the teacher informed. */}
-        {isEnded && lec.status !== 'PROCESSING_FAILED' && !lec.recordingUrl && (
+        {isEnded && lec.status !== 'PROCESSING_FAILED' && !isMissed && !lec.recordingUrl && (
           <InfoAlert className="mt-3 flex items-start gap-2 rounded-xl border-amber-100 bg-amber-50/70 px-3 py-2">
             <Loader2 className="mt-0.5 size-3.5 shrink-0 animate-spin text-amber-500" />
             <p className="text-[11px] font-medium text-amber-700">
               Processing the recording — this usually takes a minute or two. AI notes & quiz are generated automatically once it's ready.
+            </p>
+          </InfoAlert>
+        )}
+        {isMissed && (
+          <InfoAlert className="mt-3 flex items-start gap-2 rounded-xl border-slate-200 bg-slate-50 px-3 py-2">
+            <AlarmClock className="mt-0.5 size-3.5 shrink-0 text-slate-400" />
+            <p className="text-[11px] font-medium text-slate-500">
+              This class was scheduled but never started — there is no recording to process.
+            </p>
+          </InfoAlert>
+        )}
+        {lec.status === 'PROCESSING_FAILED' && (
+          <InfoAlert className="mt-3 flex items-start gap-2 rounded-xl border-rose-100 bg-rose-50/70 px-3 py-2">
+            <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-rose-500" />
+            <p className="text-[11px] font-medium text-rose-700">
+              Recording processing failed after several attempts. Contact support if the class was important — the original recording may no longer be recoverable.
             </p>
           </InfoAlert>
         )}
