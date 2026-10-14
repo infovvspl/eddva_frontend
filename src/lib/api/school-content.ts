@@ -79,6 +79,9 @@ export const schoolContent = {
     topicId?: string;
     classId?: string;
     sectionId?: string;
+    /** Publish the same material to several sections of the class in one call — takes
+     *  priority over `sectionId` when present. Returns an array in `data` when > 1. */
+    sectionIds?: string[];
   }) => schoolApi.post('/materials', body).then(extractData),
 
   /** Partial update — omitted fields are left unchanged. */
@@ -143,6 +146,10 @@ export const schoolContent = {
     resourceType: string;
     classId?: string;
     sectionId?: string;
+    /** Publish the same AI-generated material to several sections of the class in one
+     *  call — takes priority over `sectionId` when present. Returns an array in `data`
+     *  when > 1. */
+    sectionIds?: string[];
   }) =>
     schoolApi.post('/materials/ai-save', body).then(extractData),
 
