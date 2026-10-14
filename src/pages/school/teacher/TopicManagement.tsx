@@ -269,6 +269,18 @@ const TopicManagement: React.FC = () => {
     return Array.from(map.values());
   }, [all, selectedClass, selectedSection]);
 
+  // Every section (of the selected class) where this teacher teaches the selected
+  // subject — lets AI Generate and Add Material publish to several sections at once
+  // instead of repeating the whole flow once per section.
+  const topicSections = useMemo(() => {
+    if (!selectedClass || !selectedSubject) return [];
+    const map = new Map<string, Ref>();
+    all
+      .filter((a) => a.classId === selectedClass.id && a.subjectId === selectedSubject.id)
+      .forEach((a) => { if (a.sectionId) map.set(a.sectionId, { id: a.sectionId, name: formatSectionName(a.sectionName) }); });
+    return Array.from(map.values());
+  }, [all, selectedClass, selectedSubject]);
+
   // ── Curriculum fetches ─────────────────────────────────────────────────────
   const fetchChapters = async (subjectId: string) => {
     try {
@@ -803,6 +815,7 @@ const TopicManagement: React.FC = () => {
                 subjectId={selectedSubject.id}
                 classId={selectedClass?.id}
                 sectionId={selectedSection?.id}
+                availableSections={topicSections}
                 canEdit={canEditCurriculum}
                 returnState={{ selectedClass, selectedSection, selectedSubject, selectedTopic }}
                 onOpenPptStudio={() => navigate(pptStudioPath({
@@ -926,7 +939,7 @@ function IconButton({ children, label, danger, onClick }: { children: React.Reac
   );
 }
 
-function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode; onClick?: () => void; active: boolean }[] }) {
+function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode; onClick: () => void; active: boolean }[] }) {
   return (
     <UiBreadcrumb>
       <BreadcrumbList className="gap-1.5 text-sm sm:gap-1.5">
@@ -1227,6 +1240,7 @@ function MaterialWorkspace({
   subjectId,
   classId,
   sectionId,
+  availableSections,
   canEdit,
   returnState,
   onOpenPptStudio,
@@ -1236,6 +1250,9 @@ function MaterialWorkspace({
   subjectId: string;
   classId?: string;
   sectionId?: string;
+  /** Sections (of this class) this teacher also teaches this subject in — lets
+   *  Add Material / AI Generate target several sections in one save. */
+  availableSections?: Ref[];
   canEdit: boolean;
   returnState: CourseContentReturnState;
   onOpenPptStudio: () => void;
@@ -1544,6 +1561,7 @@ function MaterialWorkspace({
           subjectId={subjectId}
           classId={classId}
           sectionId={sectionId}
+          availableSections={availableSections}
           initialType={addType}
           onClose={() => setShowAdd(false)}
           onSaved={() => { setShowAdd(false); load(); }}
@@ -1556,6 +1574,7 @@ function MaterialWorkspace({
           topic={topic}
           classId={classId}
           sectionId={sectionId}
+          availableSections={availableSections}
           onClose={() => setShowAi(false)}
           onSaved={() => { load(); }}
           onOpenPptStudio={() => { setShowAi(false); onOpenPptStudio(); }}
@@ -2403,6 +2422,7 @@ function AiGeneratePanel({
   topic,
   classId,
   sectionId,
+  availableSections,
   onClose,
   onSaved,
   onOpenPptStudio,
@@ -2410,10 +2430,13 @@ function AiGeneratePanel({
   topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' | 'subject' };
   classId?: string;
   sectionId?: string;
+  availableSections?: Ref[];
   onClose: () => void;
   onSaved: () => void;
   onOpenPptStudio: () => void;
 }) {
+  const sectionOptions = availableSections ?? [];
+  const [selectedSectionIds, setSelectedSectionIds] = useState<string[]>(() => (sectionId ? [sectionId] : []));
   const scopeRef = topic.kind === 'subject' ? { subjectId: topic.id } : topic.kind === 'chapter' ? { chapterId: topic.id } : { topicId: topic.id };
   const hasAiMaterials = useSchoolFeature('ai', 'ai_content_generator_materials');
   const hasPptGen = useSchoolFeature('ai', 'ai_ppt_generator');
@@ -2553,6 +2576,10 @@ function AiGeneratePanel({
       toast.error('This does not look like an FAQ yet. Generate again before saving.');
       return;
     }
+    if (sectionOptions.length > 1 && !selectedSectionIds.length) {
+      toast.warning('Select at least one section to publish to');
+      return;
+    }
     setSaving(true);
     try {
       await schoolContent.saveAiMaterial({
@@ -2562,6 +2589,7 @@ function AiGeneratePanel({
         resourceType: cfg.saveAs,
         classId,
         sectionId,
+        sectionIds: selectedSectionIds.length ? selectedSectionIds : undefined,
       });
       toast.success(`${cfg.label} saved — students can now access it!`);
       onSaved();
@@ -2617,11 +2645,18 @@ function AiGeneratePanel({
           </div>
         </main>
 
-        <footer className="flex shrink-0 flex-wrap items-center justify-end gap-3 border-t border-surface-200 bg-white px-5 py-4 dark:border-surface-700 dark:bg-surface-900">
-          <Button variant="outline" onClick={() => setContent(null)} disabled={saving}>Edit settings & regenerate</Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Publishing…</span> : 'Confirm & publish to students'}
-          </Button>
+        <footer className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-surface-200 bg-white px-5 py-4 dark:border-surface-700 dark:bg-surface-900">
+          {sectionOptions.length > 1 ? (
+            <div className="min-w-[220px] flex-1">
+              <SectionMultiSelect sections={sectionOptions} selected={selectedSectionIds} onChange={setSelectedSectionIds} />
+            </div>
+          ) : <span />}
+          <div className="flex items-center gap-3">
+            <Button variant="outline" onClick={() => setContent(null)} disabled={saving}>Edit settings & regenerate</Button>
+            <Button onClick={handleSave} disabled={saving || (sectionOptions.length > 1 && !selectedSectionIds.length)}>
+              {saving ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Publishing…</span> : 'Confirm & publish to students'}
+            </Button>
+          </div>
         </footer>
       
   </DialogContent>
@@ -2631,7 +2666,10 @@ function AiGeneratePanel({
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
-  <DialogContent className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900 gap-0 p-0 [&>button:last-child]:hidden sm:rounded-3xl">
+  <DialogContent
+    onPointerDownOutside={(e) => e.preventDefault()}
+    onInteractOutside={(e) => e.preventDefault()}
+    className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900 gap-0 p-0 [&>button:last-child]:hidden sm:rounded-3xl">
     <DialogTitle className="sr-only">AI content generator</DialogTitle>
     <DialogDescription className="sr-only">AI content generator</DialogDescription>
 
@@ -2761,6 +2799,7 @@ function AiGeneratePanel({
                 placeholder="e.g. focus on numericals, include real-world examples…"
                 className="w-full resize-none rounded-xl border-2 border-surface-200 bg-surface-50 px-3 py-2 text-sm outline-none focus:border-violet-400 dark:border-surface-700 dark:bg-surface-800" />
             </div>
+            <SectionMultiSelect sections={sectionOptions} selected={selectedSectionIds} onChange={setSelectedSectionIds} />
           </div>
 
           {(generating || content) && (
@@ -2801,7 +2840,7 @@ function AiGeneratePanel({
             {generating ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Generating… {fmtDuration(genElapsedMs)}</span> : (content ? 'Regenerate' : 'Generate')}
           </Button>
           {content && (
-            <Button className="flex-1 justify-center" onClick={handleSave} disabled={saving}>
+            <Button className="flex-1 justify-center" onClick={handleSave} disabled={saving || (sectionOptions.length > 1 && !selectedSectionIds.length)}>
               {saving ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Saving…</span> : 'Save for students'}
             </Button>
           )}
@@ -2977,17 +3016,20 @@ function EditChecklistModal({ material, onClose, onSaved }: {
 }
 
 function AddMaterialModal({
-  topic, subjectId, classId, sectionId, initialType, onClose, onSaved, onOpenPptStudio,
+  topic, subjectId, classId, sectionId, availableSections, initialType, onClose, onSaved, onOpenPptStudio,
 }: {
   topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' | 'subject' };
   subjectId: string;
   classId?: string;
   sectionId?: string;
+  availableSections?: Ref[];
   initialType?: SchoolMaterialType;
   onClose: () => void;
   onSaved: () => void;
   onOpenPptStudio: () => void;
 }) {
+  const sectionOptions = availableSections ?? [];
+  const [selectedSectionIds, setSelectedSectionIds] = useState<string[]>(() => (sectionId ? [sectionId] : []));
   const isSubject = topic.kind === 'subject';
   const [step, setStep] = useState<'type' | 'input'>(initialType || isSubject ? 'input' : 'type');
   const [type, setType] = useState<SchoolMaterialType>(initialType ?? (isSubject ? 'ebook' : 'notes'));
@@ -3048,6 +3090,7 @@ function AddMaterialModal({
     if (incomplete) { toast.warning(`${incomplete} card${incomplete === 1 ? ' is' : 's are'} missing a front or back`); return; }
     const complete = completeCards(cards);
     if (!complete.length) { toast.warning('Add at least one card'); return; }
+    if (sectionOptions.length > 1 && !selectedSectionIds.length) { toast.warning('Select at least one section to publish to'); return; }
     setBusy(true);
     try {
       await schoolContent.createMaterial({
@@ -3060,6 +3103,7 @@ function AddMaterialModal({
         topicId: topic.kind === 'topic' ? topic.id : undefined,
         classId,
         sectionId,
+        sectionIds: selectedSectionIds.length ? selectedSectionIds : undefined,
       });
       toast.success(`${complete.length} flashcard${complete.length === 1 ? '' : 's'} saved — students can now study them`);
       onSaved();
@@ -3074,6 +3118,7 @@ function AddMaterialModal({
     const complete = completeRows(checklistRows);
     const itemCount = complete.filter((r) => !r.heading).length;
     if (!itemCount) { toast.warning('Add at least one checklist item'); return; }
+    if (sectionOptions.length > 1 && !selectedSectionIds.length) { toast.warning('Select at least one section to publish to'); return; }
     setBusy(true);
     try {
       await schoolContent.createMaterial({
@@ -3086,6 +3131,7 @@ function AddMaterialModal({
         topicId: topic.kind === 'topic' ? topic.id : undefined,
         classId,
         sectionId,
+        sectionIds: selectedSectionIds.length ? selectedSectionIds : undefined,
       });
       toast.success(`${itemCount} checklist item${itemCount === 1 ? '' : 's'} saved — students can now tick them off`);
       onSaved();
@@ -3099,6 +3145,7 @@ function AddMaterialModal({
   const save = async () => {
     if (isTypingCards) { await saveTypedCards(); return; }
     if (isTypingChecklist) { await saveTypedChecklist(); return; }
+    if (sectionOptions.length > 1 && !selectedSectionIds.length) { toast.warning('Select at least one section to publish to'); return; }
     const finalTitle = title.trim() || (file ? cleanName(file.name) : 'Material');
     setBusy(true);
     try {
@@ -3125,6 +3172,7 @@ function AddMaterialModal({
         topicId: topic.kind === 'topic' ? topic.id : undefined,
         classId,
         sectionId,
+        sectionIds: selectedSectionIds.length ? selectedSectionIds : undefined,
       });
       toast.success('Material added');
       onSaved();
@@ -3137,7 +3185,10 @@ function AddMaterialModal({
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) void requestClose(); }}>
-  <DialogContent className={`flex max-h-[92vh] w-full flex-col ${(isTypingCards || isTypingChecklist) && step === 'input' ? 'max-w-3xl' : 'max-w-md'} overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900 gap-0 p-0 [&>button:last-child]:hidden sm:rounded-3xl`}>
+  <DialogContent
+    onPointerDownOutside={(e) => e.preventDefault()}
+    onInteractOutside={(e) => e.preventDefault()}
+    className={`flex max-h-[92vh] w-full flex-col ${(isTypingCards || isTypingChecklist) && step === 'input' ? 'max-w-3xl' : 'max-w-md'} overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900 gap-0 p-0 [&>button:last-child]:hidden sm:rounded-3xl`}>
     <DialogTitle className="sr-only">Add material</DialogTitle>
     <DialogDescription className="sr-only">Add material</DialogDescription>
 
@@ -3180,6 +3231,8 @@ function AddMaterialModal({
           <div className="space-y-4 overflow-y-auto p-5">
             <InputField label="Title" value={title} onChange={(e) => setTitle(e.target.value)}
               placeholder={isTypingCards ? `Flashcards — ${topic.name}` : isTypingChecklist ? `Revision Checklist — ${topic.name}` : 'Give this material a clear title…'} />
+
+            <SectionMultiSelect sections={sectionOptions} selected={selectedSectionIds} onChange={setSelectedSectionIds} />
 
             <div className="flex gap-2">
               {type === 'flashcard' && (
@@ -3262,7 +3315,7 @@ function AddMaterialModal({
               tips={isTypingCards ? TYPED_CARD_TIPS : isTypingChecklist ? TYPED_CHECKLIST_TIPS : source === 'link' ? LINK_TIPS : guide.tips}
             />
 
-            <Button className="w-full justify-center" onClick={save} disabled={busy}>
+            <Button className="w-full justify-center" onClick={save} disabled={busy || (sectionOptions.length > 1 && !selectedSectionIds.length)}>
               {busy
                 ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> {source === 'file' ? 'Uploading…' : 'Saving…'}</span>
                 : isTypingCards ? 'Save Flashcards' : isTypingChecklist ? 'Save Checklist' : source === 'file' ? 'Upload & Save' : 'Save Link'}
