@@ -29,3 +29,37 @@ scratch_*
 .env
 .env.production
 vite.config.ts.timestamp-*
+
+# scratch / one-off files in repo root
+/diff*.txt
+/bin_diff.txt
+*.patch
+/extracted_edits.jsonl
+/div_balance.txt
+/depth.txt
+/*_recovered.txt
+/reapply.json
+/dry_run_report.md
+/temp.tsx
+/*_clean.tsx
+/test.js
+/test.ts
+/test-*.ts
+/test_*.cjs
+/test_*.js
+/fix.ts
+/fix-*.js
+/fix_*.js
+/fix_*.cjs
+/patch_*.cjs
+/get_console_errors*.js
+/trace_data.cjs
+/nw-view.mjs
+/inspect-tree.ts
+
+# package managers other than npm
+bun.lock
+bun.lockb
+
+# personal Claude Code settings
+.claude/settings.local.json
