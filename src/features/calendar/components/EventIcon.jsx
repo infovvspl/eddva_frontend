@@ -1,61 +1,132 @@
 import React from 'react';
+import {
+  BookOpen,
+  CalendarDays,
+  CalendarOff,
+  ClipboardList,
+  Drama,
+  FileText,
+  FlaskConical,
+  GraduationCap,
+  Medal,
+  Megaphone,
+  Music,
+  Plane,
+  Trophy,
+  Users,
+  Video,
+  Volleyball,
+} from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
+import examIcon from '@/assets/calendar_icons/exam.png';
+import { getHolidayIcon } from '../theme/holidayIcons';
+
+// Categories whose events can carry a named-holiday icon (Diwali, Republic Day, ...).
+const HOLIDAY_ICON_CATEGORIES = ['HOLIDAY', 'VACATION', 'NOTICE', 'CULTURAL'];
 
 /**
- * Category → 3D Realistic Emoji / Emblem mapping
+ * Category -> flat illustrated icon (image). Categories listed here are rendered as the
+ * image itself; every other category falls back to the Lucide icon tile below.
  */
-const CATEGORY_3D_EMOJIS = {
-  NOTICE:           '📢',
-  HOLIDAY:          '🌴',
-  VACATION:         '🏖️',
-  EXAM:             '📝',
-  SPORTS:           '🏆',
-  SPORTS_EVENT:     '⚽',
-  COMPETITION:      '🥇',
-  SCIENCE:          '🧪',
-  CULTURAL:         '🎭',
-  CULTURAL_PROGRAM: '🎵',
-  MEETING:          '🤝',
-  TEACHER_MEETING:  '👨‍🏫',
-  PTM:              '👨‍👩‍👧',
-  PARENT_MEETING:   '👨‍👩‍👧',
-  LIVE_CLASS:       '📹',
-  ACADEMIC:         '📚',
+const CATEGORY_IMAGES = {
+  // Unit test / exam. Source (Icons8, Officel, saved locally as a 30px PNG):
+  // https://img.icons8.com/officel/30/test-partial-passed.png
+  EXAM: examIcon,
 };
 
-const DEFAULT_3D_EMOJI = '📅';
+/**
+ * Category → lucide icon mapping.
+ */
+const CATEGORY_ICONS = {
+  NOTICE:           Megaphone,
+  HOLIDAY:          CalendarOff,
+  VACATION:         Plane,
+  EXAM:             ClipboardList,
+  SPORTS:           Trophy,
+  SPORTS_EVENT:     Volleyball,
+  COMPETITION:      Medal,
+  SCIENCE:          FlaskConical,
+  CULTURAL:         Drama,
+  CULTURAL_PROGRAM: Music,
+  MEETING:          Users,
+  TEACHER_MEETING:  GraduationCap,
+  PTM:              Users,
+  PARENT_MEETING:   Users,
+  LIVE_CLASS:       Video,
+  ACADEMIC:         BookOpen,
+  ASSIGNMENT:       FileText,
+};
 
 /**
- * EventIcon renders JUST the 3D realistic emoji icon directly (without any background circle).
- *
- * @param {string}  category      - Event category key (e.g. "EXAM", "HOLIDAY")
- * @param {string}  className     - Optional size/spacing classes
- * @param {string}  iconClassName - Optional font size override (e.g. "text-xl")
+ * Solid tile colours, used when the icon sits on a white surface (cards).
  */
-export const EventIcon = ({ category, className = 'h-5 w-5', iconClassName }) => {
-  const cat = (category || '').toUpperCase();
-  const emoji = CATEGORY_3D_EMOJIS[cat] || DEFAULT_3D_EMOJI;
+const CATEGORY_TILE_COLORS = {
+  NOTICE:           'bg-blue-600',
+  HOLIDAY:          'bg-emerald-600',
+  VACATION:         'bg-emerald-600',
+  EXAM:             'bg-amber-500',
+  SPORTS:           'bg-sky-600',
+  SPORTS_EVENT:     'bg-sky-600',
+  COMPETITION:      'bg-yellow-600',
+  SCIENCE:          'bg-purple-600',
+  CULTURAL:         'bg-pink-600',
+  CULTURAL_PROGRAM: 'bg-pink-600',
+  MEETING:          'bg-teal-600',
+  TEACHER_MEETING:  'bg-teal-600',
+  PTM:              'bg-indigo-600',
+  PARENT_MEETING:   'bg-indigo-600',
+  LIVE_CLASS:       'bg-rose-600',
+  ACADEMIC:         'bg-indigo-600',
+  ASSIGNMENT:       'bg-violet-600',
+};
 
-  // Derive text size based on className height
-  const textSizeClass = className.includes('h-10')
-    ? 'text-2xl'
-    : className.includes('h-8')
-      ? 'text-xl'
-      : className.includes('h-6')
-        ? 'text-base'
-        : className.includes('h-4')
-          ? 'text-xs'
-          : 'text-sm';
+/**
+ * EventIcon renders a category icon inside a small rounded tile.
+ *
+ * @param {string} category      - Event category key (e.g. "EXAM", "HOLIDAY")
+ * @param {string} title         - Event title; used to pick a named-holiday icon (see theme/holidayIcons.js)
+ * @param {string} className     - Tile size/spacing classes (e.g. "h-8 w-8")
+ * @param {string} variant       - "onColor" (default): translucent dark tile with a white ring, for coloured
+ *                                 calendar cells and chips. "solid": category-coloured tile,
+ *                                 for white cards.
+ * @param {string} iconClassName - Optional override for the inner icon classes
+ */
+export const EventIcon = ({ category, title, className = 'h-5 w-5', variant = 'onColor', iconClassName }) => {
+  const cat = (category || '').toUpperCase();
+  const holiday = HOLIDAY_ICON_CATEGORIES.includes(cat) ? getHolidayIcon(title) : null;
+  const image = holiday?.icon || CATEGORY_IMAGES[cat];
+  // Dark single-colour icons are turned white on coloured cells; white cards keep them as-is.
+  const invert = Boolean(holiday?.invert) && variant !== 'solid';
+
+  if (image) {
+    return (
+      <img
+        src={image}
+        alt=""
+        aria-hidden="true"
+        draggable={false}
+        className={cn(
+          'shrink-0 select-none object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.25)] transition-transform duration-200 group-hover:scale-110',
+          invert && 'brightness-0 invert',
+          className
+        )}
+      />
+    );
+  }
+
+  const Icon = CATEGORY_ICONS[cat] || CalendarDays;
 
   return (
     <span
       className={cn(
-        'inline-flex items-center justify-center shrink-0 leading-none select-none filter drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.22)] transition-transform duration-200 group-hover:scale-110 active:scale-95',
-        textSizeClass,
-        iconClassName
+        'inline-flex items-center justify-center shrink-0 rounded-lg select-none transition-transform duration-200 group-hover:scale-110 active:scale-95',
+        variant === 'solid'
+          ? cn('text-white shadow-sm', CATEGORY_TILE_COLORS[cat] || 'bg-slate-600')
+          : 'bg-black/20 text-white ring-1 ring-white/40 backdrop-blur-sm',
+        className
       )}
     >
-      {emoji}
+      <Icon className={cn('size-[55%]', iconClassName)} strokeWidth={2.25} />
     </span>
   );
 };

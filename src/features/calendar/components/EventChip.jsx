@@ -31,7 +31,7 @@ export const EventChip = ({ event, setDragId, handleEventClick }) => {
       </div>
 
       {/* Right Column: Emblem Icon (Super-Enlarged for High-Impact Visibility) */}
-      <EventIcon category={details.category} className="h-8 w-8 sm:h-9 sm:w-9 shrink-0 filter drop-shadow-md transition-transform group-hover:scale-110" />
+      <EventIcon category={details.category} title={event.title} className="h-8 w-8 sm:h-6 sm:w-6 shrink-0 filter drop-shadow-md transition-transform group-hover:scale-110" />
     </div>
   );
 };

@@ -579,7 +579,7 @@ export default function Calendar() {
                                       }}
                                       className="p-0.5 hover:scale-110 transition-transform cursor-pointer"
                                     >
-                                      <EventIcon category={details.category} className="size-8 sm:size-9 filter drop-shadow-md" />
+                                      <EventIcon category={details.category} title={ev.title} className="h-8 w-8 sm:h-6 sm:w-6 filter drop-shadow-md" />
                                     </div>
                                   );
                                 })}
