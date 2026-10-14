@@ -522,9 +522,15 @@ const AssessmentSystem: React.FC = () => {
             Navigate through your assigned classes to manage assessments.
           </p>
         </div>
+        {level !== 'classes' && (
+          <Button variant="outline" size="sm" onClick={goBack}>
+            <ChevronLeft size={16} />
+            Back
+          </Button>
+        )}
       </div>
 
-      {/* Breadcrumb — commented out; the Back button below replaces it.
+      {/* Breadcrumbs */}
       <Breadcrumb
         items={[
           { label: 'Classes', icon: <Home size={14} />, onClick: goToClasses, active: level === 'classes' },
@@ -533,17 +539,6 @@ const AssessmentSystem: React.FC = () => {
           ...(selectedSubject ? [{ label: selectedSubject.name, onClick: () => { }, active: true }] : []),
         ]}
       />
-      */}
-
-      {/* Back (top-left, where the breadcrumb used to be) */}
-      {level !== 'classes' && (
-        <div>
-          <Button variant="outline" size="sm" onClick={goBack} className="gap-1.5">
-            <ChevronLeft size={16} />
-            Back
-          </Button>
-        </div>
-      )}
 
       {/* Search Bar for Navigation Levels */}
       {level === 'classes' && (

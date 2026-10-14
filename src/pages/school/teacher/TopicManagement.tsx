@@ -297,10 +297,12 @@ const TopicManagement: React.FC = () => {
     if (!state?.selectedSubject) return;
     restoredReturnState.current = true;
     restoredSubjectId.current = state.selectedSubject.id;
-    setSelectedClass(state.selectedClass ?? null);
-    setSelectedSection(state.selectedSection ?? null);
-    setSelectedSubject(state.selectedSubject ?? null);
-    setSelectedTopic(state.selectedTopic ?? null);
+    updateUrlState({
+      class: state.selectedClass ?? null,
+      section: state.selectedSection ?? null,
+      subject: state.selectedSubject ?? null,
+      topic: state.selectedTopic ?? null,
+    });
     setSearch('');
   }, [location.state]);
 
@@ -455,9 +457,15 @@ const TopicManagement: React.FC = () => {
             Browse your assigned classes, drill into sections and subjects, and manage the curriculum.
           </p>
         </div>
+        {level !== 'classes' && (
+          <Button variant="outline" size="sm" onClick={goBack}>
+            <ChevronLeft size={16} />
+            Back
+          </Button>
+        )}
       </div>
 
-      {/* Breadcrumb — commented out; the Back button below replaces it.
+      {/* Breadcrumb */}
       <Breadcrumb
         items={[
           { label: 'Classes', icon: <Home size={14} />, onClick: goToClasses, active: level === 'classes' },
@@ -466,17 +474,6 @@ const TopicManagement: React.FC = () => {
           ...(selectedSubject ? [{ label: selectedSubject.name, onClick: () => { }, active: true }] : []),
         ]}
       />
-      */}
-
-      {/* Back (top-left, where the breadcrumb used to be) */}
-      {level !== 'classes' && (
-        <div>
-          <Button variant="outline" size="sm" onClick={goBack} className="gap-1.5">
-            <ChevronLeft size={16} />
-            Back
-          </Button>
-        </div>
-      )}
 
       {/* Search (not on curriculum's topic side) */}
       {level !== 'curriculum' && (
@@ -499,7 +496,6 @@ const TopicManagement: React.FC = () => {
           <Accordion
             type="single"
             collapsible
-            defaultValue={filteredClasses[0]?.id}
             className="grid items-start gap-4"
             style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}
           >
@@ -679,9 +675,14 @@ const TopicManagement: React.FC = () => {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (!activeSecObj) return;
-                                setSelectedClass({ id: c.id, name: c.name });
-                                setSelectedSection({ id: activeSecObj.id, name: activeSecObj.name });
-                                setSelectedSubject({ id: sub.id, name: sub.name });
+                                // One combined URL update: three separate ones each start from the old URL,
+                                // so only the last survived and the breadcrumb lost the class and section.
+                                updateUrlState({
+                                  class: { id: c.id, name: c.name },
+                                  section: { id: activeSecObj.id, name: activeSecObj.name },
+                                  subject: { id: sub.id, name: sub.name },
+                                  topic: null,
+                                });
                                 setSearch('');
                               }}
                               className="group/sub flex flex-col justify-between rounded-2xl border border-surface-200/80 bg-surface-50/50 p-3 text-left transition-all duration-200 hover:border-brand-400 hover:bg-brand-50/30 hover:shadow-xs dark:border-surface-800 dark:bg-surface-800/40 dark:hover:border-brand-600 dark:hover:bg-brand-950/20"

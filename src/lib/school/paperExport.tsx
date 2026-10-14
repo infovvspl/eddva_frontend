@@ -2,7 +2,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import AssessmentContentRenderer from '@/components/school/AssessmentContentRenderer';
 import PaperHeader from '@/components/school/teacher/PaperHeader';
-import type { PaperFormat } from './paperFormat';
+import { stripGeneratedHeader, type PaperFormat } from './paperFormat';
 
 export type PaperPart = 'questions' | 'answers' | 'both';
 
@@ -41,8 +41,8 @@ export async function downloadPaperPdf(input: PaperInput): Promise<PdfOutcome> {
   const suffix = input.part === 'answers' ? '_answer_key' : input.part === 'both' ? '_with_answers' : '';
   return buildPaperPdf({
     format: input.format,
-    questions: input.questions,
-    answerKey: input.answerKey,
+    questions: stripGeneratedHeader(input.questions),
+    answerKey: stripGeneratedHeader(input.answerKey),
     part: input.part,
     filename: `${base}${suffix}.pdf`,
   });
@@ -64,7 +64,7 @@ export async function printPaper(input: PaperInput): Promise<boolean> {
   const body = sections
     .map((s, i) => {
       const header = renderToStaticMarkup(<PaperHeader format={input.format} variant={s.kind} />);
-      const content = renderToStaticMarkup(<AssessmentContentRenderer>{s.body}</AssessmentContentRenderer>);
+      const content = renderToStaticMarkup(<AssessmentContentRenderer>{stripGeneratedHeader(s.body)}</AssessmentContentRenderer>);
       return `<section class="paper-part"${i > 0 ? ' style="break-before:page;page-break-before:always"' : ''}>
         ${header}
         <div class="paper-body">${content}</div>

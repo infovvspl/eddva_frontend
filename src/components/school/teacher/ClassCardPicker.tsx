@@ -273,7 +273,6 @@ export default function ClassCardPicker({ assignments, onPick, actionLabel = 'Op
     <Accordion
       type="single"
       collapsible
-      defaultValue={classes[0]?.id}
       className="grid items-start gap-4"
       style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}
     >
