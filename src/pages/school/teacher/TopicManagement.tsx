@@ -18,6 +18,7 @@ import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 
 import {
   Plus,
+  AlertCircle,
   BookOpen,
   ChevronRight,
   Library,
@@ -1011,6 +1012,44 @@ function resolveFileUrl(url?: string | null) {
   return `${getApiOrigin() || ''}${url}`;
 }
 
+/**
+ * A teacher adding an "Animation" material can paste a YouTube/Vimeo/Drive
+ * share link just as easily as uploading a direct .mp4 — the "Paste link"
+ * tips explicitly invite it — but a bare <video src> element can only decode
+ * a direct media file, not a YouTube watch page or a Drive share page, so it
+ * silently fails to play. This resolves a pasted link to its embeddable
+ * iframe form when it's one of those platforms, so "Play" actually works
+ * instead of showing a black box with no error.
+ */
+function resolveAnimationEmbed(url: string): { kind: 'iframe' | 'video'; src: string } {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\./, '');
+
+    if (host === 'youtube.com' || host === 'm.youtube.com') {
+      const id = u.pathname === '/watch'
+        ? u.searchParams.get('v')
+        : u.pathname.match(/^\/(?:embed|shorts)\/([^/?#]+)/)?.[1];
+      if (id) return { kind: 'iframe', src: `https://www.youtube-nocookie.com/embed/${id}` };
+    }
+    if (host === 'youtu.be') {
+      const id = u.pathname.slice(1).split(/[/?#]/)[0];
+      if (id) return { kind: 'iframe', src: `https://www.youtube-nocookie.com/embed/${id}` };
+    }
+    if (host === 'vimeo.com') {
+      const id = u.pathname.match(/^\/(\d+)/)?.[1];
+      if (id) return { kind: 'iframe', src: `https://player.vimeo.com/video/${id}` };
+    }
+    if (host === 'drive.google.com') {
+      const id = u.pathname.match(/\/file\/d\/([^/]+)/)?.[1] ?? u.searchParams.get('id');
+      if (id) return { kind: 'iframe', src: `https://drive.google.com/file/d/${id}/preview` };
+    }
+  } catch {
+    // Not a parseable absolute URL — fall through to treating it as a direct file.
+  }
+  return { kind: 'video', src: url };
+}
+
 // ── Chapter node (accordion: chapter → its topics) ───────────────────────────
 
 function ChapterNode({
@@ -1213,6 +1252,7 @@ function MaterialWorkspace({
   const [editingFlashcards, setEditingFlashcards] = useState<SchoolMaterial | null>(null);
   const [editingChecklist, setEditingChecklist] = useState<SchoolMaterial | null>(null);
   const [animationUrl, setAnimationUrl] = useState<string | null>(null);
+  const [animationLoadFailed, setAnimationLoadFailed] = useState(false);
   const [downloadingAll, setDownloadingAll] = useState(false);
 
   const load = React.useCallback(() => {
@@ -1439,7 +1479,7 @@ function MaterialWorkspace({
                             )}
                             {isAnimation && href ? (
                               <Button variant={null} size={null}
-                                onClick={() => setAnimationUrl(href)}
+                                onClick={() => { setAnimationLoadFailed(false); setAnimationUrl(href); }}
                                 className="inline-flex h-8 items-center gap-1 rounded-lg border border-purple-200 bg-purple-50 px-2.5 text-xs font-bold text-purple-600 transition-colors hover:bg-purple-100 dark:border-purple-800 dark:bg-purple-900/30"
                               >
                                 <Play size={13} /> Play
@@ -1554,14 +1594,47 @@ function MaterialWorkspace({
                 <X size={16} />
               </Button>
             </div>
-            <video
-              src={animationUrl}
-              controls
-              autoPlay
-              className="w-full bg-black"
-              style={{ maxHeight: '75vh' }}
-            />
-          
+            {(() => {
+              const embed = resolveAnimationEmbed(animationUrl);
+              if (embed.kind === 'iframe') {
+                return (
+                  <iframe
+                    src={embed.src}
+                    className="aspect-video w-full"
+                    style={{ maxHeight: '75vh' }}
+                    allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                    allowFullScreen
+                    title="Animation player"
+                  />
+                );
+              }
+              if (animationLoadFailed) {
+                return (
+                  <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
+                    <AlertCircle size={28} className="text-white/60" />
+                    <p className="max-w-sm text-sm font-medium text-white/80">
+                      This video couldn&apos;t be played here — the link may not be a direct video file.
+                    </p>
+                    <Button asChild variant="outline" size={null} className="gap-1.5 border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold text-white hover:bg-white/20">
+                      <a href={embed.src} target="_blank" rel="noreferrer">
+                        <ExternalLink size={13} /> Open link instead
+                      </a>
+                    </Button>
+                  </div>
+                );
+              }
+              return (
+                <video
+                  src={embed.src}
+                  controls
+                  autoPlay
+                  className="w-full bg-black"
+                  style={{ maxHeight: '75vh' }}
+                  onError={() => setAnimationLoadFailed(true)}
+                />
+              );
+            })()}
+
   </DialogContent>
 </Dialog>
       )}

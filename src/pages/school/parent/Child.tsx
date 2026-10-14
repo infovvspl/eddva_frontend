@@ -256,6 +256,28 @@ function MarksTab({ studentId }: { studentId: string | null }) {
     return grouped;
   }, [student]);
 
+  const classEntries = useMemo(() => Object.entries(resultsByClass), [resultsByClass]);
+
+  const { data: statusByClassKey = {} } = useQuery({
+    queryKey: ['parent-report-card-status', studentId, classEntries.map(([k, r]: any) => `${k}:${r[0]?.academicYear}`).join('|')],
+    queryFn: async () => {
+      const updates: Record<string, string> = {};
+      await Promise.all(classEntries.map(async ([classKey, results]: any) => {
+        const academicYearVal = results[0]?.academicYear || '';
+        if (!academicYearVal) return;
+        try {
+          const res = await api.get('/reports/report-card-status', { params: { studentId, academicYear: academicYearVal } });
+          const data = res.data?.data || res.data || {};
+          updates[classKey] = data.status || 'DRAFT';
+        } catch {
+          // leave this card's status unknown rather than failing the whole list
+        }
+      }));
+      return updates;
+    },
+    enabled: classEntries.length > 0 && !!studentId,
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -276,6 +298,8 @@ function MarksTab({ studentId }: { studentId: string | null }) {
             const subjectsList = [...new Set(subjectResults.map((res: any) => res.subjectName).filter(Boolean))];
             const subjectsDisplay = subjectsList.length > 0 ? subjectsList.join(', ') : 'General / All Subjects';
             const overallPercentage = calculateReportCardPercentage(results, classNameVal);
+            const cardStatus = statusByClassKey[classKey];
+            const notYetApproved = cardStatus && cardStatus !== 'APPROVED';
 
             return (
               <GlassCard
@@ -292,6 +316,11 @@ function MarksTab({ studentId }: { studentId: string | null }) {
                       <FileText size={16} />
                     </div>
                   </div>
+                  {notYetApproved && (
+                    <span className="inline-block px-2.5 py-0.5 rounded-lg bg-amber-500/10 text-amber-700 font-extrabold text-[10px] uppercase tracking-wider">
+                      {cardStatus === 'PUBLISHED' ? 'Awaiting Admin Approval' : 'Not Yet Published'}
+                    </span>
+                  )}
                   <h4 className="text-lg font-black text-slate-800 dark:text-white leading-tight tracking-tight group-hover:text-blue-600 transition-colors">
                     {classNameVal}
                   </h4>

@@ -65,6 +65,7 @@ export function ContentEditor({
   answerKey,
   onAnswerKeyChange,
   assessmentId,
+  previewHeader,
 }: {
   questions: string;
   onQuestionsChange: (v: string) => void;
@@ -72,6 +73,8 @@ export function ContentEditor({
   onAnswerKeyChange: (v: string) => void;
   /** Present only for a saved assessment — diagrams belong to one. */
   assessmentId?: string;
+  /** Shown above the student-view preview — e.g. the school-style paper header. */
+  previewHeader?: React.ReactNode;
 }) {
   // A paper that already has content (an existing test being reopened, or one
   // just AI-generated) should look the way it will to students the moment you
@@ -250,7 +253,10 @@ export function ContentEditor({
                   // KaTeX's fraction/sub-size math (numerators, denominators) shrinks
                   // further still on top of its own 1.21em multiplier — a bump here
                   // keeps short glyphs like a unary minus legible at full-paper scale.
-                  <AssessmentContentRenderer className="[&_.katex]:text-[1.3em]">{previewQuestions}</AssessmentContentRenderer>
+                  <>
+                    {previewHeader ? <div className="mb-5">{previewHeader}</div> : null}
+                    <AssessmentContentRenderer className="[&_.katex]:text-[1.3em]">{previewQuestions}</AssessmentContentRenderer>
+                  </>
                 ) : (
                   <p className="text-sm text-gray-400 text-center py-12">The rendered question paper will appear here once questions are added.</p>
                 )}
