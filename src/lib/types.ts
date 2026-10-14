@@ -67,6 +67,10 @@ export interface User {
   tenantState?: string;
   isFirstLogin?: boolean;
   onboardingRequired?: boolean;
+  /** School module only — true for the institute's SuperAdmin-onboarded admin (unrestricted). */
+  isPrimaryAdmin?: boolean;
+  /** School module only — null for unrestricted admins; a module-key array for a scoped sub-admin. */
+  adminPermissions?: string[] | null;
   permissionGroup?: string;
   customRole?: {
     id: string;

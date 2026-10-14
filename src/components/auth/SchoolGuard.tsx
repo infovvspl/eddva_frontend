@@ -9,7 +9,7 @@ import { isModuleEnabled } from "@/lib/constants/moduleFeatures";
 interface SchoolGuardProps {
   children: React.ReactNode;
   roles?: string[];
-  feature?: { type: 'module' | 'ai'; key: string };
+  feature?: { type: 'module' | 'ai' | 'adminPermission'; key: string };
 }
 
 const SCHOOL_ROLE_PATHS: Record<string, string> = {
@@ -106,6 +106,17 @@ export function SchoolGuard({ children, roles, feature }: SchoolGuardProps) {
 
   if (roles && !userRoles.some((userRole) => roles.includes(userRole))) {
     return <Navigate to={SCHOOL_ROLE_PATHS[role] ?? "/login"} replace />;
+  }
+
+  // User-level check (not institute-level like module/ai below): a restricted
+  // sub-admin granted admin access only to a subset of modules gets redirected
+  // away from pages outside that set. Primary admins and SUPER_ADMIN are never
+  // restricted — this only ever narrows what a *scoped* admin can reach.
+  if (feature?.type === 'adminPermission' && role !== 'SUPER_ADMIN' && userRoles.includes('INSTITUTE_ADMIN') && !user.isPrimaryAdmin) {
+    const granted = Array.isArray(user.adminPermissions) ? user.adminPermissions : [];
+    if (!granted.includes(feature.key)) {
+      return <Navigate to={SCHOOL_ROLE_PATHS[role] ?? "/login"} replace />;
+    }
   }
 
   if (feature && institute) {

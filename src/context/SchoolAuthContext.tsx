@@ -81,6 +81,8 @@ function buildSchoolUserFromStore(
     profileImage: storeUser.profileImage ?? null,
     phone: storeUser.phone ?? null,
     isActive: true,
+    isPrimaryAdmin: storeUser.isPrimaryAdmin ?? false,
+    adminPermissions: storeUser.adminPermissions ?? null,
     institute,
     studentProfile: storeUser.studentProfile
       ? {
@@ -269,6 +271,8 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({
             name: me.name ?? storeUser.name,
             phone: me.phone ?? storeUser.phone,
             rawRole: me.role ?? storeUser.rawRole ?? storeUser.role,
+            isPrimaryAdmin: me.isPrimaryAdmin ?? storeUser.isPrimaryAdmin ?? false,
+            adminPermissions: me.adminPermissions ?? storeUser.adminPermissions ?? null,
             profileImage:
               "profileImage" in me
                 ? me.profileImage
@@ -282,6 +286,8 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({
               name: me.name ?? storeUser.name,
               phone: me.phone ?? storeUser.phone,
               rawRole: me.role ?? storeUser.rawRole ?? storeUser.role,
+              isPrimaryAdmin: me.isPrimaryAdmin ?? storeUser.isPrimaryAdmin ?? false,
+              adminPermissions: me.adminPermissions ?? storeUser.adminPermissions ?? null,
               profileImage:
                 "profileImage" in me
                   ? me.profileImage
@@ -346,6 +352,8 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({
       role: u.role.toLowerCase() as UserRole,
       rawRole: u.role,
       profileImage: u.profileImage ?? undefined,
+      isPrimaryAdmin: u.isPrimaryAdmin ?? false,
+      adminPermissions: u.adminPermissions ?? null,
       instituteId: u.instituteId ?? undefined,
       tenantId: u.instituteId ?? undefined,
       tenantName: inst?.name ?? undefined,
@@ -424,6 +432,8 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({
       role: schoolRoleToZustand(userData.role),
       rawRole: userData.rawRole ?? userData.role,
       profileImage: userData.profileImage ?? undefined,
+      isPrimaryAdmin: userData.isPrimaryAdmin ?? false,
+      adminPermissions: userData.adminPermissions ?? null,
       instituteId: userData.instituteId ?? undefined,
       tenantId: userData.instituteId ?? undefined,
       tenantName: instData?.name ?? undefined,

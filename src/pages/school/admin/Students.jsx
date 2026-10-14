@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Download, Edit2, Plus, Search, Trash2, Users, Eye, Filter, Calendar, ArrowUpRight, GraduationCap, CheckCircle2, UserPlus, XCircle, X } from 'lucide-react';
+import { Download, Edit2, Plus, Search, Trash2, Users, Eye, Filter, Calendar, ArrowUpRight, GraduationCap, CheckCircle2, UserPlus, XCircle, X, Mail, Clock, AlertTriangle, Loader2, KeyRound, FileText, Printer } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import { getResponseList, notifyDataChanged } from '@/lib/school/apiData';
@@ -27,6 +27,58 @@ const getInitials = (name) => {
   if (parts.length >= 2) return (parts[parts.length - 2][0] + parts[parts.length - 1][0]).toUpperCase();
   return name.substring(0, 2).toUpperCase();
 };
+
+function timeAgo(dateString) {
+  const then = new Date(dateString).getTime();
+  if (Number.isNaN(then)) return '';
+  const diffMs = Date.now() - then;
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  return new Date(dateString).toLocaleDateString();
+}
+
+function CredentialsStatusBadge({ student }) {
+  const parentEmail = student.studentProfile?.parentEmail;
+  const sentAt = student.studentProfile?.credentialsSentAt;
+  if (!parentEmail) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-[10px] font-bold text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
+        <AlertTriangle className="h-3 w-3" />
+        No parent email
+      </span>
+    );
+  }
+  if (sentAt) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
+        <CheckCircle2 className="h-3 w-3" />
+        Sent {timeAgo(sentAt)}
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+      <Clock className="h-3 w-3" />
+      Not sent
+    </span>
+  );
+}
+
+function StudentCredentialsStatusBadge({ student }) {
+  const sentAt = student.studentProfile?.studentCredentialsSentAt;
+  if (!sentAt) return null;
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-1 text-[10px] font-bold text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400">
+      <KeyRound className="h-3 w-3" />
+      Student login sent {timeAgo(sentAt)}
+    </span>
+  );
+}
 
 function downloadCsv(filename, rows) {
   const csv = rows
@@ -160,6 +212,20 @@ export default function Students() {
   const [importError, setImportError] = useState('');
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
+
+  // Bulk Send Parent Credentials State
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [isSendCredsModalOpen, setIsSendCredsModalOpen] = useState(false);
+  const [resendAlreadySent, setResendAlreadySent] = useState(false);
+  const [sendingCreds, setSendingCreds] = useState(false);
+  const [sendCredsResult, setSendCredsResult] = useState(null);
+
+  // Bulk Send Student Credentials State (own login, 3 channels)
+  const [isSendStudentCredsModalOpen, setIsSendStudentCredsModalOpen] = useState(false);
+  const [studentCredsChannel, setStudentCredsChannel] = useState('student_email');
+  const [resendStudentAlreadySent, setResendStudentAlreadySent] = useState(false);
+  const [sendingStudentCreds, setSendingStudentCreds] = useState(false);
+  const [sendStudentCredsResult, setSendStudentCredsResult] = useState(null);
 
   const years = ['ALL', '2023', '2024', '2025', '2026', '2027'];
 
@@ -408,6 +474,92 @@ export default function Students() {
       });
   }, [statusFilter, students, selectedYear]);
 
+  // Selection is scoped to what's currently visible, same as StudentPromotion.jsx's
+  // pattern — clear it whenever the underlying list changes so stale ids (from a
+  // page/filter the admin has since left) can't ride along into a bulk send.
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [page, statusFilter, selectedYear, selectedClassId, selectedSectionId, searchQuery]);
+
+  const allSelected = filtered.length > 0 && selectedIds.length === filtered.length;
+  const toggleAll = () => setSelectedIds(allSelected ? [] : filtered.map((s) => s.id));
+  const toggleStudent = (id) =>
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
+
+  const selectedStudents = useMemo(
+    () => filtered.filter((s) => selectedIds.includes(s.id)),
+    [filtered, selectedIds],
+  );
+  const selectedWithoutParentEmail = selectedStudents.filter((s) => !s.studentProfile?.parentEmail).length;
+  const selectedAlreadySent = selectedStudents.filter((s) => s.studentProfile?.credentialsSentAt).length;
+
+  const handleBulkSendCredentials = async () => {
+    setSendingCreds(true);
+    try {
+      const res = await api.post('/students/bulk-send-credentials', {
+        studentIds: selectedIds,
+        skipAlreadySent: !resendAlreadySent,
+      });
+      const data = res.data?.data || res.data || {};
+      setSendCredsResult(data);
+      if (data.failedCount > 0) {
+        toast.warning(`Sent to ${data.sentCount} parent(s) — ${data.failedCount} failed, see details below.`);
+      } else {
+        toast.success(
+          `Sent to ${data.sentCount} parent(s)${data.skippedCount ? ` · ${data.skippedCount} already had credentials` : ''}.`
+        );
+      }
+      setSelectedIds([]);
+      await fetchStudents();
+    } catch (err) {
+      handleApiError(err, 'Failed to send parent credentials');
+    } finally {
+      setSendingCreds(false);
+    }
+  };
+
+  const selectedStudentAlreadySent = selectedStudents.filter((s) => s.studentProfile?.studentCredentialsSentAt).length;
+  const selectedWithoutEmail = selectedStudents.filter((s) => !s.email).length;
+
+  const handleBulkSendStudentCredentials = async () => {
+    setSendingStudentCreds(true);
+    try {
+      const res = await api.post('/students/bulk-send-student-credentials', {
+        studentIds: selectedIds,
+        channel: studentCredsChannel,
+        skipAlreadySent: !resendStudentAlreadySent,
+      });
+      const data = res.data?.data || res.data || {};
+      setSendStudentCredsResult(data);
+      if (data.channel === 'slip') {
+        if (data.pdfBase64) {
+          const bytes = Uint8Array.from(window.atob(data.pdfBase64), (c) => c.charCodeAt(0));
+          const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `credential-slips-${data.sentCount}-students.pdf`;
+          a.click();
+          URL.revokeObjectURL(url);
+          toast.success(`Downloaded a combined slip for ${data.sentCount} student(s).`);
+        } else {
+          toast.warning('No slips were generated — everyone selected was skipped.');
+        }
+      } else if (data.failedCount > 0) {
+        toast.warning(`Sent to ${data.sentCount} student(s) — ${data.failedCount} failed, see details below.`);
+      } else {
+        toast.success(
+          `Sent to ${data.sentCount} student(s)${data.skippedCount ? ` · ${data.skippedCount} already had credentials` : ''}.`
+        );
+      }
+      setSelectedIds([]);
+      await fetchStudents();
+    } catch (err) {
+      handleApiError(err, 'Failed to send student credentials');
+    } finally {
+      setSendingStudentCreds(false);
+    }
+  };
+
   const exportCsv = () => {
     const rows = [
       ['Student Name', 'Enrollment No.', 'Class/Section', 'Status'],
@@ -481,6 +633,44 @@ export default function Students() {
           </button>
         </div>
       </div>
+
+      {selectedIds.length > 0 && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 dark:border-blue-900/40 dark:bg-blue-950/20">
+          <p className="text-sm font-bold text-blue-900 dark:text-sky-200">
+            {selectedIds.length} student{selectedIds.length !== 1 ? 's' : ''} selected
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSelectedIds([])}
+              className="rounded-xl px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100 dark:text-sky-300 dark:hover:bg-blue-900/30"
+            >
+              Clear
+            </button>
+            <button
+              onClick={() => {
+                setResendAlreadySent(false);
+                setSendCredsResult(null);
+                setIsSendCredsModalOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-blue-600/25 transition hover:bg-blue-700 active:scale-[0.99]"
+            >
+              <Mail className="h-4 w-4" />
+              <span>Send Parent Credentials</span>
+            </button>
+            <button
+              onClick={() => {
+                setResendStudentAlreadySent(false);
+                setSendStudentCredsResult(null);
+                setIsSendStudentCredsModalOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-indigo-600/25 transition hover:bg-indigo-700 active:scale-[0.99]"
+            >
+              <KeyRound className="h-4 w-4" />
+              <span>Send Student Credentials</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
         {[
@@ -685,23 +875,40 @@ export default function Students() {
           <Table className="min-w-[980px] w-full text-left text-sm">
             <TableHeader className="bg-slate-50/50 text-slate-500 dark:bg-slate-800/40 dark:text-slate-400">
               <TableRow className="hover:bg-transparent border-b-0">
+                <TableHead className="h-auto w-10 px-5 py-4">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleAll}
+                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                </TableHead>
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider sticky left-0 z-20 bg-slate-50 dark:bg-slate-850 shadow-sm text-slate-500 dark:text-slate-400">Student Name</TableHead>
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Enrollment No.</TableHead>
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Class/Section</TableHead>
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</TableHead>
+                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Credentials</TableHead>
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="divide-y divide-slate-100 dark:divide-slate-800 [&_tr]:border-b-0">
               {filtered.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan="5" className="px-5 py-12 text-center text-slate-400">
+                  <TableCell colSpan="7" className="px-5 py-12 text-center text-slate-400">
                     No students found.
                   </TableCell>
                 </TableRow>
               ) : (
                 filtered.map((student) => (
                   <TableRow key={student.id} className="transition hover:bg-blue-50/40 dark:hover:bg-slate-800/40">
+                    <TableCell className="p-4 px-5 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(student.id)}
+                        onChange={() => toggleStudent(student.id)}
+                        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </TableCell>
                     <TableCell className="p-4 px-5 py-4 sticky left-0 z-20 bg-white dark:bg-slate-900">
                       <div className="flex items-center gap-4">
                         <Avatar className="size-11 shrink-0 rounded-2xl border-2 border-white bg-slate-100 shadow-sm dark:border-slate-800 dark:bg-slate-800">
@@ -759,6 +966,12 @@ export default function Students() {
                       </button>
                     </TableCell>
                     <TableCell className="p-4 px-5 py-4">
+                      <div className="flex flex-col gap-1">
+                        <CredentialsStatusBadge student={student} />
+                        <StudentCredentialsStatusBadge student={student} />
+                      </div>
+                    </TableCell>
+                    <TableCell className="p-4 px-5 py-4">
                       <div className="flex items-center gap-2">
                         <Link
                           to={`/school/admin/students/${student.id}`}
@@ -792,6 +1005,20 @@ export default function Students() {
 
         {/* Mobile View */}
         <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900 rounded-b-2xl overflow-hidden border border-t-0 border-slate-100 dark:border-slate-800">
+          {filtered.length > 0 && (
+            <button
+              onClick={toggleAll}
+              className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs font-bold text-blue-600 dark:text-sky-400"
+            >
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={toggleAll}
+                className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              />
+              {allSelected ? 'Deselect all' : 'Select all'}
+            </button>
+          )}
           {filtered.length === 0 ? (
             <div className="px-5 py-12 text-center text-slate-400 text-sm">
               No students found.
@@ -800,7 +1027,13 @@ export default function Students() {
             filtered.map((student) => (
               <div key={student.id} className="p-4 space-y-3 hover:bg-blue-50/40 dark:hover:bg-slate-800/40 transition">
                 <div className="flex items-center gap-4">
-                  <Avatar className="size-11 shrink-0 rounded-2xl border-2 border-white bg-slate-100 shadow-sm dark:border-slate-800 dark:bg-slate-800">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(student.id)}
+                    onChange={() => toggleStudent(student.id)}
+                    className="h-4 w-4 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                                    <Avatar className="size-11 shrink-0 rounded-2xl border-2 border-white bg-slate-100 shadow-sm dark:border-slate-800 dark:bg-slate-800">
                     <AvatarImage src={student.profileImage} alt={student.name} className="object-cover" />
                     <AvatarFallback className="rounded-2xl bg-blue-600/10 text-[13px] font-bold tracking-tight text-blue-700 dark:bg-blue-500/20 dark:text-sky-200">
                       {(student.name || 'S').slice(0, 1).toUpperCase()}
@@ -810,6 +1043,11 @@ export default function Students() {
                     <p className="truncate text-sm font-bold tracking-tight text-slate-900 dark:text-white">{student.name}</p>
                     <p className="truncate text-[11px] font-bold text-slate-400 dark:text-slate-500">{student.email || '—'}</p>
                   </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <CredentialsStatusBadge student={student} />
+                  <StudentCredentialsStatusBadge student={student} />
                 </div>
 
                 <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-xs text-slate-600 dark:text-slate-300 pt-1">
@@ -1000,6 +1238,290 @@ export default function Students() {
               </button>
             </div>
           </form>
+        </div>
+      </Modal>
+
+      {/* Bulk Send Parent Credentials Modal */}
+      <Modal
+        isOpen={isSendCredsModalOpen}
+        title="Send Parent Credentials"
+        onClose={() => { if (!sendingCreds) setIsSendCredsModalOpen(false); }}
+        size="lg"
+      >
+        <div className="space-y-5 p-1">
+          {!sendCredsResult ? (
+            <>
+              <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-4 text-sm font-semibold text-blue-900 dark:border-blue-900/40 dark:bg-blue-950/20 dark:text-sky-200">
+                Send login credentials to the parents of <b>{selectedIds.length}</b> selected student{selectedIds.length !== 1 ? 's' : ''}.
+                Each parent gets a new temporary password by email.
+              </div>
+
+              {selectedWithoutParentEmail > 0 && (
+                <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{selectedWithoutParentEmail} selected student{selectedWithoutParentEmail !== 1 ? 's have' : ' has'} no parent email on file and will be skipped.</span>
+                </div>
+              )}
+
+              {selectedAlreadySent > 0 && (
+                <label className="flex items-start gap-2.5 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs font-semibold text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={resendAlreadySent}
+                    onChange={(e) => setResendAlreadySent(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span>
+                    {selectedAlreadySent} selected student{selectedAlreadySent !== 1 ? 's' : ''} already {selectedAlreadySent !== 1 ? 'have' : 'has'} credentials sent.
+                    {' '}Check this to resend (generates a new password) instead of skipping them.
+                  </span>
+                </label>
+              )}
+
+              <div className="flex gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setIsSendCredsModalOpen(false)}
+                  disabled={sendingCreds}
+                  className="flex-1 rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBulkSendCredentials}
+                  disabled={sendingCreds || selectedIds.length === 0}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {sendingCreds ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Sending…
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="h-4 w-4" />
+                      Send Credentials
+                    </>
+                  )}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3 text-center dark:border-emerald-900/40 dark:bg-emerald-950/20">
+                  <p className="text-xl font-black text-emerald-700 dark:text-emerald-400">{sendCredsResult.sentCount}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-500">Sent</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-center dark:border-slate-800 dark:bg-slate-900">
+                  <p className="text-xl font-black text-slate-600 dark:text-slate-300">{sendCredsResult.skippedCount}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Skipped</p>
+                </div>
+                <div className="rounded-xl border border-rose-100 bg-rose-50/60 p-3 text-center dark:border-rose-900/40 dark:bg-rose-950/20">
+                  <p className="text-xl font-black text-rose-700 dark:text-rose-400">{sendCredsResult.failedCount}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-500">Failed</p>
+                </div>
+              </div>
+
+              {(sendCredsResult.results || []).some((r) => r.status !== 'sent') && (
+                <div className="max-h-56 space-y-1.5 overflow-y-auto rounded-xl border border-slate-100 dark:border-slate-800 p-2">
+                  {(sendCredsResult.results || [])
+                    .filter((r) => r.status !== 'sent')
+                    .map((r) => (
+                      <div
+                        key={r.studentId}
+                        className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs dark:bg-slate-900"
+                      >
+                        <span className="font-semibold text-slate-600 dark:text-slate-300">
+                          {filtered.find((s) => s.id === r.studentId)?.name || r.studentId}
+                        </span>
+                        <span className={cn(
+                          'font-bold',
+                          r.status === 'failed' ? 'text-rose-600' : 'text-slate-400'
+                        )}>
+                          {r.status === 'skipped' && r.reason === 'already_sent' ? 'Already sent' : (r.reason || r.status)}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setIsSendCredsModalOpen(false)}
+                className="w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
+              >
+                Done
+              </button>
+            </>
+          )}
+        </div>
+      </Modal>
+
+      {/* Bulk Send Student Credentials Modal (student's own login, 3 channels) */}
+      <Modal
+        isOpen={isSendStudentCredsModalOpen}
+        title="Send Student Credentials"
+        onClose={() => { if (!sendingStudentCreds) setIsSendStudentCredsModalOpen(false); }}
+        size="lg"
+      >
+        <div className="space-y-5 p-1">
+          {!sendStudentCredsResult ? (
+            <>
+              <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 text-sm font-semibold text-indigo-900 dark:border-indigo-900/40 dark:bg-indigo-950/20 dark:text-indigo-200">
+                Deliver login details (a fresh temporary password) for <b>{selectedIds.length}</b> selected student{selectedIds.length !== 1 ? 's' : ''}
+                to their own account.
+              </div>
+
+              <div className="space-y-2">
+                {[
+                  { value: 'student_email', label: "Student's Email", hint: 'Emails the login details directly to the student.', Icon: Mail },
+                  { value: 'parent_email', label: "Parent's Email", hint: "Emails the student's login details to the parent, to pass along.", Icon: Mail },
+                  { value: 'slip', label: 'Printable Slip', hint: 'Generates one combined PDF (one page per student) to print and hand out.', Icon: Printer },
+                ].map(({ value, label, hint, Icon }) => (
+                  <label
+                    key={value}
+                    className={cn(
+                      'flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition',
+                      studentCredsChannel === value
+                        ? 'border-indigo-300 bg-indigo-50/60 dark:border-indigo-700 dark:bg-indigo-950/20'
+                        : 'border-slate-200 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900'
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="studentCredsChannel"
+                      value={value}
+                      checked={studentCredsChannel === value}
+                      onChange={() => setStudentCredsChannel(value)}
+                      className="mt-0.5 h-4 w-4 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <Icon className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600" />
+                    <span>
+                      <span className="block text-sm font-bold text-slate-800 dark:text-slate-100">{label}</span>
+                      <span className="block text-xs font-medium text-slate-500 dark:text-slate-400">{hint}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+
+              {studentCredsChannel === 'student_email' && selectedWithoutEmail > 0 && (
+                <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{selectedWithoutEmail} selected student{selectedWithoutEmail !== 1 ? 's have' : ' has'} no email on file and will be skipped.</span>
+                </div>
+              )}
+
+              {studentCredsChannel === 'parent_email' && selectedWithoutParentEmail > 0 && (
+                <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{selectedWithoutParentEmail} selected student{selectedWithoutParentEmail !== 1 ? 's have' : ' has'} no parent email on file and will be skipped.</span>
+                </div>
+              )}
+
+              {selectedStudentAlreadySent > 0 && (
+                <label className="flex items-start gap-2.5 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs font-semibold text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={resendStudentAlreadySent}
+                    onChange={(e) => setResendStudentAlreadySent(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <span>
+                    {selectedStudentAlreadySent} selected student{selectedStudentAlreadySent !== 1 ? 's' : ''} already {selectedStudentAlreadySent !== 1 ? 'have' : 'has'} student credentials sent.
+                    {' '}Check this to resend (generates a new password) instead of skipping them.
+                  </span>
+                </label>
+              )}
+
+              <div className="flex gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setIsSendStudentCredsModalOpen(false)}
+                  disabled={sendingStudentCreds}
+                  className="flex-1 rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBulkSendStudentCredentials}
+                  disabled={sendingStudentCreds || selectedIds.length === 0}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {sendingStudentCreds ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {studentCredsChannel === 'slip' ? 'Generating…' : 'Sending…'}
+                    </>
+                  ) : (
+                    <>
+                      {studentCredsChannel === 'slip' ? <Printer className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
+                      {studentCredsChannel === 'slip' ? 'Generate Slip(s)' : 'Send Credentials'}
+                    </>
+                  )}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              {sendStudentCredsResult.channel === 'slip' && (
+                <div className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300">
+                  <FileText className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>The combined PDF has been downloaded to your device.</span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3 text-center dark:border-emerald-900/40 dark:bg-emerald-950/20">
+                  <p className="text-xl font-black text-emerald-700 dark:text-emerald-400">{sendStudentCredsResult.sentCount}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-500">
+                    {sendStudentCredsResult.channel === 'slip' ? 'Included' : 'Sent'}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-center dark:border-slate-800 dark:bg-slate-900">
+                  <p className="text-xl font-black text-slate-600 dark:text-slate-300">{sendStudentCredsResult.skippedCount}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Skipped</p>
+                </div>
+                <div className="rounded-xl border border-rose-100 bg-rose-50/60 p-3 text-center dark:border-rose-900/40 dark:bg-rose-950/20">
+                  <p className="text-xl font-black text-rose-700 dark:text-rose-400">{sendStudentCredsResult.failedCount}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-500">Failed</p>
+                </div>
+              </div>
+
+              {(sendStudentCredsResult.results || []).some((r) => r.status !== 'sent') && (
+                <div className="max-h-56 space-y-1.5 overflow-y-auto rounded-xl border border-slate-100 dark:border-slate-800 p-2">
+                  {(sendStudentCredsResult.results || [])
+                    .filter((r) => r.status !== 'sent')
+                    .map((r) => (
+                      <div
+                        key={r.studentId}
+                        className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs dark:bg-slate-900"
+                      >
+                        <span className="font-semibold text-slate-600 dark:text-slate-300">
+                          {filtered.find((s) => s.id === r.studentId)?.name || r.studentId}
+                        </span>
+                        <span className={cn(
+                          'font-bold',
+                          r.status === 'failed' ? 'text-rose-600' : 'text-slate-400'
+                        )}>
+                          {r.status === 'skipped' && r.reason === 'already_sent' ? 'Already sent' : (r.reason || r.status)}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setIsSendStudentCredsModalOpen(false)}
+                className="w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700"
+              >
+                Done
+              </button>
+            </>
+          )}
         </div>
       </Modal>
     </div>

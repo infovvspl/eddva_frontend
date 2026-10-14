@@ -1411,10 +1411,25 @@ export default function TeacherProfile() {
                                 <div key={rec.id} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
                                   {/* Recording row */}
                                   <div className="p-4 flex flex-col sm:flex-row sm:items-center gap-4">
-                                    {/* Icon */}
-                                    <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-blue-50 dark:bg-blue-950">
-                                      <Play size={18} className="text-blue-600" />
-                                    </div>
+                                    {/* Thumbnail */}
+                                    <button
+                                      type="button"
+                                      onClick={() => openWatch(rec)}
+                                      title="Watch recording"
+                                      className="relative grid h-14 w-24 shrink-0 place-items-center overflow-hidden rounded-xl bg-slate-900 sm:h-16 sm:w-28"
+                                    >
+                                      {rec.thumbnail_url ? (
+                                        <img
+                                          src={rec.thumbnail_url}
+                                          alt=""
+                                          className="absolute inset-0 h-full w-full object-cover"
+                                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                        />
+                                      ) : (
+                                        <div className="absolute inset-0 bg-blue-50 dark:bg-blue-950" />
+                                      )}
+                                      <Play size={18} className={`relative z-10 ${rec.thumbnail_url ? 'text-white drop-shadow' : 'text-blue-600'}`} />
+                                    </button>
 
                                     {/* Meta */}
                                     <div className="flex-1 min-w-0">

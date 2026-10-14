@@ -38,6 +38,10 @@ export interface SchoolUser {
   profileImage?: string | null;
   phone?: string | null;
   isActive?: boolean;
+  /** True for the institute's SuperAdmin-onboarded admin (unrestricted admin-panel access). */
+  isPrimaryAdmin?: boolean;
+  /** null for unrestricted admins (primary admin / SUPER_ADMIN); a module-key array for a scoped sub-admin. */
+  adminPermissions?: string[] | null;
   studentProfile?: SchoolStudentProfile | null;
 }
 

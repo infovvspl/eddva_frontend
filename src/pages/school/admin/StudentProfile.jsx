@@ -63,6 +63,9 @@ export default function StudentProfile() {
   const [sendCredsOpen, setSendCredsOpen] = useState(false);
   const [sendCredsForm, setSendCredsForm] = useState({ parentEmail: '', tempPassword: '' });
   const [isSendingCreds, setIsSendingCreds] = useState(false);
+  const [sendStudentCredsOpen, setSendStudentCredsOpen] = useState(false);
+  const [studentCredsChannel, setStudentCredsChannel] = useState('student_email');
+  const [isSendingStudentCreds, setIsSendingStudentCreds] = useState(false);
   const [attendance, setAttendance] = useState([]);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [performanceSessions, setPerformanceSessions] = useState([]);
@@ -708,6 +711,47 @@ export default function StudentProfile() {
     }
   };
 
+  const downloadCredentialSlip = (pdfBase64, studentName) => {
+    const bytes = Uint8Array.from(window.atob(pdfBase64), (c) => c.charCodeAt(0));
+    const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(studentName || 'student').replace(/\s+/g, '-')}-login-credentials.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleSendStudentCredentials = async () => {
+    setIsSendingStudentCreds(true);
+    try {
+      const res = await api.post(`/students/${student.id}/send-student-credentials`, {
+        channel: studentCredsChannel,
+        loginUrl: window.location.origin + '/login',
+      });
+      const data = res.data?.data ?? res.data ?? {};
+      if (studentCredsChannel === 'slip') {
+        downloadCredentialSlip(data.pdfBase64, student.name);
+        toast.success('Credential slip downloaded.');
+        setSendStudentCredsOpen(false);
+      } else if (data.sent) {
+        toast.success(
+          studentCredsChannel === 'parent_email'
+            ? `Login details emailed to ${data.parentEmail}.`
+            : `Login details emailed to ${data.studentEmail}.`
+        );
+        setSendStudentCredsOpen(false);
+      } else {
+        toast.warning(`Credentials email did not send${data.error ? `: ${data.error}` : '.'}`);
+      }
+      await fetchStudent();
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.error || err.response?.data?.message || 'Failed to send student credentials');
+    } finally {
+      setIsSendingStudentCreds(false);
+    }
+  };
+
   const profile = student.studentProfile || {};
   const parents = student.parentDetails || {};
   const primaryContact = parents.primaryContact || 'father';
@@ -760,6 +804,16 @@ export default function StudentProfile() {
           >
             <Send size={14} />
             Send Credentials
+          </button>
+          <button
+            onClick={() => {
+              setStudentCredsChannel('student_email');
+              setSendStudentCredsOpen(true);
+            }}
+            className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 font-bold text-xs sm:text-sm hover:bg-blue-100 transition-all flex-1 sm:flex-initial"
+          >
+            <Key size={14} />
+            Send Student Credentials
           </button>
         </div>
       </div>
@@ -862,6 +916,118 @@ export default function StudentProfile() {
                 >
                   {isSendingCreds ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                   {isSendingCreds ? 'Sending...' : 'Send Email'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Send Student Credentials Modal (student's own login, 3 channels) */}
+      {sendStudentCredsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                    <Key size={20} className="text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Send Student Credentials</h3>
+                    <p className="text-xs text-blue-200 font-bold">Deliver the student's own login</p>
+                  </div>
+                </div>
+                <button onClick={() => setSendStudentCredsOpen(false)} className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-all">
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-8 space-y-5">
+              {/* Student info card */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-lg font-bold">
+                  {getInitials(student.name)}
+                </div>
+                <div>
+                  <div className="font-bold text-slate-900 dark:text-white">{student.name}</div>
+                  <div className="text-xs font-bold text-slate-400">{student.email}</div>
+                </div>
+              </div>
+
+              {/* Channel selector */}
+              <div className="space-y-2">
+                {[
+                  { value: 'student_email', label: "Student's Email", hint: 'Emails the login details directly to the student.', Icon: Mail },
+                  { value: 'parent_email', label: "Parent's Email", hint: "Emails the student's login details to the parent, to pass along.", Icon: Mail },
+                  { value: 'slip', label: 'Printable Slip', hint: 'Downloads a one-page PDF to print and hand out.', Icon: Printer },
+                ].map(({ value, label, hint, Icon }) => (
+                  <label
+                    key={value}
+                    className={cn(
+                      'flex cursor-pointer items-start gap-3 rounded-2xl border-2 p-3 transition-colors',
+                      studentCredsChannel === value
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                        : 'border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="studentCredsChannel"
+                      value={value}
+                      checked={studentCredsChannel === value}
+                      onChange={() => setStudentCredsChannel(value)}
+                      className="mt-0.5 h-4 w-4 text-blue-600 focus:ring-blue-500"
+                    />
+                    <Icon size={16} className="mt-0.5 shrink-0 text-blue-600" />
+                    <span>
+                      <span className="block text-sm font-bold text-slate-900 dark:text-white">{label}</span>
+                      <span className="block text-xs font-bold text-slate-400">{hint}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+
+              {studentCredsChannel === 'student_email' && !student.email && (
+                <p className="text-[10px] font-bold text-amber-500 uppercase">⚠ No student email on record — this will fail</p>
+              )}
+              {studentCredsChannel === 'parent_email' && !(student.parent_email || student.parentEmail) && (
+                <p className="text-[10px] font-bold text-amber-500 uppercase">⚠ No parent email on record — this will fail</p>
+              )}
+
+              {/* Info box */}
+              <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30">
+                <p className="text-xs font-bold text-blue-700 dark:text-blue-400 leading-relaxed">
+                  A fresh temporary password is generated every time, overwriting any previous one.
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setSendStudentCredsOpen(false)}
+                  className="flex-1 py-3 rounded-2xl border-2 border-slate-100 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSendStudentCredentials}
+                  disabled={isSendingStudentCreds}
+                  className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-sm shadow-lg shadow-blue-600/25 hover:shadow-xl hover:shadow-blue-600/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isSendingStudentCreds ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : studentCredsChannel === 'slip' ? (
+                    <Printer size={16} />
+                  ) : (
+                    <Send size={16} />
+                  )}
+                  {isSendingStudentCreds
+                    ? (studentCredsChannel === 'slip' ? 'Generating...' : 'Sending...')
+                    : (studentCredsChannel === 'slip' ? 'Generate Slip' : 'Send Email')}
                 </button>
               </div>
             </div>
