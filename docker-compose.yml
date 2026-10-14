@@ -10,6 +10,9 @@ services:
         VITE_APP_ENV: ${VITE_APP_ENV:-production}
         VITE_AGORA_APP_ID: ${VITE_AGORA_APP_ID:-}
         VITE_SARVAM_API_KEY: ${VITE_SARVAM_API_KEY:-}
+        VITE_DEFAULT_TENANT_SUBDOMAIN: ${VITE_DEFAULT_TENANT_SUBDOMAIN:-}
+        VITE_PUBLIC_CATALOG_TENANT_ID: ${VITE_PUBLIC_CATALOG_TENANT_ID:-}
+        VITE_PPT_STUDIO_URL: ${VITE_PPT_STUDIO_URL:-}
     image: eddva-frontend:latest
     ports:
       - "8080:80"
