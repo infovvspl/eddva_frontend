@@ -1,0 +1,16 @@
+services:
+  frontend:
+    build:
+      context: .
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-https://api.eddva.in/api/v1}
+        VITE_BACKEND_URL: ${VITE_BACKEND_URL:-https://api.eddva.in/api/v1}
+        VITE_SOCKET_URL: ${VITE_SOCKET_URL:-https://api.eddva.in}
+        VITE_AI_URL: ${VITE_AI_URL:-https://ai.eddva.in}
+        VITE_APP_ENV: ${VITE_APP_ENV:-production}
+        VITE_AGORA_APP_ID: ${VITE_AGORA_APP_ID:-}
+        VITE_SARVAM_API_KEY: ${VITE_SARVAM_API_KEY:-}
+    image: eddva-frontend:latest
+    ports:
+      - "8080:80"
+    restart: unless-stopped

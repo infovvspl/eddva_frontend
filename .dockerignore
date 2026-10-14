@@ -1,0 +1,17 @@
+node_modules
+dist
+dist-ssr
+.git
+.github
+.claude
+.vscode
+.idea
+.env
+.env.*
+!.env.example
+*.log
+vite.config.ts.timestamp-*
+Dockerfile
+.dockerignore
+docker-compose*.yml
+README.md
