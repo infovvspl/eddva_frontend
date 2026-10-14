@@ -1930,7 +1930,7 @@ const ClassManagement: React.FC = () => {
                   <h1 className="truncate text-sm font-black leading-tight text-slate-900">{detailRec.title}</h1>
                 </div>
                 <div className="hidden shrink-0 sm:block">
-                  <TranscriptStatusBadge rec={detailRec} onView={() => setDetailTab('transcript')} onRetry={() => handleRetryTranscript(detailRec.id)} />
+                  <TranscriptStatusBadge rec={detailRec} onView={() => setDetailTab('transcript')} onRetry={() => handleRetranscribe(detailRec.id)} />
                 </div>
                 <Button variant="outline" size={null}
                   onClick={() => setDetailPanelOpen((open) => !open)}
@@ -1973,7 +1973,7 @@ const ClassManagement: React.FC = () => {
                             </Badge>
                           )}
                           <span className="sm:hidden">
-                            <TranscriptStatusBadge rec={detailRec} onView={() => setDetailTab('transcript')} onRetry={() => handleRetryTranscript(detailRec.id)} />
+                            <TranscriptStatusBadge rec={detailRec} onView={() => setDetailTab('transcript')} onRetry={() => handleRetranscribe(detailRec.id)} />
                           </span>
                         </div>
                         <h2 className="mt-3 text-xl font-black text-slate-950">{detailRec.title}</h2>
