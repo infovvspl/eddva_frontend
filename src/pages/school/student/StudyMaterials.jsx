@@ -206,7 +206,7 @@ function groupMaterials(materials) {
     if (!m) return;
     const subject = getMaterialSubjectName(m);
     const chapter = m.chapterName || m.fileName || 'General Chapters';
-    const topic = m.topicName || 'General Topics';
+    const topic = m.topicName || 'Chapter Materials';
     
     // For subject-level general materials, only allow ebooks
     const isSubjectLevel = String(topic).endsWith('Materials') || String(chapter).endsWith('Materials');
@@ -552,7 +552,7 @@ export default function StudyMaterials() {
       if (found) {
         const subjectName = getMaterialSubjectName(found);
         const chapterName = found.chapterName || found.fileName || 'General Chapters';
-        const topicName = found.topicName || 'General Topics';
+        const topicName = found.topicName || 'Chapter Materials';
         setSearchParams({ subject: subjectName, chapter: chapterName, topic: topicName });
         openMaterial(found, 'view');
       }

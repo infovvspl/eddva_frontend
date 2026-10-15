@@ -425,17 +425,6 @@ export default function Classes() {
 
   const activeFilterCount = [recFilter.subjectId, recFilter.chapterId, recFilter.topicId].filter(Boolean).length;
 
-  const recordingsSummary = useMemo(() => {
-    const total = recordings.length;
-    const transcriptReady = recordings.filter((item) => item.transcript_status === 'done').length;
-    const notesReady = recordings.filter((item) => item.notes_status === 'done' && item.notes).length;
-    const processing = recordings.filter((item) =>
-      ['pending', 'processing'].includes(item.transcript_status) ||
-      ['pending', 'processing'].includes(item.notes_status)
-    ).length;
-    return { total, transcriptReady, notesReady, processing };
-  }, [recordings]);
-
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
@@ -769,34 +758,6 @@ export default function Classes() {
 
   const recordedClassesView = (
     <div className="space-y-6">
-      {/* Stats */}
-      <div className="grid gap-2.5 grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-2xl border border-blue-100 bg-blue-50/70 p-3 sm:p-5 dark:border-blue-900/40 dark:bg-blue-950/20">
-          <Video className="size-4.5 sm:size-6 text-blue-600 dark:text-blue-400" />
-          <p className="mt-2 sm:mt-4 text-[9px] sm:text-[11px] font-black uppercase tracking-[0.24em] text-blue-700 dark:text-blue-300">Lectures</p>
-          <p className="mt-0.5 sm:mt-2 text-xl sm:text-3xl font-black text-slate-900 dark:text-white">{recordingsSummary.total}</p>
-          <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-sm font-medium text-slate-500 hidden sm:block">Recorded lessons available</p>
-        </div>
-        <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3 sm:p-5 dark:border-emerald-900/40 dark:bg-emerald-950/20">
-          <Sparkles className="size-4.5 sm:size-6 text-emerald-600 dark:text-emerald-400" />
-          <p className="mt-2 sm:mt-4 text-[9px] sm:text-[11px] font-black uppercase tracking-[0.24em] text-emerald-700 dark:text-emerald-300">AI Notes</p>
-          <p className="mt-0.5 sm:mt-2 text-xl sm:text-3xl font-black text-slate-950 dark:text-white">{recordingsSummary.notesReady}</p>
-          <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-sm font-medium text-slate-500 hidden sm:block">Ready to read and revise</p>
-        </div>
-        <div className="rounded-2xl border border-violet-100 bg-violet-50/70 p-3 sm:p-5 dark:border-violet-900/40 dark:bg-violet-950/20">
-          <FileText className="size-4.5 sm:size-6 text-violet-600 dark:text-violet-400" />
-          <p className="mt-2 sm:mt-4 text-[9px] sm:text-[11px] font-black uppercase tracking-[0.24em] text-violet-700 dark:text-violet-300">Transcript</p>
-          <p className="mt-0.5 sm:mt-2 text-xl sm:text-3xl font-black text-slate-900 dark:text-white">{recordingsSummary.transcriptReady}</p>
-          <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-sm font-medium text-slate-500 hidden sm:block">Lecture transcripts ready</p>
-        </div>
-        <div className="rounded-2xl border border-amber-100 bg-amber-50/70 p-3 sm:p-5 dark:border-amber-900/40 dark:bg-amber-950/20">
-          <Loader2 className="size-4.5 sm:size-6 text-amber-600 dark:text-amber-400 animate-spin" />
-          <p className="mt-2 sm:mt-4 text-[9px] sm:text-[11px] font-black uppercase tracking-[0.24em] text-amber-700 dark:text-amber-300">Processing</p>
-          <p className="mt-0.5 sm:mt-2 text-xl sm:text-3xl font-black text-slate-900 dark:text-white">{recordingsSummary.processing}</p>
-          <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-sm font-medium text-slate-500 hidden sm:block">AI is still preparing content</p>
-        </div>
-      </div>
-
       {/* ── Filter bar ── */}
       {recordings.length > 0 && (
         <div className="rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
