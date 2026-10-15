@@ -54,6 +54,7 @@ import {
   Clapperboard,
   Play,
   ScanLine,
+  ChevronsUpDown,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -63,11 +64,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Breadcrumb as UiBreadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import SearchBar from '@/components/school/SearchBar';
 import { Badge } from '@/components/ui/badge';
 import Modal from '@/components/school/Modal';
 import InputField from '@/components/school/InputField';
 
+import { cn } from '@/lib/utils';
 import api from '@/lib/api/school-client';
 import { MindMapCanvas } from '@/components/school/MindMapVisualizer';
 import { mindmapMarkdownToTree } from '@/lib/mindmap-markdown';
@@ -113,6 +118,76 @@ interface CourseContentReturnState {
   selectedTopic?: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' | 'subject' } | null;
 }
 
+function SectionMultiSelect({
+  sections,
+  selected,
+  onChange,
+}: {
+  sections: Ref[];
+  selected: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const toggle = (id: string) => onChange(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
+  const label = selected.length === 0
+    ? sections.length ? 'Select sections' : 'No sections found'
+    : `${selected.length} section${selected.length === 1 ? '' : 's'} selected`;
+
+  return (
+    <div className="space-y-2">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            disabled={sections.length === 0}
+            className={cn('w-full justify-between font-semibold', selected.length === 0 && 'text-muted-foreground')}
+          >
+            <span className="truncate">{label}</span>
+            <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+          <Command>
+            <CommandInput placeholder="Search sections…" />
+            <CommandList>
+              <CommandEmpty>No section found.</CommandEmpty>
+              <CommandGroup>
+                {sections.map((s) => {
+                  const id = String(s.id);
+                  const name = formatSectionName(s.name);
+                  return (
+                    <CommandItem key={id} value={name} onSelect={() => toggle(id)} className="gap-2">
+                      <Checkbox checked={selected.includes(id)} className="pointer-events-none" />
+                      <span className="truncate">{name}</span>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      {sections.length > 0 && (
+        <div className="flex items-center gap-3 text-[11px] font-semibold">
+          <Button type="button" variant="link" className="h-auto p-0 text-[11px]" onClick={() => onChange(sections.map((s) => String(s.id)))}>
+            Select all
+          </Button>
+          {selected.length > 0 && (
+            <Button type="button" variant="link" className="h-auto p-0 text-[11px] text-slate-500" onClick={() => onChange([])}>
+              Clear
+            </Button>
+          )}
+          <span className="ml-auto text-slate-400">
+            {selected.length} of {sections.length} selected
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
 
 /** Column count for the class cards: 1 on phones, 2 from md, 3 from xl (matches Tailwind breakpoints). */
 function useColumnCount() {
@@ -257,7 +332,9 @@ const TopicManagement: React.FC = () => {
       if (a.subjectId) entry.subjects.add(a.subjectId);
       map.set(a.sectionId, entry);
     });
-    return Array.from(map.values());
+    const result = Array.from(map.values());
+    result.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+    return result;
   }, [all, selectedClass]);
 
   const subjects = useMemo(() => {
@@ -268,6 +345,20 @@ const TopicManagement: React.FC = () => {
       .forEach((a) => { if (a.subjectId) map.set(a.subjectId, { id: a.subjectId, name: a.subjectName }); });
     return Array.from(map.values());
   }, [all, selectedClass, selectedSection]);
+
+  // Every section (of the selected class) where this teacher teaches the selected
+  // subject — lets AI Generate and Add Material publish to several sections at once
+  // instead of repeating the whole flow once per section.
+  const topicSections = useMemo(() => {
+    if (!selectedClass || !selectedSubject) return [];
+    const map = new Map<string, Ref>();
+    all
+      .filter((a) => a.classId === selectedClass.id && a.subjectId === selectedSubject.id)
+      .forEach((a) => { if (a.sectionId) map.set(a.sectionId, { id: a.sectionId, name: formatSectionName(a.sectionName) }); });
+    const result = Array.from(map.values());
+    result.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+    return result;
+  }, [all, selectedClass, selectedSubject]);
 
   // ── Curriculum fetches ─────────────────────────────────────────────────────
   const fetchChapters = async (subjectId: string) => {
@@ -297,10 +388,12 @@ const TopicManagement: React.FC = () => {
     if (!state?.selectedSubject) return;
     restoredReturnState.current = true;
     restoredSubjectId.current = state.selectedSubject.id;
-    setSelectedClass(state.selectedClass ?? null);
-    setSelectedSection(state.selectedSection ?? null);
-    setSelectedSubject(state.selectedSubject ?? null);
-    setSelectedTopic(state.selectedTopic ?? null);
+    updateUrlState({
+      class: state.selectedClass ?? null,
+      section: state.selectedSection ?? null,
+      subject: state.selectedSubject ?? null,
+      topic: state.selectedTopic ?? null,
+    });
     setSearch('');
   }, [location.state]);
 
@@ -311,11 +404,10 @@ const TopicManagement: React.FC = () => {
   const goToClasses = () => { updateUrlState({ class: null, section: null, subject: null, topic: null }); setSearch(''); };
   const goToSections = () => { updateUrlState({ section: null, subject: null, topic: null }); setSearch(''); };
   const goToSubjects = () => { updateUrlState({ subject: null, topic: null }); setSearch(''); };
-  const goBack = () => {
-    if (level === 'curriculum') goToSubjects();
-    else if (level === 'subjects') goToSections();
-    else if (level === 'sections') goToClasses();
-  };
+  // Class, section and subject are picked on the class cards in one go, so there is no section or
+  // subject screen to step back to: Back returns to the class cards and clears the whole selection
+  // (which also resets the breadcrumb to just "Classes").
+  const goBack = () => { if (level !== 'classes') goToClasses(); };
 
   // ── Chapter create / edit / delete ─────────────────────────────────────────
   const openCreateChapter = () => {
@@ -455,28 +547,24 @@ const TopicManagement: React.FC = () => {
             Browse your assigned classes, drill into sections and subjects, and manage the curriculum.
           </p>
         </div>
-      </div>
-
-      {/* Breadcrumb — commented out; the Back button below replaces it.
-      <Breadcrumb
-        items={[
-          { label: 'Classes', icon: <Home size={14} />, onClick: goToClasses, active: level === 'classes' },
-          ...(selectedClass ? [{ label: selectedClass.name, onClick: goToSections, active: level === 'sections' }] : []),
-          ...(selectedSection ? [{ label: selectedSection.name, onClick: goToSubjects, active: level === 'subjects' }] : []),
-          ...(selectedSubject ? [{ label: selectedSubject.name, onClick: () => { }, active: true }] : []),
-        ]}
-      />
-      */}
-
-      {/* Back (top-left, where the breadcrumb used to be) */}
-      {level !== 'classes' && (
-        <div>
-          <Button variant="outline" size="sm" onClick={goBack} className="gap-1.5">
+        {level !== 'classes' && (
+          <Button variant="outline" size="sm" onClick={goBack}>
             <ChevronLeft size={16} />
             Back
           </Button>
-        </div>
-      )}
+        )}
+      </div>
+
+      {/* Breadcrumb */}
+      <Breadcrumb
+        items={[
+          { label: 'Classes', icon: <Home size={14} />, onClick: goToClasses, active: level === 'classes' },
+          // Only "Classes" is clickable; the rest just show where you are.
+          ...(selectedClass ? [{ label: selectedClass.name, active: false }] : []),
+          ...(selectedSection ? [{ label: selectedSection.name, active: false }] : []),
+          ...(selectedSubject ? [{ label: selectedSubject.name, active: true }] : []),
+        ]}
+      />
 
       {/* Search (not on curriculum's topic side) */}
       {level !== 'curriculum' && (
@@ -499,7 +587,6 @@ const TopicManagement: React.FC = () => {
           <Accordion
             type="single"
             collapsible
-            defaultValue={filteredClasses[0]?.id}
             className="grid items-start gap-4"
             style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}
           >
@@ -516,6 +603,7 @@ const TopicManagement: React.FC = () => {
                   classSecs.push({ id: a.sectionId, name: formatSectionName(a.sectionName) });
                 }
               });
+              classSecs.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
 
               // Active selected section for this card (defaults to first section)
               const activeSecId = cardActiveSections[c.id] || classSecs[0]?.id;
@@ -679,9 +767,14 @@ const TopicManagement: React.FC = () => {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (!activeSecObj) return;
-                                setSelectedClass({ id: c.id, name: c.name });
-                                setSelectedSection({ id: activeSecObj.id, name: activeSecObj.name });
-                                setSelectedSubject({ id: sub.id, name: sub.name });
+                                // One combined URL update: three separate ones each start from the old URL,
+                                // so only the last survived and the breadcrumb lost the class and section.
+                                updateUrlState({
+                                  class: { id: c.id, name: c.name },
+                                  section: { id: activeSecObj.id, name: activeSecObj.name },
+                                  subject: { id: sub.id, name: sub.name },
+                                  topic: null,
+                                });
                                 setSearch('');
                               }}
                               className="group/sub flex flex-col justify-between rounded-2xl border border-surface-200/80 bg-surface-50/50 p-3 text-left transition-all duration-200 hover:border-brand-400 hover:bg-brand-50/30 hover:shadow-xs dark:border-surface-800 dark:bg-surface-800/40 dark:hover:border-brand-600 dark:hover:bg-brand-950/20"
@@ -802,6 +895,7 @@ const TopicManagement: React.FC = () => {
                 subjectId={selectedSubject.id}
                 classId={selectedClass?.id}
                 sectionId={selectedSection?.id}
+                availableSections={topicSections}
                 canEdit={canEditCurriculum}
                 returnState={{ selectedClass, selectedSection, selectedSubject, selectedTopic }}
                 onOpenPptStudio={() => navigate(pptStudioPath({
@@ -937,6 +1031,11 @@ function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode;
                 <BreadcrumbPage className="inline-flex items-center gap-1.5 rounded-lg bg-brand-50 px-2.5 py-1 font-semibold text-brand-700 dark:bg-brand-900/30 dark:text-brand-300">
                   {it.icon}{it.label}
                 </BreadcrumbPage>
+              ) : !it.onClick ? (
+                // No click handler: shown as plain text, not a link.
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 font-semibold text-surface-500 dark:text-surface-400">
+                  {it.icon}{it.label}
+                </span>
               ) : (
                 <BreadcrumbLink asChild>
                   <Button variant="ghost" size={null}
@@ -1221,6 +1320,7 @@ function MaterialWorkspace({
   subjectId,
   classId,
   sectionId,
+  availableSections,
   canEdit,
   returnState,
   onOpenPptStudio,
@@ -1230,6 +1330,9 @@ function MaterialWorkspace({
   subjectId: string;
   classId?: string;
   sectionId?: string;
+  /** Sections (of this class) this teacher also teaches this subject in — lets
+   *  Add Material / AI Generate target several sections in one save. */
+  availableSections?: Ref[];
   canEdit: boolean;
   returnState: CourseContentReturnState;
   onOpenPptStudio: () => void;
@@ -1538,6 +1641,7 @@ function MaterialWorkspace({
           subjectId={subjectId}
           classId={classId}
           sectionId={sectionId}
+          availableSections={availableSections}
           initialType={addType}
           onClose={() => setShowAdd(false)}
           onSaved={() => { setShowAdd(false); load(); }}
@@ -1550,6 +1654,7 @@ function MaterialWorkspace({
           topic={topic}
           classId={classId}
           sectionId={sectionId}
+          availableSections={availableSections}
           onClose={() => setShowAi(false)}
           onSaved={() => { load(); }}
           onOpenPptStudio={() => { setShowAi(false); onOpenPptStudio(); }}
@@ -2397,6 +2502,7 @@ function AiGeneratePanel({
   topic,
   classId,
   sectionId,
+  availableSections,
   onClose,
   onSaved,
   onOpenPptStudio,
@@ -2404,10 +2510,13 @@ function AiGeneratePanel({
   topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' | 'subject' };
   classId?: string;
   sectionId?: string;
+  availableSections?: Ref[];
   onClose: () => void;
   onSaved: () => void;
   onOpenPptStudio: () => void;
 }) {
+  const sectionOptions = availableSections ?? [];
+  const [selectedSectionIds, setSelectedSectionIds] = useState<string[]>(() => (sectionId ? [sectionId] : []));
   const scopeRef = topic.kind === 'subject' ? { subjectId: topic.id } : topic.kind === 'chapter' ? { chapterId: topic.id } : { topicId: topic.id };
   const hasAiMaterials = useSchoolFeature('ai', 'ai_content_generator_materials');
   const hasPptGen = useSchoolFeature('ai', 'ai_ppt_generator');
@@ -2547,6 +2656,10 @@ function AiGeneratePanel({
       toast.error('This does not look like an FAQ yet. Generate again before saving.');
       return;
     }
+    if (sectionOptions.length > 1 && !selectedSectionIds.length) {
+      toast.warning('Select at least one section to publish to');
+      return;
+    }
     setSaving(true);
     try {
       await schoolContent.saveAiMaterial({
@@ -2556,6 +2669,7 @@ function AiGeneratePanel({
         resourceType: cfg.saveAs,
         classId,
         sectionId,
+        sectionIds: selectedSectionIds.length ? selectedSectionIds : undefined,
       });
       toast.success(`${cfg.label} saved — students can now access it!`);
       onSaved();
@@ -2611,11 +2725,18 @@ function AiGeneratePanel({
           </div>
         </main>
 
-        <footer className="flex shrink-0 flex-wrap items-center justify-end gap-3 border-t border-surface-200 bg-white px-5 py-4 dark:border-surface-700 dark:bg-surface-900">
-          <Button variant="outline" onClick={() => setContent(null)} disabled={saving}>Edit settings & regenerate</Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Publishing…</span> : 'Confirm & publish to students'}
-          </Button>
+        <footer className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-surface-200 bg-white px-5 py-4 dark:border-surface-700 dark:bg-surface-900">
+          {sectionOptions.length > 1 ? (
+            <div className="min-w-[220px] flex-1">
+              <SectionMultiSelect sections={sectionOptions} selected={selectedSectionIds} onChange={setSelectedSectionIds} />
+            </div>
+          ) : <span />}
+          <div className="flex items-center gap-3">
+            <Button variant="outline" onClick={() => setContent(null)} disabled={saving}>Edit settings & regenerate</Button>
+            <Button onClick={handleSave} disabled={saving || (sectionOptions.length > 1 && !selectedSectionIds.length)}>
+              {saving ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Publishing…</span> : 'Confirm & publish to students'}
+            </Button>
+          </div>
         </footer>
       
   </DialogContent>
@@ -2625,7 +2746,10 @@ function AiGeneratePanel({
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
-  <DialogContent className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900 gap-0 p-0 [&>button:last-child]:hidden sm:rounded-3xl">
+  <DialogContent
+    onPointerDownOutside={(e) => e.preventDefault()}
+    onInteractOutside={(e) => e.preventDefault()}
+    className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900 gap-0 p-0 [&>button:last-child]:hidden sm:rounded-3xl">
     <DialogTitle className="sr-only">AI content generator</DialogTitle>
     <DialogDescription className="sr-only">AI content generator</DialogDescription>
 
@@ -2755,6 +2879,7 @@ function AiGeneratePanel({
                 placeholder="e.g. focus on numericals, include real-world examples…"
                 className="w-full resize-none rounded-xl border-2 border-surface-200 bg-surface-50 px-3 py-2 text-sm outline-none focus:border-violet-400 dark:border-surface-700 dark:bg-surface-800" />
             </div>
+            <SectionMultiSelect sections={sectionOptions} selected={selectedSectionIds} onChange={setSelectedSectionIds} />
           </div>
 
           {(generating || content) && (
@@ -2795,7 +2920,7 @@ function AiGeneratePanel({
             {generating ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Generating… {fmtDuration(genElapsedMs)}</span> : (content ? 'Regenerate' : 'Generate')}
           </Button>
           {content && (
-            <Button className="flex-1 justify-center" onClick={handleSave} disabled={saving}>
+            <Button className="flex-1 justify-center" onClick={handleSave} disabled={saving || (sectionOptions.length > 1 && !selectedSectionIds.length)}>
               {saving ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Saving…</span> : 'Save for students'}
             </Button>
           )}
@@ -2971,17 +3096,20 @@ function EditChecklistModal({ material, onClose, onSaved }: {
 }
 
 function AddMaterialModal({
-  topic, subjectId, classId, sectionId, initialType, onClose, onSaved, onOpenPptStudio,
+  topic, subjectId, classId, sectionId, availableSections, initialType, onClose, onSaved, onOpenPptStudio,
 }: {
   topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' | 'subject' };
   subjectId: string;
   classId?: string;
   sectionId?: string;
+  availableSections?: Ref[];
   initialType?: SchoolMaterialType;
   onClose: () => void;
   onSaved: () => void;
   onOpenPptStudio: () => void;
 }) {
+  const sectionOptions = availableSections ?? [];
+  const [selectedSectionIds, setSelectedSectionIds] = useState<string[]>(() => (sectionId ? [sectionId] : []));
   const isSubject = topic.kind === 'subject';
   const [step, setStep] = useState<'type' | 'input'>(initialType || isSubject ? 'input' : 'type');
   const [type, setType] = useState<SchoolMaterialType>(initialType ?? (isSubject ? 'ebook' : 'notes'));
@@ -3042,6 +3170,7 @@ function AddMaterialModal({
     if (incomplete) { toast.warning(`${incomplete} card${incomplete === 1 ? ' is' : 's are'} missing a front or back`); return; }
     const complete = completeCards(cards);
     if (!complete.length) { toast.warning('Add at least one card'); return; }
+    if (sectionOptions.length > 1 && !selectedSectionIds.length) { toast.warning('Select at least one section to publish to'); return; }
     setBusy(true);
     try {
       await schoolContent.createMaterial({
@@ -3054,6 +3183,7 @@ function AddMaterialModal({
         topicId: topic.kind === 'topic' ? topic.id : undefined,
         classId,
         sectionId,
+        sectionIds: selectedSectionIds.length ? selectedSectionIds : undefined,
       });
       toast.success(`${complete.length} flashcard${complete.length === 1 ? '' : 's'} saved — students can now study them`);
       onSaved();
@@ -3068,6 +3198,7 @@ function AddMaterialModal({
     const complete = completeRows(checklistRows);
     const itemCount = complete.filter((r) => !r.heading).length;
     if (!itemCount) { toast.warning('Add at least one checklist item'); return; }
+    if (sectionOptions.length > 1 && !selectedSectionIds.length) { toast.warning('Select at least one section to publish to'); return; }
     setBusy(true);
     try {
       await schoolContent.createMaterial({
@@ -3080,6 +3211,7 @@ function AddMaterialModal({
         topicId: topic.kind === 'topic' ? topic.id : undefined,
         classId,
         sectionId,
+        sectionIds: selectedSectionIds.length ? selectedSectionIds : undefined,
       });
       toast.success(`${itemCount} checklist item${itemCount === 1 ? '' : 's'} saved — students can now tick them off`);
       onSaved();
@@ -3093,6 +3225,7 @@ function AddMaterialModal({
   const save = async () => {
     if (isTypingCards) { await saveTypedCards(); return; }
     if (isTypingChecklist) { await saveTypedChecklist(); return; }
+    if (sectionOptions.length > 1 && !selectedSectionIds.length) { toast.warning('Select at least one section to publish to'); return; }
     const finalTitle = title.trim() || (file ? cleanName(file.name) : 'Material');
     setBusy(true);
     try {
@@ -3119,6 +3252,7 @@ function AddMaterialModal({
         topicId: topic.kind === 'topic' ? topic.id : undefined,
         classId,
         sectionId,
+        sectionIds: selectedSectionIds.length ? selectedSectionIds : undefined,
       });
       toast.success('Material added');
       onSaved();
@@ -3131,7 +3265,10 @@ function AddMaterialModal({
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) void requestClose(); }}>
-  <DialogContent className={`flex max-h-[92vh] w-full flex-col ${(isTypingCards || isTypingChecklist) && step === 'input' ? 'max-w-3xl' : 'max-w-md'} overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900 gap-0 p-0 [&>button:last-child]:hidden sm:rounded-3xl`}>
+  <DialogContent
+    onPointerDownOutside={(e) => e.preventDefault()}
+    onInteractOutside={(e) => e.preventDefault()}
+    className={`flex max-h-[92vh] w-full flex-col ${(isTypingCards || isTypingChecklist) && step === 'input' ? 'max-w-3xl' : 'max-w-md'} overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900 gap-0 p-0 [&>button:last-child]:hidden sm:rounded-3xl`}>
     <DialogTitle className="sr-only">Add material</DialogTitle>
     <DialogDescription className="sr-only">Add material</DialogDescription>
 
@@ -3174,6 +3311,8 @@ function AddMaterialModal({
           <div className="space-y-4 overflow-y-auto p-5">
             <InputField label="Title" value={title} onChange={(e) => setTitle(e.target.value)}
               placeholder={isTypingCards ? `Flashcards — ${topic.name}` : isTypingChecklist ? `Revision Checklist — ${topic.name}` : 'Give this material a clear title…'} />
+
+            <SectionMultiSelect sections={sectionOptions} selected={selectedSectionIds} onChange={setSelectedSectionIds} />
 
             <div className="flex gap-2">
               {type === 'flashcard' && (
@@ -3256,7 +3395,7 @@ function AddMaterialModal({
               tips={isTypingCards ? TYPED_CARD_TIPS : isTypingChecklist ? TYPED_CHECKLIST_TIPS : source === 'link' ? LINK_TIPS : guide.tips}
             />
 
-            <Button className="w-full justify-center" onClick={save} disabled={busy}>
+            <Button className="w-full justify-center" onClick={save} disabled={busy || (sectionOptions.length > 1 && !selectedSectionIds.length)}>
               {busy
                 ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> {source === 'file' ? 'Uploading…' : 'Saving…'}</span>
                 : isTypingCards ? 'Save Flashcards' : isTypingChecklist ? 'Save Checklist' : source === 'file' ? 'Upload & Save' : 'Save Link'}

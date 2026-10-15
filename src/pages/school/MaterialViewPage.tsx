@@ -411,6 +411,15 @@ export default function SchoolMaterialViewPage() {
 
   return (
     <div className="min-h-full bg-slate-50 p-4 sm:p-6">
+      <Button
+        type="button"
+        variant="outline"
+        onClick={handleBack}
+        aria-label="Go back"
+        className="mb-4 gap-2 rounded-xl border-slate-200 bg-white px-3 text-sm font-bold text-slate-600 shadow-sm hover:bg-slate-50"
+      >
+        <ArrowLeft size={16} /> Back
+      </Button>
       {loading ? (
         <Card className="w-full space-y-5 rounded-2xl border-slate-200 bg-white p-5 shadow-sm sm:p-8" aria-busy="true" aria-label="Loading material">
           <div className="flex items-center gap-3">
@@ -428,16 +437,6 @@ export default function SchoolMaterialViewPage() {
         <Card className="w-full rounded-2xl border-slate-200 bg-white p-5 shadow-sm sm:p-8">
           <div className="mb-6 flex flex-col gap-3 border-b border-slate-100 pb-5 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
             <div className="flex min-w-0 items-start gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={handleBack}
-                aria-label="Go back"
-                className="mt-1 size-9 shrink-0 rounded-lg border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50"
-              >
-                <ArrowLeft size={16} />
-              </Button>
               <div className="min-w-0">
                 <Badge variant="secondary" className="mb-2 gap-2 rounded-full bg-violet-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-violet-600 hover:bg-violet-50">
                   <FileText size={14} /> {labelFromType(material.fileType)}

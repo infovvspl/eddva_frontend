@@ -74,6 +74,45 @@ const superAdminGroups = [
   },
 ];
 
+// Maps each admin nav item's path to the grantable module key that gates it —
+// kept in sync by hand with eddva_frontend/src/lib/constants/adminPermissionModules.ts
+// and the backend's admin-permission-modules.ts. Paths not listed here (e.g.
+// Dashboard, Administrators) are never restricted by a scoped admin's permissions.
+const ADMIN_NAV_PATH_TO_MODULE = {
+  '/school/admin/students': 'students',
+  '/school/admin/teachers': 'teachers',
+  '/school/admin/academics': 'academics',
+  '/school/admin/subjects': 'subjects',
+  '/school/admin/competitive-subjects': 'competitive_exam_prep',
+  '/school/admin/syllabus-planner': 'syllabus_planner',
+  '/school/admin/syllabus-tracker': 'syllabus_tracker',
+  '/school/admin/attendance': 'attendance',
+  '/school/admin/timetable': 'timetable',
+  '/school/admin/calendar': 'academic_calendar',
+  '/school/admin/notices': 'notices',
+  '/school/admin/communications': 'communications',
+  '/school/admin/erp': 'erp',
+  '/school/admin/users': 'user_management',
+  '/school/admin/document-generator': 'document_generator',
+  '/school/admin/audit-logs': 'audit_logs',
+  '/school/admin/complaints': 'complaints',
+};
+
+function filterByAdminPermissions(groups, isPrimaryAdmin, adminPermissions) {
+  if (isPrimaryAdmin) return groups;
+  const granted = Array.isArray(adminPermissions) ? adminPermissions : [];
+  return groups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => {
+        const moduleKey = ADMIN_NAV_PATH_TO_MODULE[item.path];
+        if (!moduleKey) return true; // ungated items (Dashboard, Administrators) always show
+        return granted.includes(moduleKey);
+      }),
+    }))
+    .filter((group) => group.items.length > 0);
+}
+
 function buildInstituteGroups(mods, aiFeats) {
   const chatEnabled = isModuleEnabled(mods, 'chat');
   const calendarEnabled = isModuleEnabled(mods, 'academic_calendar');
@@ -211,7 +250,9 @@ export default function Sidebar({ open, onClose }) {
 
   const aiFeats = institute?.aiEnabled ? institute.aiFeatures : { ai_doubt_solver: false };
   const teacherGroups = isTeacher || useTeacherFallback ? buildTeacherGroups(institute?.modulesPermissions, aiFeats) : null;
-  const adminGroups = isInstitute ? buildInstituteGroups(institute?.modulesPermissions, aiFeats) : null;
+  const adminGroups = isInstitute
+    ? filterByAdminPermissions(buildInstituteGroups(institute?.modulesPermissions, aiFeats), user?.isPrimaryAdmin, user?.adminPermissions)
+    : null;
 
   const groups = isSuperAdmin ? superAdminGroups : isInstitute ? adminGroups : teacherGroups;
   // Open by default; the toggle collapses it to the icon rail.

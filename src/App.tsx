@@ -524,53 +524,53 @@ const SchoolRoutes = () => (
       element={<SchoolGuard roles={["INSTITUTE_ADMIN"]}><SchoolAdminLayout /></SchoolGuard>}
     >
       <Route index element={<SchoolAdminDashboard />} />
-      <Route path="users" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]}><SchoolAdminUsers /></SchoolGuard>} />
+      <Route path="users" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'user_management' }}><SchoolAdminUsers /></SchoolGuard>} />
       {/* <Route path="roles" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]}><SchoolAdminRoles /></SchoolGuard>} /> */}
-      <Route path="erp" element={<SchoolGuard roles={["INSTITUTE_ADMIN", "STAFF"]} feature={{ type: 'module', key: 'erp' }}><SchoolAdminERP /></SchoolGuard>} />
+      <Route path="erp" element={<SchoolGuard roles={["INSTITUTE_ADMIN", "STAFF"]} feature={{ type: 'module', key: 'erp' }}><SchoolGuard feature={{ type: 'adminPermission', key: 'erp' }}><SchoolAdminERP /></SchoolGuard></SchoolGuard>} />
       <Route path="attention-required" element={<SchoolAttentionRequired />} />
       <Route path="fee-defaulters" element={<SchoolFeeDefaulters />} />
-      <Route path="students" element={<SchoolStudents />} />
-      <Route path="students/new" element={<SchoolStudentRegistration />} />
-      <Route path="students/:id/edit" element={<SchoolStudentRegistration />} />
-      <Route path="students/:id" element={<SchoolAdminStudentProfile />} />
-      <Route path="students/:id/report-card" element={<SchoolAdminStudentReportCard />} />
-      <Route path="students/:id/exit" element={<SchoolAdminStudentExitWorkflow />} />
-      <Route path="student-promotion" element={<SchoolStudentPromotion />} />
-      <Route path="teachers" element={<SchoolTeachers />} />
+      <Route path="students" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'students' }}><SchoolStudents /></SchoolGuard>} />
+      <Route path="students/new" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'students' }}><SchoolStudentRegistration /></SchoolGuard>} />
+      <Route path="students/:id/edit" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'students' }}><SchoolStudentRegistration /></SchoolGuard>} />
+      <Route path="students/:id" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'students' }}><SchoolAdminStudentProfile /></SchoolGuard>} />
+      <Route path="students/:id/report-card" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'students' }}><SchoolAdminStudentReportCard /></SchoolGuard>} />
+      <Route path="students/:id/exit" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'students' }}><SchoolAdminStudentExitWorkflow /></SchoolGuard>} />
+      <Route path="student-promotion" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'students' }}><SchoolStudentPromotion /></SchoolGuard>} />
+      <Route path="teachers" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'teachers' }}><SchoolTeachers /></SchoolGuard>} />
       <Route path="admins" element={<SchoolAdmins />} />
-      <Route path="teachers/new" element={<SchoolTeacherRegistration />} />
-      <Route path="teachers/:id/edit" element={<SchoolTeacherRegistration />} />
-      <Route path="teachers/:id/performance/:bracket" element={<SchoolTeacherStudentBracketList />} />
-      <Route path="teachers/:id" element={<SchoolAdminTeacherProfile />} />
-      <Route path="attendance" element={<SchoolAttendance />} />
-      <Route path="academics" element={<SchoolAcademics />} />
+      <Route path="teachers/new" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'teachers' }}><SchoolTeacherRegistration /></SchoolGuard>} />
+      <Route path="teachers/:id/edit" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'teachers' }}><SchoolTeacherRegistration /></SchoolGuard>} />
+      <Route path="teachers/:id/performance/:bracket" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'teachers' }}><SchoolTeacherStudentBracketList /></SchoolGuard>} />
+      <Route path="teachers/:id" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'teachers' }}><SchoolAdminTeacherProfile /></SchoolGuard>} />
+      <Route path="attendance" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'attendance' }}><SchoolAttendance /></SchoolGuard>} />
+      <Route path="academics" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'academics' }}><SchoolAcademics /></SchoolGuard>} />
       <Route path="textbook-coverage" element={<Navigate to="/school/admin/academics" replace />} />
-      <Route path="academics/:classId/sections" element={<SchoolClassSections />} />
-      <Route path="notices" element={<SchoolNotices />} />
+      <Route path="academics/:classId/sections" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'academics' }}><SchoolClassSections /></SchoolGuard>} />
+      <Route path="notices" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'notices' }}><SchoolNotices /></SchoolGuard>} />
       <Route path="notifications" element={<SchoolAdminNotifications />} />
       <Route path="announcements" element={<Navigate to="/school/admin/notices" replace />} />
-      <Route path="calendar" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'academic_calendar' }}><SchoolAcademicCalendar /></SchoolGuard>} />
-      <Route path="complaints" element={<SchoolComplaints />} />
-      <Route path="timetable" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'timetable' }}><SchoolTimetable /></SchoolGuard>} />
+      <Route path="calendar" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'academic_calendar' }}><SchoolGuard feature={{ type: 'adminPermission', key: 'academic_calendar' }}><SchoolAcademicCalendar /></SchoolGuard></SchoolGuard>} />
+      <Route path="complaints" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'complaints' }}><SchoolComplaints /></SchoolGuard>} />
+      <Route path="timetable" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'timetable' }}><SchoolGuard feature={{ type: 'adminPermission', key: 'timetable' }}><SchoolTimetable /></SchoolGuard></SchoolGuard>} />
       <Route path="settings" element={<SchoolAdminSettings />} />
       <Route path="analytics" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'reports' }}><SchoolAnalytics /></SchoolGuard>} />
       <Route path="ai-usage" element={<SchoolAiUsage />} />
       <Route path="reports" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'reports' }}><SchoolReports /></SchoolGuard>} />
-      <Route path="communications" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'chat' }}><SchoolCommunications /></SchoolGuard>} />
-      <Route path="audit-logs" element={<SchoolAuditLogs />} />
+      <Route path="communications" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'chat' }}><SchoolGuard feature={{ type: 'adminPermission', key: 'communications' }}><SchoolCommunications /></SchoolGuard></SchoolGuard>} />
+      <Route path="audit-logs" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'audit_logs' }}><SchoolAuditLogs /></SchoolGuard>} />
       <Route path="institute-profile" element={<SchoolInstituteProfile />} />
       <Route path="security" element={<SchoolSecurity />} />
-      <Route path="subjects" element={<SchoolSubjects />} />
-      <Route path="competitive-subjects" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'ai', key: 'competitive_exams' }}><SchoolCompetitiveSubjects /></SchoolGuard>} />
-      <Route path="subjects/:classId" element={<SchoolClassSubjects />} />
+      <Route path="subjects" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'subjects' }}><SchoolSubjects /></SchoolGuard>} />
+      <Route path="competitive-subjects" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'ai', key: 'competitive_exams' }}><SchoolGuard feature={{ type: 'adminPermission', key: 'competitive_exam_prep' }}><SchoolCompetitiveSubjects /></SchoolGuard></SchoolGuard>} />
+      <Route path="subjects/:classId" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'subjects' }}><SchoolClassSubjects /></SchoolGuard>} />
       <Route path="message-logs" element={<SchoolMessageLogs />} />
       <Route path="gamification" element={<SchoolAdminGamification />} />
-      <Route path="document-generator" element={<SchoolDocumentGenerator />} />
-      <Route path="syllabus-planner" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'admin_syllabus_planner' }}><SchoolSyllabusPlanner /></SchoolGuard>} />
-      <Route path="syllabus-planner/:planId" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'admin_syllabus_planner' }}><SchoolSyllabusPlanDetails /></SchoolGuard>} />
-      <Route path="syllabus-tracker" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'admin_syllabus_tracker' }}><SchoolSyllabusTracker /></SchoolGuard>} />
-      <Route path="syllabus-tracker/:planId" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'admin_syllabus_tracker' }}><SchoolSyllabusTrackerDetails /></SchoolGuard>} />
-      <Route path="syllabus-analytics" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'admin_syllabus_tracker' }}><SchoolSyllabusAnalytics /></SchoolGuard>} />
+      <Route path="document-generator" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'document_generator' }}><SchoolDocumentGenerator /></SchoolGuard>} />
+      <Route path="syllabus-planner" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'admin_syllabus_planner' }}><SchoolGuard feature={{ type: 'adminPermission', key: 'syllabus_planner' }}><SchoolSyllabusPlanner /></SchoolGuard></SchoolGuard>} />
+      <Route path="syllabus-planner/:planId" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'admin_syllabus_planner' }}><SchoolGuard feature={{ type: 'adminPermission', key: 'syllabus_planner' }}><SchoolSyllabusPlanDetails /></SchoolGuard></SchoolGuard>} />
+      <Route path="syllabus-tracker" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'admin_syllabus_tracker' }}><SchoolGuard feature={{ type: 'adminPermission', key: 'syllabus_tracker' }}><SchoolSyllabusTracker /></SchoolGuard></SchoolGuard>} />
+      <Route path="syllabus-tracker/:planId" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'admin_syllabus_tracker' }}><SchoolGuard feature={{ type: 'adminPermission', key: 'syllabus_tracker' }}><SchoolSyllabusTrackerDetails /></SchoolGuard></SchoolGuard>} />
+      <Route path="syllabus-analytics" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'admin_syllabus_tracker' }}><SchoolGuard feature={{ type: 'adminPermission', key: 'syllabus_tracker' }}><SchoolSyllabusAnalytics /></SchoolGuard></SchoolGuard>} />
     </Route>
 
     {/* School Super Admin */}

@@ -12,6 +12,7 @@ import DiagramsButton from "@/components/school/diagram/DiagramsButton";
 import { insertMarkerAtCursor } from "@/components/school/diagram/marker-insert";
 import { diagramApi, type DiagramRecord } from "@/components/school/diagram/diagram-api";
 import { expandMarkersForPreview, type PreviewListState } from "@/components/school/diagram/expand-markers";
+import { stripGeneratedHeader } from "@/lib/school/paperFormat";
 
 // Question mark weights used by the AI generator (matches the backend's
 // hardcoded per-section values: MCQ/True-False/Fill-blank = 1 mark, Short
@@ -255,7 +256,7 @@ export function ContentEditor({
                   // keeps short glyphs like a unary minus legible at full-paper scale.
                   <>
                     {previewHeader ? <div className="mb-5">{previewHeader}</div> : null}
-                    <AssessmentContentRenderer className="[&_.katex]:text-[1.3em]">{previewQuestions}</AssessmentContentRenderer>
+                    <AssessmentContentRenderer className="[&_.katex]:text-[1.3em]">{previewHeader ? stripGeneratedHeader(previewQuestions) : previewQuestions}</AssessmentContentRenderer>
                   </>
                 ) : (
                   <p className="text-sm text-gray-400 text-center py-12">The rendered question paper will appear here once questions are added.</p>

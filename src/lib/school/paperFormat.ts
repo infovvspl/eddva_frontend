@@ -131,3 +131,74 @@ export function needsUnicodeFont(text: string): boolean {
   // Latin-1 plus the common typographic punctuation block are fine; everything else is not.
   return /[^\u0000-ÿ‐-‧‰-›€™←-⇿∀-⋿²³]/.test(text);
 }
+
+// ── generated-header removal ────────────────────────────────────────────────────────────────
+
+/**
+ * The AI paper generator starts every paper with its own title, class / subject / marks / time
+ * lines and a "General Instructions" list. The school header already prints all of that, so when
+ * it is shown the generated block is dropped to avoid everything appearing twice.
+ *
+ * Only the leading block is touched: it ends at the first "Section A" / "Part B" heading (or the
+ * rule or heading that closes the instructions). If no clear end is found, only the title and
+ * detail lines before the instructions are removed and the questions are never at risk.
+ */
+export function stripGeneratedHeader(markdown: string): string {
+  const text = String(markdown || '');
+  if (!text.trim()) return text;
+  const lines = text.replace(/\r\n/g, '\n').split('\n');
+
+  const stripMd = (l: string) => l.replace(/^[\s#>*_`-]+|[\s*_`:]+$/g, '').replace(/\*\*/g, '').trim();
+  const isSection = (l: string) => /^\s*(?:#{1,6}\s*)?(?:\*\*|__)?\s*(?:section|part)\s+[A-Za-z0-9IVX]+\b/i.test(l);
+  const isInstrHeading = (l: string) => {
+    const t = stripMd(l);
+    return t.length > 0 && t.length <= 70 && /instructions?|directions?|note\b/i.test(t) && !/^\s*\d+[.)]/.test(l);
+  };
+  const isListItem = (l: string) => /^\s*(?:\d+[.)]|[-*+•]|\([a-z0-9ivx]+\))\s+\S/.test(l);
+  const isMeta = (l: string) =>
+    /^\s*(?:[-*>]\s*)?(?:\*\*|__)?\s*(class|subject|maximum marks|max\.?\s*marks|total marks|full marks|marks|time allowed|time|duration|date|session|chapter|topic|name|roll)\b[^|]{0,60}[:–-]/i.test(l) ||
+    /(?:maximum|total|full)\s+marks\s*[:–-]|time\s+allowed\s*[:–-]/i.test(l);
+  const isRule = (l: string) => /^\s*(?:-{3,}|\*{3,}|_{3,}|={3,})\s*$/.test(l);
+  const isHeadingLine = (l: string) => /^\s*#{1,6}\s+\S/.test(l);
+
+  let i = 0;
+  let sawHeaderBlock = false;
+  let inInstructions = false;
+  let end = -1;
+
+  for (; i < lines.length; i += 1) {
+    const l = lines[i];
+    if (!l.trim()) continue;
+
+    if (isSection(l)) { end = i; break; }
+
+    if (isInstrHeading(l)) { inInstructions = true; sawHeaderBlock = true; continue; }
+
+    if (inInstructions) {
+      if (isListItem(l)) continue;
+      if (isRule(l)) { end = i + 1; break; }
+      if (isHeadingLine(l)) { end = i; break; }
+      // plain sentence inside the instructions — keep consuming until a clear end
+      if (l.trim().length < 160) continue;
+      end = i; break;
+    }
+
+    if (isRule(l) || isMeta(l) || isHeadingLine(l) || /^\s*(?:\*\*|__).{0,90}(?:\*\*|__)\s*$/.test(l)) {
+      sawHeaderBlock = true;
+      continue;
+    }
+
+    // first line of real content
+    end = i;
+    break;
+  }
+
+  if (!sawHeaderBlock) return text;
+
+  if (end < 0) {
+    // Ran off the end while still inside the instructions: nothing safe to cut.
+    return text;
+  }
+  const rest = lines.slice(end).join('\n').replace(/^\s*\n/, '');
+  return rest.trim() ? rest : text;
+}

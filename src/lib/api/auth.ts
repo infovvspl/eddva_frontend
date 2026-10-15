@@ -136,6 +136,8 @@ export interface SchoolLoginResponse {
     phone?: string;
     instituteId?: string;
     profileImage?: string | null;
+    isPrimaryAdmin?: boolean;
+    adminPermissions?: string[] | null;
     studentProfile?: {
       id?: string;
       sectionId?: string;

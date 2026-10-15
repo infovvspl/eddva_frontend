@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X, ExternalLink, FileText, Loader2,
+  X, ArrowLeft, ExternalLink, FileText, Loader2,
   Zap, CheckCircle2, RotateCcw, ChevronLeft, ChevronRight,
   ListChecks, Check, Trophy, AlertCircle, Maximize2, Minimize2,
   ZoomIn, ZoomOut, BarChart3, Lightbulb
@@ -711,6 +711,16 @@ export default function ResourceViewerModal({
     <>
       {/* Header */}
       <div className={cn("flex items-center gap-4 px-6 py-4 border-b shrink-0", meta.bg, meta.border)}>
+        {isFullPage && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Go back"
+            className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-slate-600 bg-white hover:bg-slate-50 transition-all border border-slate-200 shadow-sm"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+        )}
         <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center border shadow-sm bg-white", meta.color)}>
           {meta.icon}
         </div>
@@ -765,6 +775,7 @@ export default function ResourceViewerModal({
           )}
 
 
+          {!isFullPage && (
           <button
             type="button"
             onClick={onClose}
@@ -772,6 +783,7 @@ export default function ResourceViewerModal({
           >
             <X className="w-5 h-5" />
           </button>
+          )}
         </div>
       </div>
 

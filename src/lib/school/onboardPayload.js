@@ -207,16 +207,15 @@ function buildStudentBody(form) {
 export function mapStudentFormToApi(form) {
   if (!form?.name?.trim()) throw new Error('Student name is required');
   if (!form?.email?.trim()) throw new Error('Email is required');
-  if (!form?.password?.trim()) {
-    throw new Error('Password is required so the student can log in at /login');
-  }
+  // Password is optional — a blank one is auto-generated server-side, and the
+  // admin's chosen delivery channel (below) is how it actually reaches anyone.
   if (form.password && form.confirmPassword && form.password !== form.confirmPassword) {
     throw new Error('Password and confirm password do not match');
   }
 
   return {
     ...buildStudentBody(form),
-    password: form.password,
+    password: form.password || undefined,
     institute_admin_password: form.instituteAdminPassword || null,
     instituteAdminPassword: form.instituteAdminPassword || null,
   };

@@ -103,6 +103,13 @@ type ParentOption = {
   sectionName?: string;
 };
 
+const formatMeetingDate = (value?: string | null): string | null => {
+  if (!value) return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+};
+
 const unwrapList = (payload: any): any[] => {
   if (Array.isArray(payload)) return payload;
   if (Array.isArray(payload?.data)) return payload.data;
@@ -486,7 +493,7 @@ export default function TeacherMeetingsPage() {
                       <Card className="rounded-xl border-0 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 shadow-none">
                         <p className="text-[9px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Date & Time</p>
                         <p className="mt-0.5 text-[11px] sm:text-sm font-bold text-slate-800">
-                          {meeting.meetingDate || 'TBD'}{meeting.startTime ? ` • ${meeting.startTime}` : ''}
+                          {formatMeetingDate(meeting.meetingDate) || 'TBD'}{meeting.startTime ? ` • ${meeting.startTime}` : ''}
                         </p>
                       </Card>
                       <Card className="rounded-xl border-0 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 shadow-none">

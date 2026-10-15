@@ -39,7 +39,6 @@ import {
 } from 'lucide-react';
 import logoUrl from '@/assets/eddva-logo.svg';
 import { InstituteLogo } from './Brand';
-import BreadcrumbBar from '@/components/school/breadcrumbs/BreadcrumbBar';
 import { BreadcrumbProvider } from '@/components/school/breadcrumbs/BreadcrumbContext';
 import { isNavItemActive } from '@/components/layout/nav-active';
 
@@ -185,7 +184,6 @@ function AdminLayoutShell() {
         <Navbar />
 
         <MaintenanceNotice />
-        <BreadcrumbBar />
 
         {/* Scrollable Container */}
         <main className={`admin-page flex-1 min-h-0 ${isFullWidthPage ? 'p-0' : 'px-4 sm:px-4 pt-4 pb-4'} ${isFixedPage ? 'overflow-y-hidden' : 'overflow-y-auto'} scrollbar-none`}>
@@ -304,7 +302,6 @@ function AdminLayoutShell() {
       >
         <Navbar onMenuClick={() => setSidebarOpen(true)} />
         <MaintenanceNotice />
-        <BreadcrumbBar />
         <main className={`admin-page flex-1 relative overflow-x-hidden ${isFullWidthPage ? 'p-0 overflow-y-auto' : 'px-3 sm:px-5 lg:px-6 py-4 lg:py-6 overflow-y-auto'}`}>
           <div className="w-full h-full min-h-full flex flex-col">
               <div className="w-full h-full min-h-full flex flex-col">
