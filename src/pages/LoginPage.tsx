@@ -235,13 +235,13 @@ const LoginPage = () => {
 
       const targetPath = schoolPaths[user.role] || "/school/student";
 
-      // ERP is only ever relevant to admin/teaching staff — students and
+      // ERP is only ever relevant to institute admins — teachers, students and
       // parents go straight to their LMS path regardless of the institute's
       // ERP entitlement. rawRole (not the collapsed `role`) is checked here
-      // since STAFF accounts currently fall through buildSchoolUser's role
-      // normalization to 'student'.
+      // since some admin accounts currently fall through buildSchoolUser's role
+      // normalization to a non-admin role.
       const rawRole = (user.rawRole || "").toUpperCase();
-      const erpEligibleRole = ["INSTITUTE_ADMIN", "TEACHER", "STAFF"].some((r) => rawRole.includes(r));
+      const erpEligibleRole = rawRole.includes("INSTITUTE_ADMIN");
       const erpAvailable = erpEligibleRole && !!institute?.erpEnabled;
       const lmsAvailable = institute?.lmsEnabled !== false;
 
