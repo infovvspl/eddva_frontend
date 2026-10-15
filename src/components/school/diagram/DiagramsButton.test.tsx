@@ -31,6 +31,19 @@ describe('DiagramsButton', () => {
       .toBeInTheDocument();
   });
 
+  it('4. compact (one toolbar line): the reason stays visible, inside the label', () => {
+    render(<DiagramsButton compact onOpen={vi.fn()} />);
+    const button = screen.getByRole('button', { name: 'Diagrams · save first' });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('title', UNSAVED_ASSESSMENT_HINT);
+    expect(screen.queryByText(UNSAVED_ASSESSMENT_HINT)).toBeNull();
+  });
+
+  it('5. compact with a saved assessment: just "Diagrams"', () => {
+    render(<DiagramsButton compact assessmentId="aa11bb22-0000-4000-8000-000000000001" onOpen={vi.fn()} />);
+    expect(screen.getByRole('button', { name: 'Diagrams' })).not.toBeDisabled();
+  });
+
   it('3. with a saved assessment: enabled, no hint, and it opens the panel', () => {
     const onOpen = vi.fn();
     render(<DiagramsButton assessmentId="aa11bb22-0000-4000-8000-000000000001" onOpen={onOpen} />);

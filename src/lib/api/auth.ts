@@ -149,8 +149,21 @@ export interface SchoolLoginResponse {
       currentClass?: string;
     } | null;
   };
-  institute: { id: string; name: string; tenantDomain?: string; logo?: string } | null;
+  institute: {
+    id: string;
+    name: string;
+    tenantDomain?: string;
+    logo?: string;
+    erpEnabled?: boolean;
+    lmsEnabled?: boolean;
+  } | null;
   tenantDomain?: string;
+}
+
+/** Mints a short-lived bridge token the ERP frontend's /sso route exchanges for a real ERP session. */
+export async function mintErpSsoToken(): Promise<{ success: boolean; token: string }> {
+  const res = await apiClient.post("/school/auth/erp-sso-token", {});
+  return extractData(res);
 }
 
 /** Login via school backend — returns token (not accessToken) */

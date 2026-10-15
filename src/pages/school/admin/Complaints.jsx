@@ -431,6 +431,7 @@ export default function Complaints() {
                 { value: 'OPEN', label: 'Open' },
                 { value: 'IN_PROGRESS', label: 'In Progress' },
                 { value: 'RESOLVED', label: 'Resolved' },
+                { value: 'REOPENED', label: 'Re-Opened' },
                 { value: 'CLOSED', label: 'Closed' },
               ]}
               className="w-full"

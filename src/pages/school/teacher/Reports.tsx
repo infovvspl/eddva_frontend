@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { TrendingUp, TrendingDown, AlertTriangle, BarChart3, Users, Target, ChevronLeft, ChevronRight, ArrowRight, Search, ClipboardCheck, LineChart } from 'lucide-react';
 import StatCard from '@/components/school/StatCard';
 import { cn } from '@/lib/utils';
@@ -133,6 +133,7 @@ const mapRosterStudentToReportStudent = (student: any) => {
 
 const Reports: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [performanceChartData, setPerformanceChartData] = useState<any[]>([]);
   const [studentPerformance, setStudentPerformance] = useState<any[]>([]);
   const [assignedRoster, setAssignedRoster] = useState<any[]>([]);
@@ -159,7 +160,11 @@ const Reports: React.FC = () => {
   const [error, setError] = useState('');
   const [studentPage, setStudentPage] = useState(1);
   const [studentPageSize, setStudentPageSize] = useState(10);
-  const [activeTab, setActiveTab] = useState<string>('students');
+  // The dashboard's "needs attention" rows can open this page on a specific tab.
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    const t = (location.state as any)?.reportsTab;
+    return ['students', 'weakness', 'tests', 'class'].includes(t) ? t : 'students';
+  });
 
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const [selectedSection, setSelectedSection] = useState<string>('all');

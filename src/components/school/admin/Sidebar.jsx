@@ -162,12 +162,6 @@ function buildInstituteGroups(mods, aiFeats) {
     //   ],
     // },
     {
-      heading: 'ERP',
-      items: [
-        isModuleEnabled(mods, 'erp') && { path: '/school/admin/erp', label: 'ERP Dashboard', icon: BarChart3 },
-      ].filter(Boolean),
-    },
-    {
       heading: 'Administration',
       items: [
         { path: '/school/admin/users', label: 'User Management', icon: Users },

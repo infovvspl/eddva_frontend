@@ -4,6 +4,14 @@ import { CustomSelect } from "@/components/ui/CustomSelect";
 import { CheckCircle2, Clock, LifeBuoy, MessageSquare, Plus, Ticket } from 'lucide-react';
 
 const categories = ['Academic', 'Technical', 'Attendance', 'Fees', 'Other'];
+const STATUS_FILTERS = [
+  { value: 'ALL', label: 'All Statuses' },
+  { value: 'OPEN', label: 'Open' },
+  { value: 'IN_PROGRESS', label: 'In Progress' },
+  { value: 'RESOLVED', label: 'Resolved' },
+  { value: 'REOPENED', label: 'Re-Opened' },
+  { value: 'CLOSED', label: 'Closed' },
+];
 
 function statusClass(status) {
   if (status === 'RESOLVED' || status === 'CLOSED') return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300';
@@ -18,6 +26,7 @@ export default function SupportTickets() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [form, setForm] = useState({ title: '', category: categories[0], description: '' });
+  const [statusFilter, setStatusFilter] = useState('ALL');
 
   const fetchTickets = async () => {
     try {
@@ -39,6 +48,11 @@ export default function SupportTickets() {
     inProgress: tickets.filter((ticket) => ticket.status === 'IN_PROGRESS').length,
     resolved: tickets.filter((ticket) => ticket.status === 'RESOLVED' || ticket.status === 'CLOSED').length,
   }), [tickets]);
+
+  const filteredTickets = useMemo(() => {
+    if (statusFilter === 'ALL') return tickets;
+    return tickets.filter((ticket) => String(ticket.status || 'OPEN').toUpperCase() === statusFilter);
+  }, [tickets, statusFilter]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -147,22 +161,32 @@ export default function SupportTickets() {
         </form>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-sm sm:text-base font-black text-slate-950 dark:text-white">Ticket Status</h2>
               <p className="mt-0.5 text-xs sm:text-sm font-medium text-slate-500">Track every request you have raised.</p>
             </div>
-            <MessageSquare className="size-5 sm:size-6 text-blue-600" />
+            <div className="flex items-center gap-2">
+              <CustomSelect
+                value={statusFilter}
+                onChange={setStatusFilter}
+                options={STATUS_FILTERS}
+                className="w-40"
+              />
+              <MessageSquare className="size-5 sm:size-6 text-blue-600 shrink-0" />
+            </div>
           </div>
           <div className="mt-4 sm:mt-5 space-y-3">
-            {tickets.length === 0 ? (
+            {filteredTickets.length === 0 ? (
               <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 sm:p-10 text-center dark:border-slate-800 dark:bg-slate-950/50">
                 <LifeBuoy className="mx-auto size-8 sm:size-10 text-slate-300" />
                 <h3 className="mt-2.5 sm:mt-3 text-xs sm:text-sm font-black text-slate-900 dark:text-white">No support tickets</h3>
-                <p className="mt-1 text-xs sm:text-sm text-slate-500">Create a ticket when you need help.</p>
+                <p className="mt-1 text-xs sm:text-sm text-slate-500">
+                  {tickets.length === 0 ? 'Create a ticket when you need help.' : 'No tickets match this status.'}
+                </p>
               </div>
             ) : (
-              tickets.map((ticket) => (
+              filteredTickets.map((ticket) => (
                 <div key={ticket.id} className="rounded-xl border border-slate-200 p-3 sm:p-4 dark:border-slate-800">
                   <div className="flex flex-wrap items-start justify-between gap-2.5">
                     <div>

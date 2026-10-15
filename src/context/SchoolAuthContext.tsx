@@ -203,6 +203,8 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({
                       : (inst.modulesPermissions ??
                         inst.modules_permissions ??
                         {}),
+                  erpEnabled: inst.erpEnabled ?? inst.erp_enabled ?? false,
+                  lmsEnabled: inst.lmsEnabled ?? inst.lms_enabled ?? true,
                 });
               }
             })
@@ -254,6 +256,8 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({
                         : (inst.modulesPermissions ??
                           inst.modules_permissions ??
                           {}),
+                    erpEnabled: inst.erpEnabled ?? inst.erp_enabled ?? false,
+                    lmsEnabled: inst.lmsEnabled ?? inst.lms_enabled ?? true,
                   });
                 }
               })
@@ -402,6 +406,8 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({
           "string"
             ? JSON.parse(inst.modulesPermissions ?? inst.modules_permissions)
             : (inst.modulesPermissions ?? inst.modules_permissions ?? {}),
+        erpEnabled: inst.erpEnabled ?? inst.erp_enabled ?? false,
+        lmsEnabled: inst.lmsEnabled ?? inst.lms_enabled ?? true,
       });
     }
 

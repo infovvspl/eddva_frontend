@@ -54,6 +54,7 @@ const GrievanceHandling: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
   const [stats, setStats] = useState({ open: 0, inProgress: 0, resolved: 0 });
   const [showComplaintModal, setShowComplaintModal] = useState(false);
   const [grievancesList, setGrievancesList] = useState<any[]>([]);
@@ -156,6 +157,7 @@ const GrievanceHandling: React.FC = () => {
       if (activeTab === 'academic') params.category = 'academic';
       else if (activeTab === 'infrastructure') params.category = 'infrastructure';
       else if (activeTab === 'support') params.statusIn = 'OPEN,IN_PROGRESS';
+      if (statusFilter !== 'ALL') params.status = statusFilter;
 
       const res = await api.get('/grievances', { params });
       const formatted = res.data.data.map((g: any) => ({
@@ -192,7 +194,7 @@ const GrievanceHandling: React.FC = () => {
   useEffect(() => {
     fetchGrievances();
     fetchStats();
-  }, [page, limit, activeTab, searchQuery]);
+  }, [page, limit, activeTab, searchQuery, statusFilter]);
 
   useEffect(() => {
     const ticketSearch = searchParams.get('search') || searchParams.get('ticketId');
@@ -385,6 +387,22 @@ const GrievanceHandling: React.FC = () => {
               </Button>
             )}
           </div>
+          <Select
+            value={statusFilter}
+            onValueChange={(val) => { setStatusFilter(val); setPage(1); }}
+          >
+            <SelectTrigger className="h-9 w-[150px] shrink-0 rounded-xl border-slate-200 bg-white text-xs dark:border-slate-800 dark:bg-slate-900 sm:text-sm">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All Statuses</SelectItem>
+              <SelectItem value="OPEN">Open</SelectItem>
+              <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+              <SelectItem value="RESOLVED">Resolved</SelectItem>
+              <SelectItem value="REOPENED">Re-Opened</SelectItem>
+              <SelectItem value="CLOSED">Closed</SelectItem>
+            </SelectContent>
+          </Select>
           <Button className="shrink-0 gap-1.5" onClick={() => setShowComplaintModal(true)} aria-label="Raise Complaint">
             <Plus size={16} />
             <span className="hidden sm:inline">Raise Complaint</span>
