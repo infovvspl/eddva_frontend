@@ -222,6 +222,13 @@ const AssignmentManagement: React.FC = () => {
   const [bankResults, setBankResults] = useState<QuestionItem[]>([]);
   const [loadingBank, setLoadingBank] = useState(false);
   const [aiQTopic, setAiQTopic] = useState('');
+  // Topic picker for AI question generation: the selected subject's own chapters and topics.
+  const [qChapters, setQChapters] = useState<{ id: string; name: string }[]>([]);
+  const [qTopics, setQTopics] = useState<{ id: string; name: string }[]>([]);
+  const [qChapterId, setQChapterId] = useState('');
+  const [qTopicId, setQTopicId] = useState('');
+  const [qTopicCustom, setQTopicCustom] = useState(false);
+  const [loadingQChapters, setLoadingQChapters] = useState(false);
   const [aiQCount, setAiQCount] = useState('5');
   const [aiQDifficulty, setAiQDifficulty] = useState('medium');
   const [aiQType, setAiQType] = useState('mcq_single');
@@ -424,6 +431,45 @@ const AssignmentManagement: React.FC = () => {
     if (mainTab === 'inbox') void fetchInbox();
   }, [mainTab, selectedClass?.id, selectedSection?.id, selectedSubject?.id]);
 
+  // Chapters of the selected subject, for the AI question topic picker
+  useEffect(() => {
+    if (!showCreateModal || !selectedSubject?.id) {
+      setQChapters([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingQChapters(true);
+    api.get('/topics/chapters', { params: { subjectId: selectedSubject.id } })
+      .then((res) => {
+        if (cancelled) return;
+        const list: any[] = res.data?.data ?? res.data ?? [];
+        const chapters = (Array.isArray(list) ? list : []).map((c) => ({ id: String(c.id), name: String(c.name || 'Chapter') }));
+        setQChapters(chapters);
+        // Nothing set up for this subject yet: fall back to typing the topic.
+        if (!chapters.length) setQTopicCustom(true);
+      })
+      .catch(() => { if (!cancelled) { setQChapters([]); setQTopicCustom(true); } })
+      .finally(() => { if (!cancelled) setLoadingQChapters(false); });
+    return () => { cancelled = true; };
+  }, [showCreateModal, selectedSubject?.id]);
+
+  // Topics of the chosen chapter
+  useEffect(() => {
+    if (!qChapterId) {
+      setQTopics([]);
+      return;
+    }
+    let cancelled = false;
+    api.get('/topics', { params: { chapterId: qChapterId } })
+      .then((res) => {
+        if (cancelled) return;
+        const list: any[] = res.data?.data ?? res.data ?? [];
+        setQTopics((Array.isArray(list) ? list : []).map((t) => ({ id: String(t.id), name: String(t.name || 'Topic') })));
+      })
+      .catch(() => { if (!cancelled) setQTopics([]); });
+    return () => { cancelled = true; };
+  }, [qChapterId]);
+
   // Student pool: the sections this teacher may assign to, and the students in the chosen ones
   const buildPoolSections = (sectionIds: string[], options: PoolSection[] = poolOptions) =>
     options
@@ -585,6 +631,10 @@ const AssignmentManagement: React.FC = () => {
     setCreateMode("manual");
     setAiTopic("");
     setAiPrompt("");
+    setAiQTopic('');
+    setQChapterId('');
+    setQTopicId('');
+    setQTopicCustom(false);
     setWorksheetImageUrl(null);
     setWorksheetPreview(null);
     setGeneratedGroups([]);
@@ -816,7 +866,7 @@ const AssignmentManagement: React.FC = () => {
 
   const generateAiQuestions = async () => {
     if (!aiQTopic.trim()) {
-      toast.error('Enter a topic to generate questions for');
+      toast.error(qTopicCustom || !qChapters.length ? 'Enter a topic to generate questions for' : 'Choose a chapter (and a topic) to generate questions for');
       return;
     }
     setGeneratingQ(true);
@@ -2268,9 +2318,67 @@ const AssignmentManagement: React.FC = () => {
 
                 <TabsContent value="ai" className="space-y-3 pt-3">
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    <div className="col-span-2 sm:col-span-4 space-y-1">
-                      <Label className="text-[11px] font-semibold">Topic</Label>
-                      <Input value={aiQTopic} onChange={(e) => setAiQTopic(e.target.value)} placeholder="e.g. Laws of Motion" className="text-xs" />
+                    <div className="col-span-2 sm:col-span-4 space-y-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <Label className="text-[11px] font-semibold">
+                          Topic{selectedSubject ? ` (${selectedSubject.name})` : ''}
+                        </Label>
+                        {qChapters.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => { setQTopicCustom((v) => !v); setAiQTopic(''); setQChapterId(''); setQTopicId(''); }}
+                            className="text-[11px] font-semibold text-blue-600 hover:underline"
+                          >
+                            {qTopicCustom ? 'Choose from the syllabus' : 'Type my own topic'}
+                          </button>
+                        )}
+                      </div>
+
+                      {qTopicCustom || (!loadingQChapters && qChapters.length === 0) ? (
+                        <Input
+                          value={aiQTopic}
+                          onChange={(e) => setAiQTopic(e.target.value)}
+                          placeholder="e.g. Laws of Motion"
+                          className="text-xs"
+                        />
+                      ) : (
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          <Select
+                            value={qChapterId || undefined}
+                            onValueChange={(v) => {
+                              setQChapterId(v);
+                              setQTopicId('');
+                              setAiQTopic(qChapters.find((c) => c.id === v)?.name || '');
+                            }}
+                          >
+                            <SelectTrigger className="text-xs">
+                              <SelectValue placeholder={loadingQChapters ? 'Loading chapters...' : 'Select chapter'} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {qChapters.map((c, i) => (
+                                <SelectItem key={c.id} value={c.id}>{i + 1}. {c.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Select
+                            value={qTopicId || undefined}
+                            disabled={!qChapterId || qTopics.length === 0}
+                            onValueChange={(v) => {
+                              setQTopicId(v);
+                              setAiQTopic(qTopics.find((t) => t.id === v)?.name || '');
+                            }}
+                          >
+                            <SelectTrigger className="text-xs">
+                              <SelectValue placeholder={!qChapterId ? 'Select a chapter first' : qTopics.length ? 'Select topic (optional)' : 'No topics in this chapter'} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {qTopics.map((t, i) => (
+                                <SelectItem key={t.id} value={t.id}>{i + 1}. {t.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
                     </div>
                     <div className="space-y-1">
                       <Label className="text-[11px] font-semibold">How many</Label>
