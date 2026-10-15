@@ -688,7 +688,7 @@ const AssignmentManagement: React.FC = () => {
       return;
     }
     if (studentsRoster.length === 0) {
-      toast.error("Select at least one student in the Student Pool step");
+      toast.error("No students were found in this section, so there is nobody to assign this to");
       return;
     }
     if (questions.some((q) => !(Number(q.marks) > 0))) {
@@ -1083,14 +1083,13 @@ const AssignmentManagement: React.FC = () => {
   }, [workspaceAssignments]);
 
   const stepKeys = useMemo(
-    () => ['basics', 'pool', ...(formData.target_type === 'group' ? ['groups'] : []), 'content', 'questions', 'schedule', 'review'] as const,
+    () => ['basics', ...(formData.target_type === 'group' ? ['groups'] : []), /* 'content', */ 'questions', 'schedule', 'review'] as const,
     [formData.target_type],
   );
   const stepLabels: Record<string, string> = {
     basics: 'Basics & Target',
-    pool: 'Student Pool',
     groups: 'Auto-Group Setup',
-    content: 'Assignment Content',
+    // content: 'Assignment Content',
     questions: 'Questions',
     schedule: 'Schedule',
     review: 'Review & Publish',
@@ -1133,13 +1132,6 @@ const AssignmentManagement: React.FC = () => {
             <Button variant="outline" size="sm" onClick={goBack} className="gap-1.5">
               <ChevronLeft className="size-4" />
               Back
-            </Button>
-          )}
-
-          {level === 'workspace' && (
-            <Button onClick={openCreateModal} size="sm" className="gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 font-extrabold text-white shadow-md shadow-blue-600/20 hover:brightness-110">
-              <Plus className="size-4" />
-              Create Assignment
             </Button>
           )}
         </div>
@@ -1424,6 +1416,15 @@ const AssignmentManagement: React.FC = () => {
                       <SelectItem value="group">Group Project</SelectItem>
                     </SelectContent>
                   </Select>
+
+                  <Button
+                    onClick={openCreateModal}
+                    size="sm"
+                    className="h-9 gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 font-extrabold text-white shadow-md shadow-blue-600/20 hover:brightness-110"
+                  >
+                    <Plus className="size-4" />
+                    Create Assignment
+                  </Button>
                 </div>
               </div>
             )}
@@ -1887,107 +1888,14 @@ const AssignmentManagement: React.FC = () => {
             ))}
           </div>
 
-          {/* STEP: STUDENT POOL */}
-          {currentStep === 'pool' && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold flex items-center gap-1.5">
-                  <Users className="size-3.5 text-primary" />
-                  Who should receive this assignment?
-                </Label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1">
-                  {poolOptions.map((o) => (
-                    <label
-                      key={o.sectionId}
-                      className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={poolSectionIds.includes(o.sectionId)}
-                        onChange={() => togglePoolSection(o.sectionId)}
-                      />
-                      <span className="font-medium text-slate-800">{o.className} · {formatSectionName(o.sectionName)}</span>
-                    </label>
-                  ))}
-                  {poolOptions.length === 0 && !loadingStudents && (
-                    <p className="text-xs text-muted-foreground">No classes available to assign.</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-slate-200 bg-white">
-                <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2">
-                  <span className="text-xs font-bold text-slate-800">
-                    {studentsRoster.length} of {poolStudents.length} students selected
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-2 text-[11px]"
-                      onClick={() => { setGeneratedGroups([]); setExcludedIds(new Set()); }}
-                    >
-                      Select all
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-2 text-[11px]"
-                      onClick={() => { setGeneratedGroups([]); setExcludedIds(new Set(poolStudents.map((st) => st.id))); }}
-                    >
-                      Clear
-                    </Button>
-                  </div>
-                </div>
-                <div className="max-h-56 overflow-y-auto divide-y divide-slate-100">
-                  {loadingStudents ? (
-                    <div className="p-3 space-y-2">
-                      <Skeleton className="h-6 w-full" />
-                      <Skeleton className="h-6 w-full" />
-                    </div>
-                  ) : poolStudents.length === 0 ? (
-                    <p className="p-4 text-center text-xs text-muted-foreground">No students in the selected sections.</p>
-                  ) : (
-                    poolStudents.map((st) => (
-                      <label key={st.id} className="flex items-center gap-2 px-3 py-1.5 text-xs cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={!excludedIds.has(st.id)}
-                          onChange={() => toggleStudent(st.id)}
-                        />
-                        <span className="flex-1 font-medium text-slate-800">{st.name}</span>
-                        {st.rollNo && <span className="text-[10px] text-slate-400">#{st.rollNo}</span>}
-                        {poolSectionIds.length > 1 && (
-                          <Badge variant="outline" className="text-[10px]">
-                            {st.className} {formatSectionName(st.sectionName)}
-                          </Badge>
-                        )}
-                      </label>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {formData.target_type === 'group' && poolSectionIds.length > 1 && (
-                <label className="flex items-start gap-2 rounded-lg border border-indigo-100 bg-indigo-50/60 p-3 text-xs text-indigo-900 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="mt-0.5"
-                    checked={keepSectionsTogether}
-                    onChange={(e) => { setKeepSectionsTogether(e.target.checked); setGeneratedGroups([]); }}
-                  />
-                  <span>
-                    <span className="font-semibold block">Keep students from each section together</span>
-                    Groups are formed inside each section instead of mixing the whole pool.
-                  </span>
-                </label>
-              )}
-            </div>
-          )}
-
           {/* STEP 1: BASICS & TARGET */}
           {currentStep === 'basics' && (
             <div className="space-y-4">
+              {!loadingStudents && studentsRoster.length === 0 && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-800">
+                  No students were found in {selectedSection?.name || 'this section'}, so this assignment can't be created yet.
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold">Assignment Title *</Label>
                 <Input
@@ -2054,7 +1962,7 @@ const AssignmentManagement: React.FC = () => {
                     Group Assignment Selected
                   </p>
                   <p className="text-indigo-700">
-                    Students will be split into collaborative groups. Proceed to Step 3 to configure group size and auto-generate student teams.
+                    Students will be split into collaborative groups. Continue to the next step to configure group size and auto-generate student teams.
                   </p>
                 </div>
               )}
@@ -2212,7 +2120,8 @@ const AssignmentManagement: React.FC = () => {
             </div>
           )}
 
-          {/* STEP 2 (FOR INDIVIDUAL) OR STEP 3 (FOR GROUP): CONTENT & INSTRUCTIONS */}
+          {/* COMMENTED OUT: Assignment Content step (manual instructions / file, AI generator, OCR photo).
+             Re-enable by restoring 'content' in stepKeys and stepLabels above and removing this comment.
           {currentStep === 'content' && (
             <div className="space-y-4">
               <Tabs value={createMode} onValueChange={(val: any) => setCreateMode(val)} className="w-full">
@@ -2307,6 +2216,7 @@ const AssignmentManagement: React.FC = () => {
               </Tabs>
             </div>
           )}
+          */}
 
           {/* STEP: QUESTIONS (optional) */}
           {currentStep === 'questions' && (
@@ -2582,13 +2492,13 @@ const AssignmentManagement: React.FC = () => {
                 <Button
                   size="sm"
                   disabled={
-                    (currentStep === 'pool' && (loadingStudents || studentsRoster.length === 0)) ||
+                    (currentStep === 'basics' && (loadingStudents || studentsRoster.length === 0)) ||
                     (currentStep === 'schedule' && publishMode === 'scheduled' && !startAt)
                   }
                   onClick={() => setCreateStep((prev) => prev + 1)}
                   className="gap-1.5"
                 >
-                  {currentStep === 'groups' ? 'Next: Content' : 'Next Step'} <ChevronRight className="size-3.5" />
+                  {currentStep === 'groups' ? 'Next: Questions' : 'Next Step'} <ChevronRight className="size-3.5" />
                 </Button>
               )}
 

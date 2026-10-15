@@ -172,6 +172,12 @@ import type { CourseTabId } from '@/components/student/lecture/CourseTabs';
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { resolveRecordingUpload, type UploadedVideo } from './recordingUpload';
 
+/** Natural order for names: Class 2 before Class 10, Section A before Section B. */
+const byNameNatural = (a: { name?: string }, b: { name?: string }) => {
+  const norm = (v?: string) => String(v ?? '').replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim();
+  return norm(a.name).localeCompare(norm(b.name), undefined, { numeric: true, sensitivity: 'base' });
+};
+
 const ClassManagement: React.FC = () => {
   const { user, institute } = useAuth();
   const confirm = useConfirm();
@@ -395,7 +401,7 @@ const ClassManagement: React.FC = () => {
         name: assignment.className || academicClasses.find((item) => String(item.id) === String(assignment.classId))?.name || 'Class',
       });
     });
-    return Array.from(classMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+    return Array.from(classMap.values()).sort(byNameNatural);
   }, [academicClasses, teacherAssignments]);
 
   const recordingSectionOptions = useMemo(() => {
@@ -411,7 +417,7 @@ const ClassManagement: React.FC = () => {
         });
       });
 
-    return Array.from(sectionMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+    return Array.from(sectionMap.values()).sort(byNameNatural);
   }, [recordingForm.classId, teacherAssignments]);
 
   const recordingSubjectOptions = useMemo(() => {
@@ -442,7 +448,7 @@ const ClassManagement: React.FC = () => {
         .forEach((subject: any) => subjectMap.set(String(subject.id), { id: String(subject.id), name: subject.name }));
     }
 
-    return Array.from(subjectMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+    return Array.from(subjectMap.values()).sort(byNameNatural);
   }, [academicSubjects, recordingForm.classId, recordingForm.sectionId, teacherAssignments]);
 
   // ── Schedule-modal specific selects (mirror recording options but for schedLiveForm) ──
@@ -455,7 +461,7 @@ const ClassManagement: React.FC = () => {
         name: a.className || academicClasses.find((c) => String(c.id) === String(a.classId))?.name || 'Class',
       });
     });
-    return Array.from(classMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+    return Array.from(classMap.values()).sort(byNameNatural);
   }, [academicClasses, teacherAssignments]);
 
   const schedSectionOptions = useMemo(() => {
@@ -467,7 +473,7 @@ const ClassManagement: React.FC = () => {
         if (!a.sectionId) return;
         sectionMap.set(String(a.sectionId), { id: String(a.sectionId), name: a.sectionName || 'Section' });
       });
-    return Array.from(sectionMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+    return Array.from(sectionMap.values()).sort(byNameNatural);
   }, [schedLiveForm.classId, teacherAssignments]);
 
   const schedSubjectOptions = useMemo(() => {
@@ -482,7 +488,7 @@ const ClassManagement: React.FC = () => {
           name: a.subjectName || academicSubjects.find((s) => String(s.id) === String(a.subjectId))?.name || 'Subject',
         });
       });
-    return Array.from(subjectMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+    return Array.from(subjectMap.values()).sort(byNameNatural);
   }, [academicSubjects, schedLiveForm.classId, schedLiveForm.sectionId, teacherAssignments]);
 
 
@@ -664,7 +670,7 @@ const ClassManagement: React.FC = () => {
         name: assignment.className || academicClasses.find((item) => String(item.id) === String(assignment.classId))?.name || 'Class',
       });
     });
-    return Array.from(classMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+    return Array.from(classMap.values()).sort(byNameNatural);
   }, [academicClasses, teacherAssignments]);
 
   const editSectionOptions = useMemo(() => {
@@ -679,7 +685,7 @@ const ClassManagement: React.FC = () => {
           name: assignment.sectionName || 'Section',
         });
       });
-    return Array.from(sectionMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+    return Array.from(sectionMap.values()).sort(byNameNatural);
   }, [editForm.classId, teacherAssignments]);
 
   const editSubjectOptions = useMemo(() => {
@@ -710,7 +716,7 @@ const ClassManagement: React.FC = () => {
         .forEach((subject: any) => subjectMap.set(String(subject.id), { id: String(subject.id), name: subject.name }));
     }
 
-    return Array.from(subjectMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+    return Array.from(subjectMap.values()).sort(byNameNatural);
   }, [academicSubjects, editForm.classId, editForm.sectionId, teacherAssignments]);
 
   const openEditRecordingModal = (rec: any) => {
@@ -1578,7 +1584,7 @@ const ClassManagement: React.FC = () => {
           name: a.subjectName || academicSubjects.find((s: any) => String(s.id) === String(a.subjectId))?.name || 'Subject',
         });
       });
-    const filteredSubjects = Array.from(subjectMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+    const filteredSubjects = Array.from(subjectMap.values()).sort(byNameNatural);
 
     return (
       <div className="mb-4 flex flex-wrap items-center gap-3">
