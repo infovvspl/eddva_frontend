@@ -346,8 +346,28 @@ const AssessmentSystem: React.FC = () => {
     {
       key: "actions",
       title: "Actions",
-      render: (_: any, row: any) => (
+      render: (_: any, row: any) => {
+        // A completed test is locked: it can be viewed (details and scores) but not edited or deleted.
+        const locked = row.status === "completed";
+        const lockedHint = "Completed assessments can't be edited or deleted. Open the details to review scores.";
+        return (
         <div className="flex flex-wrap gap-2">
+          {locked && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+              onClick={() => navigate(`/school/teacher/assessments/${row.id}`, {
+                state: {
+                  from: `${location.pathname}${location.search}`,
+                  assessmentWorkspace: { selectedClass, selectedSection, selectedSubject },
+                },
+              })}
+            >
+              <Eye size={14} />
+              View Details
+            </Button>
+          )}
           {row.status === "draft" && (
             <Button
               size="sm"
@@ -372,9 +392,11 @@ const AssessmentSystem: React.FC = () => {
               Publish
             </Button>
           )}
+          <span title={locked ? lockedHint : undefined} className={locked ? "cursor-not-allowed" : undefined}>
           <Button
             size="sm"
             variant="outline"
+            disabled={locked}
             onClick={() => navigate(`/school/teacher/assessments/${row.id}/edit`, {
               state: {
                 test: row,
@@ -386,10 +408,14 @@ const AssessmentSystem: React.FC = () => {
           >
             Edit
           </Button>
+          </span>
+          <span title={locked ? lockedHint : undefined} className={locked ? "cursor-not-allowed" : undefined}>
           <Button
             size="sm"
             variant="outline"
+            disabled={locked}
             onClick={async () => {
+              if (locked) return;
               const confirmed = await confirm({
                 title: "Confirm Delete",
                 message: "Are you sure you want to delete this assessment? This action cannot be undone.",
@@ -409,8 +435,10 @@ const AssessmentSystem: React.FC = () => {
 <Trash2 size={14} />
             Delete
           </Button>
+          </span>
         </div>
-      ),
+        );
+      },
     },
   ];
 
