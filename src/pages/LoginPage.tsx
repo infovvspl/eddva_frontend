@@ -18,6 +18,7 @@ import login1 from "@/assets/images/login1.png";
 import login2 from "@/assets/images/login2.png";
 import login3 from "@/assets/images/login3.png";
 import { resolveTenant, PublicTenantInfo } from "@/lib/api/public-tenant";
+import { openErp } from "@/lib/erpSso";
 import { useSchoolAuth } from "@/context/SchoolAuthContext";
 
 const B = "#3B82F6"; // Softer Blue
@@ -164,7 +165,10 @@ const LoginPage = () => {
         const r = u.role.toLowerCase();
         if (r.includes('super_admin')) return 'super_admin';
         if (r.includes('teacher')) return 'teacher';
-        if (r.includes('institute_admin') || r.includes('admin')) return 'institute_admin';
+        // STAFF has no dedicated UserRole bucket — treated as admin-adjacent
+        // for routing purposes, same as SchoolGuard's role checks elsewhere
+        // (e.g. the ERP tile route already allows INSTITUTE_ADMIN + STAFF).
+        if (r.includes('institute_admin') || r.includes('admin') || r.includes('staff')) return 'institute_admin';
         if (r.includes('parent')) return 'parent';
         return 'student';
       })() as UserRole,
@@ -195,7 +199,12 @@ const LoginPage = () => {
     };
   };
 
-  const redirectUser = (user: User, tenantType: "coaching" | "school", targetTenantDomain?: string) => {
+  const redirectUser = (
+    user: User,
+    tenantType: "coaching" | "school",
+    targetTenantDomain?: string,
+    institute?: { erpEnabled?: boolean; lmsEnabled?: boolean } | null,
+  ) => {
     setTenantType(tenantType);
     setUser(user);
     if (tenantType === "school") {
@@ -208,6 +217,25 @@ const LoginPage = () => {
       };
 
       const targetPath = schoolPaths[user.role] || "/school/student";
+
+      // ERP is only ever relevant to admin/teaching staff — students and
+      // parents go straight to their LMS path regardless of the institute's
+      // ERP entitlement. rawRole (not the collapsed `role`) is checked here
+      // since STAFF accounts currently fall through buildSchoolUser's role
+      // normalization to 'student'.
+      const rawRole = (user.rawRole || "").toUpperCase();
+      const erpEligibleRole = ["INSTITUTE_ADMIN", "TEACHER", "STAFF"].some((r) => rawRole.includes(r));
+      const erpAvailable = erpEligibleRole && !!institute?.erpEnabled;
+      const lmsAvailable = institute?.lmsEnabled !== false;
+
+      if (erpAvailable && lmsAvailable) {
+        navigate("/school/select-module", { state: { lmsPath: targetPath } });
+        return;
+      }
+      if (erpAvailable && !lmsAvailable) {
+        void openErp("/dashboard");
+        return;
+      }
 
       navigate(targetPath);
       return;
@@ -269,10 +297,12 @@ const LoginPage = () => {
             aiEnabled: (schoolRes.institute as any).aiEnabled ?? (schoolRes.institute as any).ai_enabled ?? false,
             aiFeatures: (schoolRes.institute as any).aiFeatures ?? (schoolRes.institute as any).ai_features ?? {},
             modulesPermissions: (schoolRes.institute as any).modulesPermissions ?? (schoolRes.institute as any).modules_permissions ?? {},
+            erpEnabled: (schoolRes.institute as any).erpEnabled ?? (schoolRes.institute as any).erp_enabled ?? false,
+            lmsEnabled: (schoolRes.institute as any).lmsEnabled ?? (schoolRes.institute as any).lms_enabled ?? true,
           } : null,
         });
 
-        redirectUser(schoolUser, "school", schoolRes.institute?.tenantDomain);
+        redirectUser(schoolUser, "school", schoolRes.institute?.tenantDomain, schoolRes.institute);
       };
 
       const tryCoachingLogin = async () => {

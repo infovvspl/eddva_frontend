@@ -250,6 +250,8 @@ const SchoolInstitutes = lazy(() => import("./pages/school/admin/Institutes"));
 const SchoolAdminUsers = lazy(() => import("./pages/school/admin/Users"));
 // const SchoolAdminRoles = lazy(() => import("./pages/school/admin/Roles"));
 const SchoolAdminERP = lazy(() => import("./pages/school/admin/ERPWorkspace"));
+const SchoolSelectModulePage = lazy(() => import("./pages/school/SelectModulePage"));
+const SchoolSsoLanding = lazy(() => import("./pages/school/SsoLanding"));
 const SchoolAdminNotifications = lazy(() => import("./pages/school/admin/NotificationsCenter"));
 const SchoolInstituteProfile = lazy(() => import("./pages/school/admin/InstituteProfile"));
 const SchoolTopInstitutes = lazy(() => import("./pages/school/admin/TopInstitutes"));
@@ -507,6 +509,15 @@ const StudentRoutes = () => (
 // ——————————————————————————————————————————————————————————————————————————— School routes ———————————————————————————————————————————————————————————————————————————
 const SchoolRoutes = () => (
   <>
+    {/* Shown right after login only when the institute has both ERP and LMS
+        (see redirectUser in LoginPage.tsx) — a standalone page, not nested
+        under the admin layout, since the user hasn't chosen a dashboard yet. */}
+    <Route
+      path="/school/select-module"
+      element={<SchoolGuard roles={["INSTITUTE_ADMIN", "TEACHER", "STAFF"]}><SchoolSelectModulePage /></SchoolGuard>}
+    />
+    {/* Public: the person isn't authenticated as an LMS user yet when they arrive here. */}
+    <Route path="/school/sso" element={<SchoolSsoLanding />} />
     {/* School Admin */}
     <Route
       path="/school/admin"

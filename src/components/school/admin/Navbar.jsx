@@ -40,6 +40,7 @@ import { useSchoolNotification } from '@/context/SchoolNotificationContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { InstituteLogo } from './Brand';
 import logoUrl from '@/assets/eddva-logo.svg';
+import { openErp } from '@/lib/erpSso';
 
 const getAdminFallbackUrl = (n, isTeacher) => {
   if (n.actionUrl) return n.actionUrl;
@@ -106,6 +107,16 @@ export default function Navbar({ onMenuClick }) {
   const isTeacher = !isSuperAdmin && !isInstitute && (user?.role === 'TEACHER' || (isTeacherPath && hasTeacherRole));
   const canOpenInstituteAdmin = !isAdminPath && hasInstituteAdminRole && (user?.role === 'TEACHER' || hasTeacherRole);
   const canOpenTeacherPortal = isAdminPath && hasInstituteAdminRole && hasTeacherRole;
+  const canSwitchToErp = isInstitute && !!(institute?.erpEnabled);
+  const [switchingToErp, setSwitchingToErp] = useState(false);
+  const handleSwitchToErp = async () => {
+    setSwitchingToErp(true);
+    try {
+      await openErp('/dashboard');
+    } catch {
+      setSwitchingToErp(false);
+    }
+  };
   const useTeacherFallback = !isSuperAdmin && !isInstitute;
   const roleName = isTeacher || useTeacherFallback ? 'Teacher' : isInstitute ? 'Institute Admin' : 'Super Admin';
   const workspaceName = isTeacher || useTeacherFallback ? user?.name || 'Teacher Workspace' : isInstitute ? institute?.name || 'Eddva Institute' : 'EDDVA HQ';
@@ -1068,6 +1079,20 @@ export default function Navbar({ onMenuClick }) {
               </div>
             )}
           </div>
+
+          {/* Switch to ERP (Institute Admin, only when the institute has ERP enabled) */}
+          {canSwitchToErp && !isMobile && (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleSwitchToErp}
+              disabled={switchingToErp}
+              className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 px-3 py-1.5 h-auto text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 [&_svg]:size-4"
+            >
+              {switchingToErp ? <Loader2 className="animate-spin" /> : <Building2 />}
+              Switch to ERP
+            </Button>
+          )}
 
           {/* Notifications Icon & Popover */}
           <div className="relative flex items-center" ref={notifRef}>

@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 import { AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog";
+import { Switch } from "@/components/ui/switch";
 
 const TextbookCoverage = lazy(() => import("@/pages/school/teacher/TextbookCoverage"));
 
@@ -115,6 +116,7 @@ const SchoolDetailPage = () => {
   const [deleteInput, setDeleteInput] = useState("");
   const [deleting, setDeleting] = useState(false);
   const deleteInputRef = useRef<HTMLInputElement>(null);
+  const [savingModule, setSavingModule] = useState<"erp" | "lms" | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -193,6 +195,19 @@ const SchoolDetailPage = () => {
       load();
     } catch {
       toast.error("Failed to suspend");
+    }
+  };
+
+  const toggleModuleAccess = async (module: "erp" | "lms", next: boolean) => {
+    setSavingModule(module);
+    try {
+      await apiClient.put(`/school/institutes/${id}`, module === "erp" ? { erpEnabled: next } : { lmsEnabled: next });
+      setInstitute((prev: any) => (prev ? { ...prev, [module === "erp" ? "erp_enabled" : "lms_enabled"]: next } : prev));
+      toast.success(`${module === "erp" ? "ERP" : "LMS"} access ${next ? "enabled" : "disabled"}`);
+    } catch {
+      toast.error(`Failed to update ${module === "erp" ? "ERP" : "LMS"} access`);
+    } finally {
+      setSavingModule(null);
     }
   };
 
@@ -455,6 +470,34 @@ const SchoolDetailPage = () => {
         <div className="p-4 sm:p-5">
           {activeTab === "overview" && (
             <div className="space-y-6">
+              <section>
+                <h2 className="mb-3 text-sm font-black uppercase tracking-wider text-slate-500">Module Access</h2>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-4">
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">EDDVA ERP</p>
+                      <p className="text-xs font-semibold text-slate-400">School administration modules</p>
+                    </div>
+                    <Switch
+                      checked={!!(institute.erp_enabled ?? institute.erpEnabled)}
+                      disabled={savingModule === "erp"}
+                      onCheckedChange={(checked) => toggleModuleAccess("erp", checked)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-4">
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">EDDVA LMS</p>
+                      <p className="text-xs font-semibold text-slate-400">AI learning management</p>
+                    </div>
+                    <Switch
+                      checked={institute.lms_enabled ?? institute.lmsEnabled ?? true}
+                      disabled={savingModule === "lms"}
+                      onCheckedChange={(checked) => toggleModuleAccess("lms", checked)}
+                    />
+                  </div>
+                </div>
+              </section>
+
               {overviewSections.map((section) => (
                 <section key={section.title}>
                   <h2 className="mb-3 text-sm font-black uppercase tracking-wider text-slate-500">{section.title}</h2>
