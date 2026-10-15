@@ -252,6 +252,8 @@ const TopicManagement: React.FC = () => {
   const [loadingAssignments, setLoadingAssignments] = useState(true);
   const [cardActiveSections, setCardActiveSections] = useState<Record<string, string>>({});
   const columnCount = useColumnCount();
+  // Only one chapter is expanded at a time in the curriculum tree: opening another closes the previous.
+  const [openChapterId, setOpenChapterId] = useState<string | null>(null);
   const [expandedClasses, setExpandedClasses] = useState<Record<string, boolean>>({});
 
   // ── Curriculum (chapters / topics tree + selected topic) ───────────────────
@@ -869,6 +871,8 @@ const TopicManagement: React.FC = () => {
                       key={`${chapter.id}-${ci}`}
                       chapter={chapter}
                       chapterIndex={ci}
+                      open={openChapterId === String(chapter.id)}
+                      onToggle={() => setOpenChapterId((cur) => (cur === String(chapter.id) ? null : String(chapter.id)))}
                       version={curriculumVersion}
                       canEdit={canEditCurriculum}
                       selectedScopeId={selectedTopic?.id ?? null}
@@ -1019,7 +1023,7 @@ function IconButton({ children, label, danger, onClick }: { children: React.Reac
   );
 }
 
-function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode; onClick: () => void; active: boolean }[] }) {
+function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode; onClick?: () => void; active: boolean }[] }) {
   return (
     <UiBreadcrumb>
       <BreadcrumbList className="gap-1.5 text-sm sm:gap-1.5">
@@ -1152,14 +1156,13 @@ function resolveAnimationEmbed(url: string): { kind: 'iframe' | 'video'; src: st
 // ── Chapter node (accordion: chapter → its topics) ───────────────────────────
 
 function ChapterNode({
-  chapter, chapterIndex, version, canEdit, selectedScopeId,
+  chapter, chapterIndex, open, onToggle, version, canEdit, selectedScopeId,
   onSelectTopic, onSelectChapter, onAddTopic, onEditTopic, onDeleteTopic, onEditChapter, onDeleteChapter,
 }: {
-  chapter: any; chapterIndex: number; version: number; canEdit: boolean; selectedScopeId: string | null;
+  chapter: any; chapterIndex: number; open: boolean; onToggle: () => void; version: number; canEdit: boolean; selectedScopeId: string | null;
   onSelectTopic: (t: any) => void; onSelectChapter: () => void; onAddTopic: (count: number) => void;
   onEditTopic: (t: any, fallbackIndex?: number) => void; onDeleteTopic: (t: any) => void; onEditChapter: () => void; onDeleteChapter: () => void;
 }) {
-  const [open, setOpen] = useState(false);
   const [topics, setTopics] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -1183,7 +1186,7 @@ function ChapterNode({
       <div className={`group flex items-center gap-2 rounded-xl px-2.5 py-2 transition-all ${anyChildSelected && !open ? 'bg-brand-50/60 dark:bg-brand-900/10' : 'hover:bg-surface-50 dark:hover:bg-surface-800'}`}>
         <Button variant="ghost" size={null}
           type="button"
-          onClick={() => setOpen((o) => !o)}
+          onClick={onToggle}
           className="h-auto min-w-0 flex-1 justify-start gap-2 whitespace-normal p-0 text-left font-normal hover:bg-transparent"
         >
           {/* Chapter number badge */}

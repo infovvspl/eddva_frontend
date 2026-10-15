@@ -76,7 +76,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import ClassCardPicker from "@/components/school/teacher/ClassCardPicker";
 import { Separator } from "@/components/ui/separator";
 
 import api, { unwrapSchoolData } from "@/lib/api/school-client";
@@ -127,24 +127,6 @@ interface StudentGroup {
   id: string;
   name: string;
   members: StudentMember[];
-}
-
-/** Column count for the class cards: 1 on phones, 2 from md, 3 from xl (Tailwind breakpoints). */
-function useColumnCount() {
-  const pick = () => {
-    if (typeof window === 'undefined' || !window.matchMedia) return 1;
-    if (window.matchMedia('(min-width: 1280px)').matches) return 3;
-    if (window.matchMedia('(min-width: 768px)').matches) return 2;
-    return 1;
-  };
-  const [count, setCount] = useState(pick);
-  useEffect(() => {
-    const queries = [window.matchMedia('(min-width: 768px)'), window.matchMedia('(min-width: 1280px)')];
-    const update = () => setCount(pick());
-    queries.forEach((q) => q.addEventListener('change', update));
-    return () => queries.forEach((q) => q.removeEventListener('change', update));
-  }, []);
-  return count;
 }
 
 function formatSectionName(name: string | null | undefined) {
@@ -222,6 +204,13 @@ const AssignmentManagement: React.FC = () => {
   const [bankResults, setBankResults] = useState<QuestionItem[]>([]);
   const [loadingBank, setLoadingBank] = useState(false);
   const [aiQTopic, setAiQTopic] = useState('');
+  // Topic picker for AI question generation: the selected subject's own chapters and topics.
+  const [qChapters, setQChapters] = useState<{ id: string; name: string }[]>([]);
+  const [qTopics, setQTopics] = useState<{ id: string; name: string }[]>([]);
+  const [qChapterId, setQChapterId] = useState('');
+  const [qTopicId, setQTopicId] = useState('');
+  const [qTopicCustom, setQTopicCustom] = useState(false);
+  const [loadingQChapters, setLoadingQChapters] = useState(false);
   const [aiQCount, setAiQCount] = useState('5');
   const [aiQDifficulty, setAiQDifficulty] = useState('medium');
   const [aiQType, setAiQType] = useState('mcq_single');
@@ -347,30 +336,6 @@ const AssignmentManagement: React.FC = () => {
   }, [assignments]);
 
   // Class -> section -> subject is chosen on one screen (the class cards), so only two levels remain.
-  // Per class: its sections, and each section's subjects (both in natural order).
-  const classCards = useMemo(() => {
-    return classes.map((cls) => {
-      const secMap = new Map<string, { id: string; name: string; subjects: Map<string, { id: string; name: string }> }>();
-      assignments
-        .filter((a: any) => a.classId === cls.id && a.sectionId)
-        .forEach((a: any) => {
-          const sec = secMap.get(a.sectionId) ?? { id: a.sectionId, name: formatSectionName(a.sectionName), subjects: new Map() };
-          if (a.subjectId) sec.subjects.set(a.subjectId, { id: a.subjectId, name: a.subjectName });
-          secMap.set(a.sectionId, sec);
-        });
-      const secs = Array.from(secMap.values())
-        .sort(byName)
-        .map((sec) => ({ id: sec.id, name: sec.name, subjects: Array.from(sec.subjects.values()).sort(byName) }));
-      return { id: cls.id, name: cls.name, subjectCount: cls.subjects.size, sections: secs };
-    });
-  }, [classes, assignments]);
-
-  // Which section chip is active on each class card (defaults to the first).
-  const [cardSection, setCardSection] = useState<Record<string, string>>({});
-  // The class card whose subjects are showing (one at a time).
-  const [openClass, setOpenClass] = useState<string>('');
-  const columnCount = useColumnCount();
-
   const level: 'classes' | 'workspace' = selectedSubject ? 'workspace' : 'classes';
 
   const goToClasses = () => { setSelectedClass(null); setSelectedSection(null); setSelectedSubject(null); setSearch(''); };
@@ -423,6 +388,45 @@ const AssignmentManagement: React.FC = () => {
   useEffect(() => {
     if (mainTab === 'inbox') void fetchInbox();
   }, [mainTab, selectedClass?.id, selectedSection?.id, selectedSubject?.id]);
+
+  // Chapters of the selected subject, for the AI question topic picker
+  useEffect(() => {
+    if (!showCreateModal || !selectedSubject?.id) {
+      setQChapters([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingQChapters(true);
+    api.get('/topics/chapters', { params: { subjectId: selectedSubject.id } })
+      .then((res) => {
+        if (cancelled) return;
+        const list: any[] = res.data?.data ?? res.data ?? [];
+        const chapters = (Array.isArray(list) ? list : []).map((c) => ({ id: String(c.id), name: String(c.name || 'Chapter') }));
+        setQChapters(chapters);
+        // Nothing set up for this subject yet: fall back to typing the topic.
+        if (!chapters.length) setQTopicCustom(true);
+      })
+      .catch(() => { if (!cancelled) { setQChapters([]); setQTopicCustom(true); } })
+      .finally(() => { if (!cancelled) setLoadingQChapters(false); });
+    return () => { cancelled = true; };
+  }, [showCreateModal, selectedSubject?.id]);
+
+  // Topics of the chosen chapter
+  useEffect(() => {
+    if (!qChapterId) {
+      setQTopics([]);
+      return;
+    }
+    let cancelled = false;
+    api.get('/topics', { params: { chapterId: qChapterId } })
+      .then((res) => {
+        if (cancelled) return;
+        const list: any[] = res.data?.data ?? res.data ?? [];
+        setQTopics((Array.isArray(list) ? list : []).map((t) => ({ id: String(t.id), name: String(t.name || 'Topic') })));
+      })
+      .catch(() => { if (!cancelled) setQTopics([]); });
+    return () => { cancelled = true; };
+  }, [qChapterId]);
 
   // Student pool: the sections this teacher may assign to, and the students in the chosen ones
   const buildPoolSections = (sectionIds: string[], options: PoolSection[] = poolOptions) =>
@@ -585,6 +589,10 @@ const AssignmentManagement: React.FC = () => {
     setCreateMode("manual");
     setAiTopic("");
     setAiPrompt("");
+    setAiQTopic('');
+    setQChapterId('');
+    setQTopicId('');
+    setQTopicCustom(false);
     setWorksheetImageUrl(null);
     setWorksheetPreview(null);
     setGeneratedGroups([]);
@@ -688,7 +696,7 @@ const AssignmentManagement: React.FC = () => {
       return;
     }
     if (studentsRoster.length === 0) {
-      toast.error("Select at least one student in the Student Pool step");
+      toast.error("No students were found in this section, so there is nobody to assign this to");
       return;
     }
     if (questions.some((q) => !(Number(q.marks) > 0))) {
@@ -816,7 +824,7 @@ const AssignmentManagement: React.FC = () => {
 
   const generateAiQuestions = async () => {
     if (!aiQTopic.trim()) {
-      toast.error('Enter a topic to generate questions for');
+      toast.error(qTopicCustom || !qChapters.length ? 'Enter a topic to generate questions for' : 'Choose a chapter (and a topic) to generate questions for');
       return;
     }
     setGeneratingQ(true);
@@ -1083,14 +1091,13 @@ const AssignmentManagement: React.FC = () => {
   }, [workspaceAssignments]);
 
   const stepKeys = useMemo(
-    () => ['basics', 'pool', ...(formData.target_type === 'group' ? ['groups'] : []), 'content', 'questions', 'schedule', 'review'] as const,
+    () => ['basics', ...(formData.target_type === 'group' ? ['groups'] : []), /* 'content', */ 'questions', 'schedule', 'review'] as const,
     [formData.target_type],
   );
   const stepLabels: Record<string, string> = {
     basics: 'Basics & Target',
-    pool: 'Student Pool',
     groups: 'Auto-Group Setup',
-    content: 'Assignment Content',
+    // content: 'Assignment Content',
     questions: 'Questions',
     schedule: 'Schedule',
     review: 'Review & Publish',
@@ -1133,13 +1140,6 @@ const AssignmentManagement: React.FC = () => {
             <Button variant="outline" size="sm" onClick={goBack} className="gap-1.5">
               <ChevronLeft className="size-4" />
               Back
-            </Button>
-          )}
-
-          {level === 'workspace' && (
-            <Button onClick={openCreateModal} size="sm" className="gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 font-extrabold text-white shadow-md shadow-blue-600/20 hover:brightness-110">
-              <Plus className="size-4" />
-              Create Assignment
             </Button>
           )}
         </div>
@@ -1274,115 +1274,21 @@ const AssignmentManagement: React.FC = () => {
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                     {[0, 1, 2].map((i) => <Skeleton key={i} className="h-44 rounded-2xl" />)}
                   </div>
-                ) : classCards.length === 0 ? (
+                ) : classes.length === 0 ? (
                   <Card className="rounded-2xl border-2 border-dashed border-blue-200 bg-blue-50/40 p-8 text-center text-sm text-slate-500 shadow-none dark:border-blue-900/50 dark:bg-slate-900">
                     No classes assigned to you yet.
                   </Card>
                 ) : (
-                  <Accordion
-                    type="single"
-                    collapsible
-                    value={openClass}
-                    onValueChange={setOpenClass}
-                    className="grid items-start gap-4"
-                    style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}
-                  >
-                    {/* Cards are dealt into independent columns, so opening one only grows its own column. */}
-                    {(() => {
-                      const cards = classCards.map((cls) => {
-                        const activeSec = cls.sections.find((s) => s.id === cardSection[cls.id]) ?? cls.sections[0];
-                        return (
-                          <AccordionItem
-                            key={cls.id}
-                            value={cls.id}
-                            className="group overflow-hidden rounded-2xl border border-blue-200 bg-white shadow-sm transition-colors hover:border-blue-500 dark:border-blue-900/50 dark:bg-slate-900 dark:hover:border-blue-500"
-                          >
-                            {/* Header: class name — click to show its subjects */}
-                            <AccordionTrigger className="px-4 py-3.5 text-left hover:no-underline [&>svg]:hidden">
-                              <div className="flex w-full items-center gap-3">
-                                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 transition-colors group-hover:bg-blue-600 group-hover:text-white group-data-[state=open]:bg-blue-600 group-data-[state=open]:text-white dark:bg-blue-950/60 dark:text-blue-300">
-                                  <Layers className="size-5" />
-                                </span>
-                                <div className="min-w-0 flex-1">
-                                  <p className="truncate text-base font-bold text-slate-900 dark:text-white">{cls.name}</p>
-                                  <p className="mt-0.5 truncate text-xs font-normal text-slate-500">
-                                    {cls.sections.length} {cls.sections.length === 1 ? 'Section' : 'Sections'} {'\u2022'} {cls.subjectCount} {cls.subjectCount === 1 ? 'Subject' : 'Subjects'}
-                                  </p>
-                                </div>
-                                <ChevronRight className="size-4 shrink-0 text-slate-400 transition-transform group-hover:text-blue-600 group-data-[state=open]:rotate-90 group-data-[state=open]:text-blue-600" />
-                              </div>
-                            </AccordionTrigger>
-
-                            {/* Section chips: always visible, one line, so every card is the same height */}
-                            <div className="flex items-center gap-1.5 overflow-x-auto px-4 pb-3.5">
-                              {cls.sections.length === 0 ? (
-                                <span className="text-xs text-slate-400">No sections</span>
-                              ) : (
-                                cls.sections.map((sec) => {
-                                  const on = activeSec?.id === sec.id;
-                                  return (
-                                    <button
-                                      key={sec.id}
-                                      type="button"
-                                      onClick={() => {
-                                        setCardSection((prev) => ({ ...prev, [cls.id]: sec.id }));
-                                        setOpenClass(cls.id);
-                                      }}
-                                      className={`shrink-0 rounded-lg border px-3 py-1.5 text-xs font-bold transition-colors ${
-                                        on && openClass === cls.id
-                                          ? 'border-violet-600 bg-violet-600 text-white shadow-sm'
-                                          : 'border-violet-200 bg-violet-50 text-violet-700 hover:border-violet-500 dark:border-violet-900/50 dark:bg-violet-950/40 dark:text-violet-300'
-                                      }`}
-                                    >
-                                      {sec.name}
-                                    </button>
-                                  );
-                                })
-                              )}
-                            </div>
-
-                            {/* Subjects of the active section */}
-                            <AccordionContent className="border-t border-blue-100 bg-slate-50/60 p-4 pb-4 dark:border-blue-900/40 dark:bg-slate-950/40">
-                              <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                Subjects in {activeSec?.name || 'section'}
-                              </p>
-                              {!activeSec || activeSec.subjects.length === 0 ? (
-                                <p className="rounded-xl border border-dashed border-slate-200 p-3 text-center text-xs text-slate-400 dark:border-slate-800">
-                                  No subjects in this section.
-                                </p>
-                              ) : (
-                                <div className="grid grid-cols-1 gap-2">
-                                  {activeSec.subjects.map((sub) => (
-                                    <button
-                                      key={sub.id}
-                                      type="button"
-                                      onClick={() => {
-                                        setSelectedClass({ id: cls.id, name: cls.name });
-                                        setSelectedSection({ id: activeSec.id, name: activeSec.name });
-                                        setSelectedSubject({ id: sub.id, name: sub.name });
-                                      }}
-                                      className="group/sub flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-white p-2.5 text-left transition-all hover:border-emerald-500 hover:shadow-sm dark:border-emerald-900/50 dark:bg-slate-900 dark:hover:border-emerald-500"
-                                    >
-                                      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 transition-colors group-hover/sub:bg-emerald-600 group-hover/sub:text-white dark:bg-emerald-950/60 dark:text-emerald-300">
-                                        <BookOpen className="size-4" />
-                                      </span>
-                                      <span className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{sub.name}</span>
-                                      <ChevronRight className="size-4 shrink-0 text-slate-300 transition-transform group-hover/sub:translate-x-0.5 group-hover/sub:text-emerald-600" />
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
-                            </AccordionContent>
-                          </AccordionItem>
-                        );
-                      });
-                      return Array.from({ length: columnCount }, (_, col) => (
-                        <div key={col} className="flex min-w-0 flex-col gap-4">
-                          {cards.filter((_, i) => i % columnCount === col)}
-                        </div>
-                      ));
-                    })()}
-                  </Accordion>
+                  <ClassCardPicker
+                    assignments={assignments as any}
+                    actionLabel="Open assignments"
+                    onPick={(cls, sec, sub) => {
+                      setSelectedClass(cls);
+                      // The workspace shows the section the way this page always has ("Sec A").
+                      setSelectedSection({ id: sec.id, name: formatSectionName(sec.name) });
+                      setSelectedSubject(sub);
+                    }}
+                  />
                 )}
               </div>
             )}
@@ -1424,6 +1330,15 @@ const AssignmentManagement: React.FC = () => {
                       <SelectItem value="group">Group Project</SelectItem>
                     </SelectContent>
                   </Select>
+
+                  <Button
+                    onClick={openCreateModal}
+                    size="sm"
+                    className="h-9 gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 font-extrabold text-white shadow-md shadow-blue-600/20 hover:brightness-110"
+                  >
+                    <Plus className="size-4" />
+                    Create Assignment
+                  </Button>
                 </div>
               </div>
             )}
@@ -1887,107 +1802,14 @@ const AssignmentManagement: React.FC = () => {
             ))}
           </div>
 
-          {/* STEP: STUDENT POOL */}
-          {currentStep === 'pool' && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold flex items-center gap-1.5">
-                  <Users className="size-3.5 text-primary" />
-                  Who should receive this assignment?
-                </Label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1">
-                  {poolOptions.map((o) => (
-                    <label
-                      key={o.sectionId}
-                      className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={poolSectionIds.includes(o.sectionId)}
-                        onChange={() => togglePoolSection(o.sectionId)}
-                      />
-                      <span className="font-medium text-slate-800">{o.className} · {formatSectionName(o.sectionName)}</span>
-                    </label>
-                  ))}
-                  {poolOptions.length === 0 && !loadingStudents && (
-                    <p className="text-xs text-muted-foreground">No classes available to assign.</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-slate-200 bg-white">
-                <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2">
-                  <span className="text-xs font-bold text-slate-800">
-                    {studentsRoster.length} of {poolStudents.length} students selected
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-2 text-[11px]"
-                      onClick={() => { setGeneratedGroups([]); setExcludedIds(new Set()); }}
-                    >
-                      Select all
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-2 text-[11px]"
-                      onClick={() => { setGeneratedGroups([]); setExcludedIds(new Set(poolStudents.map((st) => st.id))); }}
-                    >
-                      Clear
-                    </Button>
-                  </div>
-                </div>
-                <div className="max-h-56 overflow-y-auto divide-y divide-slate-100">
-                  {loadingStudents ? (
-                    <div className="p-3 space-y-2">
-                      <Skeleton className="h-6 w-full" />
-                      <Skeleton className="h-6 w-full" />
-                    </div>
-                  ) : poolStudents.length === 0 ? (
-                    <p className="p-4 text-center text-xs text-muted-foreground">No students in the selected sections.</p>
-                  ) : (
-                    poolStudents.map((st) => (
-                      <label key={st.id} className="flex items-center gap-2 px-3 py-1.5 text-xs cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={!excludedIds.has(st.id)}
-                          onChange={() => toggleStudent(st.id)}
-                        />
-                        <span className="flex-1 font-medium text-slate-800">{st.name}</span>
-                        {st.rollNo && <span className="text-[10px] text-slate-400">#{st.rollNo}</span>}
-                        {poolSectionIds.length > 1 && (
-                          <Badge variant="outline" className="text-[10px]">
-                            {st.className} {formatSectionName(st.sectionName)}
-                          </Badge>
-                        )}
-                      </label>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {formData.target_type === 'group' && poolSectionIds.length > 1 && (
-                <label className="flex items-start gap-2 rounded-lg border border-indigo-100 bg-indigo-50/60 p-3 text-xs text-indigo-900 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="mt-0.5"
-                    checked={keepSectionsTogether}
-                    onChange={(e) => { setKeepSectionsTogether(e.target.checked); setGeneratedGroups([]); }}
-                  />
-                  <span>
-                    <span className="font-semibold block">Keep students from each section together</span>
-                    Groups are formed inside each section instead of mixing the whole pool.
-                  </span>
-                </label>
-              )}
-            </div>
-          )}
-
           {/* STEP 1: BASICS & TARGET */}
           {currentStep === 'basics' && (
             <div className="space-y-4">
+              {!loadingStudents && studentsRoster.length === 0 && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-800">
+                  No students were found in {selectedSection?.name || 'this section'}, so this assignment can't be created yet.
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold">Assignment Title *</Label>
                 <Input
@@ -2054,7 +1876,7 @@ const AssignmentManagement: React.FC = () => {
                     Group Assignment Selected
                   </p>
                   <p className="text-indigo-700">
-                    Students will be split into collaborative groups. Proceed to Step 3 to configure group size and auto-generate student teams.
+                    Students will be split into collaborative groups. Continue to the next step to configure group size and auto-generate student teams.
                   </p>
                 </div>
               )}
@@ -2212,7 +2034,8 @@ const AssignmentManagement: React.FC = () => {
             </div>
           )}
 
-          {/* STEP 2 (FOR INDIVIDUAL) OR STEP 3 (FOR GROUP): CONTENT & INSTRUCTIONS */}
+          {/* COMMENTED OUT: Assignment Content step (manual instructions / file, AI generator, OCR photo).
+             Re-enable by restoring 'content' in stepKeys and stepLabels above and removing this comment.
           {currentStep === 'content' && (
             <div className="space-y-4">
               <Tabs value={createMode} onValueChange={(val: any) => setCreateMode(val)} className="w-full">
@@ -2307,6 +2130,7 @@ const AssignmentManagement: React.FC = () => {
               </Tabs>
             </div>
           )}
+          */}
 
           {/* STEP: QUESTIONS (optional) */}
           {currentStep === 'questions' && (
@@ -2358,9 +2182,67 @@ const AssignmentManagement: React.FC = () => {
 
                 <TabsContent value="ai" className="space-y-3 pt-3">
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    <div className="col-span-2 sm:col-span-4 space-y-1">
-                      <Label className="text-[11px] font-semibold">Topic</Label>
-                      <Input value={aiQTopic} onChange={(e) => setAiQTopic(e.target.value)} placeholder="e.g. Laws of Motion" className="text-xs" />
+                    <div className="col-span-2 sm:col-span-4 space-y-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <Label className="text-[11px] font-semibold">
+                          Topic{selectedSubject ? ` (${selectedSubject.name})` : ''}
+                        </Label>
+                        {qChapters.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => { setQTopicCustom((v) => !v); setAiQTopic(''); setQChapterId(''); setQTopicId(''); }}
+                            className="text-[11px] font-semibold text-blue-600 hover:underline"
+                          >
+                            {qTopicCustom ? 'Choose from the syllabus' : 'Type my own topic'}
+                          </button>
+                        )}
+                      </div>
+
+                      {qTopicCustom || (!loadingQChapters && qChapters.length === 0) ? (
+                        <Input
+                          value={aiQTopic}
+                          onChange={(e) => setAiQTopic(e.target.value)}
+                          placeholder="e.g. Laws of Motion"
+                          className="text-xs"
+                        />
+                      ) : (
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          <Select
+                            value={qChapterId || undefined}
+                            onValueChange={(v) => {
+                              setQChapterId(v);
+                              setQTopicId('');
+                              setAiQTopic(qChapters.find((c) => c.id === v)?.name || '');
+                            }}
+                          >
+                            <SelectTrigger className="text-xs">
+                              <SelectValue placeholder={loadingQChapters ? 'Loading chapters...' : 'Select chapter'} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {qChapters.map((c, i) => (
+                                <SelectItem key={c.id} value={c.id}>{i + 1}. {c.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Select
+                            value={qTopicId || undefined}
+                            disabled={!qChapterId || qTopics.length === 0}
+                            onValueChange={(v) => {
+                              setQTopicId(v);
+                              setAiQTopic(qTopics.find((t) => t.id === v)?.name || '');
+                            }}
+                          >
+                            <SelectTrigger className="text-xs">
+                              <SelectValue placeholder={!qChapterId ? 'Select a chapter first' : qTopics.length ? 'Select topic (optional)' : 'No topics in this chapter'} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {qTopics.map((t, i) => (
+                                <SelectItem key={t.id} value={t.id}>{i + 1}. {t.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
                     </div>
                     <div className="space-y-1">
                       <Label className="text-[11px] font-semibold">How many</Label>
@@ -2582,13 +2464,13 @@ const AssignmentManagement: React.FC = () => {
                 <Button
                   size="sm"
                   disabled={
-                    (currentStep === 'pool' && (loadingStudents || studentsRoster.length === 0)) ||
+                    (currentStep === 'basics' && (loadingStudents || studentsRoster.length === 0)) ||
                     (currentStep === 'schedule' && publishMode === 'scheduled' && !startAt)
                   }
                   onClick={() => setCreateStep((prev) => prev + 1)}
                   className="gap-1.5"
                 >
-                  {currentStep === 'groups' ? 'Next: Content' : 'Next Step'} <ChevronRight className="size-3.5" />
+                  {currentStep === 'groups' ? 'Next: Questions' : 'Next Step'} <ChevronRight className="size-3.5" />
                 </Button>
               )}
 
