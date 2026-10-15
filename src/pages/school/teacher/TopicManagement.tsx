@@ -54,6 +54,7 @@ import {
   Clapperboard,
   Play,
   ScanLine,
+  ChevronsUpDown,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -63,11 +64,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Breadcrumb as UiBreadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import SearchBar from '@/components/school/SearchBar';
 import { Badge } from '@/components/ui/badge';
 import Modal from '@/components/school/Modal';
 import InputField from '@/components/school/InputField';
 
+import { cn } from '@/lib/utils';
 import api from '@/lib/api/school-client';
 import { MindMapCanvas } from '@/components/school/MindMapVisualizer';
 import { mindmapMarkdownToTree } from '@/lib/mindmap-markdown';
@@ -113,6 +118,76 @@ interface CourseContentReturnState {
   selectedTopic?: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' | 'subject' } | null;
 }
 
+function SectionMultiSelect({
+  sections,
+  selected,
+  onChange,
+}: {
+  sections: Ref[];
+  selected: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const toggle = (id: string) => onChange(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
+  const label = selected.length === 0
+    ? sections.length ? 'Select sections' : 'No sections found'
+    : `${selected.length} section${selected.length === 1 ? '' : 's'} selected`;
+
+  return (
+    <div className="space-y-2">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            disabled={sections.length === 0}
+            className={cn('w-full justify-between font-semibold', selected.length === 0 && 'text-muted-foreground')}
+          >
+            <span className="truncate">{label}</span>
+            <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+          <Command>
+            <CommandInput placeholder="Search sections…" />
+            <CommandList>
+              <CommandEmpty>No section found.</CommandEmpty>
+              <CommandGroup>
+                {sections.map((s) => {
+                  const id = String(s.id);
+                  const name = formatSectionName(s.name);
+                  return (
+                    <CommandItem key={id} value={name} onSelect={() => toggle(id)} className="gap-2">
+                      <Checkbox checked={selected.includes(id)} className="pointer-events-none" />
+                      <span className="truncate">{name}</span>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      {sections.length > 0 && (
+        <div className="flex items-center gap-3 text-[11px] font-semibold">
+          <Button type="button" variant="link" className="h-auto p-0 text-[11px]" onClick={() => onChange(sections.map((s) => String(s.id)))}>
+            Select all
+          </Button>
+          {selected.length > 0 && (
+            <Button type="button" variant="link" className="h-auto p-0 text-[11px] text-slate-500" onClick={() => onChange([])}>
+              Clear
+            </Button>
+          )}
+          <span className="ml-auto text-slate-400">
+            {selected.length} of {sections.length} selected
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
 
 /** Column count for the class cards: 1 on phones, 2 from md, 3 from xl (matches Tailwind breakpoints). */
 function useColumnCount() {
@@ -257,7 +332,9 @@ const TopicManagement: React.FC = () => {
       if (a.subjectId) entry.subjects.add(a.subjectId);
       map.set(a.sectionId, entry);
     });
-    return Array.from(map.values());
+    const result = Array.from(map.values());
+    result.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+    return result;
   }, [all, selectedClass]);
 
   const subjects = useMemo(() => {
@@ -278,7 +355,9 @@ const TopicManagement: React.FC = () => {
     all
       .filter((a) => a.classId === selectedClass.id && a.subjectId === selectedSubject.id)
       .forEach((a) => { if (a.sectionId) map.set(a.sectionId, { id: a.sectionId, name: formatSectionName(a.sectionName) }); });
-    return Array.from(map.values());
+    const result = Array.from(map.values());
+    result.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+    return result;
   }, [all, selectedClass, selectedSubject]);
 
   // ── Curriculum fetches ─────────────────────────────────────────────────────
@@ -524,6 +603,7 @@ const TopicManagement: React.FC = () => {
                   classSecs.push({ id: a.sectionId, name: formatSectionName(a.sectionName) });
                 }
               });
+              classSecs.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
 
               // Active selected section for this card (defaults to first section)
               const activeSecId = cardActiveSections[c.id] || classSecs[0]?.id;
