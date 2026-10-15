@@ -4,6 +4,7 @@ import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { SLOT_TYPE_STYLES, getSlotPalette } from '@/lib/school/timetablePalette';
 
 const DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 
@@ -60,6 +61,10 @@ export default function Timetable() {
     });
   }, [timetable]);
 
+  const paletteFor = (cls) => getSlotPalette(cls.type === 'break');
+  const initialsOf = (name) =>
+    String(name || '').split(' ').filter(Boolean).map((p) => p[0]).join('').toUpperCase().slice(0, 2) || '—';
+
   const getSortedClasses = (day) => {
     return timetable
       .filter((t) => t.day.toUpperCase() === day)
@@ -81,11 +86,12 @@ export default function Timetable() {
   };
 
   const renderBadge = (type, isLive, isLab) => {
-    if (type === 'break') return <span className="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 px-2 py-0.5 rounded text-[10px] font-bold uppercase">BREAK</span>;
-    if (isLive) return <span className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 px-2 py-0.5 rounded text-[10px] font-bold uppercase">LIVE</span>;
-    if (isLab) return <span className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 px-2 py-0.5 rounded text-[10px] font-bold uppercase">LAB</span>;
-    if (type === 'extra') return <span className="bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300 px-2 py-0.5 rounded text-[10px] font-bold uppercase">EXTRA</span>;
-    return <span className="bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 px-2 py-0.5 rounded text-[10px] font-bold uppercase">OFFLINE</span>;
+    const kind = type === 'break' ? 'break' : isLive ? 'live' : isLab ? 'lab' : type === 'extra' ? 'extra' : 'offline';
+    return (
+      <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-black uppercase ${SLOT_TYPE_STYLES[kind]}`}>
+        {kind}
+      </span>
+    );
   };
 
   if (loading) {
@@ -99,16 +105,16 @@ export default function Timetable() {
           <h1 className="text-xl sm:text-3xl font-bold font-display text-slate-900 dark:text-white">My Timetable</h1>
           <p className="text-xs sm:text-sm font-bold text-slate-500 mt-1">Unified view of your offline and live classes.</p>
         </div>
-        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-fit">
+        <div className="inline-flex w-fit items-center gap-1.5 rounded-2xl border border-slate-100 bg-white p-1.5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <button 
             onClick={() => setView('daily')}
-            className={`px-3.5 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest rounded-lg transition-all ${view === 'daily' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+            className={`rounded-xl px-4 py-2 text-sm font-bold transition ${view === 'daily' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white'}`}
           >
             Today
           </button>
           <button 
             onClick={() => setView('weekly')}
-            className={`px-3.5 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest rounded-lg transition-all ${view === 'weekly' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+            className={`rounded-xl px-4 py-2 text-sm font-bold transition ${view === 'weekly' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white'}`}
           >
             Weekly
           </button>
@@ -127,8 +133,8 @@ export default function Timetable() {
                     onClick={() => setMobileSelectedDay(day)}
                     className={`px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
                       mobileSelectedDay === day
-                        ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 shadow-md'
-                        : 'bg-slate-50 text-slate-500 hover:bg-slate-100 dark:bg-slate-800/50 dark:text-slate-400'
+                        ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+                        : 'border border-slate-100 bg-white text-slate-500 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400'
                     }`}
                   >
                     {day.toLowerCase()}
@@ -147,39 +153,46 @@ export default function Timetable() {
                     const isLive = cls.type === 'live';
                     const isLab = cls.room?.toLowerCase().includes('lab') || cls.type === 'lab';
                     const isActive = isCurrentPeriod(mobileSelectedDay, cls.startTime, cls.endTime);
-                    
+                    const palette = paletteFor(cls);
+
                     return (
-                      <div 
-                        key={idx} 
+                      <div
+                        key={idx}
                         className={cn(
-                          "p-4 rounded-xl border flex flex-col gap-3 relative transition-all shadow-sm",
-                          isActive 
-                            ? "border-blue-400 bg-blue-50/20 dark:bg-blue-900/10 shadow-[0_0_15px_rgba(59,130,246,0.15)] ring-1 ring-blue-400/50" 
-                            : cls.type === 'break'
-                            ? "border-amber-100 bg-amber-50/10 dark:border-amber-950/20 dark:bg-amber-950/5"
-                            : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800"
+                          "group relative flex flex-col gap-3 overflow-hidden rounded-2xl border p-4 pl-5 shadow-sm transition-all",
+                          cls.type === 'break' ? "bg-amber-50 dark:bg-amber-950/20" : "bg-white dark:bg-slate-900",
+                          isActive
+                            ? "border-emerald-300 ring-2 ring-emerald-200/70 dark:border-emerald-700 dark:ring-emerald-900/50"
+                            : cls.type === 'break' ? "border-amber-300 dark:border-amber-800" : "border-slate-100 dark:border-slate-800"
                         )}
                       >
+                        <span aria-hidden className={`absolute inset-y-0 left-0 w-1.5 ${palette.bar}`} />
+                        <span aria-hidden className={`pointer-events-none absolute -right-8 -top-8 size-28 rounded-full ${palette.glow}`} />
                         {isActive && (
-                          <span className="absolute top-3.5 right-3.5 bg-blue-500 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full animate-pulse shadow-md">
-                            Active Now
+                          <span className="absolute top-3.5 right-3.5 inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[9px] font-black uppercase text-white">
+                            <span className="size-1.5 animate-pulse rounded-full bg-white" />
+                            Now
                           </span>
                         )}
                         
                         <div className="flex items-start justify-between min-w-0 pr-16">
                           <div className="min-w-0">
-                            <p className={`font-black text-sm truncate ${cls.type === 'break' ? 'text-amber-800 dark:text-amber-300' : 'text-slate-950 dark:text-white'}`}>
-                              {cls.subject}
-                            </p>
+                            <span className={`inline-flex max-w-full items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-black ${palette.badge}`}>
+                              <span className={`size-1.5 shrink-0 rounded-full ${palette.bar}`} />
+                              <span className="truncate">{cls.subject}</span>
+                            </span>
                             {cls.type !== 'break' && (
-                              <p className="text-xs font-semibold text-slate-500 truncate mt-0.5">
-                                {cls.teacher}
-                              </p>
+                              <div className="mt-2.5 flex items-center gap-2">
+                                <span className={`flex size-7 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${palette.avatar}`}>
+                                  {initialsOf(cls.teacher)}
+                                </span>
+                                <p className="truncate text-xs font-semibold text-slate-600 dark:text-slate-300">{cls.teacher}</p>
+                              </div>
                             )}
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between border-t border-slate-50 dark:border-slate-800/50 pt-2.5 mt-0.5 text-xs text-slate-500 font-medium">
+                        <div className="-mx-4 -mb-4 mt-0.5 flex items-center justify-between border-t border-slate-100 bg-slate-50/70 px-4 py-2.5 pl-5 text-xs font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-950/40">
                           <div className="flex flex-col gap-0.5 text-[11px] sm:text-xs">
                             <div className="flex items-center gap-1.5">
                               <Clock className="size-3.5 text-slate-400 shrink-0" />
@@ -214,15 +227,15 @@ export default function Timetable() {
                   {getSortedClasses(currentDay).length} Classes Today
                 </span>
               </div>
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-x-auto w-full max-w-full shadow-sm">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-x-auto w-full max-w-full shadow-md">
                 <table className="w-full text-left text-sm min-w-[600px]">
-                  <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+                  <thead className="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-900">
                     <tr>
-                      <th className="px-4 py-3 font-bold text-slate-500 uppercase tracking-wider text-xs">Time</th>
-                      <th className="px-4 py-3 font-bold text-slate-500 uppercase tracking-wider text-xs">Subject</th>
-                      <th className="px-4 py-3 font-bold text-slate-500 uppercase tracking-wider text-xs">Teacher</th>
-                      <th className="px-4 py-3 font-bold text-slate-500 uppercase tracking-wider text-xs">Room</th>
-                      <th className="px-4 py-3 font-bold text-slate-500 uppercase tracking-wider text-xs">Type</th>
+                      <th className="px-4 py-4 font-black text-slate-200 uppercase tracking-wider text-xs">Time</th>
+                      <th className="px-4 py-4 font-black text-slate-200 uppercase tracking-wider text-xs">Subject</th>
+                      <th className="px-4 py-4 font-black text-slate-200 uppercase tracking-wider text-xs">Teacher</th>
+                      <th className="px-4 py-4 font-black text-slate-200 uppercase tracking-wider text-xs">Room</th>
+                      <th className="px-4 py-4 font-black text-slate-200 uppercase tracking-wider text-xs">Type</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -232,10 +245,10 @@ export default function Timetable() {
                       const isActive = isCurrentPeriod(currentDay, cls.startTime, cls.endTime);
                       
                       return (
-                        <tr key={idx} className={`transition ${isActive ? 'bg-blue-50/50 dark:bg-blue-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
+                        <tr key={idx} className={`transition ${isActive ? 'bg-emerald-50 dark:bg-emerald-950/20' : cls.type === 'break' ? 'bg-amber-50 hover:bg-amber-100/70 dark:bg-amber-950/20' : idx % 2 === 1 ? 'bg-slate-50/70 hover:bg-slate-50 dark:bg-slate-950/40 dark:hover:bg-slate-800/50' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
                           <td className="px-4 py-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">
                             <div className="flex items-center gap-2">
-                              {isActive && <span className="size-2 rounded-full bg-blue-500 animate-pulse" />}
+                              {isActive && <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />}
                               <span className="font-bold text-slate-900 dark:text-white">
                                 {cls.periodName || (cls.periodNumber ? `Period ${cls.periodNumber}` : '')}
                               </span>
@@ -244,11 +257,19 @@ export default function Timetable() {
                               {cls.startTime} - {cls.endTime}
                             </div>
                           </td>
-                          <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">
-                            {cls.subject}
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex max-w-full items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-black ${paletteFor(cls).badge}`}>
+                              <span className={`size-1.5 shrink-0 rounded-full ${paletteFor(cls).bar}`} />
+                              <span className="truncate">{cls.subject}</span>
+                            </span>
                           </td>
                           <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
-                            {cls.teacher}
+                            <div className="flex items-center gap-2">
+                              <span className={`flex size-7 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${paletteFor(cls).avatar}`}>
+                                {cls.type === 'break' ? <Coffee className="size-3.5" /> : initialsOf(cls.teacher)}
+                              </span>
+                              <span className="font-semibold">{cls.teacher}</span>
+                            </div>
                           </td>
                           <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
                             {cls.room || (isLive ? 'Virtual' : 'TBD')}
@@ -285,19 +306,19 @@ export default function Timetable() {
               ← Swipe table horizontally to see full week →
             </p>
           )}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-md overflow-hidden flex flex-col">
             <div className="overflow-x-auto w-full max-w-full">
               <table className="w-full text-left border-collapse min-w-[900px]">
-                <thead className="bg-slate-50 dark:bg-slate-800/80">
-                  <tr>
-                    <th className="p-4 border-b border-r border-slate-200 dark:border-slate-700/50 w-24 text-center font-bold text-slate-500 uppercase tracking-wider text-xs sticky left-0 z-20 bg-slate-50 dark:bg-slate-800 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                <thead>
+                  <tr className="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-900">
+                    <th className="p-4 border-r border-white/10 w-24 text-center font-black text-slate-300 uppercase tracking-wider text-xs sticky left-0 z-20 bg-slate-900">
                       Period
                     </th>
                     {DAYS.map(day => (
                       <th 
                         key={day} 
-                        className={`p-4 border-b border-slate-200 dark:border-slate-700/50 text-center font-bold uppercase tracking-wider text-xs ${
-                          day === currentDay ? 'bg-blue-50/50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-b-blue-200 dark:border-b-blue-800' : 'text-slate-600 dark:text-slate-400'
+                        className={`p-4 border-l border-white/10 text-center font-black uppercase tracking-wider text-xs ${
+                          day === currentDay ? 'bg-blue-500/30 text-white' : 'text-slate-200'
                         }`}
                       >
                         {day}
@@ -320,9 +341,9 @@ export default function Timetable() {
                       const periodName = match?.periodName || `P${idx + 1}`;
                       return (
                         <tr key={slotTime} className="group">
-                          <td className="p-3 border-b border-r border-slate-100 dark:border-slate-800/50 text-center align-middle bg-slate-50 dark:bg-slate-850 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
-                            <div className="font-bold text-slate-700 dark:text-slate-300">{periodName}</div>
-                            <div className="text-[10px] font-semibold text-slate-500 whitespace-nowrap mt-1">{startTime}-{endTime}</div>
+                          <td className="p-3 border-b border-white/10 text-center align-middle bg-slate-900 sticky left-0 z-10">
+                            <div className="text-xs font-black uppercase tracking-wider text-white">{periodName}</div>
+                            <div className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold text-slate-300 whitespace-nowrap"><Clock className="size-3" />{startTime}-{endTime}</div>
                           </td>
                           {DAYS.map(day => {
                             const cls = timetable.find(t => t.day === day && t.startTime === startTime && t.endTime === endTime);
@@ -333,15 +354,14 @@ export default function Timetable() {
                               return (
                                 <td 
                                   key={`${day}-${slotTime}`} 
-                                  className={`p-2 border-b border-slate-100 dark:border-slate-800/50 align-top ${
-                                    isDayActive ? 'bg-blue-50/20 dark:bg-blue-900/10' : ''
+                                  className={`p-2 border-b border-l border-dashed border-slate-200 dark:border-slate-800 align-top ${
+                                    isDayActive ? 'bg-blue-50/70 dark:bg-blue-950/20' : ''
                                   }`}
                                 >
-                                  <div className="h-full min-h-[80px] rounded-lg flex items-center justify-center border border-dashed border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600">
-                                    <div className="text-center">
-                                      <Coffee className="size-4 mx-auto mb-1 opacity-50" />
-                                      <span className="text-[10px] font-bold uppercase tracking-widest opacity-50">Break</span>
-                                    </div>
+                                  <div className="h-full min-h-[104px] rounded-xl flex flex-col items-center justify-center gap-1 border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-2.5 dark:border-amber-900/40 dark:from-amber-950/30 dark:to-orange-950/10">
+                                    <Coffee className="size-5 text-amber-500" />
+                                    <span className="text-xs font-black uppercase tracking-wider text-amber-800 dark:text-amber-300">Break</span>
+                                    <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">{startTime} - {endTime}</span>
                                   </div>
                                 </td>
                               );
@@ -353,45 +373,52 @@ export default function Timetable() {
                             return (
                               <td 
                                 key={`${day}-${slotTime}`} 
-                                className={`p-2 border-b border-slate-100 dark:border-slate-800/50 align-top relative ${
-                                  isDayActive ? 'bg-blue-50/20 dark:bg-blue-900/10' : ''
+                                className={`p-2 border-b border-l border-dashed border-slate-200 dark:border-slate-800 align-top relative ${
+                                  isDayActive ? 'bg-blue-50/70 dark:bg-blue-950/20' : ''
                                 }`}
                               >
-                                <div className={`p-3 rounded-xl border ${
-                                  isActive 
-                                    ? 'border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.5)] dark:shadow-[0_0_15px_rgba(59,130,246,0.3)] ring-2 ring-blue-400/50' 
-                                    : ''
-                                  } ${
-                                    cls.type === 'break'
-                                      ? 'border-amber-100 bg-amber-50/20 dark:border-amber-950/20 dark:bg-amber-950/10'
-                                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 shadow-sm'
-                                  } h-full flex flex-col gap-2 transition-all duration-300`}
-                                >
-                                  {isActive && (
-                                    <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse shadow-lg">
-                                      NOW
-                                    </div>
-                                  )}
-                                  
-                                  <div>
-                                    <div className={`font-bold line-clamp-1 ${cls.type === 'break' ? 'text-amber-800 dark:text-amber-300' : 'text-slate-900 dark:text-white'}`} title={cls.subject}>
-                                      {cls.subject}
-                                    </div>
-                                    {cls.type !== 'break' && (
-                                      <div className="text-xs font-semibold text-slate-500 line-clamp-1" title={cls.teacher}>
-                                        {cls.teacher}
+                                {(() => {
+                                  const palette = paletteFor(cls);
+                                  const isBreak = cls.type === 'break';
+                                  return (
+                                    <div className={`flex h-full min-h-[104px] flex-col overflow-hidden rounded-xl border shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+                                      isBreak ? 'bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/10' : 'bg-white dark:bg-slate-900'
+                                    } ${
+                                      isActive
+                                        ? 'border-emerald-300 ring-2 ring-emerald-200/70 dark:border-emerald-700 dark:ring-emerald-900/50'
+                                        : isBreak ? 'border-amber-300 dark:border-amber-800' : 'border-slate-200 dark:border-slate-700'
+                                    }`}>
+                                      <div className={`flex items-center justify-between gap-1.5 px-2.5 py-1.5 text-white ${palette.bar}`}>
+                                        <span className="line-clamp-1 text-xs font-black" title={cls.subject}>{cls.subject}</span>
+                                        <span className="shrink-0 rounded-md bg-white/25 px-1.5 py-0.5 text-[9px] font-black uppercase">
+                                          {isBreak ? 'break' : isLive ? 'live' : isLab ? 'lab' : cls.type === 'extra' ? 'extra' : 'offline'}
+                                        </span>
                                       </div>
-                                    )}
-                                  </div>
-  
-                                  <div className="mt-auto flex items-center justify-between gap-2">
-                                    <div className="flex items-center gap-1 text-[10px] font-semibold text-slate-500 truncate">
-                                      <MapPin className="size-3 flex-shrink-0" />
-                                      <span className="truncate">{cls.room || (isLive ? 'Virtual' : (cls.type === 'break' ? 'Cafeteria' : 'TBD'))}</span>
+                                      <div className="flex flex-1 flex-col justify-between gap-2 p-2.5">
+                                        <div className="flex items-center gap-2">
+                                          <span className={`flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${palette.avatar}`}>
+                                            {isBreak ? <Coffee className="size-3" /> : initialsOf(cls.teacher)}
+                                          </span>
+                                          <span className="line-clamp-1 text-[11px] font-semibold text-slate-700 dark:text-slate-300" title={cls.teacher}>
+                                            {isBreak ? 'No teacher' : cls.teacher}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-1.5">
+                                          <span className="inline-flex min-w-0 items-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                            <MapPin className={`size-3 shrink-0 ${palette.icon}`} />
+                                            <span className="truncate">{cls.room || (isLive ? 'Virtual' : (isBreak ? 'Cafeteria' : 'TBD'))}</span>
+                                          </span>
+                                          {isActive && (
+                                            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[9px] font-black uppercase text-white">
+                                              <span className="size-1.5 animate-pulse rounded-full bg-white" />
+                                              Now
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
                                     </div>
-                                    {renderBadge(cls.type, isLive, isLab)}
-                                  </div>
-                                </div>
+                                  );
+                                })()}
                               </td>
                             );
                           })}

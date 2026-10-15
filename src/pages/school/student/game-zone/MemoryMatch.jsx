@@ -5,8 +5,9 @@ import MemoryMatchHome from './MemoryMatchHome';
 import MemoryMatchPlay from './MemoryMatchPlay';
 import MemoryMatchResult from './MemoryMatchResult';
 import MemoryMatchLeaderboard from './MemoryMatchLeaderboard';
+import ArenaDarkFrame from './shared/ArenaDarkFrame';
 
-export default function MemoryMatch() {
+function MemoryMatchGame() {
   const [stage, setStage] = useState('home'); // 'home' | 'play' | 'result' | 'leaderboard'
   const [sessionData, setSessionData] = useState(null); // { sessionId, deckName, difficulty, cards }
   const [resultData, setResultData] = useState(null); // submit API response
@@ -82,5 +83,14 @@ export default function MemoryMatch() {
         />
       )}
     </div>
+  );
+}
+
+// Arena atmosphere + dark styling, same look as Quiz Rush.
+export default function MemoryMatch() {
+  return (
+    <ArenaDarkFrame>
+      <MemoryMatchGame />
+    </ArenaDarkFrame>
   );
 }

@@ -11,8 +11,9 @@ import { soundEngine } from '@/lib/audioManager';
 import TreasureMap from './TreasureMap';
 import TreasureChallenge from './TreasureChallenge';
 import TreasureChest from './TreasureChest';
+import ArenaDarkFrame from './shared/ArenaDarkFrame';
 
-export default function TreasureHunt() {
+function TreasureHuntGame() {
   const { user } = useAuth();
   const hasGameQuizzes = useSchoolFeature('ai', 'ai_game_quizzes');
   const [stage, setStage] = useState('lobby'); // 'lobby' | 'map' | 'challenge' | 'result' | 'chest'
@@ -527,5 +528,14 @@ export default function TreasureHunt() {
         </div>
       )}
     </div>
+  );
+}
+
+// Arena atmosphere + dark styling, same look as Quiz Rush.
+export default function TreasureHunt() {
+  return (
+    <ArenaDarkFrame>
+      <TreasureHuntGame />
+    </ArenaDarkFrame>
   );
 }
