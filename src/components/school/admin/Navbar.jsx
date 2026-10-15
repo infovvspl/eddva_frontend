@@ -1087,7 +1087,7 @@ export default function Navbar({ onMenuClick }) {
               variant="ghost"
               onClick={handleSwitchToErp}
               disabled={switchingToErp}
-              className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 px-3 py-1.5 h-auto text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 [&_svg]:size-4"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl sm:rounded-2xl bg-brand-600 px-3 py-2 h-auto text-xs sm:text-sm font-bold text-white shadow-sm transition-colors  active:scale-[0.99] [&_svg]:size-4"
             >
               {switchingToErp ? <Loader2 className="animate-spin" /> : <Building2 />}
               Switch to ERP

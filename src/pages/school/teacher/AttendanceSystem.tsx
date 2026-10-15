@@ -79,8 +79,6 @@ const FormSelect: React.FC<{
 const STATUS_OPTIONS = [
   { value: 'present', label: 'Present', dot: 'fill-emerald-500 text-emerald-500', on: 'data-[state=on]:bg-emerald-500' },
   { value: 'absent', label: 'Absent', dot: 'fill-rose-500 text-rose-500', on: 'data-[state=on]:bg-rose-500' },
-  { value: 'late', label: 'Late', dot: 'fill-amber-500 text-amber-500', on: 'data-[state=on]:bg-amber-500' },
-  { value: 'leave', label: 'Leave', dot: 'fill-slate-400 text-slate-400', on: 'data-[state=on]:bg-slate-400 dark:data-[state=on]:bg-slate-600' },
 ];
 
 type StatusValue = 'present' | 'absent' | 'late' | 'leave';
@@ -1045,10 +1043,6 @@ const AttendanceSystem: React.FC = () => {
                         className="h-auto rounded-lg bg-rose-500/10 px-3 py-1.5 text-[10px] font-black text-rose-600 hover:bg-rose-500 hover:text-white">
                         Mark All Absent
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleMarkAll('leave')}
-                        className="h-auto rounded-lg bg-slate-500/10 px-3 py-1.5 text-[10px] font-black text-slate-600 hover:bg-slate-500 hover:text-white">
-                        Mark All Leave
-                      </Button>
                       <Button variant="ghost" size="sm" onClick={handleResetAttendance}
                         className="ml-auto h-auto gap-1.5 rounded-lg bg-amber-500/10 px-3 py-1.5 text-[10px] font-black text-amber-600 hover:bg-amber-500 hover:text-white">
                         <RotateCcw className="size-3" />
@@ -1198,16 +1192,8 @@ const AttendanceSystem: React.FC = () => {
                           <span className="font-bold text-emerald-600">{liveStats.present}</span>
                         </div>
                         <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-                          <span className="inline-flex items-center gap-1"><Circle className="size-2 fill-amber-500 text-amber-500" /> Late Arrivals</span>
-                          <span className="font-bold text-amber-500">{liveStats.late}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs font-medium text-slate-500">
                           <span className="inline-flex items-center gap-1"><Circle className="size-2 fill-rose-500 text-rose-500" /> Absent</span>
                           <span className="font-bold text-rose-500">{liveStats.absent}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-                          <span className="inline-flex items-center gap-1"><Circle className="size-2 fill-slate-400 text-slate-400" /> On Leave</span>
-                          <span className="font-bold text-slate-500 dark:text-slate-400">{liveStats.leave}</span>
                         </div>
                       </div>
                     </div>

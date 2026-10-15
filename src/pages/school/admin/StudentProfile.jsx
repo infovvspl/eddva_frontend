@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   User, GraduationCap, Calendar, BarChart2, DollarSign, 
   Mail, Smartphone, MapPin, ArrowLeft, Download, Users, Phone, Shield,
@@ -55,9 +55,11 @@ const DetailItem = ({ label, value, icon: Icon, className }) => (
 export default function StudentProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const cameFromAttendanceFlag = searchParams.get('flag') === 'attendance';
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('personal');
+  const [activeTab, setActiveTab] = useState(cameFromAttendanceFlag ? 'attendance' : 'personal');
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [sendCredsOpen, setSendCredsOpen] = useState(false);
@@ -73,6 +75,10 @@ export default function StudentProfile() {
   const [attendanceMonth, setAttendanceMonth] = useState(
     new Date().toISOString().slice(0, 7) // YYYY-MM
   );
+  // Dashboard "attention required" attendance flags are computed over a trailing 30-day
+  // window, not the calendar month — default to the same window when arriving from one,
+  // so the numbers shown here match the alert that was just clicked.
+  const [last30Mode, setLast30Mode] = useState(cameFromAttendanceFlag);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [teachingMap, setTeachingMap] = useState(null);
@@ -468,7 +474,7 @@ export default function StudentProfile() {
     if (activeTab === 'attendance' && student?.id) {
       fetchAttendance();
     }
-  }, [activeTab, attendanceMonth, student?.id]);
+  }, [activeTab, attendanceMonth, last30Mode, student?.id]);
 
   useEffect(() => {
     if (activeTab === 'performance' && student?.id) {
@@ -490,12 +496,23 @@ export default function StudentProfile() {
   const fetchAttendance = async () => {
     setAttendanceLoading(true);
     try {
-      const [year, month] = attendanceMonth.split('-');
-      const startDate = `${year}-${month}-01`;
-      const lastDay = new Date(Number(year), Number(month), 0).getDate();
-      const endDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+      let startDate, endDate;
+      if (last30Mode) {
+        const today = new Date();
+        endDate = today.toISOString().slice(0, 10);
+        const start = new Date(today);
+        start.setDate(start.getDate() - 30);
+        startDate = start.toISOString().slice(0, 10);
+      } else {
+        const [year, month] = attendanceMonth.split('-');
+        startDate = `${year}-${month}-01`;
+        const lastDay = new Date(Number(year), Number(month), 0).getDate();
+        endDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+      }
       const res = await api.get('/attendance', {
-        params: { userId: student.id, startDate, endDate },
+        // The endpoint paginates (default limit 10); a 31-day window can hold more
+        // rows than that, so ask for all of them explicitly.
+        params: { userId: student.id, startDate, endDate, limit: 100 },
       });
       const list = res.data?.data ?? res.data ?? [];
       setAttendance(Array.isArray(list) ? list : []);
@@ -1807,13 +1824,39 @@ export default function StudentProfile() {
                   <div className="flex items-center justify-between flex-wrap gap-4">
                     <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest">Attendance Record</h3>
                     <div className="flex items-center gap-3">
-                      <label className="text-xs font-bold text-slate-400 uppercase">Month</label>
-                      <input
-                        type="month"
-                        value={attendanceMonth}
-                        onChange={(e) => setAttendanceMonth(e.target.value)}
-                        className="rounded-xl border-2 border-slate-100 dark:border-slate-700 px-3 py-2 text-sm font-bold text-slate-700 dark:text-white bg-white dark:bg-slate-900 outline-none focus:border-blue-500"
-                      />
+                      {last30Mode ? (
+                        <>
+                          <Badge className="rounded-lg border-transparent bg-rose-50 text-rose-600 text-[10px] font-bold uppercase tracking-wider hover:bg-rose-50">
+                            Last 30 Days
+                          </Badge>
+                          <button
+                            type="button"
+                            onClick={() => setLast30Mode(false)}
+                            className="text-xs font-bold text-blue-600 hover:text-blue-700"
+                          >
+                            Switch to month view
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <label className="text-xs font-bold text-slate-400 uppercase">Month</label>
+                          <input
+                            type="month"
+                            value={attendanceMonth}
+                            onChange={(e) => setAttendanceMonth(e.target.value)}
+                            className="rounded-xl border-2 border-slate-100 dark:border-slate-700 px-3 py-2 text-sm font-bold text-slate-700 dark:text-white bg-white dark:bg-slate-900 outline-none focus:border-blue-500"
+                          />
+                          {cameFromAttendanceFlag && (
+                            <button
+                              type="button"
+                              onClick={() => setLast30Mode(true)}
+                              className="text-xs font-bold text-blue-600 hover:text-blue-700"
+                            >
+                              Back to last 30 days
+                            </button>
+                          )}
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -1907,14 +1950,13 @@ export default function StudentProfile() {
                                 <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Date</TableHead>
                                 <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Day</TableHead>
                                 <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Status</TableHead>
-                                <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Remarks</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody className="divide-y divide-slate-50 dark:divide-slate-800 text-sm">
                               {attendance.length === 0 ? (
                                 <TableRow className="hover:bg-transparent">
-                                  <TableCell colSpan={4} className="p-10 text-center text-slate-400 font-bold">
-                                    No attendance records for this month.
+                                  <TableCell colSpan={3} className="p-10 text-center text-slate-400 font-bold">
+                                    No attendance records for {last30Mode ? 'the last 30 days' : 'this month'}.
                                   </TableCell>
                                 </TableRow>
                               ) : (
@@ -1935,7 +1977,6 @@ export default function StudentProfile() {
                                             {record.status || 'Unknown'}
                                           </Badge>
                                         </TableCell>
-                                        <TableCell className="p-4 text-slate-400 font-bold">{record.remarks || '—'}</TableCell>
                                       </TableRow>
                                     );
                                   })

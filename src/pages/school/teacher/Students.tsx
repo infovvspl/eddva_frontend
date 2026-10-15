@@ -36,10 +36,13 @@ const StudentAvatar: React.FC<{ student: any }> = ({ student }) => (
 );
 
 const AttendanceBar: React.FC<{ student: any }> = ({ student }) => {
-  const pct = student.attendancePct || 85;
+  if (student.attendancePct == null) {
+    return <span className="text-xs font-medium text-slate-400">—</span>;
+  }
+  const pct = student.attendancePct;
   return (
     <div className="flex items-center gap-2">
-      <Progress value={pct} className="h-2 w-16 bg-slate-100 dark:bg-slate-800" indicatorClassName={attendanceTone(student.attendancePct)} />
+      <Progress value={pct} className="h-2 w-16 bg-slate-100 dark:bg-slate-800" indicatorClassName={attendanceTone(pct)} />
       <span className="text-xs font-medium text-slate-600 dark:text-slate-400">{pct}%</span>
     </div>
   );
