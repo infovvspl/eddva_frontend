@@ -12,6 +12,8 @@ import DiagramsButton from "@/components/school/diagram/DiagramsButton";
 import { insertMarkerAtCursor } from "@/components/school/diagram/marker-insert";
 import { diagramApi, type DiagramRecord } from "@/components/school/diagram/diagram-api";
 import { expandMarkersForPreview, type PreviewListState } from "@/components/school/diagram/expand-markers";
+import { cn } from "@/lib/utils";
+import { EDITOR_TOOLBAR_BUTTON } from "@/components/school/editorToolbarStyles";
 import { stripGeneratedHeader } from "@/lib/school/paperFormat";
 
 // Question mark weights used by the AI generator (matches the backend's
@@ -67,6 +69,8 @@ export function ContentEditor({
   onAnswerKeyChange,
   assessmentId,
   previewHeader,
+  compact = false,
+  toolbarExtra,
 }: {
   questions: string;
   onQuestionsChange: (v: string) => void;
@@ -76,6 +80,12 @@ export function ContentEditor({
   assessmentId?: string;
   /** Shown above the student-view preview — e.g. the school-style paper header. */
   previewHeader?: React.ReactNode;
+  /** The paper at its full length on the page (no inner scroll box, no
+   *  preview caption) and taller editors — for a page whose main job is
+   *  reviewing the paper. */
+  compact?: boolean;
+  /** Extra controls placed on the tabs line, after the page switcher. */
+  toolbarExtra?: React.ReactNode;
 }) {
   // A paper that already has content (an existing test being reopened, or one
   // just AI-generated) should look the way it will to students the moment you
@@ -151,14 +161,18 @@ export function ContentEditor({
   return (
     <div className="space-y-4">
       {/* Header Tabs & Navigation Buttons */}
-      <div className="flex flex-wrap items-center justify-between border-b border-gray-200 gap-2 pb-1">
+      <div className={cn(
+        "flex items-center justify-between border-b border-gray-200 gap-2",
+        // compact: tabs and buttons on one line; scrolls sideways on a narrow phone instead of wrapping
+        compact ? "flex-nowrap overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" : "flex-wrap pb-1",
+      )}>
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "edit" | "preview")}>
           <TabsList className="h-auto gap-0 rounded-none bg-transparent p-0">
             <TabsTrigger
               value="preview"
               className="rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 data-[state=active]:border-brand-500 data-[state=active]:bg-transparent data-[state=active]:font-extrabold data-[state=active]:text-brand-600 data-[state=active]:shadow-none sm:px-4"
             >
-              <Eye className="mr-1 size-3.5" /> Preview<span className="hidden sm:inline">&nbsp;(Student View)</span>
+              <Eye className="mr-1 size-3.5" /> Preview
             </TabsTrigger>
             <TabsTrigger
               value="edit"
@@ -170,19 +184,19 @@ export function ContentEditor({
         </Tabs>
 
         {/* Quick Page Switcher Buttons */}
-        <div className="flex flex-wrap items-center gap-2 pb-1">
+        <div className={cn("flex items-center gap-2", compact ? "shrink-0" : "flex-wrap pb-1")}>
           {editorPage === "questions" ? (
-            <DiagramsButton assessmentId={assessmentId} onOpen={() => setShowDiagrams(true)} />
+            <DiagramsButton compact={compact} assessmentId={assessmentId} onOpen={() => setShowDiagrams(true)} />
           ) : null}
           {editorPage === "questions" ? (
             <Button
               type="button"
               size="sm"
               variant="outline"
-              className="gap-1.5 border-amber-300 bg-amber-50 font-bold text-amber-900 hover:bg-amber-100 hover:text-amber-900"
+              className={compact ? EDITOR_TOOLBAR_BUTTON : "gap-1.5 border-amber-300 bg-amber-50 font-bold text-amber-900 hover:bg-amber-100 hover:text-amber-900"}
               onClick={() => setEditorPage("answerKey")}
             >
-              <Key size={14} />
+              <Key size={14} className={compact ? "text-amber-600" : undefined} />
               Answer Key Page →
             </Button>
           ) : (
@@ -190,13 +204,14 @@ export function ContentEditor({
               type="button"
               size="sm"
               variant="outline"
-              className="gap-1.5 border-brand-300 bg-blue-50 font-bold text-brand-700 hover:bg-blue-100 hover:text-brand-700"
+              className={compact ? EDITOR_TOOLBAR_BUTTON : "gap-1.5 border-brand-300 bg-blue-50 font-bold text-brand-700 hover:bg-blue-100 hover:text-brand-700"}
               onClick={() => setEditorPage("questions")}
             >
-              <FileText size={14} />
+              <FileText size={14} className={compact ? "text-blue-600" : undefined} />
               ← Question Paper Page
             </Button>
           )}
+          {toolbarExtra}
         </div>
       </div>
 
@@ -217,7 +232,7 @@ export function ContentEditor({
                 value={questions}
                 onChange={(e) => onQuestionsChange(e.target.value)}
                 placeholder="Type or paste the question paper here. Markdown supported (## Section A, 1. question, etc.)."
-                className="h-[45vh] min-h-0 w-full resize-none rounded-none border-0 p-4 text-sm leading-6 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-0"
+                className={cn(compact ? "h-[70vh]" : "h-[45vh]", "min-h-0 w-full resize-none rounded-none border-0 p-4 text-sm leading-6 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-0")}
               />
             </Card>
           ) : (
@@ -234,22 +249,24 @@ export function ContentEditor({
                 value={answerKey}
                 onChange={(e) => onAnswerKeyChange(e.target.value)}
                 placeholder="Type or paste the answer key here. E.g. Q1(a), Q2 True, Q3 ______"
-                className="h-[45vh] min-h-0 w-full resize-none rounded-none border-0 p-4 text-sm leading-6 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-0"
+                className={cn(compact ? "h-[70vh]" : "h-[45vh]", "min-h-0 w-full resize-none rounded-none border-0 p-4 text-sm leading-6 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-0")}
               />
             </Card>
           )}
         </div>
       ) : (
-        <Card className="rounded-xl border-gray-200 bg-gray-50 p-5 overflow-hidden shadow-none">
+        <Card className={cn("rounded-xl overflow-hidden shadow-none", compact ? "border-0 bg-transparent p-0" : "border-gray-200 bg-gray-50 p-5")}>
           {editorPage === "questions" ? (
             <div>
-              <div className="mb-3 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-gray-500">
-                  <FileText size={14} />
-                  <span>Question Paper Preview (Student View)</span>
+              {!compact && (
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-gray-500">
+                    <FileText size={14} />
+                    <span>Question Paper Preview</span>
+                  </div>
                 </div>
-              </div>
-              <div className="h-[45vh] overflow-y-auto rounded-lg bg-white p-6 border border-gray-100 shadow-inner">
+              )}
+              <div className={cn("rounded-lg bg-white border border-gray-100", compact ? "px-3 py-4 sm:px-5 sm:py-5" : "h-[45vh] overflow-y-auto p-6 shadow-inner")}>
                 {questions.trim() ? (
                   // KaTeX's fraction/sub-size math (numerators, denominators) shrinks
                   // further still on top of its own 1.21em multiplier — a bump here
@@ -271,7 +288,7 @@ export function ContentEditor({
                   <span>Answer Key Preview (Teacher Only)</span>
                 </div>
               </div>
-              <div className="h-[45vh] overflow-y-auto rounded-lg bg-white p-6 border border-amber-100 shadow-inner">
+              <div className={cn("rounded-lg bg-white border border-amber-100", compact ? "px-3 py-4 sm:px-5 sm:py-5" : "h-[45vh] overflow-y-auto p-6 shadow-inner")}>
                 {answerKey.trim() ? (
                   <AssessmentContentRenderer className="[&_.katex]:text-[1.3em]">{answerKey}</AssessmentContentRenderer>
                 ) : (
