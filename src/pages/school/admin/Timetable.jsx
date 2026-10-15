@@ -273,22 +273,36 @@ export default function Timetable() {
 
   const fetchTimetables = async () => {
     try {
+      // Only the timetable itself is required. The teacher profile and the
+      // class/subject/period lists only enrich it, so one of them failing (it
+      // did: a 403 on the profile) must not leave every day showing "No
+      // classes" — own slots still match on slot.teacher.user.id.
       if (isTeacher) {
-        const pRes = await api.get(`/teachers/${user.id}`);
-        setTeacherProfile(pRes.data?.data?.teacherProfile);
+        try {
+          const pRes = await api.get(`/teachers/${user.id}`);
+          setTeacherProfile(pRes.data?.data?.teacherProfile);
+        } catch (profileErr) {
+          console.error('Timetable: teacher profile unavailable', profileErr);
+        }
       }
-      
-      const [res, secRes, subjRes, periodRes] = await Promise.all([
+
+      const [res, secRes, subjRes, periodRes] = await Promise.allSettled([
         api.get('/timetable'),
         api.get('/academic/classes'),
         api.get('/academic/subjects?limit=1000'),
         api.get('/academic/periods')
       ]);
+      if (res.status === 'rejected') throw res.reason;
+      const listOf = (settled, label) => {
+        if (settled.status === 'fulfilled') return getResponseList(settled.value);
+        console.error(`Timetable: ${label} unavailable`, settled.reason);
+        return [];
+      };
 
-      setTimetables(getResponseList(res));
+      setTimetables(getResponseList(res.value));
 
       const allSections = [];
-      const classesList = getResponseList(secRes);
+      const classesList = listOf(secRes, 'classes');
       setAllClasses(classesList);
       classesList.forEach(cls => {
         (cls.sections || []).forEach(section => {
@@ -296,8 +310,8 @@ export default function Timetable() {
         });
       });
       setSections(allSections);
-      setAllSubjects(getResponseList(subjRes));
-      setAllPeriods(getResponseList(periodRes));
+      setAllSubjects(listOf(subjRes, 'subjects'));
+      setAllPeriods(listOf(periodRes, 'periods'));
 
       if (!isTeacher) {
         const teachersRes = await api.get('/teachers?limit=1000');
