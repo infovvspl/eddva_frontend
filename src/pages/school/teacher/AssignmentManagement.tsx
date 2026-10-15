@@ -85,6 +85,7 @@ import { useAcademicStore } from "@/lib/academic-store";
 import DoubtImageAttach from "@/components/school/DoubtImageAttach";
 import { uploadAssignmentImage } from "@/lib/school/assignment-upload";
 import { toast } from "sonner";
+import { useLocation } from "react-router-dom";
 import { useConfirm } from "@/context/ConfirmContext";
 import { useSchoolFeature } from "@/hooks/use-school-feature";
 
@@ -186,7 +187,12 @@ const AssignmentManagement: React.FC = () => {
   const [loadingAssignments, setLoadingAssignments] = useState(true);
 
   // Main Tabs & Navigation
-  const [mainTab, setMainTab] = useState<'manage' | 'inbox' | 'groups'>('manage');
+  const location = useLocation();
+  // The dashboard's "needs attention" rows can open this page straight on the Submissions tab.
+  const [mainTab, setMainTab] = useState<'manage' | 'inbox' | 'groups'>(() => {
+    const t = (location.state as any)?.mainTab;
+    return t === 'inbox' || t === 'groups' ? t : 'manage';
+  });
   const [selectedClass, setSelectedClass] = useState<{ id: string; name: string } | null>(null);
   const [selectedSection, setSelectedSection] = useState<{ id: string; name: string } | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<{ id: string; name: string } | null>(null);
