@@ -2143,12 +2143,19 @@ function GrievancesTab() {
   const [selectedGrievance, setSelectedGrievance] = useState<any | null>(null);
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
   const queryClient = useQueryClient();
 
-  const { data: grievances, isLoading } = useQuery({
+  const { data: allGrievances, isLoading } = useQuery({
     queryKey: ['parent-grievances', searchQuery],
     queryFn: () => parentClient.getGrievances(searchQuery),
   });
+
+  const grievances = useMemo(() => {
+    if (!Array.isArray(allGrievances)) return allGrievances;
+    if (statusFilter === 'ALL') return allGrievances;
+    return allGrievances.filter((g: any) => String(g.rawStatus || g.status || '').toUpperCase() === statusFilter);
+  }, [allGrievances, statusFilter]);
 
   const submitMutation = useMutation({
     mutationFn: (data: any) => parentClient.submitGrievance(data),
@@ -2226,6 +2233,19 @@ function GrievancesTab() {
               if (searchInput.trim() !== searchQuery) setSearchQuery(searchInput.trim());
             }}
             className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+          <CustomSelect
+            value={statusFilter}
+            onChange={setStatusFilter}
+            options={[
+              { value: 'ALL', label: 'All Statuses' },
+              { value: 'OPEN', label: 'Open' },
+              { value: 'IN_PROGRESS', label: 'In Review' },
+              { value: 'RESOLVED', label: 'Resolved' },
+              { value: 'REOPENED', label: 'Reopened' },
+              { value: 'CLOSED', label: 'Closed' },
+            ]}
+            className="w-40"
           />
           <button
             onClick={() => setShowForm(true)}
@@ -2307,7 +2327,9 @@ function GrievancesTab() {
       ) : (
         <div className="flex flex-col items-center justify-center text-center opacity-50 py-12 rounded-2xl border-2 border-dashed border-slate-200 bg-white">
           <AlertTriangle className="size-12 text-slate-400 mb-3" />
-          <p className="text-sm font-bold text-slate-600">No grievances reported</p>
+          <p className="text-sm font-bold text-slate-600">
+            {Array.isArray(allGrievances) && allGrievances.length > 0 ? 'No grievances match this status' : 'No grievances reported'}
+          </p>
         </div>
       )}
 

@@ -13,6 +13,8 @@ export interface SchoolInstitute {
   state?: string | null;
   city?: string | null;
   location?: string | null;
+  erpEnabled?: boolean;
+  lmsEnabled?: boolean;
 }
 
 export interface SchoolStudentProfile {
