@@ -37,6 +37,9 @@ export interface SchoolMaterial {
   isAiGenerated?: boolean;
   /** 'upload' (file/link), 'manual' (typed by a teacher), 'ai'; null for older rows. */
   contentSource?: 'upload' | 'manual' | 'ai' | null;
+  /** The chapter's currently-indexed AI-grounding textbook — admin-managed and
+   *  class-wide, so teachers may not delete it (backend enforces this too). */
+  isTrainedTextbook?: boolean;
   topicId?: string | null;
   chapterId?: string | null;
   topicName?: string | null;

@@ -1341,6 +1341,8 @@ function MaterialWorkspace({
   const confirm = useConfirm();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
+  const isTeacherRole = user?.role === 'TEACHER';
   const hasAiMaterials = useSchoolFeature('ai', 'ai_content_generator_materials');
   const hasPptGen = useSchoolFeature('ai', 'ai_ppt_generator');
   const isChapter = topic.kind === 'chapter';
@@ -1408,6 +1410,10 @@ function MaterialWorkspace({
   }, [materials, topic.kind]);
 
   const handleDelete = async (m: SchoolMaterial) => {
+    if (isTeacherRole && m.isTrainedTextbook) {
+      toast.error('Only an admin can delete a trained textbook');
+      return;
+    }
     const isConfirmed = await confirm({
       title: "Confirm Delete",
       message: `Delete material "${m.title}"?`,
@@ -1620,7 +1626,7 @@ function MaterialWorkspace({
                             {canEdit && isText && isTypedChecklistMaterial(m) && (
                               <IconButton label="Edit checklist" onClick={() => setEditingChecklist(m)}><Pencil size={15} /></IconButton>
                             )}
-                            {canEdit && (
+                            {canEdit && !(isTeacherRole && m.isTrainedTextbook) && (
                               <IconButton label="Delete material" danger onClick={() => handleDelete(m)}><Trash2 size={15} /></IconButton>
                             )}
                           </div>
