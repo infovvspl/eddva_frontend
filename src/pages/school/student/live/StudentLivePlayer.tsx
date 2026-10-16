@@ -25,7 +25,7 @@ import api, { unwrapSchoolData } from '@/lib/api/school-client';
 import { useConfirm } from '@/context/ConfirmContext';
 import { BackButton } from '@/components/shared/BackButton';
 
-type Phase = 'waiting' | 'live' | 'ended';
+type Phase = 'waiting' | 'live' | 'ended' | 'cancelled' | 'missed';
 
 export default function StudentLivePlayer() {
   const navigate = useNavigate();
@@ -51,7 +51,13 @@ export default function StudentLivePlayer() {
   const [showQualityMenu, setShowQualityMenu] = useState(false);
   const [messages, setMessages] = useState<LiveChatMessage[]>([]);
   const [draft, setDraft] = useState('');
+  /** B-31: a message the server refused, offered for retry outside the input box. */
+  const [unsent, setUnsent] = useState<string | null>(null);
+  /** B-28: the teacher's stream dropped; the class waits for it to come back. */
+  const [reconnecting, setReconnecting] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  /** Whether the teacher allows student chat (saved per class; B-22). */
+  const [chatEnabled, setChatEnabled] = useState(true);
   const [handRaised, setHandRaised] = useState(false);
   const [pinnedAnnouncement, setPinnedAnnouncement] = useState<string | null>(null);
   const [lectureTitle, setLectureTitle] = useState('');
@@ -269,7 +275,8 @@ export default function StudentLivePlayer() {
     let cancelled = false;
     schoolLive.getStreamUrl(id).then((r) => {
       if (cancelled) return;
-      const key = r.streamKey;
+      // Played by playback ID: students are never given the stream key (B-02).
+      const key = r.playbackId;
       const proxyUrl = key ? hlsProxyUrl(key) : r.url;
       const quals: Array<{ label: string; url: string }> = r.qualities
         ? r.qualities.map((q) => {
@@ -286,8 +293,15 @@ export default function StudentLivePlayer() {
       playbackUrlRef.current = proxyUrl;
       setLectureTitle(r.title || '');
       if (r.startedAt) setStartedAt(new Date(r.startedAt).getTime());
-      if (r.status === 'LIVE') { setPhase('live'); setTimeout(() => attach(proxyUrl), 0); }
-      else if (r.status === 'ENDED') setPhase('ended');
+      // B-30: only ENDED counted as finished, so a PROCESSED or cancelled class
+      // said "The class will start automatically when the teacher goes live".
+      if (r.status === 'LIVE') {
+        setPhase('live');
+        setReconnecting(!!r.streamInterrupted);
+        setTimeout(() => attach(proxyUrl), 0);
+      } else if (r.status === 'CANCELLED') setPhase('cancelled');
+      else if (r.status === 'ENDED' || r.status === 'PROCESSED' || r.status === 'PROCESSING_FAILED') setPhase('ended');
+      else if (r.isMissed) setPhase('missed');
     }).catch(() => undefined);
     schoolLive.getChatHistory(id).then((h) => { if (!cancelled) setMessages(h); }).catch(() => undefined);
     schoolLive.getActivePoll(id).then((res) => {
@@ -314,8 +328,28 @@ export default function StudentLivePlayer() {
     const socket = createLiveSocket();
     socketRef.current = socket;
     socket.on('connect', () => socket.emit('join', { token: getLiveToken(), lectureId: id }));
-    socket.on('joined', ({ viewerCount, questionsActive = false, questions = [], pinnedAnnouncement }: { viewerCount?: number; questionsActive?: boolean; questions?: any[]; pinnedAnnouncement?: string | null }) => {
+    // B-22: the teacher turns chat on/off; the server also refuses while off.
+    socket.on('chat-settings', ({ chatEnabled: allowed }: { chatEnabled: boolean }) => {
+      setChatEnabled(allowed);
+      toast.info(allowed ? 'The teacher turned chat back on' : 'The teacher turned off chat');
+    });
+    socket.on('chat-muted', ({ text }: { text?: string }) => {
+      setChatEnabled(false);
+      if (text) setUnsent(text);
+      toast.info('Chat is turned off by the teacher');
+    });
+    // B-05: over the limit, the message is not lost: it goes back in the box.
+    socket.on('chat-rate-limited', ({ retryInSeconds = 10, text }: { retryInSeconds?: number; text?: string }) => {
+      if (text) setUnsent(text);
+      setCooldown(retryInSeconds);
+      toast.warning(`Slow down — you can send again in ${retryInSeconds}s`);
+    });
+    socket.on('joined', ({ viewerCount, questionsActive = false, questions = [], pinnedAnnouncement, chatEnabled: allowed, status }: { viewerCount?: number; questionsActive?: boolean; questions?: any[]; pinnedAnnouncement?: string | null; chatEnabled?: boolean; status?: string }) => {
       if (typeof viewerCount === 'number') setViewerCount(viewerCount);
+      if (typeof allowed === 'boolean') setChatEnabled(allowed);
+      // B-30: the class may have finished while this page was disconnected.
+      if (status === 'CANCELLED') setPhase('cancelled');
+      else if (status === 'ENDED' || status === 'PROCESSED' || status === 'PROCESSING_FAILED') setPhase('ended');
       setQuestionsActive(questionsActive);
       setQuestions(questions);
       if (pinnedAnnouncement) {
@@ -338,11 +372,15 @@ export default function StudentLivePlayer() {
     });
     socket.on('stream-started', () => {
       setPhase('live');
-      setStartedAt(Date.now());
+      setReconnecting(false);
+      // A resumed class keeps its start time.
+      setStartedAt((s) => s ?? Date.now());
       const url = playbackUrlRef.current;
       if (url) setTimeout(() => attach(url, 0), 300);
     });
+    socket.on('stream-interrupted', () => setReconnecting(true));
     socket.on('stream-ended', () => {
+      setReconnecting(false);
       setPhase('ended');
       hlsRef.current?.destroy();
       hlsRef.current = null;
@@ -411,13 +449,22 @@ export default function StudentLivePlayer() {
     return () => clearTimeout(timer);
   }, [phase, id, recordingUrl]);
 
-  const send = () => {
-    const text = draft.trim();
-    if (!text || cooldown > 0) return;
+  const sendText = (raw: string): boolean => {
+    const text = raw.trim();
+    if (!text) return false;
+    if (!chatEnabled) { toast.info('Chat is turned off by the teacher'); return false; }
+    // B-05: a held-back message used to vanish silently; say why instead.
+    if (cooldown > 0) { toast.warning(`Slow down — you can send again in ${cooldown}s`); return false; }
     socketRef.current?.emit('chat', { text: text.slice(0, 300) });
-    setDraft('');
-    setCooldown(3);
+    setCooldown(1);
+    return true;
   };
+
+  const send = () => { if (sendText(draft)) setDraft(''); };
+
+  // B-31: the refused text used to go back into the input, where it ran into
+  // whatever the student was typing next.
+  const retryUnsent = () => { if (unsent && sendText(unsent)) setUnsent(null); };
 
   const fullscreen = () => videoRef.current?.requestFullscreen?.().catch(() => undefined);
 
@@ -616,6 +663,13 @@ export default function StudentLivePlayer() {
                 </div>
               )}
 
+              {phase === 'live' && reconnecting && (
+                <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-center gap-2 bg-amber-500/90 px-3 py-2 text-center text-[12px] font-bold text-white">
+                  <Loader2 className="size-3.5 shrink-0 animate-spin" />
+                  The teacher's stream dropped. Reconnecting — stay on this page.
+                </div>
+              )}
+
               {phase !== 'live' && (
                 <div className="absolute inset-0 grid place-items-center bg-slate-950 text-center">
                   {phase === 'waiting' ? (
@@ -623,6 +677,11 @@ export default function StudentLivePlayer() {
                       <Wifi className="mx-auto mb-3 size-10 animate-pulse text-blue-400" />
                       <p className="text-[13px] font-bold">Waiting for stream…</p>
                       <p className="text-[13px] text-white/40">The class will start automatically when the teacher goes live.</p>
+                    </div>
+                  ) : phase === 'cancelled' || phase === 'missed' ? (
+                    <div className="text-white/80">
+                      <p className="text-[13px] font-bold">{phase === 'cancelled' ? 'This class was cancelled' : 'This class did not take place'}</p>
+                      <p className="text-[13px] text-white/40">There is no recording for it.</p>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center gap-4 text-white/80">
@@ -1004,18 +1063,32 @@ export default function StudentLivePlayer() {
                   </div>
 
                   <div className="p-3 border-t border-slate-100 bg-white">
+                    {unsent && (
+                      <div className="mb-2 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[12px] text-amber-800">
+                        <span className="min-w-0 flex-1 truncate" title={unsent}>Not sent: “{unsent}”</span>
+                        <button
+                          onClick={retryUnsent}
+                          disabled={!chatEnabled || cooldown > 0}
+                          className="shrink-0 font-bold text-amber-900 hover:underline disabled:opacity-50"
+                        >
+                          {cooldown > 0 ? `Retry in ${cooldown}s` : 'Retry'}
+                        </button>
+                        <button onClick={() => setUnsent(null)} className="shrink-0 px-1 text-amber-700 hover:text-amber-900" aria-label="Dismiss">×</button>
+                      </div>
+                    )}
                     <div className="flex gap-2">
                       <input
                         value={draft}
                         onChange={(e) => setDraft(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && send()}
                         maxLength={300}
-                        placeholder={cooldown > 0 ? `Wait ${cooldown}s…` : 'Type a message…'}
+                        disabled={!chatEnabled}
+                        placeholder={!chatEnabled ? 'Chat is turned off by the teacher' : cooldown > 0 ? `Wait ${cooldown}s…` : 'Type a message…'}
                         className="flex-1 bg-slate-50 border border-slate-200/80 rounded-xl px-4 py-2.5 text-[13px] text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all placeholder:text-slate-400"
                       />
                       <button
                         onClick={send}
-                        disabled={cooldown > 0 || !draft.trim()}
+                        disabled={!chatEnabled || cooldown > 0 || !draft.trim()}
                         className="size-10 shrink-0 bg-blue-600 text-white rounded-xl flex items-center justify-center hover:bg-blue-700 transition disabled:opacity-50 active:scale-95 shadow-md"
                       >
                         <Send className="size-4" />

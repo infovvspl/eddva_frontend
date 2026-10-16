@@ -479,7 +479,9 @@ export default function Classes() {
   };
 
   const obsLiveLectures = obsLive.filter((l) => l.status === 'LIVE');
-  const obsScheduledLectures = obsLive.filter((l) => l.status === 'SCHEDULED');
+  // B-21: a class the teacher sees as Missed (the server decides) is not
+  // "Starting soon" here, and a cancelled one is not upcoming at all.
+  const obsScheduledLectures = obsLive.filter((l) => l.status === 'SCHEDULED' && !l.isMissed);
 
   const ongoingCount = obsLiveLectures.length;
   const scheduledCount = obsScheduledLectures.length + liveClasses.length;

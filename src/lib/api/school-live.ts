@@ -32,7 +32,14 @@ export interface RecordingUrlResponse {
 export interface LiveLecture {
   id: string;
   title: string;
-  status: 'SCHEDULED' | 'LIVE' | 'ENDED' | 'PROCESSED' | 'PROCESSING_FAILED';
+  status: 'SCHEDULED' | 'LIVE' | 'ENDED' | 'PROCESSED' | 'PROCESSING_FAILED' | 'CANCELLED';
+  /** Set by the server: scheduled, and not live an hour after its start. */
+  isMissed?: boolean;
+  /** Plays the class without revealing its stream key. */
+  playbackId?: string;
+  /** Whether students may chat (saved per class). */
+  chatEnabled?: boolean;
+  /** Teachers only, and only while the class is open. */
   streamKey?: string;
   playbackUrl?: string | null;
   rtmpUrl?: string;
@@ -59,6 +66,8 @@ export interface LiveLecture {
 
 export interface CreatedLecture {
   lectureId: string;
+  playbackId?: string;
+  scheduledFor?: string | null;
   streamKey: string;
   rtmpUrl: string;
   playbackUrl: string;
@@ -83,6 +92,32 @@ export interface CreateLecturePayload {
   sectionName?: string;
   subjectName?: string;
 }
+export interface UpdateLecturePayload {
+  title?: string;
+  description?: string;
+  scheduledFor?: string;
+}
+
+/**
+ * A `datetime-local` value ("2026-10-16T22:00", no zone) as an exact UTC
+ * instant. Sending the raw value made the server read it as UTC, so a class
+ * set for 10:00 PM IST was stored as 22:00 UTC and shown as 3:30 AM.
+ */
+export function localInputToIso(value: string): string | undefined {
+  if (!value) return undefined;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+}
+
+/** An ISO instant as a `datetime-local` value in the browser's zone. */
+export function isoToLocalInput(value?: string | null): string {
+  if (!value) return '';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export interface LiveParticipant {
   userId: string;
   userName: string;
@@ -93,6 +128,9 @@ export interface LiveParticipant {
 export const schoolLive = {
   createLecture: (payload: CreateLecturePayload) =>
     schoolApi.post('/live/lectures', payload).then((r) => extractData<CreatedLecture>(r)),
+
+  updateLecture: (id: string, payload: UpdateLecturePayload) =>
+    schoolApi.patch(`/live/lectures/${id}`, payload).then((r) => extractData<LiveLecture>(r)),
 
   listLectures: () =>
     schoolApi.get('/live/lectures').then((r) => extractData<LiveLecture[]>(r) ?? []),
@@ -106,12 +144,18 @@ export const schoolLive = {
       .then((r) => extractData<{
         url: string;
         status: string;
+        playbackId?: string;
+        isMissed?: boolean;
+        chatEnabled?: boolean;
         streamKey?: string;
         createdAt?: string;
         title?: string;
         startedAt?: string;
         viewerCount?: number;
         qualities?: Array<{ label: string; url: string }>;
+        /** B-28: OBS has stopped; the class is waiting for it to reconnect. */
+        streamInterrupted?: boolean;
+        reconnectGraceSeconds?: number;
       }>(r)),
 
   getChatHistory: (id: string) =>
@@ -227,17 +271,19 @@ export function createBroadcastRelaySocket(): Socket {
 /**
  * Same-origin HLS URL via the backend proxy — avoids the CORS block on the
  * public R2 (`pub-*.r2.dev`) domain, which serves HLS without CORS headers.
+ * Takes the class's playback ID (never its stream key: whoever holds the key
+ * can publish into the class).
  */
-export function hlsProxyUrl(streamKey: string): string {
-  return `${getApiBaseUrl()}/school/live/hls/${streamKey}/index.m3u8`;
+export function hlsProxyUrl(playbackId: string): string {
+  return `${getApiBaseUrl()}/school/live/hls/${playbackId}/index.m3u8`;
 }
 
-export function hlsProxy480Url(streamKey: string): string {
-  return `${getApiBaseUrl()}/school/live/hls480/${streamKey}/index.m3u8`;
+export function hlsProxy480Url(playbackId: string): string {
+  return `${getApiBaseUrl()}/school/live/hls480/${playbackId}/index.m3u8`;
 }
 
-export function hlsProxy360Url(streamKey: string): string {
-  return `${getApiBaseUrl()}/school/live/hls360/${streamKey}/index.m3u8`;
+export function hlsProxy360Url(playbackId: string): string {
+  return `${getApiBaseUrl()}/school/live/hls360/${playbackId}/index.m3u8`;
 }
 
 export function getLiveToken(): string {
