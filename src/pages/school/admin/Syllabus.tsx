@@ -172,7 +172,7 @@ export default function Syllabus() {
       key: 'progress', 
       title: 'Progress', 
       width: '20%',
-      render: (val: any, row: any) => <ProgressBar progress={val || row.completionPercentage || 0} showLabel />
+      render: (val: any, row: any) => <ProgressBar value={val || row.completionPercentage || 0} showValue />
     },
     { key: 'status', title: 'Status', width: '15%' },
     {

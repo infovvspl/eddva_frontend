@@ -112,6 +112,7 @@ export const roleRedirectPath: Record<UserRole, string> = {
   institute_admin: "/admin",
   teacher: "/teacher",
   student: "/student",
+  parent: "/school/parent",
 };
 
 /** Update only the studentProfile.diagnosticCompleted flag without a full re-login */

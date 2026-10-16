@@ -20,7 +20,7 @@ const Login: React.FC = () => {
     setError('');
     setLoading(true);
     try {
-      const data = await login(email, password);
+      const data = (await login(email, password)) as { user?: { role?: string } } | undefined;
       const role = data?.user?.role;
     } catch (err: any) {
       setError(

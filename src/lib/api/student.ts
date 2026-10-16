@@ -460,6 +460,7 @@ export interface StudentLecture {
   type: "recorded" | "live";
   status: string;
   batchId: string;
+  batch?: { id: string; name?: string };
   topicId?: string;
   videoUrl?: string;
   liveMeetingUrl?: string;
@@ -545,6 +546,7 @@ export interface MockTestListItem {
   chapterId?: string;
   topicId?: string;
   batchId?: string;
+  examMode?: string | null;
   questionIds?: string[];
   isPublished: boolean;
   scheduledAt?: string;
@@ -741,6 +743,7 @@ export interface StudyPlanItem {
   refId: string;
   scheduledDate: string;
   xpReward?: number;
+  description?: string | null;
   content?: {
     topicId?: string;
     topicName?: string;
@@ -1439,6 +1442,8 @@ export interface AiQuestionResponse {
 
 export interface AiCompleteResponse {
   xpEarned: number;
+  /** Same value as xpEarned; older responses used this name. */
+  xpAwarded?: number;
   newXpTotal: number;
 }
 
@@ -1500,7 +1505,7 @@ export interface AiQuizOption {
 export interface AiQuizQuestion {
   id: string;
   content: string;
-  type: "mcq_single";
+  type: "mcq_single" | "mcq_multi";
   difficulty: "easy" | "medium" | "hard";
   marksCorrect: number;
   marksWrong: number;

@@ -164,7 +164,7 @@ function StatCard({
   const animateProps = { opacity: 1, y: 0 };
 
   const transitionProps = (isFirstRender.current && !shouldReduceMotion)
-    ? { delay, duration: 0.45, ease: [0.16, 1, 0.3, 1] }
+    ? { delay, duration: 0.45, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }
     : undefined;
 
   const colorStyles = color || "bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-950/40 dark:border-indigo-900/50 dark:text-indigo-400";

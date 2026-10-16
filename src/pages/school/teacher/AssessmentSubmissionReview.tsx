@@ -40,6 +40,7 @@ type ReviewQuestion = {
   questionText: string;
   maxMarks: number;
   studentAnswer: string;
+  studentAnswerImage?: string | null;
   status: string;
   currentMarks: number | null;
   aiGrading: AiGrading | null;
@@ -140,8 +141,8 @@ const AssessmentSubmissionReview: React.FC = () => {
         ]);
 
         const loadedAssessment = unwrapSchoolData<any>(assessmentRes, null);
-        const loadedSubmissions = unwrapSchoolList(submissionsRes);
-        const loadedResults = unwrapSchoolList(resultsRes);
+        const loadedSubmissions = unwrapSchoolList<any>(submissionsRes);
+        const loadedResults = unwrapSchoolList<any>(resultsRes);
         const loadedSubmission = loadedSubmissions.find((item: any) => {
           return String(item.student_user_id || item.studentId) === String(studentId);
         });

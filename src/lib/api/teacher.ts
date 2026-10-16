@@ -66,6 +66,9 @@ export interface Lecture {
   transcriptLanguage?: string;
   lectureLanguage?: LectureLanguage;
   createdAt: string;
+  /** Client-side placeholder lecture (not saved on the server yet); stats are not fetched for it. */
+  isFallback?: boolean;
+  subject?: { id: string; name: string };
   batch?: { id: string; name: string };
   topic?: {
     id: string;
@@ -101,6 +104,7 @@ export interface CreateLecturePayload {
   aiNotesMarkdown?: string;
   aiKeyConcepts?: string[];
   aiNoteImages?: AiNoteImage[];
+  transcriptStatus?: "pending" | "processing" | "done" | "failed";
 }
 
 export interface LectureStats {
@@ -540,6 +544,7 @@ export interface CreateMockTestPayload {
   topicId?: string;
   questionIds: string[];
   scheduledAt?: string;
+  deadlineAt?: string;
   shuffleQuestions?: boolean;
   showAnswersAfterSubmit?: boolean;
   allowReattempt?: boolean;

@@ -77,6 +77,8 @@ export interface LiveChatMessage {
   id: string;
   userId: string;
   userName: string;
+  /** Sender role (e.g. 'teacher'); the teacher dashboard uses it to tell the teacher's own messages apart. */
+  role?: string;
   text: string;
   createdAt: string;
 }

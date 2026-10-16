@@ -77,7 +77,7 @@ function buildSchoolUserFromStore(
     rawRole: storeUser.rawRole ?? storeUser.role,
     instituteId: storeUser.instituteId ?? storeUser.tenantId ?? null,
     tenantName: storeUser.tenantName,
-    tenantState: (storeUser as any).tenantState,
+    tenantState: storeUser.tenantState,
     profileImage: storeUser.profileImage ?? null,
     phone: storeUser.phone ?? null,
     isActive: true,

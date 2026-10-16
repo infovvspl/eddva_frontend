@@ -2291,7 +2291,7 @@ function TopicBrowseView({
   const rows = useMemo(() => {
     return topics
       .map(t => {
-        const tc = tCov.get(t.id) ?? { id: t.id, name: t.name, dppCount: 0, studyMaterialCount: 0, totalCount: 0 };
+        const tc = tCov.get(t.id) ?? { id: t.id, name: t.name, dppCount: 0, pyqCount: 0, studyMaterialCount: 0, totalCount: 0 };
         const st = getTopicStatus(tc);
         return { topic: t, coverage: tc, st };
       })

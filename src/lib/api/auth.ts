@@ -24,6 +24,8 @@ export interface AuthUser {
   email?: string;
   role: string;
   avatar?: string;
+  profileImage?: string;
+  permissionGroup?: string;
   tenantId?: string;
   tenantName?: string;
   tenant?: { id: string; name: string; subdomain?: string; logoUrl?: string; brandColor?: string };
@@ -157,6 +159,25 @@ export interface SchoolLoginResponse {
     logo?: string;
     erpEnabled?: boolean;
     lmsEnabled?: boolean;
+    // The backend is not consistent about casing; SchoolAuthContext reads both forms.
+    logo_url?: string;
+    state?: string;
+    city?: string;
+    location?: string;
+    tenant_domain?: string;
+    erp_enabled?: boolean;
+    lms_enabled?: boolean;
+    aiEnabled?: boolean;
+    ai_enabled?: boolean;
+    // JSON object, or a JSON string depending on how the row was serialised.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    aiFeatures?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ai_features?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    modulesPermissions?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    modules_permissions?: any;
   } | null;
   tenantDomain?: string;
 }

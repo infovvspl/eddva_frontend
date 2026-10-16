@@ -281,7 +281,7 @@ export default function ParentLayout() {
 
       <div 
         className={`flex min-w-0 flex-1 flex-col overflow-hidden ${sidebarOpen && isMobile ? 'pointer-events-none' : ''}`}
-        inert={sidebarOpen && isMobile ? "" : undefined}
+        {...(sidebarOpen && isMobile ? { inert: "" } : {})}
       >
         <header className="sticky top-0 z-30 border-b border-slate-100 bg-white/80 px-4 py-3 backdrop-blur-xl sm:px-4 sm:px-6">
           <div className="flex items-center justify-between gap-4">
