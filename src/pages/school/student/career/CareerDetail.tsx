@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
-  ArrowLeft, Check, AlertTriangle, GraduationCap, Building2,
+  Check, AlertTriangle, GraduationCap, Building2,
   IndianRupee, ChevronRight, Sparkles, BookOpen, ListChecks,
   Clock, Briefcase, Brain, Award, CheckCircle2, XCircle, Compass, Calendar
 } from 'lucide-react';
+import { BackButton } from '@/components/shared/BackButton';
 import api from '@/lib/api/school-client';
 import {
   getCareerDetail, getCareerReport,
@@ -89,10 +90,6 @@ function DynamicCareerDetail({ item, matchItem }: { item: CareerItem; matchItem:
 
   return (
     <div className="w-full space-y-5 p-1">
-      <button onClick={() => navigate(-1)} className="inline-flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-slate-600">
-        <ArrowLeft className="size-3.5" /> Back
-      </button>
-
       {/* Header */}
       <div className="rounded-3xl border border-violet-100 bg-gradient-to-br from-violet-50 to-blue-50/30 p-6 shadow-sm">
         <div className="flex items-start justify-between gap-3">
@@ -102,11 +99,14 @@ function DynamicCareerDetail({ item, matchItem }: { item: CareerItem; matchItem:
             </div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">{effectiveItem.title}</h1>
           </div>
-          {effectiveItem.fitScore > 0 && (
-            <span className={`shrink-0 rounded-lg px-2.5 py-1 text-xs font-black ${fitTextColor(effectiveItem.fitScore)}`}>
-              {effectiveItem.fitScore}% match
-            </span>
-          )}
+          <div className="flex shrink-0 items-center gap-2">
+            {effectiveItem.fitScore > 0 && (
+              <span className={`shrink-0 rounded-lg px-2.5 py-1 text-xs font-black ${fitTextColor(effectiveItem.fitScore)}`}>
+                {effectiveItem.fitScore}% match
+              </span>
+            )}
+            <BackButton />
+          </div>
         </div>
         {effectiveItem.reasoning && (
           <p className="mt-3 text-sm leading-relaxed text-slate-600">{effectiveItem.reasoning}</p>
@@ -294,10 +294,6 @@ export default function CareerDetail() {
 
   return (
     <div className="w-full space-y-6 p-1">
-      <button onClick={() => navigate(-1)} className="inline-flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-slate-600">
-        <ArrowLeft className="size-3.5" /> Back
-      </button>
-
       {/* Header card with at-a-glance metrics */}
       <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm relative overflow-hidden">
         <div className="flex items-start justify-between gap-3">
@@ -310,9 +306,12 @@ export default function CareerDetail() {
             )}
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">{career.title}</h1>
           </div>
-          <span className={`shrink-0 rounded px-2.5 py-1 text-xs font-black uppercase tracking-wider ${streamBadge(career.stream)}`}>
-            {career.stream}
-          </span>
+          <div className="flex shrink-0 items-center gap-2">
+            <span className={`shrink-0 rounded px-2.5 py-1 text-xs font-black uppercase tracking-wider ${streamBadge(career.stream)}`}>
+              {career.stream}
+            </span>
+            <BackButton />
+          </div>
         </div>
         <p className="mt-3 text-sm leading-relaxed text-slate-600">{career.description}</p>
         

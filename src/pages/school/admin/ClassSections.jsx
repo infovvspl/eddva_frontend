@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit2, Layers, Plus, Search, Trash2, UsersRound } from 'lucide-react';
+import { Edit2, Layers, Plus, Search, Trash2, UsersRound } from 'lucide-react';
+import { BackButton } from '@/components/shared/BackButton';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/admin/Modal';
 import SectionForm from '@/components/school/admin/forms/SectionForm';
@@ -120,13 +121,7 @@ export default function ClassSections() {
   if (!selectedClass) {
     return (
       <div className="w-full px-3 sm:px-5 lg:px-8 xl:px-10">
-        <button
-          onClick={() => navigate('/school/admin/academics')}
-          className="mb-5 inline-flex items-center gap-2 rounded-lg border border-surface-200 bg-white px-4 py-2.5 text-sm font-bold text-surface-700 hover:bg-surface-50 dark:border-surface-800 dark:bg-surface-900 dark:text-white"
-        >
-          <ArrowLeft className="size-4" />
-          Back to Academics
-        </button>
+        <BackButton to="/school/admin/academics" className="mb-5" />
         <div className="rounded-xl border border-surface-200 bg-white p-10 text-center shadow-sm dark:border-surface-800 dark:bg-surface-900">
           <h1 className="text-2xl font-bold text-surface-950 dark:text-white">Class not found</h1>
           <p className="mt-2 text-sm text-surface-500 dark:text-surface-400">The selected class is not available for this academic year.</p>
@@ -138,18 +133,12 @@ export default function ClassSections() {
   return (
     <div className="w-full px-3 sm:px-5 lg:px-8 xl:px-10">
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <button
-            onClick={() => navigate('/school/admin/academics')}
-            className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700"
-          >
-            <ArrowLeft className="size-4" />
-            Back to Classes
-          </button>
+        <div className="flex-1 min-w-0">
           <h1 className="font-display text-3xl font-bold text-surface-950 dark:text-white">{selectedClass.name} Sections</h1>
           <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">Manage all sections inside this class on one page.</p>
         </div>
-        <div className="flex flex-col gap-2 w-full sm:w-auto">
+        <div className="flex flex-col gap-2 w-full sm:w-auto sm:items-end">
+          <BackButton to="/school/admin/academics" className="shrink-0" />
           <div className="flex items-center gap-2 w-full">
             <span className="text-xs font-semibold text-surface-700 dark:text-surface-300 shrink-0">Year:</span>
             <div className="flex-1">

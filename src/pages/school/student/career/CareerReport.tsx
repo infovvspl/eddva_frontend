@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Sparkles, RefreshCw, Loader2, CheckCircle2, Circle, Quote, ChevronRight, Trophy, ArrowLeft,
+  Sparkles, RefreshCw, Loader2, CheckCircle2, Circle, Quote, ChevronRight, Trophy,
   ThumbsUp, ThumbsDown,
 } from 'lucide-react';
+import { BackButton } from '@/components/shared/BackButton';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { generateCareerReport, getCareerReport, submitCareerFeedback, type CareerReport as Report } from '@/lib/api/career';
 import { ErrorState, SkeletonBlock, fitTextColor } from './_shared';
@@ -226,13 +227,13 @@ export default function CareerReport() {
     <div className="w-full space-y-5 p-1">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <button onClick={() => navigate('/school/student/career')} className="mb-1 inline-flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-slate-600"><ArrowLeft className="size-3.5" /> Career Home</button>
           <h1 className="text-2xl font-black text-slate-900">Your Career Report</h1>
           <p className="text-xs text-slate-400">
             Generated {new Date(report.generatedAt).toLocaleDateString('en-GB')}
             {report.generatedForGrade ? ` · Class ${report.generatedForGrade}` : ''}
           </p>
         </div>
+        <BackButton to="/school/student/career" aria-label="Career Home" />
       </div>
 
       {/* Stream recommendation */}

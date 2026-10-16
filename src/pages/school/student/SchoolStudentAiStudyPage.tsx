@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowLeft, Sparkles, Brain, BookOpen, MessageSquare,
+  Sparkles, Brain, BookOpen, MessageSquare,
   Loader2, CheckCircle, Send, Clock,
   ChevronDown, Trophy, Lightbulb, AlertTriangle,
   Monitor, Zap, Info, ArrowRight, BrainCircuit, Highlighter, StickyNote, ListTodo,
@@ -14,6 +14,7 @@ import {
   useCompleteAiStudy, useCompletePlanItem
 } from "@/hooks/use-school-student";
 import type { AiStudySessionData, AiPracticeQuestion } from "@/lib/api/student";
+import { BackButton } from "@/components/shared/BackButton";
 import { CardGlass } from "@/components/shared/CardGlass";
 import { useIsCompactLayout } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
@@ -655,13 +656,6 @@ export default function SchoolStudentAiStudyPage() {
           <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex items-start gap-4 sm:gap-5">
-                <button
-                  onClick={() => navigate(-1)}
-                  className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
-                >
-                  <ArrowLeft className="size-5" />
-                </button>
-
                 <div className="space-y-4">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-700">
@@ -689,6 +683,7 @@ export default function SchoolStudentAiStudyPage() {
                   </p>
                 </div>
               </div>
+              <BackButton />
             </div>
 
             <div className="flex flex-wrap items-center gap-3 border-t border-slate-200/80 pt-4">

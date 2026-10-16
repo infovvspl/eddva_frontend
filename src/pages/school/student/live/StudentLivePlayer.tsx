@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import type { Socket } from 'socket.io-client';
 import Hls from 'hls.js';
 import {
-  Hand, Maximize, Send, Wifi, Radio, Users, LogOut, ArrowLeft, X,
+  Hand, Maximize, Send, Wifi, Radio, Users, LogOut, X,
   PlayCircle, Loader2, LayoutDashboard, BookOpen, Calendar, UserCheck,
   FileText, Download, Trash2, HelpCircle, MessageSquare, Settings2,
   Volume2, VolumeX,
@@ -23,6 +23,7 @@ import {
 import FloatingReactionLayer, { useFloatingReactions } from '@/components/school/live/FloatingReaction';
 import api, { unwrapSchoolData } from '@/lib/api/school-client';
 import { useConfirm } from '@/context/ConfirmContext';
+import { BackButton } from '@/components/shared/BackButton';
 
 type Phase = 'waiting' | 'live' | 'ended' | 'cancelled' | 'missed';
 
@@ -528,12 +529,6 @@ export default function StudentLivePlayer() {
         {/* Desktop Top Header Bar */}
         <header className="hidden md:flex h-16 border-b border-slate-200 bg-white px-6 items-center justify-between shrink-0 z-10 shadow-sm shadow-slate-100">
           <div className="flex items-center gap-3 min-w-0">
-            <button
-              onClick={() => handleNavClick('/school/student/live-classes')}
-              className="size-9 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center justify-center transition-colors text-slate-400 hover:text-slate-700"
-            >
-              <ArrowLeft className="size-4" />
-            </button>
             <div className="min-w-0">
               <h2 className="text-[15px] font-black text-slate-900 truncate">{lectureTitle || 'Live Class'}</h2>
               <p className="text-[13px] text-slate-400 font-bold tracking-tight block">
@@ -578,18 +573,14 @@ export default function StudentLivePlayer() {
             >
               <LogOut className="size-3.5" /> Leave
             </button>
+
+            <BackButton to="/school/student/live-classes" confirmMessage="Leave this live session?" />
           </div>
         </header>
 
         {/* Mobile Top Header Bar */}
         <header className="flex md:hidden h-16 border-b border-slate-200 bg-white px-4 items-center justify-between shrink-0 z-10 shadow-sm shadow-slate-100">
           <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
-            <button
-              onClick={() => handleNavClick('/school/student/live-classes')}
-              className="size-9 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center justify-center transition-colors text-slate-400 hover:text-slate-700 shrink-0"
-            >
-              <ArrowLeft className="size-4" />
-            </button>
             <div className="min-w-0 flex-1">
               <h2 className="text-[14px] font-black text-slate-900 truncate">{lectureTitle || 'Live Class'}</h2>
             </div>
@@ -629,6 +620,8 @@ export default function StudentLivePlayer() {
             >
               <LogOut className="size-4" />
             </button>
+
+            <BackButton to="/school/student/live-classes" confirmMessage="Leave this live session?" />
           </div>
         </header>
 

@@ -4,12 +4,13 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   User, BookOpen, Calendar, BarChart2, Briefcase,
-  Mail, Smartphone, MapPin, ArrowLeft, Download,
+  Mail, Smartphone, MapPin, Download,
   Edit2, Clock, CheckCircle, Award, Globe, Building,
   Printer, Share2, Loader2, FileText, ChevronDown, ChevronUp,
   Video, TrendingUp, Eye, Brain, Star, Play, AlertCircle,
   CheckCircle2, Sparkles, RotateCcw, X, Upload, Trash2, File,
 } from 'lucide-react';
+import { BackButton } from '@/components/shared/BackButton';
 import api from '@/lib/api/school-client';
 import { getUploadUrl, uploadToS3 } from '@/lib/upload';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -428,15 +429,8 @@ export default function TeacherProfile() {
   return (
     <div className="w-full pb-24 sm:pb-36">
       {/* Header */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-0">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold transition-colors text-sm sm:text-base self-start"
-        >
-          <ArrowLeft size={18} />
-          Back to List
-        </button>
-        <div className="flex gap-2 w-full sm:w-auto">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end px-4 sm:px-0">
+        <div className="flex gap-2 w-full sm:w-auto flex-wrap sm:justify-end">
           <button
             onClick={handleExportPDF}
             disabled={exporting}
@@ -451,6 +445,7 @@ export default function TeacherProfile() {
           <button className="flex size-10 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 shrink-0">
             <Share2 size={16} />
           </button>
+          <BackButton />
         </div>
       </div>
 

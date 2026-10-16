@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { useSchoolFeature } from '@/hooks/use-school-feature';
-import { UnifiedSidebar, SidebarProfileCard } from '@/components/layout/UnifiedSidebar';
+import { UnifiedSidebar } from '@/components/layout/UnifiedSidebar';
 import { SchoolLogo } from '@/components/school/admin/Brand';
 import {
   BarChart3,
@@ -45,7 +45,7 @@ const allItems = [
 ];
 
 export default function Sidebar({ open, onClose }) {
-  const { user, institute } = useAuth();
+  const { institute } = useAuth();
   const location = useLocation();
   const isGameRoute = location.pathname.includes('/game-zone');
   const isGamificationRoute = location.pathname.includes('/gamification') || isGameRoute;
@@ -137,20 +137,6 @@ export default function Sidebar({ open, onClose }) {
       logo={<SchoolLogo src={institute?.logo} alt={institute?.name} size="navbar" className="h-10 w-auto max-w-full object-contain" />}
       logoCollapsed={<SchoolLogo src={institute?.logo} alt={institute?.name} size="navbar" className="h-9 w-auto max-w-full object-contain" />}
       onNavClick={() => onClose?.()}
-      profileCard={(isCollapsed) => (
-        <SidebarProfileCard
-          collapsed={isCollapsed}
-          avatar={
-            <div className="grid size-full place-items-center rounded-xl border border-blue-200 bg-blue-50 text-xs font-bold tracking-tight text-blue-700 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300">
-              {(user?.name || 'S').charAt(0).toUpperCase()}
-            </div>
-          }
-          name={user?.name || 'Student'}
-          roleLabel={user?.role || 'Student'}
-          title={user?.name || 'Student'}
-          subtitle={user?.role || 'Student'}
-        />
-      )}
     />
   );
 }

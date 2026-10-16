@@ -31,7 +31,7 @@ import {
   Layers,
   Sparkles,
   ArrowRight,
-  ArrowLeft,
+  ChevronLeft,
   BookMarked,
   Library,
   ScrollText,
@@ -746,25 +746,27 @@ export default function StudyMaterials() {
 
   return (
     <div className="space-y-4 sm:space-y-6 font-poppins px-1 sm:px-0">
-      {selectedSubject && (
-        <button
-          type="button"
-          onClick={() => { setSelectedType('ALL'); setSearchQuery(''); setSearchParams(backParams); }}
-          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
-        >
-          <ArrowLeft size={16} /> Back to {backLabel}
-        </button>
-      )}
       {isMobile ? (
-        <div className="flex flex-wrap gap-2 px-1">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 dark:bg-blue-950/20 px-2.5 py-1 text-[10px] font-bold text-blue-700 dark:text-blue-400">
-            <GraduationCap size={12} />
-            {className} · Sec {sectionName}
-          </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-[10px] font-bold text-slate-700 dark:text-slate-300">
-            <BookOpen size={12} />
-            {scopedResources.count} resources{scopedResources.scope === 'available' ? '' : ` ${scopedResources.scope}`}
-          </span>
+        <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+          <div className="flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 dark:bg-blue-950/20 px-2.5 py-1 text-[10px] font-bold text-blue-700 dark:text-blue-400">
+              <GraduationCap size={12} />
+              {className} · Sec {sectionName}
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-[10px] font-bold text-slate-700 dark:text-slate-300">
+              <BookOpen size={12} />
+              {scopedResources.count} resources{scopedResources.scope === 'available' ? '' : ` ${scopedResources.scope}`}
+            </span>
+          </div>
+          {selectedSubject && (
+            <button
+              type="button"
+              onClick={() => { setSelectedType('ALL'); setSearchQuery(''); setSearchParams(backParams); }}
+              className="inline-flex items-center gap-1 h-9 pl-2.5 pr-3.5 rounded-full bg-white border border-slate-200 shadow-sm text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all shrink-0 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+            >
+              <ChevronLeft className="w-4 h-4" /> Back
+            </button>
+          )}
         </div>
       ) : (
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -785,47 +787,47 @@ export default function StudyMaterials() {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 w-full lg:w-auto lg:min-w-[380px]">
-              <StatChip icon={<GraduationCap size={17} />} label="Class" value={`${className} · Sec ${sectionName}`} />
-              <StatChip icon={<BookOpen size={17} />} label="Resources" value={`${scopedResources.count} ${scopedResources.scope}`} />
+            <div className="flex items-center gap-3 w-full lg:w-auto shrink-0">
+              <div className="grid grid-cols-2 gap-3 w-full lg:w-auto lg:min-w-[380px]">
+                <StatChip icon={<GraduationCap size={17} />} label="Class" value={`${className} · Sec ${sectionName}`} />
+                <StatChip icon={<BookOpen size={17} />} label="Resources" value={`${scopedResources.count} ${scopedResources.scope}`} />
+              </div>
+              {selectedSubject && (
+                <button
+                  type="button"
+                  onClick={() => { setSelectedType('ALL'); setSearchQuery(''); setSearchParams(backParams); }}
+                  className="inline-flex items-center gap-1 h-9 pl-2.5 pr-3.5 rounded-full bg-white border border-slate-200 shadow-sm text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all shrink-0 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                >
+                  <ChevronLeft className="w-4 h-4" /> Back
+                </button>
+              )}
             </div>
           </div>
         </section>
       )}
 
       {!selectedTopic && (
-        <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Search */}
-            <div className="relative w-full sm:w-72 md:w-80">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
-              <input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                placeholder={selectedSubject ? `Search in ${selectedSubject}…` : 'Search…'}
-              />
-            </div>
-
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-600 transition hover:bg-rose-100"
-              >
-                <X size={14} /> Clear
-              </button>
-            )}
-
-            {/* Breadcrumb when subject selected */}
-            {selectedSubject && (
-              <div className="flex items-center gap-2 text-sm w-full sm:w-auto sm:ml-auto justify-between sm:justify-start shrink-0">
-                <span className="font-black text-slate-900 truncate max-w-[150px] sm:max-w-[250px]" title={activeLabel}>
-                  {activeLabel}
-                </span>
-              </div>
-            )}
+        <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 pb-4 dark:border-slate-800">
+          {/* Search */}
+          <div className="relative w-full sm:w-72 md:w-80">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-full border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+              placeholder={selectedSubject ? `Search in ${selectedSubject}…` : 'Search…'}
+            />
           </div>
-        </section>
+
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="inline-flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-600 transition hover:bg-rose-100"
+            >
+              <X size={14} /> Clear
+            </button>
+          )}
+        </div>
       )}
 
       <div>

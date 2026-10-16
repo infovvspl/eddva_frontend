@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
-import { Link, useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { SchoolVideoPlayer } from '@/components/school/SchoolVideoPlayer';
 import { SchoolAskDoubtPanel } from '@/components/school/SchoolAskDoubtPanel';
 import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
@@ -9,8 +9,8 @@ import { useAuth } from '@/context/SchoolAuthContext';
 import { HighlightRenderer } from '@/lib/highlight-renderer';
 import { toast } from 'sonner';
 import { schoolLive } from '@/lib/api/school-live';
+import { BackButton } from '@/components/shared/BackButton';
 import {
-  ArrowLeft,
   BookOpen,
   CalendarDays,
   Clock3,
@@ -1055,13 +1055,7 @@ export default function RecordedClassDetails() {
   if (!recording) {
     return (
       <div className="space-y-6">
-        <Link
-          to={isTeacher ? "/school/teacher/classes" : "/school/student/recorded-classes"}
-          className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-blue-600"
-        >
-          <ArrowLeft size={16} />
-          Back to Recorded Classes
-        </Link>
+        <BackButton to={isTeacher ? "/school/teacher/classes" : "/school/student/recorded-classes"} />
 
         <div className="rounded-[2rem] border border-dashed border-slate-200 bg-white p-12 text-center shadow-sm">
           <FileText className="mx-auto size-12 text-slate-300" />
@@ -1078,13 +1072,6 @@ export default function RecordedClassDetails() {
     <div className="-mx-3 -mb-3 min-h-[calc(100vh-76px)] bg-slate-50 sm:-mx-5 sm:-mb-5 lg:-mx-6 lg:-mb-6 lg:flex lg:h-[calc(100vh-76px)] lg:min-h-0 lg:flex-col lg:overflow-hidden">
       <div className="border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6 lg:shrink-0">
         <div className="flex w-full items-center gap-3">
-          <Link
-            to={isTeacher ? "/school/teacher/classes" : "/school/student/recorded-classes"}
-            className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-blue-600 hover:text-white"
-            aria-label="Back to recorded classes"
-          >
-            <ArrowLeft size={17} />
-          </Link>
           <div className="min-w-0 flex-1">
             <p className="truncate text-[11px] font-bold text-blue-600">
               {recording.chapter_name || recording.subject_name || 'Recorded Class'}
@@ -1100,6 +1087,7 @@ export default function RecordedClassDetails() {
             {isSidebarExpanded ? <PanelRightClose size={14} /> : <PanelRightOpen size={14} />}
             <span>{isSidebarExpanded ? 'Hide Panel' : 'Show Panel'}</span>
           </button>
+          <BackButton to={isTeacher ? "/school/teacher/classes" : "/school/student/recorded-classes"} />
         </div>
       </div>
 
@@ -1226,7 +1214,10 @@ export default function RecordedClassDetails() {
             </main>
 
           <aside className={`min-w-0 ${isSidebarExpanded ? 'block' : 'hidden lg:hidden'} lg:h-full lg:min-h-0`}>
-            <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col h-[600px] lg:h-[calc(100vh-140px)] overflow-hidden">
+            {/* lg:h-full, not a hardcoded calc(100vh-Npx) — see teacher RecordedClassDetails.jsx
+                for why: a fixed-offset calc let this panel grow taller than its real
+                available space and get clipped by the page's outer overflow-hidden. */}
+            <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col h-[600px] lg:h-full overflow-hidden">
               <div className="shrink-0 w-full min-w-0 overflow-hidden">
                 <CourseTabs
                   activeTab={detailTab}

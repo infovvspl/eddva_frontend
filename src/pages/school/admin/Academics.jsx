@@ -174,7 +174,7 @@ export default function Academics() {
     <div className="w-full px-3 sm:px-5 lg:px-8 xl:px-10">
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="font-display text-2xl sm:text-3xl font-bold text-surface-950 dark:text-white">Academics</h1>
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-surface-950 dark:text-white">Class & Sections</h1>
           <p className="mt-1 text-xs sm:text-sm text-surface-500 dark:text-surface-400">Manage classes, sections and academic structure</p>
         </div>
         <div className="flex flex-col gap-2 w-full sm:w-auto">

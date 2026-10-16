@@ -1675,9 +1675,10 @@ const ClassManagement: React.FC = () => {
           value={recFilter.subjectId}
           onChange={(val) => setRecFilter((p) => ({ ...p, subjectId: val, chapterId: '', topicId: '' }))}
           options={[
-            { value: "", label: "All subjects" },
+            { value: "", label: recFilter.classId ? "All subjects" : "Select class first" },
             ...filteredSubjects.map((s: any) => ({ value: s.id, label: s.name })),
           ]}
+          disabled={!recFilter.classId}
           className="w-[140px] flex-1 sm:flex-none"
         />
         <CustomSelect
