@@ -561,7 +561,9 @@ export default function TeacherLiveDashboard() {
   const socketRef = useRef<Socket | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
-  const [lectureStatus, setLectureStatus] = useState<'SCHEDULED' | 'LIVE' | 'ENDED' | null>(
+  /** B-28: OBS dropped; the class stays live while it reconnects. */
+  const [obsReconnecting, setObsReconnecting] = useState(false);
+  const [lectureStatus, setLectureStatus] = useState<'SCHEDULED' | 'LIVE' | 'ENDED' | 'CANCELLED' | null>(
     location.state?.showSummary ? 'ENDED' : null,
   );
   const [viewerCount, setViewerCount] = useState(0);
@@ -767,13 +769,43 @@ export default function TeacherLiveDashboard() {
     }
   };
 
+  /**
+   * B-06 / B-22: "Allow Student Chat" is saved on the server for this class,
+   * pushed to every student, and enforced there. It used to change only this
+   * screen: students kept chatting, and a reload showed it on again.
+   */
+  const applyChatSetting = (enabled: boolean, save: boolean) => {
+    setChatAllowed(enabled);
+    setIsChatMuted(!enabled);
+    if (save) socketRef.current?.emit('update-settings', { chatEnabled: enabled });
+  };
+
+  /**
+   * B-29: the class is over, whether ended here, from another device, or by
+   * the server when OBS did not come back. The console kept showing LIVE and
+   * OBS Connected when it missed the socket event.
+   */
+  const markEnded = () => {
+    setLive(false);
+    setObsReconnecting(false);
+    setStudents([]);
+    setHands([]);
+    setLectureStatus((s) => (s === 'CANCELLED' ? s : 'ENDED'));
+    if (hlsRef.current) {
+      try { hlsRef.current.destroy(); } catch {}
+      hlsRef.current = null;
+    }
+  };
+
   const endClass = async () => {
     setEnding(true);
     try {
-      await schoolLive.endLecture(id);
+      // B-04: a class that never went live is cancelled, not "ended".
+      const res: any = await schoolLive.endLecture(id);
+      const status = res?.status || res?.data?.status || 'ENDED';
       setLive(false);
-      setLectureStatus('ENDED');
-      toast.success('Live class ended');
+      setLectureStatus(status);
+      toast.success(status === 'CANCELLED' ? 'Class cancelled' : 'Live class ended');
       navigate('/school/teacher/classes');
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Failed to end the class');
@@ -812,23 +844,26 @@ export default function TeacherLiveDashboard() {
     schoolLive.getStreamUrl(id)
       .then((r) => {
         const rawStatus = String(r.status || '').toUpperCase();
-        let s: 'SCHEDULED' | 'LIVE' | 'ENDED' =
-          rawStatus === 'PROCESSED' || rawStatus === 'PROCESSING_FAILED' || rawStatus === 'ENDED'
-            ? 'ENDED'
-            : rawStatus === 'LIVE'
-              ? 'LIVE'
-              : 'SCHEDULED';
+        let s: 'SCHEDULED' | 'LIVE' | 'ENDED' | 'CANCELLED' =
+          rawStatus === 'CANCELLED'
+            ? 'CANCELLED'
+            : rawStatus === 'PROCESSED' || rawStatus === 'PROCESSING_FAILED' || rawStatus === 'ENDED'
+              ? 'ENDED'
+              : rawStatus === 'LIVE'
+                ? 'LIVE'
+                : 'SCHEDULED';
         if (s === 'SCHEDULED' && r.createdAt) {
           const todayMidnight = new Date(); todayMidnight.setHours(0, 0, 0, 0);
           if (new Date(r.createdAt) < todayMidnight) s = 'ENDED';
         }
         setLectureStatus(s);
         setLive(s === 'LIVE');
+        setObsReconnecting(s === 'LIVE' && !!r.streamInterrupted);
         setLectureTitle(r.title || '');
         if (r.startedAt) {
           setStartedAt(new Date(r.startedAt).getTime());
         }
-        const playUrl = r.streamKey ? hlsProxyUrl(r.streamKey) : r.url;
+        const playUrl = r.playbackId ? hlsProxyUrl(r.playbackId) : r.url;
         setPlaybackUrl(playUrl);
         if (s === 'LIVE') {
           setTimeout(() => attach(playUrl), 0);
@@ -840,8 +875,10 @@ export default function TeacherLiveDashboard() {
       });
   }, [id]);
 
+  const classOpen = lectureStatus !== null && lectureStatus !== 'ENDED' && lectureStatus !== 'CANCELLED';
+
   useEffect(() => {
-    if (lectureStatus === null || lectureStatus === 'ENDED') return;
+    if (!classOpen) return;
     const timer = setInterval(() => {
       schoolLive.getActiveParticipants(id)
         .then((rows) => {
@@ -854,15 +891,33 @@ export default function TeacherLiveDashboard() {
         .catch(() => undefined);
     }, 5000);
     return () => clearInterval(timer);
-  }, [id, lectureStatus]);
+  }, [id, classOpen]);
+
+  // B-29: the socket is not the only way to learn the class has ended or that
+  // OBS dropped; check the server while the class is live.
+  useEffect(() => {
+    if (!live) return;
+    const timer = setInterval(() => {
+      schoolLive.getStreamUrl(id)
+        .then((r) => {
+          const st = String(r.status || '').toUpperCase();
+          if (['ENDED', 'PROCESSED', 'PROCESSING_FAILED', 'CANCELLED'].includes(st)) markEnded();
+          else if (st === 'LIVE') setObsReconnecting(!!r.streamInterrupted);
+        })
+        .catch(() => undefined);
+    }, 10_000);
+    return () => clearInterval(timer);
+  }, [id, live]);
 
   useEffect(() => {
-    if (lectureStatus === null || lectureStatus === 'ENDED') return;
+    if (!classOpen) return;
     const socket = createLiveSocket();
     socketRef.current = socket;
     socket.on('connect', () => socket.emit('teacher-join', { token: getLiveToken(), lectureId: id }));
-    socket.on('teacher-joined', ({ viewerCount, students = [], questionsActive = false, questions = [], pinnedAnnouncement }: { viewerCount: number; students?: (LiveStudent & { handRaised?: boolean })[]; questionsActive?: boolean; questions?: any[]; pinnedAnnouncement?: string | null }) => {
+    socket.on('chat-settings', ({ chatEnabled }: { chatEnabled: boolean }) => applyChatSetting(chatEnabled, false));
+    socket.on('teacher-joined', ({ viewerCount, students = [], questionsActive = false, questions = [], pinnedAnnouncement, chatEnabled }: { viewerCount: number; students?: (LiveStudent & { handRaised?: boolean })[]; questionsActive?: boolean; questions?: any[]; pinnedAnnouncement?: string | null; chatEnabled?: boolean }) => {
       setViewerCount(viewerCount);
+      if (typeof chatEnabled === 'boolean') applyChatSetting(chatEnabled, false);
       if (students.length) {
         setStudents(students);
         setHands(raisedHandsFromStudents(students));
@@ -887,22 +942,20 @@ export default function TeacherLiveDashboard() {
     });
     socket.on('stream-started', () => {
       setLive(true);
+      setObsReconnecting(false);
+      setLectureStatus('LIVE');
       setStartedAt((s) => s ?? Date.now());
       schoolLive.getStreamUrl(id).then((r) => {
-        const playUrl = r.streamKey ? hlsProxyUrl(r.streamKey) : r.url;
+        const playUrl = r.playbackId ? hlsProxyUrl(r.playbackId) : r.url;
         setPlaybackUrl(playUrl);
         setTimeout(() => attach(playUrl), 1000);
       }).catch(() => undefined);
     });
-    socket.on('stream-ended', () => {
-      setLive(false);
-      setStudents([]);
-      setHands([]);
-      setLectureStatus('ENDED');
-      if (hlsRef.current) {
-        try { hlsRef.current.destroy(); } catch {}
-        hlsRef.current = null;
-      }
+    socket.on('stream-ended', markEnded);
+    // B-28: OBS stopped. The class stays live while it reconnects.
+    socket.on('stream-interrupted', ({ graceSeconds = 180 }: { graceSeconds?: number }) => {
+      setObsReconnecting(true);
+      toast.warning(`OBS disconnected. The class stays live for ${Math.round(graceSeconds / 60)} min — start streaming again in OBS to continue.`);
     });
     socket.on('chat', (m: LiveChatMessage) => {
       setMessages((prev) => [...prev.slice(-200), m]);
@@ -944,7 +997,7 @@ export default function TeacherLiveDashboard() {
       );
     });
     return () => { socket.disconnect(); };
-  }, [id, lectureStatus]);
+  }, [id, classOpen]);
 
   useEffect(() => {
     if (!live) return;
@@ -1027,17 +1080,19 @@ export default function TeacherLiveDashboard() {
               : 'bg-slate-100 text-slate-500 border border-slate-200/50'
           }`}>
             <span className={`size-1.5 rounded-full ${live ? 'bg-red-500 animate-pulse' : 'bg-slate-400'}`} />
-            {live ? 'LIVE' : 'OFFLINE'}
+            {live ? 'LIVE' : lectureStatus === 'CANCELLED' ? 'CANCELLED' : 'OFFLINE'}
           </span>
 
           {/* OBS Badge */}
           <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-black uppercase tracking-wider shadow-xs transition-all ${
-            live 
-              ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
-              : 'bg-slate-100 text-slate-500 border border-slate-200/50'
+            live && obsReconnecting
+              ? 'bg-amber-50 text-amber-600 border border-amber-100'
+              : live
+                ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                : 'bg-slate-100 text-slate-500 border border-slate-200/50'
           }`}>
-            <span className={`size-1.5 rounded-full ${live ? 'bg-emerald-500 animate-ping' : 'bg-slate-400'}`} />
-            {live ? 'OBS Connected' : 'OBS Inactive'}
+            <span className={`size-1.5 rounded-full ${live && obsReconnecting ? 'bg-amber-500 animate-pulse' : live ? 'bg-emerald-500 animate-ping' : 'bg-slate-400'}`} />
+            {live && obsReconnecting ? 'OBS Reconnecting…' : live ? 'OBS Connected' : 'OBS Inactive'}
           </span>
 
           {/* Watching count */}
@@ -1186,7 +1241,7 @@ export default function TeacherLiveDashboard() {
           </div>
           
           {/* ─── Desktop Bottom Floating Control Glass Panel ─── */}
-          <div className="hidden md:flex bg-white/80 backdrop-blur-md border border-slate-200/60 shadow-xl rounded-2xl px-4 py-3 flex items-center justify-between gap-2 max-w-5xl mx-auto w-full shrink-0">
+          <div className="hidden md:flex bg-white/80 backdrop-blur-md border border-slate-200/60 shadow-xl rounded-2xl px-4 py-3 flex items-center flex-wrap justify-between gap-2 max-w-5xl mx-auto w-full shrink-0">
             <div className="flex items-center gap-1.5">
               {/* Pinned Announcements */}
               <button
@@ -1269,7 +1324,7 @@ export default function TeacherLiveDashboard() {
               title="End Live Class"
             >
               <Power className="size-3.5 shrink-0" />
-              <span className="hidden md:inline">End Class</span>
+              <span className="hidden md:inline">{lectureStatus === 'LIVE' ? 'End Class' : 'Cancel Class'}</span>
             </button>
           </div>
 
@@ -1632,13 +1687,12 @@ export default function TeacherLiveDashboard() {
                         onChange={(e) => setDraft(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && send()}
                         maxLength={300}
-                        disabled={isChatMuted}
-                        placeholder={isChatMuted ? "Chat is muted for all students" : "Message student stream…"}
+                        placeholder={isChatMuted ? "Students can't chat — your messages still go out" : "Message student stream…"}
                         className="flex-1 bg-slate-50 border border-slate-200/85 rounded-xl px-4 py-2.5 text-[13px] text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all placeholder:text-slate-400"
                       />
                       <button
                         onClick={send}
-                        disabled={!draft.trim() || isChatMuted}
+                        disabled={!draft.trim()}
                         className="size-10 shrink-0 bg-blue-600 text-white rounded-xl flex items-center justify-center hover:bg-blue-700 transition disabled:opacity-50 active:scale-95 shadow-md shadow-blue-600/10"
                       >
                         <Send className="size-4" />
@@ -1678,7 +1732,7 @@ export default function TeacherLiveDashboard() {
                     />
                     <button
                       onClick={() => {
-                        setIsChatMuted(!isChatMuted);
+                        applyChatSetting(isChatMuted, true);
                         toast.success(isChatMuted ? 'Student chat has been Unmuted' : 'Student chat has been Muted globally');
                       }}
                       className={`w-full py-2 px-3 rounded-xl border text-[13px] font-black transition active:scale-95 ${
@@ -2112,29 +2166,13 @@ export default function TeacherLiveDashboard() {
                   type="checkbox" 
                   checked={chatAllowed} 
                   onChange={(e) => {
-                    setChatAllowed(e.target.checked);
-                    setIsChatMuted(!e.target.checked);
+                    applyChatSetting(e.target.checked, true);
                     toast.success(`Chat has been ${e.target.checked ? 'Enabled' : 'Disabled'} for students.`);
                   }} 
                   className="size-4.5 text-blue-650 border-slate-300 rounded focus:ring-blue-500 cursor-pointer" 
                 />
               </div>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-[13px] font-bold text-slate-800 block">Low Latency Mode</span>
-                  <span className="text-[13px] text-slate-400">Reduce HLS buffering lag down to 2.8s</span>
-                </div>
-                <input 
-                  type="checkbox" 
-                  checked={lowLatency} 
-                  onChange={(e) => {
-                    setLowLatency(e.target.checked);
-                    toast.success(`Low latency mode ${e.target.checked ? 'Enabled' : 'Disabled'}.`);
-                  }} 
-                  className="size-4.5 text-blue-650 border-slate-300 rounded focus:ring-blue-500 cursor-pointer" 
-                />
-              </div>
             </div>
             
             <div className="flex justify-end">
@@ -2154,10 +2192,14 @@ export default function TeacherLiveDashboard() {
         <div className="fixed inset-0 z-[200] grid place-items-center bg-black/60 backdrop-blur-xs p-4 animate-fade-in" onClick={(e) => e.target === e.currentTarget && setConfirmEnd(false)}>
           <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl border border-slate-100">
             <div className="mb-2 flex items-center justify-between">
-              <h3 className="text-base font-black text-slate-900">End live class?</h3>
+              <h3 className="text-base font-black text-slate-900">{lectureStatus === 'LIVE' ? 'End live class?' : 'Cancel this class?'}</h3>
               <button onClick={() => setConfirmEnd(false)} className="text-slate-400 hover:bg-slate-100 p-1.5 rounded-xl"><X className="size-4" /></button>
             </div>
-            <p className="mb-5 text-[13px] font-semibold text-slate-500 leading-relaxed">This will end the class stream and disconnect all connected students. Make sure to stop streaming in OBS to release encoder.</p>
+            <p className="mb-5 text-[13px] font-semibold text-slate-500 leading-relaxed">
+              {lectureStatus === 'LIVE'
+                ? 'This will end the class stream and disconnect all connected students. Make sure to stop streaming in OBS to release encoder.'
+                : "This class has not started. Cancelling it removes it from students' upcoming classes; it cannot be started afterwards."}
+            </p>
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setConfirmEnd(false)}
@@ -2171,7 +2213,7 @@ export default function TeacherLiveDashboard() {
                 disabled={ending}
                 className="inline-flex items-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 px-4 py-2 text-[13px] font-black text-white shadow-md shadow-red-600/10"
               >
-                {ending ? <><Loader2 className="size-3.5 animate-spin" /> Ending…</> : 'End Class'}
+                {ending ? <><Loader2 className="size-3.5 animate-spin" /> {lectureStatus === 'LIVE' ? 'Ending…' : 'Cancelling…'}</> : lectureStatus === 'LIVE' ? 'End Class' : 'Cancel Class'}
               </button>
             </div>
           </div>

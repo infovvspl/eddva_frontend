@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { SchoolVideoPlayer } from '@/components/school/SchoolVideoPlayer';
 import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Edit, Upload, Youtube, Image as ImageIcon, FileText, Loader2, BarChart3, Download, ChevronRight, X, Sparkles, TrendingUp, XCircle, CheckCircle, ListChecks, Trophy, Copy, Eye, EyeOff, ArrowLeft, ArrowRight, ImagePlus, RefreshCw, CalendarClock, AlarmClock, PanelRightClose, PanelRightOpen, CalendarDays, Clock3, Tag, BookOpen, MessageCircle, Send, MessagesSquare, HelpCircle, User, Monitor, Save, Bell, Check, AlertTriangle } from 'lucide-react';
-import { schoolLive, type CreatedLecture, type LiveLecture } from '@/lib/api/school-live';
+import { schoolLive, localInputToIso, isoToLocalInput, type CreatedLecture, type LiveLecture } from '@/lib/api/school-live';
 import { Highlight } from '@/types/highlight';
 import { HighlightRenderer } from '@/lib/highlight-renderer';
 import { useSchoolFeature } from '@/hooks/use-school-feature';
@@ -191,7 +191,7 @@ const ClassManagement: React.FC = () => {
 
   // ── Live (self-hosted OBS/RTMP) ─────────────────────────────────────────────
   const [obsLectures, setObsLectures] = useState<LiveLecture[]>([]);
-  const [liveStatusFilter, setLiveStatusFilter] = useState<'all' | 'scheduled' | 'ongoing' | 'finished'>('all');
+  const [liveStatusFilter, setLiveStatusFilter] = useState<'all' | 'scheduled' | 'ongoing' | 'completed' | 'missed'>('all');
   const [showAllObsLectures, setShowAllObsLectures] = useState(false);
   const [showAllRecordedLectures, setShowAllRecordedLectures] = useState(false);
   const [showLiveModal, setShowLiveModal] = useState(false);    // OBS creds display
@@ -229,6 +229,14 @@ const ClassManagement: React.FC = () => {
   const submitScheduleLive = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!schedLiveForm.title.trim()) { toast.warning('Enter a class title'); return; }
+    // B-01: send the exact instant. The raw datetime-local value has no zone
+    // and was stored as UTC, putting every class 5 h 30 min late.
+    const scheduledIso = localInputToIso(schedLiveForm.scheduledFor);
+    // B-03: a class cannot start in the past (the server checks too).
+    if (scheduledIso && new Date(scheduledIso).getTime() < Date.now() - 5 * 60_000) {
+      toast.warning('The class time is in the past. Pick a time from now on.');
+      return;
+    }
     setSchedulingLive(true);
     try {
       const selectedClass = schedClassOptions.find((c) => String(c.id) === String(schedLiveForm.classId));
@@ -236,7 +244,7 @@ const ClassManagement: React.FC = () => {
       const selectedSubject = schedSubjectOptions.find((s) => String(s.id) === String(schedLiveForm.subjectId));
       const res = await schoolLive.createLecture({
         title: schedLiveForm.title.trim(),
-        scheduledFor: schedLiveForm.scheduledFor || undefined,
+        scheduledFor: scheduledIso,
         classId: schedLiveForm.classId || undefined,
         sectionId: schedLiveForm.sectionId || undefined,
         subjectId: schedLiveForm.subjectId || undefined,
@@ -276,6 +284,9 @@ const ClassManagement: React.FC = () => {
     toast.success(`${label} copied`);
   };
   const [recordedClassData, setRecordedClassData] = useState([]);
+  // False until the first load returns, so the tab does not flash
+  // "0 recorded / No recordings yet" while the list is still loading.
+  const [recordingsLoaded, setRecordingsLoaded] = useState(false);
   const [thumbnailJobs, setThumbnailJobs] = useState<Record<string, ThumbnailJob>>({});
   const [showRecordingModal, setShowRecordingModal] = useState(false);
   const [uploadingRecording, setUploadingRecording] = useState(false);
@@ -584,6 +595,8 @@ const ClassManagement: React.FC = () => {
       setRecordedClassData(Array.isArray(rows) ? rows : []);
     } catch (error) {
       console.error('Failed to fetch recordings', error);
+    } finally {
+      setRecordingsLoaded(true);
     }
   };
 
@@ -1341,6 +1354,8 @@ const ClassManagement: React.FC = () => {
 
   const isExpiredScheduled = (lec: LiveLecture) => {
     if (lec.status !== 'SCHEDULED') return false;
+    // B-21: the server's rule, so teachers and students see the same thing.
+    if (typeof lec.isMissed === 'boolean') return lec.isMissed;
     const ref = lec.scheduledFor || lec.createdAt;
     if (!ref) return false;
     const todayMidnight = new Date(); todayMidnight.setHours(0, 0, 0, 0);
@@ -1354,6 +1369,35 @@ const ClassManagement: React.FC = () => {
     const mins = Math.floor(secs / 60);
     if (mins < 60) return `${mins} min`;
     return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+  };
+
+  // B-08: change a scheduled class's title, description or time.
+  const [editLive, setEditLive] = useState<{ id: string; title: string; description: string; scheduledFor: string } | null>(null);
+  const [savingEditLive, setSavingEditLive] = useState(false);
+  const openEditLive = (lec: LiveLecture) => setEditLive({
+    id: lec.id, title: lec.title || '', description: lec.description || '', scheduledFor: isoToLocalInput(lec.scheduledFor),
+  });
+  const saveEditLive = async () => {
+    if (!editLive) return;
+    if (!editLive.title.trim()) { toast.warning('Enter a class title'); return; }
+    const scheduledIso = localInputToIso(editLive.scheduledFor);
+    if (scheduledIso && new Date(scheduledIso).getTime() < Date.now() - 5 * 60_000) {
+      toast.warning('The class time is in the past. Pick a time from now on.');
+      return;
+    }
+    setSavingEditLive(true);
+    try {
+      await schoolLive.updateLecture(editLive.id, {
+        title: editLive.title.trim(), description: editLive.description.trim(), scheduledFor: scheduledIso,
+      });
+      toast.success('Class updated. Students have been notified.');
+      setEditLive(null);
+      fetchObsLectures();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Could not update the class');
+    } finally {
+      setSavingEditLive(false);
+    }
   };
 
   const deleteLiveClass = async (id: string) => {
@@ -1381,8 +1425,11 @@ const ClassManagement: React.FC = () => {
     // SCHEDULED and whose time has simply passed without ever going live —
     // the latter has no recording job queued and will never produce one, so
     // it must never fall into the "processing" bucket below.
-    const isTerminal = lec.status === 'ENDED' || lec.status === 'PROCESSED' || lec.status === 'PROCESSING_FAILED' || !!lec.recordingUrl;
+    const isCancelled = lec.status === 'CANCELLED';
+    const isTerminal = lec.status === 'ENDED' || lec.status === 'PROCESSED' || lec.status === 'PROCESSING_FAILED' || isCancelled || !!lec.recordingUrl;
     const isMissed = !isTerminal && isExpiredScheduled(lec);
+    // A class that never started has nothing to summarise or process.
+    const neverStarted = isMissed || isCancelled;
     const isEnded = isTerminal || isMissed;
     const isScheduled = !isLive && !isEnded;
     const duration = fmtDuration(lec.startedAt, lec.endedAt);
@@ -1449,6 +1496,10 @@ const ClassManagement: React.FC = () => {
               <Badge variant="outline" className="inline-flex shrink-0 items-center gap-1 rounded-full border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-black text-rose-600">
                 Processing failed
               </Badge>
+            ) : isCancelled ? (
+              <Badge variant="outline" className="inline-flex shrink-0 items-center gap-1 rounded-full border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-500">
+                Cancelled
+              </Badge>
             ) : isMissed ? (
               <Badge variant="outline" className="inline-flex shrink-0 items-center gap-1 rounded-full border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-500">
                 Missed
@@ -1480,7 +1531,7 @@ const ClassManagement: React.FC = () => {
         )}
 
         {/* Processing status after a class ends — keeps the teacher informed. */}
-        {isEnded && lec.status !== 'PROCESSING_FAILED' && !isMissed && !lec.recordingUrl && (
+        {isEnded && lec.status !== 'PROCESSING_FAILED' && !neverStarted && !lec.recordingUrl && (
           <InfoAlert className="mt-3 flex items-start gap-2 rounded-xl border-amber-100 bg-amber-50/70 px-3 py-2">
             <Loader2 className="mt-0.5 size-3.5 shrink-0 animate-spin text-amber-500" />
             <p className="text-[11px] font-medium text-amber-700">
@@ -1493,6 +1544,14 @@ const ClassManagement: React.FC = () => {
             <AlarmClock className="mt-0.5 size-3.5 shrink-0 text-slate-400" />
             <p className="text-[11px] font-medium text-slate-500">
               This class was scheduled but never started — there is no recording to process.
+            </p>
+          </InfoAlert>
+        )}
+        {isCancelled && (
+          <InfoAlert className="mt-3 flex items-start gap-2 rounded-xl border-slate-200 bg-slate-50 px-3 py-2">
+            <AlarmClock className="mt-0.5 size-3.5 shrink-0 text-slate-400" />
+            <p className="text-[11px] font-medium text-slate-500">
+              This class was cancelled before it started.
             </p>
           </InfoAlert>
         )}
@@ -1517,13 +1576,25 @@ const ClassManagement: React.FC = () => {
         )}
 
         {/* Actions */}
-        <div className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3">
-          <Button variant="outline" size={null}
-            onClick={() => { setCreatedLive(null); setCredsLecture(lec); setShowKey(false); setShowLiveModal(true); }}
-            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold hover:bg-gradient-to-r hover:from-blue-50 hover:to-sky-50 hover:text-blue-600 hover:border-blue-300"
-          >
-            <Eye size={13} /> Stream Info
-          </Button>
+        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+          {/* B-12: stream credentials only while the class can still be streamed. */}
+          {!isEnded && (
+            <Button variant="outline" size={null}
+              onClick={() => { setCreatedLive(null); setCredsLecture(lec); setShowKey(false); setShowLiveModal(true); }}
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold hover:bg-gradient-to-r hover:from-blue-50 hover:to-sky-50 hover:text-blue-600 hover:border-blue-300"
+            >
+              <Eye size={13} /> Stream Info
+            </Button>
+          )}
+          {isScheduled && (
+            <Button variant="outline" size={null}
+              onClick={() => openEditLive(lec)}
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold hover:bg-gradient-to-r hover:from-blue-50 hover:to-sky-50 hover:text-blue-600 hover:border-blue-300"
+              title="Change the title, description or time"
+            >
+              <Edit size={13} /> Edit
+            </Button>
+          )}
 
           {isEnded && lec.recordingUrl && (
             <Button variant="outline" size={null}
@@ -1545,14 +1616,16 @@ const ClassManagement: React.FC = () => {
               <Monitor size={13} /> Studio
             </Button>
           )}
-          <Button variant="outline" size={null}
-            onClick={() => navigate(`/school/teacher/live/${lec.id}/dashboard`, { state: { showSummary: isEnded } })}
-            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold hover:bg-gradient-to-r hover:from-blue-50 hover:to-sky-50 hover:text-blue-600 hover:border-blue-300"
-          >
-            {isLive ? <><Radio size={13} /> Open Live</>
-              : isEnded ? <>View Summary <ArrowRight size={13} /></>
-                : <>Dashboard <ArrowRight size={13} /></>}
-          </Button>
+          {!neverStarted && (
+            <Button variant="outline" size={null}
+              onClick={() => navigate(`/school/teacher/live/${lec.id}/dashboard`, { state: { showSummary: isEnded } })}
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold hover:bg-gradient-to-r hover:from-blue-50 hover:to-sky-50 hover:text-blue-600 hover:border-blue-300"
+            >
+              {isLive ? <><Radio size={13} /> Open Live</>
+                : isEnded ? <>View Summary <ArrowRight size={13} /></>
+                  : <>Dashboard <ArrowRight size={13} /></>}
+            </Button>
+          )}
 
           <Button variant="ghost" size={null} onClick={() => deleteLiveClass(lec.id)} title="Delete" className="ml-auto text-slate-300 transition-colors hover:text-rose-500">
             <Trash2 size={15} />
@@ -1602,9 +1675,10 @@ const ClassManagement: React.FC = () => {
           value={recFilter.subjectId}
           onChange={(val) => setRecFilter((p) => ({ ...p, subjectId: val, chapterId: '', topicId: '' }))}
           options={[
-            { value: "", label: "All subjects" },
+            { value: "", label: recFilter.classId ? "All subjects" : "Select class first" },
             ...filteredSubjects.map((s: any) => ({ value: s.id, label: s.name })),
           ]}
+          disabled={!recFilter.classId}
           className="w-[140px] flex-1 sm:flex-none"
         />
         <CustomSelect
@@ -1631,25 +1705,23 @@ const ClassManagement: React.FC = () => {
     );
   };
 
-  const liveStatusCounts = useMemo(() => {
-    let scheduled = 0;
-    let ongoing = 0;
-    let completed = 0;
+  // One grouping for the counts and the list. B-11: missed and cancelled
+  // classes were counted as "Completed" although they never ran.
+  const liveGroup = (lec: LiveLecture): 'ongoing' | 'scheduled' | 'completed' | 'missed' => {
+    if (lec.status === 'LIVE') return 'ongoing';
+    if (lec.status === 'CANCELLED') return 'missed';
+    if (lec.status === 'ENDED' || lec.status === 'PROCESSED' || lec.status === 'PROCESSING_FAILED' || lec.recordingUrl) return 'completed';
+    return isExpiredScheduled(lec) ? 'missed' : 'scheduled';
+  };
 
+  const liveStatusCounts = useMemo(() => {
+    const counts = { scheduled: 0, ongoing: 0, completed: 0, missed: 0 };
     obsLectures.forEach((lec) => {
       if (recFilter.classId && String(lec.classId) !== String(recFilter.classId)) return;
       if (recFilter.subjectId && String(lec.subjectId) !== String(recFilter.subjectId)) return;
-
-      const isLive = lec.status === 'LIVE';
-      const isEnded = lec.status === 'ENDED' || lec.status === 'PROCESSED' || !!lec.recordingUrl || isExpiredScheduled(lec);
-      const isScheduled = !isLive && !isEnded;
-
-      if (isLive) ongoing++;
-      else if (isEnded) completed++;
-      else if (isScheduled) scheduled++;
+      counts[liveGroup(lec)]++;
     });
-
-    return { all: scheduled + ongoing + completed, scheduled, ongoing, completed };
+    return { all: counts.scheduled + counts.ongoing + counts.completed + counts.missed, ...counts };
   }, [obsLectures, recFilter.classId, recFilter.subjectId]);
 
   const filteredObsLectures = useMemo(() => {
@@ -1657,22 +1729,16 @@ const ClassManagement: React.FC = () => {
       if (recFilter.classId && String(lec.classId) !== String(recFilter.classId)) return false;
       if (recFilter.subjectId && String(lec.subjectId) !== String(recFilter.subjectId)) return false;
 
-      const isLive = lec.status === 'LIVE';
-      const isEnded = lec.status === 'ENDED' || lec.status === 'PROCESSED' || !!lec.recordingUrl || isExpiredScheduled(lec);
-      const isScheduled = !isLive && !isEnded;
-
-      if (liveStatusFilter === 'ongoing') return isLive;
-      if (liveStatusFilter === 'scheduled') return isScheduled;
-      if (liveStatusFilter === 'completed' || liveStatusFilter === 'finished') return isEnded;
-      return true;
+      return liveStatusFilter === 'all' || liveGroup(lec) === liveStatusFilter;
     });
   }, [obsLectures, recFilter.classId, recFilter.subjectId, liveStatusFilter]);
 
-  const liveStatusTabs: { id: 'all' | 'scheduled' | 'ongoing' | 'completed'; label: string; count: number; activeColor: string }[] = [
+  const liveStatusTabs: { id: 'all' | 'scheduled' | 'ongoing' | 'completed' | 'missed'; label: string; count: number; activeColor: string }[] = [
     { id: 'all', label: 'All Classes', count: liveStatusCounts.all, activeColor: 'bg-blue-600 text-white shadow-xs' },
     { id: 'scheduled', label: 'Scheduled', count: liveStatusCounts.scheduled, activeColor: 'bg-blue-600 text-white shadow-xs' },
     { id: 'ongoing', label: 'Ongoing (Live)', count: liveStatusCounts.ongoing, activeColor: 'bg-blue-600 text-white shadow-xs' },
     { id: 'completed', label: 'Completed', count: liveStatusCounts.completed, activeColor: 'bg-blue-600 text-white shadow-xs' },
+    { id: 'missed', label: 'Missed / Cancelled', count: liveStatusCounts.missed, activeColor: 'bg-blue-600 text-white shadow-xs' },
   ];
 
   const liveContent = (
@@ -1720,9 +1786,11 @@ const ClassManagement: React.FC = () => {
               ? 'No ongoing live classes'
               : liveStatusFilter === 'scheduled'
                 ? 'No scheduled live classes'
-                : liveStatusFilter === 'finished'
-                  ? 'No finished live classes'
-                  : 'No live classes found'}
+                : liveStatusFilter === 'completed'
+                  ? 'No completed live classes'
+                  : liveStatusFilter === 'missed'
+                    ? 'No missed or cancelled classes'
+                    : 'No live classes found'}
           </h3>
           <p className="mt-1 text-sm text-slate-500">
             {liveStatusFilter === 'all'
@@ -1763,7 +1831,12 @@ const ClassManagement: React.FC = () => {
       {/* Curriculum filters */}
       {renderCurriculumFilters()}
 
-      {uploadedRecordings.length === 0 ? (
+      {!recordingsLoaded ? (
+        <Card className="rounded-2xl border-dashed shadow-none border-slate-200 bg-slate-50/60 p-12 text-center" aria-busy="true">
+          <Loader2 size={28} className="mx-auto animate-spin text-slate-300" />
+          <p className="mt-3 text-sm font-bold text-slate-500">Loading recordings…</p>
+        </Card>
+      ) : uploadedRecordings.length === 0 ? (
         <Card className="rounded-2xl border-dashed shadow-none border-slate-200 bg-slate-50/60 p-12 text-center">
           <Video size={36} className="mx-auto text-slate-300" />
           <p className="mt-3 text-sm font-bold text-slate-700">No recordings yet</p>
@@ -1902,7 +1975,9 @@ const ClassManagement: React.FC = () => {
             )}
           </div>
           <p className="mt-0.5 text-sm font-medium text-slate-500">
-            {recordedClassData.length} recorded · {obsLectures.length} live class{obsLectures.length !== 1 ? 'es' : ''}
+            {recordingsLoaded
+              ? <>{recordedClassData.length} recorded · {obsLectures.length} live class{obsLectures.length !== 1 ? 'es' : ''}</>
+              : 'Loading…'}
           </p>
         </div>
         <div className="flex gap-2">
@@ -2820,6 +2895,40 @@ const ClassManagement: React.FC = () => {
       )}
 
       {/* ── Schedule Live Class modal ── */}
+      <Dialog open={!!editLive} onOpenChange={(open) => { if (!open) setEditLive(null); }}>
+        <DialogContent className="w-full max-w-lg rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit live class</DialogTitle>
+            <DialogDescription>Students are notified of the change.</DialogDescription>
+          </DialogHeader>
+          {editLive && (
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-sm font-semibold text-slate-700">Title *</Label>
+                <Input value={editLive.title} maxLength={200}
+                  onChange={(e) => setEditLive((p) => (p ? { ...p, title: e.target.value } : p))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-semibold text-slate-700">Date &amp; Time *</Label>
+                <Input type="datetime-local" min={isoToLocalInput(new Date().toISOString())} value={editLive.scheduledFor}
+                  onChange={(e) => setEditLive((p) => (p ? { ...p, scheduledFor: e.target.value } : p))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-semibold text-slate-700">Description</Label>
+                <Textarea rows={3} maxLength={1000} value={editLive.description}
+                  onChange={(e) => setEditLive((p) => (p ? { ...p, description: e.target.value } : p))} />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditLive(null)} disabled={savingEditLive}>Cancel</Button>
+            <Button onClick={saveEditLive} disabled={savingEditLive || !editLive?.title.trim() || !editLive?.scheduledFor}>
+              {savingEditLive ? <Loader2 className="size-4 animate-spin" /> : null} Save changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={showScheduleLiveModal} onOpenChange={(open) => { if (!open) { setShowScheduleLiveModal(false); resetSchedForm(); } }}>
         <DialogContent className="flex w-full max-w-3xl flex-col gap-0 overflow-hidden rounded-2xl p-0" style={{ maxHeight: 'min(90vh, 800px)' }}>
           {/* Header */}
@@ -2918,6 +3027,7 @@ const ClassManagement: React.FC = () => {
                         <Input
                           required
                           type="datetime-local"
+                          min={isoToLocalInput(new Date().toISOString())}
                           value={schedLiveForm.scheduledFor}
                           onChange={(e) => setSchedLiveForm((p) => ({ ...p, scheduledFor: e.target.value }))}
                           className="h-9 sm:h-11 w-full rounded-lg sm:rounded-xl border-slate-200 bg-slate-50 px-3 sm:px-4 text-xs sm:text-sm"
