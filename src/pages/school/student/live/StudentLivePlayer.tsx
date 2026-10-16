@@ -51,6 +51,8 @@ export default function StudentLivePlayer() {
   const [messages, setMessages] = useState<LiveChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [cooldown, setCooldown] = useState(0);
+  /** Whether the teacher allows student chat (saved per class; B-22). */
+  const [chatEnabled, setChatEnabled] = useState(true);
   const [handRaised, setHandRaised] = useState(false);
   const [pinnedAnnouncement, setPinnedAnnouncement] = useState<string | null>(null);
   const [lectureTitle, setLectureTitle] = useState('');
@@ -268,7 +270,8 @@ export default function StudentLivePlayer() {
     let cancelled = false;
     schoolLive.getStreamUrl(id).then((r) => {
       if (cancelled) return;
-      const key = r.streamKey;
+      // Played by playback ID: students are never given the stream key (B-02).
+      const key = r.playbackId;
       const proxyUrl = key ? hlsProxyUrl(key) : r.url;
       const quals: Array<{ label: string; url: string }> = r.qualities
         ? r.qualities.map((q) => {
@@ -313,8 +316,25 @@ export default function StudentLivePlayer() {
     const socket = createLiveSocket();
     socketRef.current = socket;
     socket.on('connect', () => socket.emit('join', { token: getLiveToken(), lectureId: id }));
-    socket.on('joined', ({ viewerCount, questionsActive = false, questions = [], pinnedAnnouncement }: { viewerCount?: number; questionsActive?: boolean; questions?: any[]; pinnedAnnouncement?: string | null }) => {
+    // B-22: the teacher turns chat on/off; the server also refuses while off.
+    socket.on('chat-settings', ({ chatEnabled: allowed }: { chatEnabled: boolean }) => {
+      setChatEnabled(allowed);
+      toast.info(allowed ? 'The teacher turned chat back on' : 'The teacher turned off chat');
+    });
+    socket.on('chat-muted', ({ text }: { text?: string }) => {
+      setChatEnabled(false);
+      if (text) setDraft((d) => d || text);
+      toast.info('Chat is turned off by the teacher');
+    });
+    // B-05: over the limit, the message is not lost: it goes back in the box.
+    socket.on('chat-rate-limited', ({ retryInSeconds = 10, text }: { retryInSeconds?: number; text?: string }) => {
+      if (text) setDraft((d) => d || text);
+      setCooldown(retryInSeconds);
+      toast.warning(`Slow down — you can send again in ${retryInSeconds}s`);
+    });
+    socket.on('joined', ({ viewerCount, questionsActive = false, questions = [], pinnedAnnouncement, chatEnabled: allowed }: { viewerCount?: number; questionsActive?: boolean; questions?: any[]; pinnedAnnouncement?: string | null; chatEnabled?: boolean }) => {
       if (typeof viewerCount === 'number') setViewerCount(viewerCount);
+      if (typeof allowed === 'boolean') setChatEnabled(allowed);
       setQuestionsActive(questionsActive);
       setQuestions(questions);
       if (pinnedAnnouncement) {
@@ -412,10 +432,13 @@ export default function StudentLivePlayer() {
 
   const send = () => {
     const text = draft.trim();
-    if (!text || cooldown > 0) return;
+    if (!text) return;
+    if (!chatEnabled) { toast.info('Chat is turned off by the teacher'); return; }
+    // B-05: a held-back message used to vanish silently; say why instead.
+    if (cooldown > 0) { toast.warning(`Slow down — you can send again in ${cooldown}s`); return; }
     socketRef.current?.emit('chat', { text: text.slice(0, 300) });
     setDraft('');
-    setCooldown(3);
+    setCooldown(1);
   };
 
   const fullscreen = () => videoRef.current?.requestFullscreen?.().catch(() => undefined);
@@ -1017,12 +1040,13 @@ export default function StudentLivePlayer() {
                         onChange={(e) => setDraft(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && send()}
                         maxLength={300}
-                        placeholder={cooldown > 0 ? `Wait ${cooldown}s…` : 'Type a message…'}
+                        disabled={!chatEnabled}
+                        placeholder={!chatEnabled ? 'Chat is turned off by the teacher' : cooldown > 0 ? `Wait ${cooldown}s…` : 'Type a message…'}
                         className="flex-1 bg-slate-50 border border-slate-200/80 rounded-xl px-4 py-2.5 text-[13px] text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all placeholder:text-slate-400"
                       />
                       <button
                         onClick={send}
-                        disabled={cooldown > 0 || !draft.trim()}
+                        disabled={!chatEnabled || cooldown > 0 || !draft.trim()}
                         className="size-10 shrink-0 bg-blue-600 text-white rounded-xl flex items-center justify-center hover:bg-blue-700 transition disabled:opacity-50 active:scale-95 shadow-md"
                       >
                         <Send className="size-4" />
