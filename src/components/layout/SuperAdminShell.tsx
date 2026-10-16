@@ -1,4 +1,4 @@
-import { Fragment, Suspense, useMemo } from "react"
+import { Fragment, Suspense, useMemo, type ReactNode } from "react"
 import { Link, Outlet, useLocation } from "react-router-dom"
 import { Loader2 } from "lucide-react"
 
@@ -23,12 +23,18 @@ import { cn } from "@/lib/utils"
 
 type SuperAdminShellProps = Pick<
   AppSidebarProps,
-  "brand" | "groups" | "user" | "settingsUrl" | "onLogout"
+  "brand" | "groups"
 > & {
   /** Label for the first breadcrumb, which links to the portal's dashboard. */
   rootLabel: string
   /** Pages that manage their own padding and layout (lists, chat, live rooms). */
   isFullWidthPage: (pathname: string) => boolean
+  /** Right side of the default header (bell, profile menu, ...). */
+  headerActions?: ReactNode
+  /** Replaces the whole default header. The sidebar toggle is not included, add <SidebarTrigger /> if you need it. */
+  header?: ReactNode
+  /** Phone-only bar fixed to the bottom; the page area leaves room for it. */
+  mobileBar?: ReactNode
 }
 
 type Crumb = { label: string; to?: string }
@@ -61,11 +67,11 @@ function buildCrumbs(
 export function SuperAdminShell({
   brand,
   groups,
-  user,
-  settingsUrl,
-  onLogout,
   rootLabel,
   isFullWidthPage,
+  headerActions,
+  header,
+  mobileBar,
 }: SuperAdminShellProps) {
   const { pathname } = useLocation()
   const crumbs = useMemo(
@@ -77,16 +83,11 @@ export function SuperAdminShell({
   return (
     // The page area scrolls, not the window: pages such as chat and live rooms size themselves to the viewport.
     <SidebarProvider className="h-svh max-h-svh overflow-hidden">
-      <AppSidebar
-        brand={brand}
-        groups={groups}
-        user={user}
-        settingsUrl={settingsUrl}
-        onLogout={onLogout}
-      />
+      <AppSidebar brand={brand} groups={groups} />
       <SidebarInset className="min-h-0 overflow-hidden">
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
+        {header ?? (
+        <header className="relative z-30 flex h-14 shrink-0 items-center justify-between gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+          <div className="flex min-w-0 items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
             <Separator
               orientation="vertical"
@@ -120,10 +121,15 @@ export function SuperAdminShell({
               </BreadcrumbList>
             </Breadcrumb>
           </div>
+          {headerActions && <div className="shrink-0 pr-4">{headerActions}</div>}
         </header>
+        )}
         <main
           data-tour="main-content"
-          className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain custom-scrollbar"
+          className={cn(
+            "relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain custom-scrollbar",
+            mobileBar && "pb-20 md:pb-0",
+          )}
         >
           <div
             className={cn(
@@ -145,6 +151,7 @@ export function SuperAdminShell({
           </div>
         </main>
       </SidebarInset>
+      {mobileBar}
     </SidebarProvider>
   )
 }

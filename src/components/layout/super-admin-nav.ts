@@ -20,6 +20,7 @@ import {
   BookOpen,
 } from "lucide-react"
 
+import type { TabItem } from "@/components/layout/MobileTabBar"
 import type { NavGroup } from "@/components/nav-main"
 
 /** Coaching platform super admin (/super-admin/*). */
@@ -65,6 +66,27 @@ export const coachingSuperAdminGroups: NavGroup[] = [
       { url: "/super-admin/feature-flags", title: "Feature Flags", icon: ToggleRight },
     ],
   },
+]
+
+/** Flat list behind the phone bottom bar (primary tabs + "More"), same entries as the old layout. */
+export const coachingSuperAdminTabs: TabItem[] = [
+  { label: "Dashboard", path: "/super-admin", icon: LayoutDashboard, end: true },
+  { label: "Institutes", path: "/super-admin/tenants", icon: Building2 },
+  { label: "Leads", path: "/super-admin/leads", icon: TrendingUp },
+  { label: "Support Tickets", path: "/super-admin/support-tickets", icon: Ticket },
+  { label: "Communication", path: "/super-admin/communication", icon: Megaphone },
+  { label: "Analytics", path: "/super-admin/analytics", icon: BarChart3 },
+  { label: "AI Usage", path: "/super-admin/ai-usage", icon: Sparkles },
+  { label: "Audit Logs", path: "/super-admin/audit-logs", icon: FileText },
+  { label: "Security Centre", path: "/super-admin/security", icon: Shield },
+  { label: "Settings", path: "/super-admin/settings", icon: Settings },
+  { label: "Feature Flags", path: "/super-admin/feature-flags", icon: ToggleRight },
+]
+
+export const coachingSuperAdminPrimaryTabs = [
+  "/super-admin",
+  "/super-admin/tenants",
+  "/super-admin/analytics",
 ]
 
 /** School platform super admin (/school/super-admin/*). */
