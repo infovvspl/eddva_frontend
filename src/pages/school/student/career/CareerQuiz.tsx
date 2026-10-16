@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, Loader2, Lock } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Loader2, Lock } from 'lucide-react';
+import { BackButton } from '@/components/shared/BackButton';
 import {
   getQuizQuestions, submitQuiz,
   type QuizQuestion, type QuizStatus,
@@ -104,13 +105,13 @@ export default function CareerQuiz() {
     <div className="mx-auto max-w-2xl space-y-5 p-1">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <button onClick={() => navigate('/school/student/career')} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><ArrowLeft className="size-5" /></button>
         <div className="flex-1">
           <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
             <div className="h-full rounded-full bg-blue-600 transition-all" style={{ width: `${progress}%` }} />
           </div>
         </div>
         <span className="shrink-0 text-xs font-bold text-slate-500">Question {current + 1} of {questions.length}</span>
+        <BackButton to="/school/student/career" />
       </div>
 
       {/* Question card */}

@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import {
-  ArrowLeft, FileText, Calendar, AlertCircle,
+  FileText, Calendar, AlertCircle,
   BarChart3, Target, ClipboardList, TrendingUp, BookOpen, AlertTriangle,
 } from 'lucide-react';
+import { BackButton } from '@/components/shared/BackButton';
 import api from '@/lib/api/school-client';
 import { cn } from '@/lib/utils';
 import ScoreTrendChart, { scoreTrendDelta } from '@/components/school/student/ScoreTrendChart';
@@ -57,7 +58,6 @@ const Panel = ({ title, icon: Icon, right, children, className }: { title: strin
 
 const StudentProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const [perf, setPerf] = useState<any>(null);
   const [perfLoading, setPerfLoading] = useState(true);
   const [perfError, setPerfError] = useState<string | null>(null);
@@ -87,12 +87,7 @@ const StudentProfile: React.FC = () => {
           <AlertCircle size={48} className="mx-auto mb-4 text-red-500" />
           <h2 className="text-xl font-bold tracking-tight text-red-900 mb-2">Student Not Available</h2>
           <p className="text-sm font-bold text-red-600 mb-6">{perfError || "We couldn't load this student's performance."}</p>
-          <button
-            onClick={() => navigate(-1)}
-            className="px-6 py-2 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 transition-all"
-          >
-            Go Back
-          </button>
+          <BackButton className="mx-auto" />
         </div>
       </div>
     );
@@ -104,13 +99,8 @@ const StudentProfile: React.FC = () => {
 
   return (
     <div className="w-full pb-24 sm:pb-36">
-      <div className="mb-6 px-4 sm:px-0">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold transition-colors text-sm"
-        >
-          <ArrowLeft size={18} /> Back to Students
-        </button>
+      <div className="mb-6 px-4 sm:px-0 flex justify-end">
+        <BackButton />
       </div>
 
       <div className="bg-white dark:bg-slate-950 rounded-3xl sm:rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 overflow-hidden mb-8">

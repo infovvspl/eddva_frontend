@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Award, Building2, GraduationCap, Users, BookOpen, Search, ArrowLeft, TrendingUp } from 'lucide-react';
+import { Award, Building2, GraduationCap, Users, BookOpen, Search, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { BackButton } from '@/components/shared/BackButton';
 import api from '@/lib/api/school-client';
 import { InstituteLogo, SchoolLogo, StatusBadge } from '@/components/school/admin/Brand';
 import { Skeleton } from '@/components/school/admin/Skeleton';
@@ -85,13 +86,7 @@ export default function TopInstitutes() {
     <div className="space-y-6 pb-12">
       {/* Header */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate('/school/admin')}
-            className="grid size-10 place-items-center rounded-lg border border-surface-200 bg-white text-surface-600 transition hover:bg-surface-50 active:scale-95 dark:border-surface-800 dark:bg-slate-900 dark:text-slate-400"
-          >
-            <ArrowLeft className="size-5" />
-          </button>
+        <div className="flex items-center gap-3 flex-1 min-w-0">
           <div>
             <h1 className="font-display text-3xl font-bold text-surface-950 dark:text-white flex items-center gap-2">
               Top Institutes <Award className="size-7 text-amber-500" />
@@ -101,15 +96,17 @@ export default function TopInstitutes() {
             </p>
           </div>
         </div>
-
-        <div className="relative lg:w-80">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-surface-400" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search top institutes..."
-            className="w-full rounded-lg border border-surface-200 bg-white py-2.5 pl-10 pr-4 text-sm font-medium outline-none transition focus:border-brand-300 focus:ring-4 focus:ring-brand-100 dark:border-surface-800 dark:bg-slate-900 dark:text-white"
-          />
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative lg:w-80">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-surface-400" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search top institutes..."
+              className="w-full rounded-lg border border-surface-200 bg-white py-2.5 pl-10 pr-4 text-sm font-medium outline-none transition focus:border-brand-300 focus:ring-4 focus:ring-brand-100 dark:border-surface-800 dark:bg-slate-900 dark:text-white"
+            />
+          </div>
+          <BackButton to="/school/admin" />
         </div>
       </div>
 

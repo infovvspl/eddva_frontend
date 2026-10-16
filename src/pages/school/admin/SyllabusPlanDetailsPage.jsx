@@ -2,9 +2,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  ArrowLeft, BookOpen, Calendar, Clock, User, Layers,
+  BookOpen, Calendar, Clock, User, Layers,
   Sparkles, AlertCircle, Edit3, Shield, ListTree, ChevronRight, Zap
 } from 'lucide-react';
+import { BackButton } from '@/components/shared/BackButton';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import { toast } from 'sonner';
 
@@ -76,12 +77,7 @@ export default function SyllabusPlanDetailsPage() {
     return (
       <div className="p-8 text-center space-y-4">
         <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">Syllabus Plan Not Found</h2>
-        <button
-          onClick={() => navigate('/school/admin/syllabus-planner')}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-xs font-bold text-white shadow-md hover:bg-blue-700"
-        >
-          <ArrowLeft size={16} /> Back to Syllabus Planner
-        </button>
+        <BackButton to="/school/admin/syllabus-planner" />
       </div>
     );
   }
@@ -218,14 +214,7 @@ export default function SyllabusPlanDetailsPage() {
     <div className="space-y-6 font-poppins pb-12">
       {/* Header & Back Navigation */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-3xl shadow-sm">
-        <div className="space-y-2">
-          <button
-            onClick={() => isTeacherView ? navigate('/school/teacher/teaching-plan') : navigate('/school/admin/syllabus-planner')}
-            className="inline-flex items-center gap-1.5 text-xs font-extrabold text-blue-600 hover:text-blue-700 transition-colors mb-1"
-          >
-            <ArrowLeft size={15} /> {isTeacherView ? 'Back to My Teaching Plan' : 'Back to Syllabus Planner'}
-          </button>
-          
+        <div className="space-y-2 flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="px-3 py-1 rounded-full text-xs font-black uppercase bg-blue-600 text-white">
               {plan.class_name} {plan.section_name ? `(${plan.section_name})` : ''}
@@ -256,6 +245,7 @@ export default function SyllabusPlanDetailsPage() {
               <Shield size={14} /> Official Admin Plan
             </span>
           )}
+          <BackButton to={isTeacherView ? '/school/teacher/teaching-plan' : '/school/admin/syllabus-planner'} />
         </div>
       </div>
 

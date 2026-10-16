@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   User, GraduationCap, Calendar, BarChart2, DollarSign, 
-  Mail, Smartphone, MapPin, ArrowLeft, Download, Users, Phone, Shield,
+  Mail, Smartphone, MapPin, Download, Users, Phone, Shield,
   Edit2, Clock, CheckCircle, AlertCircle, TrendingUp, HeartPulse, Briefcase, FileText, Printer, Share2, Loader2, Send, Key, X, Plus, Trash2,
   UserX, FileCheck, CheckCircle2, XCircle, UserCheck
 } from 'lucide-react';
+import { BackButton } from '@/components/shared/BackButton';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/admin/Modal';
 import StudentForm from '@/components/school/admin/forms/StudentForm';
@@ -692,12 +693,7 @@ export default function StudentProfile() {
           <AlertCircle size={48} className="mx-auto mb-4 text-red-500" />
           <h2 className="text-xl font-bold tracking-tight text-red-900 mb-2">Student Not Found</h2>
           <p className="text-sm font-bold text-red-600 mb-6">{student?.error || "We couldn't find the student profile you're looking for."}</p>
-          <button 
-            onClick={() => navigate(-1)}
-            className="px-6 py-2 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 transition-all"
-          >
-            Go Back
-          </button>
+          <BackButton className="mx-auto" />
         </div>
       </div>
     );
@@ -792,16 +788,9 @@ export default function StudentProfile() {
   return (
     <div className="w-full pb-24 sm:pb-36">
       {/* Header */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-0">
-        <button 
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold transition-colors text-sm sm:text-base self-start"
-        >
-          <ArrowLeft size={18} />
-          Back to List
-        </button>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <button 
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end px-4 sm:px-0">
+        <div className="flex gap-2 w-full sm:w-auto flex-wrap sm:justify-end">
+          <button
             onClick={handleExportPDF}
             disabled={exporting}
             className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-slate-100 text-slate-600 font-bold text-xs sm:text-sm hover:bg-slate-50 transition-all disabled:opacity-50 flex-1 sm:flex-initial"
@@ -832,6 +821,7 @@ export default function StudentProfile() {
             <Key size={14} />
             Send Student Credentials
           </button>
+          <BackButton />
         </div>
       </div>
 
