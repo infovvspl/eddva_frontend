@@ -20,6 +20,8 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 
 const getInitials = (name) => {
   if (!name) return '??';
@@ -1421,8 +1423,7 @@ export default function StudentProfile() {
             <TabButton active={activeTab === 'family'} onClick={() => setActiveTab('family')} icon={Users} label="Family Details" />
             <TabButton active={activeTab === 'academic'} onClick={() => setActiveTab('academic')} icon={GraduationCap} label="Academic" />
             <TabButton active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={Calendar} label="Attendance" />
-            {/* Performance tab hidden for now */}
-            {/* <TabButton active={activeTab === 'performance'} onClick={() => setActiveTab('performance')} icon={BarChart2} label="Performance" /> */}
+            <TabButton active={activeTab === 'performance'} onClick={() => setActiveTab('performance')} icon={BarChart2} label="Performance" />
             <TabButton active={activeTab === 'fees'} onClick={() => setActiveTab('fees')} icon={DollarSign} label="Fees & Payments" />
             <TabButton active={activeTab === 'documents'} onClick={() => setActiveTab('documents')} icon={FileCheck} label="Documents & Verification" />
           </div>
@@ -1986,6 +1987,24 @@ export default function StudentProfile() {
                 const avgAccuracy = totalSessions > 0
                   ? Math.round(sessions.reduce((sum, s) => sum + (s.accuracy || 0), 0) / totalSessions)
                   : 0;
+                const monthGroups = new Map();
+                sessions.filter((s) => s.submittedAt).forEach((s) => {
+                  const d = new Date(s.submittedAt);
+                  const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                  if (!monthGroups.has(key)) monthGroups.set(key, []);
+                  monthGroups.get(key).push(s);
+                });
+                const yearlyTrendData = Array.from(monthGroups.entries())
+                  .sort(([a], [b]) => a.localeCompare(b))
+                  .map(([key, monthSessions]) => {
+                    const [y, m] = key.split('-');
+                    const label = new Date(Number(y), Number(m) - 1, 1).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+                    return {
+                      year: label,
+                      accuracy: Math.round(monthSessions.reduce((sum, s) => sum + (s.accuracy || 0), 0) / monthSessions.length),
+                      count: monthSessions.length,
+                    };
+                  });
 
                 return (
                   <div className="space-y-8">
@@ -2010,6 +2029,31 @@ export default function StudentProfile() {
                             </div>
                             <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Average Score</div>
                           </div>
+                        </div>
+
+                        {/* Year-wise Accuracy Trend */}
+                        <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800">
+                          <h4 className="mb-4 text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest">Year-wise Accuracy Trend</h4>
+                          {yearlyTrendData.length === 0 ? (
+                            <div className="flex items-center justify-center text-xs sm:text-sm text-slate-500" style={{ height: 260 }}>
+                              Year-wise trend will appear once assessments are completed.
+                            </div>
+                          ) : (
+                            <ChartContainer config={{ accuracy: { label: 'Accuracy', color: 'hsl(var(--primary))' } }} className="w-full aspect-auto" style={{ height: 260 }}>
+                              <LineChart data={yearlyTrendData} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+                                <CartesianGrid vertical={false} />
+                                <XAxis dataKey="year" tickLine={false} axisLine={false} tickMargin={8} />
+                                <YAxis domain={[0, 100]} tickLine={false} axisLine={false} unit="%" />
+                                <ChartTooltip
+                                  content={<ChartTooltipContent
+                                    labelFormatter={(_, p) => p?.[0]?.payload ? `${p[0].payload.year} · ${p[0].payload.count} assessment${p[0].payload.count === 1 ? '' : 's'}` : ''}
+                                    formatter={(v) => `${Math.round(Number(v))}%`}
+                                  />}
+                                />
+                                <Line dataKey="accuracy" type="monotone" stroke="var(--color-accuracy)" strokeWidth={2.5} dot={{ r: 3, fill: 'var(--color-accuracy)' }} activeDot={{ r: 5 }} />
+                              </LineChart>
+                            </ChartContainer>
+                          )}
                         </div>
 
                         {/* Test Sessions Table */}

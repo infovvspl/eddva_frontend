@@ -117,6 +117,7 @@ const SchoolDetailPage = () => {
   const [deleting, setDeleting] = useState(false);
   const deleteInputRef = useRef<HTMLInputElement>(null);
   const [savingModule, setSavingModule] = useState<"erp" | "lms" | null>(null);
+  const [resendingCreds, setResendingCreds] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -195,6 +196,23 @@ const SchoolDetailPage = () => {
       load();
     } catch {
       toast.error("Failed to suspend");
+    }
+  };
+
+  const resendCredentials = async () => {
+    setResendingCreds(true);
+    try {
+      const res = await apiClient.post(`/school/institutes/${id}/resend-credentials`);
+      const data = (res.data as any)?.data ?? res.data;
+      if (data?.emailSent === false) {
+        toast.warning(data?.message || "Password reset, but the email could not be sent");
+      } else {
+        toast.success(data?.message || "Credentials re-sent to the institute admin");
+      }
+    } catch {
+      toast.error("Failed to resend credentials");
+    } finally {
+      setResendingCreds(false);
     }
   };
 
@@ -396,7 +414,7 @@ const SchoolDetailPage = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 w-full lg:flex lg:w-auto lg:items-center">
+          <div className="grid grid-cols-2 gap-2 w-full lg:flex lg:w-auto lg:flex-wrap lg:items-center">
             {institute.status !== "ACTIVE" && (
               <button onClick={approve} className="flex h-9 sm:h-auto items-center justify-center gap-1.5 rounded-xl bg-emerald-50 px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-emerald-700 transition-colors hover:bg-emerald-100">
                 <CheckCircle className="h-4 w-4 shrink-0" /> Approve
@@ -407,7 +425,15 @@ const SchoolDetailPage = () => {
                 <XCircle className="h-4 w-4 shrink-0" /> Suspend
               </button>
             )}
-            <button onClick={openDeleteModal} className="flex h-9 sm:h-auto items-center justify-center gap-1.5 rounded-xl bg-rose-50 px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-rose-700 transition-colors hover:bg-rose-100 col-start-3">
+            <button
+              onClick={resendCredentials}
+              disabled={resendingCreds}
+              className="flex h-9 sm:h-auto items-center justify-center gap-1.5 rounded-xl bg-indigo-50 px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-indigo-700 transition-colors hover:bg-indigo-100 disabled:opacity-50"
+            >
+              {resendingCreds ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : <Mail className="h-4 w-4 shrink-0" />}
+              Resend Credentials
+            </button>
+            <button onClick={openDeleteModal} className="flex h-9 sm:h-auto items-center justify-center gap-1.5 rounded-xl bg-rose-50 px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-rose-700 transition-colors hover:bg-rose-100">
               <Trash2 className="h-4 w-4 shrink-0" /> Delete
             </button>
           </div>

@@ -11,6 +11,14 @@ interface BackButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 
   confirmMessage?: string;
   /** Custom guard (e.g. unsaved-changes check). Return false to cancel navigation. */
   onBeforeLeave?: () => boolean;
+  /**
+   * Overrides navigation entirely (e.g. stepping back a level in an
+   * in-page drill-down — class → section → form — rather than changing
+   * route). When passed, `to`/`fallback`/history are not used.
+   */
+  onClick?: () => void;
+  /** Replaces the default "Back" label (e.g. "Back to Classes"). */
+  label?: string;
 }
 
 export const BackButton = ({
@@ -18,6 +26,8 @@ export const BackButton = ({
   fallback = "/",
   confirmMessage,
   onBeforeLeave,
+  onClick,
+  label = "Back",
   className = "",
   ...rest
 }: BackButtonProps) => {
@@ -27,6 +37,10 @@ export const BackButton = ({
     if (onBeforeLeave && !onBeforeLeave()) return;
     if (confirmMessage && !window.confirm(confirmMessage)) return;
 
+    if (onClick) {
+      onClick();
+      return;
+    }
     if (to) {
       navigate(to);
       return;
@@ -43,11 +57,11 @@ export const BackButton = ({
       type="button"
       onClick={handleClick}
       aria-label="Go back"
-      className={`inline-flex items-center gap-1 h-9 pl-2.5 pr-3.5 rounded-full bg-white border border-slate-200 shadow-sm text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all shrink-0 ${className}`}
+      className={`inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-bold shadow-lg shadow-blue-600/20 hover:brightness-110 transition-all shrink-0 ${className}`}
       {...rest}
     >
       <ChevronLeft className="w-4 h-4" />
-      Back
+      {label}
     </button>
   );
 };

@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 
 import { unwrapSchoolList } from '@/lib/api/school-client';
 import { useConfirm } from '@/context/ConfirmContext';
+import { BackButton } from '@/components/shared/BackButton';
 
 export default function SyllabusPlanner() {
   const confirm = useConfirm();
@@ -521,13 +522,10 @@ export default function SyllabusPlanner() {
         <div className="space-y-6">
           <div className="flex items-center justify-between bg-blue-50/50 p-4 rounded-2xl border border-blue-100 dark:bg-blue-950/30 dark:border-blue-900">
             <div className="flex items-center gap-3">
-              <button
-                type="button"
+              <BackButton
+                label="Back to All Classes"
                 onClick={() => setForm(prev => ({ ...prev, classId: '', sectionId: '' }))}
-                className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 text-xs font-bold transition-all"
-              >
-                ← Back to All Classes
-              </button>
+              />
               <h3 className="text-sm font-extrabold text-blue-900 dark:text-blue-100">
                 {selectedClassObj?.name} — Select Section
               </h3>
@@ -600,13 +598,10 @@ export default function SyllabusPlanner() {
         <div className="space-y-6">
           <div className="flex items-center justify-between bg-blue-50/50 p-4 rounded-2xl border border-blue-100 dark:bg-blue-950/30 dark:border-blue-900">
             <div className="flex items-center gap-3">
-              <button
-                type="button"
+              <BackButton
+                label="Back to Sections"
                 onClick={() => setForm(prev => ({ ...prev, sectionId: '' }))}
-                className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 text-xs font-bold transition-all"
-              >
-                ← Back to Sections
-              </button>
+              />
               <h3 className="text-sm font-extrabold text-blue-900 dark:text-blue-100">
                 {selectedClassObj?.name} {form.sectionId === 'ALL_SECTIONS' ? '(Entire Class)' : `(Section ${sections.find(s => s.id === form.sectionId)?.name || ''})`} — Syllabus Target Setup
               </h3>

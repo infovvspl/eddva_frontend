@@ -166,10 +166,18 @@ export default function Admins() {
     setTeachersLoading(true);
     setModalSearch('');
     try {
-      const [teachersRes, adminsRes] = await Promise.all([
+      const [teachersRes, staffRes, adminsRes] = await Promise.all([
         api.get('/teachers', {
           params: {
             role: 'TEACHER',
+            limit: 200,
+            ...(isPlatformSuperAdmin && selectedInstituteId !== 'ALL' ? { instituteId: selectedInstituteId } : {}),
+          }
+        }),
+        // Staff accounts are eligible for admin access too, same as teachers —
+        // the backend's setAdminRole() is role-agnostic over the users table.
+        api.get('/staff', {
+          params: {
             limit: 200,
             ...(isPlatformSuperAdmin && selectedInstituteId !== 'ALL' ? { instituteId: selectedInstituteId } : {}),
           }
@@ -183,9 +191,11 @@ export default function Admins() {
         })
       ]);
       const teachers = getResponseList(teachersRes);
+      const staff = getResponseList(staffRes);
       const admins = getResponseList(adminsRes);
       const map = new Map();
       teachers.forEach(t => map.set(t.id, t));
+      staff.forEach(s => map.set(s.id, s));
       admins.forEach(a => map.set(a.id, a));
       const combined = Array.from(map.values());
       setTeachersList(combined);

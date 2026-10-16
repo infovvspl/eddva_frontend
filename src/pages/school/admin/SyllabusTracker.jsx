@@ -9,6 +9,7 @@ import {
 import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
 import { unwrapSchoolList } from '@/lib/api/school-client';
+import { BackButton } from '@/components/shared/BackButton';
 
 export default function SyllabusTracker() {
   const navigate = useNavigate();
@@ -297,19 +298,17 @@ export default function SyllabusTracker() {
         <div>
           <div className="flex items-center gap-2">
             {selectedSectionId ? (
-              <button
+              <BackButton
+                label="Back to Sections"
                 onClick={() => setSelectedSectionId(null)}
-                className="p-1.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 transition-all mr-1 text-xs font-bold"
-              >
-                ← Back to Sections
-              </button>
+                className="mr-1"
+              />
             ) : selectedClassGroup ? (
-              <button
+              <BackButton
+                label="Back to Classes"
                 onClick={() => setSelectedClassId(null)}
-                className="p-1.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 transition-all mr-1 text-xs font-bold"
-              >
-                ← Back to Classes
-              </button>
+                className="mr-1"
+              />
             ) : null}
             <h1 className="text-2xl font-black text-slate-900 dark:text-white">
               {selectedSectionId 

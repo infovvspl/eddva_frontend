@@ -4,7 +4,7 @@ import {
   Loader2, Search, ChevronDown, Shield, AlertTriangle,
   TrendingUp, TrendingDown, Users, CheckCircle2, XCircle,
   Download, Eye, Bell, Info, SlidersHorizontal,
-  RefreshCw, ChevronUp, ChevronLeft, ChevronRight,
+  RefreshCw, ChevronUp, ChevronRight,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -13,6 +13,7 @@ import {
 import schoolApi from '@/lib/api/school-client';
 import { apiClient } from '@/lib/api/client';
 import { useAuthStore } from '@/lib/auth-store';
+import { BackButton } from '@/components/shared/BackButton';
 import {
   getGlobalFeatureFlags,
   getInstituteUsageDetail,
@@ -637,9 +638,7 @@ function SchoolDetailView({
   if (error) {
     return (
       <div className="space-y-4 p-1">
-        <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800">
-          <ChevronLeft size={15} /> Back to Dashboard
-        </button>
+        <BackButton onClick={onBack} label="Back to Dashboard" />
         <div className="rounded-xl border border-rose-100 bg-rose-50 p-5 text-sm text-rose-600">
           {error} <button onClick={() => void load()} className="ml-2 font-bold underline">Retry</button>
         </div>
@@ -654,12 +653,7 @@ function SchoolDetailView({
       {/* ── Header ── */}
       <div className="flex items-start justify-between">
         <div>
-          <button
-            onClick={onBack}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-50"
-          >
-            <ChevronLeft size={13} /> Back to Dashboard
-          </button>
+          <BackButton onClick={onBack} label="Back to Dashboard" />
           <h1 className="mt-3 flex items-center gap-2 text-base sm:text-2xl font-black text-slate-900 break-all sm:break-normal">
             <Building2 className="text-brand-500 h-[18px] w-[18px] sm:h-[22px] sm:w-[22px]" shrink-0="true" />
             {schoolName}

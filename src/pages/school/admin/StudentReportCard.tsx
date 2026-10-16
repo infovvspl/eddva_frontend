@@ -783,7 +783,7 @@ export default function StudentReportCard() {
             {printing ? <Loader2 className="size-4 animate-spin" /> : <Printer className="size-4" />}
             {printing ? 'Preparing Print...' : 'Print Report Card'}
           </button>
-          <BackButton title={isViewerOnly ? "Back" : "Back to Student Profile"} />
+          <BackButton label={isViewerOnly ? "Back" : "Back to Student Profile"} />
         </div>
       </div>
 
