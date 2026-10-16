@@ -284,6 +284,9 @@ const ClassManagement: React.FC = () => {
     toast.success(`${label} copied`);
   };
   const [recordedClassData, setRecordedClassData] = useState([]);
+  // False until the first load returns, so the tab does not flash
+  // "0 recorded / No recordings yet" while the list is still loading.
+  const [recordingsLoaded, setRecordingsLoaded] = useState(false);
   const [thumbnailJobs, setThumbnailJobs] = useState<Record<string, ThumbnailJob>>({});
   const [showRecordingModal, setShowRecordingModal] = useState(false);
   const [uploadingRecording, setUploadingRecording] = useState(false);
@@ -592,6 +595,8 @@ const ClassManagement: React.FC = () => {
       setRecordedClassData(Array.isArray(rows) ? rows : []);
     } catch (error) {
       console.error('Failed to fetch recordings', error);
+    } finally {
+      setRecordingsLoaded(true);
     }
   };
 
@@ -1825,7 +1830,12 @@ const ClassManagement: React.FC = () => {
       {/* Curriculum filters */}
       {renderCurriculumFilters()}
 
-      {uploadedRecordings.length === 0 ? (
+      {!recordingsLoaded ? (
+        <Card className="rounded-2xl border-dashed shadow-none border-slate-200 bg-slate-50/60 p-12 text-center" aria-busy="true">
+          <Loader2 size={28} className="mx-auto animate-spin text-slate-300" />
+          <p className="mt-3 text-sm font-bold text-slate-500">Loading recordings…</p>
+        </Card>
+      ) : uploadedRecordings.length === 0 ? (
         <Card className="rounded-2xl border-dashed shadow-none border-slate-200 bg-slate-50/60 p-12 text-center">
           <Video size={36} className="mx-auto text-slate-300" />
           <p className="mt-3 text-sm font-bold text-slate-700">No recordings yet</p>
@@ -1964,7 +1974,9 @@ const ClassManagement: React.FC = () => {
             )}
           </div>
           <p className="mt-0.5 text-sm font-medium text-slate-500">
-            {recordedClassData.length} recorded · {obsLectures.length} live class{obsLectures.length !== 1 ? 'es' : ''}
+            {recordingsLoaded
+              ? <>{recordedClassData.length} recorded · {obsLectures.length} live class{obsLectures.length !== 1 ? 'es' : ''}</>
+              : 'Loading…'}
           </p>
         </div>
         <div className="flex gap-2">
