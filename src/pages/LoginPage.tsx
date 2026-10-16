@@ -531,7 +531,7 @@ const LoginPage = () => {
               <button
                 type="submit"
                 disabled={!identifier.trim() || !password || loginLoading}
-                className="w-full h-12 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 mt-6 disabled:opacity-70 disabled:cursor-not-allowed shadow-md"
+                className="w-full h-12 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 mt-6 disabled:opacity-70 shadow-md"
               >
                 {loginLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Login"}
               </button>
