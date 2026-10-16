@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import api from '@/lib/api/school-client';
 import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Clock, FileText, Loader2, UploadCloud, Trash2, Camera } from 'lucide-react';
+import { BackButton } from '@/components/shared/BackButton';
 import { cn } from '@/components/school/admin/Skeleton';
 import { useConfirm } from '@/context/ConfirmContext';
 import { toast } from 'sonner';
@@ -125,18 +126,6 @@ export default function TestEngine() {
   const [submitting, setSubmitting] = useState(false);
   const [ocrLoading, setOcrLoading] = useState({});
   const previousPage = location.state?.from;
-
-  const goBackToPreviousPage = () => {
-    if (previousPage) {
-      navigate(previousPage);
-      return;
-    }
-    if (window.history.state?.idx > 0) {
-      navigate(-1);
-      return;
-    }
-    navigate('/school/student/assessments');
-  };
 
   useEffect(() => {
     latestAnswersRef.current = answers;
@@ -467,9 +456,7 @@ export default function TestEngine() {
       <div className="flex h-[70vh] flex-col items-center justify-center text-center">
         <AlertTriangle className="mb-4 size-14 text-rose-500" />
         <h2 className="text-xl font-black text-slate-900">Could not open assessment</h2>
-        <button onClick={goBackToPreviousPage} className="mt-6 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white">
-          Back to Assessments
-        </button>
+        <BackButton to={previousPage || undefined} fallback="/school/student/assessments" className="mt-6" aria-label="Back to Assessments" />
       </div>
     );
   }
@@ -495,21 +482,19 @@ export default function TestEngine() {
     <div className="min-size-full bg-white pb-16">
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-4 py-4 backdrop-blur xl:px-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0">
-            <button
-              type="button"
-              onClick={goBackToPreviousPage}
-              className="mb-2 inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-500 hover:text-blue-600"
-            >
-              <ChevronLeft size={14} />
-              Assessments
-            </button>
+          <div className="min-w-0 flex-1">
             <h1 className="truncate text-lg font-black text-slate-950">{assessment.title}</h1>
             <p className="mt-1 text-xs font-semibold text-slate-500">
               {assessment.type || 'Assessment'} | {assessment.total_marks || 100} marks | {assessment.duration_minutes || 60} mins
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            <BackButton
+              to={previousPage || undefined}
+              fallback="/school/student/assessments"
+              confirmMessage="Exit the test? Your progress may be lost."
+              aria-label="Back to Assessments"
+            />
             <div className="rounded-2xl border border-slate-200 bg-white px-4 py-2">
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Time Remaining</p>
               <p className={cn('font-mono text-xl font-black', timeLeft < 300 ? 'text-rose-600' : 'text-slate-950')}>

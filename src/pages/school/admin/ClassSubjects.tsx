@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Edit2, Layers, Plus, Search, Trash2, Filter } from 'lucide-react';
+import { BookOpen, Edit2, Layers, Plus, Search, Trash2, Filter } from 'lucide-react';
+import { BackButton } from '@/components/shared/BackButton';
 import { cn } from '@/lib/utils';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/admin/Modal';
@@ -302,13 +303,7 @@ export default function ClassSubjects() {
   if (!selectedClass && classes.length > 0) {
     return (
       <div className="w-full px-3 sm:px-5 lg:px-8 xl:px-10">
-        <button
-          onClick={() => navigate('/school/admin/subjects')}
-          className="mb-5 inline-flex items-center gap-2 rounded-lg border border-surface-200 bg-white px-4 py-2.5 text-sm font-bold text-surface-700 hover:bg-surface-50 dark:border-surface-800 dark:bg-surface-900 dark:text-white"
-        >
-          <ArrowLeft className="size-4" />
-          Back to Subjects
-        </button>
+        <BackButton to="/school/admin/subjects" className="mb-5" />
         <div className="rounded-xl border border-surface-200 bg-white p-10 text-center shadow-sm dark:border-surface-800 dark:bg-surface-900">
           <h1 className="text-2xl font-bold text-surface-955 dark:text-white">Class not found</h1>
           <p className="mt-2 text-sm text-surface-500 dark:text-surface-400">The selected class is not available.</p>
@@ -324,14 +319,7 @@ export default function ClassSubjects() {
   return (
     <div className="w-full px-3 sm:px-5 lg:px-8 xl:px-10">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <button
-            onClick={() => navigate('/school/admin/subjects')}
-            className="mb-3 inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-blue-600 hover:text-blue-700"
-          >
-            <ArrowLeft className="size-4" />
-            Back to Classes
-          </button>
+        <div className="flex-1 min-w-0">
           <h1 className="font-display text-2xl sm:text-3xl font-bold text-surface-955 dark:text-white">{selectedClass.name} Subjects</h1>
           <p className="mt-1 text-xs sm:text-sm text-surface-500 dark:text-surface-400">Manage subject mappings for this class.</p>
         </div>
@@ -343,6 +331,7 @@ export default function ClassSubjects() {
             <Plus className="size-4" />
             <span>Add Subject</span>
           </button>
+          <BackButton to="/school/admin/subjects" />
         </div>
       </div>
 

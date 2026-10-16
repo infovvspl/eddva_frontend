@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import type { Socket } from 'socket.io-client';
 import Hls from 'hls.js';
 import {
-  Hand, Radio, Users, X, Loader2, ArrowLeft, MessageSquare,
+  Hand, Radio, Users, X, Loader2, MessageSquare,
   Clock, BarChart2, Smile, UserCheck, ChevronDown, ChevronUp, Send,
   LayoutDashboard, BookOpen, Calendar, Mic, MicOff, Video, VideoOff,
   Monitor, Info, Award, Settings, Volume2, ShieldAlert, Activity, Play, Power, HelpCircle, Lock, Shield, Bell
@@ -14,7 +14,7 @@ import {
   type LiveChatMessage, type LiveLectureStats,
 } from '@/lib/api/school-live';
 import FloatingReactionLayer, { useFloatingReactions } from '@/components/school/live/FloatingReaction';
-import { useConfirm } from '@/context/ConfirmContext';
+import { BackButton } from '@/components/shared/BackButton';
 
 interface RaisedHand { userId: string; userName: string }
 interface LiveStudent { userId: string; userName: string }
@@ -117,9 +117,7 @@ function PostClassSummary({ id }: { id: string }) {
   if (!stats) {
     return (
       <div className="min-h-screen bg-[#F8F9FA] p-4 sm:p-6 text-slate-800">
-        <button onClick={() => navigate('/school/teacher/classes')} className="mb-4 inline-flex items-center gap-1.5 text-[13px] font-bold text-slate-400 hover:text-slate-700">
-          <ArrowLeft className="size-3.5" /> Back to Classes
-        </button>
+        <BackButton to="/school/teacher/classes" className="mb-4" />
         <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-700">
           Stats unavailable — restart the backend to enable full post-class analytics.
         </div>
@@ -224,22 +222,19 @@ function PostClassSummary({ id }: { id: string }) {
   return (
     <div className="min-h-screen bg-[#F8F9FA] p-4 sm:p-6 text-slate-800">
       <div className="mb-6 flex items-start justify-between gap-4">
-        <div>
-          <button
-            onClick={() => navigate('/school/teacher/classes')}
-            className="mb-3 inline-flex items-center gap-1.5 text-[13px] font-bold text-slate-400 hover:text-slate-700"
-          >
-            <ArrowLeft className="size-3.5" /> Back to Classes
-          </button>
+        <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-black text-slate-900">{stats.title}</h1>
           <p className="mt-0.5 text-[13px] text-slate-500">
             {classDate} · {startTime} – {endTime}
             {stats.teacherName && <> · <span className="font-semibold text-slate-600">{stats.teacherName}</span></>}
           </p>
         </div>
-        <span className="shrink-0 rounded-full bg-slate-200 px-3.5 py-1 text-[13px] font-black text-slate-600">
-          Class Ended
-        </span>
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <BackButton to="/school/teacher/classes" />
+          <span className="shrink-0 rounded-full bg-slate-200 px-3.5 py-1 text-[13px] font-black text-slate-600">
+            Class Ended
+          </span>
+        </div>
       </div>
 
       {/* Stat cards */}
@@ -562,7 +557,6 @@ function PostClassSummary({ id }: { id: string }) {
 export default function TeacherLiveDashboard() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
-  const confirm = useConfirm();
   const location = useLocation();
   const socketRef = useRef<Socket | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
@@ -969,17 +963,6 @@ export default function TeacherLiveDashboard() {
     return (hh ? `${String(hh).padStart(2, '0')}:` : '') + `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
   }, [now, startedAt]);
 
-  const handleNavClick = async (path: string) => {
-    if (live) {
-      const ok = await confirm({ title: 'Leave Live Class', message: "Leaving this page will disconnect the live class. Are you sure you want to navigate away?" });
-      if (ok) {
-        navigate(path);
-      }
-    } else {
-      navigate(path);
-    }
-  };
-
   const currentBitrate = useMemo(() => {
     if (!live) return 0;
     return 3150 + Math.floor(Math.sin(now / 1500) * 125);
@@ -1018,12 +1001,6 @@ export default function TeacherLiveDashboard() {
       {/* ─── Desktop Top Header Bar ─── */}
       <header className="hidden md:flex h-16 border-b border-slate-200 bg-white px-6 items-center justify-between shrink-0 z-10 shadow-sm shadow-slate-100/50">
         <div className="flex items-center gap-4 min-w-0">
-          <button
-            onClick={() => handleNavClick('/school/teacher/classes')}
-            className="size-9 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center justify-center transition-all text-slate-400 hover:text-slate-700 active:scale-95 shrink-0"
-          >
-            <ArrowLeft className="size-4" />
-          </button>
           <div className="min-w-0">
             <h2 className="text-[15px] font-black text-slate-900 truncate">{lectureTitle || 'Live Classroom'}</h2>
             <p className="text-[13px] text-slate-400 font-semibold tracking-wider uppercase block">
@@ -1090,18 +1067,16 @@ export default function TeacherLiveDashboard() {
             <MessageSquare className="size-4" />
             <span>{isRightPanelOpen ? 'Hide Panel' : 'Show Panel'}</span>
           </button>
+          <BackButton
+            to="/school/teacher/classes"
+            confirmMessage="Leave this live session?"
+          />
         </div>
       </header>
 
       {/* ─── Mobile Top Header Bar ─── */}
       <header className="flex md:hidden h-16 border-b border-slate-200 bg-white px-4 items-center justify-between shrink-0 z-10 shadow-sm shadow-slate-100">
         <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
-          <button
-            onClick={() => handleNavClick('/school/teacher/classes')}
-            className="size-9 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center justify-center transition-all text-slate-400 hover:text-slate-700 active:scale-95 shrink-0"
-          >
-            <ArrowLeft className="size-4" />
-          </button>
           <div className="min-w-0 flex-1">
             <h2 className="text-[14px] font-black text-slate-900 truncate">{lectureTitle || 'Live Classroom'}</h2>
           </div>
@@ -1132,6 +1107,10 @@ export default function TeacherLiveDashboard() {
             <MessageSquare className="size-4 shrink-0" />
             <span>Panel</span>
           </button>
+          <BackButton
+            to="/school/teacher/classes"
+            confirmMessage="Leave this live session?"
+          />
         </div>
       </header>
 

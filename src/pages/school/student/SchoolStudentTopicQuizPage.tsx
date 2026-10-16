@@ -9,6 +9,7 @@ import {
   Brain, Trophy, Play, Monitor, Zap,
   ArrowRight, ShieldCheck, BrainCircuit, Activity, Info, Check, X,
 } from "lucide-react";
+import { BackButton } from "@/components/shared/BackButton";
 import {
   useGenerateAiQuiz,
   useCompleteAiQuiz,
@@ -433,12 +434,7 @@ export default function SchoolStudentTopicQuizPage() {
     return (
       <div className="py-20 flex flex-col items-center justify-center text-center px-4">
         <div className="w-full max-w-xl">
-          <button
-            onClick={() => navigate(-1)}
-            className="size-11 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-all mx-auto mb-8 shadow-sm"
-          >
-            <ArrowLeft className="size-5" />
-          </button>
+          <BackButton className="mx-auto mb-8" />
 
           <h2 className="text-3xl font-bold text-slate-900 mb-2">Quiz Generation Failed</h2>
           <p className="text-sm text-slate-500 mb-10">Neural connection is temporarily unavailable. Please try again.</p>
@@ -481,13 +477,7 @@ export default function SchoolStudentTopicQuizPage() {
       <div className="py-20 flex items-center justify-center p-6">
         <div className="w-full max-w-lg">
           <CardGlass className="p-8 border-slate-200 bg-white shadow-sm relative">
-            <button
-              onClick={() => navigate(-1)}
-              className="absolute top-4 right-4 flex size-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
-              title="Go back"
-            >
-              <ArrowLeft className="size-4" />
-            </button>
+            <BackButton className="absolute top-4 right-4" title="Go back" />
             <div className="size-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md mb-6"><BrainCircuit className="size-6" /></div>
             <p className="text-xs font-semibold text-indigo-600 mb-1">AI quiz ready</p>
             <h1 className="text-3xl font-bold text-slate-900 mb-7 leading-tight">{aiQuizData.topicName}</h1>
@@ -505,10 +495,7 @@ export default function SchoolStudentTopicQuizPage() {
               className="w-full py-3.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold shadow-sm hover:bg-indigo-500 transition mb-3">
               Start Quiz
             </motion.button>
-            <button onClick={() => navigate(-1)}
-              className="w-full py-3 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-sm font-semibold transition">
-              Cancel & Go Back
-            </button>
+            <BackButton className="w-full py-3" aria-label="Cancel & go back" />
           </CardGlass>
         </div>
       </div>
@@ -624,7 +611,7 @@ export default function SchoolStudentTopicQuizPage() {
             </AnimatePresence>
           </CardGlass>
 
-          <button onClick={() => navigate(-1)} className="w-full py-8 rounded-[3rem] bg-slate-900 text-white text-xs font-black uppercase tracking-[0.4em] shadow-2xl flex items-center justify-center gap-6">Return to Planner <ArrowRight className="size-6" /></button>
+          <BackButton className="w-full py-8" aria-label="Return to Planner" />
         </div>
       </div>
     );

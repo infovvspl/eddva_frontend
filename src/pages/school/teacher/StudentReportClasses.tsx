@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, GraduationCap, Clock, CheckCircle, Edit2, FileText,
+  GraduationCap, Clock, CheckCircle, Edit2, FileText,
   Loader2, Plus, Trash2, X, PlusCircle, Calendar, ClipboardList
 } from 'lucide-react';
+import { BackButton } from '@/components/shared/BackButton';
 import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -1032,15 +1033,8 @@ export default function StudentReportClasses() {
 
   return (
     <div className="student-report-classes pb-12 font-poppins">
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <Button
-          variant="ghost"
-          onClick={() => navigate(-1)}
-          className="h-auto gap-2 self-start p-0 text-sm font-bold text-slate-500 hover:bg-transparent hover:text-slate-900"
-        >
-          <ArrowLeft size={16} />
-          Back to Reports
-        </Button>
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
+        <BackButton />
       </div>
 
       <Card className="mb-8 flex flex-col justify-between gap-4 rounded-3xl border-slate-100 bg-white p-4 shadow-xl shadow-slate-200/30 dark:border-slate-800 dark:bg-slate-950 dark:shadow-none sm:flex-row sm:items-center sm:p-6">

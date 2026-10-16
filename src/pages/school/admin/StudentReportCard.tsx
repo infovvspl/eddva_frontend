@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Printer, FileText, Loader2, GraduationCap, Settings, Eye, CheckCircle, Info, QrCode, Upload, Image as ImageIcon, Trash2, Plus, User, Sparkles } from 'lucide-react';
+import { Printer, FileText, Loader2, GraduationCap, Settings, Eye, CheckCircle, Info, QrCode, Upload, Image as ImageIcon, Trash2, Plus, User, Sparkles } from 'lucide-react';
+import { BackButton } from '@/components/shared/BackButton';
 import { toast } from 'sonner';
 import html2canvas from 'html2canvas';
 import api from '@/lib/api/school-client';
@@ -681,7 +682,7 @@ export default function StudentReportCard() {
               ? 'This report card is being revised by your class teacher. Please check back later.'
               : "This report card hasn't been published yet. Please check back later."}
         </p>
-        <button onClick={() => navigate(-1)} className="mt-2 px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-bold">Back</button>
+        <BackButton className="mt-2" />
       </div>
     );
   }
@@ -751,13 +752,6 @@ export default function StudentReportCard() {
       {/* Header controls (no-print) */}
       <div className="flex items-center justify-between no-print border-b border-slate-100 dark:border-slate-800 pb-4">
         <div className="flex items-center gap-3">
-          <button 
-            onClick={() => navigate(-1)} 
-            className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 transition-colors active:scale-95"
-            title={isViewerOnly ? "Back" : "Back to Student Profile"}
-          >
-            <ArrowLeft className="size-4" />
-          </button>
           <div>
             <h1 className="text-xl font-black text-slate-800 dark:text-white flex items-center gap-2">
               {isViewerOnly ? "Report Card" : "Report Card Template Configuration"}
@@ -789,6 +783,7 @@ export default function StudentReportCard() {
             {printing ? <Loader2 className="size-4 animate-spin" /> : <Printer className="size-4" />}
             {printing ? 'Preparing Print...' : 'Print Report Card'}
           </button>
+          <BackButton title={isViewerOnly ? "Back" : "Back to Student Profile"} />
         </div>
       </div>
 

@@ -54,6 +54,15 @@ export default function SchoolSsoLanding() {
         const data = extractData<SchoolLoginResponse>(res);
         if (cancelled) return;
 
+        // Logging out later should send the admin back to the ERP, not to
+        // this app's own login page — see logout() in SchoolAuthContext.
+        try {
+          sessionStorage.setItem("ssoOrigin", "erp");
+        } catch {
+          // sessionStorage may be unavailable (private mode); logout just
+          // falls back to this app's own login page in that case.
+        }
+
         setAuthSession({
           token: data.token,
           user: {
@@ -64,6 +73,8 @@ export default function SchoolSsoLanding() {
             phone: data.user.phone,
             instituteId: data.user.instituteId,
             studentProfile: data.user.studentProfile as any,
+            isPrimaryAdmin: data.user.isPrimaryAdmin,
+            adminPermissions: data.user.adminPermissions,
           },
           institute: data.institute
             ? {
@@ -73,6 +84,8 @@ export default function SchoolSsoLanding() {
                 tenantDomain: data.institute.tenantDomain ?? null,
                 erpEnabled: (data.institute as any).erpEnabled ?? true,
                 lmsEnabled: (data.institute as any).lmsEnabled ?? true,
+                aiFeatures: (data.institute as any).aiFeatures ?? (data.institute as any).ai_features ?? {},
+                modulesPermissions: (data.institute as any).modulesPermissions ?? (data.institute as any).modules_permissions ?? {},
               }
             : null,
         });

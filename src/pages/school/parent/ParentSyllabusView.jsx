@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpen, CheckCircle2, Clock, Sparkles, Loader2, UserCheck } from 'lucide-react';
+import { BackButton } from '@/components/shared/BackButton';
 import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
 
@@ -38,11 +39,14 @@ export default function ParentSyllabusView() {
 
   return (
     <div className="w-full px-4 py-6 sm:px-6 lg:px-8 space-y-6">
-      <div className="flex items-center gap-2">
-        <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">Child Academic Progress Overview</h1>
-        <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 text-xs font-black border border-blue-200 dark:border-blue-800">
-          Parent Portal
-        </span>
+      <div className="flex items-center gap-3 justify-between flex-wrap">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">Child Academic Progress Overview</h1>
+          <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 text-xs font-black border border-blue-200 dark:border-blue-800">
+            Parent Portal
+          </span>
+        </div>
+        <BackButton />
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { BackButton } from '@/components/shared/BackButton';
 import { SchoolVideoPlayer } from '@/components/school/SchoolVideoPlayer';
 import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,6 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import 'katex/dist/katex.min.css';
 import {
-  ArrowLeft,
   CalendarDays,
   Clock3,
   Tag,
@@ -1203,12 +1203,7 @@ export default function TeacherRecordedClassDetails() {
   if (!recording) {
     return (
       <div className="space-y-6">
-        <Button asChild variant="ghost" className="h-auto gap-2 p-0 text-sm font-bold text-slate-500 hover:bg-transparent hover:text-blue-600">
-          <Link to="/school/teacher/classes">
-            <ArrowLeft size={16} />
-            Back to Recorded Classes
-          </Link>
-        </Button>
+        <BackButton to="/school/teacher/classes" />
         <Card className="rounded-[2rem] border-dashed border-slate-200 bg-white p-12 text-center shadow-sm">
           <FileText className="mx-auto size-12 text-slate-300" />
           <h2 className="mt-4 text-xl font-bold text-slate-900">Lecture not found</h2>
@@ -1222,16 +1217,6 @@ export default function TeacherRecordedClassDetails() {
     <div className="-mx-3 -mb-3 min-h-[calc(100vh-76px)] bg-slate-50 sm:-mx-5 sm:-mb-5 lg:-mx-6 lg:-mb-6 lg:flex lg:h-[calc(100vh-76px)] lg:min-h-0 lg:flex-col lg:overflow-hidden">
       <div className="border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6 lg:shrink-0">
         <div className="flex w-full items-center gap-3">
-          <Button
-            asChild
-            variant="secondary"
-            size="icon"
-            className="size-9 shrink-0 rounded-xl border-0 bg-slate-100 text-slate-600 hover:bg-blue-600 hover:text-white"
-          >
-            <Link to="/school/teacher/classes" aria-label="Back to recorded classes">
-              <ArrowLeft size={17} />
-            </Link>
-          </Button>
           <div className="min-w-0 flex-1">
             <p className="truncate text-[11px] font-bold text-blue-600">{recording.chapter_name || recording.subject_name || 'Recorded Class'}</p>
             <h1 className="truncate text-sm font-black leading-tight text-slate-900">{recording.title}</h1>
@@ -1244,6 +1229,7 @@ export default function TeacherRecordedClassDetails() {
             <RefreshCw size={13} />
             Refresh
           </Button>
+          <BackButton to="/school/teacher/classes" />
         </div>
       </div>
 
