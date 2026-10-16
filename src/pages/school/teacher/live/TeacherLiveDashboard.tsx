@@ -567,6 +567,8 @@ export default function TeacherLiveDashboard() {
   const socketRef = useRef<Socket | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
+  /** B-28: OBS dropped; the class stays live while it reconnects. */
+  const [obsReconnecting, setObsReconnecting] = useState(false);
   const [lectureStatus, setLectureStatus] = useState<'SCHEDULED' | 'LIVE' | 'ENDED' | 'CANCELLED' | null>(
     location.state?.showSummary ? 'ENDED' : null,
   );
@@ -784,6 +786,23 @@ export default function TeacherLiveDashboard() {
     if (save) socketRef.current?.emit('update-settings', { chatEnabled: enabled });
   };
 
+  /**
+   * B-29: the class is over, whether ended here, from another device, or by
+   * the server when OBS did not come back. The console kept showing LIVE and
+   * OBS Connected when it missed the socket event.
+   */
+  const markEnded = () => {
+    setLive(false);
+    setObsReconnecting(false);
+    setStudents([]);
+    setHands([]);
+    setLectureStatus((s) => (s === 'CANCELLED' ? s : 'ENDED'));
+    if (hlsRef.current) {
+      try { hlsRef.current.destroy(); } catch {}
+      hlsRef.current = null;
+    }
+  };
+
   const endClass = async () => {
     setEnding(true);
     try {
@@ -831,18 +850,21 @@ export default function TeacherLiveDashboard() {
     schoolLive.getStreamUrl(id)
       .then((r) => {
         const rawStatus = String(r.status || '').toUpperCase();
-        let s: 'SCHEDULED' | 'LIVE' | 'ENDED' =
-          rawStatus === 'PROCESSED' || rawStatus === 'PROCESSING_FAILED' || rawStatus === 'ENDED'
-            ? 'ENDED'
-            : rawStatus === 'LIVE'
-              ? 'LIVE'
-              : 'SCHEDULED';
+        let s: 'SCHEDULED' | 'LIVE' | 'ENDED' | 'CANCELLED' =
+          rawStatus === 'CANCELLED'
+            ? 'CANCELLED'
+            : rawStatus === 'PROCESSED' || rawStatus === 'PROCESSING_FAILED' || rawStatus === 'ENDED'
+              ? 'ENDED'
+              : rawStatus === 'LIVE'
+                ? 'LIVE'
+                : 'SCHEDULED';
         if (s === 'SCHEDULED' && r.createdAt) {
           const todayMidnight = new Date(); todayMidnight.setHours(0, 0, 0, 0);
           if (new Date(r.createdAt) < todayMidnight) s = 'ENDED';
         }
         setLectureStatus(s);
         setLive(s === 'LIVE');
+        setObsReconnecting(s === 'LIVE' && !!r.streamInterrupted);
         setLectureTitle(r.title || '');
         if (r.startedAt) {
           setStartedAt(new Date(r.startedAt).getTime());
@@ -859,8 +881,10 @@ export default function TeacherLiveDashboard() {
       });
   }, [id]);
 
+  const classOpen = lectureStatus !== null && lectureStatus !== 'ENDED' && lectureStatus !== 'CANCELLED';
+
   useEffect(() => {
-    if (lectureStatus === null || lectureStatus === 'ENDED') return;
+    if (!classOpen) return;
     const timer = setInterval(() => {
       schoolLive.getActiveParticipants(id)
         .then((rows) => {
@@ -873,10 +897,26 @@ export default function TeacherLiveDashboard() {
         .catch(() => undefined);
     }, 5000);
     return () => clearInterval(timer);
-  }, [id, lectureStatus]);
+  }, [id, classOpen]);
+
+  // B-29: the socket is not the only way to learn the class has ended or that
+  // OBS dropped; check the server while the class is live.
+  useEffect(() => {
+    if (!live) return;
+    const timer = setInterval(() => {
+      schoolLive.getStreamUrl(id)
+        .then((r) => {
+          const st = String(r.status || '').toUpperCase();
+          if (['ENDED', 'PROCESSED', 'PROCESSING_FAILED', 'CANCELLED'].includes(st)) markEnded();
+          else if (st === 'LIVE') setObsReconnecting(!!r.streamInterrupted);
+        })
+        .catch(() => undefined);
+    }, 10_000);
+    return () => clearInterval(timer);
+  }, [id, live]);
 
   useEffect(() => {
-    if (lectureStatus === null || lectureStatus === 'ENDED') return;
+    if (!classOpen) return;
     const socket = createLiveSocket();
     socketRef.current = socket;
     socket.on('connect', () => socket.emit('teacher-join', { token: getLiveToken(), lectureId: id }));
@@ -908,6 +948,8 @@ export default function TeacherLiveDashboard() {
     });
     socket.on('stream-started', () => {
       setLive(true);
+      setObsReconnecting(false);
+      setLectureStatus('LIVE');
       setStartedAt((s) => s ?? Date.now());
       schoolLive.getStreamUrl(id).then((r) => {
         const playUrl = r.playbackId ? hlsProxyUrl(r.playbackId) : r.url;
@@ -915,15 +957,11 @@ export default function TeacherLiveDashboard() {
         setTimeout(() => attach(playUrl), 1000);
       }).catch(() => undefined);
     });
-    socket.on('stream-ended', () => {
-      setLive(false);
-      setStudents([]);
-      setHands([]);
-      setLectureStatus('ENDED');
-      if (hlsRef.current) {
-        try { hlsRef.current.destroy(); } catch {}
-        hlsRef.current = null;
-      }
+    socket.on('stream-ended', markEnded);
+    // B-28: OBS stopped. The class stays live while it reconnects.
+    socket.on('stream-interrupted', ({ graceSeconds = 180 }: { graceSeconds?: number }) => {
+      setObsReconnecting(true);
+      toast.warning(`OBS disconnected. The class stays live for ${Math.round(graceSeconds / 60)} min — start streaming again in OBS to continue.`);
     });
     socket.on('chat', (m: LiveChatMessage) => {
       setMessages((prev) => [...prev.slice(-200), m]);
@@ -965,7 +1003,7 @@ export default function TeacherLiveDashboard() {
       );
     });
     return () => { socket.disconnect(); };
-  }, [id, lectureStatus]);
+  }, [id, classOpen]);
 
   useEffect(() => {
     if (!live) return;
@@ -1065,17 +1103,19 @@ export default function TeacherLiveDashboard() {
               : 'bg-slate-100 text-slate-500 border border-slate-200/50'
           }`}>
             <span className={`size-1.5 rounded-full ${live ? 'bg-red-500 animate-pulse' : 'bg-slate-400'}`} />
-            {live ? 'LIVE' : 'OFFLINE'}
+            {live ? 'LIVE' : lectureStatus === 'CANCELLED' ? 'CANCELLED' : 'OFFLINE'}
           </span>
 
           {/* OBS Badge */}
           <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-black uppercase tracking-wider shadow-xs transition-all ${
-            live 
-              ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
-              : 'bg-slate-100 text-slate-500 border border-slate-200/50'
+            live && obsReconnecting
+              ? 'bg-amber-50 text-amber-600 border border-amber-100'
+              : live
+                ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                : 'bg-slate-100 text-slate-500 border border-slate-200/50'
           }`}>
-            <span className={`size-1.5 rounded-full ${live ? 'bg-emerald-500 animate-ping' : 'bg-slate-400'}`} />
-            {live ? 'OBS Connected' : 'OBS Inactive'}
+            <span className={`size-1.5 rounded-full ${live && obsReconnecting ? 'bg-amber-500 animate-pulse' : live ? 'bg-emerald-500 animate-ping' : 'bg-slate-400'}`} />
+            {live && obsReconnecting ? 'OBS Reconnecting…' : live ? 'OBS Connected' : 'OBS Inactive'}
           </span>
 
           {/* Watching count */}

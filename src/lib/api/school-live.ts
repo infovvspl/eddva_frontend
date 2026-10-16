@@ -153,6 +153,9 @@ export const schoolLive = {
         startedAt?: string;
         viewerCount?: number;
         qualities?: Array<{ label: string; url: string }>;
+        /** B-28: OBS has stopped; the class is waiting for it to reconnect. */
+        streamInterrupted?: boolean;
+        reconnectGraceSeconds?: number;
       }>(r)),
 
   getChatHistory: (id: string) =>
