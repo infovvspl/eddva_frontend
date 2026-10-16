@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSchoolFeature } from '@/hooks/use-school-feature';
+import { useConfirm } from '@/context/ConfirmContext';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import 'katex/dist/katex.min.css';
@@ -153,6 +154,8 @@ export default function TeacherRecordedClassDetails() {
   const location = useLocation();
   const requestedTab = location.state?.openTab;
 
+  const confirm = useConfirm();
+
   const [recordings, setRecordings] = useState([]);
   const [loading, setLoading] = useState(true);
   const hasNotesGen = useSchoolFeature('ai', 'ai_notes_generator');
@@ -177,6 +180,18 @@ export default function TeacherRecordedClassDetails() {
   useEffect(() => {
     fetchRecordings();
   }, [fetchRecordings]);
+
+  // Poll while a generation job is in flight so the transcript, notes, and —
+  // notably — the in-video quiz checkpoints picked up by SchoolVideoPlayer
+  // show up as soon as they're ready, instead of only after a manual reload.
+  useEffect(() => {
+    const isGenerating = ['transcript_status', 'notes_status', 'quiz_status'].some((key) =>
+      ['pending', 'processing'].includes(recording?.[key]),
+    );
+    if (!isGenerating) return;
+    const timer = window.setInterval(fetchRecordings, 5000);
+    return () => window.clearInterval(timer);
+  }, [recording?.transcript_status, recording?.notes_status, recording?.quiz_status, fetchRecordings]);
 
   const availableTabs = useMemo(() => {
     const list = [];
@@ -266,6 +281,11 @@ export default function TeacherRecordedClassDetails() {
     try {
       await api.post(`/classes/recordings/${recording.id}/regenerate-notes`);
       await fetchRecordings();
+      // The job is only enqueued here, not necessarily started yet, so this fetch
+      // can still see the OLD notes_status (e.g. 'done' from a prior run) — the
+      // status-driven poll above only kicks in once a fetch actually observes
+      // 'pending'/'processing'. These bridge that gap until it does.
+      [3000, 8000, 15000, 30000, 60000].forEach((delay) => window.setTimeout(fetchRecordings, delay));
     } catch (err) {
       console.error('Failed to generate notes:', err);
       toast.error(err?.response?.data?.message || 'Could not generate notes. Make sure the transcript is ready.');
@@ -330,6 +350,8 @@ export default function TeacherRecordedClassDetails() {
     try {
       await api.post(`/classes/recordings/${recording.id}/retranscribe`);
       await fetchRecordings();
+      // Bridge the "job enqueued but not yet claimed" gap — see handleRegenerateNotes.
+      [3000, 8000, 15000, 30000, 60000].forEach((delay) => window.setTimeout(fetchRecordings, delay));
     } catch (err) {
       console.error('Failed to start transcription:', err);
       toast.error('Could not start transcription. Is the AI service running?');
@@ -346,12 +368,49 @@ export default function TeacherRecordedClassDetails() {
       await api.post(`/classes/recordings/${recording.id}/generate-quiz`);
       toast.success('In-video AI Quiz generation started');
       await fetchRecordings();
+      // Bridge the "job enqueued but not yet claimed" gap — see handleRegenerateNotes.
+      [3000, 8000, 15000, 30000, 60000].forEach((delay) => window.setTimeout(fetchRecordings, delay));
     } catch (err) {
       console.error('Failed to generate in-video quiz:', err);
       toast.error(err?.response?.data?.message || 'Could not generate quiz. Make sure the transcript or notes are ready.');
     } finally {
       setGeneratingQuiz(false);
     }
+  };
+
+  // "Regenerate" variants ask for confirmation first since, unlike the first-run
+  // generate buttons, they discard existing content (and, for the quiz, its analytics).
+  const confirmRegenerateNotes = async () => {
+    const ok = await confirm({
+      title: 'Regenerate AI Notes',
+      subtitle: 'This replaces the current notes',
+      message: 'This will discard the current AI notes and generate a fresh version from the transcript. This cannot be undone.',
+      confirmLabel: 'Regenerate',
+      variant: 'destructive',
+    });
+    if (ok) handleRegenerateNotes();
+  };
+
+  const confirmRetranscribe = async () => {
+    const ok = await confirm({
+      title: 'Regenerate Transcript',
+      subtitle: 'This replaces the current transcript',
+      message: 'This will discard the current transcript and re-run speech-to-text on the recording. Notes and quiz questions already generated from the old transcript will not update automatically. This cannot be undone.',
+      confirmLabel: 'Regenerate',
+      variant: 'destructive',
+    });
+    if (ok) handleRetranscribe();
+  };
+
+  const confirmRegenerateQuiz = async () => {
+    const ok = await confirm({
+      title: 'Regenerate In-Video Quiz',
+      subtitle: 'This replaces the current quiz',
+      message: 'This will discard the current quiz questions along with their student analytics, and generate a fresh set of checkpoints. This cannot be undone.',
+      confirmLabel: 'Regenerate',
+      variant: 'destructive',
+    });
+    if (ok) handleGenerateQuiz();
   };
 
   // ── Quiz analytics: % answered per option + per-student right/wrong breakdown ──
@@ -548,6 +607,17 @@ export default function TeacherRecordedClassDetails() {
                 {addingVisuals ? <Loader2 size={11} className="animate-spin" /> : <ImagePlus size={11} />}
                 {imageCount > 0 ? 'Refresh visuals' : 'Add visuals'}
               </Button>
+              {hasNotesGen && (
+                <Button variant="outline" size={null}
+                  type="button"
+                  onClick={confirmRegenerateNotes}
+                  disabled={regeneratingNotes}
+                  className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-600 disabled:opacity-60"
+                >
+                  {regeneratingNotes ? <Loader2 size={11} className="animate-spin" /> : <RefreshCw size={11} />}
+                  {regeneratingNotes ? 'Regenerating…' : 'Regenerate'}
+                </Button>
+              )}
             </div>
           </Card>
 
@@ -598,8 +668,21 @@ export default function TeacherRecordedClassDetails() {
         .trim();
 
       return (
-        <div className="rounded-2xl bg-slate-50 p-5 text-sm leading-7 text-slate-700">
-          <p className="whitespace-pre-wrap leading-relaxed">{cleanedTranscript}</p>
+        <div className="space-y-3">
+          <div className="flex items-center justify-end">
+            <Button variant="outline" size={null}
+              type="button"
+              onClick={confirmRetranscribe}
+              disabled={retranscribing}
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 disabled:opacity-60"
+            >
+              {retranscribing ? <Loader2 size={11} className="animate-spin" /> : <RefreshCw size={11} />}
+              {retranscribing ? 'Regenerating…' : 'Regenerate transcript'}
+            </Button>
+          </div>
+          <div className="rounded-2xl bg-slate-50 p-5 text-sm leading-7 text-slate-700">
+            <p className="whitespace-pre-wrap leading-relaxed">{cleanedTranscript}</p>
+          </div>
         </div>
       );
     }
@@ -669,6 +752,20 @@ export default function TeacherRecordedClassDetails() {
 
     return (
       <div className="flex flex-col gap-y-4">
+        {hasQuizGen && (
+          <div className="flex items-center justify-end">
+            <Button variant="outline" size={null}
+              type="button"
+              onClick={confirmRegenerateQuiz}
+              disabled={generatingQuiz}
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 disabled:opacity-60"
+            >
+              {generatingQuiz ? <Loader2 size={11} className="animate-spin" /> : <RefreshCw size={11} />}
+              {generatingQuiz ? 'Regenerating…' : 'Regenerate quiz'}
+            </Button>
+          </div>
+        )}
+
         {quizAnalyticsError && (
           <Alert className="rounded-2xl border-amber-100 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
             {quizAnalyticsError}
@@ -1187,7 +1284,14 @@ export default function TeacherRecordedClassDetails() {
           </main>
 
           <aside className="min-w-0 lg:h-full lg:min-h-0">
-            <Card className="flex h-[600px] flex-col overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm lg:h-[calc(100vh-140px)]">
+            {/* lg:h-full (not a hardcoded calc(100vh-Npx)) so this panel takes exactly
+                the height the flex/grid layout actually gives its "aside" parent
+                (which is itself lg:h-full). The old fixed-offset calc assumed less
+                chrome above it than actually renders, so the card was taller than
+                its real available space and its bottom ~60px — including the tail
+                of the Notes/Quiz scroll area — was clipped by the page's outer
+                overflow-hidden wrapper instead of being reachable by scrolling. */}
+            <Card className="flex h-[600px] flex-col overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm lg:h-full">
               <div className="w-full min-w-0 shrink-0 overflow-hidden">
                 <Tabs value={detailTab} onValueChange={setDetailTab} className="w-full">
                   <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-none border-b border-slate-100 bg-transparent px-2 py-1.5">

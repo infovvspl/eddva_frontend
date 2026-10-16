@@ -1226,7 +1226,10 @@ export default function RecordedClassDetails() {
             </main>
 
           <aside className={`min-w-0 ${isSidebarExpanded ? 'block' : 'hidden lg:hidden'} lg:h-full lg:min-h-0`}>
-            <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col h-[600px] lg:h-[calc(100vh-140px)] overflow-hidden">
+            {/* lg:h-full, not a hardcoded calc(100vh-Npx) — see teacher RecordedClassDetails.jsx
+                for why: a fixed-offset calc let this panel grow taller than its real
+                available space and get clipped by the page's outer overflow-hidden. */}
+            <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col h-[600px] lg:h-full overflow-hidden">
               <div className="shrink-0 w-full min-w-0 overflow-hidden">
                 <CourseTabs
                   activeTab={detailTab}
