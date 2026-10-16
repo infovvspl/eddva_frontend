@@ -19,7 +19,7 @@ const safeName = (s: string) =>
 export function materialDisplayTitle(material: Partial<SchoolMaterial> & { chapterName?: unknown; topicName?: unknown }): string {
   const fallback = String(material.topicName || material.chapterName || material.title || 'Material').trim();
   return fallback
-    .replace(/^\s*(?:school|jee|neet|cbse|icse)\s*[-:��]\s*/i, '')
+    .replace(/^\s*(?:school|jee|neet|cbse|icse)\s*(?:-|:|\u2013|\u2014)\s*/i, '')
     .trim() || fallback;
 }
 

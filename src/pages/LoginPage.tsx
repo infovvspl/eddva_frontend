@@ -276,7 +276,10 @@ const LoginPage = () => {
   /* ── Login handler ── */
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!identifier.trim() || !password) return;
+    if (!identifier.trim() || !password) {
+      setError("Please enter your email or phone number and password.");
+      return;
+    }
     setError(""); setLoginLoading(true);
     try {
       const isEmail = identifier.includes("@");
@@ -530,7 +533,7 @@ const LoginPage = () => {
 
               <button
                 type="submit"
-                disabled={!identifier.trim() || !password || loginLoading}
+                disabled={loginLoading}
                 className="w-full h-12 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 mt-6 disabled:opacity-70 shadow-md"
               >
                 {loginLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Login"}

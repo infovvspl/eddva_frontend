@@ -19,6 +19,7 @@ export interface StudentProfile {
   className?: string;
   enrollmentNo?: string;
   rollNo?: string;
+  subjects?: string[];
 }
 
 export interface StudentParentDetails {

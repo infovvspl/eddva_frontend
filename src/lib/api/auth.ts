@@ -147,6 +147,7 @@ export interface SchoolLoginResponse {
       enrollmentNo?: string;
       rollNo?: string;
       currentClass?: string;
+      subjects?: string[];
     } | null;
   };
   institute: {
