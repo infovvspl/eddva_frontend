@@ -15,6 +15,7 @@ export const schoolStudentKeys = {
   revisionIntensive: (batchId?: string) => ["school-student", "revision", "intensive", batchId ?? ""] as const,
   revisionNotes: (batchId?: string) => ["school-student", "revision", "notes", batchId ?? ""] as const,
   practiceHistory: (batchId?: string) => ["school-student", "revision", "practice", batchId ?? ""] as const,
+  studyPlannerImprovement: (batchId?: string) => ["school-student", "improvement", batchId ?? ""] as const,
   studyStatus: (topicId: string) => ["school-student", "topics", topicId, "study-status"] as const,
   aiSession: (topicId: string) => ["school-student", "topics", topicId, "ai-study-session"] as const,
 };
@@ -290,6 +291,29 @@ export function usePracticeHistory(batchId?: string) {
     queryFn: async () => {
       const res = await schoolApi.get(`/study-plans/revision/practice${batchId ? `?batchId=${batchId}` : ""}`);
       return res.data?.data ?? res.data ?? [];
+    },
+    staleTime: 5 * 60_000,
+  });
+}
+
+export type StudyPlannerImprovement = {
+  firstUsedAt: string | null;
+  overallImprovementPoints: number | null;
+  subjects: Array<{ subjectId: string; subjectName: string; improvementPoints: number; comparableGroups: number; method: "topic" | "subject" }>;
+};
+
+const EMPTY_IMPROVEMENT: StudyPlannerImprovement = {
+  firstUsedAt: null,
+  overallImprovementPoints: null,
+  subjects: [],
+};
+
+export function useStudyPlannerImprovement(batchId?: string) {
+  return useQuery<StudyPlannerImprovement>({
+    queryKey: schoolStudentKeys.studyPlannerImprovement(batchId),
+    queryFn: async () => {
+      const res = await schoolApi.get(`/study-plans/improvement${batchId ? `?batchId=${batchId}` : ""}`);
+      return res.data?.data ?? res.data ?? EMPTY_IMPROVEMENT;
     },
     staleTime: 5 * 60_000,
   });

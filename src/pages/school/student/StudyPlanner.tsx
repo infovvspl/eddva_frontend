@@ -9,8 +9,8 @@ import {
   Brain, Target, Calendar, Clock, ChevronRight, ChevronDown,
   CheckCircle2, PlayCircle, BookOpen, Zap, Trophy, Flame,
   RotateCcw, Map as MapIcon, ListTodo, Star, CheckCheck, Rocket,
-  ArrowRight, ArrowLeft, Sparkles, Activity, Bell,
-  TrendingDown, AlertTriangle, RefreshCw, FileText, ClipboardList,
+  ArrowLeft, Sparkles, Activity, Bell,
+  TrendingDown, TrendingUp, AlertTriangle, RefreshCw, FileText, ClipboardList,
   BrainCircuit,
 } from "lucide-react";
 import {
@@ -18,7 +18,7 @@ import {
   useStudentMe, useCompletePlanItem, useSkipPlanItem, useProgressReport,
   useMyCourses, useAllBatchLectures, useMockTests, useStudentSessions, useWeeklyActivity,
   useAiStudyHistory, useRevisionSpaced, useRevisionNotes, usePracticeHistory,
-  useCourseCurriculum,
+  useCourseCurriculum, useStudyPlannerImprovement,
 } from "@/hooks/use-school-student";
 import * as studentApi from "@/lib/api/student";
 import type { StudyPlanItem, CourseResource } from "@/lib/api/student";
@@ -1620,6 +1620,7 @@ export default function SchoolStudentStudyPlanner() {
   const { data: spacedRevisionData = [] } = useRevisionSpaced(selectedCourseId ?? undefined);
   const { data: backendNotes = [] } = useRevisionNotes(selectedCourseId ?? undefined);
   const { data: backendPractice = [] } = usePracticeHistory(selectedCourseId ?? undefined);
+  const { data: improvement } = useStudyPlannerImprovement(selectedCourseId ?? undefined);
   const completedHistoryTopicIds = useMemo(() =>
     new Set(aiStudyHistory.filter(s => s.isCompleted).map(s => s.topicId)),
     [aiStudyHistory]
@@ -2041,6 +2042,10 @@ export default function SchoolStudentStudyPlanner() {
   // Pending DPPs & PDFs: resources on non-locked, non-completed topics — scoped to selected course only
   const pendingResources = useMemo(() => buildPendingResources(["pdf", "dpp"]), [buildPendingResources]);
 
+  // Pending PYQs: actual PYQ resources uploaded to Study Materials for this course that
+  // haven't been opened yet — not a synthetic "topics with no PYQ attempts" list.
+  const pendingPYQResources = useMemo(() => buildPendingResources(["pyq"]), [buildPendingResources]);
+
 
 
   // Pending mock tests: published, not yet attempted, scoped to selected course
@@ -2060,7 +2065,7 @@ export default function SchoolStudentStudyPlanner() {
   const totalBacklogCount =
     backlogPlanItems.length +
     pendingLectures.length +
-    pendingPYQTopics.length +
+    pendingPYQResources.length +
     pendingNotes.length +
     pendingMindmaps.length +
     pendingResources.length +
@@ -2292,7 +2297,7 @@ export default function SchoolStudentStudyPlanner() {
                             { key: "lectures", label: "Video Lectures", desc: "All unwatched lectures from this course", count: pendingLectures.length, icon: PlayCircle, tone: "blue" },
                             { key: "notes", label: "Notes", desc: "Unread notes from this course", count: pendingNotes.length, icon: BookOpen, tone: "amber" },
                             { key: "mindmaps", label: "Mindmaps", desc: "Visual mindmaps not yet reviewed", count: pendingMindmaps.length, icon: BrainCircuit, tone: "indigo" },
-                            { key: "pyq", label: "PYQs Pending", desc: "Previous year questions not practised", count: pendingPYQTopics.length, icon: Activity, tone: "violet" },
+                            { key: "pyq", label: "PYQs Pending", desc: "Previous year questions not practised", count: pendingPYQResources.length, icon: Activity, tone: "violet" },
                             { key: "dpp", label: "DPPs & PDFs", desc: "Practice sheets and reading material", count: pendingResources.length, icon: FileText, tone: "teal" },
                             { key: "mocktests", label: "Mock Tests", desc: "Published tests not yet attempted", count: pendingMockTests.length, icon: ClipboardList, tone: "rose" },
                           ].map(card => {
@@ -2434,18 +2439,18 @@ export default function SchoolStudentStudyPlanner() {
                             )}
 
                             {backlogPage === "pyq" && (
-                              pendingPYQTopics.length === 0 ? (
-                                <BacklogEmpty label="All PYQs attempted." />
+                              pendingPYQResources.length === 0 ? (
+                                <BacklogEmpty label="No pending PYQs." />
                               ) : (
                                 <div className="space-y-2">
-                                  {pendingPYQTopics.slice(0, 8).map(topic => (
+                                  {pendingPYQResources.slice(0, 8).map(resource => (
                                     <BacklogActionRow
-                                      key={topic.topicId}
+                                      key={resource.id}
                                       icon={Activity}
-                                      title={topic.topicName}
-                                      subtitle={`${topic.subjectName} - ${topic.chapterName}`}
-                                      buttonLabel="Attempt"
-                                      onClick={() => navigate(`/school/student/quiz?topicId=${topic.topicId}`)}
+                                      title={resource.title}
+                                      subtitle={`${resource.subjectName} - ${resource.topicName}`}
+                                      buttonLabel="Open"
+                                      onClick={() => navigate(`/school/student/study-materials?openMaterialId=${resource.id}`)}
                                     />
                                   ))}
                                 </div>
@@ -3046,41 +3051,6 @@ export default function SchoolStudentStudyPlanner() {
                 )}
               </div>
             </section>
-
-            {subjectProgress.length > 0 && (
-              <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="flex items-center justify-between gap-3">
-                  <h2 className="text-lg font-black text-slate-950">Subject progress</h2>
-                  <button
-                    type="button"
-                    onClick={() => navigate("/school/student/study-materials")}
-                    className="text-sm font-black text-blue-600 transition hover:text-blue-700"
-                  >
-                    Study materials
-                  </button>
-                </div>
-                <div className="mt-4 grid gap-3 md:grid-cols-2">
-                  {subjectProgress.map(subject => {
-                    const pct = subject.topicsTotal > 0 ? Math.round((subject.topicsCompleted / subject.topicsTotal) * 100) : 0;
-                    const cfg = subjectCfg(subject.subjectName);
-                    return (
-                      <div key={subject.subjectId} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <p className="truncate text-sm font-black text-slate-900">{subject.subjectName}</p>
-                          <p className={`text-sm font-black ${cfg.color}`}>{pct}%</p>
-                        </div>
-                        <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
-                          <div className="h-full rounded-full bg-blue-600 transition-all" style={{ width: `${pct}%` }} />
-                        </div>
-                        <p className="mt-2 text-xs font-bold text-slate-500">
-                          {subject.topicsCompleted} of {subject.topicsTotal} topics complete
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
           </main>
 
           <aside className="space-y-5">
@@ -3117,6 +3087,88 @@ export default function SchoolStudentStudyPlanner() {
               </div>
             </section>
 
+            {subjectProgress.length > 0 && (
+              <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="text-lg font-black text-slate-950">Subject progress</h2>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/school/student/study-materials")}
+                    className="text-sm font-black text-blue-600 transition hover:text-blue-700"
+                  >
+                    Study materials
+                  </button>
+                </div>
+                <div className="mt-4 space-y-3">
+                  {subjectProgress.map(subject => {
+                    const pct = subject.topicsTotal > 0 ? Math.round((subject.topicsCompleted / subject.topicsTotal) * 100) : 0;
+                    const cfg = subjectCfg(subject.subjectName);
+                    return (
+                      <div key={subject.subjectId} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="truncate text-sm font-black text-slate-900">{subject.subjectName}</p>
+                          <p className={`text-sm font-black ${cfg.color}`}>{pct}%</p>
+                        </div>
+                        <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
+                          <div className="h-full rounded-full bg-blue-600 transition-all" style={{ width: `${pct}%` }} />
+                        </div>
+                        <p className="mt-2 text-xs font-bold text-slate-500">
+                          {subject.topicsCompleted} of {subject.topicsTotal} topics complete
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {improvement && improvement.firstUsedAt && (
+              <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="size-5 text-emerald-600" />
+                  <h2 className="text-lg font-black text-slate-950">Your Improvement</h2>
+                </div>
+                <p className="mt-1 text-sm font-medium text-slate-500">
+                  Same topics/chapters, before vs. after you started using the AI Study Planner on {format(new Date(improvement.firstUsedAt), "MMM d, yyyy")}.
+                </p>
+
+                {improvement.subjects.length > 0 ? (
+                  <div className="mt-4 space-y-3">
+                    {improvement.overallImprovementPoints !== null && (
+                      <p className={`rounded-2xl px-4 py-3 text-sm font-bold ${improvement.overallImprovementPoints >= 0 ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-700"}`}>
+                        {improvement.overallImprovementPoints > 0
+                          ? `You've improved by ${improvement.overallImprovementPoints} points on average across your subjects since you started using the AI Study Planner.`
+                          : improvement.overallImprovementPoints === 0
+                          ? "Your scores are holding steady across subjects since you started using the AI Study Planner."
+                          : `Your average has dipped ${Math.abs(improvement.overallImprovementPoints)} points across subjects since you started — keep working through your daily plan to turn it around.`}
+                      </p>
+                    )}
+
+                    <div className="space-y-2">
+                      {improvement.subjects.map(s => (
+                        <div key={s.subjectId} className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-2.5">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-bold text-slate-800">{s.subjectName}</p>
+                            <p className="text-[10px] font-semibold text-slate-400">
+                              {s.method === "topic"
+                                ? `${s.comparableGroups} topic${s.comparableGroups === 1 ? "" : "s"}/chapter${s.comparableGroups === 1 ? "" : "s"} retested`
+                                : "Based on overall subject scores"}
+                            </p>
+                          </div>
+                          <span className={`shrink-0 text-sm font-black ${s.improvementPoints > 0 ? "text-emerald-600" : s.improvementPoints < 0 ? "text-amber-600" : "text-slate-500"}`}>
+                            {s.improvementPoints > 0 ? "+" : ""}{s.improvementPoints} pts
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-4 rounded-2xl bg-slate-50 px-4 py-4 text-sm font-medium text-slate-500">
+                    Once a topic or chapter has graded assessment results from both before and after you started using the planner, your improvement will show here.
+                  </p>
+                )}
+              </section>
+            )}
           </aside>
         </div>
       </div>

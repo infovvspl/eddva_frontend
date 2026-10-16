@@ -7,7 +7,7 @@ import {
   CheckCircle, XCircle, AlertTriangle, BarChart3,
   Target, ArrowLeft, Flame, Sparkles,
   Brain, Trophy, Play, Monitor, Zap,
-  ArrowRight, ShieldCheck, BrainCircuit, Activity, Info, Check, X,
+  ArrowRight, ShieldCheck, BrainCircuit, Info, Check, X,
 } from "lucide-react";
 import { BackButton } from "@/components/shared/BackButton";
 import {
@@ -121,42 +121,6 @@ function QuestionCard({
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
-function ScoreRing({ accuracy, score, outOf, correct, wrong, skipped }: {
-  accuracy: number; score: number; outOf: number;
-  correct: number; wrong: number; skipped: number;
-}) {
-  return (
-    <CardGlass className="p-10 border-white bg-slate-900 text-white relative overflow-hidden mb-10">
-      <div className="absolute -bottom-20 -right-20 size-64 bg-blue-500/10 blur-[80px] rounded-full pointer-events-none" />
-      <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-10">Show Results</h3>
-      <div className="flex items-center gap-10 flex-col sm:flex-row">
-        <div className="relative size-32 shrink-0">
-          <svg className="size-full -rotate-90" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="10" />
-            <motion.circle cx="50" cy="50" r="45" fill="none"
-              stroke={accuracy >= 70 ? "#10b981" : accuracy >= 40 ? "#f59e0b" : "#ef4444"}
-              strokeWidth="10" strokeDasharray="283"
-              initial={{ strokeDashoffset: 283 }}
-              animate={{ strokeDashoffset: 283 * (1 - accuracy / 100) }}
-              transition={{ duration: 2, ease: "easeOut" }}
-              strokeLinecap="round" />
-          </svg>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-3xl font-black italic">{accuracy.toFixed(0)}%</span>
-          </div>
-        </div>
-        <div className="text-center sm:text-left">
-          <p className="text-5xl font-black italic text-emerald-400 leading-none mb-2">{score}</p>
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-6">Total Sync Points / {outOf}</p>
-          <div className="flex items-center justify-center sm:justify-start gap-4">
-            <div className="px-4 py-2 rounded-xl bg-emerald-500/10 text-emerald-400 text-xs font-black italic border border-emerald-500/20">{correct} Valid</div>
-            <div className="px-4 py-2 rounded-xl bg-red-500/10 text-red-400 text-xs font-black italic border border-red-500/20">{wrong} Error</div>
-          </div>
-        </div>
-      </div>
-    </CardGlass>
-  );
-}
 
 // ─── Quiz Runner ──────────────────────────────────────────────────────────────
 function QuizRunner({
@@ -420,12 +384,16 @@ export default function SchoolStudentTopicQuizPage() {
   }, [stage]);
 
   if (["loading", "ai_generating", "ai_submitting"].includes(stage)) {
+    const loadingText =
+      stage === "ai_generating" ? "Generating your quiz..." :
+      stage === "ai_submitting" ? "Submitting your answers..." :
+      "Loading...";
     return (
       <div className="py-40 flex flex-col items-center justify-center text-center gap-10">
         <div className="size-24 rounded-[2.5rem] bg-white border border-slate-100 flex items-center justify-center shadow-3xl">
           <Loader2 className="size-12 animate-spin text-purple-600" />
         </div>
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] animate-pulse">Synchronizing Neural Modules...</p>
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] animate-pulse">{loadingText}</p>
       </div>
     );
   }
@@ -530,88 +498,115 @@ export default function SchoolStudentTopicQuizPage() {
     const wrongCount = questions.length - correctCount;
 
     return (
-      <div className="py-20 px-6">
-        <div className="w-full max-w-4xl mx-auto">
-          <div className="text-center mb-16">
-            <div className={cn("size-20 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-2xl", aiResult.passed ? "bg-emerald-500 text-white" : "bg-purple-600 text-white")}>
-              {aiResult.passed ? <CheckCircle className="size-10" /> : <Activity className="size-10" />}
+      <div className="py-10 px-4 sm:py-16 sm:px-6">
+        <div className="w-full max-w-3xl mx-auto">
+          <div className="text-center mb-8">
+            <div className={cn("size-16 rounded-2xl flex items-center justify-center mx-auto mb-5", aiResult.passed ? "bg-emerald-100 text-emerald-600" : "bg-blue-100 text-blue-600")}>
+              {aiResult.passed ? <CheckCircle className="size-8" /> : <ClipboardList className="size-8" />}
             </div>
-            <h1 className="text-5xl font-black text-slate-900 uppercase italic tracking-tighter mb-2">{aiResult.passed ? "Neural Pass" : "Simulation Logged"}</h1>
-            <div className="flex items-center justify-center gap-3"><Sparkles className="size-4 text-purple-500" /><p className="text-xs font-black text-purple-500 uppercase tracking-widest">AI Synthesis Result</p></div>
+            <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">{aiResult.passed ? "Great job!" : "Quiz complete"}</h1>
+            <p className="mt-1.5 text-sm text-slate-500">
+              {aiResult.passed ? "You hit your target score — nice work." : "Keep practicing — review your answers below to see where to improve."}
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ScoreRing
-              accuracy={aiResult.accuracy}
-              score={aiResult.score}
-              outOf={aiResult.totalMarks}
-              correct={correctCount}
-              wrong={wrongCount}
-              skipped={0}
-            />
-            <CardGlass className="p-8 border-amber-400/20 bg-amber-50/60 flex items-center gap-6 mb-10 h-fit">
-              <Trophy className="size-10 text-amber-500 shrink-0" />
-              <div>
-                <p className="text-2xl font-black italic text-slate-900">+{aiResult.xpEarned} XP</p>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Sync rewards transferred.</p>
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 mb-6">
+            <div className="grid gap-6 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-8">
+              <div className="relative size-28 mx-auto shrink-0 sm:mx-0">
+                <svg className="size-full -rotate-90" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="45" fill="none" stroke="#f1f5f9" strokeWidth="9" />
+                  <motion.circle cx="50" cy="50" r="45" fill="none"
+                    stroke={aiResult.accuracy >= 70 ? "#10b981" : aiResult.accuracy >= 40 ? "#f59e0b" : "#ef4444"}
+                    strokeWidth="9" strokeDasharray="283"
+                    initial={{ strokeDashoffset: 283 }}
+                    animate={{ strokeDashoffset: 283 * (1 - aiResult.accuracy / 100) }}
+                    transition={{ duration: 1.2, ease: "easeOut" }}
+                    strokeLinecap="round" />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-2xl font-bold text-slate-900">{aiResult.accuracy.toFixed(0)}%</span>
+                </div>
               </div>
-            </CardGlass>
+              <div className="text-center sm:text-left">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Your score</p>
+                <p className="text-3xl font-bold text-slate-900 mb-3">
+                  {aiResult.score} <span className="text-base font-semibold text-slate-400">/ {aiResult.totalMarks} points</span>
+                </p>
+                <div className="flex items-center justify-center gap-2.5 sm:justify-start">
+                  <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700">
+                    <CheckCircle className="size-3.5" /> {correctCount} Correct
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700">
+                    <XCircle className="size-3.5" /> {wrongCount} Incorrect
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+              <Trophy className="size-5 shrink-0 text-amber-500" />
+              <p className="text-sm font-semibold text-slate-800">
+                <span className="font-bold text-amber-700">+{aiResult.xpEarned} XP</span> added to your total
+              </p>
+            </div>
           </div>
 
-          <CardGlass className="p-8 border-white mb-10 overflow-hidden">
-            <button onClick={() => setShowReview(!showReview)} className="w-full flex items-center justify-between">
-              <div className="flex items-center gap-4"><Info className="size-5 text-slate-400" /><span className="text-sm font-black text-slate-900 uppercase italic">Review Logic Patterns</span></div>
-              <ChevronRight className={cn("size-6 text-slate-300 transition-transform", showReview && "rotate-90")} />
+          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden mb-6">
+            <button onClick={() => setShowReview(!showReview)} className="w-full flex items-center justify-between px-6 py-5">
+              <div className="flex items-center gap-3"><Info className="size-5 text-slate-400" /><span className="text-sm font-bold text-slate-900">Review your answers</span></div>
+              <ChevronRight className={cn("size-5 text-slate-300 transition-transform", showReview && "rotate-90")} />
             </button>
             <AnimatePresence>
               {showReview && (
-                <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="pt-10 space-y-6">
-                  {aiQuizData.questions.map((q, i) => {
-                    const sel = answers[q.id] || [];
-                    const correct = q.options.filter(o => o.isCorrect).map(o => o.id);
-                    const isRight = sel.length > 0 && sel.every(s => correct.includes(s));
-                    const selectedLabels = q.options
-                      .filter((o) => sel.includes(o.id))
-                      .map((o) => `${o.optionLabel}. ${o.content}`);
-                    const correctLabels = q.options
-                      .filter((o) => correct.includes(o.id))
-                      .map((o) => `${o.optionLabel}. ${o.content}`);
-                    return (
-                      <div key={i} className={cn("p-6 rounded-[2rem] border transition-all", isRight ? "bg-emerald-50 border-emerald-100" : "bg-red-50 border-red-100")}>
-                        <div className="flex gap-4 mb-4">
-                          <div className={cn("size-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm", isRight ? "bg-emerald-500 text-white" : "bg-red-500 text-white")}>
-                            {isRight ? <CheckCircle className="size-4" /> : <XCircle className="size-4" />}
+                <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="overflow-hidden">
+                  <div className="space-y-4 border-t border-slate-100 px-6 pb-6 pt-6">
+                    {aiQuizData.questions.map((q, i) => {
+                      const sel = answers[q.id] || [];
+                      const correct = q.options.filter(o => o.isCorrect).map(o => o.id);
+                      const isRight = sel.length > 0 && sel.every(s => correct.includes(s));
+                      const selectedLabels = q.options
+                        .filter((o) => sel.includes(o.id))
+                        .map((o) => `${o.optionLabel}. ${o.content}`);
+                      const correctLabels = q.options
+                        .filter((o) => correct.includes(o.id))
+                        .map((o) => `${o.optionLabel}. ${o.content}`);
+                      return (
+                        <div key={i} className={cn("rounded-2xl border p-5", isRight ? "bg-emerald-50 border-emerald-100" : "bg-red-50 border-red-100")}>
+                          <div className="flex gap-3 mb-4">
+                            <div className={cn("size-7 rounded-lg flex items-center justify-center shrink-0", isRight ? "bg-emerald-500 text-white" : "bg-red-500 text-white")}>
+                              {isRight ? <CheckCircle className="size-4" /> : <XCircle className="size-4" />}
+                            </div>
+                            <p className="text-sm font-bold text-slate-900">{q.content}</p>
                           </div>
-                          <p className="text-base font-bold text-slate-950">{q.content}</p>
+                          <div className="space-y-2.5">
+                            <div className="rounded-xl border border-slate-200 bg-white p-3.5">
+                              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1.5">Your answer</p>
+                              <p className="text-sm font-semibold text-slate-700">
+                                {selectedLabels.length ? selectedLabels.join(" | ") : "Not answered"}
+                              </p>
+                            </div>
+                            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3.5">
+                              <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-700 mb-1.5">Correct answer</p>
+                              <p className="text-sm font-semibold text-emerald-900">{correctLabels.join(" | ")}</p>
+                            </div>
+                            <div className="rounded-xl border border-blue-200 bg-blue-50 p-3.5">
+                              <p className="text-[10px] font-bold uppercase tracking-wide text-blue-700 mb-1.5">Explanation</p>
+                              <MarkdownRenderer
+                                content={q.explanation?.trim() || "Explanation not available."}
+                                className="text-sm font-medium text-slate-700 leading-relaxed"
+                              />
+                            </div>
+                          </div>
                         </div>
-                        <div className="space-y-3">
-                          <div className="rounded-xl border border-slate-200 bg-white/80 p-4">
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2">Your answer</p>
-                            <p className="text-sm font-semibold text-slate-700">
-                              {selectedLabels.length ? selectedLabels.join(" | ") : "Not answered"}
-                            </p>
-                          </div>
-                          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700 mb-2">Correct answer</p>
-                            <p className="text-sm font-semibold text-emerald-900">{correctLabels.join(" | ")}</p>
-                          </div>
-                          <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-700 mb-2">Explanation</p>
-                            <MarkdownRenderer
-                              content={q.explanation?.trim() || "Explanation not available."}
-                              className="text-sm font-medium text-slate-700 leading-relaxed"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
-          </CardGlass>
+          </div>
 
-          <BackButton className="w-full py-8" aria-label="Return to Planner" />
+          <BackButton className="w-full py-6" aria-label="Return to Planner" />
         </div>
       </div>
     );

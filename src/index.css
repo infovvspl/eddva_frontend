@@ -945,6 +945,6 @@ b, strong, th, label, button, input, select, textarea,
 }
 
 code, kbd, pre, samp,
-[class*="font-mono"] {
+.font-mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
