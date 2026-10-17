@@ -200,7 +200,7 @@ function materialMatchesType(material, selectedType) {
   return matchedKey === selectedType;
 }
 
-function groupMaterials(materials) {
+export function groupMaterials(materials) {
   const tree = {};
   materials.forEach((m) => {
     if (!m) return;
@@ -208,8 +208,12 @@ function groupMaterials(materials) {
     const chapter = m.chapterName || m.fileName || 'General Chapters';
     const topic = m.topicName || 'Chapter Materials';
     
-    // For subject-level general materials, only allow ebooks
-    const isSubjectLevel = String(topic).endsWith('Materials') || String(chapter).endsWith('Materials');
+    // For subject-level general materials (no chapter), only allow ebooks.
+    // A material attached to a chapter but no topic is chapter-level: it goes
+    // under "Chapter Materials". Checking the topic here too hid every such
+    // item from students — all animation videos (teachers attach them to a
+    // chapter), and chapter-level PPTs, DPPs, study guides and more.
+    const isSubjectLevel = !m.chapterName && !m.fileName;
     if (isSubjectLevel) {
       const meta = getResourceMeta(m.fileType, m.fileUrl, m.title);
       if (meta !== RESOURCE_META.pdf) return;
