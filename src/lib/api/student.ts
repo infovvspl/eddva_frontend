@@ -1372,21 +1372,13 @@ export async function updateProfile(payload: {
 }
 
 export async function uploadAvatar(file: File): Promise<string> {
-  // Step 1 — Upload to S3
-  const fileUrl = await uploadToS3(
-    {
-      type: "profile",
-      fileName: file.name,
-      contentType: file.type,
-      fileSize: file.size,
-    },
-    file
-  );
-
-  // Step 2 — Confirm with backend
-  const res = await apiClient.post("/auth/profile/avatar", { fileUrl });
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await apiClient.post("/auth/profile/avatar", fd, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
   const data = extractData<{ avatarUrl: string }>(res);
-  return data?.avatarUrl ?? fileUrl;
+  return data?.avatarUrl;
 }
 
 

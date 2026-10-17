@@ -1,10 +1,11 @@
+import { UserMenu } from "@/components/ui/user-menu"
+import { UserAvatar } from "@/components/ui/user-avatar"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { Bell, BellOff, LogOut, Settings, X } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
 import { ThemeSwitch } from "@/components/layout/ThemeSwitch"
-import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import {
   useMarkAllRead,
   useMarkNotificationRead,
@@ -187,62 +188,15 @@ export function CoachingHeaderActions() {
       )}
 
       <div className="relative" ref={userMenuRef}>
-        <button
-          onClick={() => setShowUserMenu((v) => !v)}
-          aria-haspopup="true"
-          aria-expanded={showUserMenu}
-          className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl border border-indigo-100 bg-indigo-50 dark:bg-indigo-950/40 shadow-sm transition-colors hover:border-indigo-300"
-        >
-          <ProfileAvatar
-            src={user.profileImage || (user as any).profilePictureUrl || null}
-            name={user.name}
-            className="h-full w-full"
-            fallbackClassName="text-[10px] font-bold text-indigo-600"
-          />
-        </button>
-
-        <AnimatePresence>
-          {showUserMenu && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: -4 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: -4 }}
-              transition={{ duration: 0.15 }}
-              role="menu"
-              aria-label="User menu"
-              className="absolute right-0 top-12 z-[80] mt-2 w-52 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 py-1.5 shadow-xl"
-            >
-              <div className="border-b border-slate-100 dark:border-slate-800 px-4 py-2.5">
-                <p className="truncate text-xs font-semibold text-slate-900 dark:text-slate-100">{user.name}</p>
-                <p className="mt-0.5 text-[10px] capitalize text-slate-400">
-                  {user.role.replace("_", " ")}
-                </p>
-              </div>
-              <button
-                role="menuitem"
-                onClick={() => {
-                  setShowUserMenu(false)
-                  navigate(SETTINGS_PATH)
-                }}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
-              >
-                <Settings className="h-4 w-4 text-slate-400" />
-                Settings
-              </button>
-              <button
-                role="menuitem"
-                onClick={() => {
-                  setShowUserMenu(false)
-                  logout()
-                }}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-950/40"
-              >
-                <LogOut className="h-4 w-4" />
-                Logout
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <UserMenu
+          src={user.profileImage || (user as any).profilePictureUrl || null}
+          name={user.name}
+          role={user.role.replace("_", " ")}
+          items={[
+            { label: "Settings", icon: Settings, to: SETTINGS_PATH },
+            { label: "Logout", icon: LogOut, onSelect: logout, destructive: true, separator: true },
+          ]}
+        />
       </div>
     </div>
   )

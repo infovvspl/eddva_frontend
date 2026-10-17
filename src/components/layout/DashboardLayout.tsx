@@ -1,3 +1,5 @@
+import { UserMenu } from "@/components/ui/user-menu"
+import { UserAvatar } from "@/components/ui/user-avatar"
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore, roleRedirectPath } from "@/lib/auth-store";
 import { useLogout, useDismissFirstLogin } from "@/hooks/use-auth";
@@ -23,7 +25,6 @@ import { AeroBackground } from "@/components/shared/AeroBackground";
 import { motion, AnimatePresence } from "framer-motion";
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import { NAV_ICON_COLORS, DEFAULT_NAV_COLOR } from "@/components/layout/nav-colors";
-import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useStudentMe, useUpdateStudentProfile, useMyCourses } from "@/hooks/use-student";
 import { useInstituteProfile, useUpdateInstituteProfile } from "@/hooks/use-admin";
@@ -1193,54 +1194,15 @@ const DashboardLayout = () => {
               {/* Right Side: Profile Icon */}
               <div className="flex min-w-0 items-center">
                 <div className="relative" ref={userMenuRef}>
-                  <button
-                    onClick={() => setShowUserMenu(v => !v)}
-                    aria-haspopup="true"
-                    aria-expanded={showUserMenu}
-                    className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shadow-sm overflow-hidden hover:border-indigo-300 transition-all shrink-0"
-                  >
-                    <ProfileAvatar
-                      src={user.profileImage || (user as any).profilePictureUrl || user.teacherProfile?.profilePhotoUrl || null}
-                      name={user.name}
-                      className="h-full w-full"
-                      fallbackClassName="text-[10px] font-bold text-indigo-600"
-                    />
-                  </button>
-
-                  <AnimatePresence>
-                    {showUserMenu && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                        transition={{ duration: 0.15 }}
-                        role="menu"
-                        aria-label="User menu"
-                        className="absolute right-0 top-13 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-[80]"
-                      >
-                        <div className="px-4 py-2.5 border-b border-slate-100">
-                          <p className="text-xs font-semibold text-slate-900 truncate">{user.name}</p>
-                          <p className="text-[10px] text-slate-400 capitalize mt-0.5">{user.role.replace("_", " ")}</p>
-                        </div>
-                        <button
-                          role="menuitem"
-                          onClick={() => { setShowUserMenu(false); navigate(settingsPath); }}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
-                        >
-                          <Settings className="w-4 h-4 text-slate-400" />
-                          Settings
-                        </button>
-                        <button
-                          role="menuitem"
-                          onClick={() => { setShowUserMenu(false); handleLogout(); }}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                        >
-                          <LogOut className="w-4 h-4" />
-                          Logout
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  <UserMenu
+                    src={user.profileImage || (user as any).profilePictureUrl || user.teacherProfile?.profilePhotoUrl || null}
+                    name={user.name}
+                    role={user.role.replace("_", " ")}
+                    items={[
+                      { label: "Settings", icon: Settings, to: settingsPath },
+                      { label: "Logout", icon: LogOut, onSelect: handleLogout, destructive: true, separator: true },
+                    ]}
+                  />
                 </div>
               </div>
             </>
@@ -1266,54 +1228,15 @@ const DashboardLayout = () => {
                 {(user?.role === "teacher" || user?.role === "institute_admin") && (
                   <div className="flex md:hidden items-center gap-2.5">
                     <div className="relative shrink-0" ref={mobileUserMenuRef}>
-                      <button
-                        onClick={() => setShowUserMenu(v => !v)}
-                        aria-haspopup="true"
-                        aria-expanded={showUserMenu}
-                        className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shadow-sm overflow-hidden hover:border-indigo-300 transition-all shrink-0"
-                      >
-                        <ProfileAvatar
-                          src={user.profileImage || (user as any).profilePictureUrl || user.teacherProfile?.profilePhotoUrl || null}
-                          name={user.name}
-                          className="h-full w-full"
-                          fallbackClassName="text-[10px] font-bold text-indigo-600"
-                        />
-                      </button>
-
-                      <AnimatePresence>
-                        {showUserMenu && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                            transition={{ duration: 0.15 }}
-                            role="menu"
-                            aria-label="User menu"
-                            className="absolute left-0 top-13 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-[80]"
-                          >
-                            <div className="px-4 py-2.5 border-b border-slate-100">
-                              <p className="text-xs font-semibold text-slate-900 truncate">{user.name}</p>
-                              <p className="text-[10px] text-slate-400 capitalize mt-0.5">{user.role.replace("_", " ")}</p>
-                            </div>
-                            <button
-                              role="menuitem"
-                              onClick={() => { setShowUserMenu(false); navigate(settingsPath); }}
-                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
-                            >
-                              <Settings className="w-4 h-4 text-slate-400" />
-                              Settings
-                            </button>
-                            <button
-                              role="menuitem"
-                              onClick={() => { setShowUserMenu(false); handleLogout(); }}
-                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                            >
-                              <LogOut className="w-4 h-4" />
-                              Logout
-                            </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                      <UserMenu
+                    src={user.profileImage || (user as any).profilePictureUrl || user.teacherProfile?.profilePhotoUrl || null}
+                    name={user.name}
+                    role={user.role.replace("_", " ")}
+                    items={[
+                      { label: "Settings", icon: Settings, to: settingsPath },
+                      { label: "Logout", icon: LogOut, onSelect: handleLogout, destructive: true, separator: true },
+                    ]}
+                  />
                     </div>
                     {user?.tenant?.name && (
                       <div className="flex flex-col min-w-0">
@@ -1542,54 +1465,15 @@ const DashboardLayout = () => {
 
                 {/* ─── Institute avatar + dropdown ─── */}
                 <div className={cn("relative", (user?.role === "teacher" || user?.role === "institute_admin") && "hidden md:block")} ref={userMenuRef}>
-                  <button
-                    onClick={() => setShowUserMenu(v => !v)}
-                    aria-haspopup="true"
-                    aria-expanded={showUserMenu}
-                    className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shadow-sm overflow-hidden hover:border-indigo-300 transition-all"
-                  >
-                    <ProfileAvatar
-                      src={user.profileImage || (user as any).profilePictureUrl || user.teacherProfile?.profilePhotoUrl || null}
-                      name={user.name}
-                      className="h-full w-full"
-                      fallbackClassName="text-[10px] font-bold text-indigo-600"
-                    />
-                  </button>
-
-                  <AnimatePresence>
-                    {showUserMenu && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                        transition={{ duration: 0.15 }}
-                        role="menu"
-                        aria-label="User menu"
-                        className="absolute right-0 top-13 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-[80]"
-                      >
-                        <div className="px-4 py-2.5 border-b border-slate-100">
-                          <p className="text-xs font-semibold text-slate-900 truncate">{user.name}</p>
-                          <p className="text-[10px] text-slate-400 capitalize mt-0.5">{user.role.replace("_", " ")}</p>
-                        </div>
-                        <button
-                          role="menuitem"
-                          onClick={() => { setShowUserMenu(false); navigate(settingsPath); }}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
-                        >
-                          <Settings className="w-4 h-4 text-slate-400" />
-                          Settings
-                        </button>
-                        <button
-                          role="menuitem"
-                          onClick={() => { setShowUserMenu(false); handleLogout(); }}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                        >
-                          <LogOut className="w-4 h-4" />
-                          Logout
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  <UserMenu
+                    src={user.profileImage || (user as any).profilePictureUrl || user.teacherProfile?.profilePhotoUrl || null}
+                    name={user.name}
+                    role={user.role.replace("_", " ")}
+                    items={[
+                      { label: "Settings", icon: Settings, to: settingsPath },
+                      { label: "Logout", icon: LogOut, onSelect: handleLogout, destructive: true, separator: true },
+                    ]}
+                  />
                 </div>
               </div>
             </>

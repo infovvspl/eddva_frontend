@@ -243,19 +243,12 @@ export async function completeTeacherOnboarding(payload: TeacherOnboardingPayloa
 
 /** Upload avatar image (unified S3 flow) */
 export async function uploadAvatar(file: File): Promise<{ avatarUrl: string }> {
-  // Step 1 — Upload to S3
-  const fileUrl = await uploadToS3(
-    {
-      type: "profile",
-      fileName: file.name,
-      contentType: file.type,
-      fileSize: file.size,
-    },
-    file
-  );
-
-  // Step 2 — Confirm with backend and persist in DB
-  const res = await apiClient.post("/auth/profile/avatar", { fileUrl });
+  // Backend streams the file to S3 and saves the URL in one call
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await apiClient.post("/auth/profile/avatar", fd, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
   return extractData<{ avatarUrl: string }>(res);
 }
 
