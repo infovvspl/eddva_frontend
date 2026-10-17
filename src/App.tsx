@@ -10,6 +10,7 @@ import { XPToastProvider } from "@/components/student/XPToast";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { SchoolGuard } from "./components/auth/SchoolGuard";
 import DashboardLayout from "./components/layout/DashboardLayout";
+import { ThemeScope } from "./components/theme-provider";
 import { SchoolAuthProvider } from "@/context/SchoolAuthContext";
 import { AiFeatureGate } from "@/components/ai/AiFeatureGate";
 import { NotificationProvider } from "@/context/SchoolNotificationContext";
@@ -996,6 +997,7 @@ const App = () => {
             <ConfirmProvider>
               <BrowserRouter>
                 <NotificationProvider>
+                  <ThemeScope />
                   <CoachingFontManager />
                   <IdleLogoutWatcher />
                   <Suspense fallback={<RouteLoading />}>

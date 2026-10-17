@@ -1,3 +1,4 @@
+import { useChartPalette } from "@/lib/chart-palette";
 import React from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
@@ -75,7 +76,7 @@ const EDDVA = {
   900: '#312e81',
 };
 
-const BRAND_BADGE = 'bg-indigo-50 text-indigo-700 ring-indigo-200 dark:bg-indigo-900 dark:text-indigo-200 dark:ring-indigo-800';
+const BRAND_BADGE = 'bg-indigo-50 text-indigo-700 ring-indigo-200 dark:bg-secondary dark:text-secondary-foreground dark:ring-border';
 const CHART_AXIS_STYLE = { fontSize: '12px', fontWeight: 700 };
 
 // ---------------------------------------------------------------------------
@@ -83,14 +84,18 @@ const CHART_AXIS_STYLE = { fontSize: '12px', fontWeight: 700 };
 // ---------------------------------------------------------------------------
 
 function ChartTooltip({ active, payload, label }: any) {
+  const c = useChartPalette();
   if (!active || !payload?.length) return null;
+  // Dark: shadcn tooltip (plain box, normal-case label, coloured marker, mono values). Light: unchanged.
   return (
-    <div className="rounded-xl border border-indigo-200 bg-white px-4 py-3 text-xs shadow-xl dark:border-indigo-800 dark:bg-slate-800">
-      <p className="mb-2 font-bold uppercase tracking-wide text-indigo-700 dark:text-indigo-200">{label}</p>
+    <div className="rounded-xl border border-indigo-200 bg-white px-4 py-3 text-xs shadow-xl dark:rounded-lg dark:border-border/50 dark:bg-background dark:px-2.5 dark:py-1.5">
+      <p className="mb-2 font-bold uppercase tracking-wide text-indigo-700 dark:mb-1 dark:font-medium dark:normal-case dark:tracking-normal dark:text-foreground">{label}</p>
       {payload.map((entry: any) => (
-        <p key={entry.name} className="flex items-center gap-2 font-semibold" style={{ color: entry.color }}>
-          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
-          {entry.name}: {entry.value}
+        <p key={entry.name} className="flex items-center gap-2 font-semibold dark:font-normal dark:text-muted-foreground" style={c.isDark ? undefined : { color: entry.color }}>
+          <span className="h-2 w-2 rounded-full dark:rounded-[2px]" style={{ backgroundColor: entry.color }} />
+          {entry.name}
+          <span className="hidden dark:ml-auto dark:inline dark:pl-4 dark:font-mono dark:font-medium dark:tabular-nums dark:text-foreground">{entry.value}</span>
+          <span className="dark:hidden">: {entry.value}</span>
         </p>
       ))}
     </div>
@@ -306,6 +311,7 @@ function ChartShell({ title, subtitle, badge, badgeClass, children, hasData, emp
 // ---------------------------------------------------------------------------
 
 const SuperAdminDashboard = () => {
+  const c = useChartPalette();
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
 
@@ -747,13 +753,13 @@ const SuperAdminDashboard = () => {
         >
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={userGrowthData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-              <CartesianGrid stroke={EDDVA[100]} strokeDasharray="4 6" vertical={false} />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} stroke={EDDVA[400]} style={CHART_AXIS_STYLE} />
-              <YAxis allowDecimals={false} axisLine={false} tickLine={false} stroke={EDDVA[400]} style={CHART_AXIS_STYLE} />
-              <RechartsTooltip content={<ChartTooltip />} />
-              <Legend iconType="circle" />
-              <Line type="monotone" dataKey="users" name="New users" stroke={EDDVA[700]} strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: EDDVA[50] }} activeDot={{ r: 7 }} />
-              <Line type="monotone" dataKey="active" name="Active users" stroke={EDDVA[400]} strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: EDDVA[50] }} activeDot={{ r: 7 }} />
+              <CartesianGrid stroke={c.grid} strokeDasharray={c.gridDash} vertical={false} />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} stroke={c.axis} tick={c.tick} style={c.axisStyle} />
+              <YAxis allowDecimals={false} axisLine={false} tickLine={false} stroke={c.axis} tick={c.tick} style={c.axisStyle} />
+              <RechartsTooltip cursor={false} content={<ChartTooltip />} />
+              <Legend iconType={c.legendIcon} formatter={(v) => <span style={{ color: c.legend, fontWeight: c.isDark ? 400 : 700 }}>{v}</span>} />
+              <Line type="monotone" dataKey="users" name="New users" stroke={c.s1} strokeWidth={c.lineWidth} dot={{ r: 4, strokeWidth: 2, fill: c.dotFill }} activeDot={{ r: 7 }} />
+              <Line type="monotone" dataKey="active" name="Active users" stroke={c.s2} strokeWidth={c.lineWidth} dot={{ r: 4, strokeWidth: 2, fill: c.dotFill }} activeDot={{ r: 7 }} />
             </LineChart>
           </ResponsiveContainer>
         </ChartShell>
@@ -769,13 +775,13 @@ const SuperAdminDashboard = () => {
         >
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={instituteGrowthData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-              <CartesianGrid stroke={EDDVA[100]} strokeDasharray="4 6" vertical={false} />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} stroke={EDDVA[400]} style={CHART_AXIS_STYLE} />
-              <YAxis allowDecimals={false} axisLine={false} tickLine={false} stroke={EDDVA[400]} style={CHART_AXIS_STYLE} />
-              <RechartsTooltip content={<ChartTooltip />} />
-              <Legend iconType="circle" />
-              <Bar dataKey="institutes" name="Registered" fill={EDDVA[600]} radius={[8, 8, 0, 0]} maxBarSize={30} />
-              <Bar dataKey="approved" name="Approved" fill={EDDVA[300]} radius={[8, 8, 0, 0]} maxBarSize={30} />
+              <CartesianGrid stroke={c.grid} strokeDasharray={c.gridDash} vertical={false} />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} stroke={c.axis} tick={c.tick} style={c.axisStyle} />
+              <YAxis allowDecimals={false} axisLine={false} tickLine={false} stroke={c.axis} tick={c.tick} style={c.axisStyle} />
+              <RechartsTooltip cursor={false} content={<ChartTooltip />} />
+              <Legend iconType={c.legendIcon} formatter={(v) => <span style={{ color: c.legend, fontWeight: c.isDark ? 400 : 700 }}>{v}</span>} />
+              <Bar dataKey="institutes" name="Registered" fill={c.barA} radius={[8, 8, 0, 0]} maxBarSize={30} />
+              <Bar dataKey="approved" name="Approved" fill={c.barB} radius={[8, 8, 0, 0]} maxBarSize={30} />
             </BarChart>
           </ResponsiveContainer>
         </ChartShell>
@@ -799,13 +805,13 @@ const SuperAdminDashboard = () => {
         >
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={revenueTrendData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-              <CartesianGrid stroke={EDDVA[100]} strokeDasharray="4 6" vertical={false} />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} stroke={EDDVA[400]} style={CHART_AXIS_STYLE} />
-              <YAxis axisLine={false} tickLine={false} stroke={EDDVA[400]} style={CHART_AXIS_STYLE} tickFormatter={(v) => `₹${formatCount(v)}`} />
-              <RechartsTooltip content={<ChartTooltip />} />
-              <Legend iconType="circle" />
-              <Line type="monotone" dataKey="billed" name="Billed" stroke={EDDVA[400]} strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: EDDVA[50] }} activeDot={{ r: 7 }} />
-              <Line type="monotone" dataKey="revenue" name="Revenue" stroke={EDDVA[700]} strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: EDDVA[50] }} activeDot={{ r: 7 }} />
+              <CartesianGrid stroke={c.grid} strokeDasharray={c.gridDash} vertical={false} />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} stroke={c.axis} tick={c.tick} style={c.axisStyle} />
+              <YAxis axisLine={false} tickLine={false} stroke={c.axis} tick={c.tick} style={c.axisStyle} tickFormatter={(v) => `₹${formatCount(v)}`} />
+              <RechartsTooltip cursor={false} content={<ChartTooltip />} />
+              <Legend iconType={c.legendIcon} formatter={(v) => <span style={{ color: c.legend, fontWeight: c.isDark ? 400 : 700 }}>{v}</span>} />
+              <Line type="monotone" dataKey="billed" name="Billed" stroke={c.s2} strokeWidth={c.lineWidth} dot={{ r: 4, strokeWidth: 2, fill: c.dotFill }} activeDot={{ r: 7 }} />
+              <Line type="monotone" dataKey="revenue" name="Revenue" stroke={c.s1} strokeWidth={c.lineWidth} dot={{ r: 4, strokeWidth: 2, fill: c.dotFill }} activeDot={{ r: 7 }} />
             </LineChart>
           </ResponsiveContainer>
         </ChartShell>
@@ -821,11 +827,11 @@ const SuperAdminDashboard = () => {
         >
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={aiUsageData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-              <CartesianGrid stroke={EDDVA[100]} strokeDasharray="4 6" vertical={false} />
-              <XAxis dataKey="time" axisLine={false} tickLine={false} stroke={EDDVA[400]} style={CHART_AXIS_STYLE} minTickGap={18} />
-              <YAxis allowDecimals={false} axisLine={false} tickLine={false} stroke={EDDVA[400]} style={CHART_AXIS_STYLE} />
-              <RechartsTooltip content={<ChartTooltip />} />
-              <Bar dataKey="usage" name="Requests" fill={EDDVA[600]} radius={[8, 8, 0, 0]} maxBarSize={26} />
+              <CartesianGrid stroke={c.grid} strokeDasharray={c.gridDash} vertical={false} />
+              <XAxis dataKey="time" axisLine={false} tickLine={false} stroke={c.axis} tick={c.tick} style={c.axisStyle} minTickGap={18} />
+              <YAxis allowDecimals={false} axisLine={false} tickLine={false} stroke={c.axis} tick={c.tick} style={c.axisStyle} />
+              <RechartsTooltip cursor={false} content={<ChartTooltip />} />
+              <Bar dataKey="usage" name="Requests" fill={c.barA} radius={[8, 8, 0, 0]} maxBarSize={26} />
             </BarChart>
           </ResponsiveContainer>
         </ChartShell>

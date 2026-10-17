@@ -85,7 +85,7 @@ const getAdminFallbackUrl = (n, isTeacher) => {
   }
 };
 
-export default function Navbar({ onMenuClick }) {
+export default function Navbar({ onMenuClick, leadingActions }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, institute, logout } = useAuth();
@@ -432,10 +432,12 @@ export default function Navbar({ onMenuClick }) {
   const notifRef = useRef(null);
 
   useEffect(() => {
+    // Dark mode is only offered to the super admin; everyone else is pinned to light.
+    if (isSuperAdmin) return;
     const root = document.documentElement;
     root.classList.remove('dark');
     localStorage.setItem('eddva-theme', 'light');
-  }, []);
+  }, [isSuperAdmin]);
 
   useEffect(() => {
     if (notifOpen) {
@@ -1093,6 +1095,8 @@ export default function Navbar({ onMenuClick }) {
               Switch to ERP
             </Button>
           )}
+
+          {leadingActions}
 
           {/* Notifications Icon & Popover */}
           <div className="relative flex items-center" ref={notifRef}>

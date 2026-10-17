@@ -7,6 +7,7 @@ import {
 import { BreadcrumbProvider } from "@/components/school/breadcrumbs/BreadcrumbContext"
 import SchoolAdminNavbar from "@/components/school/admin/Navbar"
 import SchoolAdminLayout from "@/components/school/admin/Layout"
+import { ThemeSwitch } from "@/components/layout/ThemeSwitch"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { useIsMobile } from "@/hooks/use-mobile"
 
@@ -45,7 +46,7 @@ export default function SchoolSuperAdminLayout() {
               <SidebarTrigger />
             </div>
             <div className="min-w-0 flex-1 [&>header]:border-b-0">
-              <SchoolAdminNavbar />
+              <SchoolAdminNavbar leadingActions={<ThemeSwitch variant="ghost" />} />
             </div>
           </div>
         }

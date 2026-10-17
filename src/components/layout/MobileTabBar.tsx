@@ -44,7 +44,7 @@ export function MobileTabBar({
 
   return (
     <>
-      <div className="fixed bottom-0 left-0 right-0 z-[90] flex items-center justify-around border-t border-slate-100 bg-white/95 px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] shadow-[0_-4px_24px_rgba(0,0,0,0.04)] backdrop-blur-md md:hidden">
+      <div className="fixed bottom-0 left-0 right-0 z-[90] flex items-center justify-around border-t border-slate-100 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] shadow-[0_-4px_24px_rgba(0,0,0,0.04)] backdrop-blur-md md:hidden">
         {primary.map((item) => {
           const Icon = item.icon
           const active = isActive(item)
@@ -108,7 +108,7 @@ export function MobileTabBar({
                     More
                   </span>
                   {active && (
-                    <div className="absolute inset-0 -z-10 rounded-2xl bg-blue-50" />
+                    <div className="absolute inset-0 -z-10 rounded-2xl bg-blue-50 dark:bg-blue-950/40" />
                   )}
                 </>
               )
@@ -132,15 +132,15 @@ export function MobileTabBar({
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "tween", ease: [0.16, 1, 0.3, 1], duration: 0.35 }}
-              className="fixed bottom-0 left-0 right-0 z-[110] max-h-[80dvh] overflow-hidden rounded-t-[2.5rem] border-t border-slate-100 bg-white p-6 pb-[max(2rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))] shadow-2xl md:hidden"
+              className="fixed bottom-0 left-0 right-0 z-[110] max-h-[80dvh] overflow-hidden rounded-t-[2.5rem] border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 pb-[max(2rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))] shadow-2xl md:hidden"
             >
               <div
                 onClick={() => setMoreOpen(false)}
                 className="-mt-2 flex w-full shrink-0 cursor-pointer justify-center py-2"
               >
-                <div className="h-1.5 w-12 rounded-full bg-slate-200 transition-colors hover:bg-slate-300" />
+                <div className="h-1.5 w-12 rounded-full bg-slate-200 dark:bg-slate-700 transition-colors hover:bg-slate-300" />
               </div>
-              <h3 className="mb-5 px-2 text-base font-bold text-slate-800">More Options</h3>
+              <h3 className="mb-5 px-2 text-base font-bold text-slate-800 dark:text-slate-100">More Options</h3>
               <div className="grid grid-cols-3 gap-x-3 gap-y-6 overflow-y-auto pr-1">
                 {more.map((item) => {
                   const Icon = item.icon
@@ -165,7 +165,7 @@ export function MobileTabBar({
                       <span
                         className={cn(
                           "w-full truncate text-center text-[10px] font-bold tracking-tight transition-colors duration-300",
-                          active ? `${colors.active} font-extrabold` : "text-slate-600",
+                          active ? `${colors.active} font-extrabold` : "text-slate-600 dark:text-slate-300",
                         )}
                       >
                         {item.label}

@@ -552,6 +552,13 @@
 */
   @supports (height: 100dvh) {
     :root {
+    /* Chart series: shadcn neutral (only used in dark mode; light charts use the brand palette) */
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+
       --vh: 1dvh;
     }
   }
@@ -635,6 +642,30 @@
   .driver-overlay {
     opacity: 0.6 !important;
   }
+}
+
+/* In-between slate shades (slate-850, slate-905, ...) used across the school screens. Tailwind 4 only ships 50-950. */
+@theme {
+  --color-slate-105: oklch(0.966 0.0073 248.2766);
+  --color-slate-150: oklch(0.9485 0.01 251.702);
+  --color-slate-205: oklch(0.926 0.0135 255.3773);
+  --color-slate-250: oklch(0.899 0.0175 254.201);
+  --color-slate-305: oklch(0.8608 0.0229 253.0887);
+  --color-slate-350: oklch(0.7865 0.031 254.841);
+  --color-slate-355: oklch(0.7782 0.0319 255.0357);
+  --color-slate-405: oklch(0.6965 0.0403 256.8195);
+  --color-slate-450: oklch(0.629 0.043 257.1025);
+  --color-slate-455: oklch(0.6215 0.0433 257.1339);
+  --color-slate-505: oklch(0.5486 0.0459 257.4102);
+  --color-slate-550: oklch(0.5 0.0445 257.349);
+  --color-slate-605: oklch(0.4423 0.043 257.2813);
+  --color-slate-650: oklch(0.409 0.0435 257.284);
+  --color-slate-655: oklch(0.4053 0.0435 257.2843);
+  --color-slate-750: oklch(0.3255 0.0425 258.659);
+  --color-slate-805: oklch(0.2755 0.0411 260.3172);
+  --color-slate-850: oklch(0.2435 0.0415 262.893);
+  --color-slate-905: oklch(0.2001 0.042 265.649);
+  --color-slate-955: oklch(0.104 0.042 264.695);
 }
 
 @layer base {
@@ -742,66 +773,120 @@
   }
 
   .dark {
-    --background: 222 47% 11%; /* #0B0F19 */
-    --foreground: 210 40% 98%;
+    /* shadcn neutral (zinc) dark; brand blue is kept for primary/ring. */
+    --background: 240 10% 3.9%; /* #09090b */
+    --foreground: 0 0% 98%;
 
-    --card: 222 47% 13%; /* #0F1524 */
-    --card-foreground: 210 40% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 222 47% 13%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
 
     --primary: 217 91% 60%; /* #3B82F6 */
-    --primary-foreground: 222 47% 11%;
+    --primary-foreground: 0 0% 98%;
     --primary-dark: 217 91% 53%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 223 47% 17%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
 
-    --accent: 217 91% 60%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
 
-    --border: 223 47% 20%;
-    --border-light: 223 47% 16%;
-    --input: 223 47% 20%;
+    --border: 240 3.7% 15.9%;
+    --border-light: 240 3.7% 12%;
+    --input: 240 3.7% 15.9%;
     --ring: 217 91% 60%;
 
-    --surface: 222 47% 13%;
-    --surface-2: 222 47% 10%;
+    --surface: 240 5.9% 7%;
+    --surface-2: 240 10% 3.9%;
 
-    --sidebar-background: 222 47% 13%;
-    --sidebar-foreground: 210 40% 98%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 223 47% 17%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 223 47% 20%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Chart series: shadcn neutral */
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
 
     /* Gray Palette for Dark mode */
-    --gray-50: #0b0f19;
-    --gray-100: #0f1524;
-    --gray-200: #1e293b;
-    --gray-300: #334155;
-    --gray-400: #475569;
-    --gray-500: #64748b;
-    --gray-600: #94a3b8;
-    --gray-700: #cbd5e1;
-    --gray-800: #e2e8f0;
-    --gray-850: #f1f5f9;
-    --gray-900: #f8fafc;
+    --gray-50: #09090b;
+    --gray-100: #18181b;
+    --gray-200: #27272a;
+    --gray-300: #3f3f46;
+    --gray-400: #52525b;
+    --gray-500: #71717a;
+    --gray-600: #a1a1aa;
+    --gray-700: #d4d4d8;
+    --gray-800: #e4e4e7;
+    --gray-850: #f4f4f5;
+    --gray-900: #fafafa;
     --gray-950: #ffffff;
 
-    --glass-bg: rgba(15, 21, 36, 0.7);
+    --glass-bg: rgba(24, 24, 27, 0.7);
     --glass-border: rgba(255, 255, 255, 0.05);
     --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
   }
 }
 
 @layer base {
+
+  /* Dark mode: slate/gray utilities render as neutral zinc (the shadcn dark look), not blue-grey. */
+  .dark {
+    --color-slate-50: oklch(0.985 0 0);
+    --color-slate-100: oklch(0.967 0.001 286.375);
+    --color-slate-105: oklch(0.9647 0.0011 286.3723);
+    --color-slate-150: oklch(0.9435 0.0025 286.3475);
+    --color-slate-200: oklch(0.92 0.004 286.32);
+    --color-slate-205: oklch(0.9176 0.0041 286.3183);
+    --color-slate-250: oklch(0.8955 0.005 286.303);
+    --color-slate-300: oklch(0.871 0.006 286.286);
+    --color-slate-305: oklch(0.8627 0.0065 286.2751);
+    --color-slate-350: oklch(0.788 0.0105 286.1765);
+    --color-slate-355: oklch(0.7797 0.011 286.1655);
+    --color-slate-400: oklch(0.705 0.015 286.067);
+    --color-slate-405: oklch(0.6973 0.015 286.0606);
+    --color-slate-450: oklch(0.6285 0.0155 286.0025);
+    --color-slate-455: oklch(0.6209 0.0155 285.996);
+    --color-slate-500: oklch(0.552 0.016 285.938);
+    --color-slate-505: oklch(0.5465 0.0161 285.9304);
+    --color-slate-550: oklch(0.497 0.0165 285.862);
+    --color-slate-600: oklch(0.442 0.017 285.786);
+    --color-slate-605: oklch(0.4384 0.0168 285.7869);
+    --color-slate-650: oklch(0.406 0.015 285.7955);
+    --color-slate-655: oklch(0.4024 0.0148 285.7964);
+    --color-slate-700: oklch(0.37 0.013 285.805);
+    --color-slate-750: oklch(0.322 0.0095 285.919);
+    --color-slate-800: oklch(0.274 0.006 286.033);
+    --color-slate-805: oklch(0.2708 0.006 286.0256);
+    --color-slate-850: oklch(0.242 0.006 285.959);
+    --color-slate-900: oklch(0.21 0.006 285.885);
+    --color-slate-905: oklch(0.2031 0.0059 285.8788);
+    --color-slate-950: oklch(0.141 0.005 285.823);
+    --color-slate-955: oklch(0.116 0.005 285.823);
+    --color-gray-50: oklch(0.985 0 0);
+    --color-gray-100: oklch(0.967 0.001 286.375);
+    --color-gray-200: oklch(0.92 0.004 286.32);
+    --color-gray-300: oklch(0.871 0.006 286.286);
+    --color-gray-400: oklch(0.705 0.015 286.067);
+    --color-gray-500: oklch(0.552 0.016 285.938);
+    --color-gray-600: oklch(0.442 0.017 285.786);
+    --color-gray-700: oklch(0.37 0.013 285.805);
+    --color-gray-800: oklch(0.274 0.006 286.033);
+    --color-gray-900: oklch(0.21 0.006 285.885);
+    --color-gray-950: oklch(0.141 0.005 285.823);
+  }
 
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
