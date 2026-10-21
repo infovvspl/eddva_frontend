@@ -268,6 +268,7 @@ export default function Sidebar({ open, onClose }) {
   return (
     <UnifiedSidebar
       groups={groups}
+      activeStyle="dark"
       collapsed={collapsed}
       onToggleCollapse={() => setCollapsed((v) => !v)}
       mobileOpen={open}
