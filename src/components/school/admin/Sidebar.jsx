@@ -136,8 +136,8 @@ function buildInstituteGroups(mods, aiFeats) {
         { path: '/school/admin/academics', label: 'Class & Sections', icon: Building2 },
         { path: '/school/admin/subjects', label: 'Subjects', icon: BookOpen },
         competitiveEnabled && { path: '/school/admin/competitive-subjects', label: 'Competitive Exam Prep', icon: Trophy },
-        syllabusPlannerEnabled && { path: '/school/admin/syllabus-planner', label: 'Syllabus Planner', icon: FileText },
-        syllabusTrackerEnabled && { path: '/school/admin/syllabus-tracker', label: 'Syllabus Tracker', icon: BarChart3 },
+        syllabusPlannerEnabled && { path: '/school/admin/syllabus-planner', label: 'Lesson Planner', icon: FileText },
+        syllabusTrackerEnabled && { path: '/school/admin/syllabus-tracker', label: 'Lesson Tracker', icon: BarChart3 },
       ].filter(Boolean),
     },
     {

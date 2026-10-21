@@ -315,7 +315,7 @@ export default function SyllabusTracker() {
                 ? `${selectedClassGroup?.className} — ${selectedSectionId === 'ALL_SECTIONS' ? 'Entire Class' : `Section ${classSections.find(s => s.id === selectedSectionId)?.name || ''}`}`
                 : selectedClassGroup 
                 ? `${selectedClassGroup.className} Sections`
-                : 'Syllabus Tracker'}
+                : 'Lesson Tracker'}
             </h1>
             <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 text-xs font-black border border-blue-200 dark:border-blue-800">
               Interactive Analytics Cards
