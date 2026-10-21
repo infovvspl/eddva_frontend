@@ -37,6 +37,9 @@ export function getEventDetails(event) {
   if (cat === 'TEACHER_MEETING' || cat === 'MEETING' || title.includes('meeting') || title.includes('staff meeting') || title.includes('board meeting')) {
     return EVENT_CATEGORIES.MEETING;
   }
+  if (cat === 'BIRTHDAY' || title.includes('birthday')) {
+    return EVENT_CATEGORIES.BIRTHDAY;
+  }
   if (cat === 'SPORTS_EVENT' || cat === 'SPORTS' || title.includes('sports') || title.includes('football') || title.includes('basketball') || title.includes('cricket') || title.includes('match') || title.includes('play')) {
     return EVENT_CATEGORIES.SPORTS;
   }

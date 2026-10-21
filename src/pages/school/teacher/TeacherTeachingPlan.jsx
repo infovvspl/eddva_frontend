@@ -434,7 +434,7 @@ export default function TeacherTeachingPlan() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-black text-slate-900 dark:text-white">My Teaching Plan</h1>
+            <h1 className="text-2xl font-black text-slate-900 dark:text-white">My Lesson Plan</h1>
             <Badge variant="outline" className="px-3 py-1 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 text-xs font-black border-blue-200 dark:border-blue-800">
               Teacher Portal
             </Badge>

@@ -191,9 +191,9 @@ function buildTeacherGroups(mods, aiFeats) {
       heading: 'Teaching',
       items: [
         { path: '/school/teacher', label: 'Dashboard', icon: LayoutDashboard, end: true },
-        teachingPlanEnabled && { path: '/school/teacher/teaching-plan', label: 'My Teaching Plan', icon: ClipboardList },
-        liveEnabled && { path: '/school/teacher/classes', label: 'Live & Recorded Video', icon: Video },
+        teachingPlanEnabled && { path: '/school/teacher/teaching-plan', label: 'My Lesson Plan', icon: ClipboardList },
         { path: '/school/teacher/course-content', label: 'Course Content', icon: BookOpen },
+        liveEnabled && { path: '/school/teacher/classes', label: 'Live & Recorded Video', icon: Video },
         competitiveEnabled && { path: '/school/teacher/competitive-prep', label: 'Competitive Exam Prep', icon: Trophy },
         { path: '/school/teacher/students', label: 'Students', icon: GraduationCap },
         { path: '/school/teacher/attendance', label: 'Attendance', icon: ClipboardCheck },
