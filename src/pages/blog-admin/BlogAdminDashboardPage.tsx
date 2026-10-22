@@ -17,6 +17,7 @@ import {
 } from '@/lib/api/blogAdmin';
 import { blogAdminToken } from '@/lib/api/blogAdminClient';
 import { useConfirm } from '@/context/ConfirmContext';
+import { Skeleton } from '@/components/ui/skeleton';
 import ImageCropModal from './ImageCropModal';
 import BlogBodyEditor from './BlogBodyEditor';
 
@@ -253,8 +254,68 @@ export default function BlogAdminDashboardPage() {
 
   if (checkingSession) {
     return (
-      <div className="grid min-h-dvh place-items-center bg-slate-50 dark:bg-slate-950">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+      <div className="min-h-dvh bg-slate-50 dark:bg-slate-950">
+        {/* Top bar skeleton */}
+        <div className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 p-4 sm:p-6">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-8 w-8 rounded-xl" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-8 w-20 rounded-lg" />
+            </div>
+          </div>
+        </div>
+
+        <div className="mx-auto max-w-6xl p-4 sm:p-6">
+          {/* Heading + actions skeleton */}
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <div className="space-y-2">
+              <Skeleton className="h-7 w-16" />
+              <Skeleton className="h-4 w-48" />
+            </div>
+            <div className="flex gap-2">
+              <Skeleton className="h-9 w-24 rounded-xl" />
+              <Skeleton className="h-9 w-24 rounded-xl" />
+            </div>
+          </div>
+
+          {/* Filter strip skeleton */}
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <Skeleton className="h-9 w-48 rounded-lg" />
+            <Skeleton className="h-9 w-24 rounded-lg" />
+            <Skeleton className="h-9 w-24 rounded-lg" />
+          </div>
+
+          {/* Post rows skeleton */}
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
+            {/* Table header */}
+            <div className="flex items-center gap-4 px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+              <Skeleton className="h-3 w-48" />
+              <Skeleton className="h-3 w-20 ml-auto" />
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+            {/* Rows */}
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-4 py-4 border-b border-slate-50 dark:border-slate-800/50 last:border-0">
+                <Skeleton className="h-12 w-16 rounded-lg shrink-0" />
+                <div className="flex-1 space-y-2 min-w-0">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+                <Skeleton className="h-6 w-20 rounded-full shrink-0" />
+                <Skeleton className="h-4 w-24 shrink-0" />
+                <div className="flex gap-1 shrink-0">
+                  <Skeleton className="h-7 w-7 rounded-md" />
+                  <Skeleton className="h-7 w-7 rounded-md" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }

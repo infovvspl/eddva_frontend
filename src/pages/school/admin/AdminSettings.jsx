@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { AvatarUploadPopover } from "@/components/ui/avatar-upload-popover";
 import { useAuthStore } from '@/lib/auth-store';
-import { useAvatarUpload } from "@/hooks/use-avatar-upload";
+import { useAvatarRemove, useAvatarUpload } from "@/hooks/use-avatar-upload";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -111,6 +111,7 @@ export default function Settings() {
     }
   };
   const uploadPhoto = useAvatarUpload('school');
+  const removePhoto = useAvatarRemove('school');
   const [maintenanceLoading, setMaintenanceLoading] = useState(false);
   const [savingMaintenance, setSavingMaintenance] = useState(false);
 
@@ -331,7 +332,7 @@ export default function Settings() {
                         <AvatarImage src={user?.profileImage || undefined} alt={user?.name || 'Admin'} />
                         <AvatarFallback className="text-xs font-semibold">{(user?.name || 'A').slice(0, 2).toUpperCase()}</AvatarFallback>
                       </Avatar>
-                      <AvatarUploadPopover open={photoOpen} onOpenChange={setPhotoOpen} onUpload={uploadPhoto}>
+                      <AvatarUploadPopover open={photoOpen} onOpenChange={setPhotoOpen} onUpload={uploadPhoto} onRemove={removePhoto} hasPhoto={!!user?.profileImage} currentSrc={user?.profileImage} name={user?.name}>
                         <Button type="button" variant="outline" size="sm" className="h-8 px-2.5 text-xs" onClick={() => setPhotoOpen((o) => !o)}>
                           <Camera className="size-4" /> Change photo
                         </Button>
