@@ -77,7 +77,7 @@ export default function SyllabusPlanDetailsPage() {
     return (
       <div className="p-8 text-center space-y-4">
         <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">Syllabus Plan Not Found</h2>
-        <BackButton to="/school/admin/syllabus-planner" />
+        <BackButton fallback="/school/admin/syllabus-planner" />
       </div>
     );
   }
@@ -245,7 +245,7 @@ export default function SyllabusPlanDetailsPage() {
               <Shield size={14} /> Official Admin Plan
             </span>
           )}
-          <BackButton to={isTeacherView ? '/school/teacher/teaching-plan' : '/school/admin/syllabus-planner'} />
+          <BackButton fallback={isTeacherView ? '/school/teacher/teaching-plan' : '/school/admin/syllabus-planner'} />
         </div>
       </div>
 
