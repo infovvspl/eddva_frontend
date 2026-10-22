@@ -29,6 +29,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 import { AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const TextbookCoverage = lazy(() => import("@/pages/school/teacher/TextbookCoverage"));
 
@@ -286,7 +287,50 @@ const SchoolDetailPage = () => {
   }, [parents, search]);
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-slate-400" /></div>;
+    return (
+      <div className="space-y-6 p-4 sm:p-6 min-h-screen">
+        <Skeleton className="h-8 w-24 rounded-xl" />
+        <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 flex flex-col sm:flex-row items-start gap-5">
+          <Skeleton className="h-16 w-16 rounded-2xl shrink-0" />
+          <div className="flex-1 space-y-3">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-32" />
+            <div className="flex gap-2">
+              <Skeleton className="h-6 w-20 rounded-full" />
+              <Skeleton className="h-6 w-16 rounded-full" />
+            </div>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <Skeleton className="h-9 w-24 rounded-xl" />
+            <Skeleton className="h-9 w-24 rounded-xl" />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-3">
+              <Skeleton className="h-8 w-8 rounded-lg" />
+              <Skeleton className="h-6 w-16" />
+              <Skeleton className="h-3 w-20" />
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-2 border-b border-slate-100 dark:border-slate-800 pb-1">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-8 w-20 rounded-t-lg" />)}
+        </div>
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex items-center gap-4 px-4 py-3.5 border-b border-slate-50 dark:border-slate-800/50 last:border-0">
+              <Skeleton className="h-9 w-9 rounded-full shrink-0" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-3 w-40" />
+                <Skeleton className="h-3 w-28" />
+              </div>
+              <Skeleton className="h-6 w-16 rounded-full" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   if (!institute) {

@@ -13,6 +13,7 @@ import { useAuthStore } from "@/lib/auth-store";
 import { useAdminDashboard, useBatches } from "@/hooks/use-admin";
 import { useAdminPresenceStats } from "@/hooks/use-presence";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Card,
   CardHeader,
@@ -125,9 +126,60 @@ const AdminDashboard = () => {
 
   if (isLoading || !data) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[500px] gap-3">
-        <div className="w-12 h-12 rounded-full border-4 border-blue-50 border-t-blue-600 animate-spin" />
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Loading Intelligence...</p>
+      <div className="w-full space-y-7 sm:space-y-8">
+        {/* Hero banner skeleton */}
+        <div className="relative overflow-hidden rounded-[2.5rem] p-6 sm:p-8 lg:p-9 shadow-xl border border-blue-600/10 bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-800 dark:to-slate-700">
+          <Skeleton className="h-8 w-52 mb-2 bg-white/40 dark:bg-slate-700" />
+          <Skeleton className="h-4 w-72 mb-8 bg-white/30 dark:bg-slate-700" />
+          <div className="flex gap-3 flex-wrap">
+            <Skeleton className="h-10 w-40 rounded-full bg-white/20 dark:bg-slate-700" />
+            <Skeleton className="h-10 w-32 rounded-2xl bg-white/20 dark:bg-slate-700" />
+          </div>
+        </div>
+
+        {/* Stat cards skeleton */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 px-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-10 w-10 rounded-xl" />
+                <Skeleton className="h-4 w-4 rounded" />
+              </div>
+              <Skeleton className="h-7 w-20" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          ))}
+        </div>
+
+        {/* Charts skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {[...Array(2)].map((_, i) => (
+            <div key={i} className="rounded-[2rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 space-y-4">
+              <Skeleton className="h-5 w-36" />
+              <Skeleton className="h-3 w-52" />
+              <Skeleton className="h-48 w-full rounded-xl" />
+            </div>
+          ))}
+        </div>
+
+        {/* Recent items skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {[...Array(2)].map((_, j) => (
+            <div key={j} className="rounded-[2rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 space-y-3">
+              <Skeleton className="h-5 w-32 mb-4" />
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="flex items-center gap-3 py-2">
+                  <Skeleton className="h-10 w-10 rounded-xl shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-3 w-40" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                  <Skeleton className="h-6 w-14 rounded-full" />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
