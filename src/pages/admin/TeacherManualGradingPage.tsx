@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -254,17 +254,20 @@ export default function TeacherManualGradingPage() {
     queryKey: ["session-result", sessionId],
     queryFn: () => getSessionResult(sessionId!),
     enabled: !!sessionId,
-    onSuccess: (data) => {
-      // Pre-fill grades from existing marksAwarded for descriptive questions
-      const init: Record<string, number> = {};
-      for (const att of data.attempts ?? []) {
-        if (att.question?.type === "descriptive") {
-          init[att.questionId] = att.marksAwarded ?? 0;
-        }
-      }
-      setGrades(init);
-    },
   });
+
+  // Pre-fill grades from existing marksAwarded for descriptive questions.
+  // (React Query v5 removed `onSuccess` from useQuery, so this runs as an effect.)
+  useEffect(() => {
+    if (!result) return;
+    const init: Record<string, number> = {};
+    for (const att of result.attempts ?? []) {
+      if (att.question?.type === "descriptive") {
+        init[att.questionId] = att.marksAwarded ?? 0;
+      }
+    }
+    setGrades(init);
+  }, [result]);
 
   const mutation = useMutation({
     mutationFn: (g: { questionId: string; marksAwarded: number }[]) =>

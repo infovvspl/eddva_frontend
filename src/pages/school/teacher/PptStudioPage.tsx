@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronRight, Presentation } from 'lucide-react';
 import { toast } from 'sonner';
 import { BackButton } from '@/components/shared/BackButton';
@@ -64,6 +64,7 @@ export function pptStudioPath(sel: {
 /** PPT Studio as a page of its own: full screen, no panel sidebar. */
 export default function PptStudioPage() {
   const [params] = useSearchParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const institute = (user as { instituteId?: string; tenantId?: string } | null)?.instituteId
     || (user as { tenantId?: string } | null)?.tenantId || '';
@@ -88,6 +89,13 @@ export default function PptStudioPage() {
 
   const crumbs = [params.get('className'), params.get('subjectName'),
     params.get('chapterName'), params.get('topicName')].filter(Boolean) as string[];
+
+  const back = () => {
+    // Course Content keeps its selection in the URL, so going back returns to
+    // the same class, subject and topic.
+    if (window.history.length > 1) navigate(-1);
+    else navigate('/school/teacher/course-content');
+  };
 
   // Receive a generated .pptx from the studio and save it to the topic's
   // Course Content materials, then acknowledge the iframe.

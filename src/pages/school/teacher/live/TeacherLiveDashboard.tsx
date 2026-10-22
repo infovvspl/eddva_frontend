@@ -1923,7 +1923,7 @@ export default function TeacherLiveDashboard() {
                       </h5>
                       <div className="space-y-3 pr-1">
                         {pastPolls.filter((p) => p.status === 'ENDED').map((p) => {
-                          const results = p.results || {};
+                          const results: Record<string, number> = p.results || {};
                           const totalVotes = Object.values(results).reduce((a, b) => a + b, 0);
                           
                           // Determine highest voted in past poll to highlight

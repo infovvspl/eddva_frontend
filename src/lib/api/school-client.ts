@@ -22,11 +22,11 @@ const schoolApi = {
 };
 
 /** Normalize list payloads from school APIs (`{ data: [] }` or bare array). */
-export function unwrapSchoolList(res: { data?: unknown }): unknown[] {
+export function unwrapSchoolList<T = unknown>(res: { data?: unknown }): T[] {
   const body = res?.data;
-  if (Array.isArray(body)) return body;
+  if (Array.isArray(body)) return body as T[];
   if (body && typeof body === 'object' && Array.isArray((body as { data?: unknown[] }).data)) {
-    return (body as { data: unknown[] }).data;
+    return (body as { data: T[] }).data;
   }
   return [];
 }

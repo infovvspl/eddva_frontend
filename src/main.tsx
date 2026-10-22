@@ -12,7 +12,7 @@ import "./index.css";
 // guarantees the next one shows a recoverable error screen instead of blank.
 createRoot(document.getElementById("root")!).render(
   <PageErrorBoundary>
-    <ThemeProvider attribute="class" defaultTheme="light" forcedTheme="light" enableSystem={false}>
+    <ThemeProvider attribute="class" defaultTheme="light" storageKey="eddva-theme" enableSystem={false}>
       <App />
     </ThemeProvider>
   </PageErrorBoundary>,

@@ -701,7 +701,7 @@ export default function AcademicCalendarPage({
                 <CustomSelect
                   onChange={setYear}
                   value={year}
-                  options={yearOptions.map((y) => ({ value: y, label: y }))}
+                  options={yearOptions.map((y) => ({ value: y, label: String(y) }))}
                   className="w-[90px] sm:w-[100px]"
                 />
               </div>

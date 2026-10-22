@@ -97,9 +97,9 @@ function runsFromInline(node: Element | ChildNode, marks: Marks = {}): Inline[] 
       underline: marks.underline || tag === 'u',
       strike: marks.strike || tag === 's' || tag === 'del',
       code: marks.code || tag === 'code',
-      color: el.getAttribute('data-color') || el.style.color || marks.color,
-      fontFamily: el.style.fontFamily || marks.fontFamily,
-      fontSize: el.style.fontSize || marks.fontSize,
+      color: el.getAttribute('data-color') || (el as HTMLElement).style.color || marks.color,
+      fontFamily: (el as HTMLElement).style.fontFamily || marks.fontFamily,
+      fontSize: (el as HTMLElement).style.fontSize || marks.fontSize,
     };
     runs.push(...runsFromInline(el, nextMarks));
   });
@@ -209,7 +209,7 @@ export async function htmlToDocxBlob(html: string, options: { settings?: BlogDoc
   });
   if (references.length && paragraphs.length) {
     const refs = references.map((reference, index) => reference.kind === 'endnote' ? new EndnoteReferenceRun(index + 1) : new FootnoteReferenceRun(index + 1));
-    paragraphs[paragraphs.length - 1] = new Paragraph({ children: [...(paragraphs[paragraphs.length - 1].options.children || []), ...refs] });
+    paragraphs[paragraphs.length - 1] = new Paragraph({ children: [...((paragraphs[paragraphs.length - 1] as any).options.children || []), ...refs] });
   }
   const pageWidth = settings.pageSize === 'LETTER' ? 12240 : 11906;
   const pageHeight = settings.pageSize === 'LETTER' ? 15840 : 16838;

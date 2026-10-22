@@ -12,6 +12,7 @@ export interface SchoolInstitute {
   modulesPermissions?: Record<string, boolean>;
   state?: string | null;
   city?: string | null;
+  address?: string | null;
   location?: string | null;
   erpEnabled?: boolean;
   lmsEnabled?: boolean;
@@ -37,6 +38,8 @@ export interface SchoolUser {
   rawRole?: string;
   instituteId?: string | null;
   institute?: SchoolInstitute | null;
+  tenantName?: string;
+  tenantState?: string;
   profileImage?: string | null;
   phone?: string | null;
   isActive?: boolean;

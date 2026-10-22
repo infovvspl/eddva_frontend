@@ -1,8 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as adminApi from "@/lib/api/admin";
 import { 
-  RemoveSubjectTeacherParams,
-  JoinBatchDto,
   SubmitFeedbackDto
 } from "@/lib/api/admin";
 

@@ -240,7 +240,7 @@ const Reports: React.FC = () => {
               : Array.isArray(rosterBody)
                 ? rosterBody
                 : [];
-            const reportByStudentId = new Map(reportStudents.map((student: any) => [String(student.id), student]));
+            const reportByStudentId = new Map<string, any>(reportStudents.map((student: any) => [String(student.id), student]));
             reportStudents = rosterStudents.map((student: any) => ({
               ...mapRosterStudentToReportStudent(student),
               ...(reportByStudentId.get(String(student.id)) || {}),

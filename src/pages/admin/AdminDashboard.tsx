@@ -168,7 +168,7 @@ const AdminDashboard = () => {
         <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="relative z-10 flex flex-col justify-between py-1 flex-1 min-w-0 w-full">
           <div className="flex flex-col items-start gap-1.5 min-w-0 w-full">
             <h1 className="font-display text-2xl sm:text-3xl lg:text-[2rem] font-semibold text-white tracking-tight leading-snug break-words">
-              Welcome, {user?.name || user?.fullName}
+              Welcome, {user?.name}
             </h1>
             <p className="text-sm sm:text-base font-semibold text-blue-100/80 mt-1 flex items-center gap-2">
               <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-blue-200/60" /> {today} <span className="hidden sm:inline text-blue-300/60">•</span> <span className="hidden sm:inline text-white font-semibold">{user?.tenantName}</span>

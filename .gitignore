@@ -24,3 +24,30 @@ scratch_*
 *.njsproj/
 *.sln
 *.sw?
+
+# Vite temp config bundles
+vite.config.ts.timestamp-*
+vitest.config.ts.timestamp-*
+*.timestamp-*.mjs
+
+# Other package managers' lockfiles (project uses npm)
+bun.lock
+bun.lockb
+yarn.lock
+pnpm-lock.yaml
+
+# Test / build output
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+
+# Ad-hoc debugging artifacts
+/diff*.txt
+/*.patch
+/temp*
+/dry_run_report.md
+
+# Env overrides
+.env.local
+.env.*.local

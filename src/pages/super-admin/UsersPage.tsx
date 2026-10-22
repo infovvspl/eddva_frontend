@@ -5,6 +5,7 @@ import {
   ChevronLeft, ChevronRight, Eye, Ban, Filter, Download, UserPlus, Loader2, Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/context/ConfirmContext";
 import { useUsers, useSuspendUser, useActivateUser, useDeleteUser } from "@/hooks/use-users";
 
 import { CustomSelect } from "@/components/ui/CustomSelect";

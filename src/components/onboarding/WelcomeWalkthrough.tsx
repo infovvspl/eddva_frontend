@@ -10,9 +10,12 @@ import {
   ArrowRight, Zap, Shield, Star, Rocket, Check,
 } from "lucide-react";
 
+/** Parents use the school LMS layout, which has no walkthrough. */
+type TourRole = Exclude<UserRole, "parent">;
+
 // ─── Tour step: welcome hero (no feature cards — those are in Features step) ──
 
-const TOUR_CONTENT: Record<UserRole, {
+const TOUR_CONTENT: Record<TourRole, {
   headline: string;
   sub: string;
   emoji: string;
@@ -71,7 +74,7 @@ const TOUR_CONTENT: Record<UserRole, {
 
 // ─── Features step: detailed breakdown (distinct from tour bullets above) ─────
 
-const FEATURES_CONTENT: Record<UserRole, {
+const FEATURES_CONTENT: Record<TourRole, {
   label: string; icon: React.ComponentType<{ className?: string }>; color: string; desc: string;
 }[]> = {
   student: [
@@ -144,7 +147,8 @@ const slideVariants = {
 // ─── Step components ──────────────────────────────────────────────────────────
 
 function AppTourStep({ role }: { role: UserRole }) {
-  const c = TOUR_CONTENT[role];
+  const c = TOUR_CONTENT[role as TourRole];
+  if (!c) return null;
   return (
     <div className="flex flex-col items-center text-center gap-5">
       <div className="text-6xl">{c.emoji}</div>
@@ -168,7 +172,8 @@ function AppTourStep({ role }: { role: UserRole }) {
 }
 
 function FeaturesStep({ role }: { role: UserRole }) {
-  const features = FEATURES_CONTENT[role];
+  const features = FEATURES_CONTENT[role as TourRole];
+  if (!features) return null;
   return (
     <div className="flex flex-col items-center text-center gap-5">
       <div>

@@ -283,9 +283,9 @@ export default function TeacherProfilePage() {
     setIsUploadingAvatar(true);
     try {
       const result = await uploadAvatar.mutateAsync(file);
-      setAvatarUrl(result.profileImageUrl);
+      setAvatarUrl(result.avatarUrl);
       // Immediately save avatar
-      await completeOnboarding.mutateAsync({ profilePhotoUrl: result.profileImageUrl });
+      await completeOnboarding.mutateAsync({ profilePhotoUrl: result.avatarUrl });
       await refreshStore();
       toast({ title: "Photo updated!" });
     } catch {

@@ -185,7 +185,7 @@ export default function BillingManagementPage() {
     try {
       const result = await impersonate(tenant.id);
       if (result?.token) {
-        tokenStorage.setToken(result.token);
+        tokenStorage.setAccess(result.token);
         navigate('/admin');
       }
     } catch {

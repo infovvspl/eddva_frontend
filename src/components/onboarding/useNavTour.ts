@@ -958,7 +958,7 @@ const ADMIN_STEPS: NavTourStep[] = [
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
-const NAV_TOUR_STEPS: Record<UserRole, NavTourStep[]> = {
+const NAV_TOUR_STEPS: Record<Exclude<UserRole, "parent">, NavTourStep[]> = {
   student: STUDENT_STEPS,
   teacher: TEACHER_STEPS,
   institute_admin: ADMIN_STEPS,
@@ -971,7 +971,7 @@ export function useNavTour(role: UserRole) {
   const [phase, setPhase] = useState<TourPhase>("nav");
   const [pageFeatureIdx, setPageFeatureIdx] = useState(0);
 
-  const steps = NAV_TOUR_STEPS[role] ?? [];
+  const steps = NAV_TOUR_STEPS[role as Exclude<UserRole, "parent">] ?? [];
   const currentStep = isActive && steps.length > 0 ? steps[currentStepIdx] : null;
   const currentPageFeature =
     isActive && phase === "page" && currentStep

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import schoolApi from "@/lib/api/school-client";
+import type { StudyPlanItem } from "@/lib/api/student";
 
 // ─── Query Keys ───────────────────────────────────────────────────────────────
 export const schoolStudentKeys = {
@@ -152,7 +153,7 @@ export function useWeeklyPlan(startDate: string, endDate: string, batchId?: stri
 }
 
 export function useWeeklyPlanGrouped(startDate: string, endDate: string, batchId?: string) {
-  return useQuery({
+  return useQuery<Record<string, StudyPlanItem[]>>({
     queryKey: batchId
       ? [...schoolStudentKeys.weeklyPlanByBatch(startDate, endDate, batchId), "grouped"]
       : [...schoolStudentKeys.weeklyPlan(startDate, endDate), "grouped"],

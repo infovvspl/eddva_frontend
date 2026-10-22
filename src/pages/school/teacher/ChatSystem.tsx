@@ -1735,7 +1735,7 @@ const ChatSystem: React.FC = () => {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-slate-400">Institute Name</span>
-                        <span className="text-slate-800 truncate max-w-[180px]">{user?.instituteName || 'Eddva Institute'}</span>
+                        <span className="text-slate-800 truncate max-w-[180px]">{user?.institute?.name || user?.tenantName || 'Eddva Institute'}</span>
                       </div>
                     </div>
                   </div>

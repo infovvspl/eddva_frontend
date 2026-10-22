@@ -1,3 +1,5 @@
+import { UserMenu } from "@/components/ui/user-menu"
+import { UserAvatar } from "@/components/ui/user-avatar"
 import React, { useEffect, useRef, useState, Suspense, useMemo } from "react";
 import { Outlet, NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -281,7 +283,7 @@ export default function ParentLayout() {
 
       <div 
         className={`flex min-w-0 flex-1 flex-col overflow-hidden ${sidebarOpen && isMobile ? 'pointer-events-none' : ''}`}
-        inert={sidebarOpen && isMobile ? "" : undefined}
+        {...(sidebarOpen && isMobile ? { inert: "" } : {})}
       >
         <header className="sticky top-0 z-30 border-b border-slate-100 bg-white/80 px-4 py-3 backdrop-blur-xl sm:px-4 sm:px-6">
           <div className="flex items-center justify-between gap-4">
@@ -648,70 +650,21 @@ export default function ParentLayout() {
 
               {!isMobile && (
                 <div className="relative border-l border-slate-100 pl-4 dark:border-slate-800" ref={profileRef}>
-                  <button
-                    onClick={() => setProfileOpen((o) => !o)}
-                    className="flex items-center gap-2 outline-none"
-                    aria-label="User Profile menu"
-                  >
+                  <div className="flex items-center gap-2">
                     <div className="hidden text-right sm:block">
                       <p className="text-sm font-bold leading-none text-slate-950">{user?.name || "Parent"}</p>
                       <p className="mt-1 text-xs font-semibold text-slate-500">Parent</p>
                     </div>
-                    <div className="relative">
-                      {user?.profileImage ? (
-                        <img
-                          src={user.profileImage}
-                          alt={user?.name || 'Parent'}
-                          onError={(e: any) => {
-                            e.target.style.display = 'none';
-                            e.target.parentNode.innerHTML = `<div class="grid size-10 place-items-center rounded-2xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">${(user?.name || 'P').charAt(0).toUpperCase()}</div>`;
-                          }}
-                          className="size-10 rounded-2xl border border-slate-200 object-cover"
-                        />
-                      ) : (
-                        <div className="grid size-10 place-items-center rounded-2xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-                          {(user?.name || 'P').charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <div className="absolute -bottom-1 -right-1 size-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-950" />
-                    </div>
-                  </button>
-
-                  {profileOpen && (
-                    <div className="absolute right-0 z-50 mt-4 w-64 overflow-hidden rounded-[2rem] border border-slate-100 bg-white py-2 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
-                      {/* Profile Header */}
-                      <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800">
-                        <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user?.name || 'Parent'}</p>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Parent Portal</p>
-                      </div>
-
-                      {/* My Profile Link */}
-                      <Link
-                        to="/school/parent/profile"
-                        onClick={() => setProfileOpen(false)}
-                        className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
-                      >
-                        <div className="size-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
-                          <UserCircle size={16} />
-                        </div>
-                        My Profile
-                      </Link>
-
-                      {/* Log Out */}
-                      <button
-                        onClick={() => {
-                          setProfileOpen(false);
-                          logout();
-                        }}
-                        className="flex w-full items-center gap-3 px-5 py-3 text-left text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
-                      >
-                        <div className="size-8 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 flex items-center justify-center">
-                          <LogOut size={16} />
-                        </div>
-                        Log Out
-                      </button>
-                    </div>
-                  )}
+                    <UserMenu
+                      src={user?.profileImage}
+                      name={user?.name || "Parent"}
+                      role="Parent Portal"
+                      items={[
+                        { label: "My Profile", icon: UserCircle, to: "/school/parent/profile" },
+                        { label: "Log Out", icon: LogOut, onSelect: logout, destructive: true, separator: true },
+                      ]}
+                    />
+                  </div>
                 </div>
               )}
             </div>

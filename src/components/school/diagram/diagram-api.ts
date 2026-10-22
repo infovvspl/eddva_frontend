@@ -23,6 +23,8 @@ export type DiagramFailureStage = 'structural' | 'geometric' | 'render' | 'stora
 export interface DiagramRejection {
   /** True when the server refused the spec itself rather than failing. */
   rejected: true;
+  /** Rejections carry `errors`, not a message. Declared so `e.message` type-checks on the union. */
+  message?: undefined;
   stage: DiagramFailureStage;
   errors: string[];
   warnings: string[];

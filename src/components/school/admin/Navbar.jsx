@@ -1,3 +1,5 @@
+import { UserMenu } from "@/components/ui/user-menu"
+import { UserAvatar } from "@/components/ui/user-avatar"
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Bell,
@@ -85,7 +87,7 @@ const getAdminFallbackUrl = (n, isTeacher) => {
   }
 };
 
-export default function Navbar({ onMenuClick }) {
+export default function Navbar({ onMenuClick, leadingActions }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, institute, logout } = useAuth();
@@ -432,10 +434,12 @@ export default function Navbar({ onMenuClick }) {
   const notifRef = useRef(null);
 
   useEffect(() => {
+    // Dark mode is only offered to the super admin; everyone else is pinned to light.
+    if (isSuperAdmin) return;
     const root = document.documentElement;
     root.classList.remove('dark');
     localStorage.setItem('eddva-theme', 'light');
-  }, []);
+  }, [isSuperAdmin]);
 
   useEffect(() => {
     if (notifOpen) {
@@ -1094,6 +1098,8 @@ export default function Navbar({ onMenuClick }) {
             </Button>
           )}
 
+          {leadingActions}
+
           {/* Notifications Icon & Popover */}
           <div className="relative flex items-center" ref={notifRef}>
             <Button
@@ -1254,146 +1260,23 @@ export default function Navbar({ onMenuClick }) {
 
           {!isMobile && (
             <div className="relative border-l border-slate-250 dark:border-slate-800 pl-3.5 ml-1.5" ref={profileRef}>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setProfileOpen((o) => !o)}
-                className="flex items-center gap-2 size-auto p-0 outline-none hover:bg-transparent group"
-                aria-label="User Profile menu"
-              >
-                <div className="relative transition-transform duration-200 group-hover:scale-105">
-                  {user?.profileImage ? (
-                    <img src={user.profileImage} alt="Profile" className="size-10 rounded-xl object-cover border border-slate-200 dark:border-slate-800 shadow-sm" />
-                  ) : (
-                    <div className="grid size-10 place-items-center rounded-xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-350">
-                      {(user?.name || 'A').charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <div className="absolute -bottom-1 -right-1 size-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-950 shadow-sm" />
-                </div>
-              </Button>
-
-              {profileOpen && (
-                <div className="absolute right-0 z-50 mt-4 w-64 overflow-hidden rounded-[2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 py-2 shadow-2xl">
-                  {/* Profile Header */}
-                  <div className="px-5 py-3 border-b border-slate-105 dark:border-slate-800">
-                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user?.name || 'Admin'}</p>
-                    <p className="text-[10px] font-bold text-slate-405 uppercase tracking-widest mt-0.5">{roleName}</p>
-                  </div>
-
-                  {/* Profile Link (Teachers Only) */}
-                  {isTeacher && (
-                    <Link
-                      to="/school/teacher/profile"
-                      onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                      <div className="size-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center">
-                        <UserCircle size={16} />
-                      </div>
-                      My Profile
-                    </Link>
-                  )}
-
-                  {/* Institute Profile link (Institute Admin) */}
-                  {isInstitute && (
-                    <Link
-                      to="/school/admin/institute-profile"
-                      onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                      <div className="size-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center">
-                        <Building2 size={16} />
-                      </div>
-                      Institute Profile
-                    </Link>
-                  )}
-
-                  {/* My Profile link (Institute Admin) */}
-                  {isInstitute && (
-                    <Link
-                      to="/school/admin/settings?tab=profile"
-                      onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                      <div className="size-8 rounded-xl bg-sky-50 dark:bg-sky-900/30 text-sky-600 flex items-center justify-center">
-                        <UserCircle size={16} />
-                      </div>
-                      My Profile
-                    </Link>
-                  )}
-
-                  {/* Settings link */}
-                  <Link
-                    to={isTeacher ? "/school/teacher/settings" : profilePath}
-                    onClick={() => setProfileOpen(false)}
-                    className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
-                  >
-                    <div className="size-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
-                      <SettingsIcon size={16} />
-                    </div>
-                    Settings
-                  </Link>
-
-                  {/* Change Password (Teachers Only) */}
-                  {isTeacher && (
-                    <Link
-                      to="/school/teacher/settings?tab=security"
-                      onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                      <div className="size-8 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center">
-                        <KeyRound size={16} />
-                      </div>
-                      Change Password
-                    </Link>
-                  )}
-
-                  {canOpenInstituteAdmin && (
-                    <Link
-                      to="/school/admin"
-                      onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                      <div className="size-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center">
-                        <Shield size={16} />
-                      </div>
-                      Institute Admin
-                    </Link>
-                  )}
-
-                  {canOpenTeacherPortal && (
-                    <Link
-                      to="/school/teacher"
-                      onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                      <div className="size-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center">
-                        <GraduationCap size={16} />
-                      </div>
-                      Teacher Portal
-                    </Link>
-                  )}
-
-                  <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 mx-4" />
-
-                  {/* Logout button */}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => {
-                      setProfileOpen(false);
-                      logout();
-                    }}
-                    className="w-full h-auto justify-start gap-3 px-5 py-3 rounded-none text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-955/40 hover:text-rose-600 text-left"
-                  >
-                    <div className="size-8 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 flex items-center justify-center">
-                      <LogOut size={16} />
-                    </div>
-                    Logout
-                  </Button>
-                </div>
-              )}
+              <UserMenu
+                src={user?.profileImage}
+                name={user?.name || 'Admin'}
+                role={roleName}
+                items={[
+                  ...(isTeacher ? [{ label: 'My Profile', icon: UserCircle, to: '/school/teacher/profile' }] : []),
+                  ...(isInstitute ? [
+                    { label: 'Institute Profile', icon: Building2, to: '/school/admin/institute-profile' },
+                    { label: 'My Profile', icon: UserCircle, to: '/school/admin/settings?tab=profile' },
+                  ] : []),
+                  { label: 'Settings', icon: SettingsIcon, to: isTeacher ? '/school/teacher/settings' : profilePath },
+                  ...(isTeacher ? [{ label: 'Change Password', icon: KeyRound, to: '/school/teacher/settings?tab=security' }] : []),
+                  ...(canOpenInstituteAdmin ? [{ label: 'Institute Admin', icon: Shield, to: '/school/admin' }] : []),
+                  ...(canOpenTeacherPortal ? [{ label: 'Teacher Portal', icon: GraduationCap, to: '/school/teacher' }] : []),
+                  { label: 'Logout', icon: LogOut, onSelect: logout, destructive: true, separator: true },
+                ]}
+              />
             </div>
           )}
         </div>

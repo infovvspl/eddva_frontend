@@ -4316,7 +4316,7 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: (obs?: BroadcastCrea
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => onClose()} />
       <motion.div initial={{ opacity: 0, scale: 0.97, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }}
         className="relative z-10 bg-card border border-border rounded-2xl w-full max-w-lg shadow-2xl flex flex-col"
         style={{ maxHeight: "min(90vh, 750px)" }}>
@@ -4332,7 +4332,7 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: (obs?: BroadcastCrea
               <p className="text-xs text-muted-foreground mt-0.5">Students will be notified and reminded automatically</p>
             </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center shrink-0 ml-2">
+          <button onClick={() => onClose()} className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center shrink-0 ml-2">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -4422,7 +4422,7 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: (obs?: BroadcastCrea
 
           {/* Footer */}
           <div className="shrink-0 flex items-center justify-end gap-3 px-5 sm:px-7 py-4 border-t border-border bg-card">
-            <Button variant="ghost" type="button" onClick={onClose}>Cancel</Button>
+            <Button variant="ghost" type="button" onClick={() => onClose()}>Cancel</Button>
             <Button type="submit" disabled={isSubmitting || !batchId || !topicId || !title || !scheduledAt} className="gap-2 px-5">
               {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calendar className="w-4 h-4" />}
               Schedule Live Class
@@ -4851,7 +4851,7 @@ function YoutubeManualNotesPanel({ lecture }: { lecture: Lecture }) {
       await updateLecture.mutateAsync({
         id: lecture.id,
         aiNotesMarkdown: text.trim(),
-        transcriptStatus: "done" as any,
+        transcriptStatus: "done",
       });
       queryClient.invalidateQueries({ queryKey: ["lectures"] });
       toast({ title: "Notes saved", description: "Your notes are now visible to students." });
@@ -6319,12 +6319,12 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
                   { id: 'all', label: 'All Classes', count: coachingLiveCounts.all },
                   { id: 'scheduled', label: 'Scheduled', count: coachingLiveCounts.scheduled },
                   { id: 'ongoing', label: 'Ongoing (Live)', count: coachingLiveCounts.ongoing },
-                  { id: 'completed', label: 'Completed', count: coachingLiveCounts.completed ?? coachingLiveCounts.finished },
+                  { id: 'finished', label: 'Completed', count: coachingLiveCounts.finished },
                 ].map((t) => (
                   <button
                     key={t.id}
                     type="button"
-                    onClick={() => setCoachingLiveStatusFilter(t.id as any)}
+                    onClick={() => setCoachingLiveStatusFilter(t.id as typeof coachingLiveStatusFilter)}
                     className={cn(
                       'inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all',
                       coachingLiveStatusFilter === t.id
@@ -6358,7 +6358,7 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
                       ? 'No ongoing live classes'
                       : coachingLiveStatusFilter === 'scheduled'
                         ? 'No scheduled live classes'
-                        : (coachingLiveStatusFilter === 'completed' || coachingLiveStatusFilter === 'finished')
+                        : coachingLiveStatusFilter === 'finished'
                           ? 'No completed live classes'
                           : 'No live classes scheduled'}
                   </p>
@@ -6449,9 +6449,30 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
                           onGenerateNotes={() => linkedLecture && handleRegenerateNotes(linkedLecture.id)}
                           onGenerateQuiz={async () => {
                             if (!linkedLecture) return;
+                            const notes = linkedLecture.aiNotesMarkdown || '';
+                            const transcript = linkedLecture.transcript || '';
+                            if (!notes.trim() && !transcript.trim()) {
+                              toast({
+                                title: 'No content to generate from',
+                                description: 'A transcript or notes are required to generate quiz questions.',
+                                variant: 'destructive',
+                              });
+                              return;
+                            }
                             try {
-                              await generateQuizForLecture(linkedLecture.id);
-                              toast({ title: 'Quiz generation started' });
+                              const result = await generateQuizForLecture({
+                                notes,
+                                transcript,
+                                lectureTitle: linkedLecture.title,
+                                topicId: linkedLecture.topic?.id,
+                                numQuestions: 5,
+                                courseLevel: linkedLecture.batch?.name || linkedLecture.topic?.name || 'General',
+                                language: linkedLecture.lectureLanguage || 'en',
+                              });
+                              const qs: QuizCheckpoint[] = (result as any).questions ?? [];
+                              await saveQuizCheckpoints(linkedLecture.id, qs);
+                              toast({ title: `${qs.length} quiz checkpoints generated!`, description: 'Saved successfully.' });
+                              queryClient.invalidateQueries({ queryKey: ['teacher', 'lecture-checkpoints', linkedLecture.id] });
                               queryClient.invalidateQueries({ queryKey: ['teacher', 'lectures'] });
                             } catch {
                               toast({ title: 'Could not generate quiz', variant: 'destructive' });
