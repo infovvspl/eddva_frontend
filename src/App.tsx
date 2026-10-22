@@ -10,6 +10,7 @@ import { XPToastProvider } from "@/components/student/XPToast";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { SchoolGuard } from "./components/auth/SchoolGuard";
 import DashboardLayout from "./components/layout/DashboardLayout";
+import { ThemeScope } from "./components/theme-provider";
 import { SchoolAuthProvider } from "@/context/SchoolAuthContext";
 import { AiFeatureGate } from "@/components/ai/AiFeatureGate";
 import { NotificationProvider } from "@/context/SchoolNotificationContext";
@@ -187,6 +188,8 @@ const SuspendedPage = lazy(() => import("./pages/SuspendedPage"));
 
 // ——————————————————————————————————————————————————————————————————————————— School admin pages ———————————————————————————————————————————————————————————————————————————
 const SchoolAdminLayout = lazy(() => import("./components/school/admin/Layout"));
+const SchoolSuperAdminLayout = lazy(() => import("./components/layout/SchoolSuperAdminLayout"));
+const CoachingSuperAdminLayout = lazy(() => import("./components/layout/CoachingSuperAdminLayout"));
 const SchoolAdminDashboard = lazy(() => import("./pages/school/admin/AdminDashboard"));
 const SchoolStudents = lazy(() => import("./pages/school/admin/Students"));
 const SchoolStudentRegistration = lazy(() => import("./pages/school/admin/StudentRegistration"));
@@ -580,7 +583,7 @@ const SchoolRoutes = () => (
     {/* School Super Admin */}
     <Route
       path="/school/super-admin"
-      element={<SchoolGuard roles={["SUPER_ADMIN"]}><SchoolAdminLayout /></SchoolGuard>}
+      element={<SchoolGuard roles={["SUPER_ADMIN"]}><SchoolSuperAdminLayout /></SchoolGuard>}
     >
       <Route index element={<SchoolAdminDashboard />} />
       <Route path="institutes" element={<SchoolInstitutes />} />
@@ -751,7 +754,7 @@ const SchoolRoutes = () => (
 const SuperAdminRoutes = () => (
   <>
     <Route path="/super-admin/login" element={<Navigate to="/login" replace />} />
-    <Route element={<ProtectedRoute allowedRoles={["super_admin"]}><DashboardLayout /></ProtectedRoute>}>
+    <Route element={<ProtectedRoute allowedRoles={["super_admin"]}><CoachingSuperAdminLayout /></ProtectedRoute>}>
       <Route path="/super-admin" element={<SuperAdminDashboard />} />
       <Route path="/super-admin/dashboard" element={<SuperAdminDashboard />} />
       <Route path="/super-admin/tenants" element={<InstitutesPage />} />
@@ -998,6 +1001,7 @@ const App = () => {
             <ConfirmProvider>
               <BrowserRouter>
                 <NotificationProvider>
+                  <ThemeScope />
                   <CoachingFontManager />
                   <IdleLogoutWatcher />
                   <Suspense fallback={<RouteLoading />}>

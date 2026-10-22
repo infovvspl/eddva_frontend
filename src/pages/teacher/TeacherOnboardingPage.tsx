@@ -243,7 +243,7 @@ export default function TeacherOnboardingPage() {
     setIsUploadingAvatar(true);
     try {
       const result = await uploadAvatar.mutateAsync(file);
-      setAvatarUrl(result.profileImageUrl);
+      setAvatarUrl(result.avatarUrl);
     } catch {
       toast({ title: "Upload failed", description: "Could not upload avatar. You can continue anyway.", variant: "destructive" });
     } finally {

@@ -24,6 +24,8 @@ export interface AuthUser {
   email?: string;
   role: string;
   avatar?: string;
+  profileImage?: string;
+  permissionGroup?: string;
   tenantId?: string;
   tenantName?: string;
   tenant?: { id: string; name: string; subdomain?: string; logoUrl?: string; brandColor?: string };
@@ -147,6 +149,7 @@ export interface SchoolLoginResponse {
       enrollmentNo?: string;
       rollNo?: string;
       currentClass?: string;
+      subjects?: string[];
     } | null;
   };
   institute: {
@@ -156,6 +159,25 @@ export interface SchoolLoginResponse {
     logo?: string;
     erpEnabled?: boolean;
     lmsEnabled?: boolean;
+    // The backend is not consistent about casing; SchoolAuthContext reads both forms.
+    logo_url?: string;
+    state?: string;
+    city?: string;
+    location?: string;
+    tenant_domain?: string;
+    erp_enabled?: boolean;
+    lms_enabled?: boolean;
+    aiEnabled?: boolean;
+    ai_enabled?: boolean;
+    // JSON object, or a JSON string depending on how the row was serialised.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    aiFeatures?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ai_features?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    modulesPermissions?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    modules_permissions?: any;
   } | null;
   tenantDomain?: string;
 }
@@ -221,19 +243,12 @@ export async function completeTeacherOnboarding(payload: TeacherOnboardingPayloa
 
 /** Upload avatar image (unified S3 flow) */
 export async function uploadAvatar(file: File): Promise<{ avatarUrl: string }> {
-  // Step 1 — Upload to S3
-  const fileUrl = await uploadToS3(
-    {
-      type: "profile",
-      fileName: file.name,
-      contentType: file.type,
-      fileSize: file.size,
-    },
-    file
-  );
-
-  // Step 2 — Confirm with backend and persist in DB
-  const res = await apiClient.post("/auth/profile/avatar", { fileUrl });
+  // Backend streams the file to S3 and saves the URL in one call
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await apiClient.post("/auth/profile/avatar", fd, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
   return extractData<{ avatarUrl: string }>(res);
 }
 

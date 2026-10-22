@@ -11,7 +11,7 @@ import {
   useStudentMe, useProgressReport, useWeeklyActivity,
   useUpdateProfile, useUploadAvatar, useMyCourses,
 } from "@/hooks/use-student";
-import { useAuthStore } from "@/lib/auth-store";
+import { useLogout } from "@/hooks/use-auth";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -285,7 +285,7 @@ export default function StudentProfilePage() {
   const lightMotion = isCompactLayout || !!prefersReducedMotion;
   const [showEdit, setShowEdit]   = useState(false);
   const [aiReady, setAiReady]     = useState(false);
-  const { logout }                = useAuthStore();
+  const logout                    = useLogout();
   const navigate                  = useNavigate();
 
   const { data: me,       isLoading: meLoading }     = useStudentMe();
@@ -434,7 +434,7 @@ export default function StudentProfilePage() {
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:border-slate-300 hover:bg-slate-50 transition-all shadow-sm">
                 <Edit3 className="w-3.5 h-3.5" /> Edit
               </button>
-              <button onClick={() => { logout(); navigate("/login"); }}
+              <button onClick={() => logout()}
                 className="p-2 rounded-xl border border-slate-200 bg-white text-slate-400 hover:text-red-500 hover:border-red-200 transition-all shadow-sm">
                 <LogOut className="w-3.5 h-3.5" />
               </button>
@@ -629,9 +629,9 @@ export default function StudentProfilePage() {
                   return (
                     <div key={i} className="flex-1 flex flex-col items-center gap-1">
                       <motion.div className="w-full rounded-sm"
-                        style={{ height: h, background: d.minutesStudied > 0 ? `${BLUE}50` : "#f1f5f9" }}
+                        style={{ height: h, background: d.minutesStudied > 0 ? `${BLUE}50` : "#f1f5f9", transformOrigin: "bottom" }}
                         initial={{ scaleY: 0 }} animate={{ scaleY: 1 }}
-                        transition={{ delay: 0.4 + i * 0.05, transformOrigin: "bottom" }} />
+                        transition={{ delay: 0.4 + i * 0.05 }} />
                       <span className="text-[9px] text-slate-300 font-medium">{days[i]}</span>
                     </div>
                   );

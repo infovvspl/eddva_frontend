@@ -139,8 +139,8 @@ function buildInstituteGroups(mods, aiFeats) {
         { path: '/school/admin/academics', label: 'Class & Sections', icon: Building2 },
         { path: '/school/admin/subjects', label: 'Subjects', icon: BookOpen },
         competitiveEnabled && { path: '/school/admin/competitive-subjects', label: 'Competitive Exam Prep', icon: Trophy },
-        syllabusPlannerEnabled && { path: '/school/admin/syllabus-planner', label: 'Lesson Plan', icon: FileText },
-        syllabusTrackerEnabled && { path: '/school/admin/syllabus-tracker', label: 'Lesson Plan Tracker', icon: BarChart3 },
+        syllabusPlannerEnabled && { path: '/school/admin/syllabus-planner', label: 'Lesson Planner', icon: FileText },
+        syllabusTrackerEnabled && { path: '/school/admin/syllabus-tracker', label: 'Lesson Tracker', icon: BarChart3 },
       ].filter(Boolean),
     },
     {
@@ -196,9 +196,9 @@ function buildTeacherGroups(mods, aiFeats) {
       heading: 'Teaching',
       items: [
         { path: '/school/teacher', label: 'Dashboard', icon: LayoutDashboard, end: true },
-        teachingPlanEnabled && { path: '/school/teacher/teaching-plan', label: 'Lesson Plan', icon: ClipboardList },
-        liveEnabled && { path: '/school/teacher/classes', label: 'Live & Recorded Video', icon: Video },
+        teachingPlanEnabled && { path: '/school/teacher/teaching-plan', label: 'My Lesson Plan', icon: ClipboardList },
         { path: '/school/teacher/course-content', label: 'Course Content', icon: BookOpen },
+        liveEnabled && { path: '/school/teacher/classes', label: 'Live & Recorded Video', icon: Video },
         competitiveEnabled && { path: '/school/teacher/competitive-prep', label: 'Competitive Exam Prep', icon: Trophy },
         { path: '/school/teacher/students', label: 'Students', icon: GraduationCap },
         { path: '/school/teacher/attendance', label: 'Attendance', icon: ClipboardCheck },
@@ -273,6 +273,7 @@ export default function Sidebar({ open, onClose }) {
   return (
     <UnifiedSidebar
       groups={groups}
+      activeStyle="dark"
       collapsed={collapsed}
       onToggleCollapse={() => setCollapsed((v) => !v)}
       mobileOpen={open}

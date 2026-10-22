@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect, useCallback, type MutableRefObject } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, type MutableRefObject } from "react";
 import { useParams, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
+import { useHasAiFeature } from "@/hooks/use-tenant-features";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
@@ -14,7 +15,7 @@ import {
   MessageCircle, Loader2, Lock, Calendar, FileText,
   X, Layers, ExternalLink, Download,
   ClipboardList, Link2, Youtube, BookMarked, AlertTriangle,
-  Video, Brain,
+  Video, Brain, CircleHelp,
 } from "lucide-react";
 import { type TopicResource, type TopicResourceType } from "@/lib/api/admin";
 import ResourceViewerModal from "@/components/resources/ResourceViewerModal";
@@ -146,6 +147,7 @@ const RESOURCE_CONFIG: Record<TopicResourceType, {
   link:  { label: "Link",   icon: Link2,        bg: "bg-slate-50",  text: "text-slate-700",  border: "border-slate-200"  },
   quiz:  { label: "Quiz",   icon: Sparkles,     bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-200" },
   mindmap: { label: "Mindmap", icon: Brain, bg: "bg-teal-50", text: "text-teal-700", border: "border-teal-200" },
+  faq:   { label: "FAQ",    icon: CircleHelp,   bg: "bg-cyan-50",   text: "text-cyan-700",   border: "border-cyan-200"   },
 };
 
 function youtubeThumb(url: string) {
@@ -1546,34 +1548,6 @@ export default function StudentLecturePage() {
     }
   };
 
-  const hasNotesGen = useHasAiFeature("ai_content_generation");
-  const hasQuizGen = useHasAiFeature("ai_content_generation") && useHasAiFeature("ai_study_assistant");
-  const hasSpeechToText = useHasAiFeature("ai_speech_to_text");
-  const hasDoubtResolution = useHasAiFeature("ai_doubt_resolution");
-
-  const availableTabs = useMemo(() => {
-    const list: CourseTabId[] = [];
-    if (hasNotesGen) list.push("notes");
-    if (hasSpeechToText && lecture?.transcript) list.push("transcript");
-    if (hasQuizGen && checkpoints.length > 0) list.push("quiz");
-    if (hasDoubtResolution) list.push("doubt");
-    return list;
-  }, [hasNotesGen, hasSpeechToText, lecture?.transcript, hasQuizGen, checkpoints.length, hasDoubtResolution]);
-
-  const [activeAiTab,  setActiveAiTab]  = useState<CourseTabId>(() => {
-    if (hasNotesGen) return "notes";
-    if (hasSpeechToText && lecture?.transcript) return "transcript";
-    if (hasQuizGen && checkpoints.length > 0) return "quiz";
-    if (hasDoubtResolution) return "doubt";
-    return "notes";
-  });
-
-  useEffect(() => {
-    if (availableTabs.length > 0 && !availableTabs.includes(activeAiTab)) {
-      setActiveAiTab(availableTabs[0]);
-    }
-  }, [availableTabs, activeAiTab]);
-
   const canAccessLiveLectures = useModuleAccess("live_lectures");
   const [activeMatTab, setActiveMatTab] = useState<MatTabKey>("all");
   const [aiOpen,       setAiOpen]       = useState(true);
@@ -1607,6 +1581,35 @@ export default function StudentLecturePage() {
     queryFn: () => getQuizCheckpoints(id!),
     enabled: !!id,
   });
+
+  const hasNotesGen = useHasAiFeature("ai_content_generation");
+  const hasStudyAssistant = useHasAiFeature("ai_study_assistant");
+  const hasQuizGen = hasNotesGen && hasStudyAssistant;
+  const hasSpeechToText = useHasAiFeature("ai_speech_to_text");
+  const hasDoubtResolution = useHasAiFeature("ai_doubt_resolution");
+
+  const availableTabs = useMemo(() => {
+    const list: CourseTabId[] = [];
+    if (hasNotesGen) list.push("notes");
+    if (hasSpeechToText && lecture?.transcript) list.push("transcript");
+    if (hasQuizGen && checkpoints.length > 0) list.push("quiz");
+    if (hasDoubtResolution) list.push("doubt");
+    return list;
+  }, [hasNotesGen, hasSpeechToText, lecture?.transcript, hasQuizGen, checkpoints.length, hasDoubtResolution]);
+
+  const [activeAiTab,  setActiveAiTab]  = useState<CourseTabId>(() => {
+    if (hasNotesGen) return "notes";
+    if (hasSpeechToText && lecture?.transcript) return "transcript";
+    if (hasQuizGen && checkpoints.length > 0) return "quiz";
+    if (hasDoubtResolution) return "doubt";
+    return "notes";
+  });
+
+  useEffect(() => {
+    if (availableTabs.length > 0 && !availableTabs.includes(activeAiTab)) {
+      setActiveAiTab(availableTabs[0]);
+    }
+  }, [availableTabs, activeAiTab]);
 
   const { data: topicResources = [] } = useQuery({
     queryKey: ["student", "topic-resources", lecture?.topicId],
@@ -1757,13 +1760,14 @@ export default function StudentLecturePage() {
     if (activeMatTab === "links")  return <ResourceListPanel resources={linkRes} type="link" topicId={lecture.topicId} />;
 
     // "all" tab — grouped sections
-    const sections: { key: MatTabKey; label: string; cfg: typeof RESOURCE_CONFIG[keyof typeof RESOURCE_CONFIG]; items: TopicResource[]; isVideo?: boolean }[] = [
+    const sections = ([
       { key: "videos", label: "Videos",      cfg: RESOURCE_CONFIG["video"], items: videoRes,  isVideo: true },
       { key: "dpp",    label: "DPP",          cfg: RESOURCE_CONFIG["dpp"],  items: dppRes  },
       { key: "pyq",    label: "PYQ",          cfg: RESOURCE_CONFIG["pyq"],  items: pyqRes  },
       { key: "pdf",    label: "Notes & PDF",  cfg: RESOURCE_CONFIG["pdf"],  items: pdfRes  },
       { key: "links",  label: "Links",        cfg: RESOURCE_CONFIG["link"], items: linkRes },
-    ].filter(s => s.items.length > 0);
+    ] as { key: MatTabKey; label: string; cfg: typeof RESOURCE_CONFIG[keyof typeof RESOURCE_CONFIG]; items: TopicResource[]; isVideo?: boolean }[])
+      .filter(s => s.items.length > 0);
 
     if (sections.length === 0) return (
       <div className="flex flex-col items-center justify-center py-14 text-center">

@@ -46,6 +46,9 @@ export interface SchoolMaterial {
   chapterName?: string | null;
   subjectName?: string | null;
   subjectIdFk?: string | null;
+  /** Older rows carry the file kind in `type` instead of `fileType`. */
+  type?: string | null;
+  tenantId?: string | null;
   createdAt?: string | null;
 }
 

@@ -10,6 +10,7 @@ export const EVENT_PRIORITY_ORDER = {
   'PTM': 6,
   'PARENT_MEETING': 6,
   'TEACHER_MEETING': 6,
+  'BIRTHDAY': 7,
   'NOTICE': 7,
   'ASSIGNMENT': 7
 };
@@ -59,6 +60,11 @@ export const EVENT_CATEGORIES = {
     category: 'PTM',
     label: 'PTM',
     colorStyles: 'bg-indigo-50/70 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-850'
+  },
+  BIRTHDAY: {
+    category: 'BIRTHDAY',
+    label: 'Birthday',
+    colorStyles: 'bg-pink-50/70 text-pink-700 border-pink-200 dark:bg-pink-950/40 dark:text-pink-300 dark:border-pink-800'
   },
   LIVE_CLASS: {
     category: 'LIVE_CLASS',

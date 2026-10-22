@@ -275,9 +275,9 @@ const AssessmentDetails: React.FC = () => {
         api.get(`/assessments/${id}/submissions`),
       ]);
 
-      const loadedStudents = unwrapSchoolList(studentsRes);
-      const loadedResults = unwrapSchoolList(resultsRes);
-      const loadedSubmissions = unwrapSchoolList(submissionsRes);
+      const loadedStudents = unwrapSchoolList<any>(studentsRes);
+      const loadedResults = unwrapSchoolList<any>(resultsRes);
+      const loadedSubmissions = unwrapSchoolList<any>(submissionsRes);
       setStudents(loadedStudents);
       setResults(loadedResults);
       setSubmissions(loadedSubmissions);

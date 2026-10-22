@@ -441,7 +441,7 @@ export default function SyllabusPlanner() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">Annual Lesson Plan</h1>
+            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">Annual Lesson Planner</h1>
             <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 text-xs font-black border border-blue-200 dark:border-blue-800">
               Curriculum Setup
             </span>

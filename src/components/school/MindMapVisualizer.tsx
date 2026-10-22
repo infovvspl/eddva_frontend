@@ -867,7 +867,7 @@ const MindMapCanvasInner = forwardRef<MindMapCanvasHandle, MindMapCanvasProps & 
                 <rect x="0" y="0" width={entry.w} height={isRoot ? 10 : 5} rx="2" fill={color} />
                 <foreignObject width={entry.w} height={entry.h} style={{ pointerEvents: 'none' }}>
                   <div
-                    xmlns="http://www.w3.org/1999/xhtml"
+                    {...{ xmlns: "http://www.w3.org/1999/xhtml" }}
                     className="flex items-center justify-center text-center text-slate-800 size-full select-none"
                     style={{
                       padding: `${s.padY}px ${s.padX}px`,

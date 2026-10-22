@@ -280,7 +280,7 @@ const StudentsPage = () => {
                         <div className="flex items-center gap-1.5">
                           <p className="text-sm text-slate-600">{phone}</p>
                           {s.phoneVerified && (
-                            <CheckCircle className="w-3.5 h-3.5 text-green-500" title="Phone Verified" />
+                            <span title="Phone Verified" className="inline-flex"><CheckCircle className="w-3.5 h-3.5 text-green-500" /></span>
                           )}
                         </div>
                         {email && <p className="text-xs text-slate-400">{email}</p>}

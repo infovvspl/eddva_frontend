@@ -1333,10 +1333,10 @@ export default function StudentReportCard() {
                           {scholasticResults.map(res => (
                             <TableRow key={res.subject} className="hover:bg-slate-50/50 transition-colors font-bold">
                               <TableCell className="py-1.5 px-2.5 text-slate-900 font-extrabold">{res.subject}</TableCell>
-                              <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{Math.round(res.final * 0.7)}</TableCell>
-                              <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{Math.round(res.final * 0.2)}</TableCell>
-                              <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{Math.round(res.final * 0.1)}</TableCell>
-                              <TableCell className="py-1.5 px-2.5 text-center font-black text-blue-600">{Math.round(res.final)}</TableCell>
+                              <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{Math.round(Number(res.final) * 0.7)}</TableCell>
+                              <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{Math.round(Number(res.final) * 0.2)}</TableCell>
+                              <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{Math.round(Number(res.final) * 0.1)}</TableCell>
+                              <TableCell className="py-1.5 px-2.5 text-center font-black text-blue-600">{Math.round(Number(res.final))}</TableCell>
                               <TableCell className="py-1.5 px-2.5 text-center">
                                 <Badge variant="secondary" className="rounded-md border-transparent bg-blue-50 text-blue-600 font-extrabold uppercase text-[10px] min-w-[20px] h-[20px] leading-none hover:bg-blue-50">
                                   {res.grade}

@@ -8,6 +8,25 @@ import { SLOT_TYPE_STYLES, getSlotPalette } from '@/lib/school/timetablePalette'
 
 const DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 
+/** The teacher's profile photo, or their initials when there is none or it fails to load. */
+function TeacherAvatar({ src, name, className, children }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => { setFailed(false); }, [src]);
+  if (src && !failed) {
+    return (
+      <img
+        src={src}
+        alt={name || 'Teacher'}
+        title={name || undefined}
+        loading="lazy"
+        onError={() => setFailed(true)}
+        className={cn(className, 'object-cover ring-2 ring-white dark:ring-slate-800')}
+      />
+    );
+  }
+  return <span className={className}>{children}</span>;
+}
+
 export default function Timetable() {
   const isMobile = useIsMobile();
   const [timetable, setTimetable] = useState([]);
@@ -183,9 +202,9 @@ export default function Timetable() {
                             </span>
                             {cls.type !== 'break' && (
                               <div className="mt-2.5 flex items-center gap-2">
-                                <span className={`flex size-7 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${palette.avatar}`}>
+                                <TeacherAvatar src={cls.teacherImage} name={cls.teacher} className={`flex size-8 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${palette.avatar}`}>
                                   {initialsOf(cls.teacher)}
-                                </span>
+                                </TeacherAvatar>
                                 <p className="truncate text-xs font-semibold text-slate-600 dark:text-slate-300">{cls.teacher}</p>
                               </div>
                             )}
@@ -265,9 +284,9 @@ export default function Timetable() {
                           </td>
                           <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
                             <div className="flex items-center gap-2">
-                              <span className={`flex size-7 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${paletteFor(cls).avatar}`}>
+                              <TeacherAvatar src={cls.type === 'break' ? null : cls.teacherImage} name={cls.teacher} className={`flex size-8 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${paletteFor(cls).avatar}`}>
                                 {cls.type === 'break' ? <Coffee className="size-3.5" /> : initialsOf(cls.teacher)}
-                              </span>
+                              </TeacherAvatar>
                               <span className="font-semibold">{cls.teacher}</span>
                             </div>
                           </td>
@@ -396,9 +415,9 @@ export default function Timetable() {
                                       </div>
                                       <div className="flex flex-1 flex-col justify-between gap-2 p-2.5">
                                         <div className="flex items-center gap-2">
-                                          <span className={`flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${palette.avatar}`}>
+                                          <TeacherAvatar src={isBreak ? null : cls.teacherImage} name={cls.teacher} className={`flex size-7 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${palette.avatar}`}>
                                             {isBreak ? <Coffee className="size-3" /> : initialsOf(cls.teacher)}
-                                          </span>
+                                          </TeacherAvatar>
                                           <span className="line-clamp-1 text-[11px] font-semibold text-slate-700 dark:text-slate-300" title={cls.teacher}>
                                             {isBreak ? 'No teacher' : cls.teacher}
                                           </span>

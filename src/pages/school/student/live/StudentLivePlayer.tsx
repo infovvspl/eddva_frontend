@@ -96,7 +96,7 @@ export default function StudentLivePlayer() {
 
     // Sync with production DB
     api.get(`/classes/student-notes?lectureId=${id}`).then((res) => {
-      const data = unwrapSchoolData(res, {});
+      const data = unwrapSchoolData<{ notes?: string }>(res, {});
       if (data.notes) {
         setNotes(data.notes);
         localStorage.setItem(`student_notes_${id}`, data.notes);
@@ -1145,7 +1145,7 @@ export default function StudentLivePlayer() {
                       </h5>
                       <div className="space-y-3">
                         {pastPolls.filter((p) => p.status === 'ENDED').map((p) => {
-                          const results = p.results || {};
+                          const results: Record<string, number> = p.results || {};
                           const totalVotes = Object.values(results).reduce((a, b) => a + b, 0);
                           const studentVote = localStorage.getItem('voted_poll_' + p.id);
                           return (

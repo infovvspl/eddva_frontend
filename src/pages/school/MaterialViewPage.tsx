@@ -240,7 +240,7 @@ function MaterialBody({ material, isStudent }: { material: SchoolMaterial; isStu
                 markdown: content,
                 title: title,
                 theme: 'clean-white',
-                materialId: material.id || materialId,
+                materialId: material.id,
               }, '*');
             }
           }}
@@ -349,7 +349,7 @@ export default function SchoolMaterialViewPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const isStudent = location.pathname.includes('/student/');
-  const routeState = location.state as { from?: string; courseContentState?: unknown } | null;
+  const routeState = location.state as { from?: string; courseContentState?: unknown; materialTypeLabel?: string } | null;
   const fromPath = routeState?.from;
   const handleBack = () =>
     fromPath

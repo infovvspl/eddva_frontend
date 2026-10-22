@@ -1944,7 +1944,7 @@ export default function StudentCourseDetailPage() {
   const nextTopic = allTopicsFlat.find(t => t.status !== "completed" && t.status !== "locked") ?? null;
   const resourcesLocked = false;
 
-  const TABS: { id: EnrolledTab; label: string; count?: number; icon: React.ReactNode }[] = [
+  const TABS = ([
     { id: "curriculum", label: "Curriculum",    icon: <Layers className="w-4 h-4" /> },
     { id: "lectures",   label: "Lectures",      count: lectures.length || undefined,       icon: <Video className="w-4 h-4" /> },
     { id: "dpp",        label: "DPP",           count: dppList.length || undefined,        icon: <ClipboardList className="w-4 h-4" /> },
@@ -1953,7 +1953,7 @@ export default function StudentCourseDetailPage() {
     { id: "material",   label: "Notes",         count: materialList.length || undefined,   icon: <BookOpen className="w-4 h-4" /> },
     { id: "mindmap",    label: "Mindmaps",      count: mindmapList.length || undefined,    icon: <Brain className="w-4 h-4" /> },
     { id: "mock_test", label: "Mock Tests", count: mockTests.length || undefined, icon: <FlaskConical className="w-4 h-4" /> },
-  ].filter(t => t.id !== "mock_test" || canAccessMockTests);
+  ] as { id: EnrolledTab; label: string; count?: number; icon: React.ReactNode }[]).filter(t => t.id !== "mock_test" || canAccessMockTests);
 
   return (
     <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 space-y-6">

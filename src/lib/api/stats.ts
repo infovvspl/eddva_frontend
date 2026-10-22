@@ -23,6 +23,8 @@ export interface PlatformStats {
   userGrowth?: Array<{ name: string; users: number; active: number }>;
   instituteGrowth?: Array<{ name: string; institutes: number; approved: number }>;
   aiUsageTrend?: Array<{ time: string; usage: number; sessions?: number }>;
+  totalAiRequests?: number;
+  revenueTrend?: Array<Record<string, unknown>>;
   studentFocus?: {
     activeStudents: number;
     newEnrollments: number;

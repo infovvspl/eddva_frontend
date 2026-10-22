@@ -42,6 +42,9 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
+import StarBorder from '@/components/ui/star-border';
+import { useTheme } from 'next-themes';
+import { useChartPalette } from '@/lib/chart-palette';
 
 
 function formatNumber(value) {
@@ -61,19 +64,23 @@ const EDDVA = {
   900: '#312e81',
 };
 
-const BRAND_BADGE = 'bg-brand-50 text-brand-700 ring-brand-200 dark:bg-brand-900 dark:text-brand-200 dark:ring-brand-800';
+const BRAND_BADGE = 'bg-brand-50 text-brand-700 ring-brand-200 dark:bg-secondary dark:text-secondary-foreground dark:ring-border';
 const CHART_AXIS_STYLE = { fontSize: '12px', fontWeight: 700 };
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
 
 function ChartTooltip({ active, payload, label }) {
+  const c = useChartPalette();
   if (!active || !payload?.length) return null;
+  // Dark: shadcn tooltip (plain box, normal-case label, coloured marker, mono values). Light: unchanged.
   return (
-    <div className="rounded-xl border border-brand-200 bg-white px-4 py-3 text-xs shadow-xl dark:border-brand-800 dark:bg-slate-800">
-      <p className="mb-2 font-bold uppercase tracking-wide text-brand-700 dark:text-brand-200">{label}</p>
+    <div className="rounded-xl border border-brand-200 bg-white px-4 py-3 text-xs shadow-xl dark:rounded-lg dark:border-border/50 dark:bg-background dark:px-2.5 dark:py-1.5">
+      <p className="mb-2 font-bold uppercase tracking-wide text-brand-700 dark:mb-1 dark:font-medium dark:normal-case dark:tracking-normal dark:text-foreground">{label}</p>
       {payload.map((entry) => (
-        <p key={entry.name} className="flex items-center gap-2 font-semibold" style={{ color: entry.color }}>
-          <span className="size-2 rounded-full" style={{ backgroundColor: entry.color }} />
-          {entry.name}: {entry.value}
+        <p key={entry.name} className="flex items-center gap-2 font-semibold dark:font-normal dark:text-muted-foreground" style={c.isDark ? undefined : { color: entry.color }}>
+          <span className="size-2 rounded-full dark:rounded-[2px]" style={{ backgroundColor: entry.color }} />
+          {entry.name}
+          <span className="hidden dark:ml-auto dark:inline dark:pl-4 dark:font-mono dark:font-medium dark:tabular-nums dark:text-foreground">{entry.value}</span>
+          <span className="dark:hidden">: {entry.value}</span>
         </p>
       ))}
     </div>
@@ -105,14 +112,34 @@ function StatBadge({ label, value, trend, trendValue, color = 'blue', formatter 
 }
 
 function KpiCard({ title, value, icon: Icon, subtext, trend, gradient, delay, formatter }) {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
   const safeGradient = Array.isArray(gradient) ? gradient : ['#2563eb', '#38bdf8', 'bg-gradient-to-br from-blue-600 to-sky-400'];
   const trendValue = typeof trend === 'number' ? trend : 0;
   const TrendIcon = trendValue >= 0 ? ArrowUpRight : ArrowDownRight;
   const trendText = `${trendValue >= 0 ? '+' : ''}${trendValue}%`;
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-100 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md dark:border-slate-800 dark:bg-slate-950 flex flex-col justify-between">
-      <div className="absolute inset-0 opacity-0 transition-all duration-300 group-hover:opacity-100 pointer-events-none" style={{ background: `linear-gradient(135deg, ${safeGradient[0]}15, ${safeGradient[1]}15)` }} />
+    <StarBorder
+      as="div"
+      theme={isDark ? 'dark' : 'light'}
+      color={safeGradient[1]}
+      trailColor={safeGradient[0]}
+      // Idle cards are still; hovering one runs its light once around the border.
+      loop={false}
+      lapDuration={3.5}
+      duration={3}
+      thickness={1.5}
+      radius={24}
+      trailLength={0.12}
+      glow={0.7}
+      hover="lap"
+      clickPulse={false}
+      backgroundColor="hsl(var(--card))"
+      textColor="hsl(var(--foreground))"
+      className="group flex! w-full flex-col items-stretch! justify-between! gap-0! p-4! text-left font-normal shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
+    >
+      <div className="absolute inset-0 rounded-[inherit] opacity-0 transition-all duration-300 group-hover:opacity-100 pointer-events-none" style={{ background: `linear-gradient(135deg, ${safeGradient[0]}15, ${safeGradient[1]}15)` }} />
       <div className="relative z-10 flex items-center justify-between gap-2 mb-2">
         <div className={`size-11 sm:size-12 min-w-[44px] min-h-[44px] sm:min-w-[48px] sm:min-h-[48px] shrink-0 flex items-center justify-center rounded-2xl ${safeGradient[2]} text-white shadow-sm ring-1 ring-slate-100/50`}>
           <Icon className="size-5 sm:size-6 shrink-0 stroke-[2.5]" />
@@ -129,7 +156,7 @@ function KpiCard({ title, value, icon: Icon, subtext, trend, gradient, delay, fo
         </p>
         {subtext && <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">{subtext}</p>}
       </div>
-    </div>
+    </StarBorder>
   );
 }
 
@@ -147,8 +174,8 @@ function BubbleTooltip({ active, payload }) {
   if (!active || !payload?.length) return null;
   const row = payload[0]?.payload || {};
   return (
-    <div className="rounded-xl border border-brand-200 bg-white px-4 py-3 text-xs shadow-xl dark:border-brand-800 dark:bg-slate-800">
-      <p className="mb-2 font-bold uppercase tracking-wide text-brand-700 dark:text-brand-200">{row.name}</p>
+    <div className="rounded-xl border border-brand-200 bg-white px-4 py-3 text-xs shadow-xl dark:border-border dark:bg-popover">
+      <p className="mb-2 font-bold uppercase tracking-wide text-brand-700 dark:text-foreground">{row.name}</p>
       <p className="font-semibold text-brand-700">Registered: {row.institutes || 0}</p>
       <p className="mt-1 font-semibold text-brand-500">Approved: {row.approved || 0}</p>
     </div>
@@ -269,6 +296,7 @@ const statusColors = {
 };
 
 export default function SuperAdminDashboardWorkspace({ stats }) {
+  const c = useChartPalette();
   const navigate = useNavigate();
   const userGrowthData = stats?.userGrowth || [];
   const instituteGrowthData = stats?.instituteGrowth || [];
@@ -534,13 +562,13 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
         >
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={userGrowthDisplayData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-              <CartesianGrid stroke={EDDVA[100]} strokeDasharray="4 6" vertical={false} />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} stroke={EDDVA[400]} style={CHART_AXIS_STYLE} />
-              <YAxis allowDecimals={false} axisLine={false} tickLine={false} stroke={EDDVA[400]} style={CHART_AXIS_STYLE} />
-              <RechartsTooltip content={<ChartTooltip />} />
-              <Legend iconType="circle" />
-              <Line type="monotone" dataKey="users" name="New users" stroke={EDDVA[700]} strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: EDDVA[50] }} activeDot={{ r: 7 }} />
-              <Line type="monotone" dataKey="active" name="Active users" stroke={EDDVA[400]} strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: EDDVA[50] }} activeDot={{ r: 7 }} />
+              <CartesianGrid stroke={c.grid} strokeDasharray={c.gridDash} vertical={false} />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} stroke={c.axis} tick={c.tick} style={c.axisStyle} />
+              <YAxis allowDecimals={false} axisLine={false} tickLine={false} stroke={c.axis} tick={c.tick} style={c.axisStyle} />
+              <RechartsTooltip cursor={false} content={<ChartTooltip />} />
+              <Legend iconType={c.legendIcon} formatter={(v) => <span style={{ color: c.legend, fontWeight: c.isDark ? 400 : 700 }}>{v}</span>} />
+              <Line type="monotone" dataKey="users" name="New users" stroke={c.s1} strokeWidth={c.lineWidth} dot={{ r: 4, strokeWidth: 2, fill: c.dotFill }} activeDot={{ r: 7 }} />
+              <Line type="monotone" dataKey="active" name="Active users" stroke={c.s2} strokeWidth={c.lineWidth} dot={{ r: 4, strokeWidth: 2, fill: c.dotFill }} activeDot={{ r: 7 }} />
             </LineChart>
           </ResponsiveContainer>
         </ChartShell>
@@ -556,13 +584,13 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
         >
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={instituteGrowthDisplayData} margin={{ top: 10, right: 16, left: -18, bottom: 0 }}>
-              <CartesianGrid stroke={EDDVA[100]} strokeDasharray="4 6" vertical={false} />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} stroke={EDDVA[400]} style={CHART_AXIS_STYLE} />
-              <YAxis allowDecimals={false} axisLine={false} tickLine={false} stroke={EDDVA[400]} style={CHART_AXIS_STYLE} />
-              <RechartsTooltip content={<ChartTooltip />} />
-              <Legend iconType="circle" />
-              <Bar dataKey="institutes" name="Registered" fill={EDDVA[600]} radius={[8, 8, 0, 0]} maxBarSize={26} />
-              <Bar dataKey="approved" name="Approved" fill={EDDVA[300]} radius={[8, 8, 0, 0]} maxBarSize={26} />
+              <CartesianGrid stroke={c.grid} strokeDasharray={c.gridDash} vertical={false} />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} stroke={c.axis} tick={c.tick} style={c.axisStyle} />
+              <YAxis allowDecimals={false} axisLine={false} tickLine={false} stroke={c.axis} tick={c.tick} style={c.axisStyle} />
+              <RechartsTooltip cursor={false} content={<ChartTooltip />} />
+              <Legend iconType={c.legendIcon} formatter={(v) => <span style={{ color: c.legend, fontWeight: c.isDark ? 400 : 700 }}>{v}</span>} />
+              <Bar dataKey="institutes" name="Registered" fill={c.barA} radius={[8, 8, 0, 0]} maxBarSize={26} />
+              <Bar dataKey="approved" name="Approved" fill={c.barB} radius={[8, 8, 0, 0]} maxBarSize={26} />
             </BarChart>
           </ResponsiveContainer>
         </ChartShell>
@@ -583,21 +611,21 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
             <AreaChart data={revenueDisplayData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
               <defs>
                 <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={EDDVA[700]} stopOpacity={0.28} />
-                  <stop offset="95%" stopColor={EDDVA[700]} stopOpacity={0.02} />
+                  <stop offset="5%" stopColor={c.s1} stopOpacity={0.28} />
+                  <stop offset="95%" stopColor={c.s1} stopOpacity={0.02} />
                 </linearGradient>
                 <linearGradient id="billedFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={EDDVA[400]} stopOpacity={0.18} />
-                  <stop offset="95%" stopColor={EDDVA[400]} stopOpacity={0.02} />
+                  <stop offset="5%" stopColor={c.s2} stopOpacity={0.18} />
+                  <stop offset="95%" stopColor={c.s2} stopOpacity={0.02} />
                 </linearGradient>
               </defs>
-              <CartesianGrid stroke={EDDVA[100]} strokeDasharray="4 6" vertical={false} />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} stroke={EDDVA[400]} style={CHART_AXIS_STYLE} />
-              <YAxis axisLine={false} tickLine={false} stroke={EDDVA[400]} style={CHART_AXIS_STYLE} />
-              <RechartsTooltip content={<ChartTooltip />} />
-              <Legend iconType="circle" />
-              <Area type="monotone" dataKey="billed" name="Billed" stackId="revenue" stroke={EDDVA[400]} strokeWidth={2} fill="url(#billedFill)" activeDot={{ r: 5 }} />
-              <Area type="monotone" dataKey="revenue" name="Collected" stackId="revenue" stroke={EDDVA[700]} strokeWidth={3} fill="url(#revenueFill)" activeDot={{ r: 6 }} />
+              <CartesianGrid stroke={c.grid} strokeDasharray={c.gridDash} vertical={false} />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} stroke={c.axis} tick={c.tick} style={c.axisStyle} />
+              <YAxis axisLine={false} tickLine={false} stroke={c.axis} tick={c.tick} style={c.axisStyle} />
+              <RechartsTooltip cursor={false} content={<ChartTooltip />} />
+              <Legend iconType={c.legendIcon} formatter={(v) => <span style={{ color: c.legend, fontWeight: c.isDark ? 400 : 700 }}>{v}</span>} />
+              <Area type="monotone" dataKey="billed" name="Billed" stackId="revenue" stroke={c.s2} strokeWidth={2} fill="url(#billedFill)" activeDot={{ r: 5 }} />
+              <Area type="monotone" dataKey="revenue" name="Collected" stackId="revenue" stroke={c.s1} strokeWidth={c.lineWidth} fill="url(#revenueFill)" activeDot={{ r: 6 }} />
             </AreaChart>
           </ResponsiveContainer>
         </ChartShell>
@@ -613,11 +641,11 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
         >
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={aiUsageDisplayData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-              <CartesianGrid stroke={EDDVA[100]} strokeDasharray="4 6" vertical={false} />
-              <XAxis dataKey="time" axisLine={false} tickLine={false} stroke={EDDVA[400]} style={CHART_AXIS_STYLE} minTickGap={18} />
-              <YAxis allowDecimals={false} axisLine={false} tickLine={false} stroke={EDDVA[400]} style={CHART_AXIS_STYLE} />
-              <RechartsTooltip content={<ChartTooltip />} />
-              <Bar dataKey="usage" name="Requests" fill={EDDVA[600]} radius={[8, 8, 0, 0]} maxBarSize={26} />
+              <CartesianGrid stroke={c.grid} strokeDasharray={c.gridDash} vertical={false} />
+              <XAxis dataKey="time" axisLine={false} tickLine={false} stroke={c.axis} tick={c.tick} style={c.axisStyle} minTickGap={18} />
+              <YAxis allowDecimals={false} axisLine={false} tickLine={false} stroke={c.axis} tick={c.tick} style={c.axisStyle} />
+              <RechartsTooltip cursor={false} content={<ChartTooltip />} />
+              <Bar dataKey="usage" name="Requests" fill={c.barA} radius={[8, 8, 0, 0]} maxBarSize={26} />
             </BarChart>
           </ResponsiveContainer>
         </ChartShell>
