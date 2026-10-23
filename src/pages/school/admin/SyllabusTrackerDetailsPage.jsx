@@ -114,7 +114,7 @@ export default function SyllabusTrackerDetailsPage() {
               {plan.className} {plan.sectionName ? `(${plan.sectionName})` : ''}
             </span>
             <span className="px-3 py-1 rounded-full text-xs font-extrabold uppercase bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-              Session {plan.academicYear || '2025-2026'}
+              Session {plan.academicYear || '2026-2027'}
             </span>
           </div>
 

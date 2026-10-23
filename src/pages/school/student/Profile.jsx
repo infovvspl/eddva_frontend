@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
 import { Document, Page, pdfjs } from 'react-pdf';
+import { CartesianGrid, LabelList, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -259,8 +260,6 @@ export default function Profile() {
     loadIdCard(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const idCardDownloadName = `${(user?.name || 'student').replace(/\s+/g, '-')}-id-card.pdf`;
 
   if (loading) {
     return (
@@ -655,20 +654,116 @@ export default function Profile() {
               {analytics.subjectPerformance?.length > 0 && (
                 <div className="space-y-2.5">
                   <h3 className="text-[10px] sm:text-xs font-extrabold text-slate-450 dark:text-slate-500 uppercase tracking-wider">Subject-wise Accuracy</h3>
-                  {analytics.subjectPerformance.map((subj) => (
-                    <div key={subj.subjectName} className="space-y-1">
-                      <div className="flex items-center justify-between text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300">
-                        <span className="truncate">{subj.subjectName}</span>
-                        <span className="shrink-0 text-slate-400">{Math.round(subj.accuracy)}%</span>
-                      </div>
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                        <div
-                          className={cn('h-full rounded-full', subj.accuracy >= 75 ? 'bg-emerald-500' : subj.accuracy >= 60 ? 'bg-amber-500' : 'bg-rose-500')}
-                          style={{ width: `${Math.min(100, Math.max(2, subj.accuracy))}%` }}
+                  <div style={{ height: 260 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={analytics.subjectPerformance}
+                        margin={{ top: 36, right: 20, left: 4, bottom: 40 }}
+                      >
+                        <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="3 3" />
+                        <XAxis
+                          dataKey="subjectName"
+                          interval={0}
+                          angle={-35}
+                          textAnchor="end"
+                          height={60}
+                          tick={{ fontSize: 10, fill: '#334155', fontWeight: 800 }}
+                          axisLine={false}
+                          tickLine={false}
                         />
-                      </div>
-                    </div>
-                  ))}
+                        <YAxis
+                          domain={[0, 100]}
+                          ticks={[0, 25, 50, 75, 100]}
+                          width={34}
+                          tick={{ fontSize: 10, fill: '#94a3b8' }}
+                          tickFormatter={(v) => `${v}%`}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <Tooltip
+                          cursor={{ stroke: '#94a3b8', strokeDasharray: '3 3' }}
+                          content={({ active, payload }) => {
+                            if (!active || !payload?.length) return null;
+                            const d = payload[0].payload;
+                            return (
+                              <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold shadow-lg dark:border-slate-700 dark:bg-slate-900">
+                                <p className="text-slate-900 dark:text-white">{d.subjectName}</p>
+                                <p className="text-slate-500 dark:text-slate-400">
+                                  {Math.round(d.accuracy)}% accuracy · {d.attempts} attempt{d.attempts === 1 ? '' : 's'}
+                                </p>
+                              </div>
+                            );
+                          }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="accuracy"
+                          stroke="#10b981"
+                          strokeWidth={2.5}
+                          dot={({ cx, cy, payload }) => (
+                            <circle
+                              key={`dot-${payload.subjectName}`}
+                              cx={cx}
+                              cy={cy}
+                              r={4}
+                              fill={payload.accuracy >= 75 ? '#10b981' : payload.accuracy >= 60 ? '#f59e0b' : '#f43f5e'}
+                              stroke="#fff"
+                              strokeWidth={1.5}
+                            />
+                          )}
+                          activeDot={{ r: 6 }}
+                        >
+                          <LabelList
+                            dataKey="accuracy"
+                            position="top"
+                            offset={10}
+                            formatter={(v) => `${Math.round(v)}%`}
+                            style={{ fontSize: 9, fontWeight: 700, fill: '#64748b' }}
+                          />
+                        </Line>
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Color-coded legend — same green/amber/red thresholds as the line's dots, broken out per subject. */}
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {analytics.subjectPerformance.map((subj) => {
+                      const tone = subj.accuracy >= 75 ? 'emerald' : subj.accuracy >= 60 ? 'amber' : 'rose';
+                      return (
+                        <div
+                          key={subj.subjectName}
+                          className={cn(
+                            'flex items-center justify-between gap-2 rounded-xl border px-2.5 py-2',
+                            tone === 'emerald' && 'border-emerald-100 bg-emerald-50/50 dark:border-emerald-900/40 dark:bg-emerald-950/20',
+                            tone === 'amber' && 'border-amber-100 bg-amber-50/50 dark:border-amber-900/40 dark:bg-amber-950/20',
+                            tone === 'rose' && 'border-rose-100 bg-rose-50/50 dark:border-rose-900/40 dark:bg-rose-950/20',
+                          )}
+                        >
+                          <div className="flex min-w-0 items-center gap-1.5">
+                            <span
+                              className={cn(
+                                'size-2 shrink-0 rounded-full',
+                                tone === 'emerald' && 'bg-emerald-500',
+                                tone === 'amber' && 'bg-amber-500',
+                                tone === 'rose' && 'bg-rose-500',
+                              )}
+                            />
+                            <span className="truncate text-[11px] font-bold text-slate-700 dark:text-slate-300">{subj.subjectName}</span>
+                          </div>
+                          <span
+                            className={cn(
+                              'shrink-0 text-xs font-black',
+                              tone === 'emerald' && 'text-emerald-700 dark:text-emerald-300',
+                              tone === 'amber' && 'text-amber-700 dark:text-amber-300',
+                              tone === 'rose' && 'text-rose-700 dark:text-rose-300',
+                            )}
+                          >
+                            {Math.round(subj.accuracy)}%
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
@@ -725,25 +820,6 @@ export default function Profile() {
                     </div>
                   ))}
                 </Document>
-              </div>
-              <div className="mt-3.5 flex gap-2.5">
-                <a
-                  href={idCardUrl}
-                  download={idCardDownloadName}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] sm:text-xs font-bold transition-all shadow-md shadow-indigo-500/10 hover:scale-102 active:scale-98"
-                >
-                  <Download className="size-3.5" />
-                  Download PDF
-                </a>
-                <button
-                  onClick={() => loadIdCard(true)}
-                  disabled={idCardLoading}
-                  title="Refresh"
-                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 text-[10px] sm:text-xs font-bold transition-all hover:bg-slate-50 dark:hover:bg-slate-900 disabled:opacity-60"
-                >
-                  {idCardLoading ? <Loader2 className="size-3.5 animate-spin" /> : <IdCard className="size-3.5" />}
-                  Refresh
-                </button>
               </div>
             </div>
           ) : idCardStatus === 'loading' ? (

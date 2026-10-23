@@ -49,7 +49,7 @@ export default function LessonPlanFormModal({ open, isOpen, onClose, onSuccess, 
   const [submitting, setSubmitting] = useState(false);
 
   const [form, setForm] = useState({
-    academicYear: String(new Date().getFullYear()),
+    academicYear: '2026-2027',
     classId: '',
     sectionId: '',
     subjectId: '',

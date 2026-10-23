@@ -3,7 +3,7 @@ import api from '@/lib/api/school-client';
 import { Bell, CalendarDays, ClipboardList, ExternalLink, FileText, Image as ImageIcon, Megaphone, MessageSquare, Paperclip, Search, X } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-const categories = ['All', 'GENERAL', 'EXAM', 'HOLIDAY', 'ACADEMIC'];
+const categories = ['All', 'GENERAL', 'ACHIEVEMENT', 'EXAM', 'HOLIDAY', 'ACADEMIC', 'EVENT'];
 const isMaintenanceNotice = (notice) => String(notice?.category || '').toUpperCase() === 'MAINTENANCE';
 
 // Category colours for the date block and the label (full class names so Tailwind keeps them).

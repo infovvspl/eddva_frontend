@@ -45,7 +45,7 @@ interface Attachment {
   url: string;
 }
 
-const categories = ['All', 'GENERAL', 'EXAM', 'HOLIDAY', 'ACADEMIC'];
+const categories = ['All', 'GENERAL', 'ACHIEVEMENT', 'EXAM', 'HOLIDAY', 'ACADEMIC', 'EVENT'];
 const isMaintenanceNotice = (notice: Notice) => String(notice?.category || '').toUpperCase() === 'MAINTENANCE';
 
 function priorityClass(priority: 'HIGH' | 'NORMAL' | 'LOW') {

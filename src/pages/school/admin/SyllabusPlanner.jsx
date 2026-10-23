@@ -27,7 +27,7 @@ export default function SyllabusPlanner() {
   const [availableYears, setAvailableYears] = useState(['2024-2025', '2025-2026', '2026-2027']);
 
   const [form, setForm] = useState({
-    academicYear: searchParams.get('year') || '2025-2026',
+    academicYear: searchParams.get('year') || '2026-2027',
     classId: searchParams.get('classId') || '',
     sectionId: searchParams.get('sectionId') || '',
     subjectId: '',
