@@ -2,7 +2,7 @@
 // Uses lucide-react icons
 
 import { Sparkles } from "lucide-react";
-import aboutHome from "../assets/abouthome.png";
+import aboutHome from "../assets/abouthome.webp";
 import { aboutCards as cards } from "../data/about";
 import useInView from "../hooks/useInView";
 

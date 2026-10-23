@@ -7,7 +7,7 @@ import {
   FiCheck,
   FiTrendingUp,
 } from "react-icons/fi";
-import app1 from "../../assets/app1.png";
+import app1 from "../../assets/app1.webp";
 import app2 from "../../assets/app2.png";
 import apple from "../../assets/appstore.png";
 import google from "../../assets/playstore.png";
