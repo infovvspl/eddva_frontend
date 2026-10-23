@@ -8,7 +8,9 @@
 
 import { Link } from "react-router-dom";
 import { ArrowRight, Check } from "lucide-react";
-import { services } from "../data/services";
+import { useTranslation } from "react-i18next";
+import { useLocalized } from "@/i18n/useLocalized";
+import { services as servicesData } from "../data/services";
 import useInView from "../hooks/useInView";
 
 // Institutes, Schools and Universities used to each link out to their own
@@ -18,6 +20,7 @@ import useInView from "../hooks/useInView";
 // panel here already shows everything there is for that institution type,
 // so there's nothing left to break out to; only "Talk to us" remains.
 const Panel = ({ service, index }) => {
+  const { t } = useTranslation("solutions");
   const { id, title, desc, covers, Icon, color, bg } = service;
   const [ref, inView] = useInView({ threshold: 0.2 });
 
@@ -53,7 +56,7 @@ const Panel = ({ service, index }) => {
 
         <div className="nw-aud__actions">
           <Link to="/contact" className="nw-aud__cta" id={`${id}-audience-cta`}>
-            Talk to us
+            {t("audience.talk")}
             <ArrowRight size={15} strokeWidth={2.5} />
           </Link>
         </div>
@@ -63,15 +66,16 @@ const Panel = ({ service, index }) => {
 };
 
 const SolutionAudience = () => {
+  const { t } = useTranslation("solutions");
+  const services = useLocalized("data-services", servicesData);
   return (
     <section className="nw-aud" id="nw-solution-audience">
       <div className="nw-aud__container">
 
         <header className="nw-aud__header">
-          <h2 className="nw-aud__heading">Built for Every Kind of Institution</h2>
+          <h2 className="nw-aud__heading">{t("audience.heading")}</h2>
           <p className="nw-aud__lead">
-            The same platform, configured around how your institution actually
-            runs — a school day, a coaching timetable or a university semester.
+            {t("audience.lead")}
           </p>
         </header>
 

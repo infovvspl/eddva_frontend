@@ -1,0 +1,61 @@
+{
+  "hero": {
+    "badge": "Our Products",
+    "titleLine1": "Smarter Technology for",
+    "titleAccent": "Smarter Education",
+    "lead": "A unified ecosystem of LMS, ERP and AI tools — empowering institutes, teachers and students to achieve more."
+  },
+  "grid": {
+    "headingPre": "Explore Our ",
+    "headingAccent": "Product",
+    "lead": "Five products, one platform. Pick what your institution needs — everything below is included in what it says.",
+    "mostPopular": "Most Popular",
+    "learnMore": "Learn more",
+    "headingPost": " Suite"
+  },
+  "why": {
+    "headingPre": "Why Choose ",
+    "headingAccent": "EDDVA",
+    "lead": "Technology that transforms the way education works.",
+    "reasons": {
+      "nw-wc-ai": {
+        "title": "AI-Powered Intelligence",
+        "desc": "Smarter learning with real-time insights"
+      },
+      "nw-wc-ecosystem": {
+        "title": "End-to-End Ecosystem",
+        "desc": "Learning + Management in one platform"
+      },
+      "nw-wc-scale": {
+        "title": "Scalable for Everyone",
+        "desc": "Designed for schools, institutes and coaching centres"
+      },
+      "nw-wc-secure": {
+        "title": "Secure & Reliable",
+        "desc": "Your data, always protected"
+      },
+      "nw-wc-anywhere": {
+        "title": "Learn Anywhere",
+        "desc": "Access on web, tablet and mobile"
+      },
+      "nw-wc-success": {
+        "title": "Student Success First",
+        "desc": "Built for better results and brighter futures"
+      }
+    }
+  },
+  "detail": {
+    "allProducts": "All products",
+    "whatItDoes": "What it does",
+    "seeIn": "See {{title}} in your institution",
+    "walk": "We will walk you through it on your own setup.",
+    "more": "More products"
+  },
+  "modules": {
+    "heading": "Everything Inside",
+    "erpLead": "Twenty-three modules covering every administrative function an institution runs day to day.",
+    "lmsLead": "Fourteen modules bringing AI into teaching, learning and everyday classroom work.",
+    "jeeLead": "Eight modules covering structured syllabus, practice and teacher oversight from day one to exam day.",
+    "jeeAiLead": "Eight modules built around one goal: an AI-driven prep plan that adapts to how each student is actually doing."
+  }
+}

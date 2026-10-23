@@ -3,11 +3,15 @@
 // data/team.js) beside the bio and a pull-quote, with a handwritten aside.
 
 import { Quote } from "lucide-react";
-import { founder } from "../data/team";
+import { useTranslation } from "react-i18next";
+import { useLocalized } from "@/i18n/useLocalized";
+import { founder as founderData } from "../data/team";
 import getInitials from "../utils/initials";
 import useInView from "../hooks/useInView";
 
 const FounderSection = () => {
+  const { t } = useTranslation("about");
+  const founder = useLocalized("data-team", founderData, "founder");
   const [ref, inView] = useInView({ threshold: 0.25 });
 
   return (
@@ -33,11 +37,11 @@ const FounderSection = () => {
         </div>
 
         <div className="nw-founder__body">
-          <span className="nw-founder__label">Our Founder</span>
+          <span className="nw-founder__label">{t("founder.label")}</span>
           <span className="nw-founder__rule" aria-hidden="true" />
           <h2 className="nw-founder__heading">
-            Driven by Purpose.<br />
-            Committed to <span className="nw-founder__heading-accent">Education.</span>
+            {t("founder.headingLine1")}<br />
+            {t("founder.headingPre")}<span className="nw-founder__heading-accent">{t("founder.headingAccent")}</span>
           </h2>
           <p className="nw-founder__bio">{founder.bio}</p>
 
@@ -49,7 +53,7 @@ const FounderSection = () => {
         </div>
 
         <p className="nw-founder__note" aria-hidden="true">
-          Innovate<br />Educate<br />Empower
+          {t("founder.note1")}<br />{t("founder.note2")}<br />{t("founder.note3")}
         </p>
 
       </div>

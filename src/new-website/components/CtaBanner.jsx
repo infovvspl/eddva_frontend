@@ -3,9 +3,11 @@
 
 import { Link } from "react-router-dom";
 import { CalendarDays, ArrowRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import useInView from "../hooks/useInView";
 
 const CtaBanner = () => {
+  const { t } = useTranslation("home");
   const [ref, inView] = useInView({ threshold: 0.3 });
 
   return (
@@ -17,15 +19,15 @@ const CtaBanner = () => {
             <CalendarDays size={28} strokeWidth={1.7} />
           </div>
           <div className="nw-cta__text">
-            <h2 className="nw-cta__heading">Ready to Transform Your Institution?</h2>
+            <h2 className="nw-cta__heading">{t("cta.heading")}</h2>
             <p className="nw-cta__sub">
-              Book a free demo and explore how EDDVA can help you achieve more.
+              {t("cta.sub")}
             </p>
           </div>
         </div>
 
         <Link to="/contact" className="nw-cta__btn" id="nw-cta-demo-btn">
-          Book a Free Demo
+          {t("cta.button")}
           <ArrowRight size={16} strokeWidth={2.2} />
         </Link>
 

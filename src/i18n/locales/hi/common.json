@@ -1,0 +1,60 @@
+{
+  "language": {
+    "label": "भाषा",
+    "switchTo": "भाषा बदलें"
+  },
+  "nav": {
+    "main": "मुख्य नेविगेशन",
+    "home": "होम",
+    "about": "हमारे बारे में",
+    "product": "उत्पाद",
+    "solution": "समाधान",
+    "forInstitutions": "संस्थानों के लिए",
+    "forTeachers": "शिक्षकों के लिए",
+    "forStudents": "विद्यार्थियों के लिए",
+    "forParents": "अभिभावकों के लिए",
+    "faq": "अक्सर पूछे जाने वाले प्रश्न",
+    "blog": "ब्लॉग",
+    "contact": "संपर्क करें",
+    "login": "लॉगिन",
+    "openMenu": "मेनू खोलें"
+  },
+  "footer": {
+    "blurbLine1": "शिक्षा विकास एवं उन्नति",
+    "blurbLine2": "स्कूलों और संस्थानों के लिए ऑल-इन-वन AI-संचालित प्लेटफ़ॉर्म।",
+    "downloadBrochure": "ब्रोशर डाउनलोड करें",
+    "quickLinks": "त्वरित लिंक",
+    "aboutUs": "हमारे बारे में",
+    "products": "उत्पाद",
+    "services": "सेवाएँ",
+    "stakeholders": "हितधारक",
+    "bookDemo": "डेमो बुक करें",
+    "contactUs": "संपर्क करें",
+    "rights": "सर्वाधिकार सुरक्षित।",
+    "developedBy": "विकसित द्वारा",
+    "privacy": "गोपनीयता नीति",
+    "terms": "नियम एवं शर्तें",
+    "backToTop": "ऊपर जाएँ"
+  },
+  "pageHead": {
+    "home": "होम",
+    "breadcrumb": "ब्रेडक्रंब"
+  },
+  "whatsapp": {
+    "chat": "WhatsApp पर EDDVA से चैट करें"
+  },
+  "topbar": {
+    "whatsapp": "WhatsApp",
+    "facebook": "Facebook",
+    "instagram": "Instagram",
+    "linkedin": "LinkedIn",
+    "youtube": "YouTube"
+  },
+  "cookieBar": {
+    "notice": "कुकी सूचना",
+    "text": "हम ऐप चलाने (जैसे साइन-इन) के लिए आवश्यक कुकीज़ और, आपकी पसंद से, अनुभव बेहतर बनाने के लिए कुकीज़ का उपयोग करते हैं।",
+    "policy": "कुकी नीति",
+    "ok": "ठीक है",
+    "dismiss": "बंद करें"
+  }
+}

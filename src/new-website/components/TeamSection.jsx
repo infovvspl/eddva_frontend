@@ -7,7 +7,9 @@
 
 import { useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { team } from "../data/team";
+import { useTranslation } from "react-i18next";
+import { useLocalized } from "@/i18n/useLocalized";
+import { team as teamData } from "../data/team";
 import getInitials from "../utils/initials";
 import useInView from "../hooks/useInView";
 
@@ -24,6 +26,8 @@ const PALETTE = [
 ];
 
 const TeamSection = () => {
+  const { t } = useTranslation("about");
+  const team = useLocalized("data-team", teamData);
   const [containerRef, inView] = useInView({ threshold: 0.15 });
   const trackRef = useRef(null);
 
@@ -43,12 +47,12 @@ const TeamSection = () => {
       <div className={`nw-team__container${inView ? " nw-in" : ""}`} ref={containerRef}>
 
         <header className="nw-team__header">
-          <span className="nw-team__label">Our Team</span>
+          <span className="nw-team__label">{t("team.label")}</span>
           <h2 className="nw-team__heading">
-            Meet the People Behind <span className="nw-team__heading-accent">EDDVA</span>
+            {t("team.headingPre")}<span className="nw-team__heading-accent">{t("team.headingAccent")}</span>
           </h2>
           <p className="nw-team__sub">
-            A passionate team working to transform education through innovation, technology and care.
+            {t("team.sub")}
           </p>
         </header>
 
@@ -57,7 +61,7 @@ const TeamSection = () => {
             type="button"
             className="nw-team__arrow nw-team__arrow--prev"
             onClick={() => scrollByCards(-1)}
-            aria-label="Previous team member"
+            aria-label={t("team.prev")}
           >
             <ChevronLeft size={18} strokeWidth={2.4} />
           </button>
@@ -92,14 +96,14 @@ const TeamSection = () => {
             type="button"
             className="nw-team__arrow nw-team__arrow--next"
             onClick={() => scrollByCards(1)}
-            aria-label="Next team member"
+            aria-label={t("team.next")}
           >
             <ChevronRight size={18} strokeWidth={2.4} />
           </button>
         </div>
 
         <p className="nw-team__note" aria-hidden="true">
-          Different · Skills · One Mission
+          {t("team.note")}
         </p>
 
       </div>

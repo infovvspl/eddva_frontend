@@ -14,10 +14,15 @@
 // under it in the photo.
 
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ChevronRight, GraduationCap } from "lucide-react";
-import aboutBanner from "../assets/bgabout.png";
+import aboutBannerEn from "../assets/bgabout.png";
+import aboutBannerHi from "../assets/bgabout.hi.webp";
 
-const AboutHero = () => (
+const AboutHero = () => {
+  const { t, i18n } = useTranslation(["about", "common"]);
+  const aboutBanner = i18n.language === "hi" ? aboutBannerHi : aboutBannerEn;
+  return (
   <section
     className="nw-abouthero"
     id="nw-about-head"
@@ -27,21 +32,21 @@ const AboutHero = () => (
     <div className="nw-abouthero__container">
 
       <div className="nw-abouthero__content">
-        <nav className="nw-abouthero__crumbs nw-rise" style={{ "--nw-delay": "0s" }} aria-label="Breadcrumb">
-          <Link to="/" className="nw-abouthero__crumb">Home</Link>
+        <nav className="nw-abouthero__crumbs nw-rise" style={{ "--nw-delay": "0s" }} aria-label={t("common:pageHead.breadcrumb")}>
+          <Link to="/" className="nw-abouthero__crumb">{t("common:pageHead.home")}</Link>
           <ChevronRight size={14} strokeWidth={2.2} aria-hidden="true" />
           <span className="nw-abouthero__crumb nw-abouthero__crumb--current" aria-current="page">
-            About EDDVA
+            {t("hero.crumb")}
           </span>
           <GraduationCap size={18} strokeWidth={1.8} className="nw-abouthero__crumb-icon" aria-hidden="true" />
         </nav>
 
         <h1 className="nw-abouthero__title nw-rise" style={{ "--nw-delay": "0.08s" }}>
-          About <span className="nw-abouthero__title-accent">EDDVA</span>
+          {t("hero.titlePre")}<span className="nw-abouthero__title-accent">{t("hero.titleAccent")}</span>
         </h1>
 
         <p className="nw-abouthero__lead nw-rise" style={{ "--nw-delay": "0.16s" }}>
-          Built for the future of education — AI, automation and analytics in one platform.
+          {t("hero.lead")}
         </p>
 
         <Link
@@ -50,13 +55,14 @@ const AboutHero = () => (
           id="nw-abouthero-story"
           style={{ "--nw-delay": "0.24s" }}
         >
-          Our Story
+          {t("hero.storyBtn")}
           <ChevronRight size={16} strokeWidth={2.4} />
         </Link>
       </div>
 
     </div>
   </section>
-);
+  );
+};
 
 export default AboutHero;

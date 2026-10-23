@@ -16,9 +16,12 @@ import Footer from "../components/Footer";
 import { services } from "../data/services";
 import { roleSolutions } from "../data/solutions";
 import { Layers } from "lucide-react";
+import { useTranslation } from "react-i18next";
+
 import useScrollToTopOrHash from "../hooks/useScrollToTopOrHash";
 
 const SolutionPage = () => {
+  const { t } = useTranslation("solutions");
   useScrollToTopOrHash();
 
   return (
@@ -28,15 +31,15 @@ const SolutionPage = () => {
       <main>
         <PageHead
           id="nw-solution-head"
-          title="Solutions for Every"
-          accent="Institution"
-          lead="Schools, institutes and the people inside them — each with tools built for the job."
+          title={t("pages.solution.title")}
+          accent={t("pages.solution.accent")}
+          lead={t("pages.solution.lead")}
           icon={Layers}
           color="#1a56db"
           bg="#eaf1fd"
           stats={[
-            { value: services.length, label: "Institution Types" },
-            { value: roleSolutions.length, label: "Stakeholder Roles" },
+            { value: services.length, label: t("pages.institutionTypes") },
+            { value: roleSolutions.length, label: t("pages.stakeholderRoles") },
           ]}
         />
         <SolutionAudience />

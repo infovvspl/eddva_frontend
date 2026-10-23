@@ -1,0 +1,60 @@
+{
+  "language": {
+    "label": "Language",
+    "switchTo": "Switch language"
+  },
+  "nav": {
+    "main": "Main Navigation",
+    "home": "Home",
+    "about": "About",
+    "product": "Product",
+    "solution": "Solution",
+    "forInstitutions": "For Institutions",
+    "forTeachers": "For Teachers",
+    "forStudents": "For Students",
+    "forParents": "For Parents",
+    "faq": "FAQ",
+    "blog": "Blog",
+    "contact": "Contact us",
+    "login": "Login",
+    "openMenu": "Open Menu"
+  },
+  "footer": {
+    "blurbLine1": "Education Development & Advancement",
+    "blurbLine2": "All-in-one AI-Powered Platform for Schools & Institutes.",
+    "downloadBrochure": "Download Brochure",
+    "quickLinks": "Quick Links",
+    "aboutUs": "About Us",
+    "products": "Products",
+    "services": "Services",
+    "stakeholders": "Stakeholders",
+    "bookDemo": "Book a Demo",
+    "contactUs": "Contact Us",
+    "rights": "All Rights Reserved.",
+    "developedBy": "Developed by",
+    "privacy": "Privacy Policy",
+    "terms": "Terms & Conditions",
+    "backToTop": "Back to top"
+  },
+  "pageHead": {
+    "home": "Home",
+    "breadcrumb": "Breadcrumb"
+  },
+  "whatsapp": {
+    "chat": "Chat with EDDVA on WhatsApp"
+  },
+  "topbar": {
+    "whatsapp": "WhatsApp",
+    "facebook": "Facebook",
+    "instagram": "Instagram",
+    "linkedin": "LinkedIn",
+    "youtube": "YouTube"
+  },
+  "cookieBar": {
+    "notice": "Cookie notice",
+    "text": "We use essential cookies to run the app (e.g. sign-in) and, with your choice, to improve the experience.",
+    "policy": "Cookie policy",
+    "ok": "OK",
+    "dismiss": "Dismiss"
+  }
+}
