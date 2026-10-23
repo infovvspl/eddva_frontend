@@ -103,32 +103,43 @@ export default function Announcements() {
   const countOf = (item) => (item === 'All' ? notices.length : notices.filter((n) => n.category === item).length);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 py-2">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h1 className="!text-2xl font-black tracking-tight text-slate-900 dark:text-white">Announcements</h1>
           <p className="mt-1 text-sm font-medium text-slate-500">Institute notices, exam notices, holiday notices, and teacher messages.</p>
         </div>
         <div className="relative w-full lg:max-w-sm">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+          <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            className="w-full rounded-full border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm font-semibold text-slate-900 shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+            className="h-11 w-full rounded-full border border-indigo-200 bg-white pl-11 pr-11 text-base font-semibold text-slate-900 outline-none transition placeholder:font-medium placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-800 dark:bg-slate-900 dark:text-white sm:text-sm [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
             placeholder="Search notices"
+            aria-label="Search notices"
             type="search"
           />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery('')}
+              className="absolute right-2.5 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+              aria-label="Clear search"
+            >
+              <X className="size-4" />
+            </button>
+          )}
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {[
-          { label: 'All notices', value: notices.length, icon: Megaphone, tile: 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300' },
-          { label: 'Exam', value: notices.filter((n) => n.category === 'EXAM').length, icon: ClipboardList, tile: 'bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-300' },
-          { label: 'Holiday', value: notices.filter((n) => n.category === 'HOLIDAY').length, icon: CalendarDays, tile: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300' },
-          { label: 'Messages', value: notifications.length, icon: MessageSquare, tile: 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300' },
-        ].map(({ label, value, icon: Icon, tile }) => (
-          <div key={label} className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-100 bg-white p-3.5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:gap-4 sm:p-5">
+          { label: 'All notices', value: notices.length, icon: Megaphone, border: 'border-blue-200 hover:border-blue-300 hover:bg-blue-50/60 dark:border-blue-900/60 dark:hover:border-blue-800 dark:hover:bg-blue-950/20', tile: 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300' },
+          { label: 'Exam', value: notices.filter((n) => n.category === 'EXAM').length, icon: ClipboardList, border: 'border-rose-200 hover:border-rose-300 hover:bg-rose-50/60 dark:border-rose-900/60 dark:hover:border-rose-800 dark:hover:bg-rose-950/20', tile: 'bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-300' },
+          { label: 'Holiday', value: notices.filter((n) => n.category === 'HOLIDAY').length, icon: CalendarDays, border: 'border-emerald-200 hover:border-emerald-300 hover:bg-emerald-50/60 dark:border-emerald-900/60 dark:hover:border-emerald-800 dark:hover:bg-emerald-950/20', tile: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300' },
+          { label: 'Messages', value: notifications.length, icon: MessageSquare, border: 'border-violet-200 hover:border-violet-300 hover:bg-violet-50/60 dark:border-violet-900/60 dark:hover:border-violet-800 dark:hover:bg-violet-950/20', tile: 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300' },
+        ].map(({ label, value, icon: Icon, tile, border }) => (
+          <div key={label} className={`flex min-w-0 items-center gap-3 rounded-2xl border bg-white p-3.5 transition-colors duration-200 dark:bg-slate-900 sm:gap-4 sm:p-5 ${border}`}>
             <span className={`grid size-10 shrink-0 place-items-center rounded-xl sm:size-12 ${tile}`}>
               <Icon className="size-5 sm:size-6" />
             </span>
@@ -140,22 +151,23 @@ export default function Announcements() {
         ))}
       </div>
 
-      {/* Underline tabs. */}
-      <div className="flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-slate-800">
+      {/* Separate bordered chips; the active one fills with its category colour. */}
+      <div className="-mx-1 flex gap-2.5 overflow-x-auto px-1 py-1">
         {categories.map((item) => {
           const active = category === item;
+          const fill = item === 'All' ? 'bg-slate-900 dark:bg-white' : getColor(item).block;
           return (
             <button
               key={item}
               type="button"
               onClick={() => setCategory(item)}
-              className={`-mb-px inline-flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-xs font-black uppercase tracking-widest transition ${active
-                ? 'border-blue-600 text-blue-700 dark:border-blue-400 dark:text-blue-300'
-                : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+              className={`inline-flex shrink-0 items-center gap-2.5 whitespace-nowrap rounded-xl border px-4 py-2.5 text-xs font-black uppercase tracking-wider transition-all ${active
+                ? `${fill} border-transparent text-white shadow-md dark:text-white ${item === 'All' ? 'dark:!text-slate-900' : ''}`
+                : 'border-slate-200 bg-white text-slate-600 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-700'
                 }`}
             >
               {item}
-              <span className={`rounded-md px-1.5 py-0.5 text-[10px] leading-none ${active ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}`}>
+              <span className={`min-w-5 rounded-md px-1.5 py-0.5 text-center text-[10px] leading-none ${active ? 'bg-white/25 text-inherit' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}`}>
                 {countOf(item)}
               </span>
             </button>
