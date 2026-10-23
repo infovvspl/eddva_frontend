@@ -471,7 +471,7 @@ export default function Dashboard() {
             <div className="relative z-10 p-8 sm:p-10 max-w-lg">
               <h1 className="text-[28px] sm:text-[34px] leading-tight font-bold text-white mb-3 flex items-center gap-2 flex-wrap">
                 <span>Welcome back,<br/>{user?.name?.split(' ')[0] || 'Abhijit'}!</span>
-                <PartyPopper className="size-7 shrink-0 text-white/90" />
+                {/* <PartyPopper className="size-7 shrink-0 text-white/90" /> */}
               </h1>
               <p className="text-white/90 text-xs sm:text-[13px] font-medium leading-relaxed tracking-wide max-w-xs">
                 Stay curious, stay focused and keep growing every day.
@@ -484,7 +484,7 @@ export default function Dashboard() {
             <StatCard icon={BookOpen} iconColor="text-white" bgColor="bg-indigo-600" title="Live Classes Today" value={todayClassesCount} link="View Schedule" to="/school/student/live-classes" />
             <StatCard icon={Pencil} iconColor="text-white" bgColor="bg-emerald-500" title="Attendance" value={`${attendancePct}%`} link="View Details" to="/school/student/attendance" />
             <StatCard icon={Star} iconColor="text-white" bgColor="bg-amber-500" title="Pending Assignments" value={pendingAssignments.length} link="View All" to="/school/student/assignments" />
-            <StatCard icon={Award} iconColor="text-white" bgColor="bg-blue-500" title="EDVA Points" value={dashboardData?.eddvaCoins || user?.eddvaCoins || 680} link="Top 15% in class" isGrayLink />
+            <StatCard icon={Award} iconColor="text-white" bgColor="bg-blue-500" title="EDDVA Points" value={dashboardData?.eddvaCoins || user?.eddvaCoins || 680} link="Top 15% in class" isGrayLink />
           </div>
         </div>
         

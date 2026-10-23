@@ -1,33 +1,98 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/SchoolAuthContext';
-import { 
-  BookOpen, GraduationCap, KeyRound, ShieldCheck, UserCircle, Users, 
-  BarChart2, Calendar, Shield, Mail, Smartphone, MapPin, User, AlertCircle
+import {
+  BookOpen, GraduationCap, KeyRound, ShieldCheck, UserCircle, Users,
+  BarChart2, Calendar, Shield, Mail, Smartphone, MapPin, User, UserCheck,
+  ChevronRight, Building2, Hash, Sparkles,
 } from 'lucide-react';
 import { ProfileAvatar } from '@/components/ui/profile-avatar';
 import schoolApi from '@/lib/api/school-client';
 import { toast } from 'sonner';
 
-function ProfileField({ label, value, icon: Icon, onRequestEdit }) {
+// Accent colours, written out in full so Tailwind can see every class.
+const TONES = {
+  blue: { chip: 'bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400', grad: 'from-blue-500 to-cyan-500', glow: 'bg-blue-500/15' },
+  emerald: { chip: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400', grad: 'from-emerald-500 to-teal-500', glow: 'bg-emerald-500/15' },
+  violet: { chip: 'bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400', grad: 'from-violet-500 to-fuchsia-500', glow: 'bg-violet-500/15' },
+  indigo: { chip: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400', grad: 'from-indigo-500 to-violet-500', glow: 'bg-indigo-500/15' },
+  amber: { chip: 'bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400', grad: 'from-amber-500 to-orange-500', glow: 'bg-amber-500/15' },
+  rose: { chip: 'bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400', grad: 'from-rose-500 to-pink-500', glow: 'bg-rose-500/15' },
+  cyan: { chip: 'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/50 dark:text-cyan-400', grad: 'from-cyan-500 to-sky-500', glow: 'bg-cyan-500/15' },
+};
+
+// Subject pills cycle through these so a row of subjects reads as a colourful set.
+const SUBJECT_PILLS = [
+  'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/50',
+  'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/50',
+  'bg-violet-50 text-violet-700 border-violet-100 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-900/50',
+  'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/50',
+  'bg-rose-50 text-rose-700 border-rose-100 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900/50',
+  'bg-cyan-50 text-cyan-700 border-cyan-100 dark:bg-cyan-950/40 dark:text-cyan-300 dark:border-cyan-900/50',
+];
+
+const CARD = 'rounded-3xl border border-slate-100 bg-white shadow-xl shadow-slate-200/40 dark:border-slate-800/80 dark:bg-slate-950 dark:shadow-none';
+
+function ProfileField({ label, value, icon: Icon, tone = 'blue', onRequestEdit }) {
+  const t = TONES[tone] || TONES.blue;
   return (
-    <div className="rounded-2xl border border-slate-100 bg-slate-50/30 p-3 sm:p-4 dark:border-slate-800 dark:bg-slate-900/10 flex flex-col justify-between min-h-[75px] sm:min-h-[90px] hover:border-slate-200 dark:hover:border-slate-700 transition-colors">
-      <div>
-        <p className="flex items-center gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-          {Icon && <Icon className="size-3 sm:size-3.5 text-slate-400 shrink-0" />}
-          {label}
-        </p>
-        <p className="mt-1 truncate text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-          {value || <span className="text-slate-400 dark:text-slate-500 italic font-medium">Not specified</span>}
-        </p>
+    <div className="group flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/50 p-3 sm:p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-200 hover:bg-white hover:shadow-md dark:border-slate-800 dark:bg-slate-900/30 dark:hover:border-slate-700 dark:hover:bg-slate-900">
+      <span className={`flex size-9 sm:size-10 shrink-0 items-center justify-center rounded-xl ${t.chip}`}>
+        {Icon && <Icon className="size-4 sm:size-[18px]" />}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">{label}</p>
+        {value ? (
+          <p className="mt-0.5 truncate text-xs sm:text-sm font-bold text-slate-900 dark:text-white" title={String(value)}>{value}</p>
+        ) : (
+          <div className="mt-0.5 flex items-center gap-2">
+            <span className="text-xs sm:text-sm font-medium italic text-slate-400 dark:text-slate-500">Not specified</span>
+            <button
+              onClick={onRequestEdit}
+              className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+            >
+              + Add
+            </button>
+          </div>
+        )}
       </div>
-      {!value && (
-        <button 
-          onClick={onRequestEdit}
-          className="mt-1.5 self-start text-[9px] sm:text-[10px] font-extrabold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 uppercase tracking-wider transition-colors"
-        >
-          + Add
-        </button>
+    </div>
+  );
+}
+
+// One of the four summary cards under the hero: gradient icon chip, big value, optional progress bar.
+function StatCard({ icon: Icon, label, tone, children, helper, progress }) {
+  const t = TONES[tone];
+  return (
+    <div className={`${CARD} group relative overflow-hidden p-4 sm:p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl`}>
+      <span aria-hidden className={`pointer-events-none absolute -right-8 -top-8 size-28 rounded-full blur-2xl transition-transform duration-500 group-hover:scale-125 ${t.glow}`} />
+      <div className="relative flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
+        <span className={`flex size-10 sm:size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-lg ${t.grad}`}>
+          <Icon className="size-5" />
+        </span>
+        <p className="max-w-full truncate text-[10px] sm:text-xs font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{label}</p>
+      </div>
+      <div className="relative mt-3 sm:mt-4">{children}</div>
+      {progress != null && (
+        <div className="relative mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+          <div className={`h-full rounded-full bg-gradient-to-r transition-all duration-700 ${t.grad}`} style={{ width: `${Math.max(0, Math.min(100, progress))}%` }} />
+        </div>
       )}
+      {helper && <p className="relative mt-2 text-[11px] sm:text-xs font-semibold leading-snug text-slate-400 dark:text-slate-500">{helper}</p>}
+    </div>
+  );
+}
+
+function SectionHeader({ icon: Icon, tone, title, subtitle }) {
+  const t = TONES[tone];
+  return (
+    <div className="flex items-center gap-3">
+      <span className={`flex size-10 sm:size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-lg ${t.grad}`}>
+        <Icon className="size-5" />
+      </span>
+      <div className="min-w-0">
+        <h2 className="!text-sm !leading-5 sm:!text-base sm:!leading-6 font-extrabold text-slate-950 dark:text-white">{title}</h2>
+        <p className="text-[10px] sm:text-xs font-medium text-slate-400 dark:text-slate-500">{subtitle}</p>
+      </div>
     </div>
   );
 }
@@ -38,6 +103,8 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [showAllSubjects, setShowAllSubjects] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  // The class teacher of the student's own section, looked up from the section's teaching map.
+  const [sectionTeacher, setSectionTeacher] = useState(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -68,18 +135,73 @@ export default function Profile() {
     fetchProfile();
   }, []);
 
+  // Who is the class teacher of this student's class/section? Ask the section's teaching
+  // map for it, then borrow the teacher's photo from the student's timetable if the map
+  // doesn't carry one. Optional: when it fails the profile just shows no class teacher.
+  useEffect(() => {
+    if (loading) return undefined;
+    const sp = studentData?.studentProfile || {};
+    const sectionId = sp.sectionId || sp.section?.id || user?.studentProfile?.sectionId || user?.sectionId;
+    if (!sectionId) return undefined;
+
+    let cancelled = false;
+    const sameName = (a, b) => String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
+
+    (async () => {
+      try {
+        const res = await schoolApi.get(`/academic/sections/${sectionId}/teaching-map`);
+        const map = res.data?.data ?? res.data ?? {};
+
+        let teacher = map.classTeacher && typeof map.classTeacher === 'object' ? { ...map.classTeacher } : null;
+        if (!teacher?.name) {
+          // Fall back to the assignment flagged as class teacher.
+          const flagged = (map.rawAssignments || []).find((a) => a.isClassTeacher);
+          if (flagged) {
+            const listed = (map.subjects || []).flatMap((row) => row.teachers || []).find((t) => t.userId === flagged.teacherUserId);
+            teacher = { name: flagged.teacherName || listed?.name, email: flagged.teacherEmail };
+          }
+        }
+        if (!teacher?.name) return;
+
+        let photo = teacher.profileImage || teacher.profilePictureUrl || teacher.photo || teacher.avatar || teacher.teacherImage || teacher.image || null;
+        if (!photo) {
+          try {
+            const tt = await schoolApi.get('/timetables/student/me');
+            const classes = tt.data?.timetable || tt.data?.data?.timetable || [];
+            photo = classes.find((c) => c.teacherImage && sameName(c.teacher, teacher.name))?.teacherImage || null;
+          } catch {
+            /* photo is optional */
+          }
+        }
+
+        if (!cancelled) {
+          setSectionTeacher({ name: teacher.name, photo });
+        }
+      } catch (err) {
+        console.error('Could not load the class teacher for this section:', err);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [loading, studentData, user?.studentProfile?.sectionId, user?.sectionId]);
+
   if (loading) {
     return (
-      <div className="space-y-6 animate-pulse p-4">
-        <div className="h-32 bg-slate-200 dark:bg-slate-800 rounded-3xl" />
-        <div className="grid gap-6 md:grid-cols-3">
-          <div className="h-28 bg-slate-200 dark:bg-slate-800 rounded-3xl" />
-          <div className="h-28 bg-slate-200 dark:bg-slate-800 rounded-3xl" />
-          <div className="h-28 bg-slate-200 dark:bg-slate-800 rounded-3xl" />
+      <div className="space-y-6 animate-pulse p-1">
+        <div className="overflow-hidden rounded-3xl border border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-950">
+          <div className="h-32 sm:h-40 bg-slate-200 dark:bg-slate-800" />
+          <div className="px-5 pb-6 sm:px-8">
+            <div className="-mt-12 size-24 sm:size-28 rounded-3xl bg-slate-300 ring-4 ring-white dark:bg-slate-700 dark:ring-slate-950" />
+            <div className="mt-4 h-6 w-48 rounded-lg bg-slate-200 dark:bg-slate-800" />
+            <div className="mt-2 h-4 w-72 max-w-full rounded-lg bg-slate-200 dark:bg-slate-800" />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => <div key={i} className="h-36 rounded-3xl bg-slate-200 dark:bg-slate-800" />)}
         </div>
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="h-80 bg-slate-200 dark:bg-slate-800 rounded-3xl" />
-          <div className="h-80 bg-slate-200 dark:bg-slate-800 rounded-3xl" />
+          <div className="h-80 rounded-3xl bg-slate-200 dark:bg-slate-800" />
+          <div className="h-80 rounded-3xl bg-slate-200 dark:bg-slate-800" />
         </div>
       </div>
     );
@@ -107,6 +229,31 @@ export default function Profile() {
   const visibleSubjects = subjectsList.slice(0, maxVisibleSubjects);
   const overflowCount = subjectsList.length - maxVisibleSubjects;
 
+  // Class teacher of the student's section. The profile API may send it as a name
+  // string or an object, on the profile, the section or the student, so look in each.
+  const firstFilled = (...values) => values.find((v) => v !== undefined && v !== null && String(v).trim() !== '');
+  const rawClassTeacher = firstFilled(
+    student.classTeacher, profile.classTeacher, profile.section?.classTeacher, student.section?.classTeacher,
+    profile.class_teacher, profile.section?.class_teacher,
+  );
+  const classTeacherObj = rawClassTeacher && typeof rawClassTeacher === 'object' ? rawClassTeacher : {};
+  const profileTeacherName = firstFilled(
+    typeof rawClassTeacher === 'string' ? rawClassTeacher : undefined,
+    classTeacherObj.name, classTeacherObj.user?.name,
+    [classTeacherObj.firstName, classTeacherObj.lastName].filter(Boolean).join(' '),
+    student.classTeacherName, profile.classTeacherName, profile.section?.classTeacherName,
+    profile.class_teacher_name, profile.section?.class_teacher_name,
+  ) || '';
+  const profileTeacherPhoto = firstFilled(
+    classTeacherObj.profileImage, classTeacherObj.user?.profileImage, classTeacherObj.profilePictureUrl,
+    classTeacherObj.photo, classTeacherObj.avatar, classTeacherObj.teacherImage, classTeacherObj.image,
+    student.classTeacherImage, profile.classTeacherImage, profile.section?.classTeacherImage,
+    student.classTeacherPhoto, profile.classTeacherPhoto,
+  ) || null;
+
+  const classTeacherName = sectionTeacher?.name || profileTeacherName;
+  const classTeacherPhoto = sectionTeacher?.photo || profileTeacherPhoto;
+
   const hasParentDetails = !!(parents.fatherName || parents.motherName || parents.guardianName || parents.email || parents.parentPhone);
 
   const parentName = parents.fatherName || parents.motherName || parents.guardianName || '';
@@ -116,193 +263,188 @@ export default function Profile() {
     ? parents.primaryContact.charAt(0).toUpperCase() + parents.primaryContact.slice(1)
     : '';
 
+  const dobText = profile.dob
+    ? new Date(profile.dob).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+    : '';
+  const attendancePct = student.attendancePercentage;
+  const hasAttendance = attendancePct !== null && attendancePct !== undefined;
+
   return (
     <div className="space-y-6 pb-12 p-1">
-      {/* Compressed Header Card */}
-      <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-xl shadow-slate-100/50 dark:border-slate-800/80 dark:bg-slate-950 dark:shadow-none">
-        <div className="absolute top-0 right-0 size-40 bg-gradient-to-br from-blue-500/10 to-indigo-500/0 blur-2xl rounded-full" />
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            {user?.profileImage ? (
-              <ProfileAvatar
-                src={user.profileImage}
-                name={user?.name}
-                className="size-16 sm:size-20 shrink-0 rounded-2xl border border-slate-200/50 shadow-md shadow-blue-500/5"
-                fallbackClassName="text-xl sm:text-2xl font-black text-blue-700 dark:text-blue-300"
-              />
-            ) : (
-              <ProfileAvatar
-                name={user?.name}
-                className="size-16 sm:size-20 shrink-0 rounded-2xl border border-slate-200/50 bg-blue-50/50 shadow-md shadow-blue-500/5"
-                fallbackClassName="text-xl sm:text-2xl font-black text-blue-700 dark:text-blue-300"
-              />
-            )}
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="truncate text-xl sm:text-2xl font-extrabold tracking-tight text-slate-950 dark:text-white">{user?.name || 'Student'}</h1>
-              </div>
-              <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400">
-                {className && (
-                  <span className="flex items-center gap-1">
-                    <GraduationCap className="size-3.5 sm:size-4 text-blue-500" />
-                    Class {className} {sectionName ? `· ${sectionName}` : ''}
-                  </span>
-                )}
-                {className && rollNo && <span className="text-slate-300 dark:text-slate-800">|</span>}
-                {rollNo && <span className="font-mono text-xs">Roll: {rollNo}</span>}
-                {(className || rollNo) && enrollmentNo && <span className="text-slate-300 dark:text-slate-800">|</span>}
-                {enrollmentNo && <span className="font-mono text-[10px] sm:text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/80 px-2 py-0.5 rounded-lg">{enrollmentNo}</span>}
-              </div>
-              <p className="mt-1 text-[11px] sm:text-xs font-medium text-slate-450 dark:text-slate-500">{institute?.name || 'EDDVA School Portal'}</p>
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      <section className={`${CARD} overflow-hidden`}>
+        <div className="relative h-32 sm:h-40 overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600">
+          <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.22)_1px,transparent_0)] bg-[size:20px_20px]" />
+          <div aria-hidden className="absolute -left-10 -top-16 size-56 rounded-full bg-white/10 blur-2xl" />
+          <div aria-hidden className="absolute -bottom-20 right-10 size-64 rounded-full bg-fuchsia-400/30 blur-3xl" />
+          <div aria-hidden className="absolute right-1/3 -top-10 size-40 rounded-full bg-cyan-300/20 blur-3xl" />
+          <span className="absolute right-4 top-4 sm:right-6 sm:top-5 inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/15 px-3 py-1 text-[10px] sm:text-xs font-extrabold uppercase tracking-wider text-white backdrop-blur-md">
+            <span className="size-1.5 rounded-full bg-emerald-300 animate-pulse" />
+            Active
+          </span>
+        </div>
+
+        <div className="relative px-5 pb-6 sm:px-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:gap-6">
+            <ProfileAvatar
+              src={user?.profileImage}
+              name={user?.name}
+              className="-mt-14 sm:-mt-16 size-28 sm:size-32 shrink-0 rounded-3xl bg-gradient-to-br from-blue-50 to-indigo-100 ring-4 ring-white shadow-2xl shadow-indigo-500/20 dark:ring-slate-950"
+              fallbackClassName="text-3xl sm:text-4xl font-black text-indigo-700 dark:text-indigo-300"
+            />
+            <div className="min-w-0 flex-1 sm:pb-1">
+              <h1 className="truncate !text-2xl !leading-8 sm:!text-3xl sm:!leading-9 font-extrabold tracking-tight text-slate-950 dark:text-white">{user?.name || 'Student'}</h1>
+              <p className="mt-0.5 flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400">
+                <Building2 className="size-3.5 sm:size-4 text-slate-400" />
+                {institute?.name || 'EDDVA School Portal'}
+              </p>
             </div>
           </div>
 
-          <div className="shrink-0 self-start sm:self-center">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-emerald-100 bg-emerald-50/30 text-emerald-700 text-[10px] sm:text-xs font-extrabold uppercase tracking-wider dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30 shadow-sm shadow-emerald-500/5">
-              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Active
-            </span>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {className && (
+              <span className="inline-flex items-center gap-1.5 rounded-xl border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300">
+                <GraduationCap className="size-3.5" />
+                Class {className}{sectionName ? ` · ${sectionName}` : ''}
+              </span>
+            )}
+            {rollNo && (
+              <span className="inline-flex items-center gap-1.5 rounded-xl border border-violet-100 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700 dark:border-violet-900/50 dark:bg-violet-950/40 dark:text-violet-300">
+                <Hash className="size-3.5" />
+                Roll {rollNo}
+              </span>
+            )}
+            {enrollmentNo && (
+              <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 font-mono text-[11px] sm:text-xs font-bold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                <Sparkles className="size-3.5 text-amber-500" />
+                {enrollmentNo}
+              </span>
+            )}
           </div>
         </div>
       </section>
 
-      {/* Top-line metric stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6">
-        {/* Attendance Card */}
-        <div className="relative overflow-hidden p-3 sm:p-6 rounded-2xl sm:rounded-3xl bg-slate-50/30 dark:bg-slate-900/10 border border-slate-100 dark:border-slate-800/80 hover:shadow-lg hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-300 group">
-          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform duration-300 hidden sm:block">
-            <Calendar size={64} className="text-blue-600 dark:text-blue-400" />
-          </div>
-          <p className="flex items-center gap-1 sm:gap-1.5 text-[8px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-            <Calendar className="size-3 sm:size-4 text-blue-500" />
-            <span className="truncate">Attendance</span>
-          </p>
-          <div className="mt-2 sm:mt-3 flex items-baseline gap-1 sm:gap-2">
-            <p className="text-base sm:text-4xl font-extrabold tracking-tight text-slate-950 dark:text-white">
-              {student.attendancePercentage !== null && student.attendancePercentage !== undefined 
-                ? `${student.attendancePercentage}%` 
-                : '—'}
+      {/* ── Summary cards ────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <StatCard
+          icon={Calendar}
+          label="Attendance"
+          tone="blue"
+          progress={hasAttendance ? Number(attendancePct) : 0}
+          helper={hasAttendance ? 'Overall attendance presence' : 'No attendance record found'}
+        >
+          <div className="flex items-baseline gap-2">
+            <p className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-950 dark:text-white">
+              {hasAttendance ? `${attendancePct}%` : '—'}
             </p>
-            {student.attendancePercentage === null && (
-              <button 
-                onClick={handleRequestEdit}
-                className="text-[10px] sm:text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-              >
-                + Add
-              </button>
+            {!hasAttendance && (
+              <button onClick={handleRequestEdit} className="text-[10px] sm:text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400">+ Add</button>
             )}
           </div>
-          <p className="mt-1 text-xs font-semibold text-slate-400 dark:text-slate-500 leading-normal hidden sm:block">
-            {student.attendancePercentage !== null ? 'Overall attendance presence percentage' : 'No attendance record found'}
-          </p>
-        </div>
+        </StatCard>
 
-        {/* Performance Card */}
-        <div className="relative overflow-hidden p-3 sm:p-6 rounded-2xl sm:rounded-3xl bg-slate-50/30 dark:bg-slate-900/10 border border-slate-100 dark:border-slate-800/80 hover:shadow-lg hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-300 group">
-          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform duration-300 hidden sm:block">
-            <BarChart2 size={64} className="text-emerald-600 dark:text-emerald-400" />
-          </div>
-          <p className="flex items-center gap-1 sm:gap-1.5 text-[8px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-            <BarChart2 className="size-3 sm:size-4 text-emerald-500" />
-            <span className="truncate">Avg Accuracy</span>
+        <StatCard
+          icon={BarChart2}
+          label="Avg Accuracy"
+          tone="emerald"
+          progress={avgAccuracy !== null ? avgAccuracy : 0}
+          helper={avgAccuracy !== null ? `Based on ${totalSessions} evaluated assessments` : 'No test sessions completed yet'}
+        >
+          <p className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-950 dark:text-white">
+            {avgAccuracy !== null ? `${avgAccuracy}%` : '—'}
           </p>
-          <div className="mt-2 sm:mt-3 flex items-baseline gap-1 sm:gap-2">
-            <p className="text-base sm:text-4xl font-extrabold tracking-tight text-slate-950 dark:text-white">
-              {avgAccuracy !== null ? `${avgAccuracy}%` : '—'}
-            </p>
-          </div>
-          <p className="mt-1 text-xs font-semibold text-slate-400 dark:text-slate-500 leading-normal hidden sm:block">
-            {avgAccuracy !== null ? `Based on ${totalSessions} evaluated assessments` : 'No test sessions completed yet'}
-          </p>
-        </div>
+        </StatCard>
 
-        {/* Academic Year Card */}
-        <div className="relative overflow-hidden p-3 sm:p-6 rounded-2xl sm:rounded-3xl bg-slate-50/30 dark:bg-slate-900/10 border border-slate-100 dark:border-slate-800/80 hover:shadow-lg hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-300 group">
-          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform duration-300 hidden sm:block">
-            <GraduationCap size={64} className="text-indigo-600 dark:text-indigo-400" />
-          </div>
-          <p className="flex items-center gap-1 sm:gap-1.5 text-[8px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-            <GraduationCap className="size-3 sm:size-4 text-indigo-500" />
-            <span className="truncate">Acad Year</span>
-          </p>
-          <div className="mt-2 sm:mt-3 flex items-baseline gap-1 sm:gap-2">
-            <p className="text-base sm:text-4xl font-extrabold tracking-tight text-slate-950 dark:text-white">
-              {profile.academicYear || '—'}
-            </p>
+        <div className="col-span-2 lg:col-span-1 [&>div]:h-full">
+        <StatCard icon={GraduationCap} label="Acad Year" tone="indigo" helper="Current calendar year">
+          <div className="flex items-baseline gap-2">
+            <p className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-950 dark:text-white">{profile.academicYear || '—'}</p>
             {!profile.academicYear && (
-              <button 
-                onClick={handleRequestEdit}
-                className="text-[10px] sm:text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-              >
-                + Add
-              </button>
+              <button onClick={handleRequestEdit} className="text-[10px] sm:text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400">+ Add</button>
             )}
           </div>
-          <p className="mt-1 text-xs font-semibold text-slate-400 dark:text-slate-500 leading-normal hidden sm:block">
-            Current calendar year
-          </p>
+        </StatCard>
+        </div>
+
+        <div className="col-span-2 lg:col-span-1 [&>div]:h-full">
+          <StatCard
+            icon={UserCheck}
+            label="Class Teacher"
+            tone="violet"
+            helper={classTeacherName ? (className ? `Class ${className}${sectionName ? ` · ${sectionName}` : ''}` : 'Your class teacher') : 'No class teacher assigned yet'}
+          >
+            {classTeacherName ? (
+              <div className="flex items-center gap-3 min-w-0">
+                <ProfileAvatar
+                  src={classTeacherPhoto}
+                  name={classTeacherName}
+                  className="size-12 sm:size-14 shrink-0 rounded-2xl bg-violet-50 ring-2 ring-violet-100 shadow-md shadow-violet-500/10 dark:ring-violet-900/50"
+                  fallbackClassName="text-lg sm:text-xl font-black text-violet-700 dark:text-violet-300"
+                />
+                <p className="min-w-0 truncate text-base sm:text-lg font-extrabold tracking-tight text-slate-950 dark:text-white" title={classTeacherName}>
+                  {classTeacherName}
+                </p>
+              </div>
+            ) : (
+              <p className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-950 dark:text-white">—</p>
+            )}
+          </StatCard>
         </div>
       </div>
 
-      {/* Main details sections */}
+      {/* ── Details ──────────────────────────────────────────────────────── */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Personal & Academic Details */}
-        <section className="rounded-2xl sm:rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-xl shadow-slate-100/50 dark:border-slate-800/80 dark:bg-slate-950 dark:shadow-none space-y-5 sm:space-y-6">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <UserCircle className="size-5 sm:size-6 text-blue-600 dark:text-blue-400 shrink-0" />
-            <div>
-              <h2 className="text-sm sm:text-base font-extrabold text-slate-950 dark:text-white">Personal & Identity Details</h2>
-              <p className="text-[10px] sm:text-xs font-medium text-slate-400 dark:text-slate-500">Essential identity and enrollment values.</p>
-            </div>
+        <section className={`${CARD} space-y-5 p-4 sm:p-6`}>
+          <SectionHeader icon={UserCircle} tone="blue" title="Personal & Identity Details" subtitle="Essential identity and enrollment values." />
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <ProfileField label="Full Name" value={user?.name} icon={User} tone="blue" onRequestEdit={handleRequestEdit} />
+            <ProfileField label="Student ID / User ID" value={user?.id} icon={Shield} tone="indigo" onRequestEdit={handleRequestEdit} />
+            <ProfileField label="Roll Number" value={rollNo} icon={Hash} tone="violet" onRequestEdit={handleRequestEdit} />
+            <ProfileField label="National ID" value={profile.nationalId} icon={ShieldCheck} tone="emerald" onRequestEdit={handleRequestEdit} />
+            <ProfileField label="Primary Contact Phone" value={user?.phone} icon={Smartphone} tone="cyan" onRequestEdit={handleRequestEdit} />
+            <ProfileField label="Date of Birth" value={dobText} icon={Calendar} tone="amber" onRequestEdit={handleRequestEdit} />
           </div>
 
-          <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
-            <ProfileField label="Full Name" value={user?.name} icon={User} onRequestEdit={handleRequestEdit} />
-            <ProfileField label="Student ID / User ID" value={user?.id} icon={Shield} onRequestEdit={handleRequestEdit} />
-            <ProfileField label="Roll Number" value={rollNo} icon={GraduationCap} onRequestEdit={handleRequestEdit} />
-            <ProfileField label="National ID" value={profile.nationalId} icon={ShieldCheck} onRequestEdit={handleRequestEdit} />
-            <ProfileField label="Primary Contact Phone" value={user?.phone} icon={Smartphone} onRequestEdit={handleRequestEdit} />
-            <ProfileField label="Date of Birth" value={profile.dob ? new Date(profile.dob).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ''} icon={Calendar} onRequestEdit={handleRequestEdit} />
-          </div>
-
-          {/* Subjects Card */}
-          <div className="rounded-2xl border border-slate-100 bg-slate-50/10 p-3.5 sm:p-5 dark:border-slate-800/50">
-            <h3 className="text-[10px] sm:text-xs font-extrabold text-slate-450 dark:text-slate-500 uppercase tracking-wider mb-2.5 sm:mb-3 flex items-center gap-2">
-              <BookOpen className="size-3.5 sm:size-4 text-blue-500" />
+          {/* Subjects */}
+          <div className="rounded-2xl border border-slate-100 bg-gradient-to-br from-slate-50/80 to-white p-4 sm:p-5 dark:border-slate-800 dark:from-slate-900/40 dark:to-slate-950">
+            <h3 className="mb-3 flex items-center gap-2 !text-[10px] !leading-4 sm:!text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <span className="flex size-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+                <BookOpen className="size-3.5" />
+              </span>
               Academic Curriculum Subjects
+              {subjectsList.length > 0 && (
+                <span className="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">{subjectsList.length}</span>
+              )}
             </h3>
             {subjectsList.length === 0 ? (
               <div className="flex items-center justify-between">
-                <span className="text-xs sm:text-sm font-semibold text-slate-400 dark:text-slate-500 italic">No subjects assigned yet</span>
-                <button 
-                  onClick={handleRequestEdit}
-                  className="text-[10px] sm:text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                >
-                  + Add
-                </button>
+                <span className="text-xs sm:text-sm font-semibold italic text-slate-400 dark:text-slate-500">No subjects assigned yet</span>
+                <button onClick={handleRequestEdit} className="text-[10px] sm:text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">+ Add</button>
               </div>
             ) : (
-              <div className="flex flex-wrap gap-1.5 items-center">
+              <div className="flex flex-wrap items-center gap-2">
                 {(showAllSubjects ? subjectsList : visibleSubjects).map((sub, idx) => (
-                  <span 
-                    key={idx} 
-                    className="px-2.5 py-1 rounded-xl bg-blue-50/50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 text-[10px] sm:text-xs font-bold border border-blue-100/50 dark:border-blue-900/50 shadow-sm"
+                  <span
+                    key={idx}
+                    className={`rounded-xl border px-3 py-1.5 text-[11px] sm:text-xs font-bold shadow-sm ${SUBJECT_PILLS[idx % SUBJECT_PILLS.length]}`}
                   >
                     {sub}
                   </span>
                 ))}
                 {!showAllSubjects && overflowCount > 0 && (
-                  <button 
+                  <button
                     onClick={() => setShowAllSubjects(true)}
-                    className="px-2 py-1 rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 hover:bg-slate-205 dark:hover:bg-slate-700 text-[10px] sm:text-xs font-extrabold transition-colors border border-slate-200 dark:border-slate-700"
+                    className="rounded-xl border border-slate-200 bg-slate-100 px-3 py-1.5 text-[11px] sm:text-xs font-extrabold text-slate-600 transition-colors hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                   >
                     +{overflowCount} more
                   </button>
                 )}
                 {showAllSubjects && subjectsList.length > maxVisibleSubjects && (
-                  <button 
+                  <button
                     onClick={() => setShowAllSubjects(false)}
-                    className="px-2 py-1 rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 hover:bg-slate-205 dark:hover:bg-slate-700 text-[10px] sm:text-xs font-extrabold transition-colors border border-slate-200 dark:border-slate-700"
+                    className="rounded-xl border border-slate-200 bg-slate-100 px-3 py-1.5 text-[11px] sm:text-xs font-extrabold text-slate-600 transition-colors hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                   >
                     Show Less
                   </button>
@@ -312,70 +454,72 @@ export default function Profile() {
           </div>
         </section>
 
-        {/* Parent / Guardian Information */}
-        <section className="rounded-2xl sm:rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-xl shadow-slate-100/50 dark:border-slate-800/80 dark:bg-slate-950 dark:shadow-none flex flex-col justify-between">
-          <div className="space-y-5 sm:space-y-6">
-            <div className="flex items-center gap-2.5 sm:gap-3">
-              <Users className="size-5 sm:size-6 text-violet-600 dark:text-violet-400 shrink-0" />
-              <div>
-                <h2 className="text-sm sm:text-base font-extrabold text-slate-950 dark:text-white">Parent & Guardian Information</h2>
-                <p className="text-[10px] sm:text-xs font-medium text-slate-400 dark:text-slate-500">Contact mapping for emergency logs.</p>
-              </div>
-            </div>
+        {/* Parent / Guardian + Security */}
+        <section className={`${CARD} flex flex-col justify-between p-4 sm:p-6`}>
+          <div className="space-y-5">
+            <SectionHeader icon={Users} tone="violet" title="Parent & Guardian Information" subtitle="Contact mapping for emergency logs." />
 
             {!hasParentDetails ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-center p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/10 my-3 sm:my-4">
-                <Users className="size-8 sm:size-10 text-slate-400 mb-2.5 sm:mb-3" />
-                <h3 className="text-xs sm:text-sm font-bold text-slate-950 dark:text-white">No Guardian Details Found</h3>
-                <p className="mt-1.5 text-[10px] sm:text-xs text-slate-450 dark:text-slate-500 max-w-xs leading-normal">Family contact details and emergency parent records are currently missing from the portal.</p>
-                <button 
+              <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/40 p-6 sm:p-8 text-center dark:border-slate-800 dark:bg-slate-900/20">
+                <span className="flex size-14 items-center justify-center rounded-2xl bg-violet-50 text-violet-500 dark:bg-violet-950/40">
+                  <Users className="size-7" />
+                </span>
+                <h3 className="mt-3 !text-xs !leading-4 sm:!text-sm sm:!leading-5 font-bold text-slate-950 dark:text-white">No Guardian Details Found</h3>
+                <p className="mt-1.5 max-w-xs text-[10px] sm:text-xs leading-normal text-slate-500 dark:text-slate-500">
+                  Family contact details and emergency parent records are currently missing from the portal.
+                </p>
+                <button
                   onClick={handleRequestEdit}
-                  className="mt-3.5 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[10px] sm:text-xs font-bold transition-all shadow-md shadow-blue-500/10 hover:scale-102 active:scale-98"
+                  className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 text-[10px] sm:text-xs font-bold text-white shadow-lg shadow-blue-500/25 transition-all hover:brightness-110 active:scale-[0.98]"
                 >
                   Request to Add Details
                 </button>
               </div>
             ) : (
-              <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
-                <ProfileField label="Parent / Guardian Name" value={parentName} icon={User} onRequestEdit={handleRequestEdit} />
-                <ProfileField label="Contact Details" value={parentContact} icon={Smartphone} onRequestEdit={handleRequestEdit} />
-                <ProfileField label="Email Address" value={parentEmail} icon={Mail} onRequestEdit={handleRequestEdit} />
-                <ProfileField label="Relationship" value={parentRelation} icon={Users} onRequestEdit={handleRequestEdit} />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <ProfileField label="Parent / Guardian Name" value={parentName} icon={User} tone="violet" onRequestEdit={handleRequestEdit} />
+                <ProfileField label="Contact Details" value={parentContact} icon={Smartphone} tone="emerald" onRequestEdit={handleRequestEdit} />
+                <ProfileField label="Email Address" value={parentEmail} icon={Mail} tone="rose" onRequestEdit={handleRequestEdit} />
+                <ProfileField label="Relationship" value={parentRelation} icon={Users} tone="amber" onRequestEdit={handleRequestEdit} />
               </div>
             )}
           </div>
 
-          {/* Security details (nested in layout card footer) */}
-          <div className="border-t border-slate-100 dark:border-slate-800/80 pt-4 sm:pt-6 mt-4 sm:mt-6 space-y-3 sm:space-y-4">
-            <h3 className="text-[10px] sm:text-xs font-extrabold text-slate-450 dark:text-slate-500 uppercase tracking-wider flex items-center gap-2">
-              <ShieldCheck className="size-3.5 sm:size-4 text-emerald-500" />
+          {/* Security */}
+          <div className="mt-6 space-y-3 border-t border-slate-100 pt-5 dark:border-slate-800/80">
+            <h3 className="flex items-center gap-2 !text-[10px] !leading-4 sm:!text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <ShieldCheck className="size-4 text-emerald-500" />
               Security Settings
             </h3>
-            <div className="space-y-2.5 sm:space-y-3">
-              <button 
+            <div className="space-y-2.5">
+              <button
                 onClick={() => {
                   toast.success("A password reset link has been sent to your registered email.");
                 }}
-                className="flex w-full items-center justify-between rounded-xl sm:rounded-2xl border border-slate-100 p-3.5 sm:p-4 bg-slate-50/20 hover:bg-slate-50 dark:border-slate-800/80 dark:hover:bg-slate-800/50 transition-all font-bold text-slate-700 dark:text-slate-300"
+                className="group flex w-full items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/40 p-3.5 text-left transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:bg-white hover:shadow-md dark:border-slate-800 dark:bg-slate-900/30 dark:hover:border-blue-900 dark:hover:bg-slate-900"
               >
-                <span className="flex items-center gap-2.5 sm:gap-3 text-xs sm:text-sm">
-                  <KeyRound className="size-4 sm:size-5 text-blue-500" />
-                  Change Password
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+                  <KeyRound className="size-5" />
                 </span>
-                <span className="text-[8px] sm:text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Send Link →</span>
+                <span className="flex-1 text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">Change Password</span>
+                <span className="flex items-center gap-1 text-[9px] sm:text-[10px] font-bold uppercase text-slate-400 transition-colors group-hover:text-blue-600 dark:text-slate-500">
+                  Send Link <ChevronRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+                </span>
               </button>
 
-              <button 
+              <button
                 onClick={() => {
                   toast.info("Your account is currently active on 1 device session.");
                 }}
-                className="flex w-full items-center justify-between rounded-xl sm:rounded-2xl border border-slate-100 p-3.5 sm:p-4 bg-slate-50/20 hover:bg-slate-50 dark:border-slate-800/80 dark:hover:bg-slate-800/50 transition-all font-bold text-slate-700 dark:text-slate-300"
+                className="group flex w-full items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/40 p-3.5 text-left transition-all hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-white hover:shadow-md dark:border-slate-800 dark:bg-slate-900/30 dark:hover:border-emerald-900 dark:hover:bg-slate-900"
               >
-                <span className="flex items-center gap-2.5 sm:gap-3 text-xs sm:text-sm">
-                  <Smartphone className="size-4 sm:size-5 text-emerald-500" />
-                  Review Device Sessions
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400">
+                  <Smartphone className="size-5" />
                 </span>
-                <span className="text-[8px] sm:text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Review →</span>
+                <span className="flex-1 text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">Review Device Sessions</span>
+                <span className="flex items-center gap-1 text-[9px] sm:text-[10px] font-bold uppercase text-slate-400 transition-colors group-hover:text-emerald-600 dark:text-slate-500">
+                  Review <ChevronRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+                </span>
               </button>
             </div>
           </div>

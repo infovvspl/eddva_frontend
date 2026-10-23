@@ -7,6 +7,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import GlassCard from '@/components/school/GlassCard';
 import Badge from '@/components/school/Badge';
 import ScoreTrendChart, { scoreTrendDelta } from '@/components/school/student/ScoreTrendChart';
+import SubjectMasteryChart from '@/components/school/student/SubjectMasteryChart';
 import '@/pages/school/teacher/StudentReportClasses.css';
 
 export default function Analytics() {
@@ -423,26 +424,7 @@ export default function Analytics() {
             <div className="rounded-2xl sm:rounded-[2rem] border border-slate-100 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <h2 className="mb-4 sm:mb-6 text-base sm:text-lg font-black text-slate-900 dark:text-white">Subject Mastery</h2>
               
-              <div className="space-y-4 sm:space-y-6">
-                {currentClassSubjectMastery.length === 0 ? (
-                  <p className="text-xs sm:text-sm text-slate-500">Not enough data to calculate mastery.</p>
-                ) : (
-                  currentClassSubjectMastery.map((sub, i) => (
-                    <div key={i}>
-                      <div className="mb-1.5 flex items-center justify-between text-xs sm:text-sm font-bold">
-                        <span className="text-slate-700 dark:text-slate-300">{sub.subjectName}</span>
-                        <span className="text-indigo-600 dark:text-indigo-400">{sub.accuracy}%</span>
-                      </div>
-                      <div className="h-2.5 sm:h-3 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                        <div 
-                          className="h-full rounded-full bg-indigo-600 transition-all duration-1000" 
-                          style={{ width: `${sub.accuracy}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+              <SubjectMasteryChart data={currentClassSubjectMastery} height={isMobile ? 280 : 320} compact={isMobile} />
             </div>
 
             {/* Class Cards */}

@@ -98,7 +98,10 @@ const SLOT_TYPE_TEXT = {
   extra: 'text-amber-600 dark:text-amber-400',
   break: 'text-slate-500 dark:text-slate-400',
 };
-function WeeklyGridSlotCard({ slot, subjectName, teacherName, onEdit, onDelete }) {
+function WeeklyGridSlotCard({ slot, subjectName, teacherName, photoUrl, onEdit, onDelete }) {
+  // Show the teacher's photo when there is one (and it loads); otherwise their initials.
+  const [failedUrl, setFailedUrl] = useState(null);
+  const showPhoto = Boolean(photoUrl) && failedUrl !== photoUrl;
   const isBreak = slot.type === 'break';
   const palette = getSlotPalette(slot);
   const type = slot.type || 'offline';
@@ -130,8 +133,20 @@ function WeeklyGridSlotCard({ slot, subjectName, teacherName, onEdit, onDelete }
         <span className={`capitalize ${SLOT_TYPE_TEXT[type] || SLOT_TYPE_TEXT.offline}`}>{type}</span>
       </p>
       <div className="flex items-center gap-2">
-        <span className={`flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${palette.avatar}`}>
-          {isBreak ? <Coffee className="size-3" /> : teacherName.split(' ').map((p) => p[0]).join('').toUpperCase().slice(0, 2)}
+        <span className={`flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full text-[10px] font-black ${palette.avatar}`}>
+          {isBreak ? (
+            <Coffee className="size-3" />
+          ) : showPhoto ? (
+            <img
+              src={photoUrl}
+              alt={teacherName}
+              className="size-full object-cover"
+              loading="lazy"
+              onError={() => setFailedUrl(photoUrl)}
+            />
+          ) : (
+            teacherName.split(' ').map((p) => p[0]).join('').toUpperCase().slice(0, 2)
+          )}
         </span>
         <span className="truncate text-xs font-bold text-slate-800 dark:text-slate-200">
           {isBreak ? 'No teacher' : teacherName}
@@ -139,6 +154,21 @@ function WeeklyGridSlotCard({ slot, subjectName, teacherName, onEdit, onDelete }
       </div>
 
     </div>
+  );
+}
+
+// Round teacher avatar: the photo when there is one (and it loads), otherwise the initials.
+function PhotoAvatar({ src, name, initials, className }) {
+  const [failedSrc, setFailedSrc] = useState(null);
+  const showPhoto = Boolean(src) && failedSrc !== src;
+  return (
+    <span className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full ${className}`}>
+      {showPhoto ? (
+        <img src={src} alt={name} className="size-full object-cover" loading="lazy" onError={() => setFailedSrc(src)} />
+      ) : (
+        initials
+      )}
+    </span>
   );
 }
 
@@ -649,6 +679,13 @@ export default function Timetable() {
     setIsModalOpen(true);
   };
 
+  // Teacher photo for a slot: from the slot's own teacher if present, else from the teacher list.
+  const getSlotTeacherPhoto = (slot) =>
+    slot.teacher?.profileImage
+    || slot.teacher?.user?.profileImage
+    || allTeachers.find((t) => String(t.teacherProfile?.id) === String(slot.teacherId || slot.teacher?.id))?.profileImage
+    || null;
+
   const formatTeacherName = (t) => {
     if (!t) return null;
     const u = t.user || {};
@@ -737,6 +774,7 @@ export default function Timetable() {
           name,
           profileId: teacher.teacherProfile?.id,
           userId: teacher.id,
+          photo: teacher.profileImage || teacher.user?.profileImage || null,
           subjects: Array.isArray(teacher.subjects) ? teacher.subjects : [],
         });
       }
@@ -798,6 +836,7 @@ export default function Timetable() {
       teacherMap.set(teacher.id, {
         key: teacher.id,
         teacherName: teacher.name,
+        photo: teacher.photo,
         activeSlot: null,
         nextSlot: null,
         totalSlots: 0,
@@ -1351,6 +1390,7 @@ export default function Timetable() {
                                     slot={slot}
                                     subjectName={slot.subject?.name || allSubjects.find(s => s.id === slot.subjectId)?.name || 'Subject'}
                                     teacherName={formatTeacherName(slot.teacher) || allTeachers.find(t => t.teacherProfile?.id === slot.teacherId)?.name || 'Teacher'}
+                                    photoUrl={getSlotTeacherPhoto(slot)}
                                     onEdit={() => handleEditClick(slot)}
                                     onDelete={() => handleDeleteClick(slot.id)}
                                   />
@@ -1628,9 +1668,12 @@ export default function Timetable() {
 
                     <div className="flex flex-1 flex-col gap-3 p-3.5">
                       <div className="flex items-center gap-2.5">
-                        <span className={`flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-black ${isEngaged ? palette.avatar : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>
-                          {initials}
-                        </span>
+                        <PhotoAvatar
+                          src={item.photo}
+                          name={item.teacherName}
+                          initials={initials}
+                          className={`size-9 text-xs font-black ${isEngaged ? palette.avatar : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}
+                        />
                         <div className="min-w-0">
                           <p className="truncate text-sm font-black text-slate-950 dark:text-white">{item.teacherName}</p>
                           <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">{item.totalSlots} period{item.totalSlots === 1 ? '' : 's'} / week</p>

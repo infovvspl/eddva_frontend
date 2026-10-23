@@ -8,7 +8,6 @@ import {
   BookOpen,
   Check,
   CheckCircle2,
-  ChevronDown,
   Clock,
   HelpCircle,
   Lightbulb,
@@ -473,7 +472,6 @@ export default function Doubts() {
                 ]}
                   className="w-full"
                 />
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
               </div>
             </div>
             <div>
@@ -487,7 +485,6 @@ export default function Doubts() {
                 ]}
                   className="w-full"
                 />
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
               </div>
             </div>
           </div>
@@ -516,7 +513,6 @@ export default function Doubts() {
               ]}
               className="w-full"
             />
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
           </div>
         </div>
 
@@ -542,7 +538,7 @@ export default function Doubts() {
               className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-indigo-600 text-sm font-black text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 disabled:opacity-40"
             >
               {submitting ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-              Ask AI
+              Ask AI Tutor
             </button>
             <button
               type="button"
