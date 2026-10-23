@@ -429,11 +429,11 @@ export default function Analytics() {
 
             {/* Class Cards */}
             <div className="space-y-4">
-              <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-1.5 flex items-center gap-2">
+              <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4 flex items-center gap-2">
                 <GraduationCap className="text-indigo-600 size-4" /> Academic Report Cards
               </h3>
               {Object.keys(resultsByClass).length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,17rem),1fr))] gap-4 sm:gap-6">
                   {Object.entries(resultsByClass).map(([classKey, results]) => {
                     const classNameVal = results[0]?.className || classKey;
                     const academicYearVal = results[0]?.academicYear || '';
@@ -448,14 +448,14 @@ export default function Analytics() {
                       <GlassCard
                         key={classKey}
                         onClick={() => navigate(`/school/student/analytics/report-card?class=${encodeURIComponent(classNameVal)}&year=${encodeURIComponent(academicYearVal)}`)}
-                        className="group relative cursor-pointer p-6 rounded-3xl border border-slate-200/85 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 flex flex-col justify-between h-48 w-full active:scale-[0.99] student-report-classes__card"
+                        className="group relative cursor-pointer p-5 sm:p-6 rounded-3xl border border-slate-200/85 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 flex flex-col justify-between gap-4 min-h-48 h-auto min-w-0 w-full active:scale-[0.99] student-report-classes__card"
                       >
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-start">
-                            <span className="px-3 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 font-extrabold text-[10px] uppercase tracking-wider">
+                        <div className="min-w-0 space-y-2">
+                          <div className="flex justify-between items-start gap-2">
+                            <span className="min-w-0 truncate px-3 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 font-extrabold text-[10px] uppercase tracking-wider">
                               {academicYearVal || 'Academic Year'}
                             </span>
-                            <div className="size-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-blue-500 group-hover:bg-blue-50 dark:group-hover:bg-blue-950/30 transition-colors">
+                            <div className="size-8 shrink-0 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-blue-500 group-hover:bg-blue-50 dark:group-hover:bg-blue-950/30 transition-colors">
                               <FileText size={16} />
                             </div>
                           </div>
@@ -464,19 +464,19 @@ export default function Analytics() {
                               {cardStatus === 'PUBLISHED' ? 'Awaiting Admin Approval' : 'Not Yet Published'}
                             </span>
                           )}
-                          <h4 className="text-lg font-black text-slate-800 dark:text-white leading-tight tracking-tight group-hover:text-blue-600 transition-colors">
+                          <h4 className="text-lg font-black text-slate-800 dark:text-white leading-tight tracking-tight break-words line-clamp-2 group-hover:text-blue-600 transition-colors" title={classNameVal}>
                             {classNameVal}
                           </h4>
-                          <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 line-clamp-2 pr-4 leading-normal">
+                          <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 line-clamp-2 break-words leading-normal" title={`Subjects: ${subjectsDisplay}`}>
                             Subjects: {subjectsDisplay}
                           </p>
                         </div>
-                        <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
-                          <div>
+                        <div className="flex items-center justify-between gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                          <div className="min-w-0">
                             <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Overall weighted result</div>
                             <div className="text-xs font-black text-slate-400 dark:text-slate-500 mt-0.5">Report Card Score</div>
                           </div>
-                          <div className="text-right">
+                          <div className="shrink-0 text-right">
                             <div className="text-2xl font-black text-blue-600 dark:text-blue-400">{overallPercentage}%</div>
                           </div>
                         </div>
