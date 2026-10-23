@@ -1,5 +1,6 @@
 // StudentSolutionPage.jsx — route: /solution/students
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import "../new-website.css";
 import TopBar from "../components/TopBar";
 import Navbar from "../components/Navbar";
@@ -16,6 +17,7 @@ const studentCapabilityCount = students
   : 0;
 
 const StudentSolutionPage = () => {
+  const { t } = useTranslation("solutions");
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   return (
@@ -26,15 +28,15 @@ const StudentSolutionPage = () => {
         {students && (
           <PageHead
             id="nw-student-sol-head"
-            title="EDDVA for"
-            accent="Students"
-            lead="Personalized learning paths, progress tracking and everything a student needs in one place."
+            title={t("pages.students.title")}
+            accent={t("pages.students.accent")}
+            lead={t("pages.students.lead")}
             icon={students.Icon}
             color={students.color}
             bg={students.bg}
             stats={[
-              { value: studentCapabilityCount, label: "Capabilities" },
-              { value: students.groups.length, label: "Categories" },
+              { value: studentCapabilityCount, label: t("pages.capabilities") },
+              { value: students.groups.length, label: t("pages.categories") },
             ]}
           />
         )}

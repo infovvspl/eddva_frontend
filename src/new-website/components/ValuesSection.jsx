@@ -1,9 +1,13 @@
 // ValuesSection.jsx — /about — "Our Values"
 
-import { values } from "../data/values";
+import { useTranslation } from "react-i18next";
+import { useLocalized } from "@/i18n/useLocalized";
+import { values as valuesData } from "../data/values";
 import useInView from "../hooks/useInView";
 
 const ValuesSection = () => {
+  const { t } = useTranslation("about");
+  const values = useLocalized("data-values", valuesData);
   const [ref, inView] = useInView({ threshold: 0.2 });
 
   return (
@@ -11,8 +15,8 @@ const ValuesSection = () => {
       <div className="nw-values__container">
 
         <header className="nw-values__header">
-          <h2 className="nw-values__heading">Our Values</h2>
-          <p className="nw-values__sub">The principles that guide everything we do.</p>
+          <h2 className="nw-values__heading">{t("values.heading")}</h2>
+          <p className="nw-values__sub">{t("values.sub")}</p>
         </header>
 
         <ul className={`nw-values__grid${inView ? " nw-in" : ""}`} ref={ref}>

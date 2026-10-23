@@ -130,6 +130,7 @@ export default function Sidebar({ open, onClose }) {
   return (
     <UnifiedSidebar
       groups={filteredGroups.filter(g => g.items.length > 0)}
+      activeStyle="dark"
       collapsed={collapsed}
       onToggleCollapse={handleToggleCollapse}
       mobileOpen={open}

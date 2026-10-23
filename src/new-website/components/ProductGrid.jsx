@@ -15,12 +15,15 @@
 
 import { Link } from "react-router-dom";
 import { Check, ArrowRight, Sparkles } from "lucide-react";
-import { products } from "../data/products";
+import { useTranslation } from "react-i18next";
+import { useLocalized } from "@/i18n/useLocalized";
+import { products as productsData } from "../data/products";
 import useInView from "../hooks/useInView";
 
 const FEATURED = "nw-prod-combo";
 
 const ProductCard = ({ product, index }) => {
+  const { t } = useTranslation("products");
   const { id, slug, title, desc, tagline, bullets, cta, TileIcon, img, Icon, color, bg, border, btn } = product;
   const [ref, inView] = useInView({ threshold: 0.15 });
   const featured = id === FEATURED;
@@ -41,7 +44,7 @@ const ProductCard = ({ product, index }) => {
       {featured && (
         <span className="nw-pgrid__flag">
           <Sparkles size={11} strokeWidth={2.4} />
-          Most Popular
+          {t("grid.mostPopular")}
         </span>
       )}
 
@@ -75,7 +78,7 @@ const ProductCard = ({ product, index }) => {
 
       <div className="nw-pgrid__actions">
         <Link to={`/products/${slug}`} className="nw-pgrid__more" id={`${id}-more`}>
-          Learn more
+          {t("grid.learnMore")}
           <ArrowRight size={13} strokeWidth={2.6} />
         </Link>
         <Link
@@ -92,17 +95,18 @@ const ProductCard = ({ product, index }) => {
 };
 
 const ProductGrid = () => {
+  const { t } = useTranslation("products");
+  const products = useLocalized("data-products", productsData);
   return (
     <section className="nw-pgrid" id="nw-product-suite">
       <div className="nw-pgrid__container">
 
         <header className="nw-pgrid__header">
           <h2 className="nw-pgrid__heading">
-            Explore Our <span className="nw-pgrid__heading-accent">Product</span> Suite
+            {t("grid.headingPre")}<span className="nw-pgrid__heading-accent">{t("grid.headingAccent")}</span>{t("grid.headingPost")}
           </h2>
           <p className="nw-pgrid__lead">
-            Five products, one platform. Pick what your institution needs —
-            everything below is included in what it says.
+            {t("grid.lead")}
           </p>
         </header>
 

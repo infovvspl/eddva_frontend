@@ -6,55 +6,50 @@
 // response time against what the team actually commits to.
 
 import { Send, PhoneCall, MonitorPlay, Rocket } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import useInView from "../hooks/useInView";
+import { localizeDigits } from "@/i18n/digits";
 
 const steps = [
   {
     id: "nw-step-send",
     Icon: Send,
-    title: "You send the enquiry",
-    desc: "Tell us about your institution and what you would like to see.",
   },
   {
     id: "nw-step-call",
     Icon: PhoneCall,
-    title: "We get in touch",
-    desc: "Someone from the team calls you, usually within one working day.",
   },
   {
     id: "nw-step-demo",
     Icon: MonitorPlay,
-    title: "A guided demo",
-    desc: "A walkthrough of the modules that matter to your institution.",
   },
   {
     id: "nw-step-live",
     Icon: Rocket,
-    title: "Onboarding",
-    desc: "Data migration, staff training and support through go-live.",
   },
 ];
 
 const ContactSteps = () => {
+  const { t } = useTranslation("contact");
   const [ref, inView] = useInView({ threshold: 0.25 });
 
   return (
     <section className="nw-steps" id="nw-contact-steps">
       <div className="nw-steps__container">
 
-        <h2 className="nw-steps__heading">What Happens Next</h2>
+        <h2 className="nw-steps__heading">{t("steps.heading")}</h2>
 
         <ol className={`nw-steps__list${inView ? " nw-in" : ""}`} ref={ref}>
-          {steps.map(({ id, Icon, title, desc }, i) => (
+          {steps.map(({ id, Icon }, i) => (
             <li className="nw-steps__step" key={id} id={id} style={{ "--i": i }}>
               <span className="nw-steps__marker" aria-hidden="true">
                 <span className="nw-steps__icon">
                   <Icon size={20} strokeWidth={1.9} />
                 </span>
-                <span className="nw-steps__num">{i + 1}</span>
+                <span className="nw-steps__num">{localizeDigits(i + 1)}</span>
               </span>
-              <h3 className="nw-steps__title">{title}</h3>
-              <p className="nw-steps__desc">{desc}</p>
+              <h3 className="nw-steps__title">{t(`steps.items.${id}.title`)}</h3>
+              <p className="nw-steps__desc">{t(`steps.items.${id}.desc`)}</p>
             </li>
           ))}
         </ol>

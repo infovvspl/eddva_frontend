@@ -13,8 +13,11 @@ import CtaBanner from "../components/CtaBanner";
 import Footer from "../components/Footer";
 import useBlogPosts from "../hooks/useBlogPosts";
 import { Newspaper } from "lucide-react";
+import { useTranslation } from "react-i18next";
+
 
 const BlogPage = () => {
+  const { t } = useTranslation("blog");
   useEffect(() => { window.scrollTo(0, 0); }, []);
   const { posts } = useBlogPosts();
 
@@ -25,14 +28,14 @@ const BlogPage = () => {
       <main>
         <PageHead
           id="nw-blog-head"
-          title="EDDVA"
-          accent="Blog"
-          lead="Notes on AI in education, exam prep strategy and running a school — from the team building EDDVA."
+          title={t("pageTitle")}
+          accent={t("pageAccent")}
+          lead={t("pageLead")}
           icon={Newspaper}
           color="#1a56db"
           bg="#eaf1fd"
           stats={[
-            { value: posts.length, label: "Articles" },
+            { value: posts.length, label: t("articles") },
           ]}
         />
         <BlogGrid posts={posts} />

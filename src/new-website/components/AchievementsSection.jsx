@@ -1,11 +1,15 @@
 // AchievementsSection.jsx — New Website Mockup
 // "OUR ACHIEVEMENTS — Recognized for Excellence" credential badges
 
-import { achievements } from "../data/achievements";
+import { useTranslation } from "react-i18next";
+import { useLocalized } from "@/i18n/useLocalized";
+import { achievements as achievementsData } from "../data/achievements";
 import useInView from "../hooks/useInView";
 
 
 const AchievementsSection = () => {
+  const { t } = useTranslation("home");
+  const achievements = useLocalized("data-achievements", achievementsData);
   const [ref, inView] = useInView({ threshold: 0.2 });
 
   return (
@@ -13,8 +17,8 @@ const AchievementsSection = () => {
       <div className="nw-achievements__container">
 
         <div className="nw-achievements__header">
-          <span className="nw-achievements__label">OUR ACHIEVEMENTS</span>
-          <h2 className="nw-achievements__heading">Recognized for Excellence</h2>
+          <span className="nw-achievements__label">{t("achievements.label")}</span>
+          <h2 className="nw-achievements__heading">{t("achievements.heading")}</h2>
         </div>
 
         <div className={`nw-achievements__grid${inView ? " nw-in" : ""}`} ref={ref}>

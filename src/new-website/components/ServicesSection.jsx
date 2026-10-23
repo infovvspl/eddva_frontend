@@ -3,7 +3,9 @@
 // the two service cards side by side, then the four stakeholder cards.
 
 import { ArrowRight } from "lucide-react";
-import { services, stakeholders } from "../data/services";
+import { useTranslation } from "react-i18next";
+import { useLocalized } from "@/i18n/useLocalized";
+import { services as servicesData, stakeholders as stakeholdersData } from "../data/services";
 import useInView from "../hooks/useInView";
 
 
@@ -46,6 +48,9 @@ const CampusScene = () => (
 );
 
 const ServicesSection = () => {
+  const { t } = useTranslation("home");
+  const services = useLocalized("data-services", servicesData);
+  const stakeholders = useLocalized("data-services", stakeholdersData);
   const [listRef, listIn] = useInView({ threshold: 0.2 });
   const [shRef, shIn] = useInView({ threshold: 0.15 });
 
@@ -56,13 +61,12 @@ const ServicesSection = () => {
         {/* Header — intro copy with the campus scene alongside */}
         <div className="nw-services__head">
           <div className="nw-services__intro">
-            <span className="nw-services__label nw-services__label--rule">OUR SERVICES</span>
+            <span className="nw-services__label nw-services__label--rule">{t("services.label")}</span>
             <h2 className="nw-services__heading">
-              Tailored <span className="nw-services__heading-accent">for Institutions</span>
+              {t("services.headingPre")}<span className="nw-services__heading-accent">{t("services.headingAccent")}</span>
             </h2>
             <p className="nw-services__lead">
-              Powerful solutions designed to simplify operations, drive
-              engagement and deliver academic excellence.
+              {t("services.lead")}
             </p>
           </div>
           <div className="nw-services__scene" aria-hidden="true">
@@ -95,7 +99,7 @@ const ServicesSection = () => {
 
         {/* Stakeholders — one connected ecosystem, not four separate cards */}
         <div className="nw-services__right">
-          <span className="nw-services__label nw-services__label--center">OUR STAKEHOLDERS</span>
+          <span className="nw-services__label nw-services__label--center">{t("services.stakeholders")}</span>
           <div className={`nw-services__stakeholders${shIn ? " nw-in" : ""}`} ref={shRef}>
             <svg className="nw-services__sh-line" viewBox="0 0 100 2" preserveAspectRatio="none" aria-hidden="true">
               <line x1="0" y1="1" x2="100" y2="1" />

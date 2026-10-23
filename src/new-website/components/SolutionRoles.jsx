@@ -21,8 +21,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, ArrowRight } from "lucide-react";
-import { roleSolutions } from "../data/solutions";
+import { useTranslation } from "react-i18next";
+import { useLocalized } from "@/i18n/useLocalized";
+import { roleSolutions as roleSolutionsData } from "../data/solutions";
 import useInView from "../hooks/useInView";
+import { localizeDigits } from "@/i18n/digits";
 
 const countFor = role =>
   role.groups.reduce((sum, group) => sum + group.items.length, 0);
@@ -40,6 +43,8 @@ const DEDICATED_PAGE = {
 };
 
 const SolutionRoles = () => {
+  const { t } = useTranslation("solutions");
+  const roleSolutions = useLocalized("data-solutions", roleSolutionsData);
   // Default-open the first role that still expands in place — Students
   // (roleSolutions[0]) now links out instead, so opening it by default would
   // do nothing.
@@ -56,10 +61,9 @@ const SolutionRoles = () => {
       <div className="nw-roles__container">
 
         <header className="nw-roles__header">
-          <h2 className="nw-roles__heading">What EDDVA Does for Each of Them</h2>
+          <h2 className="nw-roles__heading">{t("roles.heading")}</h2>
           <p className="nw-roles__lead">
-            Every module below is live in the platform. Open a role to see
-            exactly what they get.
+            {t("roles.lead")}
           </p>
         </header>
 
@@ -84,7 +88,7 @@ const SolutionRoles = () => {
                     <span className="nw-roles__title">{title}</span>
                     <span className="nw-roles__blurb">{blurb}</span>
                   </span>
-                  <span className="nw-roles__count">{countFor(role)}</span>
+                  <span className="nw-roles__count">{localizeDigits(countFor(role))}</span>
                   <ArrowRight
                     size={19}
                     strokeWidth={2.2}
@@ -119,7 +123,7 @@ const SolutionRoles = () => {
                       <span className="nw-roles__title">{title}</span>
                       <span className="nw-roles__blurb">{blurb}</span>
                     </span>
-                    <span className="nw-roles__count">{countFor(role)}</span>
+                    <span className="nw-roles__count">{localizeDigits(countFor(role))}</span>
                     <ChevronDown
                       size={19}
                       strokeWidth={2.2}
@@ -144,7 +148,7 @@ const SolutionRoles = () => {
                       <div className="nw-roles__group" key={groupId}>
                         <h4 className="nw-roles__group-label">
                           {label}
-                          <span className="nw-roles__group-count">{items.length}</span>
+                          <span className="nw-roles__group-count">{localizeDigits(items.length)}</span>
                         </h4>
                         <ul className="nw-roles__items">
                           {items.map(({ Icon: ItemIcon, name, desc }) => (

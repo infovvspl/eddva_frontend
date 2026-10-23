@@ -3,9 +3,12 @@
 // intro column. Deliberately NOT the home page's four-up card grid — same
 // copy from data/about.js, different layout.
 
+import { useTranslation } from "react-i18next";
+import { useLocalized } from "@/i18n/useLocalized";
 import aboutHome from "../assets/about.png";
-import { aboutCards } from "../data/about";
+import { aboutCards as aboutCardsData } from "../data/about";
 import useInView from "../hooks/useInView";
+import { localizeDigits } from "@/i18n/digits";
 
 /* Each row watches itself, so the list reveals as you scroll rather than all
    at once when the section's top edge appears. */
@@ -21,7 +24,7 @@ const Row = ({ card, index }) => {
       style={{ "--nw-pillar-accent": color }}
     >
       <span className="nw-pillars__num" aria-hidden="true">
-        {String(index + 1).padStart(2, "0")}
+        {localizeDigits(String(index + 1).padStart(2, "0"))}
       </span>
       <div className="nw-pillars__body">
         <div className="nw-pillars__row-head">
@@ -41,6 +44,8 @@ const Row = ({ card, index }) => {
 };
 
 const AboutPillars = () => {
+  const { t } = useTranslation("about");
+  const aboutCards = useLocalized("data-about", aboutCardsData);
   return (
     <section className="nw-pillars" id="nw-about-pillars">
       <div className="nw-pillars__container">
@@ -48,13 +53,13 @@ const AboutPillars = () => {
         {/* LEFT — stays put while the list scrolls past it */}
         <div className="nw-pillars__intro">
           <h2 className="nw-pillars__heading">
-            Empowering Education.<br />
-            Enriching <span className="nw-pillars__heading-accent">Futures.</span>
+            {t("pillars.headingLine1")}<br />
+            {t("pillars.headingPre")}<span className="nw-pillars__heading-accent">{t("pillars.headingAccent")}</span>
           </h2>
           <figure className="nw-pillars__media">
             <img
               src={aboutHome}
-              alt="A student answering a water cycle lesson on the EDDVA smartboard while the teacher looks on"
+              alt={t("pillars.imageAlt")}
               loading="lazy"
             />
           </figure>

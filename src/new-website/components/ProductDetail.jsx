@@ -12,7 +12,9 @@
 
 import { Link } from "react-router-dom";
 import { Check, ArrowRight, ArrowLeft } from "lucide-react";
-import { products } from "../data/products";
+import { useTranslation } from "react-i18next";
+import { useLocalized } from "@/i18n/useLocalized";
+import { products as productsData } from "../data/products";
 import ErpModules from "./ErpModules";
 import LmsModules from "./LmsModules";
 import JeeNeetAiModules from "./JeeNeetAiModules";
@@ -26,7 +28,10 @@ const MODULE_BLOCK = {
   "nw-prod-jee-nonai": JeeNeetModules,
 };
 
-const ProductDetail = ({ product }) => {
+const ProductDetail = ({ product: productSource }) => {
+  const { t } = useTranslation("products");
+  const products = useLocalized("data-products", productsData);
+  const product = products.find(p => p.id === productSource.id) ?? productSource;
   const { id, slug, title, tagline, desc, bullets, cta, img, Icon, color, bg } = product;
   const [ref, inView] = useInView({ threshold: 0.08 });
   const ModuleBlock = MODULE_BLOCK[id];
@@ -41,7 +46,7 @@ const ProductDetail = ({ product }) => {
           <div className="nw-proddet__hero-copy">
             <Link to="/products" className="nw-proddet__back">
               <ArrowLeft size={15} strokeWidth={2.4} />
-              All products
+              {t("detail.allProducts")}
             </Link>
             <h1 className="nw-proddet__title" style={{ whiteSpace: "pre-line" }}>{title}</h1>
             <p className="nw-proddet__tagline">{tagline}</p>
@@ -62,7 +67,7 @@ const ProductDetail = ({ product }) => {
       {/* ── What it does ── */}
       <section className="nw-proddet__body">
         <div className={`nw-proddet__body-inner${inView ? " nw-in" : ""}`} ref={ref}>
-          <h2 className="nw-proddet__h2">What it does</h2>
+          <h2 className="nw-proddet__h2">{t("detail.whatItDoes")}</h2>
           <ul className="nw-proddet__points">
             {bullets.map((point, i) => (
               <li className="nw-proddet__point" key={point} style={{ "--i": i }}>
@@ -76,9 +81,9 @@ const ProductDetail = ({ product }) => {
 
           <div className="nw-proddet__cta-card">
             <div>
-              <h3 className="nw-proddet__cta-title">See {title} in your institution</h3>
+              <h3 className="nw-proddet__cta-title">{t("detail.seeIn", { title })}</h3>
               <p className="nw-proddet__cta-desc">
-                We will walk you through it on your own setup.
+                {t("detail.walk")}
               </p>
             </div>
             <Link to="/contact" className="nw-proddet__cta" id={`nw-product-${slug}-cta`}>
@@ -94,7 +99,7 @@ const ProductDetail = ({ product }) => {
       {/* ── Related ── */}
       <section className="nw-proddet__related">
         <div className="nw-proddet__related-inner">
-          <h2 className="nw-proddet__h2">More products</h2>
+          <h2 className="nw-proddet__h2">{t("detail.more")}</h2>
           <div className="nw-proddet__related-grid">
             {related.map(item => (
               <Link

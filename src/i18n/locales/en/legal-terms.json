@@ -1,0 +1,333 @@
+{
+  "eyebrow": "Legal",
+  "title": "Terms of Service",
+  "updated": "Effective Date: October 2026",
+  "back": "← Back to home",
+  "emailLabel": "Email",
+  "websiteLabel": "Website",
+  "intro": [],
+  "sections": [
+    {
+      "heading": "1. Introduction",
+      "blocks": [
+        {
+          "p": "Welcome to EDDVA, an Artificial Intelligence-powered educational platform developed, owned and operated by Veteran Ventures & Services Pvt. Ltd. (\"VVSPL\", \"we\", \"our\", or \"us\"). These Terms & Conditions (\"Terms\") govern your access to and use of EDDVA, including its website, web application, mobile applications, software, APIs, cloud services, and all associated products and services (collectively referred to as the \"Platform\")."
+        },
+        {
+          "p": "By accessing, registering, or using EDDVA, you agree to comply with these Terms. If you do not agree with any provision of these Terms, you should not access or use the Platform."
+        },
+        {
+          "p": "These Terms should be read together with our Privacy Policy and any separate commercial agreement, Service Level Agreement (SLA), Memorandum of Understanding (MoU), Purchase Order, or other written agreement executed between VVSPL and an educational institution. In the event of any inconsistency between these Terms and such written agreement, the executed agreement shall prevail to the extent of such inconsistency."
+        }
+      ]
+    },
+    {
+      "heading": "2. Definitions",
+      "blocks": [
+        {
+          "p": "For the purposes of these Terms:"
+        },
+        {
+          "ul": [
+            "**Platform** means EDDVA, including its website, web portal, Android application, iOS application, APIs, software modules, cloud infrastructure, artificial intelligence services, databases, and all associated services.",
+            "**User** means any student, parent, teacher, faculty member, educational institution, administrator, employee, visitor, or any authorised individual using the Platform.",
+            "**Institution** means any school, college, university, coaching institute, academy, organisation, or government institution subscribing to or using EDDVA.",
+            "**Content** means all educational materials, documents, videos, assessments, assignments, presentations, messages, reports, question banks, AI-generated outputs, and any other information uploaded, stored, created, or transmitted through the Platform."
+          ]
+        }
+      ]
+    },
+    {
+      "heading": "3. Eligibility and User Accounts",
+      "blocks": [
+        {
+          "p": "EDDVA is intended for use by recognised educational institutions and their authorised users. Students below the age prescribed under applicable laws may use the Platform only under the supervision or authorisation of their educational institution or parent or legal guardian, wherever applicable."
+        },
+        {
+          "p": "Certain services require users to create an account. Users are responsible for ensuring that all information provided during registration is accurate, complete, and up to date. Login credentials are personal and confidential and must not be shared with any unauthorised person."
+        },
+        {
+          "p": "Users are responsible for all activities carried out through their accounts and shall immediately notify the concerned institution or VVSPL of any suspected unauthorised access or security breach. VVSPL reserves the right to suspend or terminate accounts created using false information or used in violation of these Terms."
+        }
+      ]
+    },
+    {
+      "heading": "4. Licence to Use the Platform",
+      "blocks": [
+        {
+          "p": "Subject to compliance with these Terms, VVSPL grants users a limited, non-exclusive, non- transferable, non-sublicensable, and revocable licence to access and use EDDVA solely for lawful educational, administrative, and institutional purposes."
+        },
+        {
+          "p": "This licence does not grant users any ownership rights in the Platform or any intellectual property belonging to VVSPL. Users shall not copy, reproduce, modify, distribute, reverse engineer, decompile, create derivative works, or commercially exploit any part of EDDVA without prior written consent from VVSPL."
+        }
+      ]
+    },
+    {
+      "heading": "5. Acceptable Use and User Responsibilities",
+      "blocks": [
+        {
+          "p": "Users agree to use EDDVA responsibly, ethically, and in compliance with applicable laws, institutional policies, and these Terms. Users shall not use the Platform to engage in unlawful, fraudulent, harmful, or abusive activities. Without limitation, users shall not:"
+        },
+        {
+          "ul": [
+            "access accounts or systems without authorisation;",
+            "upload viruses, malware, ransomware, spyware, or malicious code;",
+            "interfere with the operation or security of the Platform;",
+            "impersonate another individual or organisation;",
+            "upload unlawful, defamatory, obscene, discriminatory, or offensive material;",
+            "misuse AI-generated content for fraudulent or unethical purposes;",
+            "attempt to bypass security controls or authentication mechanisms;",
+            "copy, distribute, sell, or commercially exploit Platform content without authorisation."
+          ]
+        },
+        {
+          "p": "Users are responsible for maintaining the confidentiality of their account credentials and ensuring that any content uploaded by them does not infringe the intellectual property, privacy, or other legal rights of third parties."
+        }
+      ]
+    },
+    {
+      "heading": "6. Educational Institution Responsibilities",
+      "blocks": [
+        {
+          "p": "Educational institutions subscribing to EDDVA are responsible for administering user accounts, maintaining the accuracy of institutional records, obtaining necessary permissions or consents from students or parents wherever required by law, and ensuring that the Platform is used in accordance with their academic policies and applicable laws."
+        },
+        {
+          "p": "Institutions shall designate authorised administrators responsible for managing access rights, academic records, attendance, assessments, and other institutional data maintained within EDDVA."
+        },
+        {
+          "p": "VVSPL provides EDDVA as a technology platform. Academic policies relating to examinations, grading, attendance, promotions, certifications, disciplinary proceedings, or any educational decisions shall remain the sole responsibility of the concerned educational institution."
+        }
+      ]
+    },
+    {
+      "heading": "7. Artificial Intelligence Features",
+      "blocks": [
+        {
+          "p": "EDDVA incorporates Artificial Intelligence to enhance teaching, learning, and academic administration. AI-powered features may include generation of notes, lecture transcripts, quizzes, practice questions, study plans, learning recommendations, summaries, academic analytics, and other educational resources."
+        },
+        {
+          "p": "AI-generated outputs are intended solely as educational assistance. While VVSPL continually improves the accuracy and reliability of its AI systems, such outputs may occasionally contain inaccuracies, omissions, or limitations. Users should independently verify AI-generated content before relying upon it for academic or administrative purposes."
+        },
+        {
+          "p": "VVSPL shall not be responsible for academic decisions made solely on the basis of AI- generated outputs. Final evaluation, grading, certification, promotion, and disciplinary decisions shall always remain with the concerned educational institution."
+        }
+      ]
+    },
+    {
+      "heading": "8. Intellectual Property Rights",
+      "blocks": [
+        {
+          "p": "EDDVA, including its software, source code, databases, artificial intelligence models, algorithms, user interface, design, graphics, documentation, trademarks, logos, trade names, and all related intellectual property rights, is the exclusive property of Veteran Ventures & Services Pvt. Ltd. or its licensors and is protected under applicable intellectual property laws."
+        },
+        {
+          "p": "Educational content uploaded by institutions or users shall remain the property of the respective owner. By uploading content to the Platform, the user or institution grants VVSPL a limited licence to host, store, process, reproduce, display, and transmit such content solely for the purpose of providing, maintaining, securing, and improving the services offered through EDDVA."
+        },
+        {
+          "p": "Users shall not remove proprietary notices, claim ownership of Platform components, or use the intellectual property of VVSPL except as expressly permitted under these Terms."
+        }
+      ]
+    },
+    {
+      "heading": "9. User Content",
+      "blocks": [
+        {
+          "p": "Users are solely responsible for the content they upload or share through EDDVA. They represent and warrant that they possess all necessary rights and permissions to upload such content and that it does not violate any applicable law or third-party rights."
+        },
+        {
+          "p": "VVSPL reserves the right, but not the obligation, to remove or restrict access to any content that violates these Terms, infringes intellectual property rights, compromises platform security, or is otherwise considered unlawful or inappropriate."
+        }
+      ]
+    },
+    {
+      "heading": "10. Live Classes, Recorded Content and Assessments",
+      "blocks": [
+        {
+          "p": "EDDVA enables educational institutions to conduct live classes, upload recorded lectures, create assessments, assign coursework, and provide digital learning resources through the Platform. All educational content uploaded by an institution shall remain the property of the respective institution or its authorised content owner."
+        },
+        {
+          "p": "Users are permitted to access such content solely for their personal educational purposes. Unless expressly authorised by the concerned educational institution or VVSPL, users shall not record, download, reproduce, distribute, publish, sell, or otherwise commercially exploit any live class, recorded lecture, assessment, or educational material available through the Platform."
+        },
+        {
+          "p": "Where recording of live sessions is enabled, users acknowledge that such sessions may be recorded for academic continuity, revision, quality assurance, teacher training, institutional record keeping, or other legitimate educational purposes."
+        },
+        {
+          "p": "EDDVA may provide AI-assisted assessments, automated evaluation, performance analytics, and examination monitoring features to support academic activities. Such features are intended to assist educational institutions and do not replace the academic judgment of teachers or institutional authorities. Final evaluation, grading, certification, and disciplinary decisions shall remain the sole responsibility of the concerned educational institution."
+        }
+      ]
+    },
+    {
+      "heading": "11. Subscription, Fees and Payments",
+      "blocks": [
+        {
+          "p": "Certain services or features offered through EDDVA may be subject to subscription fees or commercial terms agreed separately between VVSPL and the concerned educational institution."
+        },
+        {
+          "p": "All implementation charges, subscription fees, Annual Maintenance Charges (AMC), payment schedules, taxes, revenue-sharing arrangements, or other commercial terms shall be governed by the applicable commercial proposal, Purchase Order, Service Level Agreement (SLA), Memorandum of Understanding (MoU), or any other written agreement executed between VVSPL and the educational institution."
+        },
+        {
+          "p": "Where online payment facilities are enabled, transactions shall be processed through authorised third-party payment gateway providers. VVSPL does not store debit card numbers, credit card details, CVV numbers, UPI PINs, internet banking credentials, or other payment authentication information."
+        },
+        {
+          "p": "Failure to make payments in accordance with the agreed commercial terms may result in suspension or restriction of access to the subscribed services."
+        }
+      ]
+    },
+    {
+      "heading": "12. Third-Party Services",
+      "blocks": [
+        {
+          "p": "EDDVA may integrate with third-party services including cloud hosting providers, payment gateways, video conferencing platforms, email services, SMS gateways, notification services, authentication providers, analytics platforms, and other technology partners necessary for delivering the Platform."
+        },
+        {
+          "p": "Such third-party services operate independently and are governed by their respective terms and privacy policies. VVSPL shall not be responsible for the availability, performance, content, security, or privacy practices of third-party services."
+        },
+        {
+          "p": "The inclusion of any third-party service within EDDVA does not constitute an endorsement or recommendation by VVSPL."
+        }
+      ]
+    },
+    {
+      "heading": "13. Platform Availability and Updates",
+      "blocks": [
+        {
+          "p": "VVSPL strives to maintain the availability, reliability, and security of EDDVA. However, uninterrupted or error-free access cannot be guaranteed due to scheduled maintenance, software upgrades, infrastructure changes, internet connectivity issues, cloud service interruptions, security enhancements, or circumstances beyond our reasonable control."
+        },
+        {
+          "p": "We reserve the right to modify, improve, replace, suspend, or discontinue any feature or functionality of the Platform whenever necessary to improve performance, security, legal compliance, or user experience."
+        },
+        {
+          "p": "Where reasonably practicable, users shall be notified in advance of scheduled maintenance that may significantly affect the availability of the Platform."
+        }
+      ]
+    },
+    {
+      "heading": "14. Suspension and Termination",
+      "blocks": [
+        {
+          "p": "VVSPL reserves the right to suspend, restrict, or terminate access to EDDVA where a user or educational institution violates these Terms, applicable laws, contractual obligations, or engages in activities that may compromise the security, integrity, or lawful operation of the Platform."
+        },
+        {
+          "p": "Users may discontinue use of the Platform at any time. Educational institutions may terminate their subscription in accordance with the terms of the applicable commercial agreement executed with VVSPL."
+        },
+        {
+          "p": "Upon termination, users shall immediately cease using the Platform. Termination shall not affect any rights or obligations accrued prior to such termination, including obligations relating to confidentiality, intellectual property, payments, indemnification, limitation of liability, and dispute resolution."
+        }
+      ]
+    },
+    {
+      "heading": "15. Disclaimer of Warranties",
+      "blocks": [
+        {
+          "p": "EDDVA is provided on an \"as is\" and \"as available\" basis. While VVSPL uses reasonable efforts to provide a secure, reliable, and high-quality educational platform, we do not warrant that the Platform will always operate uninterrupted, error-free, or meet every specific educational or institutional requirement."
+        },
+        {
+          "p": "AI-generated outputs, automated assessments, learning recommendations, transcripts, notes, summaries, and other AI-assisted features are intended solely to support teaching and learning. Users should independently verify such outputs before relying upon them for academic or administrative purposes."
+        },
+        {
+          "p": "VVSPL does not guarantee specific academic performance, examination results, admissions, placements, rankings, certifications, or learning outcomes arising from the use of EDDVA."
+        }
+      ]
+    },
+    {
+      "heading": "16. Limitation of Liability",
+      "blocks": [
+        {
+          "p": "To the maximum extent permitted under applicable law, VVSPL shall not be liable for any indirect, incidental, consequential, special, exemplary, or punitive damages, including loss of profits, business interruption, goodwill, educational opportunity, or loss of data arising out of or relating to the use of, or inability to use, EDDVA."
+        },
+        {
+          "p": "In no event shall the aggregate liability of VVSPL exceed the fees actually paid by the concerned educational institution to VVSPL for the services giving rise to the claim during the twelve (12) months immediately preceding such claim, except where otherwise required by applicable law."
+        }
+      ]
+    },
+    {
+      "heading": "17. Confidentiality",
+      "blocks": [
+        {
+          "p": "VVSPL recognises the confidential nature of educational information and shall use reasonable measures to protect the confidentiality of student records, teacher information, institutional documents, assessments, reports, learning resources, administrative information, and other confidential data processed through EDDVA."
+        },
+        {
+          "p": "Users shall likewise maintain the confidentiality of information accessed through the Platform and shall not disclose, reproduce, distribute, or use confidential information except as authorised by the concerned educational institution or required under applicable law."
+        }
+      ]
+    },
+    {
+      "heading": "18. Force Majeure",
+      "blocks": [
+        {
+          "p": "VVSPL shall not be liable for any delay or failure in performing its obligations under these Terms where such delay or failure results from events beyond its reasonable control, including natural disasters, floods, fires, earthquakes, pandemics, epidemics, war, terrorism, cyberattacks, governmental actions, labour disputes, internet outages, power failures, or failures of telecommunications or cloud infrastructure."
+        }
+      ]
+    },
+    {
+      "heading": "19. Governing Law and Dispute Resolution",
+      "blocks": [
+        {
+          "p": "These Terms shall be governed by and construed in accordance with the laws of the Republic of India."
+        },
+        {
+          "p": "The parties shall endeavour to resolve any dispute arising out of or relating to these Terms through mutual discussions and good-faith negotiations. If the dispute cannot be resolved amicably, it shall be subject to the exclusive jurisdiction of the competent courts at Bhubaneswar, Odisha, unless otherwise required under applicable law."
+        }
+      ]
+    },
+    {
+      "heading": "20. Changes to these Terms",
+      "blocks": [
+        {
+          "p": "VVSPL reserves the right to amend or update these Terms from time to time to reflect changes in applicable laws, technology, business operations, or the services offered through EDDVA."
+        },
+        {
+          "p": "The updated version shall be published on the Platform with the revised Effective Date. Continued use of EDDVA after such publication shall constitute acceptance of the revised Terms."
+        }
+      ]
+    },
+    {
+      "heading": "21. Entire Agreement",
+      "blocks": [
+        {
+          "p": "These Terms & Conditions, together with the Privacy Policy and any applicable commercial agreement, Service Level Agreement (SLA), Memorandum of Understanding (MoU), Purchase Order, or other written agreement executed between VVSPL and the concerned educational institution, constitute the entire agreement governing the use of EDDVA."
+        },
+        {
+          "p": "In the event of any inconsistency between these Terms and any separately executed written agreement, the provisions of the executed agreement shall prevail to the extent of such inconsistency."
+        }
+      ]
+    },
+    {
+      "heading": "22. Contact Us",
+      "blocks": [
+        {
+          "p": "If you have any questions, concerns, or require assistance regarding these Terms & Conditions or the use of EDDVA, please contact:"
+        },
+        {
+          "card": {
+            "title": "Veteran Ventures & Services Pvt. Ltd. (VVSPL)",
+            "lines": [
+              "EDDVA Support Team",
+              "309-310, 3rd Floor, Odyssa Business Centre,",
+              "Rasulgarh, Bhubaneswar – 751010, Odisha, India"
+            ],
+            "email": "support@eddva.in",
+            "website": "https://www.eddva.in"
+          }
+        },
+        {
+          "note": "For implementation support, institutional partnerships, commercial enquiries, or technical assistance, you may contact VVSPL through the official contact details published on the EDDVA website."
+        }
+      ]
+    }
+  ],
+  "footer": {
+    "before": "Our",
+    "links": [
+      {
+        "to": "/privacy-policy",
+        "label": "Privacy Policy"
+      },
+      {
+        "to": "/cookie-policy",
+        "label": "Cookie Policy"
+      }
+    ],
+    "and": "and",
+    "after": "describe how we handle personal data and cookies."
+  }
+}
