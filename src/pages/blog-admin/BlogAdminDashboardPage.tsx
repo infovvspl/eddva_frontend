@@ -12,13 +12,14 @@ import {
 } from 'lucide-react';
 import {
   getCurrentBlogAdmin, logoutBlogAdmin,
-  getBlogPosts, createBlogPost, updateBlogPost, deleteBlogPost, uploadBlogCoverImage,
+  getBlogPosts, createBlogPost, updateBlogPost, deleteBlogPost,
   type BlogPost, type BlogPostStatus, type BlogSection, type BlogAdmin, type BlogDocumentSettings,
 } from '@/lib/api/blogAdmin';
 import { blogAdminToken } from '@/lib/api/blogAdminClient';
 import { useConfirm } from '@/context/ConfirmContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import ImageCropModal from './ImageCropModal';
+import { stageBlogImage, uploadStagedImages, clearStagedImages } from './pendingImages';
 import BlogBodyEditor from './BlogBodyEditor';
 
 const STATUSES: BlogPostStatus[] = ['DRAFT', 'PUBLISHED'];
@@ -83,7 +84,6 @@ export default function BlogAdminDashboardPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm());
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // ── Session check ──────────────────────────────────────────────────────
@@ -152,6 +152,7 @@ export default function BlogAdminDashboardPage() {
   };
 
   const closeForm = () => {
+    clearStagedImages();
     setFormOpen(false);
     setForm(emptyForm());
   };
@@ -173,15 +174,7 @@ export default function BlogAdminDashboardPage() {
       toast.error('Image must be 5 MB or smaller');
       return;
     }
-    setUploading(true);
-    try {
-      const { url } = await uploadBlogCoverImage(file);
-      setForm((f) => ({ ...f, coverImage: url }));
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || 'Cover image upload failed');
-    } finally {
-      setUploading(false);
-    }
+    setForm((f) => ({ ...f, coverImage: stageBlogImage(file) }));
   };
 
   const handleSubmit = async (statusOverride?: BlogPostStatus) => {
@@ -190,21 +183,37 @@ export default function BlogAdminDashboardPage() {
       return;
     }
     const sections = form.sections
-      .map((s) => ({ heading: s.heading.trim(), body: s.body.trim(), references: s.references }))
+      .map((s) => ({ heading: s.heading.trim(), body: s.body.trim(), contentJson: s.contentJson, references: s.references }))
       .filter((s) => s.heading || s.body);
+
+    setSaving(true);
+    let coverImage = form.coverImage.trim();
+    try {
+      const uploaded = new Map<string, string>();
+      coverImage = await uploadStagedImages(coverImage, uploaded);
+      for (const section of sections) {
+        section.body = await uploadStagedImages(section.body, uploaded);
+        if (section.contentJson) {
+          section.contentJson = JSON.parse(await uploadStagedImages(JSON.stringify(section.contentJson), uploaded));
+        }
+      }
+    } catch (e: any) {
+      setSaving(false);
+      toast.error(e?.response?.data?.message || 'Image upload failed');
+      return;
+    }
 
     const payload = {
       title: form.title.trim(),
       category: form.category.trim() || undefined,
       excerpt: form.excerpt.trim() || undefined,
       author: form.author.trim() || undefined,
-      coverImage: form.coverImage.trim() || undefined,
+      coverImage: coverImage || undefined,
       readTime: form.readTime ? Number(form.readTime) : undefined,
       sections,
       status: statusOverride || form.status,
     };
 
-    setSaving(true);
     try {
       if (form.id) {
         await updateBlogPost(form.id, payload);
@@ -460,13 +469,12 @@ export default function BlogAdminDashboardPage() {
                   )}
                   <div className="flex flex-col items-start gap-1.5">
                     <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
-                      {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImageIcon className="h-3.5 w-3.5" />}
-                      {uploading ? 'Uploading…' : form.coverImage ? 'Replace' : 'Upload'}
+                      <ImageIcon className="h-3.5 w-3.5" />
+                      {form.coverImage ? 'Replace' : 'Upload'}
                       <input
                         type="file"
                         accept="image/jpeg,image/png,image/webp"
                         className="hidden"
-                        disabled={uploading}
                         onChange={(e) => { const file = e.target.files?.[0]; if (file) void handleCoverFile(file); e.target.value = ''; }}
                       />
                     </label>
@@ -475,7 +483,7 @@ export default function BlogAdminDashboardPage() {
                         Remove
                       </button>
                     )}
-                    <span className="text-[11px] font-normal text-slate-400">Original image uploaded unchanged. Maximum size: 5 MB.</span>
+                    <span className="text-[11px] font-normal text-slate-400">Uploaded when you save, converted to WebP. Maximum size: 5 MB.</span>
                   </div>
                 </div>
               </div>
