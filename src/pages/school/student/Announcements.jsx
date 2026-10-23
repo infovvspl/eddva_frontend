@@ -3,7 +3,7 @@ import api from '@/lib/api/school-client';
 import { Bell, CalendarDays, ClipboardList, ExternalLink, FileText, Image as ImageIcon, Megaphone, MessageSquare, Search, X } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-const categories = ['All', 'GENERAL', 'EXAM', 'HOLIDAY', 'ACADEMIC'];
+const categories = ['All', 'GENERAL', 'ACHIEVEMENT', 'EXAM', 'HOLIDAY', 'ACADEMIC', 'EVENT'];
 const isMaintenanceNotice = (notice) => String(notice?.category || '').toUpperCase() === 'MAINTENANCE';
 
 function priorityClass(priority) {

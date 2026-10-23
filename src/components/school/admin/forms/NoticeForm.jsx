@@ -139,6 +139,7 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
                   options={[
                   { value: "GENERAL", label: "General" },
                   { value: "ACADEMIC", label: "Academic" },
+                  { value: "ACHIEVEMENT", label: "Achievement" },
                   { value: "EVENT", label: "Event" },
                   { value: "HOLIDAY", label: "Holiday" },
                   { value: "EXAM", label: "Exam" },

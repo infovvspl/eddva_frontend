@@ -220,7 +220,7 @@ export default function SyllabusPlanDetailsPage() {
               {plan.class_name} {plan.section_name ? `(${plan.section_name})` : ''}
             </span>
             <span className="px-3 py-1 rounded-full text-xs font-extrabold uppercase bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-              Session {plan.academic_year || '2025-2026'}
+              Session {plan.academic_year || '2026-2027'}
             </span>
           </div>
 

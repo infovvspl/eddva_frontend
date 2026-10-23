@@ -917,13 +917,12 @@ export default function TeacherProfile() {
                                 <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Date</TableHead>
                                 <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Day</TableHead>
                                 <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Status</TableHead>
-                                <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Remarks</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody className="divide-y divide-slate-50 dark:divide-slate-800 text-sm">
                               {attendance.length === 0 ? (
                                 <TableRow className="hover:bg-transparent">
-                                  <TableCell colSpan={4} className="p-10 text-center text-slate-400 font-bold">
+                                  <TableCell colSpan={3} className="p-10 text-center text-slate-400 font-bold">
                                     No attendance records for this month.
                                   </TableCell>
                                 </TableRow>
@@ -945,7 +944,6 @@ export default function TeacherProfile() {
                                             {record.status || 'Unknown'}
                                           </Badge>
                                         </TableCell>
-                                        <TableCell className="p-4 text-slate-400 font-bold">{record.remarks || '—'}</TableCell>
                                       </TableRow>
                                     );
                                   })

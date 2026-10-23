@@ -29,7 +29,7 @@ const academicYears = ['2024-2025', '2025-2026', '2026-2027'];
 export default function Academics() {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [academicYear, setAcademicYear] = useState('2025-2026');
+  const [academicYear, setAcademicYear] = useState('2026-2027');
   const [isClassModalOpen, setIsClassModalOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -152,17 +152,6 @@ export default function Academics() {
 
   const sectionCount = (cls) => (cls.sections || []).length;
   const classStudents = (cls) => valueOrDash(cls.totalStudents, cls.total_students, cls.studentCount, cls.student_count);
-  const sectionTeacher = (section) => valueOrDash(section.classTeacher, section.class_teacher, section.classTeacherName, section.class_teacher_name);
-  const classTeacher = (cls) => {
-    const direct = valueOrDash(cls.classTeacher, cls.class_teacher, cls.classTeacherName, cls.class_teacher_name);
-    if (direct !== '-') return direct;
-
-    const firstSectionTeacher = (cls.sections || [])
-      .map((section) => sectionTeacher(section))
-      .find((teacher) => teacher !== '-');
-
-    return firstSectionTeacher || '-';
-  };
 
   const openSectionsPage = (classId) => {
     navigate(`/school/admin/academics/${classId}/sections`, { state: { academicYear } });
@@ -288,7 +277,6 @@ export default function Academics() {
                 <TableHead className="h-auto px-3 py-4 sticky left-0 z-20 bg-surface-50 dark:bg-slate-850 shadow-sm text-surface-600 dark:text-surface-300">Class</TableHead>
                 <TableHead className="h-auto px-3 py-4 text-center text-surface-600 dark:text-surface-300">Sections</TableHead>
                 <TableHead className="h-auto px-3 py-4 text-center text-surface-600 dark:text-surface-300">Students</TableHead>
-                <TableHead className="h-auto px-3 py-4 text-surface-600 dark:text-surface-300">Class Teacher</TableHead>
                 <TableHead className="h-auto px-3 py-4 text-surface-600 dark:text-surface-300">Status</TableHead>
                 <TableHead className="h-auto px-3 py-4 text-center text-surface-600 dark:text-surface-300">Actions</TableHead>
               </TableRow>
@@ -296,7 +284,7 @@ export default function Academics() {
             <TableBody className="divide-y divide-surface-200 text-sm dark:divide-surface-800 [&_tr]:border-b-0">
               {filteredClasses.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={6} className="px-5 py-12 text-center">
+                  <TableCell colSpan={5} className="px-5 py-12 text-center">
                     <p className="font-bold text-surface-900 dark:text-white">No matching classes found</p>
                     <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">Try selecting a different academic year or add a new class.</p>
                   </TableCell>
@@ -308,7 +296,6 @@ export default function Academics() {
                       <TableCell className="p-4 px-3 py-4 font-bold text-surface-950 dark:text-white sticky left-0 z-20 bg-white dark:bg-slate-900">{cls.name}</TableCell>
                       <TableCell className="p-4 px-3 py-4 text-center font-semibold text-blue-700 dark:text-blue-300">{sectionCount(cls)}</TableCell>
                       <TableCell className="p-4 px-3 py-4 text-center text-surface-700 dark:text-surface-200">{classStudents(cls)}</TableCell>
-                      <TableCell className="p-4 px-3 py-4 text-surface-700 dark:text-surface-200">{classTeacher(cls)}</TableCell>
                       <TableCell className="p-4 px-3 py-4"><StatusPill /></TableCell>
                       <TableCell className="p-4 px-3 py-4">
                         <div className="flex justify-center gap-2">
@@ -349,10 +336,6 @@ export default function Academics() {
                     <div>
                       <span className="block text-[9px] uppercase tracking-wider text-surface-400 font-bold">Students</span>
                       <span className="font-semibold">{classStudents(cls)}</span>
-                    </div>
-                    <div className="col-span-2">
-                      <span className="block text-[9px] uppercase tracking-wider text-surface-400 font-bold">Class Teacher</span>
-                      <span className="font-semibold">{classTeacher(cls)}</span>
                     </div>
                   </div>
 

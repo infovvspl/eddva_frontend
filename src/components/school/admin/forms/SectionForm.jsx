@@ -3,7 +3,7 @@ import { AlertCircle, Loader } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { CustomSelect } from "@/components/ui/CustomSelect";
 
-export default function SectionForm({ sectionData, classes = [], onSubmit, onCancel, isLoading, defaultAcademicYear = '2025-2026', initialClassId = '' }) {
+export default function SectionForm({ sectionData, classes = [], onSubmit, onCancel, isLoading, defaultAcademicYear = '2026-2027', initialClassId = '' }) {
   const [formData, setFormData] = useState({
     name: '',
     classId: '',
