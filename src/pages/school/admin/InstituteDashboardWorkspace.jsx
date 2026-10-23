@@ -148,6 +148,9 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
   // Live flags computed by the dashboard API; the stored notifications are only a fallback
   // for an older backend that does not send them.
   const attentionFlags = Array.isArray(stats?.attentionFlags) ? stats.attentionFlags : flags;
+  // True total across every flag category (attendance, teacher attendance, performance, fees) —
+  // the preview list above is capped, so this is the number the badge shows.
+  const flagTrackerCount = stats?.attentionFlagsCount ?? attentionFlags.length;
 
   const students = stats?.totalStudents ?? 150;
   const teachers = stats?.totalTeachers ?? 41;
@@ -364,6 +367,11 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
               <div className="flex items-center gap-2">
                 <AlertCircle className="w-5 h-5 text-rose-500" />
                 <CardTitle className="text-base font-semibold text-slate-900 dark:text-white">Attention Required</CardTitle>
+                {flagTrackerCount > 0 && (
+                  <Badge variant="secondary" className="bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 font-semibold text-[11px] px-2 py-0.5 rounded-full">
+                    {flagTrackerCount}
+                  </Badge>
+                )}
               </div>
               <button onClick={() => navigate('/school/admin/attention-required')} className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1">
                 View All <ChevronRight className="w-3.5 h-3.5" />

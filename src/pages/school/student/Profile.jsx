@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/SchoolAuthContext';
-import { 
-  BookOpen, GraduationCap, KeyRound, ShieldCheck, UserCircle, Users, 
-  BarChart2, Calendar, Shield, Mail, Smartphone, MapPin, User, AlertCircle
+import {
+  BookOpen, GraduationCap, KeyRound, ShieldCheck, UserCircle, Users,
+  BarChart2, Calendar, Shield, Mail, Smartphone, MapPin, User, AlertCircle,
+  TrendingUp, Target, Flame, IdCard, Download, Loader2, Sparkles
 } from 'lucide-react';
 import { ProfileAvatar } from '@/components/ui/profile-avatar';
 import schoolApi from '@/lib/api/school-client';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+import { Document, Page, pdfjs } from 'react-pdf';
+
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 function ProfileField({ label, value, icon: Icon, onRequestEdit }) {
   return (
@@ -38,6 +43,22 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [showAllSubjects, setShowAllSubjects] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [analytics, setAnalytics] = useState(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  const [idCardLoading, setIdCardLoading] = useState(false);
+  const [idCardUrl, setIdCardUrl] = useState(null);
+  const [idCardNumPages, setIdCardNumPages] = useState(0);
+  // 'loading' | 'ready' | 'not-issued' | 'error' — drives which of the three
+  // states (spinner / card / "not issued yet" message) the section shows.
+  const [idCardStatus, setIdCardStatus] = useState('loading');
+
+  // Revoke the blob URL when it's replaced or the page unmounts, so it
+  // doesn't leak memory across repeated "view" clicks.
+  useEffect(() => {
+    return () => {
+      if (idCardUrl) URL.revokeObjectURL(idCardUrl);
+    };
+  }, [idCardUrl]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -68,6 +89,61 @@ export default function Profile() {
     fetchProfile();
   }, []);
 
+  useEffect(() => {
+    async function fetchAnalytics() {
+      try {
+        const res = await schoolApi.get('/reports/my-analytics');
+        setAnalytics(res.data?.data ?? res.data);
+      } catch (err) {
+        console.error('Error fetching performance analytics:', err);
+      } finally {
+        setAnalyticsLoading(false);
+      }
+    }
+    fetchAnalytics();
+  }, []);
+
+  const loadIdCard = async (announce = false) => {
+    setIdCardLoading(true);
+    try {
+      const res = await schoolApi.get('/institute-admin/document/my-id-card');
+      // The global ResponseInterceptor wraps every controller return in
+      // {success, data, ...} — the admin document generator page already
+      // handles this defensively; this call needs the same fallback.
+      const pdfBase64 = res.data?.data?.pdfBase64 ?? res.data?.pdfBase64;
+      if (!pdfBase64) throw new Error('No ID card data returned');
+      const bytes = Uint8Array.from(window.atob(pdfBase64), (c) => c.charCodeAt(0));
+      const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+      setIdCardNumPages(0);
+      setIdCardUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return url;
+      });
+      setIdCardStatus('ready');
+    } catch (err) {
+      console.error('Error loading ID card:', err);
+      // A 404 just means the school hasn't issued one yet — that's an
+      // expected, silent state on first load, not something to toast about.
+      if (err?.response?.status === 404) {
+        setIdCardStatus('not-issued');
+      } else {
+        setIdCardStatus('error');
+        if (announce) toast.error(err?.response?.data?.message || 'Failed to load your ID card.');
+      }
+    } finally {
+      setIdCardLoading(false);
+    }
+  };
+
+  // Auto-load on page open — a student with a card already issued should
+  // just see it, not have to click a button to find out one exists.
+  useEffect(() => {
+    loadIdCard(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const idCardDownloadName = `${(user?.name || 'student').replace(/\s+/g, '-')}-id-card.pdf`;
+
   if (loading) {
     return (
       <div className="space-y-6 animate-pulse p-4">
@@ -86,6 +162,11 @@ export default function Profile() {
   }
 
   const student = studentData || {};
+  // Prefer the fresh per-page fetch over the auth context's cached copy — the
+  // latter is only refreshed once per full page load/login, so a photo an
+  // admin just set stays invisible here until the student's browser tab
+  // happens to reload, even though this page's own fetch already has it.
+  const profileImage = student.profileImage || user?.profileImage || null;
   const profile = student.studentProfile || {};
   const parents = student.parentDetails || {};
 
@@ -123,9 +204,9 @@ export default function Profile() {
         <div className="absolute top-0 right-0 size-40 bg-gradient-to-br from-blue-500/10 to-indigo-500/0 blur-2xl rounded-full" />
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            {user?.profileImage ? (
+            {profileImage ? (
               <ProfileAvatar
-                src={user.profileImage}
+                src={profileImage}
                 name={user?.name}
                 className="size-16 sm:size-20 shrink-0 rounded-2xl border border-slate-200/50 shadow-md shadow-blue-500/5"
                 fallbackClassName="text-xl sm:text-2xl font-black text-blue-700 dark:text-blue-300"
@@ -379,6 +460,170 @@ export default function Profile() {
               </button>
             </div>
           </div>
+        </section>
+      </div>
+
+      {/* Performance Matrix & ID Card */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Performance Matrix */}
+        <section className="rounded-2xl sm:rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-xl shadow-slate-100/50 dark:border-slate-800/80 dark:bg-slate-950 dark:shadow-none space-y-5 sm:space-y-6">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <TrendingUp className="size-5 sm:size-6 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <div>
+              <h2 className="text-sm sm:text-base font-extrabold text-slate-950 dark:text-white">Performance Matrix</h2>
+              <p className="text-[10px] sm:text-xs font-medium text-slate-400 dark:text-slate-500">Accuracy across subjects, from your published results.</p>
+            </div>
+          </div>
+
+          {analyticsLoading ? (
+            <div className="h-48 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-900" />
+          ) : !analytics || !analytics.questionsAttempted ? (
+            <div className="flex flex-col items-center justify-center text-center p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/10">
+              <BarChart2 className="size-8 sm:size-10 text-slate-400 mb-2.5 sm:mb-3" />
+              <h3 className="text-xs sm:text-sm font-bold text-slate-950 dark:text-white">No Results Yet</h3>
+              <p className="mt-1.5 text-[10px] sm:text-xs text-slate-450 dark:text-slate-500 max-w-xs leading-normal">Your performance matrix will appear once assessment results are published.</p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3 text-center dark:border-emerald-900/40 dark:bg-emerald-950/20">
+                  <Target className="mx-auto size-4 text-emerald-600 dark:text-emerald-400" />
+                  <p className="mt-1.5 text-lg sm:text-xl font-black text-emerald-700 dark:text-emerald-300">{Math.round(analytics.overallAccuracy)}%</p>
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Accuracy</p>
+                </div>
+                <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-3 text-center dark:border-blue-900/40 dark:bg-blue-950/20">
+                  <BarChart2 className="mx-auto size-4 text-blue-600 dark:text-blue-400" />
+                  <p className="mt-1.5 text-lg sm:text-xl font-black text-blue-700 dark:text-blue-300">{analytics.questionsAttempted}</p>
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Attempted</p>
+                </div>
+                <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-3 text-center dark:border-amber-900/40 dark:bg-amber-950/20">
+                  <Flame className="mx-auto size-4 text-amber-600 dark:text-amber-400" />
+                  <p className="mt-1.5 text-lg sm:text-xl font-black text-amber-700 dark:text-amber-300">{analytics.streakDays}</p>
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Day Streak</p>
+                </div>
+              </div>
+
+              {analytics.subjectPerformance?.length > 0 && (
+                <div className="space-y-2.5">
+                  <h3 className="text-[10px] sm:text-xs font-extrabold text-slate-450 dark:text-slate-500 uppercase tracking-wider">Subject-wise Accuracy</h3>
+                  {analytics.subjectPerformance.map((subj) => (
+                    <div key={subj.subjectName} className="space-y-1">
+                      <div className="flex items-center justify-between text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300">
+                        <span className="truncate">{subj.subjectName}</span>
+                        <span className="shrink-0 text-slate-400">{Math.round(subj.accuracy)}%</span>
+                      </div>
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                        <div
+                          className={cn('h-full rounded-full', subj.accuracy >= 75 ? 'bg-emerald-500' : subj.accuracy >= 60 ? 'bg-amber-500' : 'bg-rose-500')}
+                          style={{ width: `${Math.min(100, Math.max(2, subj.accuracy))}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {analytics.weakTopics?.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Needs focus:</span>
+                  {analytics.weakTopics.map((t) => (
+                    <span key={t.subjectName} className="rounded-lg bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-600 dark:bg-rose-950/30 dark:text-rose-400">
+                      {t.subjectName}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {analytics.insights?.summary && (
+                <div className="flex items-start gap-2 rounded-2xl border border-slate-100 bg-slate-50/30 p-3 dark:border-slate-800 dark:bg-slate-900/10">
+                  <Sparkles className="size-3.5 shrink-0 text-blue-500 mt-0.5" />
+                  <p className="text-[11px] sm:text-xs font-medium leading-relaxed text-slate-600 dark:text-slate-400">{analytics.insights.summary}</p>
+                </div>
+              )}
+            </>
+          )}
+        </section>
+
+        {/* ID Card */}
+        <section className="rounded-2xl sm:rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-xl shadow-slate-100/50 dark:border-slate-800/80 dark:bg-slate-950 dark:shadow-none flex flex-col">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <IdCard className="size-5 sm:size-6 text-indigo-600 dark:text-indigo-400 shrink-0" />
+            <div>
+              <h2 className="text-sm sm:text-base font-extrabold text-slate-950 dark:text-white">Student ID Card</h2>
+              <p className="text-[10px] sm:text-xs font-medium text-slate-400 dark:text-slate-500">View or download your official school ID card.</p>
+            </div>
+          </div>
+
+          {idCardStatus === 'ready' && idCardUrl ? (
+            <div className="flex-1 flex flex-col my-3 sm:my-4">
+              <div className="flex-1 min-h-[460px] flex items-center justify-center p-4 sm:p-6">
+                <Document
+                  file={idCardUrl}
+                  onLoadSuccess={({ numPages }) => setIdCardNumPages(numPages)}
+                  loading={<Loader2 className="size-6 animate-spin text-indigo-500" />}
+                  error={<p className="text-xs font-semibold text-rose-500">Couldn't render the card preview.</p>}
+                  className="flex flex-wrap items-start justify-center gap-4 sm:gap-6"
+                >
+                  {/* Only front/back matter here — a template with extra pages
+                      (e.g. a "terms" or "emergency contact" insert) still only
+                      shows the card itself, not every page of the PDF. */}
+                  {Array.from({ length: Math.min(idCardNumPages, 2) }, (_, i) => (
+                    <div key={i} className="flex flex-col items-center gap-1.5">
+                      <Page pageNumber={i + 1} width={320} renderTextLayer={false} renderAnnotationLayer={false} />
+                      {idCardNumPages > 1 && (
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">{i === 0 ? 'Front' : 'Back'}</span>
+                      )}
+                    </div>
+                  ))}
+                </Document>
+              </div>
+              <div className="mt-3.5 flex gap-2.5">
+                <a
+                  href={idCardUrl}
+                  download={idCardDownloadName}
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] sm:text-xs font-bold transition-all shadow-md shadow-indigo-500/10 hover:scale-102 active:scale-98"
+                >
+                  <Download className="size-3.5" />
+                  Download PDF
+                </a>
+                <button
+                  onClick={() => loadIdCard(true)}
+                  disabled={idCardLoading}
+                  title="Refresh"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 text-[10px] sm:text-xs font-bold transition-all hover:bg-slate-50 dark:hover:bg-slate-900 disabled:opacity-60"
+                >
+                  {idCardLoading ? <Loader2 className="size-3.5 animate-spin" /> : <IdCard className="size-3.5" />}
+                  Refresh
+                </button>
+              </div>
+            </div>
+          ) : idCardStatus === 'loading' ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/10 my-3 sm:my-4">
+              <Loader2 className="size-8 animate-spin text-indigo-400" />
+              <p className="mt-3 text-[10px] sm:text-xs font-semibold text-slate-400">Checking for your ID card...</p>
+            </div>
+          ) : idCardStatus === 'not-issued' ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/10 my-3 sm:my-4">
+              <IdCard className="size-8 sm:size-10 text-slate-400 mb-2.5 sm:mb-3" />
+              <h3 className="text-xs sm:text-sm font-bold text-slate-950 dark:text-white">Not Issued Yet</h3>
+              <p className="mt-1.5 text-[10px] sm:text-xs text-slate-450 dark:text-slate-500 max-w-xs leading-normal">
+                Your school hasn't issued your ID card yet. Check back later, or contact the school office.
+              </p>
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/10 my-3 sm:my-4">
+              <AlertCircle className="size-8 sm:size-10 text-rose-400 mb-2.5 sm:mb-3" />
+              <h3 className="text-xs sm:text-sm font-bold text-slate-950 dark:text-white">Couldn't Load ID Card</h3>
+              <button
+                onClick={() => loadIdCard(true)}
+                disabled={idCardLoading}
+                className="mt-3.5 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] sm:text-xs font-bold transition-all shadow-md shadow-indigo-500/10 hover:scale-102 active:scale-98 disabled:opacity-60"
+              >
+                {idCardLoading ? <Loader2 className="size-3.5 animate-spin" /> : <IdCard className="size-3.5" />}
+                Try Again
+              </button>
+            </div>
+          )}
         </section>
       </div>
     </div>

@@ -1,14 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { UserX, Search, Mail, Bell } from 'lucide-react';
+import { UserX, Search, Mail, Bell, ShieldCheck, X } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/lib/api/school-client';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
+const EXEMPTION_CATEGORIES = [
+  { value: 'STAFF_WARD', label: "Staff ward" },
+  { value: 'MERIT_SCHOLARSHIP', label: 'Merit scholarship' },
+  { value: 'SPORTS_SCHOLARSHIP', label: 'Sports scholarship' },
+  { value: 'ECONOMIC_HARDSHIP', label: 'Economic hardship' },
+  { value: 'SIBLING_DISCOUNT', label: 'Sibling discount' },
+  { value: 'RTE_QUOTA', label: 'RTE quota' },
+  { value: 'OTHER', label: 'Other' },
+];
+
 export default function FeeDefaulters() {
   const [fees, setFees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [exemptTarget, setExemptTarget] = useState<any>(null);
+  const [exemptCategory, setExemptCategory] = useState('STAFF_WARD');
+  const [exemptSubmitting, setExemptSubmitting] = useState(false);
 
   useEffect(() => {
     fetchFees();
@@ -21,8 +34,9 @@ export default function FeeDefaulters() {
       const rows = Array.isArray(res.data) ? res.data : (res.data?.data ?? []);
       const now = new Date();
       setFees(rows.filter((f: any) => {
+        const status = String(f.status).toUpperCase();
         const dueDate = f.due_date ? new Date(f.due_date) : null;
-        return String(f.status).toUpperCase() !== 'PAID' && dueDate && dueDate < now;
+        return status !== 'PAID' && status !== 'EXEMPT' && dueDate && dueDate < now;
       }));
     } catch (err) {
       toast.error('Failed to load defaulters');
@@ -40,8 +54,28 @@ export default function FeeDefaulters() {
     }
   };
 
+  const openExemptModal = (fee: any) => {
+    setExemptTarget(fee);
+    setExemptCategory('STAFF_WARD');
+  };
+
+  const handleExempt = async () => {
+    if (!exemptTarget) return;
+    setExemptSubmitting(true);
+    try {
+      await api.put(`/fees/${exemptTarget.id}/exempt`, { category: exemptCategory });
+      toast.success(`${exemptTarget.student_name || 'Student'} marked fee-exempt`);
+      setExemptTarget(null);
+      fetchFees();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || 'Failed to mark exempt');
+    } finally {
+      setExemptSubmitting(false);
+    }
+  };
+
   const filteredFees = fees.filter(f =>
-    f.fee_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    f.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     f.student_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -96,7 +130,7 @@ export default function FeeDefaulters() {
                         <div className="text-sm font-medium text-gray-900">{fee.student_name || 'Unknown'}</div>
                       </div>
                     </TableCell>
-                    <TableCell className="p-4 px-6 py-4 whitespace-nowrap text-sm text-gray-500">{fee.fee_type}</TableCell>
+                    <TableCell className="p-4 px-6 py-4 whitespace-nowrap text-sm text-gray-500">{fee.title}</TableCell>
                     <TableCell className="p-4 px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">
                       ₹{Math.round(Number(fee.amount) || 0).toLocaleString('en-IN')}
                     </TableCell>
@@ -104,17 +138,66 @@ export default function FeeDefaulters() {
                       {fee.due_date ? new Date(fee.due_date).toLocaleDateString() : '—'}
                     </TableCell>
                     <TableCell className="p-4 px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => handleRemind(fee.id)}
-                        className="text-indigo-600 hover:text-indigo-900 flex items-center justify-end"
-                      >
-                        <Mail className="size-4 mr-1" /> Remind
-                      </button>
+                      <div className="flex items-center justify-end gap-4">
+                        <button
+                          onClick={() => handleRemind(fee.id)}
+                          className="text-indigo-600 hover:text-indigo-900 flex items-center"
+                        >
+                          <Mail className="size-4 mr-1" /> Remind
+                        </button>
+                        <button
+                          onClick={() => openExemptModal(fee)}
+                          className="text-emerald-600 hover:text-emerald-800 flex items-center"
+                        >
+                          <ShieldCheck className="size-4 mr-1" /> Mark exempt
+                        </button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+          </div>
+        </div>
+      )}
+
+      {exemptTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-gray-900">Mark fee exempt</h2>
+              <button onClick={() => setExemptTarget(null)} className="text-gray-400 hover:text-gray-600">
+                <X className="size-5" />
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 mb-4">
+              {exemptTarget.student_name || 'This student'}'s <span className="font-medium">{exemptTarget.title}</span> (₹{Math.round(Number(exemptTarget.amount) || 0).toLocaleString('en-IN')}) will be marked fully exempt. This applies to any institute.
+            </p>
+            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Exemption category</label>
+            <select
+              value={exemptCategory}
+              onChange={(e) => setExemptCategory(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 mb-4 text-sm"
+            >
+              {EXEMPTION_CATEGORIES.map((c) => (
+                <option key={c.value} value={c.value}>{c.label}</option>
+              ))}
+            </select>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setExemptTarget(null)}
+                className="flex-1 px-4 py-2 rounded-lg border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleExempt}
+                disabled={exemptSubmitting}
+                className="flex-1 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {exemptSubmitting ? 'Saving...' : 'Confirm exemption'}
+              </button>
+            </div>
           </div>
         </div>
       )}

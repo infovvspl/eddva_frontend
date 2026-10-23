@@ -1,6 +1,7 @@
 // StudyMaterials - Responsive student resource center
 import React, { useEffect, useMemo, useState } from 'react';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
+import HighlightableNotes from '@/components/shared/HighlightableNotes';
 import { AnimatePresence, motion } from 'framer-motion';
 import { MindMapCanvas } from '@/components/school/MindMapVisualizer';
 import { useAuth } from '@/context/SchoolAuthContext';
@@ -1397,7 +1398,7 @@ function MaterialViewer({ material, onClose }) {
                 />
               </div>
             ) : isFlashcard ? <FlashcardViewer content={previewContent} /> : (
-              <MarkdownRenderer content={previewContent} className="prose-slate" />
+              <HighlightableNotes materialId={material.id} content={previewContent} className="prose-slate" />
             )
           ) : (
             <div className="rounded-xl border border-dashed border-slate-200 p-10 text-center text-sm font-semibold text-slate-400">

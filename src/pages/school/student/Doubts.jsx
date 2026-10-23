@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   ChevronDown,
   Clock,
+  GraduationCap,
   HelpCircle,
   Lightbulb,
   Loader2,
@@ -344,7 +345,18 @@ export default function Doubts() {
     [doubts],
   );
   const allDoubts = useMemo(() => sortByActivity(doubts), [doubts]);
-  const shownDoubts = tab === 'pending' ? pendingDoubts : tab === 'answered' ? answeredDoubts : allDoubts;
+  // Split out of "Pending" so a student can tell "AI already answered this" apart
+  // from "nobody has looked at this yet" — both currently count as pending above.
+  const aiAnsweredDoubts = useMemo(
+    () => sortByNewest(doubts.filter((d) => d.status === 'ai_answered')),
+    [doubts],
+  );
+  const teacherAnsweredDoubts = answeredDoubts;
+  const shownDoubts = tab === 'pending' ? pendingDoubts
+    : tab === 'ai' ? aiAnsweredDoubts
+    : tab === 'teacher' ? teacherAnsweredDoubts
+    : tab === 'answered' ? answeredDoubts
+    : allDoubts;
 
   const filteredTeachers = subjectId
     ? context.teachers.filter((t) => !t.subjectId || t.subjectId === subjectId)
@@ -604,10 +616,11 @@ export default function Doubts() {
             </div>
           </div>
 
-          <div className="flex flex-row flex-nowrap gap-2">
+          <div className="flex flex-row flex-nowrap gap-2 overflow-x-auto">
             {[
               { id: 'pending', label: 'Pending', icon: Clock, count: pendingDoubts.length },
-              { id: 'answered', label: 'Answered', icon: CheckCircle2, count: answeredDoubts.length },
+              { id: 'ai', label: 'AI Answered', icon: Sparkles, count: aiAnsweredDoubts.length },
+              { id: 'teacher', label: 'Teacher Answered', icon: GraduationCap, count: teacherAnsweredDoubts.length },
               { id: 'all', label: 'All', icon: HelpCircle, count: doubts.length },
             ].map(({ id, label, icon: Icon, count }) => (
               <button

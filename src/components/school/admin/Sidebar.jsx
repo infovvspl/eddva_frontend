@@ -53,6 +53,7 @@ const superAdminGroups = [
     items: [
       { path: '/school/super-admin/communication', label: 'Communication', icon: Megaphone },
       { path: '/school/super-admin/complaints', label: 'Support Tickets', icon: Ticket },
+      { path: '/school/super-admin/grievances', label: 'Grievances', icon: MessageSquareWarning },
     ],
   },
   {
@@ -173,6 +174,7 @@ function buildInstituteGroups(mods, aiFeats) {
         { path: '/school/admin/document-generator', label: 'Document Generator', icon: FileText },
         { path: '/school/admin/audit-logs', label: 'Audit Logs', icon: FileText },
         { path: '/school/admin/complaints', label: 'Support Tickets', icon: Shield },
+        { path: '/school/admin/grievances', label: 'Grievances', icon: MessageSquareWarning },
       ],
     },
   ].filter(group => group.items && group.items.length > 0);
