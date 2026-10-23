@@ -295,6 +295,10 @@ export default function Profile() {
 
   const className = profile.section?.class?.name || profile.className || user?.studentProfile?.className || '';
   const sectionName = profile.section?.name || profile.sectionName || user?.studentProfile?.sectionName || '';
+  // The API usually sends the name already prefixed ("Class 10"), so only add the word when it is a bare
+  // number ("10"). Names like "LKG" or "Nursery" are shown exactly as they are.
+  const classLabel = /^\s*\d/.test(className) ? `Class ${String(className).trim()}` : String(className).trim();
+  const classWithSection = classLabel ? `${classLabel}${sectionName ? ` · ${sectionName}` : ''}` : '';
   const rollNo = profile.rollNo || profile.roll_no || user?.studentProfile?.rollNo || '';
   const enrollmentNo = profile.enrollmentNo || user?.studentProfile?.enrollmentNo || '';
 
@@ -387,7 +391,7 @@ export default function Profile() {
             {className && (
               <span className="inline-flex items-center gap-1.5 rounded-xl border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300">
                 <GraduationCap className="size-3.5" />
-                Class {className}{sectionName ? ` · ${sectionName}` : ''}
+                {classWithSection}
               </span>
             )}
             {rollNo && (
@@ -453,7 +457,7 @@ export default function Profile() {
             icon={UserCheck}
             label="Class Teacher"
             tone="violet"
-            helper={classTeacherName ? (className ? `Class ${className}${sectionName ? ` · ${sectionName}` : ''}` : 'Your class teacher') : 'No class teacher assigned yet'}
+            helper={classTeacherName ? (classWithSection || 'Your class teacher') : 'No class teacher assigned yet'}
           >
             {classTeacherName ? (
               <div className="flex items-center gap-3 min-w-0">
