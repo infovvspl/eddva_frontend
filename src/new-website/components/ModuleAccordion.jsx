@@ -10,6 +10,7 @@
 
 import { useState } from "react";
 import { ChevronDown, Check } from "lucide-react";
+import { localizeDigits } from "@/i18n/digits";
 
 const ModuleAccordion = ({ id, heading, headingAccent, lead, modules, defaultOpenId, tinted }) => {
   const [open, setOpen] = useState(() => (defaultOpenId ? { [defaultOpenId]: true } : {}));
@@ -44,7 +45,7 @@ const ModuleAccordion = ({ id, heading, headingAccent, lead, modules, defaultOpe
                       <Icon size={19} strokeWidth={1.8} />
                     </span>
                     <span className="nw-modacc__title">{title}</span>
-                    <span className="nw-modacc__count">{bullets.length}</span>
+                    <span className="nw-modacc__count">{localizeDigits(bullets.length)}</span>
                     <ChevronDown size={17} strokeWidth={2.2} className="nw-modacc__chev" aria-hidden="true" />
                   </button>
                 </h3>

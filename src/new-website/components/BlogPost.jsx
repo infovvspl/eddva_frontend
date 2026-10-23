@@ -7,14 +7,16 @@
 import DOMPurify from "dompurify";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Calendar, Clock, User } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { getCategoryStyle } from "../data/blogCategoryStyle";
 import renderBlogText from "../lib/renderBlogText";
 import { isHtmlBody } from "../lib/blogBody";
 
-const formatDate = iso =>
-  new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+const formatDate = (iso, lng) =>
+  new Date(iso).toLocaleDateString(lng === "hi" ? "hi-IN-u-nu-deva" : "en-IN", { day: "numeric", month: "long", year: "numeric" });
 
 const BlogPost = ({ post, allPosts = [] }) => {
+  const { t, i18n } = useTranslation("blog");
   const { id, slug, title, category, author, date, readTime, sections, coverImage } = post;
   const { Icon, color, bg } = getCategoryStyle(category);
 
@@ -29,10 +31,10 @@ const BlogPost = ({ post, allPosts = [] }) => {
         <div className="nw-bpost__hero-inner">
           <Link to="/blog" className="nw-bpost__back">
             <ArrowLeft size={15} strokeWidth={2.4} />
-            All posts
+            {t("allPosts")}
           </Link>
 
-          <span className="nw-bpost__category">{category}</span>
+          <span className="nw-bpost__category">{t(`categories.${category}`, { defaultValue: category })}</span>
           <h1 className="nw-bpost__title">{title}</h1>
 
           <div className="nw-bpost__meta">
@@ -42,12 +44,12 @@ const BlogPost = ({ post, allPosts = [] }) => {
             </span>
             <span className="nw-bpost__meta-item">
               <Calendar size={14} strokeWidth={2.2} />
-              {formatDate(date)}
+              {formatDate(date, i18n.resolvedLanguage)}
             </span>
             {readTime && (
               <span className="nw-bpost__meta-item">
                 <Clock size={14} strokeWidth={2.2} />
-                {readTime} min read
+                {t("minRead", { count: readTime })}
               </span>
             )}
           </div>
@@ -88,11 +90,11 @@ const BlogPost = ({ post, allPosts = [] }) => {
 
           <div className="nw-bpost__cta-card">
             <div>
-              <h3 className="nw-bpost__cta-title">See how EDDVA puts this into practice</h3>
-              <p className="nw-bpost__cta-desc">We will walk you through it on your own setup.</p>
+              <h3 className="nw-bpost__cta-title">{t("ctaTitle")}</h3>
+              <p className="nw-bpost__cta-desc">{t("ctaDesc")}</p>
             </div>
             <Link to="/contact" className="nw-bpost__cta" id={`nw-blog-${slug}-cta`}>
-              Book a Free Demo
+              {t("cta")}
               <ArrowRight size={15} strokeWidth={2.6} />
             </Link>
           </div>
@@ -103,7 +105,7 @@ const BlogPost = ({ post, allPosts = [] }) => {
       {related.length > 0 && (
         <section className="nw-bpost__related">
           <div className="nw-bpost__related-inner">
-            <h2 className="nw-bpost__h2">More from the blog</h2>
+            <h2 className="nw-bpost__h2">{t("more")}</h2>
             <div className="nw-bpost__related-grid">
               {related.map(item => {
                 const itemStyle = getCategoryStyle(item.category);
@@ -122,7 +124,7 @@ const BlogPost = ({ post, allPosts = [] }) => {
                       )}
                     </span>
                     <span className="nw-bpost__related-copy">
-                      <span className="nw-bpost__related-category">{item.category}</span>
+                      <span className="nw-bpost__related-category">{t(`categories.${item.category}`, { defaultValue: item.category })}</span>
                       <span className="nw-bpost__related-title">{item.title}</span>
                     </span>
                     <ArrowRight size={16} strokeWidth={2.4} className="nw-bpost__related-arrow" />

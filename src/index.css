@@ -16,12 +16,25 @@
   }
 }
 
+/* Devanagari glyphs for Hindi. Poppins' own Devanagari subset draws digits as
+   Latin-looking shapes and sizes unevenly against its Latin letters, so a
+   self-hosted Noto Sans Devanagari covers just the Devanagari range and is
+   listed ahead of Poppins in the font stacks. Latin text is unaffected. */
+@font-face {
+  font-family: "EDDVA Devanagari";
+  src: url("/fonts/noto-sans-devanagari.woff2") format("woff2");
+  font-weight: 100 900;
+  size-adjust: 112%;
+  font-display: swap;
+  unicode-range: U+0900-097F, U+1CD0-1CF4, U+200C-200D, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FF;
+}
+
 @theme {
   --breakpoint-3xl: 1920px;
   --breakpoint-4xl: 2560px;
 
-  --font-sans: Poppins, system-ui, sans-serif;
-  --font-poppins: Poppins, system-ui, sans-serif;
+  --font-sans: "EDDVA Devanagari", Poppins, "Noto Sans Devanagari", system-ui, sans-serif;
+  --font-poppins: "EDDVA Devanagari", Poppins, "Noto Sans Devanagari", system-ui, sans-serif;
 
   --color-border: hsl(var(--border));
   --color-border-light: hsl(var(--border-light));
@@ -1367,7 +1380,7 @@ button,
 input,
 select,
 textarea {
-  font-family: "Poppins", system-ui, sans-serif;
+  font-family: "EDDVA Devanagari", "Poppins", "Noto Sans Devanagari", system-ui, sans-serif;
 }
 
 body,

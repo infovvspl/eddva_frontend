@@ -1,0 +1,59 @@
+{
+  "hero": {
+    "crumb": "About EDDVA",
+    "titlePre": "About ",
+    "titleAccent": "EDDVA",
+    "lead": "Built for the future of education — AI, automation and analytics in one platform.",
+    "storyBtn": "Our Story"
+  },
+  "pillars": {
+    "headingLine1": "Empowering Education.",
+    "headingPre": "Enriching ",
+    "headingAccent": "Futures.",
+    "imageAlt": "A student answering a water cycle lesson on the EDDVA smartboard while the teacher looks on"
+  },
+  "story": {
+    "pageTitle": "Our",
+    "pageAccent": "Story",
+    "pageLead": "Why EDDVA exists, what it believes about teaching, and where it's headed.",
+    "label": "About Us",
+    "headingPre": "Empowering Education. Enriching ",
+    "headingAccent": "Futures.",
+    "p1": "Education has always been about more than technology. It is about a teacher who inspires, a student who discovers, a parent who supports, and an institution that nurtures potential.",
+    "p2": "EDDVA – Education Development & Advancement was born from a simple belief: the future of education should not replace the foundations of teaching, it should strengthen them.",
+    "p3": "We bring together the essence of traditional teaching with the intelligence of AI, creating an education ecosystem where technology works alongside educators, not in place of them.",
+    "p4": "From AI-powered personalised learning and intelligent assessments to smart school management, analytics and seamless communication, EDDVA connects students, teachers, parents and institutions on one intelligent platform.",
+    "p5": "Our AI helps understand how students learn, supports teachers in delivering more effective education, gives parents meaningful visibility into their child’s journey, and empowers institutions with the insights and tools to make better decisions.",
+    "triplet1": "Because we believe every learner is different.",
+    "triplet2": "Every teacher has a unique way of teaching.",
+    "triplet3": "And every institution has its own vision for excellence.",
+    "closing": "EDDVA brings the intelligence of technology to education while keeping the human connection at its heart.",
+    "visionTitle": "Our Vision",
+    "visionDesc": "To build a future where every learner receives personalised support, every educator is empowered to teach better, and every institution has the intelligence to create meaningful educational outcomes.",
+    "promiseTitle": "Our Promise",
+    "promiseLine1": "We don’t aim to make education more technological.",
+    "promiseLine2": "We aim to make technology make education better."
+  },
+  "founder": {
+    "label": "Our Founder",
+    "headingLine1": "Driven by Purpose.",
+    "headingPre": "Committed to ",
+    "headingAccent": "Education.",
+    "note1": "Innovate",
+    "note2": "Educate",
+    "note3": "Empower"
+  },
+  "team": {
+    "label": "Our Team",
+    "headingPre": "Meet the People Behind ",
+    "headingAccent": "EDDVA",
+    "sub": "A passionate team working to transform education through innovation, technology and care.",
+    "prev": "Previous team member",
+    "next": "Next team member",
+    "note": "Different · Skills · One Mission"
+  },
+  "values": {
+    "heading": "Our Values",
+    "sub": "The principles that guide everything we do."
+  }
+}

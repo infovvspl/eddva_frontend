@@ -4,11 +4,16 @@
 // Same filter pattern as FeatureIndex's category filter, applied to FAQ.
 
 import { useState } from "react";
-import { faqCategories } from "../data/faq";
+import { useTranslation } from "react-i18next";
+import { useLocalized } from "@/i18n/useLocalized";
+import { faqCategories as faqCategoriesData } from "../data/faq";
 import FaqCategoryAccordion from "./FaqCategoryAccordion";
 import useInView from "../hooks/useInView";
+import { localizeDigits } from "@/i18n/digits";
 
 const FaqBrowser = () => {
+  const { t } = useTranslation("faq");
+  const faqCategories = useLocalized("data-faq", faqCategoriesData);
   const [activeId, setActiveId] = useState(faqCategories[0].id);
   const active = faqCategories.find(c => c.id === activeId) || faqCategories[0];
   const [ref, inView] = useInView({ threshold: 0.1 });
@@ -18,7 +23,7 @@ const FaqBrowser = () => {
       <div className="nw-faqp__container">
         <div className={`nw-faqp__layout${inView ? " nw-in" : ""}`}>
 
-          <div className="nw-faqp__sidebar" role="tablist" aria-label="FAQ category" aria-orientation="vertical">
+          <div className="nw-faqp__sidebar" role="tablist" aria-label={t("category")} aria-orientation="vertical">
             {faqCategories.map(({ id, label, questions }) => (
               <button
                 type="button"
@@ -29,7 +34,7 @@ const FaqBrowser = () => {
                 onClick={() => setActiveId(id)}
               >
                 <span>{label}</span>
-                <span className="nw-faqp__sidebar-count">{questions.length}</span>
+                <span className="nw-faqp__sidebar-count">{localizeDigits(questions.length)}</span>
               </button>
             ))}
           </div>

@@ -8,12 +8,17 @@
 
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { useLocalized } from "@/i18n/useLocalized";
 import useInView from "../hooks/useInView";
+import { localizeDigits } from "@/i18n/digits";
 
 const countFor = role =>
   role.groups.reduce((sum, group) => sum + group.items.length, 0);
 
-const RoleDetail = ({ role }) => {
+const RoleDetail = ({ role: roleSource }) => {
+  const { t } = useTranslation("solutions");
+  const role = useLocalized("data-solutions", roleSource, roleSource.id);
   const { title, blurb, Icon, color, bg, groups } = role;
   const [ref, inView] = useInView({ threshold: 0.05 });
   const total = countFor(role);
@@ -26,9 +31,9 @@ const RoleDetail = ({ role }) => {
           <span className="nw-roledet__icon" aria-hidden="true">
             <Icon size={30} strokeWidth={1.7} />
           </span>
-          <h1 className="nw-roledet__title">What EDDVA Does for {title}</h1>
+          <h1 className="nw-roledet__title">{t("detail.title", { title })}</h1>
           <p className="nw-roledet__blurb">{blurb}</p>
-          <span className="nw-roledet__total">{total} capabilities, live in the platform</span>
+          <span className="nw-roledet__total">{t("detail.total", { count: total })}</span>
         </header>
 
         <div className={`nw-roledet__groups${inView ? " nw-in" : ""}`} ref={ref}>
@@ -36,7 +41,7 @@ const RoleDetail = ({ role }) => {
             <div className="nw-roledet__group" key={groupId} style={{ "--i": gi }}>
               <h2 className="nw-roledet__group-label">
                 {label}
-                <span className="nw-roledet__group-count">{items.length}</span>
+                <span className="nw-roledet__group-count">{localizeDigits(items.length)}</span>
               </h2>
               <ul className="nw-roledet__items">
                 {items.map(({ Icon: ItemIcon, name, desc }) => (
@@ -57,13 +62,13 @@ const RoleDetail = ({ role }) => {
 
         <div className="nw-roledet__cta-card">
           <div>
-            <h3 className="nw-roledet__cta-title">See it on your own {title.toLowerCase()}</h3>
+            <h3 className="nw-roledet__cta-title">{t("detail.ctaTitle", { title: title.toLowerCase() })}</h3>
             <p className="nw-roledet__cta-desc">
-              We will walk through these modules against your institution's own setup.
+              {t("detail.ctaDesc")}
             </p>
           </div>
           <Link to="/contact" className="nw-roledet__cta" id="nw-role-detail-cta">
-            Book a demo
+            {t("detail.book")}
             <ArrowRight size={15} strokeWidth={2.6} />
           </Link>
         </div>
