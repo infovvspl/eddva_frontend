@@ -25,6 +25,7 @@ import { useTranslation } from "react-i18next";
 import { useLocalized } from "@/i18n/useLocalized";
 import { roleSolutions as roleSolutionsData } from "../data/solutions";
 import useInView from "../hooks/useInView";
+import { localizeDigits } from "@/i18n/digits";
 
 const countFor = role =>
   role.groups.reduce((sum, group) => sum + group.items.length, 0);
@@ -87,7 +88,7 @@ const SolutionRoles = () => {
                     <span className="nw-roles__title">{title}</span>
                     <span className="nw-roles__blurb">{blurb}</span>
                   </span>
-                  <span className="nw-roles__count">{countFor(role)}</span>
+                  <span className="nw-roles__count">{localizeDigits(countFor(role))}</span>
                   <ArrowRight
                     size={19}
                     strokeWidth={2.2}
@@ -122,7 +123,7 @@ const SolutionRoles = () => {
                       <span className="nw-roles__title">{title}</span>
                       <span className="nw-roles__blurb">{blurb}</span>
                     </span>
-                    <span className="nw-roles__count">{countFor(role)}</span>
+                    <span className="nw-roles__count">{localizeDigits(countFor(role))}</span>
                     <ChevronDown
                       size={19}
                       strokeWidth={2.2}
@@ -147,7 +148,7 @@ const SolutionRoles = () => {
                       <div className="nw-roles__group" key={groupId}>
                         <h4 className="nw-roles__group-label">
                           {label}
-                          <span className="nw-roles__group-count">{items.length}</span>
+                          <span className="nw-roles__group-count">{localizeDigits(items.length)}</span>
                         </h4>
                         <ul className="nw-roles__items">
                           {items.map(({ Icon: ItemIcon, name, desc }) => (

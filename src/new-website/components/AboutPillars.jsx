@@ -8,6 +8,7 @@ import { useLocalized } from "@/i18n/useLocalized";
 import aboutHome from "../assets/about.png";
 import { aboutCards as aboutCardsData } from "../data/about";
 import useInView from "../hooks/useInView";
+import { localizeDigits } from "@/i18n/digits";
 
 /* Each row watches itself, so the list reveals as you scroll rather than all
    at once when the section's top edge appears. */
@@ -23,7 +24,7 @@ const Row = ({ card, index }) => {
       style={{ "--nw-pillar-accent": color }}
     >
       <span className="nw-pillars__num" aria-hidden="true">
-        {String(index + 1).padStart(2, "0")}
+        {localizeDigits(String(index + 1).padStart(2, "0"))}
       </span>
       <div className="nw-pillars__body">
         <div className="nw-pillars__row-head">

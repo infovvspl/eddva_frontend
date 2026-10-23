@@ -13,7 +13,7 @@ import renderBlogText from "../lib/renderBlogText";
 import { isHtmlBody } from "../lib/blogBody";
 
 const formatDate = (iso, lng) =>
-  new Date(iso).toLocaleDateString(lng === "hi" ? "hi-IN" : "en-IN", { day: "numeric", month: "long", year: "numeric" });
+  new Date(iso).toLocaleDateString(lng === "hi" ? "hi-IN-u-nu-deva" : "en-IN", { day: "numeric", month: "long", year: "numeric" });
 
 const BlogPost = ({ post, allPosts = [] }) => {
   const { t, i18n } = useTranslation("blog");

@@ -9,6 +9,7 @@ import { useLocalized } from "@/i18n/useLocalized";
 import { faqCategories as faqCategoriesData } from "../data/faq";
 import FaqCategoryAccordion from "./FaqCategoryAccordion";
 import useInView from "../hooks/useInView";
+import { localizeDigits } from "@/i18n/digits";
 
 const FaqBrowser = () => {
   const { t } = useTranslation("faq");
@@ -33,7 +34,7 @@ const FaqBrowser = () => {
                 onClick={() => setActiveId(id)}
               >
                 <span>{label}</span>
-                <span className="nw-faqp__sidebar-count">{questions.length}</span>
+                <span className="nw-faqp__sidebar-count">{localizeDigits(questions.length)}</span>
               </button>
             ))}
           </div>

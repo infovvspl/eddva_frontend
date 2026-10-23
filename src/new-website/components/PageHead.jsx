@@ -12,6 +12,7 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ChevronRight } from "lucide-react";
+import { localizeDigits } from "@/i18n/digits";
 
 const PageHead = ({ title, accent, lead, id, icon: Icon, color, bg, stats }) => {
   const { t } = useTranslation();
@@ -46,7 +47,7 @@ const PageHead = ({ title, accent, lead, id, icon: Icon, color, bg, stats }) => 
         <div className="nw-pagehead__stats nw-rise" style={{ "--nw-delay": "0.24s" }}>
           {stats.map(stat => (
             <div className="nw-pagehead__stat" key={stat.label}>
-              <span className="nw-pagehead__stat-value">{stat.value}</span>
+              <span className="nw-pagehead__stat-value">{localizeDigits(stat.value)}</span>
               <span className="nw-pagehead__stat-label">{stat.label}</span>
             </div>
           ))}

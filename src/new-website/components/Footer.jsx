@@ -176,7 +176,7 @@ const Footer = () => {
         </div>
 
         <span className="nw-footer__copy">
-          © {new Date().getFullYear()} EDDVA. {t("footer.rights")}
+          © {localizeDigits(new Date().getFullYear())} EDDVA. {t("footer.rights")}
           <span className="nw-footer__sep">|</span>
           {t("footer.developedBy")}{" "}
           <a

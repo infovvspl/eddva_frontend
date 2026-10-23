@@ -11,6 +11,7 @@ import { ArrowRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useLocalized } from "@/i18n/useLocalized";
 import useInView from "../hooks/useInView";
+import { localizeDigits } from "@/i18n/digits";
 
 const countFor = role =>
   role.groups.reduce((sum, group) => sum + group.items.length, 0);
@@ -40,7 +41,7 @@ const RoleDetail = ({ role: roleSource }) => {
             <div className="nw-roledet__group" key={groupId} style={{ "--i": gi }}>
               <h2 className="nw-roledet__group-label">
                 {label}
-                <span className="nw-roledet__group-count">{items.length}</span>
+                <span className="nw-roledet__group-count">{localizeDigits(items.length)}</span>
               </h2>
               <ul className="nw-roledet__items">
                 {items.map(({ Icon: ItemIcon, name, desc }) => (

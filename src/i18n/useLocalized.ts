@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { toDevanagariDigits } from "./devanagari";
 
 type Tree = unknown;
 
@@ -37,7 +38,8 @@ export function localize<T>(data: T, tr: Tree): T {
     return out as T;
   }
 
-  if (typeof tr === "string" && (typeof data === "string" || data === undefined)) return tr as unknown as T;
+  // Translated copy is written with ASCII digits; show them as Devanagari digits.
+  if (typeof tr === "string" && (typeof data === "string" || data === undefined)) return toDevanagariDigits(tr) as unknown as T;
   return data;
 }
 

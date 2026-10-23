@@ -8,6 +8,7 @@
 import { Send, PhoneCall, MonitorPlay, Rocket } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import useInView from "../hooks/useInView";
+import { localizeDigits } from "@/i18n/digits";
 
 const steps = [
   {
@@ -45,7 +46,7 @@ const ContactSteps = () => {
                 <span className="nw-steps__icon">
                   <Icon size={20} strokeWidth={1.9} />
                 </span>
-                <span className="nw-steps__num">{i + 1}</span>
+                <span className="nw-steps__num">{localizeDigits(i + 1)}</span>
               </span>
               <h3 className="nw-steps__title">{t(`steps.items.${id}.title`)}</h3>
               <p className="nw-steps__desc">{t(`steps.items.${id}.desc`)}</p>

@@ -1,5 +1,6 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
+import { toDevanagariDigits } from "./devanagari";
 
 export const SUPPORTED_LANGUAGES = [
   { code: "en", label: "English", native: "English" },
@@ -63,7 +64,16 @@ export async function setLanguage(lng: LanguageCode) {
   }
 }
 
-i18n.use(initReactI18next).init({
+// Hindi copy is written with ASCII digits; render them as Devanagari digits.
+const devanagariDigits = {
+  type: "postProcessor" as const,
+  name: "devanagariDigits",
+  process: (value: string, _key: unknown, _options: unknown, translator: { language?: string }) =>
+    translator.language?.startsWith("hi") ? toDevanagariDigits(value) : value,
+};
+
+i18n.use(devanagariDigits).use(initReactI18next).init({
+  postProcess: ["devanagariDigits"],
   resources: { en: enResources },
   lng: "en",
   fallbackLng: "en",

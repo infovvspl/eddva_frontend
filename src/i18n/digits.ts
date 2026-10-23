@@ -1,9 +1,6 @@
 import i18n from "./index";
-
-const DEVANAGARI_ZERO = 0x0966;
+import { toDevanagariDigits } from "./devanagari";
 
 /** Renders ASCII digits as Devanagari digits when the UI language is Hindi. */
-export const localizeDigits = (text: string): string =>
-  i18n.language?.startsWith("hi")
-    ? text.replace(/\d/g, d => String.fromCharCode(DEVANAGARI_ZERO + Number(d)))
-    : text;
+export const localizeDigits = (text: string | number): string =>
+  i18n.language?.startsWith("hi") ? toDevanagariDigits(String(text)) : String(text);

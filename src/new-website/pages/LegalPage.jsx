@@ -11,6 +11,14 @@ import Navbar from "../components/Navbar";
 import PageHead from "../components/PageHead";
 import Footer from "../components/Footer";
 import { CookieConsentBar } from "@/components/landing/CookieConsentBar";
+import { toDevanagariDigits } from "@/i18n/devanagari";
+
+// Policy copy is written with ASCII digits; show them as Devanagari in Hindi.
+const withDigits = node =>
+  typeof node === "string" ? toDevanagariDigits(node)
+  : Array.isArray(node) ? node.map(withDigits)
+  : node && typeof node === "object" ? Object.fromEntries(Object.entries(node).map(([k, v]) => [k, withDigits(v)]))
+  : node;
 
 // "**Term:** rest" → bold lead-in, used by the definition and cookie lists.
 const Rich = ({ text }) => {
@@ -53,7 +61,8 @@ const LegalPage = ({ ns, id }) => {
   const { i18n } = useTranslation(ns);
   // The whole document is one resource tree, so read the bundle directly;
   // English is the fallback while a Hindi bundle is still loading.
-  const doc = i18n.getResourceBundle(i18n.language, ns) ?? i18n.getResourceBundle("en", ns);
+  const bundle = i18n.getResourceBundle(i18n.language, ns) ?? i18n.getResourceBundle("en", ns);
+  const doc = i18n.language?.startsWith("hi") ? withDigits(bundle) : bundle;
   const { sections, intro, footer } = doc;
   const labels = { email: doc.emailLabel, website: doc.websiteLabel };
 

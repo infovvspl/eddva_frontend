@@ -13,6 +13,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Play, Brain, Users, Sparkles, Star, Quote, X } from "lucide-react";
 import schoolHeroEn from "../assets/school-banner.webp";
 import schoolHeroHi from "../assets/school-banner.hi.webp";
+import { localizeDigits } from "@/i18n/digits";
 
 // youtube.com/shorts/OXY5dOQ9wlw — the demo walkthrough linked from "Watch Video"
 const DEMO_VIDEO_ID = "OXY5dOQ9wlw";
@@ -165,7 +166,7 @@ const HeroSection = () => {
           <div className="nw-hcard nw-hcard--metric" id="nw-hcard-metric">
             <span className="nw-hcard__metric-head">
               <small>{t("hero.attendance")}</small>
-              <strong>98.2%</strong>
+              <strong>{localizeDigits("98.2%")}</strong>
               <em className="nw-hcard__delta">&#9650; {t("hero.delta")}</em>
             </span>
             <svg className="nw-hcard__spark" viewBox="0 0 120 40" preserveAspectRatio="none" aria-hidden="true">

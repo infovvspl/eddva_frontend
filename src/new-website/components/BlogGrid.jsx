@@ -11,7 +11,7 @@ import { getCategoryStyle } from "../data/blogCategoryStyle";
 import useInView from "../hooks/useInView";
 
 const formatDate = (iso, lng) =>
-  new Date(iso).toLocaleDateString(lng === "hi" ? "hi-IN" : "en-IN", { day: "numeric", month: "short", year: "numeric" });
+  new Date(iso).toLocaleDateString(lng === "hi" ? "hi-IN-u-nu-deva" : "en-IN", { day: "numeric", month: "short", year: "numeric" });
 
 const BlogCard = ({ post, index }) => {
   const { t, i18n } = useTranslation("blog");

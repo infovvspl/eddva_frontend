@@ -288,7 +288,7 @@ const ContactSection = () => {
               FileText
             )}
             <span className="nw-contactp__counter">
-              {form.message.length} / {LIMITS.message}
+              {localizeDigits(`${form.message.length} / ${LIMITS.message}`)}
             </span>
 
             <div className="nw-contactp__actions">
