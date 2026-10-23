@@ -13,7 +13,7 @@ import {
   Smartphone, Bell, WifiOff, LineChart,
   BookOpen, GraduationCap, Trophy,
 } from "lucide-react";
-import appLogin from "../../assets/app1.png";
+import appLogin from "../../assets/app1.webp";
 import playStore from "../../assets/playstore.png";
 import appStore from "../../assets/appstore.png";
 import avStudent from "../assets/mobile icons/Img 1.png";
