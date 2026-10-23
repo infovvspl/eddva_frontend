@@ -21,7 +21,9 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, ArrowRight } from "lucide-react";
-import { roleSolutions } from "../data/solutions";
+import { useTranslation } from "react-i18next";
+import { useLocalized } from "@/i18n/useLocalized";
+import { roleSolutions as roleSolutionsData } from "../data/solutions";
 import useInView from "../hooks/useInView";
 
 const countFor = role =>
@@ -40,6 +42,8 @@ const DEDICATED_PAGE = {
 };
 
 const SolutionRoles = () => {
+  const { t } = useTranslation("solutions");
+  const roleSolutions = useLocalized("data-solutions", roleSolutionsData);
   // Default-open the first role that still expands in place — Students
   // (roleSolutions[0]) now links out instead, so opening it by default would
   // do nothing.
@@ -56,10 +60,9 @@ const SolutionRoles = () => {
       <div className="nw-roles__container">
 
         <header className="nw-roles__header">
-          <h2 className="nw-roles__heading">What EDDVA Does for Each of Them</h2>
+          <h2 className="nw-roles__heading">{t("roles.heading")}</h2>
           <p className="nw-roles__lead">
-            Every module below is live in the platform. Open a role to see
-            exactly what they get.
+            {t("roles.lead")}
           </p>
         </header>
 

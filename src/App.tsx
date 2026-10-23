@@ -28,7 +28,7 @@ function CoachingFontManager() {
     if (location.pathname.startsWith("/school") || tenantType === "school") {
       document.documentElement.style.removeProperty("--font-sans");
     } else {
-      document.documentElement.style.setProperty("--font-sans", '"Poppins"');
+      document.documentElement.style.setProperty("--font-sans", '"EDDVA Devanagari", "Poppins", "Noto Sans Devanagari"');
     }
   }, [location.pathname, tenantType]);
 

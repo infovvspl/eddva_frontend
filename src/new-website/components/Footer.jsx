@@ -16,10 +16,12 @@
 // the bottom bar text are exactly as they were. Only the treatment moved.
 
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Phone, Mail, MapPin, ArrowUp, Download } from "lucide-react";
 import { LOGO, LOGO_ALT } from "../brand";
 import { socials } from "../data/socials";
-import { emails, PHONE, ADDRESS } from "../data/contact";
+import { emails, PHONE } from "../data/contact";
+import { localizeDigits } from "@/i18n/digits";
 import { products } from "../data/products";
 
 // Every link here is a real route now, not a same-page anchor — the footer
@@ -30,33 +32,33 @@ import { products } from "../data/products";
 const columns = [
   {
     id: "nw-foot-quick",
-    title: "Quick Links",
+    title: "footer.quickLinks",
     links: [
-      { id: "home",     label: "Home",     to: "/" },
-      { id: "about",    label: "About Us", to: "/about" },
-      { id: "products", label: "Products", to: "/products" },
-      { id: "services", label: "Services", to: "/solution" },
-      { id: "blog",     label: "Blog",     to: "/blog" },
+      { id: "home",     label: "nav.home",     to: "/" },
+      { id: "about",    label: "footer.aboutUs", to: "/about" },
+      { id: "products", label: "footer.products", to: "/products" },
+      { id: "services", label: "footer.services", to: "/solution" },
+      { id: "blog",     label: "nav.blog",     to: "/blog" },
     ],
   },
   {
     id: "nw-foot-products",
-    title: "Products",
+    title: "footer.products",
     // Each product now has its own page (see pages/ProductDetailPage) —
     // built straight from data/products.js so a new product never needs a
     // matching footer entry written by hand.
     links: products.map(({ id, slug, title }) => ({
-      id, label: title, to: `/products/${slug}`,
+      id, label: title, raw: true, to: `/products/${slug}`,
     })),
   },
   {
     id: "nw-foot-services",
-    title: "Services",
+    title: "footer.services",
     links: [
-      { id: "institutions", label: "For Institutions", to: "/solution/institutions" },
-      { id: "stakeholders", label: "Stakeholders",     to: "/solution#nw-solution-roles" },
-      { id: "demo",         label: "Book a Demo",    to: "/contact" },
-      { id: "login",        label: "Login",          to: "/login" },
+      { id: "institutions", label: "nav.forInstitutions", to: "/solution/institutions" },
+      { id: "stakeholders", label: "footer.stakeholders", to: "/solution#nw-solution-roles" },
+      { id: "demo",         label: "footer.bookDemo",    to: "/contact" },
+      { id: "login",        label: "nav.login",          to: "/login" },
     ],
   },
 ];
@@ -71,15 +73,17 @@ const BROCHURE_URL = "/eddva-brochure.pdf";
 
 const DEVELOPER = { label: "VVSPL", href: "https://vvspltech.com" };
 
-const contacts = [
-  { id: "phone", Icon: Phone, label: PHONE.display, href: PHONE.href },
+const buildContacts = t => [
+  { id: "phone", Icon: Phone, label: localizeDigits(PHONE.display), href: PHONE.href },
   ...emails.map(({ id, address }) => ({
     id, Icon: Mail, label: address, href: `mailto:${address}`,
   })),
-  { id: "place", Icon: MapPin, label: ADDRESS, href: null },
+  { id: "place", Icon: MapPin, label: t("contact:details.address"), href: null },
 ];
 
 const Footer = () => {
+  const { t } = useTranslation(["common", "contact"]);
+  const contacts = buildContacts(t);
   const toTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
   return (
@@ -94,8 +98,8 @@ const Footer = () => {
         <div className="nw-footer__brand">
           <img src={LOGO} alt={LOGO_ALT} className="nw-footer__logo" id="nw-footer-logo" />
           <p className="nw-footer__blurb">
-            Education Development &amp; Advancement<br />
-            All-in-one AI-Powered Platform for Schools &amp; Institutes.
+            {t("footer.blurbLine1")}<br />
+            {t("footer.blurbLine2")}
           </p>
 
           <a
@@ -105,20 +109,20 @@ const Footer = () => {
             download
           >
             <Download size={16} strokeWidth={2.2} />
-            Download Brochure
+            {t("footer.downloadBrochure")}
           </a>
         </div>
 
         {/* Link columns */}
         {columns.map(col => (
           <div className="nw-footer__col" key={col.id} id={col.id}>
-            <h4 className="nw-footer__col-title">{col.title}</h4>
+            <h4 className="nw-footer__col-title">{t(col.title)}</h4>
             <ul className="nw-footer__list">
               {col.links.map(link => (
                 <li key={link.id}>
                   {link.to ? (
                     <Link to={link.to} className="nw-footer__link" id={`${col.id}-${link.id}`}>
-                      {link.label}
+                      {link.raw ? link.label : t(link.label)}
                     </Link>
                   ) : (
                     <a href={link.href} className="nw-footer__link" id={`${col.id}-${link.id}`}>
@@ -133,7 +137,7 @@ const Footer = () => {
 
         {/* Contact */}
         <div className="nw-footer__col" id="nw-foot-contact">
-          <h4 className="nw-footer__col-title">Contact Us</h4>
+          <h4 className="nw-footer__col-title">{t("footer.contactUs")}</h4>
           <ul className="nw-footer__list">
             {contacts.map(({ id, Icon, label, href }) => (
               <li className="nw-footer__contact" key={id}>
@@ -172,9 +176,9 @@ const Footer = () => {
         </div>
 
         <span className="nw-footer__copy">
-          © {new Date().getFullYear()} EDDVA. All Rights Reserved.
+          © {new Date().getFullYear()} EDDVA. {t("footer.rights")}
           <span className="nw-footer__sep">|</span>
-          Developed by{" "}
+          {t("footer.developedBy")}{" "}
           <a
             href={DEVELOPER.href}
             className="nw-footer__dev"
@@ -187,14 +191,14 @@ const Footer = () => {
         </span>
 
         <div className="nw-footer__legal">
-          <Link to="/privacy-policy" className="nw-footer__link" id="nw-foot-privacy">Privacy Policy</Link>
+          <Link to="/privacy-policy" className="nw-footer__link" id="nw-foot-privacy">{t("footer.privacy")}</Link>
           <span className="nw-footer__sep">|</span>
-          <Link to="/terms" className="nw-footer__link" id="nw-foot-terms">Terms &amp; Conditions</Link>
+          <Link to="/terms" className="nw-footer__link" id="nw-foot-terms">{t("footer.terms")}</Link>
           <button
             type="button"
             className="nw-footer__top"
             id="nw-foot-top"
-            aria-label="Back to top"
+            aria-label={t("footer.backToTop")}
             onClick={toTop}
           >
             <ArrowUp size={15} strokeWidth={2.4} />

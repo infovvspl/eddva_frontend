@@ -26,24 +26,26 @@ import {
   Phone, Mail, MapPin, Clock, Send, Loader2, CheckCircle2, AlertCircle,
   User, Building2, FileText, SlidersHorizontal, ShieldCheck,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { submitLead } from "../../lib/api/leads";
 import { socials } from "../data/socials";
-import { emails, emailFor, PHONE, ADDRESS, HOURS } from "../data/contact";
+import { emails, emailFor, PHONE } from "../data/contact";
+import { localizeDigits } from "@/i18n/digits";
 import useInView from "../hooks/useInView";
 
 // Schools and coaching institutes have separate mailboxes, so both are listed
 // with the label that says which is which.
-const details = [
-  { id: "nw-contact-phone", Icon: Phone, label: "Call us", value: PHONE.display, href: PHONE.href },
-  ...emails.map(({ id, address, label }) => ({
+const buildDetails = t => [
+  { id: "nw-contact-phone", Icon: Phone, label: t("details.call"), value: localizeDigits(PHONE.display), href: PHONE.href },
+  ...emails.map(({ id, address }) => ({
     id: `nw-contact-mail-${id}`,
     Icon: Mail,
-    label,
+    label: t(`details.mail.${id}`),
     value: address,
     href: `mailto:${address}`,
   })),
-  { id: "nw-contact-address", Icon: MapPin, label: "Visit us",     value: ADDRESS, href: null },
-  { id: "nw-contact-hours",   Icon: Clock,  label: "Office hours", value: HOURS,   href: null },
+  { id: "nw-contact-address", Icon: MapPin, label: t("details.visit"), value: t("details.address"), href: null },
+  { id: "nw-contact-hours",   Icon: Clock,  label: t("details.hours"), value: t("details.hoursValue"), href: null },
 ];
 
 // `vertical` maps onto the backend's LeadVertical enum where the choice implies
@@ -66,36 +68,38 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PHONE_RE = /^[+\d][\d\s\-()]{6,}$/;
 
 /** Returns a message for each invalid field; an empty object means valid. */
-const validate = form => {
+const validate = (form, t) => {
   const errors = {};
-  if (!form.name.trim()) errors.name = "Please tell us your name.";
-  else if (form.name.length > LIMITS.name) errors.name = `Keep this under ${LIMITS.name} characters.`;
+  if (!form.name.trim()) errors.name = t("form.errors.name");
+  else if (form.name.length > LIMITS.name) errors.name = t("form.errors.maxLen", { max: LIMITS.name });
 
-  if (!form.email.trim()) errors.email = "We need an email to reply to.";
-  else if (!EMAIL_RE.test(form.email.trim())) errors.email = "That does not look like a valid email address.";
+  if (!form.email.trim()) errors.email = t("form.errors.email");
+  else if (!EMAIL_RE.test(form.email.trim())) errors.email = t("form.errors.emailInvalid");
 
   if (form.phone.trim() && !PHONE_RE.test(form.phone.trim()))
-    errors.phone = "Use digits, spaces and + only.";
+    errors.phone = t("form.errors.phone");
 
   if (form.institution.length > LIMITS.institution)
-    errors.institution = `Keep this under ${LIMITS.institution} characters.`;
+    errors.institution = t("form.errors.maxLen", { max: LIMITS.institution });
 
-  if (!form.interest) errors.interest = "Please choose one.";
+  if (!form.interest) errors.interest = t("form.errors.interest");
 
-  if (!form.message.trim()) errors.message = "Tell us a little about what you need.";
+  if (!form.message.trim()) errors.message = t("form.errors.message");
   else if (form.message.length > LIMITS.message)
-    errors.message = `Keep this under ${LIMITS.message} characters.`;
+    errors.message = t("form.errors.maxLen", { max: LIMITS.message });
 
   return errors;
 };
 
 const ContactSection = () => {
+  const { t } = useTranslation("contact");
+  const details = buildDetails(t);
   const [cardRef, cardInView] = useInView({ threshold: 0.15 });
   const [form, setForm] = useState(EMPTY);
   const [touched, setTouched] = useState({});
   const [status, setStatus] = useState("idle"); // idle | sending | sent | error
 
-  const errors = validate(form);
+  const errors = validate(form, t);
   const isValid = Object.keys(errors).length === 0;
   // If the send fails, point them at the mailbox matching their enquiry
   const fallbackEmail = emailFor(
@@ -166,11 +170,10 @@ const ContactSection = () => {
             <span className="nw-contactp__grid-bg" aria-hidden="true" />
 
             <div className="nw-contactp__aside-inner">
-              <h2 className="nw-contactp__aside-title">Talk to the EDDVA Team</h2>
+              <h2 className="nw-contactp__aside-title">{t("form.asideTitle")}</h2>
               <span className="nw-contactp__aside-rule" aria-hidden="true" />
               <p className="nw-contactp__aside-lead">
-                Tell us about your institution and we will show you exactly how
-                EDDVA fits — academics, administration and analytics in one place.
+                {t("form.asideLead")}
               </p>
 
               <ul className="nw-contactp__details">
@@ -213,20 +216,20 @@ const ContactSection = () => {
 
           {/* ── Enquiry form ── */}
           <form className="nw-contactp__form" id="nw-contact-form" onSubmit={handleSubmit} noValidate>
-            <h3 className="nw-contactp__form-title">Send us an enquiry</h3>
+            <h3 className="nw-contactp__form-title">{t("form.title")}</h3>
             <p className="nw-contactp__form-lead">
-              Fill in the details and our team will get back to you shortly.
+              {t("form.lead")}
             </p>
 
             <div className="nw-contactp__row">
-              {field("name", "Your name *",
+              {field("name", t("form.name"),
                 <input className="nw-contactp__input" id="nw-contact-name" type="text"
                   placeholder=" " maxLength={LIMITS.name} value={form.name}
                   onChange={update("name")} onBlur={blur("name")}
                   aria-invalid={Boolean(showError("name"))} />,
                 User
               )}
-              {field("institution", "Institution name",
+              {field("institution", t("form.institution"),
                 <input className="nw-contactp__input" id="nw-contact-institution" type="text"
                   placeholder=" " maxLength={LIMITS.institution} value={form.institution}
                   onChange={update("institution")} onBlur={blur("institution")}
@@ -236,14 +239,14 @@ const ContactSection = () => {
             </div>
 
             <div className="nw-contactp__row">
-              {field("email", "Email address *",
+              {field("email", t("form.email"),
                 <input className="nw-contactp__input" id="nw-contact-email" type="email"
                   placeholder=" " maxLength={LIMITS.email} value={form.email}
                   onChange={update("email")} onBlur={blur("email")}
                   aria-invalid={Boolean(showError("email"))} />,
                 Mail
               )}
-              {field("phone", "Phone number",
+              {field("phone", t("form.phone"),
                 <input className="nw-contactp__input" id="nw-contact-phone-field" type="tel"
                   placeholder=" " maxLength={LIMITS.phone} value={form.phone}
                   onChange={update("phone")} onBlur={blur("phone")}
@@ -263,12 +266,12 @@ const ContactSection = () => {
               <select className="nw-contactp__input nw-contactp__select" id="nw-contact-interest"
                 value={form.interest} onChange={update("interest")} onBlur={blur("interest")}
                 aria-invalid={Boolean(showError("interest"))}>
-                <option value="" disabled>Select an option</option>
+                <option value="" disabled>{t("form.select")}</option>
                 {interests.map(({ label }) => (
-                  <option key={label} value={label}>{label}</option>
+                  <option key={label} value={label}>{t(`interests.${label}`)}</option>
                 ))}
               </select>
-              <span className="nw-contactp__label">I am interested in</span>
+              <span className="nw-contactp__label">{t("form.interest")}</span>
               {showError("interest") && (
                 <span className="nw-contactp__error" role="alert">
                   <AlertCircle size={13} strokeWidth={2.2} />
@@ -277,7 +280,7 @@ const ContactSection = () => {
               )}
             </label>
 
-            {field("message", "Message *",
+            {field("message", t("form.message"),
               <textarea className="nw-contactp__input nw-contactp__textarea" id="nw-contact-message"
                 rows={5} placeholder=" " maxLength={LIMITS.message} value={form.message}
                 onChange={update("message")} onBlur={blur("message")}
@@ -294,29 +297,28 @@ const ContactSection = () => {
                 {status === "sending" ? (
                   <>
                     <Loader2 size={16} strokeWidth={2.2} className="nw-contactp__spin" />
-                    Sending…
+                    {t("form.sending")}
                   </>
                 ) : (
                   <>
                     <Send size={16} strokeWidth={2.2} />
-                    Send enquiry
+                    {t("form.send")}
                   </>
                 )}
               </button>
               {!isValid && Object.keys(touched).length > 0 && (
-                <span className="nw-contactp__hint">Fill the highlighted fields to send.</span>
+                <span className="nw-contactp__hint">{t("form.hint")}</span>
               )}
               <span className="nw-contactp__trust">
                 <ShieldCheck size={15} strokeWidth={2} />
-                Your information is safe with us.
+                {t("form.trust")}
               </span>
             </div>
 
             {status === "sent" && (
               <p className="nw-contactp__note nw-contactp__note--ok" role="status">
                 <CheckCircle2 size={17} strokeWidth={2.2} />
-                Thanks — your enquiry is with the team. We usually reply within
-                one working day.
+                {t("form.sent")}
               </p>
             )}
 
@@ -324,11 +326,11 @@ const ContactSection = () => {
               <p className="nw-contactp__note nw-contactp__note--bad" role="alert">
                 <AlertCircle size={17} strokeWidth={2.2} />
                 <span>
-                  That did not go through. Please try again, or write to{" "}
+                  {t("form.errorPre")}
                   <a href={`mailto:${fallbackEmail.address}`} className="nw-contactp__note-link">
                     {fallbackEmail.address}
-                  </a>{" "}
-                  directly.
+                  </a>
+                  {t("form.errorPost")}
                 </span>
               </p>
             )}

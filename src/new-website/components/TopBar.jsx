@@ -2,6 +2,10 @@
 // Standalone component, no connection to existing eddva_frontend code
 // Blue utility bar: phone on the left, brand social tiles on the right
 
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "./LanguageSwitcher";
+import { localizeDigits } from "@/i18n/digits";
+
 const socials = [
   {
     id: "nw-social-wa",
@@ -41,6 +45,7 @@ const socials = [
 ];
 
 const TopBar = () => {
+  useTranslation(); // re-render on language change
   return (
     <div className="nw-topbar" id="nw-topbar">
       {/* Phone number */}
@@ -51,12 +56,13 @@ const TopBar = () => {
               <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.5 19.79 19.79 0 0 1 1.6 4.9 2 2 0 0 1 3.6 2.7h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.4a16 16 0 0 0 6.29 6.29l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 17.92z"/>
             </svg>
           </span>
-          +91-7894689818
+          {localizeDigits("+91-7894689818")}
         </a>
       </div>
 
       {/* Social icons */}
       <div className="nw-topbar__right nw-topbar__socials">
+        <LanguageSwitcher />
         {socials.map(({ id, label, href, brand, path }) => (
           <a
             key={id}

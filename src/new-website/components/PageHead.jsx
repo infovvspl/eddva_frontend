@@ -10,17 +10,20 @@
 // count, focus-area count) pulled straight from that page's own data, so the
 // banner carries information instead of just a title.
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ChevronRight } from "lucide-react";
 
-const PageHead = ({ title, accent, lead, id, icon: Icon, color, bg, stats }) => (
+const PageHead = ({ title, accent, lead, id, icon: Icon, color, bg, stats }) => {
+  const { t } = useTranslation();
+  return (
   <section
     className="nw-pagehead"
     id={id}
     style={color ? { "--nw-ph-accent": color, "--nw-ph-bg": bg } : undefined}
   >
     <div className="nw-pagehead__container">
-      <nav className="nw-pagehead__crumbs nw-rise" style={{ "--nw-delay": "0s" }} aria-label="Breadcrumb">
-        <Link to="/" className="nw-pagehead__crumb">Home</Link>
+      <nav className="nw-pagehead__crumbs nw-rise" style={{ "--nw-delay": "0s" }} aria-label={t("pageHead.breadcrumb")}>
+        <Link to="/" className="nw-pagehead__crumb">{t("pageHead.home")}</Link>
         <ChevronRight size={14} strokeWidth={2.2} aria-hidden="true" />
         <span className="nw-pagehead__crumb nw-pagehead__crumb--current" aria-current="page">
           {title} {accent}
@@ -51,6 +54,7 @@ const PageHead = ({ title, accent, lead, id, icon: Icon, color, bg, stats }) => 
       )}
     </div>
   </section>
-);
+  );
+};
 
 export default PageHead;

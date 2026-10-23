@@ -18,6 +18,7 @@ import s23 from "../assets/logos/23.png";
 import s24 from "../assets/logos/24.png";
 import s25 from "../assets/logos/25.png";
 import s26 from "../assets/logos/26.png";
+import { useTranslation } from "react-i18next";
 import useInView from "../hooks/useInView";
 
 const partners = [
@@ -50,6 +51,7 @@ const Strip = ({ clone }) => (
 );
 
 const PartnersStrip = () => {
+  const { t } = useTranslation("home");
   const [titleRef, titleIn] = useInView({ threshold: 0.4 });
 
   return (
@@ -57,7 +59,7 @@ const PartnersStrip = () => {
       <div className="nw-partners__container">
 
         <p className={`nw-partners__title${titleIn ? " nw-in" : ""}`} id="nw-partners-title" ref={titleRef}>
-          Preferred by Educators. Trusted by Institutions.
+          {t("partners.title")}
         </p>
 
         <div className="nw-marquee nw-marquee--partners" id="nw-partners-marquee">

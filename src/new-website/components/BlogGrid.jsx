@@ -6,13 +6,15 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Calendar, Clock } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { getCategoryStyle } from "../data/blogCategoryStyle";
 import useInView from "../hooks/useInView";
 
-const formatDate = iso =>
-  new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+const formatDate = (iso, lng) =>
+  new Date(iso).toLocaleDateString(lng === "hi" ? "hi-IN" : "en-IN", { day: "numeric", month: "short", year: "numeric" });
 
 const BlogCard = ({ post, index }) => {
+  const { t, i18n } = useTranslation("blog");
   const { id, slug, title, category, excerpt, date, readTime, coverImage } = post;
   const { Icon, color, bg } = getCategoryStyle(category);
   const [ref, inView] = useInView({ threshold: 0.12 });
@@ -35,25 +37,25 @@ const BlogCard = ({ post, index }) => {
         </span>
       )}
 
-      <span className="nw-bgrid__category">{category}</span>
+      <span className="nw-bgrid__category">{t(`categories.${category}`, { defaultValue: category })}</span>
       <h3 className="nw-bgrid__title">{title}</h3>
       <p className="nw-bgrid__excerpt">{excerpt}</p>
 
       <div className="nw-bgrid__meta">
         <span className="nw-bgrid__meta-item">
           <Calendar size={13} strokeWidth={2.2} />
-          {formatDate(date)}
+          {formatDate(date, i18n.resolvedLanguage)}
         </span>
         {readTime && (
           <span className="nw-bgrid__meta-item">
             <Clock size={13} strokeWidth={2.2} />
-            {readTime} min read
+            {t("minRead", { count: readTime })}
           </span>
         )}
       </div>
 
       <span className="nw-bgrid__more">
-        Read more
+        {t("readMore")}
         <ArrowRight size={13} strokeWidth={2.6} />
       </span>
     </Link>
@@ -61,6 +63,7 @@ const BlogCard = ({ post, index }) => {
 };
 
 const BlogGrid = ({ posts }) => {
+  const { t } = useTranslation("blog");
   const [category, setCategory] = useState("All");
 
   const categories = useMemo(
@@ -78,7 +81,7 @@ const BlogGrid = ({ posts }) => {
       <div className="nw-bgrid__container">
 
         {categories.length > 2 && (
-          <div className="nw-bgrid__tabs" role="tablist" aria-label="Filter posts by category">
+          <div className="nw-bgrid__tabs" role="tablist" aria-label={t("filter")}>
             {categories.map(cat => (
               <button
                 key={cat}
@@ -89,7 +92,7 @@ const BlogGrid = ({ posts }) => {
                 id={`nw-blog-tab-${cat.replace(/\s+/g, "-").toLowerCase()}`}
                 onClick={() => setCategory(cat)}
               >
-                {cat}
+                {t(`categories.${cat}`, { defaultValue: cat })}
               </button>
             ))}
           </div>
@@ -102,7 +105,7 @@ const BlogGrid = ({ posts }) => {
             ))}
           </div>
         ) : (
-          <p className="nw-bgrid__empty">No posts in this category yet.</p>
+          <p className="nw-bgrid__empty">{t("empty")}</p>
         )}
 
       </div>
