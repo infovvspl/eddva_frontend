@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Download, Edit2, Plus, Search, Trash2, Users, Eye, Filter, Calendar, ArrowUpRight, GraduationCap, CheckCircle2, UserPlus, XCircle, X, Mail, Clock, AlertTriangle, Loader2, KeyRound, FileText, Printer } from 'lucide-react';
+import { Download, Edit2, Plus, Search, Trash2, Users, Eye, Filter, Calendar, ArrowUpRight, GraduationCap, CheckCircle2, UserPlus, XCircle, X, Mail, AlertTriangle, Loader2, KeyRound, FileText, Printer } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import { getResponseList, notifyDataChanged } from '@/lib/school/apiData';
@@ -27,58 +27,6 @@ const getInitials = (name) => {
   if (parts.length >= 2) return (parts[parts.length - 2][0] + parts[parts.length - 1][0]).toUpperCase();
   return name.substring(0, 2).toUpperCase();
 };
-
-function timeAgo(dateString) {
-  const then = new Date(dateString).getTime();
-  if (Number.isNaN(then)) return '';
-  const diffMs = Date.now() - then;
-  const mins = Math.floor(diffMs / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d ago`;
-  return new Date(dateString).toLocaleDateString();
-}
-
-function CredentialsStatusBadge({ student }) {
-  const parentEmail = student.studentProfile?.parentEmail;
-  const sentAt = student.studentProfile?.credentialsSentAt;
-  if (!parentEmail) {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-[10px] font-bold text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
-        <AlertTriangle className="h-3 w-3" />
-        No parent email
-      </span>
-    );
-  }
-  if (sentAt) {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
-        <CheckCircle2 className="h-3 w-3" />
-        Sent {timeAgo(sentAt)}
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-      <Clock className="h-3 w-3" />
-      Not sent
-    </span>
-  );
-}
-
-function StudentCredentialsStatusBadge({ student }) {
-  const sentAt = student.studentProfile?.studentCredentialsSentAt;
-  if (!sentAt) return null;
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-1 text-[10px] font-bold text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400">
-      <KeyRound className="h-3 w-3" />
-      Student login sent {timeAgo(sentAt)}
-    </span>
-  );
-}
 
 function downloadCsv(filename, rows) {
   const csv = rows
@@ -887,14 +835,13 @@ export default function Students() {
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Enrollment No.</TableHead>
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Class/Section</TableHead>
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</TableHead>
-                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Credentials</TableHead>
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="divide-y divide-slate-100 dark:divide-slate-800 [&_tr]:border-b-0">
               {filtered.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan="7" className="px-5 py-12 text-center text-slate-400">
+                  <TableCell colSpan="6" className="px-5 py-12 text-center text-slate-400">
                     No students found.
                   </TableCell>
                 </TableRow>
@@ -964,12 +911,6 @@ export default function Students() {
                           {student.isActive ? 'Active' : 'Inactive'}
                         </span>
                       </button>
-                    </TableCell>
-                    <TableCell className="p-4 px-5 py-4">
-                      <div className="flex flex-col gap-1">
-                        <CredentialsStatusBadge student={student} />
-                        <StudentCredentialsStatusBadge student={student} />
-                      </div>
                     </TableCell>
                     <TableCell className="p-4 px-5 py-4">
                       <div className="flex items-center gap-2">
@@ -1043,11 +984,6 @@ export default function Students() {
                     <p className="truncate text-sm font-bold tracking-tight text-slate-900 dark:text-white">{student.name}</p>
                     <p className="truncate text-[11px] font-bold text-slate-400 dark:text-slate-500">{student.email || '—'}</p>
                   </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <CredentialsStatusBadge student={student} />
-                  <StudentCredentialsStatusBadge student={student} />
                 </div>
 
                 <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-xs text-slate-600 dark:text-slate-300 pt-1">
