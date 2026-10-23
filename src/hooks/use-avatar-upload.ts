@@ -8,6 +8,14 @@ import { useAuthStore } from "@/lib/auth-store"
  * Uploads a profile photo and updates the signed-in user so every avatar refreshes.
  * `portal: "school"` posts to the school backend instead of the coaching one.
  */
+export function useAvatarRemove(portal: "coaching" | "school" = "school") {
+  return useCallback(async () => {
+    await apiClient.delete(portal === "school" ? "/school/auth/profile/avatar" : "/auth/profile/avatar")
+    const { user, setUser } = useAuthStore.getState()
+    if (user) setUser({ ...user, profileImage: null, profilePictureUrl: null } as typeof user)
+  }, [portal])
+}
+
 export function useAvatarUpload(portal: "coaching" | "school" = "coaching") {
   return useCallback(
     async (file: File) => {

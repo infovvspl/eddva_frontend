@@ -10,7 +10,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Play, Brain, Users, Sparkles, Star, Quote, X } from "lucide-react";
-import schoolHero from "../assets/school-banner.png";
+import schoolHero from "../assets/school-banner.webp";
 
 // youtube.com/shorts/OXY5dOQ9wlw — the demo walkthrough linked from "Watch Video"
 const DEMO_VIDEO_ID = "OXY5dOQ9wlw";

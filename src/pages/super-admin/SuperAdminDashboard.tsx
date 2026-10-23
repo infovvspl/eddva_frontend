@@ -38,6 +38,7 @@ import { usePlatformStats } from '@/hooks/use-stats';
 import { useTenants } from '@/hooks/use-tenants';
 import { useAuthStore } from '@/lib/auth-store';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 import coachingSuperAdminImg from '@/assets/images/coaching_superadmin.png';
 
 // ---------------------------------------------------------------------------
@@ -323,9 +324,69 @@ const SuperAdminDashboard = () => {
   // ── Loading ────────────────────────────────────────────────────────────────
   if (statsLoading || tenantsLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[500px] gap-3">
-        <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
-        <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Loading Intelligence...</p>
+      <div className="space-y-4 sm:space-y-6 pb-12 px-0 animate-pulse">
+        {/* Hero banner skeleton */}
+        <div className="relative overflow-hidden rounded-3xl p-6 sm:p-8 pb-6 sm:pb-28 shadow-lg border border-slate-200 dark:border-slate-800 bg-gradient-to-r from-slate-200 to-slate-300 dark:from-slate-800 dark:to-slate-700">
+          <Skeleton className="h-5 w-40 mb-3 bg-white/40 dark:bg-slate-700" />
+          <Skeleton className="h-8 w-64 mb-2 bg-white/40 dark:bg-slate-700" />
+          <Skeleton className="h-4 w-80 bg-white/30 dark:bg-slate-700" />
+          <div className="absolute bottom-6 right-6 hidden sm:flex gap-3">
+            <Skeleton className="h-10 w-36 rounded-xl bg-white/30 dark:bg-slate-700" />
+          </div>
+        </div>
+
+        {/* Stat cards skeleton */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="rounded-2xl md:rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-12 w-12 rounded-2xl" />
+                <Skeleton className="h-5 w-14 rounded-full" />
+              </div>
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-8 w-24" />
+            </div>
+          ))}
+        </div>
+
+        {/* Quick actions skeleton */}
+        <div className="space-y-3">
+          <Skeleton className="h-5 w-32" />
+          <div className="flex gap-2 sm:gap-3">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center gap-2 p-4 sm:p-5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950">
+                <Skeleton className="h-12 w-12 sm:h-14 sm:w-14 rounded-full" />
+                <Skeleton className="h-3 w-12" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* System status skeleton */}
+        <div className="hidden sm:flex rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 p-5 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="flex-1 space-y-2">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-5 w-16" />
+            </div>
+          ))}
+        </div>
+
+        {/* Chart skeletons */}
+        <div className="grid gap-4 lg:grid-cols-2">
+          {[...Array(2)].map((_, i) => (
+            <div key={i} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 p-4 sm:p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
+                  <Skeleton className="h-5 w-32" />
+                  <Skeleton className="h-3 w-52" />
+                </div>
+                <Skeleton className="h-6 w-16 rounded-full" />
+              </div>
+              <Skeleton className="h-48 sm:h-72 w-full rounded-xl" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

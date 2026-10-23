@@ -278,10 +278,10 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
 
       <div className="flex flex-col sm:flex-row gap-3 pt-4">
         {step === 1 ? (
-          <>
+          <React.Fragment key="step-1-actions">
             <button
               type="button"
-              onClick={handleNextStep}
+              onClick={(e) => { e.preventDefault(); handleNextStep(); }}
               className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 active:scale-[0.98] px-4 py-2.5 font-bold text-white shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-all duration-200"
             >
               Continue
@@ -293,9 +293,9 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
             >
               Cancel
             </button>
-          </>
+          </React.Fragment>
         ) : (
-          <>
+          <React.Fragment key="step-2-actions">
             <button
               type="submit"
               disabled={isLoading || uploadingFile}
@@ -311,7 +311,7 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
             >
               Back
             </button>
-          </>
+          </React.Fragment>
         )}
       </div>
     </form>

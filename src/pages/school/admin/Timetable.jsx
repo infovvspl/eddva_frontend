@@ -77,12 +77,12 @@ const byNameNatural = (a, b) => {
 
 // Solid chip colour per weekday for the Weekly Class Timetable's top row.
 const DAY_CHIP_COLORS = {
-  MONDAY: 'bg-blue-600 shadow-blue-600/30',
+  MONDAY: 'bg-amber-800 shadow-amber-800/30',
   TUESDAY: 'bg-emerald-600 shadow-emerald-600/30',
-  WEDNESDAY: 'bg-violet-600 shadow-violet-600/30',
+  WEDNESDAY: 'bg-orange-600 shadow-orange-600/30',
   THURSDAY: 'bg-amber-500 shadow-amber-500/30',
   FRIDAY: 'bg-rose-600 shadow-rose-600/30',
-  SATURDAY: 'bg-cyan-600 shadow-cyan-600/30',
+  SATURDAY: 'bg-pink-500 shadow-pink-500/30',
   SUNDAY: 'bg-slate-600 shadow-slate-600/30',
 };
 
@@ -1365,7 +1365,7 @@ export default function Timetable() {
                                     </span>
                                   </div>
                                 ) : (
-                                  <div className="h-[80px] rounded-xl border border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center gap-1 bg-slate-50/40 dark:bg-slate-900/30 text-slate-300 dark:text-slate-600">
+                                  <div className="h-[80px] rounded-xl border border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center gap-1 bg-slate-50/40 dark:bg-slate-900/30 text-slate-500 dark:text-slate-400">
                                     <Plus className="size-4" />
                                     <span className="text-[10px] font-bold uppercase tracking-wider">Free</span>
                                   </div>

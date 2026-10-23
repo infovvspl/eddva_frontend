@@ -31,7 +31,7 @@ import {
 import type { BlogDocumentSettings, BlogReference } from '@/lib/api/blogAdmin';
 import { legacyBodyToHtml } from '@/new-website/lib/blogBody';
 import { docxFileToHtml, htmlToDocxBlob, downloadBlob } from './docxConvert';
-import { uploadBlogCoverImage } from '@/lib/api/blogAdmin';
+import { stageBlogImage } from './pendingImages';
 
 const RevisionMark = Mark.create({
   name: 'revision',
@@ -85,7 +85,6 @@ export default function BlogBodyEditor({
 }) {
   const [importing, setImporting] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const docSettings: BlogDocumentSettings = {
@@ -188,16 +187,7 @@ export default function BlogBodyEditor({
       toast.error('Image must be 5 MB or smaller');
       return;
     }
-    setUploadingImage(true);
-    try {
-      const { url } = await uploadBlogCoverImage(file);
-      editor.chain().focus().setImage({ src: url, alt: '' }).run();
-    } catch (err) {
-      console.error(err);
-      toast.error('Image upload failed');
-    } finally {
-      setUploadingImage(false);
-    }
+    editor.chain().focus().setImage({ src: stageBlogImage(file), alt: '' }).run();
   };
 
   return (
@@ -240,8 +230,8 @@ export default function BlogBodyEditor({
         <ToolbarButton onClick={handleSetLink} active={editor.isActive('link')} title="Link">
           <LinkIcon className="h-3.5 w-3.5" />
         </ToolbarButton>
-        <ToolbarButton onClick={handleImageClick} title="Insert image" disabled={uploadingImage}>
-          {uploadingImage ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImageIcon className="h-3.5 w-3.5" />}
+        <ToolbarButton onClick={handleImageClick} title="Insert image">
+          <ImageIcon className="h-3.5 w-3.5" />
         </ToolbarButton>
         <span className="mx-1 h-4 w-px bg-slate-200 dark:bg-slate-700" />
         <ToolbarButton onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')} title="Bullet list">

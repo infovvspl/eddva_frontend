@@ -173,7 +173,7 @@ function buildInstituteGroups(mods, aiFeats) {
         { path: '/school/admin/users', label: 'User Management', icon: Users },
         { path: '/school/admin/document-generator', label: 'Document Generator', icon: FileText },
         { path: '/school/admin/audit-logs', label: 'Audit Logs', icon: FileText },
-        { path: '/school/admin/complaints', label: 'Support Tickets', icon: Shield },
+        { path: '/school/admin/complaints', label: 'Help Desk', icon: Shield },
         { path: '/school/admin/grievances', label: 'Grievances', icon: MessageSquareWarning },
       ],
     },

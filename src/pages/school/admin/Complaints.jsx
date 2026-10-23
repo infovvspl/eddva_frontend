@@ -395,7 +395,7 @@ export default function Complaints() {
     <div className="w-full min-h-full p-4 sm:p-6 lg:p-8 space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-display text-2xl sm:text-3xl font-bold text-surface-950">Support Operations</h1>
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-surface-950">Help Desk</h1>
           <p className="mt-1 text-xs sm:text-sm font-medium text-surface-500">
             {user?.role === 'SUPER_ADMIN'
               ? 'Monitor tenant support activity across institutes.'
