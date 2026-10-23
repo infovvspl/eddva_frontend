@@ -23,7 +23,8 @@ import {
   Plus,
   BarChart3,
   ClipboardList,
-  Megaphone
+  Megaphone,
+  IndianRupee
 } from "lucide-react";
 import { useAuth } from "@/context/SchoolAuthContext";
 import { useSchoolFeature } from "@/hooks/use-school-feature";
@@ -37,6 +38,7 @@ import MaintenanceNotice from "@/components/shared/MaintenanceNotice";
 const parentPages = [
   { name: 'Dashboard', path: '/school/parent/dashboard', icon: Home, keywords: 'overview summary' },
   { name: 'Child Report', path: '/school/parent/child', icon: GraduationCap, keywords: 'child student attendance marks performance progress' },
+  { name: 'Fee Details', path: '/school/parent/fees', icon: IndianRupee, keywords: 'fee fees payment due pending deposit dues upcoming' },
   { name: 'Communication', path: '/school/parent/communication', icon: MessageCircle, keywords: 'chat message teacher contact' },
   { name: 'Notices', path: '/school/parent/announcements', icon: Megaphone, keywords: 'announcements notice board notices circulars letters dynamic broadcast updates' },
   { name: 'Alerts & Notifications', path: '/school/parent/notifications', icon: Bell, keywords: 'alerts notice notifications updates' },
@@ -49,6 +51,7 @@ const parentNavGroups = [
     items: [
       { label: "Dashboard", path: "/school/parent/dashboard", icon: Home, end: true },
       { label: "Child Report", path: "/school/parent/child", icon: GraduationCap, featType: 'module', featKey: 'reports' },
+      { label: "Fee Details", path: "/school/parent/fees", icon: IndianRupee },
       { label: "Communication", path: "/school/parent/communication", icon: MessageCircle, featType: 'module', featKey: 'chat' },
       { label: "Notices", path: "/school/parent/announcements", icon: Megaphone },
       { label: "Alerts", path: "/school/parent/notifications", icon: Bell },

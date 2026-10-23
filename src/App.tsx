@@ -203,12 +203,15 @@ const SchoolTeacherRegistration = lazy(() => import("./pages/school/admin/Teache
 const SchoolAdminTeacherProfile = lazy(() => import("./pages/school/admin/TeacherProfile"));
 const SchoolTeacherStudentBracketList = lazy(() => import("./pages/school/admin/TeacherStudentBracketList"));
 const SchoolAttendance = lazy(() => import("./pages/school/admin/Attendance"));
+const SchoolAttendanceEntry = lazy(() => import("./pages/school/admin/AttendanceEntry"));
+const SchoolTeacherAttendance = lazy(() => import("./pages/school/admin/TeacherAttendance"));
 const SchoolAcademics = lazy(() => import("./pages/school/admin/Academics"));
 const SchoolClassSections = lazy(() => import("./pages/school/admin/ClassSections"));
 const SchoolNotices = lazy(() => import("./pages/school/admin/Notices"));
 const SchoolFees = lazy(() => import("./pages/school/admin/Fees"));
 const SchoolAcademicCalendar = lazy(() => import("./pages/school/admin/AcademicCalendar"));
 const SchoolComplaints = lazy(() => import("./pages/school/admin/Complaints"));
+const SchoolGrievances = lazy(() => import("./pages/school/admin/Grievances"));
 const SchoolAnalytics = lazy(() => import("./pages/school/admin/Analytics"));
 const SchoolAiUsage = lazy(() => import("./pages/school/admin/AiUsage"));
 const SchoolTimetable = lazy(() => import("./pages/school/admin/Timetable"));
@@ -352,6 +355,7 @@ const SchoolParentLayout = lazy(() => import("./components/school/parent/ParentL
 const SchoolParentAuthGuard = lazy(() => import("./components/school/parent/ParentAuthGuard").then(m => ({ default: m.ParentAuthGuard })));
 const SchoolParentDashboard = lazy(() => import("./pages/school/parent/Dashboard"));
 const SchoolParentChild = lazy(() => import("./pages/school/parent/Child"));
+const SchoolParentFees = lazy(() => import("./pages/school/parent/Fees"));
 const SchoolParentCommunication = lazy(() => import("./pages/school/parent/Communication"));
 const SchoolParentNotifications = lazy(() => import("./pages/school/parent/Notifications"));
 const SchoolStudentNotifications = lazy(() => import("./pages/school/student/Notifications"));
@@ -546,6 +550,8 @@ const SchoolRoutes = () => (
       <Route path="teachers/:id/performance/:bracket" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'teachers' }}><SchoolTeacherStudentBracketList /></SchoolGuard>} />
       <Route path="teachers/:id" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'teachers' }}><SchoolAdminTeacherProfile /></SchoolGuard>} />
       <Route path="attendance" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'attendance' }}><SchoolAttendance /></SchoolGuard>} />
+      <Route path="attendance-entry" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'attendance' }}><SchoolAttendanceEntry /></SchoolGuard>} />
+      <Route path="teacher-attendance" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'attendance' }}><SchoolTeacherAttendance /></SchoolGuard>} />
       <Route path="academics" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'academics' }}><SchoolAcademics /></SchoolGuard>} />
       <Route path="textbook-coverage" element={<Navigate to="/school/admin/academics" replace />} />
       <Route path="academics/:classId/sections" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'academics' }}><SchoolClassSections /></SchoolGuard>} />
@@ -554,6 +560,7 @@ const SchoolRoutes = () => (
       <Route path="announcements" element={<Navigate to="/school/admin/notices" replace />} />
       <Route path="calendar" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'academic_calendar' }}><SchoolGuard feature={{ type: 'adminPermission', key: 'academic_calendar' }}><SchoolAcademicCalendar /></SchoolGuard></SchoolGuard>} />
       <Route path="complaints" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'complaints' }}><SchoolComplaints /></SchoolGuard>} />
+      <Route path="grievances" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]}><SchoolGrievances /></SchoolGuard>} />
       <Route path="timetable" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'timetable' }}><SchoolGuard feature={{ type: 'adminPermission', key: 'timetable' }}><SchoolTimetable /></SchoolGuard></SchoolGuard>} />
       <Route path="settings" element={<SchoolAdminSettings />} />
       <Route path="analytics" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'reports' }}><SchoolAnalytics /></SchoolGuard>} />
@@ -598,6 +605,7 @@ const SchoolRoutes = () => (
       <Route path="communications" element={<SchoolCommunications />} />
       <Route path="communication" element={<SuperAdminCommunication />} />
       <Route path="complaints" element={<SchoolComplaints />} />
+      <Route path="grievances" element={<SchoolGrievances />} />
       <Route path="audit-logs" element={<SchoolAuditLogs />} />
       <Route path="security" element={<SchoolSecurity />} />
       <Route path="settings" element={<SchoolAdminSettings />} />
@@ -736,6 +744,7 @@ const SchoolRoutes = () => (
       <Route path="dashboard" element={<SchoolParentDashboard />} />
       <Route path="child" element={<SchoolGuard roles={["PARENT"]} feature={{ type: 'module', key: 'reports' }}><SchoolParentChild /></SchoolGuard>} />
       <Route path="child/report-card" element={<SchoolAdminStudentReportCard />} />
+      <Route path="fees" element={<SchoolGuard roles={["PARENT"]}><SchoolParentFees /></SchoolGuard>} />
       <Route path="communication" element={<SchoolGuard roles={["PARENT"]} feature={{ type: 'module', key: 'chat' }}><SchoolParentCommunication /></SchoolGuard>} />
       <Route path="notifications" element={<SchoolParentNotifications />} />
       <Route path="announcements" element={<SchoolParentAnnouncements />} />

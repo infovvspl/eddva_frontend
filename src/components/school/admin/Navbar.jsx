@@ -30,7 +30,9 @@ import {
   X,
   Clock,
   BarChart3,
-  ClipboardList
+  ClipboardList,
+  MessageSquareWarning,
+  AlertCircle
 } from 'lucide-react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
@@ -432,6 +434,41 @@ export default function Navbar({ onMenuClick, leadingActions }) {
   const searchRef = useRef(null);
   const profileRef = useRef(null);
   const notifRef = useRef(null);
+  const grievRef = useRef(null);
+
+  // Grievance header bell — admin-only, mirrors the notifications bell above but
+  // reads straight from the grievance API (open/in-progress/reopened tickets),
+  // since grievances aren't routed through the generic notifications table.
+  const canSeeGrievances = isSuperAdmin || isInstitute;
+  const grievancesBasePath = isSuperAdmin ? '/school/super-admin/grievances' : '/school/admin/grievances';
+  const [grievOpen, setGrievOpen] = useState(false);
+  const [grievLoading, setGrievLoading] = useState(false);
+  const [grievances, setGrievances] = useState([]);
+  const [grievCount, setGrievCount] = useState(0);
+
+  const fetchGrievancePreview = async () => {
+    setGrievLoading(true);
+    try {
+      const res = await api.get('/grievances', { params: { statusIn: 'OPEN,IN_PROGRESS,REOPENED', limit: 6, sortBy: 'createdAt', sortOrder: 'DESC' } });
+      setGrievances(res.data?.data || []);
+      setGrievCount(res.data?.total ?? (res.data?.data || []).length);
+    } catch (err) {
+      console.error('Failed to fetch grievances:', err);
+    } finally {
+      setGrievLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!canSeeGrievances) return;
+    fetchGrievancePreview();
+    const interval = setInterval(fetchGrievancePreview, 60000);
+    return () => clearInterval(interval);
+  }, [canSeeGrievances]);
+
+  useEffect(() => {
+    if (grievOpen) fetchGrievancePreview();
+  }, [grievOpen]);
 
   useEffect(() => {
     // Dark mode is only offered to the super admin; everyone else is pinned to light.
@@ -482,6 +519,9 @@ export default function Navbar({ onMenuClick, leadingActions }) {
       }
       if (notifRef.current && !notifRef.current.contains(e.target)) {
         setNotifOpen(false);
+      }
+      if (grievRef.current && !grievRef.current.contains(e.target)) {
+        setGrievOpen(false);
       }
     }
     document.addEventListener('click', onDocClick);
@@ -1099,6 +1139,92 @@ export default function Navbar({ onMenuClick, leadingActions }) {
           )}
 
           {leadingActions}
+
+          {/* Grievance Tracker Icon & Popover — admin-only */}
+          {canSeeGrievances && (
+            <div className="relative flex items-center" ref={grievRef}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setGrievOpen(!grievOpen)}
+                className="relative rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100/75 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-200 [&_svg]:h-[18px] [&_svg]:w-[18px]"
+                aria-label="Grievances"
+              >
+                <MessageSquareWarning className="h-[18px] w-[18px]" />
+                {grievCount > 0 && (
+                  <span className="absolute right-2 top-2 h-4 min-w-[16px] flex items-center justify-center rounded-full bg-amber-500 px-1 text-[9px] font-bold tracking-tight text-white border border-white dark:border-slate-950">
+                    {grievCount}
+                  </span>
+                )}
+              </Button>
+
+              {grievOpen && (
+                <div className="absolute right-[-12px] sm:right-0 top-full mt-3.5 z-50 w-[calc(100vw-2rem)] sm:w-96 max-w-[360px] sm:max-w-none overflow-hidden rounded-[2rem] border border-slate-105 dark:border-slate-800 bg-white dark:bg-slate-905 py-2 shadow-2xl">
+                  <div className="flex items-center justify-between px-5 py-3 border-b border-slate-105 dark:border-slate-800">
+                    <div>
+                      <h3 className="text-base font-semibold text-slate-900 dark:text-white">Grievances</h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-0.5">
+                        {grievCount} open {grievCount === 1 ? 'ticket' : 'tickets'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="max-h-[60vh] sm:max-h-[380px] overflow-y-auto custom-scrollbar">
+                    {grievLoading ? (
+                      <div className="flex flex-col items-center justify-center p-8 text-slate-400">
+                        <Loader2 className="size-6 animate-spin text-amber-500 mb-2" />
+                        <p className="text-sm font-semibold">Fetching grievances...</p>
+                      </div>
+                    ) : grievances.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center p-8 text-center">
+                        <Inbox className="size-9 text-slate-400 dark:text-slate-600 mb-2" />
+                        <p className="text-sm font-semibold text-slate-500">No open grievances.</p>
+                      </div>
+                    ) : (
+                      grievances.map((g) => (
+                        <div
+                          key={g.id}
+                          onClick={() => {
+                            navigate(`${grievancesBasePath}?ticketId=${encodeURIComponent(g.ticketNumber || g.ticket_number || '')}`);
+                            setGrievOpen(false);
+                          }}
+                          className="group relative flex items-start gap-3 px-5 py-4 border-b border-slate-50 dark:border-slate-850/40 last:border-0 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 cursor-pointer transition-colors"
+                        >
+                          <div className={cn(
+                            "size-8 shrink-0 rounded-xl flex items-center justify-center text-xs font-bold",
+                            String(g.status).toUpperCase() === 'OPEN' ? "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-450" : "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-450"
+                          )}>
+                            <AlertCircle size={14} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-semibold text-slate-900 dark:text-white truncate">{g.title}</h4>
+                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2 leading-relaxed">
+                              {g.raised_by_name ? `From ${g.raised_by_name}` : 'From a teacher'} · {String(g.status || '').replace('_', ' ')}
+                            </p>
+                            <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 tracking-tight uppercase block mt-1.5">
+                              {g.created_at ? new Date(g.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="border-t border-slate-100 dark:border-slate-800 p-2.5 text-center flex-shrink-0">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => { navigate(grievancesBasePath); setGrievOpen(false); }}
+                      className="w-full h-auto p-0 text-center text-[10px] font-extrabold text-amber-600 dark:text-amber-400 hover:text-amber-700 hover:bg-transparent"
+                    >
+                      View All Grievances →
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Notifications Icon & Popover */}
           <div className="relative flex items-center" ref={notifRef}>
