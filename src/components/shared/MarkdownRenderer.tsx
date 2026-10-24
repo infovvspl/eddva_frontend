@@ -1537,7 +1537,16 @@ export function MarkdownRenderer({ content, className, imageMap, highlights = []
       }
 
       return <p {...props} className="my-2">{highlightChildren(children, highlights)}</p>;
-    }
+    },
+    // Headings had no custom renderer at all, so a highlight whose selected
+    // text fell inside one (e.g. a section title) never got wrapped — it sat
+    // in the "My Highlights" list with no visible mark in the document.
+    h1: ({ node, children, ...props }: any) => <h1 {...props}>{highlightChildren(children, highlights)}</h1>,
+    h2: ({ node, children, ...props }: any) => <h2 {...props}>{highlightChildren(children, highlights)}</h2>,
+    h3: ({ node, children, ...props }: any) => <h3 {...props}>{highlightChildren(children, highlights)}</h3>,
+    h4: ({ node, children, ...props }: any) => <h4 {...props}>{highlightChildren(children, highlights)}</h4>,
+    h5: ({ node, children, ...props }: any) => <h5 {...props}>{highlightChildren(children, highlights)}</h5>,
+    h6: ({ node, children, ...props }: any) => <h6 {...props}>{highlightChildren(children, highlights)}</h6>,
   };
 
   return (

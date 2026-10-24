@@ -1,6 +1,6 @@
 // SyllabusPlanner - Annual Subject Syllabus Planner and Milestone Manager
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   BookOpen, Calendar, Plus, Save, Layers, CheckCircle2,
   Sparkles, Loader2, Filter, AlertCircle, Users, ArrowRight, Eye, ChevronRight,
@@ -16,6 +16,9 @@ import { BackButton } from '@/components/shared/BackButton';
 export default function SyllabusPlanner() {
   const confirm = useConfirm();
   const navigate = useNavigate();
+  // The chosen year / class / section live in the URL so that coming back from a plan's
+  // detail page (browser or Back button) returns to the same step instead of the class list.
+  const [searchParams, setSearchParams] = useSearchParams();
   const [classes, setClasses] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,9 +27,9 @@ export default function SyllabusPlanner() {
   const [availableYears, setAvailableYears] = useState(['2024-2025', '2025-2026', '2026-2027']);
 
   const [form, setForm] = useState({
-    academicYear: '2025-2026',
-    classId: '',
-    sectionId: '',
+    academicYear: searchParams.get('year') || '2026-2027',
+    classId: searchParams.get('classId') || '',
+    sectionId: searchParams.get('sectionId') || '',
     subjectId: '',
     chapterId: '',
     topicId: '',
@@ -63,6 +66,23 @@ export default function SyllabusPlanner() {
       }
     }).catch(() => {});
   }, []);
+
+  // Restore the step we were on (class chosen from the URL): load its sections and subjects.
+  useEffect(() => {
+    if (form.classId) {
+      fetchSubjectsForClass(form.classId);
+      fetchSectionsForClass(form.classId);
+    }
+  }, []);
+
+  // Keep the URL in step with the selection. `replace` so the steps don't pile up in history.
+  useEffect(() => {
+    const next = new URLSearchParams();
+    if (form.classId) next.set('classId', form.classId);
+    if (form.sectionId) next.set('sectionId', form.sectionId);
+    if (form.academicYear) next.set('year', form.academicYear);
+    setSearchParams(next, { replace: true });
+  }, [form.classId, form.sectionId, form.academicYear]);
 
   useEffect(() => {
     fetchInitialData();

@@ -1,0 +1,110 @@
+{
+  "hero": {
+    "badge": "EDDVA – Education Development & Advancement",
+    "headingLine1": "Transforming Education",
+    "headingPre": "with ",
+    "headingAccent": "AI-Powered",
+    "headingPost": " Solutions",
+    "sub": "Keeping the essence of traditional teaching alive, while empowering it with the intelligence of AI. EDDVA connects Students, Teachers, Parents and School Management through one intelligent ecosystem designed to enhance learning, empower educators and enable smarter decisions.",
+    "tagline": "Personalised Learning. Smarter Teaching. Better Decisions.",
+    "requestDemo": "Request Free Demo",
+    "watchVideo": "Watch Video",
+    "imageAlt": "A teacher presenting a solar system lesson on a smartboard to her class",
+    "liveClass": "Live Class",
+    "noteLine1": "Teach smarter,",
+    "noteLine2": "not harder",
+    "aiInsights": "AI Insights",
+    "realtime": "Real-time analytics",
+    "attendance": "Attendance this term",
+    "delta": "6.4% vs last term",
+    "quote": "Admin work halved, and parents finally see progress as it happens.",
+    "quoteName": "Priya S.",
+    "quoteRole": "Principal",
+    "rated": "Rated 5 out of 5",
+    "demoVideo": "Demo video",
+    "closeVideo": "Close video",
+    "videoTitle": "EDDVA demo video"
+  },
+  "trust": {
+    "title": "Everything Your Institution Needs",
+    "tagline": "Built for Better Learning. Designed for Smarter Institutions.",
+    "items": {
+      "nw-trust-manage": "School & Institute\nManagement",
+      "nw-trust-ai": "AI Learning\nEcosystem",
+      "nw-trust-erp": "Smart School\nERP",
+      "nw-trust-analytics": "Advanced Analytics\n& Reports",
+      "nw-trust-parent": "Parent\nConnect",
+      "nw-trust-secure": "Secure &\nReliable"
+    }
+  },
+  "partners": {
+    "title": "Preferred by Educators. Trusted by Institutions."
+  },
+  "about": {
+    "label": "ABOUT US",
+    "headingLine1": "Empowering Education.",
+    "headingPre": "Enriching ",
+    "headingAccent": "Futures.",
+    "desc1": "EDDVA is a next generation platform built for the future of education. We combine AI, automation and analytics to deliver personalised learning, simplify school operations and create better outcomes for every stakeholder.",
+    "desc2": "By bringing students, teachers, parents and school management together on one intelligent ecosystem, EDDVA makes education smarter, more connected and more impactful.",
+    "tagline": "Learn Smarter. Teach Better. Grow Together.",
+    "imageAlt": "A teacher presenting the EDDVA dashboard on a classroom display"
+  },
+  "services": {
+    "label": "OUR SERVICES",
+    "headingPre": "Tailored ",
+    "headingAccent": "for Institutions",
+    "lead": "Powerful solutions designed to simplify operations, drive engagement and deliver academic excellence.",
+    "stakeholders": "OUR STAKEHOLDERS"
+  },
+  "products": {
+    "label": "OUR PRODUCTS",
+    "heading": "Complete Solutions for Every Need",
+    "viewDetails": "View Details"
+  },
+  "aiFeatures": {
+    "heading": "Discover Our Top AI Features"
+  },
+  "achievements": {
+    "label": "OUR ACHIEVEMENTS",
+    "heading": "Recognized for Excellence"
+  },
+  "app": {
+    "label": "MOBILE APPLICATION",
+    "heading": "Take EDDVA Anywhere",
+    "lead": "Students, teachers and parents stay connected on Android and iOS – one app for classes, progress, fees and notices.",
+    "getItOn": "Get it on",
+    "downloadOn": "Download on the",
+    "phoneAlt": "EDDVA app login screen",
+    "perks": {
+      "nw-app-learn": {
+        "title": "Learn on the move",
+        "desc": "Classes, notes and tests in your pocket."
+      },
+      "nw-app-alerts": {
+        "title": "Instant alerts",
+        "desc": "Attendance, fees and notices in real time."
+      },
+      "nw-app-offline": {
+        "title": "Works offline",
+        "desc": "Download lessons and study without data."
+      },
+      "nw-app-track": {
+        "title": "Track progress",
+        "desc": "Live performance insights for every student."
+      }
+    }
+  },
+  "blog": {
+    "label": "FROM THE BLOG",
+    "heading": "Notes on AI, exam prep & running a school",
+    "viewAll": "View all articles",
+    "minRead": "{{count}} min read",
+    "readMore": "Read more"
+  },
+  "cta": {
+    "heading": "Ready to Transform Your Institution?",
+    "sub": "Book a free demo and explore how EDDVA can help you achieve more.",
+    "button": "Book a Free Demo"
+  }
+}

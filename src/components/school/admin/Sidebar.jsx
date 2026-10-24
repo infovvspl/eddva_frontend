@@ -52,6 +52,7 @@ const superAdminGroups = [
     items: [
       { path: '/school/super-admin/communication', label: 'Communication', icon: Megaphone },
       { path: '/school/super-admin/complaints', label: 'Support Tickets', icon: Ticket },
+      { path: '/school/super-admin/grievances', label: 'Grievances', icon: MessageSquareWarning },
     ],
   },
   {
@@ -87,6 +88,7 @@ const ADMIN_NAV_PATH_TO_MODULE = {
   '/school/admin/syllabus-planner': 'syllabus_planner',
   '/school/admin/syllabus-tracker': 'syllabus_tracker',
   '/school/admin/attendance': 'attendance',
+  '/school/admin/improvement': 'improvement_areas',
   '/school/admin/timetable': 'timetable',
   '/school/admin/calendar': 'academic_calendar',
   '/school/admin/notices': 'notices',
@@ -136,7 +138,7 @@ function buildInstituteGroups(mods, aiFeats) {
         { path: '/school/admin/academics', label: 'Class & Sections', icon: Building2 },
         { path: '/school/admin/subjects', label: 'Subjects', icon: BookOpen },
         competitiveEnabled && { path: '/school/admin/competitive-subjects', label: 'Competitive Exam Prep', icon: Trophy },
-        syllabusPlannerEnabled && { path: '/school/admin/syllabus-planner', label: 'Lesson Planner', icon: FileText },
+        syllabusPlannerEnabled && { path: '/school/admin/syllabus-planner', label: 'Lesson Plan', icon: FileText },
         syllabusTrackerEnabled && { path: '/school/admin/syllabus-tracker', label: 'Lesson Tracker', icon: BarChart3 },
       ].filter(Boolean),
     },
@@ -167,7 +169,8 @@ function buildInstituteGroups(mods, aiFeats) {
         { path: '/school/admin/users', label: 'User Management', icon: Users },
         { path: '/school/admin/document-generator', label: 'Document Generator', icon: FileText },
         { path: '/school/admin/audit-logs', label: 'Audit Logs', icon: FileText },
-        { path: '/school/admin/complaints', label: 'Support Tickets', icon: Shield },
+        { path: '/school/admin/complaints', label: 'Help Desk', icon: Shield },
+        { path: '/school/admin/grievances', label: 'Grievances', icon: MessageSquareWarning },
       ],
     },
   ].filter(group => group.items && group.items.length > 0);

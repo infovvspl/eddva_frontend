@@ -21,7 +21,7 @@ export default function ClassSections() {
 
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [academicYear, setAcademicYear] = useState(location.state?.academicYear || '2025-2026');
+  const [academicYear, setAcademicYear] = useState(location.state?.academicYear || '2026-2027');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSection, setSelectedSection] = useState(null);
   const [isSectionModalOpen, setIsSectionModalOpen] = useState(false);

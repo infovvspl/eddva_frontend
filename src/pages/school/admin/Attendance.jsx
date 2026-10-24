@@ -599,7 +599,7 @@ export default function Attendance() {
             <TableHeader className="bg-surface-50 text-surface-500">
               <TableRow className="hover:bg-transparent border-b-0">
                 <TableHead className="h-auto px-6 py-4 font-semibold sticky left-0 z-20 bg-surface-50 dark:bg-slate-850 shadow-sm text-surface-500">Name</TableHead>
-                <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Role</TableHead>
+                <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">{selectedRole === 'STUDENT' ? 'Roll No.' : 'Role'}</TableHead>
                 {selectedRole === 'STUDENT' && <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Class / Section</TableHead>}
                 <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Date</TableHead>
                 <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Status</TableHead>
@@ -619,7 +619,9 @@ export default function Attendance() {
                   <TableRow key={record.id} className="hover:bg-surface-50 transition-colors">
                     <TableCell className="p-4 px-6 py-4 font-semibold text-surface-950 sticky left-0 z-20 bg-white dark:bg-slate-900">{record.user?.name || '-'}</TableCell>
                     <TableCell className="p-4 px-6 py-4">
-                      {hasRole(record.user?.role, 'STUDENT') ? (
+                      {selectedRole === 'STUDENT' ? (
+                        <span className="font-semibold text-surface-700">{record.user?.studentProfile?.rollNo || '-'}</span>
+                      ) : hasRole(record.user?.role, 'STUDENT') ? (
                         <Badge variant="secondary" className="items-center gap-1 rounded-full border-transparent bg-blue-50 text-xs font-bold text-blue-700 hover:bg-blue-50">
                           <GraduationCap className="size-3" /> Student
                         </Badge>
@@ -704,8 +706,10 @@ export default function Attendance() {
 
               <div className="grid grid-cols-2 gap-3 text-xs text-surface-600 pt-1">
                 <div>
-                  <span className="block text-[9px] uppercase tracking-wider text-surface-400 font-bold">Role</span>
-                  {hasRole(record.user?.role, 'STUDENT') ? (
+                  <span className="block text-[9px] uppercase tracking-wider text-surface-400 font-bold">{selectedRole === 'STUDENT' ? 'Roll No.' : 'Role'}</span>
+                  {selectedRole === 'STUDENT' ? (
+                    <span className="font-semibold block mt-0.5">{record.user?.studentProfile?.rollNo || '-'}</span>
+                  ) : hasRole(record.user?.role, 'STUDENT') ? (
                     <Badge variant="secondary" className="items-center gap-1 rounded-full border-transparent bg-blue-50 text-xs font-bold text-blue-700 mt-0.5 hover:bg-blue-50">
                       <GraduationCap className="size-3.5" /> Student
                     </Badge>

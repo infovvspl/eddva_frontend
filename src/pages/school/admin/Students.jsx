@@ -1,13 +1,12 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Download, Edit2, Plus, Search, Trash2, Users, Eye, Filter, Calendar, ArrowUpRight, GraduationCap, CheckCircle2, UserPlus, XCircle, X, Mail, Clock, AlertTriangle, Loader2, KeyRound, FileText, Printer } from 'lucide-react';
+import { Download, Edit2, Plus, Search, Users, Eye, Calendar, ArrowUpRight, GraduationCap, CheckCircle2, UserPlus, XCircle, X, Mail, AlertTriangle, Loader2, KeyRound, FileText, Printer } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import { getResponseList, notifyDataChanged } from '@/lib/school/apiData';
 import Modal from '@/components/school/admin/Modal';
 import { toast } from 'sonner';
-import { useConfirm } from '@/context/ConfirmContext';
 import { handleApiError } from '@/lib/school/errorHandler';
 import { Skeleton, cn } from '@/components/school/admin/Skeleton';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
@@ -27,58 +26,6 @@ const getInitials = (name) => {
   if (parts.length >= 2) return (parts[parts.length - 2][0] + parts[parts.length - 1][0]).toUpperCase();
   return name.substring(0, 2).toUpperCase();
 };
-
-function timeAgo(dateString) {
-  const then = new Date(dateString).getTime();
-  if (Number.isNaN(then)) return '';
-  const diffMs = Date.now() - then;
-  const mins = Math.floor(diffMs / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d ago`;
-  return new Date(dateString).toLocaleDateString();
-}
-
-function CredentialsStatusBadge({ student }) {
-  const parentEmail = student.studentProfile?.parentEmail;
-  const sentAt = student.studentProfile?.credentialsSentAt;
-  if (!parentEmail) {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-[10px] font-bold text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
-        <AlertTriangle className="h-3 w-3" />
-        No parent email
-      </span>
-    );
-  }
-  if (sentAt) {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
-        <CheckCircle2 className="h-3 w-3" />
-        Sent {timeAgo(sentAt)}
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-      <Clock className="h-3 w-3" />
-      Not sent
-    </span>
-  );
-}
-
-function StudentCredentialsStatusBadge({ student }) {
-  const sentAt = student.studentProfile?.studentCredentialsSentAt;
-  if (!sentAt) return null;
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-1 text-[10px] font-bold text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400">
-      <KeyRound className="h-3 w-3" />
-      Student login sent {timeAgo(sentAt)}
-    </span>
-  );
-}
 
 function downloadCsv(filename, rows) {
   const csv = rows
@@ -198,7 +145,6 @@ export default function Students() {
   const [selectedSectionId, setSelectedSectionId] = useState('ALL');
   const [institutes, setInstitutes] = useState([]);
   const [selectedInstituteId, setSelectedInstituteId] = useState('ALL');
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -334,28 +280,6 @@ export default function Students() {
 
   const handleEditClick = (student) => {
     navigate(`/school/admin/students/${student.id}/edit`);
-  };
-
-  const confirm = useConfirm();
-
-  const handleDeleteClick = async (id) => {
-    const ok = await confirm({
-      title: 'Delete Student Profile',
-      subtitle: 'Danger Zone',
-      message: 'Are you sure you want to permanently delete this student record? This will revoke login credentials and erase all profile history.',
-      confirmLabel: 'Delete Student',
-      cancelLabel: 'Keep Student'
-    });
-    if (ok) {
-      try {
-        await api.delete(`/students/${id}`);
-        setStudents(students.filter(s => s.id !== id));
-        notifyDataChanged('students');
-        toast.success('Student deleted successfully');
-      } catch (error) {
-        handleApiError(error, 'Failed to delete student');
-      }
-    }
   };
 
   const handleImportSubmit = async (e) => {
@@ -735,138 +659,110 @@ export default function Students() {
       </div>
 
       <div className="mt-5 glass-premium rounded-2xl">
-        <div className="relative z-20 border-b border-[rgba(37,99,235,0.10)] bg-white/60 px-4 py-4 backdrop-blur dark:border-slate-700 dark:bg-slate-900/40 space-y-3">
-          {/* ── Sleek Compact Toolbar (Mobile & Desktop) ── */}
-          <div className="flex flex-col gap-3">
-            {/* Top Toolbar Row */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-              {/* Search & Filter Toggle Group */}
-              <div className="flex items-center gap-2 flex-1 max-w-lg">
-                <div className="relative flex-1 min-w-[180px]">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
-                  <input
-                    value={searchQuery}
-                    onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-                    placeholder="Search students…"
-                    className="w-full rounded-xl border border-slate-200/80 bg-white/90 py-1.5 pl-8 pr-9 text-xs font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
-                  />
-                  <VoiceSearchButton
-                    className="absolute right-1 top-1/2 -translate-y-1/2"
-                    onResult={(transcript) => { setSearchQuery(transcript); setPage(1); }}
-                  />
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setShowMobileFilters((prev) => !prev)}
-                  className={cn(
-                    "inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition shrink-0",
-                    showMobileFilters || (statusFilter !== 'ALL' || selectedClassId !== 'ALL' || selectedSectionId !== 'ALL' || selectedYear !== 'ALL' || (isPlatformSuperAdmin && selectedInstituteId !== 'ALL'))
-                      ? "border-blue-500 bg-blue-50/80 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-700"
-                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-                  )}
-                >
-                  <Filter className="size-3.5" />
-                  <span>Filter</span>
-                  {(statusFilter !== 'ALL' || selectedClassId !== 'ALL' || selectedSectionId !== 'ALL' || selectedYear !== 'ALL' || (isPlatformSuperAdmin && selectedInstituteId !== 'ALL')) && (
-                    <span className="size-2 rounded-full bg-blue-600 dark:bg-blue-400" />
-                  )}
-                </button>
-              </div>
-
-              {/* Right Action Badges & Buttons */}
-              <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
-                <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/60 bg-slate-50/80 px-2.5 py-1.5 text-xs font-bold text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-                  <Users className="size-3.5 text-blue-500" />
-                  <span>{formatNumber(filtered.length)} results</span>
-                </div>
-
-                {(statusFilter !== 'ALL' || selectedClassId !== 'ALL' || selectedSectionId !== 'ALL' || selectedYear !== 'ALL' || (isPlatformSuperAdmin && selectedInstituteId !== 'ALL')) && (
-                  <button
-                    type="button"
-                    onClick={clearStudentFilters}
-                    className="inline-flex items-center gap-1 rounded-xl border border-rose-200/80 bg-rose-50/50 px-2.5 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-100/60 transition dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-400"
-                  >
-                    <X className="size-3.5" />
-                    <span>Clear</span>
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  onClick={exportCsv}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-                >
-                  <Download className="size-3.5 text-slate-500" />
-                  <span>Export</span>
-                </button>
-              </div>
+        <div className="relative z-20 border-b border-[rgba(37,99,235,0.10)] bg-white/60 px-4 py-4 backdrop-blur dark:border-slate-700 dark:bg-slate-900/40">
+          {/* ── Search + all filters inline, no hide/show toggle ── */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative min-w-[180px] flex-1 max-w-xs">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
+              <input
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+                placeholder="Search students…"
+                className="w-full rounded-xl border border-slate-200/80 bg-white/90 py-1.5 pl-8 pr-9 text-xs font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+              />
+              <VoiceSearchButton
+                className="absolute right-1 top-1/2 -translate-y-1/2"
+                onResult={(transcript) => { setSearchQuery(transcript); setPage(1); }}
+              />
             </div>
 
-            {/* Expandable Detailed Filters Drawer */}
-            {showMobileFilters && (
-              <div className="flex flex-wrap items-center gap-2 pt-2.5 border-t border-slate-100 dark:border-slate-800/80">
-                <CustomSelect
-                  value={statusFilter}
-                  onChange={setStatusFilter}
-                  options={[
-                    { value: "ALL", label: "All statuses" },
-                    { value: "ACTIVE", label: "Active" },
-                    { value: "INACTIVE", label: "Inactive" },
-                  ]}
-                  className="w-full sm:w-40"
-                  triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-                />
+            <CustomSelect
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={[
+                { value: "ALL", label: "All statuses" },
+                { value: "ACTIVE", label: "Active" },
+                { value: "INACTIVE", label: "Inactive" },
+              ]}
+              className="w-36 shrink-0"
+              triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+            />
 
-                {isPlatformSuperAdmin && (
-                  <CustomSelect
-                    value={selectedInstituteId}
-                    onChange={handleInstituteFilterChange}
-                    options={[
-                      { value: "ALL", label: "All schools" },
-                      ...institutes.map((institute) => ({ value: institute.id, label: institute.name })),
-                    ]}
-                    className="w-full sm:w-44"
-                    triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-                  />
-                )}
-
-                <CustomSelect
-                  value={selectedClassId}
-                  onChange={handleClassFilterChange}
-                  options={[
-                    { value: "ALL", label: isPlatformSuperAdmin && selectedInstituteId === 'ALL' ? 'Select school first' : 'All classes' },
-                    ...classes.map((cls) => ({ value: cls.id, label: cls.name })),
-                  ]}
-                  disabled={isPlatformSuperAdmin && selectedInstituteId === 'ALL'}
-                  className="w-full sm:w-40"
-                  triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-                />
-
-                <CustomSelect
-                  value={selectedSectionId}
-                  onChange={handleSectionFilterChange}
-                  options={[
-                    { value: "ALL", label: selectedClassId === 'ALL' ? 'Select class first' : 'All sections' },
-                    ...sectionOptions.map((section) => ({ value: section.id, label: `Section ${section.name}` })),
-                  ]}
-                  disabled={selectedClassId === 'ALL' || (isPlatformSuperAdmin && selectedInstituteId === 'ALL')}
-                  className="w-full sm:w-40"
-                  triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-                />
-
-                <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
-                  <Calendar className="size-3.5 text-slate-400" />
-                  <CustomSelect
-                    value={selectedYear}
-                    onChange={setSelectedYear}
-                    options={years.map((y) => ({ value: y, label: y }))}
-                    className="w-24"
-                    triggerClassName="flex size-full items-center justify-between gap-1 px-1.5 py-1 text-xs font-semibold text-slate-700 border-none bg-transparent"
-                  />
-                </div>
-              </div>
+            {isPlatformSuperAdmin && (
+              <CustomSelect
+                value={selectedInstituteId}
+                onChange={handleInstituteFilterChange}
+                options={[
+                  { value: "ALL", label: "All schools" },
+                  ...institutes.map((institute) => ({ value: institute.id, label: institute.name })),
+                ]}
+                className="w-40 shrink-0"
+                triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+              />
             )}
+
+            <CustomSelect
+              value={selectedClassId}
+              onChange={handleClassFilterChange}
+              options={[
+                { value: "ALL", label: isPlatformSuperAdmin && selectedInstituteId === 'ALL' ? 'Select school first' : 'All classes' },
+                ...classes.map((cls) => ({ value: cls.id, label: cls.name })),
+              ]}
+              disabled={isPlatformSuperAdmin && selectedInstituteId === 'ALL'}
+              className="w-36 shrink-0"
+              triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+            />
+
+            <CustomSelect
+              value={selectedSectionId}
+              onChange={handleSectionFilterChange}
+              options={[
+                { value: "ALL", label: selectedClassId === 'ALL' ? 'Select class first' : 'All sections' },
+                ...sectionOptions.map((section) => ({ value: section.id, label: `Section ${section.name}` })),
+              ]}
+              disabled={selectedClassId === 'ALL' || (isPlatformSuperAdmin && selectedInstituteId === 'ALL')}
+              className="w-36 shrink-0"
+              triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+            />
+
+            <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
+              <Calendar className="size-3.5 text-slate-400" />
+              <CustomSelect
+                value={selectedYear}
+                onChange={setSelectedYear}
+                options={years.map((y) => ({ value: y, label: y }))}
+                className="w-24"
+                triggerClassName="flex size-full items-center justify-between gap-1 px-1.5 py-1 text-xs font-semibold text-slate-700 border-none bg-transparent"
+              />
+            </div>
+
+            {(statusFilter !== 'ALL' || selectedClassId !== 'ALL' || selectedSectionId !== 'ALL' || selectedYear !== 'ALL' || (isPlatformSuperAdmin && selectedInstituteId !== 'ALL')) && (
+              <button
+                type="button"
+                onClick={clearStudentFilters}
+                className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-rose-200/80 bg-rose-50/50 px-2.5 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-100/60 transition dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-400"
+              >
+                <X className="size-3.5" />
+                <span>Clear</span>
+              </button>
+            )}
+
+            {/* Right Action Badges & Buttons */}
+            <div className="ml-auto flex shrink-0 items-center gap-2">
+              <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/60 bg-slate-50/80 px-2.5 py-1.5 text-xs font-bold text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+                <Users className="size-3.5 text-blue-500" />
+                <span>{formatNumber(filtered.length)} results</span>
+              </div>
+
+              <button
+                type="button"
+                onClick={exportCsv}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+              >
+                <Download className="size-3.5 text-slate-500" />
+                <span>Export</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -887,14 +783,13 @@ export default function Students() {
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Enrollment No.</TableHead>
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Class/Section</TableHead>
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</TableHead>
-                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Credentials</TableHead>
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="divide-y divide-slate-100 dark:divide-slate-800 [&_tr]:border-b-0">
               {filtered.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan="7" className="px-5 py-12 text-center text-slate-400">
+                  <TableCell colSpan="6" className="px-5 py-12 text-center text-slate-400">
                     No students found.
                   </TableCell>
                 </TableRow>
@@ -918,7 +813,9 @@ export default function Students() {
                           </AvatarFallback>
                         </Avatar>
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-bold tracking-tight text-slate-900 dark:text-white">{student.name}</p>
+                          <Link to={`/school/admin/students/${student.id}`} className="truncate text-sm font-bold tracking-tight text-slate-900 hover:text-blue-600 hover:underline dark:text-white dark:hover:text-blue-400 block">
+                            {student.name}
+                          </Link>
                           <p className="truncate text-[11px] font-bold text-slate-400 dark:text-slate-500">{student.email || '—'}</p>
                         </div>
                       </div>
@@ -966,12 +863,6 @@ export default function Students() {
                       </button>
                     </TableCell>
                     <TableCell className="p-4 px-5 py-4">
-                      <div className="flex flex-col gap-1">
-                        <CredentialsStatusBadge student={student} />
-                        <StudentCredentialsStatusBadge student={student} />
-                      </div>
-                    </TableCell>
-                    <TableCell className="p-4 px-5 py-4">
                       <div className="flex items-center gap-2">
                         <Link
                           to={`/school/admin/students/${student.id}`}
@@ -986,13 +877,6 @@ export default function Students() {
                         >
                           <Edit2 className="size-4" />
                           <span className="absolute -top-10 left-1/2 -translate-x-1/2 scale-0 rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">Edit</span>
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClick(student.id)}
-                          className="group relative flex size-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 transition-all hover:border-red-400 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
-                        >
-                          <Trash2 className="size-4" />
-                          <span className="absolute -top-10 left-1/2 -translate-x-1/2 scale-0 rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">Delete</span>
                         </button>
                       </div>
                     </TableCell>
@@ -1040,14 +924,11 @@ export default function Students() {
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold tracking-tight text-slate-900 dark:text-white">{student.name}</p>
+                    <Link to={`/school/admin/students/${student.id}`} className="truncate text-sm font-bold tracking-tight text-slate-900 hover:text-blue-600 hover:underline dark:text-white dark:hover:text-blue-400 block">
+                      {student.name}
+                    </Link>
                     <p className="truncate text-[11px] font-bold text-slate-400 dark:text-slate-500">{student.email || '—'}</p>
                   </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <CredentialsStatusBadge student={student} />
-                  <StudentCredentialsStatusBadge student={student} />
                 </div>
 
                 <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-xs text-slate-600 dark:text-slate-300 pt-1">
@@ -1114,13 +995,6 @@ export default function Students() {
                   >
                     <Edit2 className="size-3.5" />
                     <span>Edit</span>
-                  </button>
-                  <button
-                    onClick={() => handleDeleteClick(student.id)}
-                    className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-100 bg-white px-3 text-slate-500 hover:border-red-400 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 text-xs font-bold"
-                  >
-                    <Trash2 className="size-3.5" />
-                    <span>Delete</span>
                   </button>
                 </div>
               </div>

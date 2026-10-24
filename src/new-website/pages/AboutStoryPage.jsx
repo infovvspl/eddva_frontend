@@ -12,8 +12,10 @@ import AboutStory from "../components/AboutStory";
 import CtaBanner from "../components/CtaBanner";
 import Footer from "../components/Footer";
 import { HeartHandshake } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const AboutStoryPage = () => {
+  const { t } = useTranslation("about");
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   return (
@@ -23,9 +25,9 @@ const AboutStoryPage = () => {
       <main>
         <PageHead
           id="nw-about-story-head"
-          title="Our"
-          accent="Story"
-          lead="Why EDDVA exists, what it believes about teaching, and where it's headed."
+          title={t("story.pageTitle")}
+          accent={t("story.pageAccent")}
+          lead={t("story.pageLead")}
           icon={HeartHandshake}
           color="#1a56db"
           bg="#eaf1fd"

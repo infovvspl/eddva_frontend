@@ -10,6 +10,10 @@ import {
 import api from '@/lib/api/school-client';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { putFileToS3 } from '@/lib/api/upload';
+import { toast } from 'sonner';
+
+const MAX_PHOTO_MB = 10;
 
 const STEPS = [
   { id: 1, title: 'Basic Information', icon: User, description: 'Personal & identity details' },
@@ -194,6 +198,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
   const { institute } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState({});
+  const [photoUploading, setPhotoUploading] = useState(false);
   const [formData, setFormData] = useState({
     name: '', email: '', password: '', confirmPassword: '', autoGeneratePassword: true,
     credentialDeliveryChannel: 'student_email', phone: '',
@@ -337,6 +342,35 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     updateField(name, type === 'checkbox' ? checked : value);
+  };
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    e.target.value = ''; // allow re-selecting the same file after a failed attempt
+    if (!file) return;
+
+    if (file.size > MAX_PHOTO_MB * 1024 * 1024) {
+      toast.error(`Photo is ${(file.size / 1024 / 1024).toFixed(1)}MB — must be ${MAX_PHOTO_MB}MB or smaller.`);
+      return;
+    }
+
+    setPhotoUploading(true);
+    try {
+      const contentType = file.type || 'image/jpeg';
+      const presign = await api.post('/students/photo-upload-url', {
+        fileName: file.name,
+        contentType,
+        fileSize: file.size,
+      });
+      const { uploadUrl, fileUrl } = presign.data?.data ?? presign.data;
+      await putFileToS3(uploadUrl, file, contentType);
+      updateField('profileImage', fileUrl);
+    } catch (err) {
+      console.error('Student photo upload failed:', err);
+      toast.error('Failed to upload photo. Please try again.');
+    } finally {
+      setPhotoUploading(false);
+    }
   };
 
   // Strips non-digits as the admin types, so a phone/Aadhaar/PIN box can never
@@ -523,27 +557,22 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
             <div className="mb-5 grid gap-4 lg:grid-cols-[150px_1fr] xl:grid-cols-[160px_1fr]">
               <div className="flex flex-col items-start gap-3 sm:items-center">
                 <div className="relative flex size-32 sm:size-36 flex-col items-center justify-center overflow-hidden rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50 transition-all hover:border-blue-500 dark:border-slate-700 dark:bg-slate-800/50 group cursor-pointer">
-                  {formData.profileImage ? (
+                  {photoUploading ? (
+                    <Loader2 className="text-blue-500 animate-spin" size={32} />
+                  ) : formData.profileImage ? (
                     <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} alt="Preview" className="size-full object-cover" />
                   ) : (
                     <Camera className="text-slate-400 group-hover:text-blue-500" size={32} />
                   )}
                   <input
                     type="file"
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                    onChange={(e) => {
-                      const file = e.target.files[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          setFormData(prev => ({ ...prev, profileImage: reader.result }));
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
+                    accept="image/*"
+                    disabled={photoUploading}
+                    className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                    onChange={handlePhotoUpload}
                   />
                 </div>
-                <p className="text-xs font-semibold text-slate-400">Student photo</p>
+                <p className="text-xs font-semibold text-slate-400">{photoUploading ? 'Uploading...' : `Student photo (max ${MAX_PHOTO_MB}MB)`}</p>
               </div>
               <div className="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2">
                 <FloatingInput label="Full Name" name="name" value={formData.name} onChange={handleChange} icon={User} error={errors.name} required autoComplete="off" />
@@ -1240,7 +1269,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                     onSubmit(formData);
                   }
                 }}
-                disabled={isLoading}
+                disabled={isLoading || photoUploading}
                 className={`${currentStep === 1 ? 'col-span-2 sm:col-span-1' : ''} inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700 disabled:opacity-50 sm:px-6 sm:py-3`}
               >
                 {currentStep < STEPS.length ? (

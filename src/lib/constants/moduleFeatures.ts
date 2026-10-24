@@ -39,8 +39,8 @@ export const ROLE_MODULE_FEATURES: RoleFeatureGroup[] = [
       { key: 'admin_timetable', parentKey: 'timetable', label: 'Manage Timetable', description: 'Create and edit class timetables', defaultEnabled: true },
       { key: 'admin_reports', parentKey: 'reports', label: 'View School Reports & Analytics', description: 'View school-wide analytics and reports', defaultEnabled: true },
       { key: 'admin_meetings', parentKey: 'meetings', label: 'Manage Meetings', description: 'Schedule and manage all meetings', defaultEnabled: true },
-      { key: 'admin_syllabus_planner', parentKey: 'syllabus', label: 'Syllabus Planner', description: 'Annual subject syllabus planner and milestone manager', defaultEnabled: true },
-      { key: 'admin_syllabus_tracker', parentKey: 'syllabus', label: 'Syllabus Tracker', description: 'Syllabus completion & coverage tracking', defaultEnabled: true },
+      { key: 'admin_syllabus_planner', parentKey: 'syllabus', label: 'Lesson Plan', description: 'Annual subject syllabus planner and milestone manager', defaultEnabled: true },
+      { key: 'admin_syllabus_tracker', parentKey: 'syllabus', label: 'Lesson Plan Tracker', description: 'Syllabus completion & coverage tracking', defaultEnabled: true },
     ]
   },
   {
@@ -54,7 +54,7 @@ export const ROLE_MODULE_FEATURES: RoleFeatureGroup[] = [
       { key: 'teacher_timetable', parentKey: 'timetable', label: 'View Timetable', description: 'View personal teaching schedule', defaultEnabled: true },
       { key: 'teacher_reports', parentKey: 'reports', label: 'View Class Reports', description: 'View class and student performance', defaultEnabled: true },
       { key: 'teacher_meetings', parentKey: 'meetings', label: 'Host & Join Meetings', description: 'Join and manage parent-teacher meetings', defaultEnabled: true },
-      { key: 'teacher_teaching_plan', parentKey: 'syllabus', label: 'My Teaching Plan', description: 'Teacher syllabus plan and progress', defaultEnabled: true },
+      { key: 'teacher_teaching_plan', parentKey: 'syllabus', label: 'Lesson Plan', description: 'Teacher syllabus plan and progress', defaultEnabled: true },
     ]
   },
   {

@@ -5,11 +5,15 @@
 // falls back to `Icon`; drop an "Icon 5.png" beside the others, import it and
 // set `img` to switch it over.
 
-import { products } from "../data/products";
+import { useTranslation } from "react-i18next";
+import { useLocalized } from "@/i18n/useLocalized";
+import { products as productsData } from "../data/products";
 import useInView from "../hooks/useInView";
 
 
 const ProductsSection = () => {
+  const { t } = useTranslation("home");
+  const products = useLocalized("data-products", productsData);
   const [gridRef, gridIn] = useInView({ threshold: 0.12 });
 
   return (
@@ -18,8 +22,8 @@ const ProductsSection = () => {
 
         {/* Header */}
         <div className="nw-products__header">
-          <span className="nw-products__label">OUR PRODUCTS</span>
-          <h2 className="nw-products__heading">Complete Solutions for Every Need</h2>
+          <span className="nw-products__label">{t("products.label")}</span>
+          <h2 className="nw-products__heading">{t("products.heading")}</h2>
           <span className="nw-products__ornament" aria-hidden="true" />
         </div>
 
@@ -49,7 +53,7 @@ const ProductsSection = () => {
                 id={`${id}-btn`}
                 style={{ "--nw-btn": btn, "--nw-btn-hover": btnHover }}
               >
-                View Details
+                {t("products.viewDetails")}
               </a>
             </div>
           ))}

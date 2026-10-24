@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Search, User, Filter, X } from 'lucide-react';
 import api from '@/lib/api/school-client';
@@ -48,13 +49,24 @@ const AttendanceBar: React.FC<{ student: any }> = ({ student }) => {
   );
 };
 
+type ClassOption = { id: string; name: string; sections: { id: string; name: string }[] };
+
+const useDebounced = <T,>(value: T, delay = 300) => {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+};
+
 const Students: React.FC = () => {
   const navigate = useNavigate();
-  const [students, setStudents] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
+  const search = useDebounced(searchQuery.trim());
 
-  // Filters
+  // Filters (class / section are ids so the server can filter on them)
   const [selectedClass, setSelectedClass] = useState<string>('All');
   const [selectedSection, setSelectedSection] = useState<string>('All');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Active' | 'Inactive'>('All');
@@ -64,84 +76,58 @@ const Students: React.FC = () => {
   const [limit, setLimit] = useState(10);
 
   useEffect(() => {
-    fetchStudents();
-  }, []);
-
-  useEffect(() => {
     setPage(1);
-  }, [searchQuery, selectedClass, selectedSection, statusFilter]);
+  }, [search, selectedClass, selectedSection, statusFilter, limit]);
 
-  const fetchStudents = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get('/students', { params: { limit: 'all' } });
-      const data = res.data?.data || [];
-      setStudents(data);
-    } catch (error) {
-      console.error('Failed to fetch students:', error);
-    } finally {
-      setLoading(false);
-    }
+  const fetchPage = async (pageNo: number) => {
+    const res = await api.get('/students', {
+      params: {
+        page: pageNo,
+        limit,
+        ...(search && { search }),
+        ...(selectedClass !== 'All' && { classId: selectedClass }),
+        ...(selectedSection !== 'All' && { sectionId: selectedSection }),
+        ...(statusFilter !== 'All' && { status: statusFilter.toLowerCase() }),
+      },
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return res.data as { data: any[]; total: number; totalPages: number };
   };
+  const listKey = (pageNo: number) =>
+    ['teacher-students', { pageNo, limit, search, selectedClass, selectedSection, statusFilter }] as const;
 
-  const filteredStudents = useMemo(() => {
-    return students.filter(student => {
-      // Status filter
-      if (statusFilter === 'Active' && !student.isActive) return false;
-      if (statusFilter === 'Inactive' && student.isActive) return false;
+  // Only the current page is fetched. The previous page stays on screen while the next one
+  // loads, and visited pages are cached so paging back is instant.
+  const { data: result, isLoading: loading, isFetching, isError } = useQuery({
+    queryKey: listKey(page),
+    queryFn: () => fetchPage(page),
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
+  });
 
-      // Class/Section filter
-      const className = student.studentProfile?.section?.class?.name || '';
-      const sectionName = student.studentProfile?.section?.name || '';
+  const students = result?.data ?? [];
+  const total = result?.total ?? 0;
+  const totalPages = result?.totalPages || 1;
 
-      if (selectedClass !== 'All' && className !== selectedClass) return false;
-      if (selectedSection !== 'All' && sectionName !== selectedSection) return false;
+  // Warm the next page in the background so "Next" feels instant.
+  useEffect(() => {
+    if (page < totalPages) {
+      queryClient.prefetchQuery({ queryKey: listKey(page + 1), queryFn: () => fetchPage(page + 1), staleTime: 60_000 });
+    }
+  }, [page, totalPages, result]); // eslint-disable-line react-hooks/exhaustive-deps
 
-      // Search query
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        const nameMatch = student.name?.toLowerCase().includes(query);
-        const rollMatch = student.studentProfile?.rollNo?.toLowerCase().includes(query);
-        const classMatch = className.toLowerCase().includes(query);
-        const sectionMatch = sectionName.toLowerCase().includes(query);
-
-        if (!nameMatch && !rollMatch && !classMatch && !sectionMatch) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [students, searchQuery, statusFilter, selectedClass, selectedSection]);
-
-  const paginatedStudents = useMemo(() => {
-    const startIndex = (page - 1) * limit;
-    return filteredStudents.slice(startIndex, startIndex + limit);
-  }, [filteredStudents, page, limit]);
-
-  const total = filteredStudents.length;
-  const totalPages = Math.ceil(total / limit) || 1;
-
-  const uniqueClasses = useMemo(() => {
-    const classes = new Set<string>();
-    students.forEach(s => {
-      const cName = s.studentProfile?.section?.class?.name;
-      if (cName) classes.add(cName);
-    });
-    return ['All', ...Array.from(classes)];
-  }, [students]);
-
-  const uniqueSections = useMemo(() => {
-    const sections = new Set<string>();
-    students.forEach(s => {
-      const cName = s.studentProfile?.section?.class?.name;
-      const sName = s.studentProfile?.section?.name;
-      if (sName && (selectedClass === 'All' || cName === selectedClass)) {
-        sections.add(sName);
-      }
-    });
-    return ['All', ...Array.from(sections)];
-  }, [students, selectedClass]);
+  // Class / section dropdown options come from their own tiny query, not from the student list.
+  const { data: classOptions = [] } = useQuery({
+    queryKey: ['teacher-students-filters'],
+    queryFn: async () => (await api.get('/students/filters')).data?.data?.classes as ClassOption[],
+    staleTime: 5 * 60_000,
+  });
+  const sectionOptions = useMemo(
+    () => (selectedClass === 'All'
+      ? classOptions.flatMap((c) => c.sections)
+      : classOptions.find((c) => c.id === selectedClass)?.sections ?? []),
+    [classOptions, selectedClass],
+  );
 
   const resetFilters = () => {
     setSearchQuery('');
@@ -171,7 +157,7 @@ const Students: React.FC = () => {
             <div className="relative w-full flex-1">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
               <Input
-                placeholder="Search by name, roll no, class..."
+                placeholder="Search by name, roll no or enrollment no..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -182,9 +168,10 @@ const Students: React.FC = () => {
               <Select value={selectedClass} onValueChange={(v) => { setSelectedClass(v); setSelectedSection('All'); }}>
                 <SelectTrigger className="w-full lg:w-[150px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {uniqueClasses.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c === 'All' ? 'All Classes' : (c.toLowerCase().startsWith('class') ? c : `Class ${c}`)}
+                  <SelectItem value="All">All Classes</SelectItem>
+                  {classOptions.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name.toLowerCase().startsWith('class') ? c.name : `Class ${c.name}`}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -193,8 +180,9 @@ const Students: React.FC = () => {
               <Select value={selectedSection} onValueChange={setSelectedSection}>
                 <SelectTrigger className="w-full lg:w-[150px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {uniqueSections.map((s) => (
-                    <SelectItem key={s} value={s}>{s === 'All' ? 'All Sections' : `Section ${s}`}</SelectItem>
+                  <SelectItem value="All">All Sections</SelectItem>
+                  {sectionOptions.map((sec) => (
+                    <SelectItem key={sec.id} value={sec.id}>{`Section ${sec.name}`}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -217,7 +205,7 @@ const Students: React.FC = () => {
           </div>
         </CardHeader>
 
-        <CardContent className="flex flex-col gap-4 p-4 pt-0 sm:p-6 sm:pt-0">
+        <CardContent className={`flex flex-col gap-4 p-4 pt-0 transition-opacity sm:p-6 sm:pt-0 ${isFetching && !loading ? 'opacity-60' : ''}`}>
           {loading ? (
             <div className="space-y-3 rounded-lg border border-slate-100 p-4 dark:border-slate-800">
               {Array.from({ length: 6 }).map((_, i) => (
@@ -228,17 +216,17 @@ const Students: React.FC = () => {
                 </div>
               ))}
             </div>
-          ) : paginatedStudents.length === 0 ? (
+          ) : students.length === 0 ? (
             <div className="flex min-h-[300px] flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-200 text-center text-slate-500 dark:border-slate-800">
               <Filter className="size-12 text-slate-300 dark:text-slate-700" />
-              <p>No students found matching your criteria</p>
+              <p>{isError ? 'Could not load students. Please try again.' : 'No students found matching your criteria'}</p>
               <Button variant="outline" onClick={resetFilters}>Clear Filters</Button>
             </div>
           ) : (
             <>
               {/* Mobile: one card per student */}
               <div className="flex flex-col gap-3 md:hidden">
-                {paginatedStudents.map((student) => (
+                {students.map((student) => (
                   <Card
                     key={student.id}
                     role="button"
@@ -295,7 +283,7 @@ const Students: React.FC = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginatedStudents.map((student) => (
+                    {students.map((student) => (
                       <TableRow key={student.id} onClick={() => openStudent(student.id)} className="cursor-pointer">
                         <TableCell className="px-4 py-3 lg:px-6">
                           <div className="flex items-center gap-3">
@@ -331,7 +319,7 @@ const Students: React.FC = () => {
             </>
           )}
 
-          {filteredStudents.length > 0 && (
+          {total > 0 && (
             <div className="border-t border-slate-100 pt-4 dark:border-slate-800">
               <DataTablePagination
                 page={page}

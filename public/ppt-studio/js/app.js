@@ -546,6 +546,25 @@ window.App = {
     if (prevBtn) prevBtn.addEventListener('click', () => SlidePreview.prevSlide());
     if (nextBtn) nextBtn.addEventListener('click', () => SlidePreview.nextSlide());
 
+    // ---- Fullscreen preview ---------------------------------
+    const previewArea = document.getElementById('slide-preview-area');
+    const fsBtn = document.getElementById('fullscreen-btn');
+    const fsExitBtn = document.getElementById('fullscreen-exit-btn');
+    if (previewArea && fsBtn) {
+      fsBtn.addEventListener('click', () => {
+        if (previewArea.requestFullscreen) previewArea.requestFullscreen();
+      });
+    }
+    if (fsExitBtn) {
+      fsExitBtn.addEventListener('click', () => {
+        if (document.exitFullscreen) document.exitFullscreen();
+      });
+    }
+    document.addEventListener('fullscreenchange', () => {
+      const isFs = document.fullscreenElement === previewArea;
+      if (fsExitBtn) fsExitBtn.hidden = !isFs;
+    });
+
     // ---- Keyboard navigation (arrows) ----------------------
     document.addEventListener('keydown', (e) => {
       if (this.currentView !== 'preview') return;

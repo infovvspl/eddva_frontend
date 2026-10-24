@@ -5,9 +5,12 @@
 // where the source image leaves room for them. Replaces PageHead on this
 // page only — every other sub-page still uses the shared banner.
 
+import { useTranslation } from "react-i18next";
 import contactBg from "../assets/contactbg.png";
 
-const ContactHero = () => (
+const ContactHero = () => {
+  const { t } = useTranslation("contact");
+  return (
   <section
     className="nw-chero"
     id="nw-contact-hero"
@@ -28,17 +31,17 @@ const ContactHero = () => (
     }}
   >
     <div className="nw-chero__container">
-      <span className="nw-chero__eyebrow nw-rise" style={{ "--nw-delay": "0s" }}>We&rsquo;d Love to Hear From You</span>
+      <span className="nw-chero__eyebrow nw-rise" style={{ "--nw-delay": "0s" }}>{t("hero.eyebrow")}</span>
       <h1 className="nw-chero__title nw-rise" style={{ "--nw-delay": "0.08s" }}>
-        Get in <span className="nw-chero__title-accent">Touch</span>
+        {t("hero.titlePre")}<span className="nw-chero__title-accent">{t("hero.titleAccent")}</span>
       </h1>
       <span className="nw-chero__title-rule" aria-hidden="true" />
       <p className="nw-chero__lead nw-rise" style={{ "--nw-delay": "0.16s" }}>
-        Have questions, a demo request or a plan that fits your needs — we&rsquo;re
-        just a message away. Our team will get back to you soon.
+        {t("hero.lead")}
       </p>
     </div>
   </section>
-);
+  );
+};
 
 export default ContactHero;

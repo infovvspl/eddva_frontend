@@ -1,0 +1,27 @@
+{
+  "pageTitle": "EDDVA",
+  "pageAccent": "Blog",
+  "pageLead": "Notes on AI in education, exam prep strategy and running a school — from the team building EDDVA.",
+  "articles": "Articles",
+  "filter": "Filter posts by category",
+  "empty": "No posts in this category yet.",
+  "minRead": "{{count}} min read",
+  "readMore": "Read more",
+  "allPosts": "All posts",
+  "ctaTitle": "See how EDDVA puts this into practice",
+  "ctaDesc": "We will walk you through it on your own setup.",
+  "cta": "Book a Free Demo",
+  "more": "More from the blog",
+  "categories": {
+    "All": "All",
+    "AI in Education": "AI in Education",
+    "Exam Prep": "Exam Prep",
+    "School Management": "School Management",
+    "Product Updates": "Product Updates"
+  },
+  "emptyLanguage": "No articles in this language yet.",
+  "onlyIn": {
+    "en": "This article is only available in English.",
+    "hi": "This article is only available in Hindi."
+  }
+}

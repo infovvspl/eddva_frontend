@@ -9,9 +9,11 @@
 // sentence would flatten that rhythm.
 
 import { Eye, HeartHandshake } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import useInView from "../hooks/useInView";
 
 const AboutStory = () => {
+  const { t } = useTranslation("about");
   const [ref, inView] = useInView({ threshold: 0.08 });
 
   return (
@@ -19,56 +21,42 @@ const AboutStory = () => {
       <div className="nw-story__container">
 
         <header className="nw-story__header">
-          <span className="nw-story__label">About Us</span>
+          <span className="nw-story__label">{t("story.label")}</span>
           <h2 className="nw-story__heading">
-            Empowering Education. Enriching{" "}
-            <span className="nw-story__heading-accent">Futures.</span>
+            {t("story.headingPre")}
+            <span className="nw-story__heading-accent">{t("story.headingAccent")}</span>
           </h2>
         </header>
 
         <div className={`nw-story__body${inView ? " nw-in" : ""}`} ref={ref}>
           <p className="nw-story__p">
-            Education has always been about more than technology. It is about
-            a teacher who inspires, a student who discovers, a parent who
-            supports, and an institution that nurtures potential.
+            {t("story.p1")}
           </p>
 
           <p className="nw-story__p">
-            EDDVA &ndash; Education Development &amp; Advancement was born
-            from a simple belief: the future of education should not replace
-            the foundations of teaching, it should strengthen them.
+            {t("story.p2")}
           </p>
 
           <p className="nw-story__p">
-            We bring together the essence of traditional teaching with the
-            intelligence of AI, creating an education ecosystem where
-            technology works alongside educators, not in place of them.
+            {t("story.p3")}
           </p>
 
           <p className="nw-story__p">
-            From AI-powered personalised learning and intelligent assessments
-            to smart school management, analytics and seamless communication,
-            EDDVA connects students, teachers, parents and institutions on one
-            intelligent platform.
+            {t("story.p4")}
           </p>
 
           <p className="nw-story__p">
-            Our AI helps understand how students learn, supports teachers in
-            delivering more effective education, gives parents meaningful
-            visibility into their child&rsquo;s journey, and empowers
-            institutions with the insights and tools to make better
-            decisions.
+            {t("story.p5")}
           </p>
 
           <p className="nw-story__triplet">
-            Because we believe every learner is different.<br />
-            Every teacher has a unique way of teaching.<br />
-            And every institution has its own vision for excellence.
+            {t("story.triplet1")}<br />
+            {t("story.triplet2")}<br />
+            {t("story.triplet3")}
           </p>
 
           <p className="nw-story__p nw-story__p--closing">
-            EDDVA brings the intelligence of technology to education while
-            keeping the human connection at its heart.
+            {t("story.closing")}
           </p>
         </div>
 
@@ -77,12 +65,9 @@ const AboutStory = () => {
             <span className="nw-story__card-icon" aria-hidden="true">
               <Eye size={26} strokeWidth={1.8} />
             </span>
-            <h3 className="nw-story__card-title">Our Vision</h3>
+            <h3 className="nw-story__card-title">{t("story.visionTitle")}</h3>
             <p className="nw-story__card-desc">
-              To build a future where every learner receives personalised
-              support, every educator is empowered to teach better, and every
-              institution has the intelligence to create meaningful
-              educational outcomes.
+              {t("story.visionDesc")}
             </p>
           </article>
 
@@ -90,10 +75,10 @@ const AboutStory = () => {
             <span className="nw-story__card-icon" aria-hidden="true">
               <HeartHandshake size={26} strokeWidth={1.8} />
             </span>
-            <h3 className="nw-story__card-title">Our Promise</h3>
+            <h3 className="nw-story__card-title">{t("story.promiseTitle")}</h3>
             <p className="nw-story__card-desc">
-              We don&rsquo;t aim to make education more technological.<br />
-              We aim to make technology make education better.
+              {t("story.promiseLine1")}<br />
+              {t("story.promiseLine2")}
             </p>
           </article>
         </div>

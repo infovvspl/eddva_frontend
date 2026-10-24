@@ -1,5 +1,6 @@
 // ParentSolutionPage.jsx — route: /solution/parents
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import "../new-website.css";
 import TopBar from "../components/TopBar";
 import Navbar from "../components/Navbar";
@@ -16,6 +17,7 @@ const parentCapabilityCount = parents
   : 0;
 
 const ParentSolutionPage = () => {
+  const { t } = useTranslation("solutions");
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   return (
@@ -26,15 +28,15 @@ const ParentSolutionPage = () => {
         {parents && (
           <PageHead
             id="nw-parent-sol-head"
-            title="EDDVA for"
-            accent="Parents"
-            lead="Real-time updates, direct communication with school and teachers, and a clear view of your child's progress."
+            title={t("pages.parents.title")}
+            accent={t("pages.parents.accent")}
+            lead={t("pages.parents.lead")}
             icon={parents.Icon}
             color={parents.color}
             bg={parents.bg}
             stats={[
-              { value: parentCapabilityCount, label: "Capabilities" },
-              { value: parents.groups.length, label: "Categories" },
+              { value: parentCapabilityCount, label: t("pages.capabilities") },
+              { value: parents.groups.length, label: t("pages.categories") },
             ]}
           />
         )}

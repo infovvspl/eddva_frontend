@@ -902,6 +902,7 @@ const AttendanceSystem: React.FC = () => {
                     label="Attendance Date"
                     type="date"
                     value={date}
+                    max={new Date().toISOString().split('T')[0]}
                     onChange={(e) => setDate(e.target.value)}
                     disabled={editingSessionId !== null}
                   />

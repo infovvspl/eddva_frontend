@@ -133,7 +133,7 @@ export default function StudentReportCard() {
     // targetYear/targetClass (from the URL) reflect the specific report card being viewed —
     // e.g. a past class — and must win over the student's current class profile, otherwise
     // actions taken while viewing a historical report card silently apply to the current one.
-    const academicYear = targetYear || profileForRemarks.section?.class?.academicYear || student?.academicYear || '2025-2026';
+    const academicYear = targetYear || profileForRemarks.section?.class?.academicYear || student?.academicYear || '2026-2027';
     const className = targetClass || profileForRemarks.section?.class?.name || student?.className || undefined;
     if (!studentUserId || !academicYear) return;
 
@@ -157,7 +157,7 @@ export default function StudentReportCard() {
     const profileForRemarks = student?.studentProfile || {};
     // See note above: targetYear/targetClass must win so workflow actions apply to the
     // report card actually on screen, not the student's current class.
-    const academicYear = targetYear || profileForRemarks.section?.class?.academicYear || student?.academicYear || '2025-2026';
+    const academicYear = targetYear || profileForRemarks.section?.class?.academicYear || student?.academicYear || '2026-2027';
     const className = targetClass || profileForRemarks.section?.class?.name || student?.className || undefined;
     return { studentUserId, academicYear, className };
   };
@@ -261,7 +261,7 @@ export default function StudentReportCard() {
   const saveTeacherRemarks = async () => {
     const studentUserId = student?.id || student?.userId || id || searchParams.get('studentId');
     const profileForRemarks = student?.studentProfile || {};
-    const academicYear = targetYear || profileForRemarks.section?.class?.academicYear || student?.academicYear || '2025-2026';
+    const academicYear = targetYear || profileForRemarks.section?.class?.academicYear || student?.academicYear || '2026-2027';
     const className = targetClass || profileForRemarks.section?.class?.name || student?.className || undefined;
     if (!studentUserId || !academicYear) return;
 
@@ -398,7 +398,7 @@ export default function StudentReportCard() {
 
   const profile = student?.studentProfile || {};
   const currentClassName = profile.section?.class?.name || student?.className || targetClass || 'Class IX';
-  const currentAcademicYear = profile.section?.class?.academicYear || student?.academicYear || targetYear || '2025-2026';
+  const currentAcademicYear = profile.section?.class?.academicYear || student?.academicYear || targetYear || '2026-2027';
 
   const isInformationTechnologySubject = (subjectName = '') => {
     const subject = String(subjectName || '').trim().toLowerCase();
