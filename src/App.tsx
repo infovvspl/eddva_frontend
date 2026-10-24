@@ -330,7 +330,10 @@ const SchoolStudentTreasureHunt = lazy(() => import("./pages/school/student/game
 const SchoolStudentMathSprint = lazy(() => import("./pages/school/student/game-zone/MathSprint"));
 const SchoolStudentMemoryMatch = lazy(() => import("./pages/school/student/game-zone/MemoryMatch"));
 const SchoolStudentWordMaster = lazy(() => import("./pages/school/student/game-zone/WordMaster"));
-const SchoolStudentStudyPlanner = lazy(() => import("./pages/school/student/StudyPlanner"));
+const SchoolStudentPlannerShell = lazy(() => import("./pages/school/student/planner/PlannerShell"));
+const SchoolStudentPlannerHome = lazy(() => import("./pages/school/student/planner/PlannerHome"));
+const SchoolStudentPlannerThread = lazy(() => import("./pages/school/student/planner/ThreadPage"));
+const SchoolStudentPlannerRoadmap = lazy(() => import("./pages/school/student/planner/RoadmapPage"));
 const SchoolStudentAttendance = lazy(() => import("./pages/school/student/Attendance"));
 const SchoolStudentCalendar = lazy(() => import("./pages/school/student/Calendar"));
 const SchoolStudentTimetable = lazy(() => import("./pages/school/student/Timetable"));
@@ -346,8 +349,6 @@ const SchoolStudentCareerQuizResult = lazy(() => import("./pages/school/student/
 const SchoolStudentCareerReport = lazy(() => import("./pages/school/student/career/CareerReport"));
 const SchoolStudentCareerExplorer = lazy(() => import("./pages/school/student/career/CareerExplorer"));
 const SchoolStudentCareerDetail = lazy(() => import("./pages/school/student/career/CareerDetail"));
-const SchoolStudentAiStudyPage = lazy(() => import("./pages/school/student/SchoolStudentAiStudyPage"));
-const SchoolStudentTopicQuizPage = lazy(() => import("./pages/school/student/SchoolStudentTopicQuizPage"));
 
 // ——————————————————————————————————————————————————————————————————————————— School parent pages ———————————————————————————————————————————————————————————————————————————
 const SchoolParentLayout = lazy(() => import("./components/school/parent/ParentLayout"));
@@ -697,11 +698,18 @@ const SchoolRoutes = () => (
       <Route path="competitive-prep" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'competitive_exams' }}><SchoolStudentCompetitivePrep /></SchoolGuard>} />
       <Route path="battle-arena" element={<SchoolStudentBattleArena />} />
       <Route path="gamification" element={<SchoolStudentGamification />} />
-      <Route path="planner" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_study_planner' }}><SchoolStudentStudyPlanner /></SchoolGuard>} />
-      <Route path="ai-study/:topicId" element={<SchoolStudentAiStudyPage />} />
+      {/* AI learning path: home map of weak chapters/topics -> their roadmap -> one chat per topic (replaces the old study planner). */}
+      <Route path="planner" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_study_planner' }}><SchoolStudentPlannerShell /></SchoolGuard>}>
+        <Route index element={<SchoolStudentPlannerHome />} />
+        <Route path="chapter/:chapterId" element={<SchoolStudentPlannerRoadmap kind="chapter" />} />
+        <Route path="topic/:topicId" element={<SchoolStudentPlannerRoadmap kind="topic" />} />
+        <Route path="t/:threadId" element={<SchoolStudentPlannerThread />} />
+      </Route>
+      {/* The old study planner's topic and quiz pages now live inside the learning path. */}
+      <Route path="ai-study/:topicId" element={<Navigate to="/school/student/planner" replace />} />
       {/* The AI Tutor is now a panel on every page; old links open it on the dashboard. */}
       <Route path="ai-tutor" element={<Navigate to="/school/student?aiTutor=open" replace />} />
-      <Route path="quiz" element={<SchoolStudentTopicQuizPage />} />
+      <Route path="quiz" element={<Navigate to="/school/student/planner" replace />} />
       <Route path="attendance" element={<SchoolStudentAttendance />} />
       <Route path="timetable" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'module', key: 'timetable' }}><SchoolStudentTimetable /></SchoolGuard>} />
       <Route path="calendar" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'module', key: 'academic_calendar' }}><SchoolStudentCalendar /></SchoolGuard>} />

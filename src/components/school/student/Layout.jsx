@@ -79,7 +79,7 @@ function StudentLayoutShell() {
     { label: 'Live Classes', path: '/school/student/live-classes', matchPaths: ['/school/student/live'], icon: MonitorPlay, color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/20', enabled: hasLiveClasses },
     { label: 'Recorded Classes', path: '/school/student/recorded-classes', icon: Video, color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20', enabled: true },
     { label: 'Study Materials', path: '/school/student/study-materials', matchPaths: ['/school/student/classes', '/school/student/syllabus'], icon: BookOpen, color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/20', enabled: true },
-    { label: 'AI Planner', path: '/school/student/planner', matchPaths: ['/school/student/ai-study', '/school/student/quiz'], icon: BrainCircuit, color: 'text-purple-500 bg-purple-50 dark:bg-purple-950/20', enabled: hasPlanner },
+    { label: 'AI Planner', path: '/school/student/planner', icon: BrainCircuit, color: 'text-purple-500 bg-purple-50 dark:bg-purple-950/20', enabled: hasPlanner },
     { label: 'Assignments', path: '/school/student/assignments', icon: FileText, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20', enabled: hasAssignments },
     { label: 'Assessments', path: '/school/student/assessments', icon: ClipboardList, color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/20', enabled: hasAssessments },
     { label: 'Attendance', path: '/school/student/attendance', icon: UserCheck, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20', enabled: true },

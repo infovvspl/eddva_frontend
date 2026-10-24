@@ -46,16 +46,17 @@ function getQuestionTypeLabel(type) {
   return labels[type] || 'Question';
 }
 
+// `number` is the question's continuous position across the WHOLE paper
+// (1..N); `displayNumber` is whatever the authored/stored paper text happened
+// to print next to it, which restarts at 1 in every section for papers
+// generated before that was fixed. `number` must win so numbering stays
+// continuous across sections here — see assessment-utils.ts for the same rule.
 function getQuestionDisplayNumber(question, fallbackIndex) {
-  return question?.displayNumber || question?.number || fallbackIndex + 1;
+  return question?.number || question?.displayNumber || fallbackIndex + 1;
 }
 
 function getPaletteQuestionNumber(group, itemIndex) {
-  const current = Number(group.questions[itemIndex]?.question?.displayNumber);
-  const previous = itemIndex > 0 ? Number(group.questions[itemIndex - 1]?.question?.displayNumber) : null;
-  const expected = group.startIndex + itemIndex + 1;
-  if (Number.isFinite(current) && current > 0 && (previous == null || current > previous)) return current;
-  return expected;
+  return group.startIndex + itemIndex + 1;
 }
 
 function getSectionLetter(question) {

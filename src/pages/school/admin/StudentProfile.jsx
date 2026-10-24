@@ -22,6 +22,9 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { BrainCircuit } from 'lucide-react';
+import { useSchoolFeature } from '@/hooks/use-school-feature';
+import StudentStudyReport from '@/pages/school/reports/study-planner/StudentStudyReport';
 
 const getInitials = (name) => {
   if (!name) return '??';
@@ -59,6 +62,7 @@ export default function StudentProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const hasPlanner = useSchoolFeature('ai', 'ai_study_planner');
   const cameFromAttendanceFlag = searchParams.get('flag') === 'attendance';
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1424,6 +1428,7 @@ export default function StudentProfile() {
             <TabButton active={activeTab === 'academic'} onClick={() => setActiveTab('academic')} icon={GraduationCap} label="Academic" />
             <TabButton active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={Calendar} label="Attendance" />
             <TabButton active={activeTab === 'performance'} onClick={() => setActiveTab('performance')} icon={BarChart2} label="Performance" />
+            {hasPlanner && <TabButton active={activeTab === 'study-planner'} onClick={() => setActiveTab('study-planner')} icon={BrainCircuit} label="Study Planner" />}
             <TabButton active={activeTab === 'fees'} onClick={() => setActiveTab('fees')} icon={DollarSign} label="Fees & Payments" />
             <TabButton active={activeTab === 'documents'} onClick={() => setActiveTab('documents')} icon={FileCheck} label="Documents & Verification" />
           </div>
@@ -1981,6 +1986,7 @@ export default function StudentProfile() {
                 </div>
               )}
 
+              {activeTab === 'study-planner' && hasPlanner && <StudentStudyReport studentId={id} embedded />}
               {activeTab === 'performance' && (() => {
                 const sessions = performanceSessions;
                 const totalSessions = sessions.length;

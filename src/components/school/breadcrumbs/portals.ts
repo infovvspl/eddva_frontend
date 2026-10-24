@@ -14,7 +14,6 @@ export const STUDENT_PORTAL: PortalConfig = {
     assessments: 'Assessments',
     view: 'Details',
     planner: 'AI Study Planner',
-    quiz: 'Quiz',
     analytics: 'Performance Analytics',
     attendance: 'Attendance',
     doubts: 'My Doubts',
@@ -45,11 +44,12 @@ export const STUDENT_PORTAL: PortalConfig = {
     'live-classes': 'Recording',
     'recorded-classes': 'Recording',
     assessments: 'Assessment',
-    'ai-study': 'AI Study',
+    t: 'Chat',
+    chapter: 'Chapter roadmap',
+    topic: 'Topic roadmap',
     explore: 'Career Details',
   },
-  skipped: ['topics', 'recording', 'ai-study'],
-  parentModule: { quiz: 'planner', 'ai-study': 'planner' },
+  skipped: ['topics', 'recording', 't', 'chapter', 'topic'],
   hidden: [/^live\/[^/]+\/watch$/, /^assessments\/[^/]+\/take$/],
   // Study Materials keeps its subject > chapter > topic position in the query string.
   queryTrail: (segments, search, base) => {

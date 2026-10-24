@@ -19,7 +19,7 @@ import { useAuth } from '@/context/SchoolAuthContext';
 import { useAcademicStore } from '@/lib/academic-store';
 import { toast } from 'sonner';
 import TeacherAvatar from '@/assets/images/Teacher_Avatar.png';
-import BgBanner from '@/assets/images/bgbanner3.png';
+import BgBanner from '@/assets/images/bgbanner3.webp';
 import ImgChalkboard from '@/assets/images/10.png';
 import ImgGlobe from '@/assets/images/11 (1).png';
 import ImgPencils1 from '@/assets/images/3 (1).png';
