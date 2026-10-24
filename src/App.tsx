@@ -220,9 +220,13 @@ const SchoolSyllabusPlanner = lazy(() => import("./pages/school/admin/SyllabusPl
 const SchoolSyllabusPlanDetails = lazy(() => import("./pages/school/admin/SyllabusPlanDetailsPage"));
 const SchoolSyllabusTracker = lazy(() => import("./pages/school/admin/SyllabusTracker"));
 const SchoolSyllabusTrackerDetails = lazy(() => import("./pages/school/admin/SyllabusTrackerDetailsPage"));
+const SchoolLessonPlanApprovals = lazy(() => import("./pages/school/admin/LessonPlanApprovals"));
+const SchoolLessonPlanReview = lazy(() => import("./pages/school/admin/LessonPlanReview"));
 const SchoolSyllabusAnalytics = lazy(() => import("./pages/school/admin/SyllabusAnalytics"));
 const SchoolTeacherTeachingPlan = lazy(() => import("./pages/school/teacher/TeacherTeachingPlan"));
 const SchoolLessonPlanDetails = lazy(() => import("./pages/school/teacher/LessonPlanDetails"));
+const SchoolChapterLessonPlan = lazy(() => import("./pages/school/teacher/ChapterLessonPlanPage"));
+const SchoolLessonPlanPrint = lazy(() => import("./pages/school/teacher/LessonPlanPrintPage"));
 const SchoolStudentSyllabusView = lazy(() => import("./pages/school/student/StudentSyllabusView"));
 const SchoolParentSyllabusView = lazy(() => import("./pages/school/parent/ParentSyllabusView"));
 const SchoolFinance = lazy(() => import("./pages/school/admin/Finance"));
@@ -579,6 +583,8 @@ const SchoolRoutes = () => (
       <Route path="document-generator" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'document_generator' }}><SchoolDocumentGenerator /></SchoolGuard>} />
       <Route path="syllabus-planner" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'admin_syllabus_planner' }}><SchoolGuard feature={{ type: 'adminPermission', key: 'syllabus_planner' }}><SchoolSyllabusPlanner /></SchoolGuard></SchoolGuard>} />
       <Route path="syllabus-planner/:planId" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'admin_syllabus_planner' }}><SchoolGuard feature={{ type: 'adminPermission', key: 'syllabus_planner' }}><SchoolSyllabusPlanDetails /></SchoolGuard></SchoolGuard>} />
+      <Route path="lesson-plan-approvals" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'admin_syllabus_planner' }}><SchoolGuard feature={{ type: 'adminPermission', key: 'syllabus_planner' }}><SchoolLessonPlanApprovals /></SchoolGuard></SchoolGuard>} />
+      <Route path="lesson-plan-approvals/:planId" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'admin_syllabus_planner' }}><SchoolGuard feature={{ type: 'adminPermission', key: 'syllabus_planner' }}><SchoolLessonPlanReview /></SchoolGuard></SchoolGuard>} />
       <Route path="syllabus-tracker" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'admin_syllabus_tracker' }}><SchoolGuard feature={{ type: 'adminPermission', key: 'syllabus_tracker' }}><SchoolSyllabusTracker /></SchoolGuard></SchoolGuard>} />
       <Route path="syllabus-tracker/:planId" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'admin_syllabus_tracker' }}><SchoolGuard feature={{ type: 'adminPermission', key: 'syllabus_tracker' }}><SchoolSyllabusTrackerDetails /></SchoolGuard></SchoolGuard>} />
       <Route path="syllabus-analytics" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'admin_syllabus_tracker' }}><SchoolGuard feature={{ type: 'adminPermission', key: 'syllabus_tracker' }}><SchoolSyllabusAnalytics /></SchoolGuard></SchoolGuard>} />
@@ -653,6 +659,7 @@ const SchoolRoutes = () => (
       <Route path="teaching-plan" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'teacher_teaching_plan' }}><SchoolTeacherTeachingPlan /></SchoolGuard>} />
       <Route path="syllabus-planner/:planId" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'teacher_teaching_plan' }}><SchoolSyllabusPlanDetails /></SchoolGuard>} />
       <Route path="lesson-plans/:lessonId" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'teacher_teaching_plan' }}><SchoolLessonPlanDetails /></SchoolGuard>} />
+      <Route path="chapter-lesson-plans/:planId" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'teacher_teaching_plan' }}><SchoolChapterLessonPlan /></SchoolGuard>} />
       <Route path="calendar" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'academic_calendar' }}><SchoolTeacherCalendar /></SchoolGuard>} />
       <Route path="attendance" element={<SchoolAttendanceSystem />} />
       <Route path="assignments" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'assignments' }}><SchoolAssignmentManagement /></SchoolGuard>} />
@@ -737,6 +744,9 @@ const SchoolRoutes = () => (
 
     {/* School Student — Gaming Arena (full-screen, no sidebar). Sibling routes,
         not nested under SchoolStudentLayout, so the dashboard shell never mounts. */}
+    {/* Print-friendly lesson plans, outside the dashboard layout so only the plan prints. */}
+    <Route path="/school/print/lesson-plans/review/:planId" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]}><SchoolLessonPlanPrint admin /></SchoolGuard>} />
+    <Route path="/school/print/lesson-plans/:planId" element={<SchoolGuard roles={["TEACHER"]}><SchoolLessonPlanPrint /></SchoolGuard>} />
     <Route path="/school/student/game-zone/quiz-rush" element={<SchoolGuard roles={["STUDENT"]}><GameArenaShell><SchoolStudentQuizRush /></GameArenaShell></SchoolGuard>} />
     <Route path="/school/student/game-zone/treasure-hunt" element={<SchoolGuard roles={["STUDENT"]}><GameArenaShell><SchoolStudentTreasureHunt /></GameArenaShell></SchoolGuard>} />
     <Route path="/school/student/game-zone/math-sprint" element={<SchoolGuard roles={["STUDENT"]}><GameArenaShell><SchoolStudentMathSprint /></GameArenaShell></SchoolGuard>} />
