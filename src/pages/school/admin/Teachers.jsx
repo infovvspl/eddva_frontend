@@ -648,8 +648,12 @@ export default function Teachers() {
                           </AvatarFallback>
                         </Avatar>
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-bold tracking-tight text-slate-900 dark:text-white">{teacher.name}</p>
-                          <p className="truncate text-[11px] font-bold text-slate-400 dark:text-slate-500">{teacher.teacherProfile?.designation || '—'}</p>
+                          <Link to={`/school/admin/teachers/${teacher.id}`} className="truncate text-sm font-bold tracking-tight text-slate-900 hover:text-blue-600 hover:underline dark:text-white dark:hover:text-blue-400 block">
+                            {teacher.name}
+                          </Link>
+                          {teacher.teacherProfile?.designation && (
+                            <p className="truncate text-[11px] font-bold text-slate-400 dark:text-slate-500">{teacher.teacherProfile.designation}</p>
+                          )}
                         </div>
                       </div>
                     </TableCell>
@@ -741,8 +745,12 @@ export default function Teachers() {
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold tracking-tight text-slate-900 dark:text-white">{teacher.name}</p>
-                    <p className="truncate text-[11px] font-bold text-slate-400 dark:text-slate-500">{teacher.teacherProfile?.designation || '—'}</p>
+                    <Link to={`/school/admin/teachers/${teacher.id}`} className="truncate text-sm font-bold tracking-tight text-slate-900 hover:text-blue-600 hover:underline dark:text-white dark:hover:text-blue-400 block">
+                      {teacher.name}
+                    </Link>
+                    {teacher.teacherProfile?.designation && (
+                      <p className="truncate text-[11px] font-bold text-slate-400 dark:text-slate-500">{teacher.teacherProfile.designation}</p>
+                    )}
                   </div>
                 </div>
 

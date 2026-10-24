@@ -88,6 +88,7 @@ const ADMIN_NAV_PATH_TO_MODULE = {
   '/school/admin/syllabus-planner': 'syllabus_planner',
   '/school/admin/syllabus-tracker': 'syllabus_tracker',
   '/school/admin/attendance': 'attendance',
+  '/school/admin/improvement': 'improvement_areas',
   '/school/admin/timetable': 'timetable',
   '/school/admin/calendar': 'academic_calendar',
   '/school/admin/notices': 'notices',

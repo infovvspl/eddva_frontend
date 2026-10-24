@@ -203,6 +203,7 @@ const SchoolTeacherRegistration = lazy(() => import("./pages/school/admin/Teache
 const SchoolAdminTeacherProfile = lazy(() => import("./pages/school/admin/TeacherProfile"));
 const SchoolTeacherStudentBracketList = lazy(() => import("./pages/school/admin/TeacherStudentBracketList"));
 const SchoolAttendanceHub = lazy(() => import("./pages/school/admin/AttendanceHub"));
+const SchoolAreaOfImprovement = lazy(() => import("./pages/school/admin/AreaOfImprovement"));
 const SchoolAcademics = lazy(() => import("./pages/school/admin/Academics"));
 const SchoolClassSections = lazy(() => import("./pages/school/admin/ClassSections"));
 const SchoolNotices = lazy(() => import("./pages/school/admin/Notices"));
@@ -548,6 +549,7 @@ const SchoolRoutes = () => (
       <Route path="teachers/:id/performance/:bracket" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'teachers' }}><SchoolTeacherStudentBracketList /></SchoolGuard>} />
       <Route path="teachers/:id" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'teachers' }}><SchoolAdminTeacherProfile /></SchoolGuard>} />
       <Route path="attendance" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'attendance' }}><SchoolAttendanceHub /></SchoolGuard>} />
+      <Route path="improvement" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'improvement_areas' }}><SchoolAreaOfImprovement /></SchoolGuard>} />
       <Route path="attendance-entry" element={<Navigate to="/school/admin/attendance" replace />} />
       <Route path="teacher-attendance" element={<Navigate to="/school/admin/attendance" replace />} />
       <Route path="academics" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'academics' }}><SchoolAcademics /></SchoolGuard>} />

@@ -17,6 +17,7 @@ export const ADMIN_PERMISSION_MODULES = [
   { key: 'syllabus_planner', label: 'Lesson Plan', icon: FileText },
   { key: 'syllabus_tracker', label: 'Lesson Plan Tracker', icon: BarChart3 },
   { key: 'attendance', label: 'Attendance', icon: BarChart3 },
+  { key: 'improvement_areas', label: 'Area of Improvement', icon: AlertCircle },
   { key: 'timetable', label: 'Timetable and Roster', icon: CalendarDays },
   { key: 'academic_calendar', label: 'Academic Calendar', icon: CalendarDays },
   { key: 'notices', label: 'Notices & Announcements', icon: AlertCircle },

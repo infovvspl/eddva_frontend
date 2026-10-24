@@ -88,6 +88,7 @@ export const ADMIN_PORTAL: PortalConfig = {
     subjects: 'Subjects',
     'syllabus-planner': 'Lesson Plan',
     'syllabus-tracker': 'Lesson Plan Tracker',
+    'improvement': 'Area of Improvement',
     'syllabus-analytics': 'Syllabus Analytics',
     'textbook-coverage': 'Textbook Coverage',
     attendance: 'Attendance',

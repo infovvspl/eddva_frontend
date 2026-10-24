@@ -813,7 +813,9 @@ export default function Students() {
                           </AvatarFallback>
                         </Avatar>
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-bold tracking-tight text-slate-900 dark:text-white">{student.name}</p>
+                          <Link to={`/school/admin/students/${student.id}`} className="truncate text-sm font-bold tracking-tight text-slate-900 hover:text-blue-600 hover:underline dark:text-white dark:hover:text-blue-400 block">
+                            {student.name}
+                          </Link>
                           <p className="truncate text-[11px] font-bold text-slate-400 dark:text-slate-500">{student.email || '—'}</p>
                         </div>
                       </div>
@@ -922,7 +924,9 @@ export default function Students() {
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold tracking-tight text-slate-900 dark:text-white">{student.name}</p>
+                    <Link to={`/school/admin/students/${student.id}`} className="truncate text-sm font-bold tracking-tight text-slate-900 hover:text-blue-600 hover:underline dark:text-white dark:hover:text-blue-400 block">
+                      {student.name}
+                    </Link>
                     <p className="truncate text-[11px] font-bold text-slate-400 dark:text-slate-500">{student.email || '—'}</p>
                   </div>
                 </div>
