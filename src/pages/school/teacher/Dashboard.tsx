@@ -59,48 +59,49 @@ const getTeacherFallbackUrl = (n: any) => {
 
 const MAX_CLASS_CARDS_SHOWN = 4;
 
-// Today's Schedule timeline — shared by the desktop panel (in the banner
-// row) and the mobile/tablet panel (stacked below it, since the two never
-// show at the same time).
-const scheduleItems = [
-  { time: '09:00 AM', timeColor: '#1E293B', subject: 'Mathematics', meta: 'Class 10 - Section A', dot: '#10B981',
-    badge: (
-      <Badge variant="outline" className="gap-1 text-[9px] sm:text-[10px] font-bold text-[#059669] bg-[#ECFDF5] px-2 py-1 border-[#D1FAE5]">
-        <div className="size-1.5 rounded-full bg-[#10B981] animate-pulse" /> Live
-      </Badge>
-    ) },
-  { time: '11:00 AM', timeColor: '#64748B', subject: 'Science', meta: 'Class 9 - Section A', dot: '#3B82F6',
-    badge: (
-      <Badge variant="outline" className="text-[9px] sm:text-[10px] font-bold text-[#2563EB] bg-[#EFF6FF] px-2 py-1 border-[#DBEAFE]">
-        Upcoming
-      </Badge>
-    ) },
-  { time: '02:00 PM', timeColor: '#64748B', subject: 'Assignment Review', meta: 'Class 10 - Section A', dot: '#9333EA',
-    badge: (
-      <Badge variant="outline" className="text-[9px] sm:text-[10px] font-bold text-[#9333EA] bg-[#FAF5FF] px-2 py-1 border-[#F3E8FF]">
-        Review
-      </Badge>
-    ) },
-];
-
-const ScheduleTimeline = () => (
-  <div className="relative pl-6 space-y-8">
-    <div className="absolute left-1 top-2 bottom-2 w-0.5 bg-slate-100" />
-    {scheduleItems.map((item) => (
-      <div className="relative" key={item.subject}>
-        <div className="absolute -left-[27px] top-1 size-3 rounded-full ring-4 ring-white" style={{ background: item.dot }} />
-        <div className="flex justify-between items-start">
-          <div>
-            <p className="text-[11px] font-bold mb-1" style={{ color: item.timeColor }}>{item.time}</p>
-            <p className="text-[14px] sm:text-[15px] font-bold text-[#112A46]">{item.subject}</p>
-            <p className="text-[10px] sm:text-[11px] font-medium text-[#64748B]">{item.meta}</p>
-          </div>
-          {item.badge}
-        </div>
+// Today's Schedule timeline — built from the teacher's real remaining classes
+// today (`upcomingClasses`, fetched from /dashboard/stats). The first item is
+// treated as "now" (closest upcoming/in-progress class), the rest "Upcoming".
+const ScheduleTimeline = ({ classes }: { classes: any[] }) => {
+  if (classes.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 text-center">
+        <Calendar size={28} className="text-slate-300" />
+        <p className="mt-2 text-sm font-bold text-slate-600">No more classes today</p>
+        <p className="mt-1 text-xs font-medium text-slate-400">Your remaining periods for today will appear here.</p>
       </div>
-    ))}
-  </div>
-);
+    );
+  }
+  return (
+    <div className="relative pl-6 space-y-8">
+      <div className="absolute left-1 top-2 bottom-2 w-0.5 bg-slate-100" />
+      {classes.map((item, i) => (
+        <div className="relative" key={item.id || i}>
+          <div
+            className="absolute -left-[27px] top-1 size-3 rounded-full ring-4 ring-white"
+            style={{ background: i === 0 ? '#10B981' : '#3B82F6' }}
+          />
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-[11px] font-bold mb-1" style={{ color: i === 0 ? '#1E293B' : '#64748B' }}>{item.time}</p>
+              <p className="text-[14px] sm:text-[15px] font-bold text-[#112A46]">{item.subject}</p>
+              <p className="text-[10px] sm:text-[11px] font-medium text-[#64748B]">{item.class}{item.room ? ` • ${item.room}` : ''}</p>
+            </div>
+            {i === 0 ? (
+              <Badge variant="outline" className="gap-1 text-[9px] sm:text-[10px] font-bold text-[#059669] bg-[#ECFDF5] px-2 py-1 border-[#D1FAE5]">
+                <div className="size-1.5 rounded-full bg-[#10B981] animate-pulse" /> Next
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-[9px] sm:text-[10px] font-bold text-[#2563EB] bg-[#EFF6FF] px-2 py-1 border-[#DBEAFE]">
+                Upcoming
+              </Badge>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 // Score bands for the class-performance donut (same cut-offs the Reports page uses).
 const PERFORMANCE_BANDS = [
@@ -515,6 +516,19 @@ const Dashboard: React.FC = () => {
   }, [ownWork, notifications]);
   const hiddenGroupCount = Math.max(0, classSectionGroups.length - MAX_CLASS_CARDS_SHOWN);
 
+  // "My Classes" card art/colors cycle through a fixed palette — purely decorative,
+  // doesn't depend on real data.
+  const CLASS_CARD_STYLES = [
+    { imgBg: 'bg-[#E8F4FD]', img: ImgChalkboard, badgeBg: 'bg-blue-100/50', badgeText: 'text-blue-700', badgeBorder: 'border-blue-200/50' },
+    { imgBg: 'bg-[#F3E8FF]', img: ImgGlobe, badgeBg: 'bg-purple-100/50', badgeText: 'text-purple-700', badgeBorder: 'border-purple-200/50' },
+    { imgBg: 'bg-[#FFF7ED]', img: ImgPencils2, badgeBg: 'bg-orange-100/50', badgeText: 'text-orange-700', badgeBorder: 'border-orange-200/50' },
+  ];
+  const sectionStudentCountMap = useMemo(() => {
+    const map = new Map<string, number>();
+    (stats?.teacherData?.sectionStudentCounts || []).forEach((r: any) => map.set(r.sectionId, r.count));
+    return map;
+  }, [stats]);
+
   // Attendance data from backend
   const attendancePresent = stats?.attendancePresent || 0;
   const attendanceAbsent = stats?.attendanceAbsent || 0;
@@ -566,7 +580,7 @@ const Dashboard: React.FC = () => {
           </CardHeader>
           <Separator className="bg-slate-100" />
           <CardContent className="p-5 sm:p-6">
-            <ScheduleTimeline />
+            <ScheduleTimeline classes={upcomingClasses} />
           </CardContent>
           <Separator className="bg-slate-100" />
           <CardFooter className="p-4 bg-white">
@@ -814,68 +828,57 @@ const Dashboard: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-4 flex-1">
-                {/* Class Card 1 */}
-                <Card className="bg-[#F8FAFC] rounded-[1.5rem] p-3 border-slate-100 shadow-none flex gap-4 hover:shadow-sm transition-shadow cursor-pointer items-stretch" onClick={() => navigate('/school/teacher/classes')}>
-                  {/* Left Image Placeholder */}
-                  <div className="w-[110px] bg-[#E8F4FD] rounded-xl flex items-center justify-center shrink-0 relative overflow-hidden">
-                    <img src={ImgChalkboard} alt="Classroom" className="absolute inset-0 size-full object-cover scale-110" />
+                {classSectionGroups.length === 0 ? (
+                  <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 px-4 py-10 text-center">
+                    <BookOpen size={28} className="text-slate-300" />
+                    <p className="mt-2 text-sm font-bold text-slate-600">No classes assigned yet</p>
                   </div>
-                  
-                  {/* Right Content */}
-                  <div className="flex flex-col flex-1 min-w-0 py-1 pr-2 justify-between">
-                    <div className="flex justify-between items-start gap-2">
-                      <h3 className="text-[17px] font-extrabold text-[#112A46] leading-tight truncate min-w-0">Class 10 - Section A</h3>
-                      <Badge variant="secondary" className="text-[10px] font-bold bg-[#DCFCE7] hover:bg-[#DCFCE7] text-[#059669] px-2.5 py-1 shrink-0 border-0">Class Teacher</Badge>
-                    </div>
-
-                    <div className="flex items-center flex-wrap gap-x-4 gap-y-1 my-2">
-                      <div className="flex items-center gap-1.5 text-[12px] font-bold text-[#475569]">
-                        <Users size={14} className="text-[#64748B]"/> 42 Students
-                      </div>
-                      <div className="flex items-center gap-1.5 text-[12px] font-bold text-[#475569]">
-                        <BookOpen size={14} className="text-[#64748B]"/> 6 Subjects
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline" className="text-[10px] font-bold px-3 py-1.5 bg-blue-100/50 text-blue-700 border-blue-200/50">Mathematics</Badge>
-                      <Badge variant="outline" className="text-[10px] font-bold px-3 py-1.5 bg-blue-100/50 text-blue-700 border-blue-200/50">Science</Badge>
-                      <Badge variant="outline" className="text-[10px] font-bold px-3 py-1.5 bg-blue-100/50 text-blue-700 border-blue-200/50">History</Badge>
-                      <Badge variant="secondary" className="text-[10px] font-bold px-2 py-1.5 bg-indigo-100/50 hover:bg-indigo-100/50 text-indigo-700 border-0">+2</Badge>
-                    </div>
-                  </div>
-                </Card>
-
-                {/* Class Card 2 */}
-                <Card className="bg-[#F8FAFC] rounded-[1.5rem] p-3 border-slate-100 shadow-none flex gap-4 hover:shadow-sm transition-shadow cursor-pointer items-stretch" onClick={() => navigate('/school/teacher/classes')}>
-                  {/* Left Image Placeholder */}
-                  <div className="w-[110px] bg-[#F3E8FF] rounded-xl flex items-center justify-center shrink-0 relative overflow-hidden">
-                    <img src={ImgGlobe} alt="Globe" className="absolute inset-0 size-full object-cover scale-110" />
-                  </div>
-                  
-                  {/* Right Content */}
-                  <div className="flex flex-col flex-1 min-w-0 py-1 pr-2 justify-between">
-                    <div className="flex justify-between items-start gap-2">
-                      <h3 className="text-[17px] font-extrabold text-[#112A46] leading-tight truncate min-w-0">Class 9 - Section A</h3>
-                    </div>
-
-                    <div className="flex items-center flex-wrap gap-x-4 gap-y-1 my-2">
-                      <div className="flex items-center gap-1.5 text-[12px] font-bold text-[#475569]">
-                        <Users size={14} className="text-[#64748B]"/> 39 Students
-                      </div>
-                      <div className="flex items-center gap-1.5 text-[12px] font-bold text-[#475569]">
-                        <BookOpen size={14} className="text-[#64748B]"/> 7 Subjects
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline" className="text-[10px] font-bold px-3 py-1.5 bg-purple-100/50 text-purple-700 border-purple-200/50">Mathematics</Badge>
-                      <Badge variant="outline" className="text-[10px] font-bold px-3 py-1.5 bg-purple-100/50 text-purple-700 border-purple-200/50">English</Badge>
-                      <Badge variant="outline" className="text-[10px] font-bold px-3 py-1.5 bg-purple-100/50 text-purple-700 border-purple-200/50">Science</Badge>
-                      <Badge variant="secondary" className="text-[10px] font-bold px-2 py-1.5 bg-indigo-100/50 hover:bg-indigo-100/50 text-indigo-700 border-0">+2</Badge>
-                    </div>
-                  </div>
-                </Card>
+                ) : (
+                  classSectionGroups.slice(0, 2).map((g, i) => {
+                    const style = CLASS_CARD_STYLES[i % CLASS_CARD_STYLES.length];
+                    const studentCount = sectionStudentCountMap.get(g.sectionId) ?? null;
+                    const subjectNames = g.subjects.map((s: any) => s.subjectName).filter(Boolean);
+                    const visibleSubjects = subjectNames.slice(0, 3);
+                    const extraCount = subjectNames.length - visibleSubjects.length;
+                    return (
+                      <Card
+                        key={`${g.classId}__${g.sectionId}`}
+                        className="bg-[#F8FAFC] rounded-[1.5rem] p-3 border-slate-100 shadow-none flex gap-4 hover:shadow-sm transition-shadow cursor-pointer items-stretch"
+                        onClick={() => navigate('/school/teacher/classes')}
+                      >
+                        <div className={`w-[110px] ${style.imgBg} rounded-xl flex items-center justify-center shrink-0 relative overflow-hidden`}>
+                          <img src={style.img} alt="" className="absolute inset-0 size-full object-cover scale-110" />
+                        </div>
+                        <div className="flex flex-col flex-1 min-w-0 py-1 pr-2 justify-between">
+                          <div className="flex justify-between items-start gap-2">
+                            <h3 className="text-[17px] font-extrabold text-[#112A46] leading-tight truncate min-w-0">{g.className} - {g.sectionName}</h3>
+                            {g.isClassTeacher && (
+                              <Badge variant="secondary" className="text-[10px] font-bold bg-[#DCFCE7] hover:bg-[#DCFCE7] text-[#059669] px-2.5 py-1 shrink-0 border-0">Class Teacher</Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center flex-wrap gap-x-4 gap-y-1 my-2">
+                            {studentCount != null && (
+                              <div className="flex items-center gap-1.5 text-[12px] font-bold text-[#475569]">
+                                <Users size={14} className="text-[#64748B]" /> {studentCount} Students
+                              </div>
+                            )}
+                            <div className="flex items-center gap-1.5 text-[12px] font-bold text-[#475569]">
+                              <BookOpen size={14} className="text-[#64748B]" /> {plural(subjectNames.length, 'Subject', 'Subjects')}
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {visibleSubjects.map((name) => (
+                              <Badge key={name} variant="outline" className={`text-[10px] font-bold px-3 py-1.5 ${style.badgeBg} ${style.badgeText} ${style.badgeBorder}`}>{name}</Badge>
+                            ))}
+                            {extraCount > 0 && (
+                              <Badge variant="secondary" className="text-[10px] font-bold px-2 py-1.5 bg-indigo-100/50 hover:bg-indigo-100/50 text-indigo-700 border-0">+{extraCount}</Badge>
+                            )}
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })
+                )}
               </div>
             </Card>
           </div>

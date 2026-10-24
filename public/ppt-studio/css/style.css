@@ -1611,14 +1611,19 @@ select option {
 #slide-preview-area:fullscreen {
   background: #0b0c10;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 2rem;
 }
 
+/* .slide-canvas-wrapper is a size-containment box (container-type: size) —
+   it needs an explicit, definite height here too, or the cqh units that
+   size .slide-canvas resolve to 0 and the slide renders blank. */
 #slide-preview-area:fullscreen .slide-canvas-wrapper {
-  flex: 0 1 auto;
+  flex: none;
   width: min(92vw, 92vh * 16 / 9);
+  height: min(92vh, 92vw * 9 / 16);
 }
 
 #slide-preview-area:fullscreen .slide-counter-row,
