@@ -21,7 +21,7 @@ for (const [path, mod] of Object.entries(enModules)) {
 }
 
 // Only English ships in the main bundle; other locales load on demand.
-const localeLoaders = import.meta.glob<{ default: Record<string, unknown> }>("./locales/!(en)/*.json");
+const localeLoaders = import.meta.glob<{ default: Record<string, unknown> }>(["./locales/*/*.json", "!./locales/en/*.json"]);
 
 function isSupported(code: string | null): code is LanguageCode {
   return SUPPORTED_LANGUAGES.some((l) => l.code === code);
