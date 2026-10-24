@@ -24,6 +24,14 @@ import BlogBodyEditor from './BlogBodyEditor';
 
 const STATUSES: BlogPostStatus[] = ['DRAFT', 'PUBLISHED'];
 
+// Mirror the backend DTO limits (blog.dto.ts) so oversize input is caught in the form.
+const TITLE_MAX = 400;
+const EXCERPT_MAX = 1000;
+
+type Locale = 'en' | 'hi';
+const LOCALE_LABEL: Record<Locale, string> = { en: 'English', hi: 'हिन्दी' };
+const otherLocale = (l: Locale): Locale => (l === 'en' ? 'hi' : 'en');
+
 const statusStyle: Record<BlogPostStatus, string> = {
   DRAFT: 'bg-slate-100 text-slate-600',
   PUBLISHED: 'bg-emerald-100 text-emerald-700',
@@ -45,6 +53,9 @@ const emptySection = (): FormSection => ({ heading: '', body: '', _key: nextSect
 interface FormState {
   id: string | null;
   title: string;
+  slug: string;
+  locale: Locale;
+  translationGroup: string | null;
   category: string;
   excerpt: string;
   author: string;
@@ -58,6 +69,9 @@ interface FormState {
 const emptyForm = (): FormState => ({
   id: null,
   title: '',
+  slug: '',
+  locale: 'en',
+  translationGroup: null,
   category: '',
   excerpt: '',
   author: 'EDDVA Team',
@@ -80,6 +94,7 @@ export default function BlogAdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<BlogPostStatus | ''>('');
   const [search, setSearch] = useState('');
+  const [localeFilter, setLocaleFilter] = useState<Locale | ''>('');
 
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm());
@@ -109,6 +124,7 @@ export default function BlogAdminDashboardPage() {
     try {
       const res = await getBlogPosts({
         status: statusFilter || undefined,
+        locale: localeFilter || undefined,
         search: search.trim() || undefined,
         page,
         limit: 20,
@@ -120,13 +136,13 @@ export default function BlogAdminDashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, search, page]);
+  }, [statusFilter, localeFilter, search, page]);
 
   useEffect(() => {
     if (!checkingSession && admin) load();
   }, [checkingSession, admin, load]);
 
-  useEffect(() => { setPage(1); }, [statusFilter, search]);
+  useEffect(() => { setPage(1); }, [statusFilter, localeFilter, search]);
 
   const openCreate = () => {
     setForm(emptyForm());
@@ -137,6 +153,9 @@ export default function BlogAdminDashboardPage() {
     setForm({
       id: post.id,
       title: post.title,
+      slug: post.slug,
+      locale: (post.locale as Locale) || 'en',
+      translationGroup: post.translationGroup ?? null,
       category: post.category || '',
       excerpt: post.excerpt || '',
       author: post.author || '',
@@ -149,6 +168,38 @@ export default function BlogAdminDashboardPage() {
       status: post.status,
     });
     setFormOpen(true);
+  };
+
+  // Start a draft in the other language, linked to this post. The copy keeps
+  // the original text as a starting point for the translator to overwrite.
+  const openTranslation = async (post: BlogPost) => {
+    const locale = otherLocale((post.locale as Locale) || 'en');
+    const group = post.translationGroup || post.id;
+    try {
+      if (!post.translationGroup) await updateBlogPost(post.id, { translationGroup: group });
+    } catch {
+      toast.error('Could not link the translation');
+      return;
+    }
+    setForm({
+      id: null,
+      title: post.title,
+      slug: `${post.slug}-${locale}`,
+      locale,
+      translationGroup: group,
+      category: post.category || '',
+      excerpt: post.excerpt || '',
+      author: post.author || '',
+      coverImage: post.coverImage || '',
+      readTime: post.readTime ? String(post.readTime) : '',
+      sections: post.sections && post.sections.length > 0
+        ? post.sections.map((sec) => ({ ...sec, _key: nextSectionKey() }))
+        : [emptySection()],
+      documentSettings: post.documentSettings || emptyForm().documentSettings,
+      status: 'DRAFT',
+    });
+    setFormOpen(true);
+    load();
   };
 
   const closeForm = () => {
@@ -182,6 +233,10 @@ export default function BlogAdminDashboardPage() {
       toast.error('Title is required');
       return;
     }
+    if (form.excerpt.length > EXCERPT_MAX) {
+      toast.error(`Excerpt is ${form.excerpt.length} characters; the limit is ${EXCERPT_MAX}. Please shorten it.`);
+      return;
+    }
     const sections = form.sections
       .map((s) => ({ heading: s.heading.trim(), body: s.body.trim(), contentJson: s.contentJson, references: s.references }))
       .filter((s) => s.heading || s.body);
@@ -205,6 +260,9 @@ export default function BlogAdminDashboardPage() {
 
     const payload = {
       title: form.title.trim(),
+      slug: form.slug.trim() || undefined,
+      locale: form.locale,
+      translationGroup: form.translationGroup ?? undefined,
       category: form.category.trim() || undefined,
       excerpt: form.excerpt.trim() || undefined,
       author: form.author.trim() || undefined,
@@ -385,6 +443,10 @@ export default function BlogAdminDashboardPage() {
             <option value="">All statuses</option>
             {STATUSES.map((s) => <option key={s} value={s}>{s === 'PUBLISHED' ? 'Published' : 'Draft'}</option>)}
           </select>
+          <select value={localeFilter} onChange={(e) => setLocaleFilter(e.target.value as any)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+            <option value="">All languages</option>
+            {(Object.keys(LOCALE_LABEL) as Locale[]).map((l) => <option key={l} value={l}>{LOCALE_LABEL[l]}</option>)}
+          </select>
         </div>
 
         {/* Create / edit panel */}
@@ -401,11 +463,36 @@ export default function BlogAdminDashboardPage() {
 
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="sm:col-span-2 text-xs font-bold text-slate-600 dark:text-slate-300">
-                Title
+                <span className="flex items-center justify-between">
+                  Title
+                  <span className={`font-medium ${form.title.length >= TITLE_MAX ? 'text-red-500' : 'text-slate-400'}`}>{form.title.length}/{TITLE_MAX}</span>
+                </span>
                 <input
                   value={form.title}
+                  maxLength={TITLE_MAX}
                   onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                   placeholder="How AI Is Personalising Learning for Every Student"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-normal outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                />
+              </label>
+
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                Language
+                <select
+                  value={form.locale}
+                  onChange={(e) => setForm((f) => ({ ...f, locale: e.target.value as Locale }))}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-normal outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                >
+                  {(Object.keys(LOCALE_LABEL) as Locale[]).map((l) => <option key={l} value={l}>{LOCALE_LABEL[l]}</option>)}
+                </select>
+              </label>
+
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                URL slug (English letters, optional)
+                <input
+                  value={form.slug}
+                  onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
+                  placeholder="how-ai-personalises-learning"
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-normal outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 />
               </label>
@@ -434,9 +521,13 @@ export default function BlogAdminDashboardPage() {
               </label>
 
               <label className="sm:col-span-2 text-xs font-bold text-slate-600 dark:text-slate-300">
-                Excerpt
+                <span className="flex items-center justify-between">
+                  Excerpt
+                  <span className={`font-medium ${form.excerpt.length >= EXCERPT_MAX ? 'text-red-500' : 'text-slate-400'}`}>{form.excerpt.length}/{EXCERPT_MAX}</span>
+                </span>
                 <textarea
                   value={form.excerpt}
+                  maxLength={EXCERPT_MAX}
                   onChange={(e) => setForm((f) => ({ ...f, excerpt: e.target.value }))}
                   rows={2}
                   placeholder="One or two sentences shown on the blog card and listing."
@@ -565,8 +656,8 @@ export default function BlogAdminDashboardPage() {
           <div className="space-y-3">
             {items.map((post) => (
               <div key={post.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="flex min-w-0 gap-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 flex-1 gap-3">
                     {post.coverImage ? (
                       <img src={post.coverImage} alt="" className="h-12 w-12 flex-shrink-0 rounded-lg object-cover" />
                     ) : (
@@ -574,23 +665,26 @@ export default function BlogAdminDashboardPage() {
                         <ImageIcon className="h-5 w-5" />
                       </span>
                     )}
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="truncate text-sm font-black text-slate-900 dark:text-white">{post.title}</h3>
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${statusStyle[post.status]}`}>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="min-w-0 truncate text-sm font-black text-slate-900 dark:text-white">{post.title}</h3>
+                        <span className="flex-shrink-0 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-black text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-300">
+                          {LOCALE_LABEL[(post.locale as Locale) || 'en']}
+                        </span>
+                        <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black ${statusStyle[post.status]}`}>
                           {post.status === 'PUBLISHED' ? 'Published' : 'Draft'}
                         </span>
                       </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-                        {post.category && <span className="rounded-md bg-slate-100 px-1.5 py-0.5 font-bold uppercase text-slate-500 dark:bg-slate-800">{post.category}</span>}
-                        {post.author && <span>{post.author}</span>}
-                        <span>/blog/{post.slug}</span>
-                        <span>{new Date(post.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                      <div className="mt-1 flex items-center gap-x-3 overflow-hidden whitespace-nowrap text-xs text-slate-500">
+                        {post.category && <span className="flex-shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 font-bold uppercase text-slate-500 dark:bg-slate-800">{post.category}</span>}
+                        {post.author && <span className="flex-shrink-0">{post.author}</span>}
+                        <span className="min-w-0 truncate">/blog/{post.slug}</span>
+                        <span className="flex-shrink-0">{new Date(post.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
-                      {post.excerpt && <p className="mt-1.5 max-w-2xl text-xs text-slate-600 dark:text-slate-300">{post.excerpt}</p>}
+                      {post.excerpt && <p className="mt-1.5 line-clamp-2 max-w-2xl text-xs text-slate-600 dark:text-slate-300">{post.excerpt}</p>}
                     </div>
                   </div>
-                  <div className="flex flex-shrink-0 items-center gap-1.5">
+                  <div className="flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap">
                     <button
                       onClick={() => togglePublish(post)}
                       title={post.status === 'PUBLISHED' ? 'Unpublish' : 'Publish'}
@@ -598,6 +692,14 @@ export default function BlogAdminDashboardPage() {
                     >
                       {post.status === 'PUBLISHED' ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                       {post.status === 'PUBLISHED' ? 'Unpublish' : 'Publish'}
+                    </button>
+                    <button
+                      onClick={() => openTranslation(post)}
+                      title={`Create ${LOCALE_LABEL[otherLocale((post.locale as Locale) || 'en')]} version`}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      {LOCALE_LABEL[otherLocale((post.locale as Locale) || 'en')]}
                     </button>
                     <button
                       onClick={() => openEdit(post)}
