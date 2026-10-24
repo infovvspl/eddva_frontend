@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   GraduationCap, Clock, CheckCircle, Edit2, FileText,
   Loader2, Plus, Trash2, X, PlusCircle, Calendar, ClipboardList
@@ -16,6 +16,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { BrainCircuit } from 'lucide-react';
+import { useSchoolFeature } from '@/hooks/use-school-feature';
+import StudentStudyReport from '@/pages/school/reports/study-planner/StudentStudyReport';
 import DataTable from '@/components/school/DataTable';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import './StudentReportClasses.css';
@@ -52,6 +55,8 @@ interface SubjectRow {
 export default function StudentReportClasses() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const hasPlanner = useSchoolFeature('ai', 'ai_study_planner');
+  const [searchParams] = useSearchParams();
   const [student, setStudent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isAddPrevOpen, setIsAddPrevOpen] = useState(false);
@@ -1049,12 +1054,13 @@ export default function StudentReportClasses() {
         </div>
       </Card>
 
-      <Tabs defaultValue="report-cards">
+      <Tabs defaultValue={hasPlanner && searchParams.get('tab') === 'study-planner' ? 'study-planner' : 'report-cards'}>
         <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border border-slate-100 bg-white p-1.5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           {[
             { id: 'report-cards', label: 'Report Cards', icon: <FileText size={16} /> },
             { id: 'assessment-marks', label: 'Assessment Marks', icon: <ClipboardList size={16} /> },
             { id: 'assignments', label: 'Assignments', icon: <Calendar size={16} /> },
+            ...(hasPlanner ? [{ id: 'study-planner', label: 'Study Planner', icon: <BrainCircuit size={16} /> }] : []),
           ].map((t) => (
             <TabsTrigger
               key={t.id}
@@ -1069,6 +1075,12 @@ export default function StudentReportClasses() {
         <TabsContent value="report-cards" className="mt-6">{reportCardsContent}</TabsContent>
         <TabsContent value="assessment-marks" className="mt-6">{assessmentMarksContent}</TabsContent>
         <TabsContent value="assignments" className="mt-6">{assignmentsContent}</TabsContent>
+        {hasPlanner && id && (
+          <TabsContent value="study-planner" className="mt-6">
+            {/* Only the subjects this teacher teaches the student (all of them for the class teacher). */}
+            <StudentStudyReport studentId={id} embedded />
+          </TabsContent>
+        )}
       </Tabs>
 
       <Dialog open={isAddPrevOpen} onOpenChange={setIsAddPrevOpen}>

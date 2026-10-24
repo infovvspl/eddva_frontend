@@ -16,6 +16,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import DataTable from '@/components/school/DataTable';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import api from '@/lib/api/school-client';
+import { BrainCircuit } from 'lucide-react';
+import { useSchoolFeature } from '@/hooks/use-school-feature';
+import StudyPlannerOverview from '@/pages/school/reports/study-planner/StudyPlannerOverview';
 import './Reports.css';
 
 const TONE_BADGE: Record<string, string> = {
@@ -134,6 +137,7 @@ const mapRosterStudentToReportStudent = (student: any) => {
 const Reports: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const hasPlanner = useSchoolFeature('ai', 'ai_study_planner');
   const [performanceChartData, setPerformanceChartData] = useState<any[]>([]);
   const [studentPerformance, setStudentPerformance] = useState<any[]>([]);
   const [assignedRoster, setAssignedRoster] = useState<any[]>([]);
@@ -163,7 +167,7 @@ const Reports: React.FC = () => {
   // The dashboard's "needs attention" rows can open this page on a specific tab.
   const [activeTab, setActiveTab] = useState<string>(() => {
     const t = (location.state as any)?.reportsTab;
-    return ['students', 'weakness', 'tests', 'class'].includes(t) ? t : 'students';
+    return ['students', 'weakness', 'tests', 'class', 'study-planner'].includes(t) ? t : 'students';
   });
 
   const [selectedClass, setSelectedClass] = useState<string>('all');
@@ -1065,6 +1069,7 @@ const Reports: React.FC = () => {
             { id: 'weakness', label: 'Weakness Analysis', icon: <AlertTriangle size={16} /> },
             { id: 'tests', label: 'Test Analysis', icon: <ClipboardCheck size={16} /> },
             { id: 'class', label: 'Class Analytics', icon: <LineChart size={16} /> },
+            ...(hasPlanner ? [{ id: 'study-planner', label: 'Study Planner', icon: <BrainCircuit size={16} /> }] : []),
           ].map((t) => (
             <TabsTrigger
               key={t.id}
@@ -1082,6 +1087,9 @@ const Reports: React.FC = () => {
         {activeTab === 'weakness' && weaknessContent}
         {activeTab === 'tests' && testContent}
         {activeTab === 'class' && classContent}
+        {activeTab === 'study-planner' && hasPlanner && (
+          <StudyPlannerOverview embedded studentHref={(userId) => `/school/teacher/reports/student/${userId}?tab=study-planner`} />
+        )}
       </div>
     </div>
   );

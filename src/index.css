@@ -1416,3 +1416,82 @@ code, kbd, pre, samp,
 .school-platform {
   overflow: clip;
 }
+
+/* ─── Study planner: a light that travels round the edge of every mind-map box
+   and curved-path circle. The colour comes from --planner-glow (set per node:
+   progress or weak / at risk); --planner-glow-delay staggers the boxes so they
+   do not move in step. A thin ring outside the border, masked so the box itself
+   is untouched. Stopped for people who prefer reduced motion. ─── */
+@property --planner-glow-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+.planner-glow {
+  position: relative;
+  isolation: isolate;
+}
+.planner-glow::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  padding: 2px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--planner-glow-angle),
+    transparent 0deg 240deg,
+    var(--planner-glow, hsl(var(--primary))) 315deg,
+    transparent 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: planner-glow-spin 3.6s linear infinite;
+  animation-delay: var(--planner-glow-delay, 0s);
+}
+@keyframes planner-glow-spin {
+  to {
+    --planner-glow-angle: 360deg;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .planner-glow::before {
+    animation: none;
+    opacity: 0.5;
+  }
+}
+
+/* ─── Study planner: a light gliding along the curved path's connecting lines.
+   A short bright dash with a long gap, its offset animated so it travels the
+   line's direction; each line starts a little later (--planner-flow-delay) so
+   the light runs down the path. Hidden for people who prefer reduced motion. ─── */
+.planner-path-light {
+  fill: none;
+  stroke-linecap: round;
+  stroke-dasharray: 16 420;
+  animation: planner-path-flow 5.6s linear infinite;
+  animation-delay: var(--planner-flow-delay, 0s);
+  pointer-events: none;
+}
+.planner-path-light--reached {
+  stroke: #ffffff;
+  filter: drop-shadow(0 0 3px hsl(var(--primary))) drop-shadow(0 0 6px hsl(var(--primary)));
+}
+.planner-path-light--ahead {
+  stroke: hsl(var(--primary) / 0.55);
+  filter: drop-shadow(0 0 3px hsl(var(--primary) / 0.5));
+}
+@keyframes planner-path-flow {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -436;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .planner-path-light {
+    display: none;
+  }
+}

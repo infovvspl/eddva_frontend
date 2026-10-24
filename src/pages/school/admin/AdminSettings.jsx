@@ -273,6 +273,7 @@ export default function Settings() {
                 ['announcementAlerts', 'Announcement Alerts', 'Get alerts for new announcements/notices.'],
                 ['assignmentAlerts', 'Assignment Alerts', 'Deadlines and grading reminders.'],
                 ['attendanceAlerts', 'Attendance Alerts', 'Attendance status notifications.'],
+                ['studyPlannerAlerts', 'AI Study Planner Alerts', 'Weekly notice about students who stop studying, show low engagement, or study without improving.'],
                 ['soundEnabled', 'Notification Sounds', 'Play a sound alert when a message arrives.'],
                 ['doNotDisturb', 'Do Not Disturb Mode', 'Mute all system and desktop notifications.'],
               ].map(([key, label, description]) => (

@@ -8,10 +8,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
 import api from '@/lib/api/school-client';
 import GlassCard from '@/components/school/GlassCard';
+import { useSchoolFeature } from "@/hooks/use-school-feature";
+import StudentStudyReport from "@/pages/school/reports/study-planner/StudentStudyReport";
 
 export default function ParentChild() {
   const { activeChildId } = useParentContext();
-  const [activeTab, setActiveTab] = useState<"attendance" | "marks" | "homework" | "tests">("attendance");
+  const [activeTab, setActiveTab] = useState<"attendance" | "marks" | "homework" | "tests" | "planner">("attendance");
+  const hasPlanner = useSchoolFeature("ai", "ai_study_planner");
 
   return (
     <div className="space-y-6 md:space-y-8">
@@ -26,6 +29,7 @@ export default function ParentChild() {
           { id: "marks", label: "Report Card" },
           { id: "homework", label: "Homework" },
           { id: "tests", label: "Tests" },
+          ...(hasPlanner ? [{ id: "planner", label: "Study Planner" }] : []),
         ].map((tab) => (
           <button
             key={tab.id}
@@ -46,6 +50,7 @@ export default function ParentChild() {
         {activeTab === "marks" && <MarksTab studentId={activeChildId} />}
         {activeTab === "homework" && <HomeworkTab studentId={activeChildId} />}
         {activeTab === "tests" && <TestsTab studentId={activeChildId} />}
+        {activeTab === "planner" && hasPlanner && activeChildId && <StudentStudyReport key={activeChildId} studentId={activeChildId} embedded />}
       </div>
     </div>
   );
