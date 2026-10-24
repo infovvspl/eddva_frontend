@@ -306,7 +306,11 @@ export default function Timetable() {
       }
 
       const [res, secRes, subjRes, periodRes] = await Promise.allSettled([
-        api.get('/timetable'),
+        // This fetches the whole institute's weekly timetable in one call and filters
+        // client-side per class/section — the backend's default limit (100) silently cut
+        // the response off partway through Monday once every section had a full schedule,
+        // so later classes/sections and every day after Monday just showed "Free".
+        api.get('/timetable', { params: { limit: 5000 } }),
         api.get('/academic/classes'),
         api.get('/academic/subjects?limit=1000'),
         api.get('/academic/periods')
@@ -469,7 +473,7 @@ export default function Timetable() {
 
       if (res.data?.success) {
         setIsBulkEditMode(false);
-        const updatedRes = await api.get('/timetable');
+        const updatedRes = await api.get('/timetable', { params: { limit: 5000 } });
         setTimetables(getResponseList(updatedRes));
       } else if (res.data?.errors) {
         setBulkErrors(res.data.errors);
@@ -518,7 +522,7 @@ export default function Timetable() {
       if (res.data?.success) {
         setIsCopyClassModalOpen(false);
         setTargetClassSectionId('');
-        const updatedRes = await api.get('/timetable');
+        const updatedRes = await api.get('/timetable', { params: { limit: 5000 } });
         setTimetables(getResponseList(updatedRes));
       } else if (res.data?.errors) {
         setBulkErrors(res.data.errors);
