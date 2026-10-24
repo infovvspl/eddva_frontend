@@ -5,10 +5,11 @@ import {
   ChevronRight, CheckSquare, PlusCircle, Video, TrendingUp, AlertCircle, ArrowUpRight,
   BookOpen, Edit3, UploadCloud, Calendar, ArrowRight, Presentation
 } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
+import { formatDuration, formatDurationShort } from '@/lib/format';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -284,6 +285,45 @@ const Dashboard: React.FC = () => {
       });
     return () => { cancelled = true; };
   }, [perfScope?.classId, perfScope?.sectionId, !!stats]);
+
+  // ── Screen Time: the teacher's own active-usage trend ───────────────────────
+  const [screenTimeRange, setScreenTimeRange] = useState<'week' | 'month'>('week');
+  const [screenTime, setScreenTime] = useState<{
+    loading: boolean;
+    todaySeconds: number;
+    totalSeconds: number;
+    days: Array<{ date: string; activeSeconds: number }>;
+  }>({ loading: true, todaySeconds: 0, totalSeconds: 0, days: [] });
+
+  useEffect(() => {
+    let cancelled = false;
+    setScreenTime((prev) => ({ ...prev, loading: true }));
+    api.get('/screen-time/me', { params: { range: screenTimeRange } })
+      .then((res) => {
+        if (cancelled) return;
+        const body: any = res.data?.data ?? res.data ?? {};
+        setScreenTime({
+          loading: false,
+          todaySeconds: Number(body.todaySeconds) || 0,
+          totalSeconds: Number(body.totalSeconds) || 0,
+          days: Array.isArray(body.days) ? body.days : [],
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setScreenTime({ loading: false, todaySeconds: 0, totalSeconds: 0, days: [] });
+      });
+    return () => { cancelled = true; };
+  }, [screenTimeRange]);
+
+  const screenTimeChartData = useMemo(
+    () => screenTime.days.map((d) => ({
+      name: new Date(`${d.date}T00:00:00`).toLocaleDateString(undefined,
+        screenTimeRange === 'week' ? { weekday: 'short' } : { day: 'numeric', month: 'short' }),
+      seconds: d.activeSeconds,
+    })),
+    [screenTime.days, screenTimeRange],
+  );
+  const screenTimeHasActivity = screenTimeChartData.some((d) => d.seconds > 0);
 
   // ── "Needs your attention": real flags built from the teacher's own data ────────────────
   type AttentionFlags = {
@@ -879,6 +919,81 @@ const Dashboard: React.FC = () => {
               </div>
             </Card>
           </div>
+
+          {/* Screen Time */}
+          <Card className="bg-white rounded-[1.5rem] p-7 border-slate-100 shadow-sm flex flex-col mt-4">
+            <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
+              <div>
+                <CardTitle className="text-lg font-extrabold text-slate-900 tracking-tight leading-normal flex items-center gap-2">
+                  <Clock size={18} className="text-indigo-500" /> Screen Time
+                </CardTitle>
+                <p className="text-xs font-semibold text-slate-500 mt-1">Your active time in EDDVA</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Today</p>
+                  <p className="text-lg font-black text-slate-900 leading-none mt-0.5">{formatDurationShort(screenTime.todaySeconds)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    {screenTimeRange === 'week' ? 'This Week' : 'This Month'}
+                  </p>
+                  <p className="text-lg font-black text-indigo-600 leading-none mt-0.5">{formatDurationShort(screenTime.totalSeconds)}</p>
+                </div>
+                <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-1">
+                  {(['week', 'month'] as const).map((r) => (
+                    <Button
+                      key={r}
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setScreenTimeRange(r)}
+                      className={`h-7 rounded-md px-2.5 text-xs font-bold ${
+                        screenTimeRange === r ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:bg-transparent'
+                      }`}
+                    >
+                      {r === 'week' ? 'Week' : 'Month'}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {screenTime.loading ? (
+              <Skeleton className="h-52 w-full rounded-2xl" />
+            ) : !screenTimeHasActivity ? (
+              <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 px-4 py-10 text-center">
+                <Clock size={28} className="text-slate-300" />
+                <p className="mt-2 text-sm font-bold text-slate-600">No screen time recorded yet</p>
+                <p className="mt-1 text-xs font-medium text-slate-400">Your active usage will appear here as you use EDDVA.</p>
+              </div>
+            ) : (
+              <div className="h-52 w-full">
+                <ChartContainer config={{ seconds: { label: 'Active time', color: 'hsl(var(--primary))' } }} className="h-full w-full aspect-auto">
+                  <AreaChart data={screenTimeChartData} margin={{ top: 5, right: 8, left: -16, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="screenTimeFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--color-seconds)" stopOpacity={0.35} />
+                        <stop offset="95%" stopColor="var(--color-seconds)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} />
+                    <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} interval={screenTimeRange === 'month' ? 4 : 0} />
+                    <YAxis tickLine={false} axisLine={false} tickFormatter={(v) => formatDurationShort(Number(v))} width={48} />
+                    <ChartTooltip content={<ChartTooltipContent formatter={(v) => formatDuration(Number(v)) ?? '0s'} />} />
+                    <Area
+                      dataKey="seconds"
+                      type="monotone"
+                      stroke="var(--color-seconds)"
+                      strokeWidth={2.5}
+                      fill="url(#screenTimeFill)"
+                      dot={{ r: 3, fill: 'var(--color-seconds)' }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </AreaChart>
+                </ChartContainer>
+              </div>
+            )}
+          </Card>
 
           {/* Recent Activity */}
           <div className="mt-4">

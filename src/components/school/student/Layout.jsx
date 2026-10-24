@@ -12,6 +12,7 @@ import { PageTransition } from '@/components/school/admin/PageTransition';
 import MaintenanceNotice from '@/components/shared/MaintenanceNotice';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSchoolFeature } from '@/hooks/use-school-feature';
+import { useScreenTimeTracking } from '@/hooks/use-screen-time-tracking';
 import { useAuth } from '@/context/SchoolAuthContext';
 import {
   LayoutDashboard,
@@ -41,6 +42,7 @@ function StudentLayoutShell() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { logout } = useAuth();
+  useScreenTimeTracking();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [moreDrawerOpen, setMoreDrawerOpen] = useState(false);

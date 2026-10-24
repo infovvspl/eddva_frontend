@@ -49,6 +49,16 @@ export const parentClient = {
       .then(extractData)
       .catch((e) => logParentApiError('getAttendance', `/school/parent/students/${studentId}/attendance`, e)),
 
+  getScreenTime: (studentId: string, range: 'week' | 'month' = 'week') =>
+    schoolApi.get(`/parent/students/${studentId}/screen-time?range=${range}`)
+      .then(extractData)
+      .catch((e) => logParentApiError('getScreenTime', `/school/parent/students/${studentId}/screen-time`, e)),
+
+  getScreenTimeMonth: (studentId: string, month: string) =>
+    schoolApi.get(`/parent/students/${studentId}/screen-time/month?month=${month}`)
+      .then(extractData)
+      .catch((e) => logParentApiError('getScreenTimeMonth', `/school/parent/students/${studentId}/screen-time/month`, e)),
+
   submitLeaveRequest: (studentId: string, data: unknown) =>
     schoolApi.post(`/parent/students/${studentId}/leave-request`, data)
       .then(extractData)

@@ -6,6 +6,9 @@ import {
   Edit2, Clock, CheckCircle, AlertCircle, TrendingUp, HeartPulse, Briefcase, FileText, Printer, Share2, Loader2, Send, Key, X, Plus, Trash2,
   UserX, FileCheck, CheckCircle2, XCircle, UserCheck
 } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { formatDuration, formatDurationShort } from '@/lib/format';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/admin/Modal';
 import StudentForm from '@/components/school/admin/forms/StudentForm';
@@ -88,6 +91,14 @@ export default function StudentProfile() {
 
   const [minAttendanceOverride, setMinAttendanceOverride] = useState('');
   const [savingAttendanceThreshold, setSavingAttendanceThreshold] = useState(false);
+
+  const [screenTimeView, setScreenTimeView] = useState('week');
+  const [screenTimeMonth, setScreenTimeMonth] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [screenTimeWeek, setScreenTimeWeek] = useState({ loading: true, todaySeconds: 0, totalSeconds: 0, days: [] });
+  const [screenTimeMonthData, setScreenTimeMonthData] = useState({ loading: true, totalSeconds: 0, days: [] });
 
   const getClassNumberFromName = (className = '') => {
     const cls = String(className || '').toLowerCase();
@@ -481,6 +492,47 @@ export default function StudentProfile() {
       fetchPerformanceSessions();
     }
   }, [activeTab, student?.id, student?.studentProfile?.id]);
+
+  useEffect(() => {
+    if (activeTab !== 'screentime' || screenTimeView !== 'week' || !student?.id) return;
+    let cancelled = false;
+    setScreenTimeWeek((prev) => ({ ...prev, loading: true }));
+    api.get(`/screen-time/user/${student.id}`, { params: { range: 'week' } })
+      .then((res) => {
+        if (cancelled) return;
+        const body = res.data?.data ?? res.data ?? {};
+        setScreenTimeWeek({
+          loading: false,
+          todaySeconds: Number(body.todaySeconds) || 0,
+          totalSeconds: Number(body.totalSeconds) || 0,
+          days: Array.isArray(body.days) ? body.days : [],
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setScreenTimeWeek({ loading: false, todaySeconds: 0, totalSeconds: 0, days: [] });
+      });
+    return () => { cancelled = true; };
+  }, [activeTab, screenTimeView, student?.id]);
+
+  useEffect(() => {
+    if (activeTab !== 'screentime' || screenTimeView !== 'calendar' || !student?.id) return;
+    let cancelled = false;
+    setScreenTimeMonthData((prev) => ({ ...prev, loading: true }));
+    api.get(`/screen-time/user/${student.id}/month`, { params: { month: screenTimeMonth } })
+      .then((res) => {
+        if (cancelled) return;
+        const body = res.data?.data ?? res.data ?? {};
+        setScreenTimeMonthData({
+          loading: false,
+          totalSeconds: Number(body.totalSeconds) || 0,
+          days: Array.isArray(body.days) ? body.days : [],
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setScreenTimeMonthData({ loading: false, totalSeconds: 0, days: [] });
+      });
+    return () => { cancelled = true; };
+  }, [activeTab, screenTimeView, screenTimeMonth, student?.id]);
 
   useEffect(() => {
     const sectionId = student?.studentProfile?.sectionId || student?.studentProfile?.section?.id;
@@ -1431,6 +1483,7 @@ export default function StudentProfile() {
             <TabButton active={activeTab === 'family'} onClick={() => setActiveTab('family')} icon={Users} label="Family Details" />
             <TabButton active={activeTab === 'academic'} onClick={() => setActiveTab('academic')} icon={GraduationCap} label="Academic" />
             <TabButton active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={Calendar} label="Attendance" />
+            <TabButton active={activeTab === 'screentime'} onClick={() => setActiveTab('screentime')} icon={Clock} label="Screen Time" />
             {/* Performance tab hidden for now */}
             {/* <TabButton active={activeTab === 'performance'} onClick={() => setActiveTab('performance')} icon={BarChart2} label="Performance" /> */}
             <TabButton active={activeTab === 'fees'} onClick={() => setActiveTab('fees')} icon={DollarSign} label="Fees & Payments" />
@@ -1987,6 +2040,187 @@ export default function StudentProfile() {
                       </>
                     );
                   })()}
+                </div>
+              )}
+
+              {activeTab === 'screentime' && (
+                <div className="space-y-6">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest">Screen Time</h3>
+                    <div className="flex items-center gap-2 rounded-xl bg-slate-100 dark:bg-slate-900/50 p-1">
+                      {[
+                        { id: 'week', label: 'This Week' },
+                        { id: 'calendar', label: 'By Month' },
+                      ].map((v) => (
+                        <button
+                          key={v.id}
+                          type="button"
+                          onClick={() => setScreenTimeView(v.id)}
+                          className={`rounded-lg px-3.5 py-1.5 text-xs font-bold transition-colors ${
+                            screenTimeView === v.id
+                              ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                              : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                          }`}
+                        >
+                          {v.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {screenTimeView === 'week' ? (
+                    screenTimeWeek.loading ? (
+                      <div className="flex items-center justify-center py-16">
+                        <Loader2 size={32} className="animate-spin text-blue-500" />
+                      </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-center">
+                            <div className="text-2xl sm:text-4xl font-bold tracking-tight mb-1 text-blue-600 dark:text-blue-400">{formatDurationShort(screenTimeWeek.todaySeconds)}</div>
+                            <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Today</div>
+                          </div>
+                          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-indigo-500/10 border border-indigo-500/20 text-center text-indigo-600 dark:text-indigo-400">
+                            <div className="text-2xl sm:text-4xl font-bold tracking-tight mb-1">{formatDurationShort(screenTimeWeek.totalSeconds)}</div>
+                            <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">This Week</div>
+                          </div>
+                        </div>
+
+                        {screenTimeWeek.days.every((d) => !d.activeSeconds) ? (
+                          <div className="rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 p-10 text-center text-slate-400 font-bold">
+                            No screen time recorded this week yet.
+                          </div>
+                        ) : (
+                          <div className="h-56 w-full rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
+                            <ChartContainer config={{ seconds: { label: 'Active time', color: 'hsl(var(--primary))' } }} className="h-full w-full aspect-auto">
+                              <AreaChart
+                                data={screenTimeWeek.days.map((d) => ({
+                                  name: new Date(`${d.date}T00:00:00`).toLocaleDateString(undefined, { weekday: 'short' }),
+                                  seconds: d.activeSeconds,
+                                }))}
+                                margin={{ top: 5, right: 8, left: -16, bottom: 0 }}
+                              >
+                                <defs>
+                                  <linearGradient id="adminScreenTimeFill" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="var(--color-seconds)" stopOpacity={0.35} />
+                                    <stop offset="95%" stopColor="var(--color-seconds)" stopOpacity={0} />
+                                  </linearGradient>
+                                </defs>
+                                <CartesianGrid vertical={false} />
+                                <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} />
+                                <YAxis tickLine={false} axisLine={false} tickFormatter={(v) => formatDurationShort(Number(v))} width={48} />
+                                <ChartTooltip content={<ChartTooltipContent formatter={(v) => formatDuration(Number(v)) ?? '0s'} />} />
+                                <Area
+                                  dataKey="seconds"
+                                  type="monotone"
+                                  stroke="var(--color-seconds)"
+                                  strokeWidth={2.5}
+                                  fill="url(#adminScreenTimeFill)"
+                                  dot={{ r: 3, fill: 'var(--color-seconds)' }}
+                                  activeDot={{ r: 6 }}
+                                />
+                              </AreaChart>
+                            </ChartContainer>
+                          </div>
+                        )}
+                      </>
+                    )
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-end">
+                        <input
+                          type="month"
+                          value={screenTimeMonth}
+                          onChange={(e) => setScreenTimeMonth(e.target.value)}
+                          className="rounded-xl border-2 border-slate-100 dark:border-slate-700 px-3 py-2 text-sm font-bold text-slate-700 dark:text-white bg-white dark:bg-slate-900 outline-none focus:border-blue-500"
+                        />
+                      </div>
+
+                      {screenTimeMonthData.loading ? (
+                        <div className="flex items-center justify-center py-16">
+                          <Loader2 size={32} className="animate-spin text-blue-500" />
+                        </div>
+                      ) : screenTimeMonthData.days.length === 0 ? (
+                        <div className="rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 p-10 text-center text-slate-400 font-bold">
+                          No screen time recorded for this month.
+                        </div>
+                      ) : (() => {
+                        const byDate = new Map(screenTimeMonthData.days.map((d) => [d.date, d.activeSeconds]));
+                        const maxSeconds = Math.max(1, ...screenTimeMonthData.days.map((d) => d.activeSeconds));
+                        const activeDays = screenTimeMonthData.days.filter((d) => d.activeSeconds > 0);
+                        const dailyAverage = activeDays.length > 0
+                          ? Math.round(screenTimeMonthData.totalSeconds / activeDays.length)
+                          : 0;
+                        const mostActive = screenTimeMonthData.days.reduce(
+                          (best, d) => (d.activeSeconds > (best?.activeSeconds ?? -1) ? d : best),
+                          null
+                        );
+
+                        const [yearStr, monthStr] = screenTimeMonth.split('-');
+                        const year = parseInt(yearStr, 10);
+                        const monthIndex = parseInt(monthStr, 10) - 1;
+                        const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+                        const firstDayIndex = new Date(year, monthIndex, 1).getDay();
+
+                        const calendarCells = [];
+                        for (let i = 0; i < firstDayIndex; i++) calendarCells.push({ dayNum: null, dateStr: '', activeSeconds: 0 });
+                        for (let d = 1; d <= daysInMonth; d++) {
+                          const dateStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                          calendarCells.push({ dayNum: d, dateStr, activeSeconds: byDate.get(dateStr) ?? 0 });
+                        }
+
+                        return (
+                          <>
+                            <div className="grid grid-cols-3 gap-3 sm:gap-4">
+                              <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-indigo-500/10 border border-indigo-500/20 text-center text-indigo-600 dark:text-indigo-400">
+                                <div className="text-xl sm:text-3xl font-bold tracking-tight mb-1">{formatDurationShort(screenTimeMonthData.totalSeconds)}</div>
+                                <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">Total</div>
+                              </div>
+                              <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-blue-500/10 border border-blue-500/20 text-center text-blue-600 dark:text-blue-400">
+                                <div className="text-xl sm:text-3xl font-bold tracking-tight mb-1">{formatDurationShort(dailyAverage)}</div>
+                                <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">Daily Avg</div>
+                              </div>
+                              <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-emerald-500/10 border border-emerald-500/20 text-center text-emerald-600 dark:text-emerald-400">
+                                <div className="text-xl sm:text-3xl font-bold tracking-tight mb-1">
+                                  {mostActive && mostActive.activeSeconds > 0
+                                    ? new Date(`${mostActive.date}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+                                    : '—'}
+                                </div>
+                                <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">Most Active</div>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-7 gap-2">
+                              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+                                <div key={d} className="text-center text-[10px] font-black uppercase text-slate-400 py-2">{d}</div>
+                              ))}
+                              {calendarCells.map((cell, i) => {
+                                if (cell.dayNum === null) return <div key={i} className="aspect-square" />;
+                                const intensity = cell.activeSeconds / maxSeconds;
+                                const bg =
+                                  cell.activeSeconds === 0 ? 'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-slate-300 dark:text-slate-600' :
+                                  intensity > 0.66 ? 'border-blue-200 bg-blue-100 text-blue-800' :
+                                  intensity > 0.33 ? 'border-blue-100 bg-blue-50 text-blue-700' :
+                                  'border-blue-50 bg-blue-50/50 text-blue-600';
+                                return (
+                                  <div
+                                    key={cell.dateStr}
+                                    title={cell.activeSeconds > 0 ? (formatDuration(cell.activeSeconds) ?? '') : 'No activity'}
+                                    className={`flex aspect-square flex-col items-center justify-center rounded-xl border-2 text-sm font-bold ${bg}`}
+                                  >
+                                    {cell.dayNum}
+                                    {cell.activeSeconds > 0 && (
+                                      <span className="mt-0.5 text-[9px] font-bold">{formatDurationShort(cell.activeSeconds)}</span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </>
+                  )}
                 </div>
               )}
 

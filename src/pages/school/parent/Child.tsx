@@ -2,16 +2,31 @@ import React, { useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar, FileText, CheckCircle2, CheckCircle, XCircle, Clock, BookOpen, Search, X, Trophy, Target, Award, MessageSquare, Loader2 } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
 import { parentClient } from "@/lib/api/parent-client";
 import { useParentContext } from "@/components/school/parent/ParentAuthGuard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import api from '@/lib/api/school-client';
 import GlassCard from '@/components/school/GlassCard';
+import { formatDuration, formatDurationShort } from "@/lib/format";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+
+type ChildTab = "attendance" | "marks" | "homework" | "tests" | "screentime";
+const VALID_TABS: ChildTab[] = ["attendance", "marks", "homework", "tests", "screentime"];
 
 export default function ParentChild() {
   const { activeChildId } = useParentContext();
-  const [activeTab, setActiveTab] = useState<"attendance" | "marks" | "homework" | "tests">("attendance");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab") as ChildTab | null;
+  const [activeTab, setActiveTab] = useState<ChildTab>(
+    tabParam && VALID_TABS.includes(tabParam) ? tabParam : "attendance"
+  );
+
+  const selectTab = (tab: ChildTab) => {
+    setActiveTab(tab);
+    setSearchParams(tab === "attendance" ? {} : { tab }, { replace: true });
+  };
 
   return (
     <div className="space-y-6 md:space-y-8">
@@ -26,10 +41,11 @@ export default function ParentChild() {
           { id: "marks", label: "Report Card" },
           { id: "homework", label: "Homework" },
           { id: "tests", label: "Tests" },
+          { id: "screentime", label: "Screen Time" },
         ].map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
+            onClick={() => selectTab(tab.id as ChildTab)}
             className={`flex-1 rounded-xl px-4 py-2.5 text-sm font-bold transition-all whitespace-nowrap ${
               activeTab === tab.id
                 ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
@@ -46,6 +62,7 @@ export default function ParentChild() {
         {activeTab === "marks" && <MarksTab studentId={activeChildId} />}
         {activeTab === "homework" && <HomeworkTab studentId={activeChildId} />}
         {activeTab === "tests" && <TestsTab studentId={activeChildId} />}
+        {activeTab === "screentime" && <ScreenTimeTab studentId={activeChildId} />}
       </div>
     </div>
   );
@@ -147,6 +164,214 @@ function AttendanceTab({ studentId }: { studentId: string | null }) {
         <div className="flex flex-col items-center justify-center text-center opacity-50 py-12">
           <Calendar className="size-12 text-slate-400 mb-3" />
           <p className="text-sm font-bold text-slate-600">No attendance data for this month</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ScreenTimeTab({ studentId }: { studentId: string | null }) {
+  const [view, setView] = useState<"week" | "calendar">("week");
+  const [month, setMonth] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
+
+  const { data: weekData, isLoading: weekLoading } = useQuery<any>({
+    queryKey: ['parent-screentime-week', studentId],
+    queryFn: () => studentId ? parentClient.getScreenTime(studentId, 'week') : null,
+    enabled: !!studentId && view === "week",
+    retry: 1,
+  });
+
+  const { data: monthData, isLoading: monthLoading } = useQuery<any>({
+    queryKey: ['parent-screentime-month', studentId, month],
+    queryFn: () => studentId ? parentClient.getScreenTimeMonth(studentId, month) : null,
+    enabled: !!studentId && view === "calendar",
+    retry: 1,
+  });
+
+  const weekDays: Array<{ date: string; activeSeconds: number }> = weekData?.days ?? [];
+  const weekChartData = useMemo(
+    () => weekDays.map((d) => ({
+      name: new Date(d.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short' }),
+      seconds: d.activeSeconds,
+    })),
+    [weekDays],
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h3 className="text-lg font-black text-slate-900">Screen Time</h3>
+        <div className="flex items-center gap-2 rounded-xl bg-slate-100 p-1">
+          {([
+            { id: "week", label: "This Week" },
+            { id: "calendar", label: "By Month" },
+          ] as const).map((v) => (
+            <button
+              key={v.id}
+              onClick={() => setView(v.id)}
+              className={`rounded-lg px-3.5 py-1.5 text-xs font-bold transition-colors ${
+                view === v.id ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              {v.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {view === "week" ? (
+        weekLoading ? (
+          <Skeleton className="h-64 w-full rounded-2xl" />
+        ) : (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4 rounded-2xl bg-slate-50 p-4 border border-slate-100">
+              <div className="text-center">
+                <p className="text-xs font-black uppercase text-slate-400">Today</p>
+                <p className="text-2xl font-black text-blue-600">{formatDurationShort(weekData?.todaySeconds)}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs font-black uppercase text-slate-400">This Week</p>
+                <p className="text-2xl font-black text-indigo-600">{formatDurationShort(weekData?.totalSeconds)}</p>
+              </div>
+            </div>
+
+            {weekDays.length === 0 ? (
+              <div className="flex flex-col items-center justify-center text-center opacity-50 py-12">
+                <Clock className="size-12 text-slate-400 mb-3" />
+                <p className="text-sm font-bold text-slate-600">No screen time recorded this week yet</p>
+              </div>
+            ) : (
+              <div className="h-56 w-full rounded-2xl border border-slate-100 bg-white p-4">
+                <ChartContainer config={{ seconds: { label: 'Active time', color: 'hsl(var(--primary))' } }} className="h-full w-full aspect-auto">
+                  <AreaChart data={weekChartData} margin={{ top: 5, right: 8, left: -16, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="parentScreenTimeFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--color-seconds)" stopOpacity={0.35} />
+                        <stop offset="95%" stopColor="var(--color-seconds)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} />
+                    <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} />
+                    <YAxis tickLine={false} axisLine={false} tickFormatter={(v) => formatDurationShort(Number(v))} width={48} />
+                    <ChartTooltip content={<ChartTooltipContent formatter={(v) => formatDuration(Number(v)) ?? '0s'} />} />
+                    <Area
+                      dataKey="seconds"
+                      type="monotone"
+                      stroke="var(--color-seconds)"
+                      strokeWidth={2.5}
+                      fill="url(#parentScreenTimeFill)"
+                      dot={{ r: 3, fill: 'var(--color-seconds)' }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </AreaChart>
+                </ChartContainer>
+              </div>
+            )}
+          </div>
+        )
+      ) : (
+        <div className="space-y-6">
+          <div className="flex items-center justify-end">
+            <input
+              type="month"
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              className="rounded-xl border-2 border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-bold text-slate-700 outline-none focus:border-blue-500"
+            />
+          </div>
+
+          {monthLoading ? (
+            <Skeleton className="h-64 w-full rounded-2xl" />
+          ) : (() => {
+            const monthDays: Array<{ date: string; activeSeconds: number }> = monthData?.days ?? [];
+            if (monthDays.length === 0) {
+              return (
+                <div className="flex flex-col items-center justify-center text-center opacity-50 py-12">
+                  <Calendar className="size-12 text-slate-400 mb-3" />
+                  <p className="text-sm font-bold text-slate-600">No screen time recorded for this month</p>
+                </div>
+              );
+            }
+
+            const byDate = new Map(monthDays.map((d) => [d.date, d.activeSeconds]));
+            const maxSeconds = Math.max(1, ...monthDays.map((d) => d.activeSeconds));
+            const activeDays = monthDays.filter((d) => d.activeSeconds > 0);
+            const dailyAverage = activeDays.length > 0
+              ? Math.round((monthData?.totalSeconds ?? 0) / activeDays.length)
+              : 0;
+            const mostActive = monthDays.reduce(
+              (best, d) => (d.activeSeconds > (best?.activeSeconds ?? -1) ? d : best),
+              null as { date: string; activeSeconds: number } | null
+            );
+
+            const [yearStr, monthStr] = month.split('-');
+            const year = parseInt(yearStr, 10);
+            const monthIndex = parseInt(monthStr, 10) - 1;
+            const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+            const firstDayIndex = new Date(year, monthIndex, 1).getDay();
+
+            const calendarCells: Array<{ dayNum: number | null; dateStr: string; activeSeconds: number }> = [];
+            for (let i = 0; i < firstDayIndex; i++) calendarCells.push({ dayNum: null, dateStr: '', activeSeconds: 0 });
+            for (let d = 1; d <= daysInMonth; d++) {
+              const dateStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+              calendarCells.push({ dayNum: d, dateStr, activeSeconds: byDate.get(dateStr) ?? 0 });
+            }
+
+            return (
+              <div className="space-y-6">
+                <div className="grid grid-cols-3 gap-4 rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                  <div className="text-center">
+                    <p className="text-xs font-black uppercase text-slate-400">Total</p>
+                    <p className="text-xl font-black text-indigo-600">{formatDurationShort(monthData?.totalSeconds)}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs font-black uppercase text-slate-400">Daily Avg</p>
+                    <p className="text-xl font-black text-blue-600">{formatDurationShort(dailyAverage)}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs font-black uppercase text-slate-400">Most Active</p>
+                    <p className="text-xl font-black text-emerald-600">
+                      {mostActive && mostActive.activeSeconds > 0
+                        ? new Date(mostActive.date + 'T00:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+                        : '—'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-7 gap-2">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                    <div key={d} className="text-center text-[10px] font-black uppercase text-slate-400 py-2">{d}</div>
+                  ))}
+                  {calendarCells.map((cell, i) => {
+                    if (cell.dayNum === null) {
+                      return <div key={i} className="aspect-square" />;
+                    }
+                    const intensity = cell.activeSeconds / maxSeconds;
+                    const bg =
+                      cell.activeSeconds === 0 ? 'border-slate-100 bg-slate-50 text-slate-300' :
+                      intensity > 0.66 ? 'border-blue-200 bg-blue-100 text-blue-800' :
+                      intensity > 0.33 ? 'border-blue-100 bg-blue-50 text-blue-700' :
+                      'border-blue-50 bg-blue-50/50 text-blue-600';
+                    return (
+                      <div
+                        key={cell.dateStr}
+                        title={cell.activeSeconds > 0 ? formatDuration(cell.activeSeconds) ?? '' : 'No activity'}
+                        className={`flex aspect-square flex-col items-center justify-center rounded-xl border-2 text-sm font-bold ${bg}`}
+                      >
+                        {cell.dayNum}
+                        {cell.activeSeconds > 0 && (
+                          <span className="mt-0.5 text-[9px] font-bold">{formatDurationShort(cell.activeSeconds)}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>

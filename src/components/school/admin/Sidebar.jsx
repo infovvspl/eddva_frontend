@@ -13,6 +13,7 @@ import {
   BookOpen,
   Building2,
   CalendarDays,
+  Clock,
   ClipboardCheck,
   ClipboardList,
   FileText,
@@ -27,6 +28,7 @@ import {
   CalendarClock,
   Settings as SettingsIcon,
   Shield,
+  Siren,
   Sparkles,
   Ticket,
   ToggleRight,
@@ -96,6 +98,8 @@ const ADMIN_NAV_PATH_TO_MODULE = {
   '/school/admin/document-generator': 'document_generator',
   '/school/admin/audit-logs': 'audit_logs',
   '/school/admin/complaints': 'complaints',
+  '/school/admin/screen-time': 'screen_time',
+  '/school/admin/emergency-sos': 'emergency_sos',
 };
 
 function filterByAdminPermissions(groups, isPrimaryAdmin, adminPermissions) {
@@ -168,6 +172,8 @@ function buildInstituteGroups(mods, aiFeats) {
         { path: '/school/admin/document-generator', label: 'Document Generator', icon: FileText },
         { path: '/school/admin/audit-logs', label: 'Audit Logs', icon: FileText },
         { path: '/school/admin/complaints', label: 'Support Tickets', icon: Shield },
+        { path: '/school/admin/screen-time', label: 'Screen Time', icon: Clock },
+        { path: '/school/admin/emergency-sos', label: 'Emergency SOS', icon: Siren, danger: true },
       ],
     },
   ].filter(group => group.items && group.items.length > 0);
@@ -216,6 +222,7 @@ function buildTeacherGroups(mods, aiFeats) {
       items: [
         { path: '/school/teacher/announcements', label: 'Announcements', icon: Megaphone },
         chatEnabled && { path: '/school/teacher/chat', label: 'Chat', icon: MessageSquare },
+        { path: '/school/teacher/emergency-sos', label: 'Emergency SOS', icon: Siren, danger: true },
       ].filter(Boolean),
     },
     {

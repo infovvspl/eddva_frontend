@@ -223,6 +223,8 @@ const SchoolParentSyllabusView = lazy(() => import("./pages/school/parent/Parent
 const SchoolFinance = lazy(() => import("./pages/school/admin/Finance"));
 const SchoolCommunications = lazy(() => import("./pages/school/admin/Communications"));
 const SchoolAuditLogs = lazy(() => import("./pages/school/admin/AuditLogs"));
+const SchoolScreenTimeReport = lazy(() => import("./pages/school/admin/ScreenTimeReport"));
+const SchoolEmergencySos = lazy(() => import("./pages/school/shared/EmergencySos"));
 const SchoolSecurity = lazy(() => import("./pages/school/admin/SecurityCenter"));
 const SchoolSubjects = lazy(() => import("./pages/school/admin/Subjects"));
 const SchoolCompetitiveSubjects = lazy(() => import("./pages/school/admin/CompetitiveSubjects"));
@@ -558,6 +560,8 @@ const SchoolRoutes = () => (
       <Route path="reports" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'reports' }}><SchoolReports /></SchoolGuard>} />
       <Route path="communications" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'chat' }}><SchoolGuard feature={{ type: 'adminPermission', key: 'communications' }}><SchoolCommunications /></SchoolGuard></SchoolGuard>} />
       <Route path="audit-logs" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'audit_logs' }}><SchoolAuditLogs /></SchoolGuard>} />
+      <Route path="screen-time" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'screen_time' }}><SchoolScreenTimeReport /></SchoolGuard>} />
+      <Route path="emergency-sos" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'emergency_sos' }}><SchoolEmergencySos /></SchoolGuard>} />
       <Route path="institute-profile" element={<SchoolInstituteProfile />} />
       <Route path="security" element={<SchoolSecurity />} />
       <Route path="subjects" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'adminPermission', key: 'subjects' }}><SchoolSubjects /></SchoolGuard>} />
@@ -623,6 +627,7 @@ const SchoolRoutes = () => (
       <Route index element={<SchoolTeacherDashboard />} />
       <Route path="students" element={<SchoolTeacherStudents />} />
       <Route path="students/:id" element={<SchoolTeacherStudentProfile />} />
+      <Route path="emergency-sos" element={<SchoolEmergencySos />} />
       <Route path="profile" element={<SchoolTeacherProfile />} />
       <Route path="settings" element={<SchoolTeacherSettings />} />
       <Route path="notifications" element={<SchoolTeacherNotifications />} />

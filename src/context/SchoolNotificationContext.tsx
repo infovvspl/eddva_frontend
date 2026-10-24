@@ -14,12 +14,24 @@ export interface NotificationPreferences {
   assignmentAlerts: boolean;
 }
 
+export interface ActiveEmergencyAlert {
+  id: string;
+  studentName: string;
+  className?: string;
+  sectionName?: string;
+  message: string;
+  senderName: string;
+  senderRole: string;
+  createdAt: string;
+}
+
 interface NotificationContextType {
   unreadCount: number;
   notifications: any[];
   permission: NotificationPermission;
   showPermissionBanner: boolean;
   settings: NotificationPreferences;
+  activeEmergencyAlerts: ActiveEmergencyAlert[];
   requestPermission: () => Promise<void>;
   dismissBanner: () => void;
   toggleSetting: (key: keyof NotificationPreferences) => Promise<void>;
@@ -69,6 +81,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [activeEmergencyAlerts, setActiveEmergencyAlerts] = useState<ActiveEmergencyAlert[]>([]);
   const [permission, setPermission] = useState<NotificationPermission>(
     supportsNotifications ? Notification.permission : "denied"
   );
@@ -129,6 +142,17 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   };
 
+  const fetchActiveEmergencyAlerts = async () => {
+    if (!isAuthenticated || user?.role !== 'PARENT') return;
+    try {
+      const res = await api.get('/parent/emergency-alerts/active');
+      const list = res.data?.data ?? res.data ?? [];
+      if (Array.isArray(list)) setActiveEmergencyAlerts(list);
+    } catch (e) {
+      console.error('Failed to fetch active emergency alerts:', e);
+    }
+  };
+
   const fetchPreferences = async () => {
     if (!isAuthenticated || user?.role === 'SUPER_ADMIN') return;
     try {
@@ -157,6 +181,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       fetchUnreadCount();
       fetchNotifications();
       fetchPreferences();
+      fetchActiveEmergencyAlerts();
 
       // Show banner if permission is default and not dismissed this session
       if (supportsNotifications && Notification.permission === "default" && !sessionStorage.getItem("eddva-notif-banner-dismissed")) {
@@ -254,6 +279,17 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           }
         }
       });
+
+      // Stateful pair, separate from the one-shot notification above: starts
+      // and stops the always-visible Emergency SOS banner (EmergencyAlertBanner),
+      // independent of DND/type preferences — a parent should never be able to
+      // mute an active emergency.
+      socket.on('emergency_sos_active', (alert: ActiveEmergencyAlert) => {
+        setActiveEmergencyAlerts((prev) => (prev.some((a) => a.id === alert.id) ? prev : [...prev, alert]));
+      });
+      socket.on('emergency_sos_resolved', ({ alertId }: { alertId: string }) => {
+        setActiveEmergencyAlerts((prev) => prev.filter((a) => a.id !== alertId));
+      });
     }, 0);
 
     return () => {
@@ -319,6 +355,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         permission,
         showPermissionBanner,
         settings,
+        activeEmergencyAlerts,
         requestPermission,
         dismissBanner,
         toggleSetting,
