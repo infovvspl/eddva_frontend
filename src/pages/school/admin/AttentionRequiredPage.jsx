@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, ChevronLeft, ChevronRight, CheckCircle2, Loader2 } from 'lucide-react';
+import { AlertCircle, ChevronRight, CheckCircle2, Loader2 } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { getResponseData } from '@/lib/school/apiData';
 import { cn } from '@/lib/utils';
+import { BackButton } from '@/components/shared/BackButton';
 
 export default function AttentionRequiredPage() {
   const navigate = useNavigate();
@@ -26,12 +27,7 @@ export default function AttentionRequiredPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 w-full space-y-6">
       <div className="flex items-center gap-3">
-        <button
-          onClick={() => navigate('/school/admin')}
-          className="flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-        >
-          <ChevronLeft className="w-4 h-4" /> Dashboard
-        </button>
+        <BackButton to="/school/admin" label="Dashboard" />
       </div>
 
       <div className="flex items-center gap-2">

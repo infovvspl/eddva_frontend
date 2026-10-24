@@ -1,3 +1,5 @@
+import { UserMenu } from "@/components/ui/user-menu"
+import { UserAvatar } from "@/components/ui/user-avatar"
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Bell,
@@ -28,7 +30,9 @@ import {
   X,
   Clock,
   BarChart3,
-  ClipboardList
+  ClipboardList,
+  MessageSquareWarning,
+  AlertCircle
 } from 'lucide-react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
@@ -85,7 +89,7 @@ const getAdminFallbackUrl = (n, isTeacher) => {
   }
 };
 
-export default function Navbar({ onMenuClick }) {
+export default function Navbar({ onMenuClick, leadingActions }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, institute, logout } = useAuth();
@@ -430,12 +434,49 @@ export default function Navbar({ onMenuClick }) {
   const searchRef = useRef(null);
   const profileRef = useRef(null);
   const notifRef = useRef(null);
+  const grievRef = useRef(null);
+
+  // Grievance header bell — admin-only, mirrors the notifications bell above but
+  // reads straight from the grievance API (open/in-progress/reopened tickets),
+  // since grievances aren't routed through the generic notifications table.
+  const canSeeGrievances = isSuperAdmin || isInstitute;
+  const grievancesBasePath = isSuperAdmin ? '/school/super-admin/grievances' : '/school/admin/grievances';
+  const [grievOpen, setGrievOpen] = useState(false);
+  const [grievLoading, setGrievLoading] = useState(false);
+  const [grievances, setGrievances] = useState([]);
+  const [grievCount, setGrievCount] = useState(0);
+
+  const fetchGrievancePreview = async () => {
+    setGrievLoading(true);
+    try {
+      const res = await api.get('/grievances', { params: { statusIn: 'OPEN,IN_PROGRESS,REOPENED', limit: 6, sortBy: 'createdAt', sortOrder: 'DESC' } });
+      setGrievances(res.data?.data || []);
+      setGrievCount(res.data?.total ?? (res.data?.data || []).length);
+    } catch (err) {
+      console.error('Failed to fetch grievances:', err);
+    } finally {
+      setGrievLoading(false);
+    }
+  };
 
   useEffect(() => {
+    if (!canSeeGrievances) return;
+    fetchGrievancePreview();
+    const interval = setInterval(fetchGrievancePreview, 60000);
+    return () => clearInterval(interval);
+  }, [canSeeGrievances]);
+
+  useEffect(() => {
+    if (grievOpen) fetchGrievancePreview();
+  }, [grievOpen]);
+
+  useEffect(() => {
+    // Dark mode is only offered to the super admin; everyone else is pinned to light.
+    if (isSuperAdmin) return;
     const root = document.documentElement;
     root.classList.remove('dark');
     localStorage.setItem('eddva-theme', 'light');
-  }, []);
+  }, [isSuperAdmin]);
 
   useEffect(() => {
     if (notifOpen) {
@@ -478,6 +519,9 @@ export default function Navbar({ onMenuClick }) {
       }
       if (notifRef.current && !notifRef.current.contains(e.target)) {
         setNotifOpen(false);
+      }
+      if (grievRef.current && !grievRef.current.contains(e.target)) {
+        setGrievOpen(false);
       }
     }
     document.addEventListener('click', onDocClick);
@@ -1094,6 +1138,94 @@ export default function Navbar({ onMenuClick }) {
             </Button>
           )}
 
+          {leadingActions}
+
+          {/* Grievance Tracker Icon & Popover — admin-only */}
+          {canSeeGrievances && (
+            <div className="relative flex items-center" ref={grievRef}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setGrievOpen(!grievOpen)}
+                className="relative rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100/75 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-200 [&_svg]:h-[18px] [&_svg]:w-[18px]"
+                aria-label="Grievances"
+              >
+                <MessageSquareWarning className="h-[18px] w-[18px]" />
+                {grievCount > 0 && (
+                  <span className="absolute right-2 top-2 h-4 min-w-[16px] flex items-center justify-center rounded-full bg-amber-500 px-1 text-[9px] font-bold tracking-tight text-white border border-white dark:border-slate-950">
+                    {grievCount}
+                  </span>
+                )}
+              </Button>
+
+              {grievOpen && (
+                <div className="absolute right-[-12px] sm:right-0 top-full mt-3.5 z-50 w-[calc(100vw-2rem)] sm:w-96 max-w-[360px] sm:max-w-none overflow-hidden rounded-[2rem] border border-slate-105 dark:border-slate-800 bg-white dark:bg-slate-905 py-2 shadow-2xl">
+                  <div className="flex items-center justify-between px-5 py-3 border-b border-slate-105 dark:border-slate-800">
+                    <div>
+                      <h3 className="text-base font-semibold text-slate-900 dark:text-white">Grievances</h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-0.5">
+                        {grievCount} open {grievCount === 1 ? 'ticket' : 'tickets'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="max-h-[60vh] sm:max-h-[380px] overflow-y-auto custom-scrollbar">
+                    {grievLoading ? (
+                      <div className="flex flex-col items-center justify-center p-8 text-slate-400">
+                        <Loader2 className="size-6 animate-spin text-amber-500 mb-2" />
+                        <p className="text-sm font-semibold">Fetching grievances...</p>
+                      </div>
+                    ) : grievances.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center p-8 text-center">
+                        <Inbox className="size-9 text-slate-400 dark:text-slate-600 mb-2" />
+                        <p className="text-sm font-semibold text-slate-500">No open grievances.</p>
+                      </div>
+                    ) : (
+                      grievances.map((g) => (
+                        <div
+                          key={g.id}
+                          onClick={() => {
+                            navigate(`${grievancesBasePath}?ticketId=${encodeURIComponent(g.ticketNumber || g.ticket_number || '')}`);
+                            setGrievOpen(false);
+                          }}
+                          className="group relative flex items-start gap-3 px-5 py-4 border-b border-slate-50 dark:border-slate-850/40 last:border-0 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 cursor-pointer transition-colors"
+                        >
+                          <div className={cn(
+                            "size-8 shrink-0 rounded-xl flex items-center justify-center text-xs font-bold",
+                            String(g.status).toUpperCase() === 'OPEN' ? "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-450" : "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-450"
+                          )}>
+                            <AlertCircle size={14} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-semibold text-slate-900 dark:text-white truncate">{g.title}</h4>
+                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2 leading-relaxed">
+                              {g.raised_by_name ? `From ${g.raised_by_name}` : 'From a teacher'} · {String(g.status || '').replace('_', ' ')}
+                            </p>
+                            <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 tracking-tight uppercase block mt-1.5">
+                              {g.created_at ? new Date(g.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="border-t border-slate-100 dark:border-slate-800 p-2.5 text-center flex-shrink-0">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => { navigate(grievancesBasePath); setGrievOpen(false); }}
+                      className="w-full h-auto p-0 text-center text-[10px] font-extrabold text-amber-600 dark:text-amber-400 hover:text-amber-700 hover:bg-transparent"
+                    >
+                      View All Grievances →
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Notifications Icon & Popover */}
           <div className="relative flex items-center" ref={notifRef}>
             <Button
@@ -1254,146 +1386,23 @@ export default function Navbar({ onMenuClick }) {
 
           {!isMobile && (
             <div className="relative border-l border-slate-250 dark:border-slate-800 pl-3.5 ml-1.5" ref={profileRef}>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setProfileOpen((o) => !o)}
-                className="flex items-center gap-2 size-auto p-0 outline-none hover:bg-transparent group"
-                aria-label="User Profile menu"
-              >
-                <div className="relative transition-transform duration-200 group-hover:scale-105">
-                  {user?.profileImage ? (
-                    <img src={user.profileImage} alt="Profile" className="size-10 rounded-xl object-cover border border-slate-200 dark:border-slate-800 shadow-sm" />
-                  ) : (
-                    <div className="grid size-10 place-items-center rounded-xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-350">
-                      {(user?.name || 'A').charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <div className="absolute -bottom-1 -right-1 size-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-950 shadow-sm" />
-                </div>
-              </Button>
-
-              {profileOpen && (
-                <div className="absolute right-0 z-50 mt-4 w-64 overflow-hidden rounded-[2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 py-2 shadow-2xl">
-                  {/* Profile Header */}
-                  <div className="px-5 py-3 border-b border-slate-105 dark:border-slate-800">
-                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user?.name || 'Admin'}</p>
-                    <p className="text-[10px] font-bold text-slate-405 uppercase tracking-widest mt-0.5">{roleName}</p>
-                  </div>
-
-                  {/* Profile Link (Teachers Only) */}
-                  {isTeacher && (
-                    <Link
-                      to="/school/teacher/profile"
-                      onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                      <div className="size-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center">
-                        <UserCircle size={16} />
-                      </div>
-                      My Profile
-                    </Link>
-                  )}
-
-                  {/* Institute Profile link (Institute Admin) */}
-                  {isInstitute && (
-                    <Link
-                      to="/school/admin/institute-profile"
-                      onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                      <div className="size-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center">
-                        <Building2 size={16} />
-                      </div>
-                      Institute Profile
-                    </Link>
-                  )}
-
-                  {/* My Profile link (Institute Admin) */}
-                  {isInstitute && (
-                    <Link
-                      to="/school/admin/settings?tab=profile"
-                      onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                      <div className="size-8 rounded-xl bg-sky-50 dark:bg-sky-900/30 text-sky-600 flex items-center justify-center">
-                        <UserCircle size={16} />
-                      </div>
-                      My Profile
-                    </Link>
-                  )}
-
-                  {/* Settings link */}
-                  <Link
-                    to={isTeacher ? "/school/teacher/settings" : profilePath}
-                    onClick={() => setProfileOpen(false)}
-                    className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
-                  >
-                    <div className="size-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
-                      <SettingsIcon size={16} />
-                    </div>
-                    Settings
-                  </Link>
-
-                  {/* Change Password (Teachers Only) */}
-                  {isTeacher && (
-                    <Link
-                      to="/school/teacher/settings?tab=security"
-                      onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                      <div className="size-8 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center">
-                        <KeyRound size={16} />
-                      </div>
-                      Change Password
-                    </Link>
-                  )}
-
-                  {canOpenInstituteAdmin && (
-                    <Link
-                      to="/school/admin"
-                      onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                      <div className="size-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center">
-                        <Shield size={16} />
-                      </div>
-                      Institute Admin
-                    </Link>
-                  )}
-
-                  {canOpenTeacherPortal && (
-                    <Link
-                      to="/school/teacher"
-                      onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                      <div className="size-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center">
-                        <GraduationCap size={16} />
-                      </div>
-                      Teacher Portal
-                    </Link>
-                  )}
-
-                  <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 mx-4" />
-
-                  {/* Logout button */}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => {
-                      setProfileOpen(false);
-                      logout();
-                    }}
-                    className="w-full h-auto justify-start gap-3 px-5 py-3 rounded-none text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-955/40 hover:text-rose-600 text-left"
-                  >
-                    <div className="size-8 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 flex items-center justify-center">
-                      <LogOut size={16} />
-                    </div>
-                    Logout
-                  </Button>
-                </div>
-              )}
+              <UserMenu
+                src={user?.profileImage}
+                name={user?.name || 'Admin'}
+                role={roleName}
+                items={[
+                  ...(isTeacher ? [{ label: 'My Profile', icon: UserCircle, to: '/school/teacher/profile' }] : []),
+                  ...(isInstitute ? [
+                    { label: 'Institute Profile', icon: Building2, to: '/school/admin/institute-profile' },
+                    { label: 'My Profile', icon: UserCircle, to: '/school/admin/settings?tab=profile' },
+                  ] : []),
+                  { label: 'Settings', icon: SettingsIcon, to: isTeacher ? '/school/teacher/settings' : profilePath },
+                  ...(isTeacher ? [{ label: 'Change Password', icon: KeyRound, to: '/school/teacher/settings?tab=security' }] : []),
+                  ...(canOpenInstituteAdmin ? [{ label: 'Institute Admin', icon: Shield, to: '/school/admin' }] : []),
+                  ...(canOpenTeacherPortal ? [{ label: 'Teacher Portal', icon: GraduationCap, to: '/school/teacher' }] : []),
+                  { label: 'Logout', icon: LogOut, onSelect: logout, destructive: true, separator: true },
+                ]}
+              />
             </div>
           )}
         </div>

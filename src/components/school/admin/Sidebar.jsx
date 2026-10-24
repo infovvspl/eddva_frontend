@@ -54,6 +54,7 @@ const superAdminGroups = [
     items: [
       { path: '/school/super-admin/communication', label: 'Communication', icon: Megaphone },
       { path: '/school/super-admin/complaints', label: 'Support Tickets', icon: Ticket },
+      { path: '/school/super-admin/grievances', label: 'Grievances', icon: MessageSquareWarning },
     ],
   },
   {
@@ -89,6 +90,7 @@ const ADMIN_NAV_PATH_TO_MODULE = {
   '/school/admin/syllabus-planner': 'syllabus_planner',
   '/school/admin/syllabus-tracker': 'syllabus_tracker',
   '/school/admin/attendance': 'attendance',
+  '/school/admin/improvement': 'improvement_areas',
   '/school/admin/timetable': 'timetable',
   '/school/admin/calendar': 'academic_calendar',
   '/school/admin/notices': 'notices',
@@ -140,8 +142,9 @@ function buildInstituteGroups(mods, aiFeats) {
         { path: '/school/admin/academics', label: 'Class & Sections', icon: Building2 },
         { path: '/school/admin/subjects', label: 'Subjects', icon: BookOpen },
         competitiveEnabled && { path: '/school/admin/competitive-subjects', label: 'Competitive Exam Prep', icon: Trophy },
-        syllabusPlannerEnabled && { path: '/school/admin/syllabus-planner', label: 'Syllabus Planner', icon: FileText },
-        syllabusTrackerEnabled && { path: '/school/admin/syllabus-tracker', label: 'Syllabus Tracker', icon: BarChart3 },
+        syllabusPlannerEnabled && { path: '/school/admin/syllabus-planner', label: 'Lesson Plan', icon: FileText },
+        syllabusPlannerEnabled && { path: '/school/admin/lesson-plan-approvals', label: 'Lesson Plan Approvals', icon: ClipboardCheck },
+        syllabusTrackerEnabled && { path: '/school/admin/syllabus-tracker', label: 'Lesson Tracker', icon: BarChart3 },
       ].filter(Boolean),
     },
     {
@@ -171,7 +174,8 @@ function buildInstituteGroups(mods, aiFeats) {
         { path: '/school/admin/users', label: 'User Management', icon: Users },
         { path: '/school/admin/document-generator', label: 'Document Generator', icon: FileText },
         { path: '/school/admin/audit-logs', label: 'Audit Logs', icon: FileText },
-        { path: '/school/admin/complaints', label: 'Support Tickets', icon: Shield },
+        { path: '/school/admin/complaints', label: 'Help Desk', icon: Shield },
+        { path: '/school/admin/grievances', label: 'Grievances', icon: MessageSquareWarning },
         { path: '/school/admin/screen-time', label: 'Screen Time', icon: Clock },
         { path: '/school/admin/emergency-sos', label: 'Emergency SOS', icon: Siren, danger: true },
       ],
@@ -197,9 +201,9 @@ function buildTeacherGroups(mods, aiFeats) {
       heading: 'Teaching',
       items: [
         { path: '/school/teacher', label: 'Dashboard', icon: LayoutDashboard, end: true },
-        teachingPlanEnabled && { path: '/school/teacher/teaching-plan', label: 'My Teaching Plan', icon: ClipboardList },
-        liveEnabled && { path: '/school/teacher/classes', label: 'Live & Recorded Video', icon: Video },
+        teachingPlanEnabled && { path: '/school/teacher/teaching-plan', label: 'My Lesson Plan', icon: ClipboardList },
         { path: '/school/teacher/course-content', label: 'Course Content', icon: BookOpen },
+        liveEnabled && { path: '/school/teacher/classes', label: 'Live & Recorded Video', icon: Video },
         competitiveEnabled && { path: '/school/teacher/competitive-prep', label: 'Competitive Exam Prep', icon: Trophy },
         { path: '/school/teacher/students', label: 'Students', icon: GraduationCap },
         { path: '/school/teacher/attendance', label: 'Attendance', icon: ClipboardCheck },
@@ -275,6 +279,7 @@ export default function Sidebar({ open, onClose }) {
   return (
     <UnifiedSidebar
       groups={groups}
+      activeStyle="dark"
       collapsed={collapsed}
       onToggleCollapse={() => setCollapsed((v) => !v)}
       mobileOpen={open}

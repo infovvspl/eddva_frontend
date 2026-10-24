@@ -28,8 +28,8 @@ const categoryStyles = {
  * Category-based gradient styles for date grid cells.
  */
 const CATEGORY_CELL_GRADIENTS = {
-  HOLIDAY:          'bg-gradient-to-br from-rose-500 via-red-500 to-rose-600 border-2 border-rose-700 text-white font-bold shadow-md dark:from-rose-900 dark:via-red-850 dark:to-rose-950 dark:border-rose-600',
-  VACATION:         'bg-gradient-to-br from-emerald-500 via-teal-500 to-emerald-600 border-2 border-emerald-700 text-white font-bold shadow-md dark:from-emerald-900 dark:via-teal-850 dark:to-emerald-950 dark:border-emerald-600',
+  HOLIDAY:          'bg-gradient-to-br from-emerald-500 via-green-500 to-emerald-600 border-2 border-emerald-700 text-white font-bold shadow-md dark:from-emerald-900 dark:via-green-850 dark:to-emerald-950 dark:border-emerald-600',
+  VACATION:         'bg-gradient-to-br from-cyan-500 via-sky-500 to-cyan-600 border-2 border-cyan-700 text-white font-bold shadow-md dark:from-cyan-900 dark:via-sky-850 dark:to-cyan-950 dark:border-cyan-600',
   EXAM:             'bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 border-2 border-amber-700 text-white font-bold shadow-md dark:from-amber-900 dark:via-orange-850 dark:to-amber-950 dark:border-amber-600',
   SPORTS:           'bg-gradient-to-br from-sky-500 via-blue-500 to-cyan-600 border-2 border-blue-700 text-white font-bold shadow-md dark:from-sky-900 dark:via-blue-850 dark:to-cyan-950 dark:border-sky-600',
   SPORTS_EVENT:     'bg-gradient-to-br from-sky-500 via-blue-500 to-cyan-600 border-2 border-blue-700 text-white font-bold shadow-md dark:from-sky-900 dark:via-blue-850 dark:to-cyan-950 dark:border-sky-600',
@@ -42,6 +42,7 @@ const CATEGORY_CELL_GRADIENTS = {
   TEACHER_MEETING:  'bg-gradient-to-br from-teal-500 via-cyan-500 to-emerald-600 border-2 border-teal-700 text-white font-bold shadow-md dark:from-teal-900 dark:via-cyan-850 dark:to-emerald-950 dark:border-teal-600',
   PTM:              'bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 border-2 border-indigo-700 text-white font-bold shadow-md dark:from-indigo-900 dark:via-purple-850 dark:to-indigo-950 dark:border-indigo-600',
   PARENT_MEETING:   'bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 border-2 border-indigo-700 text-white font-bold shadow-md dark:from-indigo-900 dark:via-purple-850 dark:to-indigo-950 dark:border-indigo-600',
+  BIRTHDAY:         'bg-gradient-to-br from-pink-500 via-fuchsia-500 to-pink-600 border-2 border-pink-700 text-white font-bold shadow-md dark:from-pink-900 dark:via-fuchsia-850 dark:to-pink-950 dark:border-pink-600',
   NOTICE:           'bg-gradient-to-br from-blue-500 via-sky-500 to-blue-600 border-2 border-blue-700 text-white font-bold shadow-md dark:from-blue-900 dark:via-sky-850 dark:to-blue-950 dark:border-blue-600',
   ACADEMIC:         'bg-gradient-to-br from-indigo-500 via-blue-500 to-indigo-600 border-2 border-indigo-700 text-white font-bold shadow-md dark:from-indigo-900 dark:via-blue-850 dark:to-indigo-950 dark:border-indigo-600',
 };

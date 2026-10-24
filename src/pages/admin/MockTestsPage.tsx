@@ -600,6 +600,8 @@ type AiQuestionCacheEntry = {
   batchId?: string;
   scope: { subjectId?: string; chapterId?: string; topicId?: string };
   updatedAt: number;
+  /** Generation language; entries written before this field existed are treated as English. */
+  language?: string;
   questions: CachedQuestion[];
 };
 
@@ -1181,7 +1183,14 @@ function QuestionRow({
               <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Type</label>
               <CustomSelect
                 value={`${q.type}|${q.generatedTypeLabel || ""}`}
-                options={allowedMixes.map((m, i) => ({ value: `${m.type}`, label: m.label }))}
+                onChange={(val: string) => {
+                  const [v, label] = val.split("|");
+                  if (v === "mcq_single" || v === "mcq_multi" || v === "integer" || v === "descriptive") {
+                    const fresh = blankQuestion(v as DraftQKind, "comp_mcq", label || undefined);
+                    onChange({ ...fresh, _key: q._key, content: q.content, contentImageUrl: q.contentImageUrl, difficulty: q.difficulty, marksCorrect: q.marksCorrect });
+                  }
+                }}
+                options={allowedMixes.map((m) => ({ value: `${m.type}|${m.label}`, label: m.label }))}
                 className="w-full"
               />
             </div>
@@ -2453,7 +2462,7 @@ function CreateTestModal({
   );
   const [activeTab, setActiveTab] = useState<"manual" | "ai" | "csv">("manual");
   const aiContentEnabled = useHasAiFeature("ai_content_generation");
-  const questionTabs = (aiContentEnabled ? ["manual", "ai", "csv"] : ["manual", "csv"]) as const;
+  const questionTabs: ("manual" | "ai" | "csv")[] = aiContentEnabled ? ["manual", "ai", "csv"] : ["manual", "csv"];
   const [showCsvImport, setShowCsvImport] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");

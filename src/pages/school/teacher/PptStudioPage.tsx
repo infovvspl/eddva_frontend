@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ChevronRight, Presentation } from 'lucide-react';
+import { ChevronRight, Presentation } from 'lucide-react';
 import { toast } from 'sonner';
+import { BackButton } from '@/components/shared/BackButton';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { getApiBaseUrl } from '@/lib/api-config';
 import { schoolContent } from '@/lib/api/school-content';
@@ -195,16 +196,7 @@ export default function PptStudioPage() {
     // The bar sits on the studio's own lavender background, so the page and
     // the studio read as one screen.
     <div className="flex h-screen w-full flex-col bg-[#eef0f8]">
-      <div className="flex shrink-0 items-center gap-4 px-4 pb-1 pt-3 sm:px-[2.5%]">
-        <button
-          type="button"
-          onClick={back}
-          className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-[0_1px_4px_rgba(15,23,42,0.08)] ring-1 ring-slate-200/70 transition hover:text-blue-700 hover:ring-blue-200"
-        >
-          <ArrowLeft size={14} />
-          <span className="hidden sm:inline">Back to Course Content</span>
-          <span className="sm:hidden">Back</span>
-        </button>
+      <div className="flex shrink-0 items-center justify-between gap-4 px-4 pb-1 pt-3 sm:px-[2.5%]">
         <div className="flex min-w-0 items-center gap-2 text-xs">
           <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-gradient-to-br from-blue-500 to-violet-500 text-white shadow-sm">
             <Presentation size={13} />
@@ -221,6 +213,7 @@ export default function PptStudioPage() {
             </span>
           )}
         </div>
+        <BackButton fallback="/school/teacher/course-content" />
       </div>
       <iframe
         title="AI PPT Studio"

@@ -1,6 +1,6 @@
 // SyllabusPlanner - Annual Subject Syllabus Planner and Milestone Manager
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   BookOpen, Calendar, Plus, Save, Layers, CheckCircle2,
   Sparkles, Loader2, Filter, AlertCircle, Users, ArrowRight, Eye, ChevronRight,
@@ -11,10 +11,14 @@ import { toast } from 'sonner';
 
 import { unwrapSchoolList } from '@/lib/api/school-client';
 import { useConfirm } from '@/context/ConfirmContext';
+import { BackButton } from '@/components/shared/BackButton';
 
 export default function SyllabusPlanner() {
   const confirm = useConfirm();
   const navigate = useNavigate();
+  // The chosen year / class / section live in the URL so that coming back from a plan's
+  // detail page (browser or Back button) returns to the same step instead of the class list.
+  const [searchParams, setSearchParams] = useSearchParams();
   const [classes, setClasses] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,9 +27,9 @@ export default function SyllabusPlanner() {
   const [availableYears, setAvailableYears] = useState(['2024-2025', '2025-2026', '2026-2027']);
 
   const [form, setForm] = useState({
-    academicYear: '2025-2026',
-    classId: '',
-    sectionId: '',
+    academicYear: searchParams.get('year') || '2026-2027',
+    classId: searchParams.get('classId') || '',
+    sectionId: searchParams.get('sectionId') || '',
     subjectId: '',
     chapterId: '',
     topicId: '',
@@ -62,6 +66,23 @@ export default function SyllabusPlanner() {
       }
     }).catch(() => {});
   }, []);
+
+  // Restore the step we were on (class chosen from the URL): load its sections and subjects.
+  useEffect(() => {
+    if (form.classId) {
+      fetchSubjectsForClass(form.classId);
+      fetchSectionsForClass(form.classId);
+    }
+  }, []);
+
+  // Keep the URL in step with the selection. `replace` so the steps don't pile up in history.
+  useEffect(() => {
+    const next = new URLSearchParams();
+    if (form.classId) next.set('classId', form.classId);
+    if (form.sectionId) next.set('sectionId', form.sectionId);
+    if (form.academicYear) next.set('year', form.academicYear);
+    setSearchParams(next, { replace: true });
+  }, [form.classId, form.sectionId, form.academicYear]);
 
   useEffect(() => {
     fetchInitialData();
@@ -440,7 +461,7 @@ export default function SyllabusPlanner() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">Annual Syllabus Planner</h1>
+            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">Annual Lesson Planner</h1>
             <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 text-xs font-black border border-blue-200 dark:border-blue-800">
               Curriculum Setup
             </span>
@@ -521,13 +542,10 @@ export default function SyllabusPlanner() {
         <div className="space-y-6">
           <div className="flex items-center justify-between bg-blue-50/50 p-4 rounded-2xl border border-blue-100 dark:bg-blue-950/30 dark:border-blue-900">
             <div className="flex items-center gap-3">
-              <button
-                type="button"
+              <BackButton
+                label="Back to All Classes"
                 onClick={() => setForm(prev => ({ ...prev, classId: '', sectionId: '' }))}
-                className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 text-xs font-bold transition-all"
-              >
-                ← Back to All Classes
-              </button>
+              />
               <h3 className="text-sm font-extrabold text-blue-900 dark:text-blue-100">
                 {selectedClassObj?.name} — Select Section
               </h3>
@@ -600,13 +618,10 @@ export default function SyllabusPlanner() {
         <div className="space-y-6">
           <div className="flex items-center justify-between bg-blue-50/50 p-4 rounded-2xl border border-blue-100 dark:bg-blue-950/30 dark:border-blue-900">
             <div className="flex items-center gap-3">
-              <button
-                type="button"
+              <BackButton
+                label="Back to Sections"
                 onClick={() => setForm(prev => ({ ...prev, sectionId: '' }))}
-                className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 text-xs font-bold transition-all"
-              >
-                ← Back to Sections
-              </button>
+              />
               <h3 className="text-sm font-extrabold text-blue-900 dark:text-blue-100">
                 {selectedClassObj?.name} {form.sectionId === 'ALL_SECTIONS' ? '(Entire Class)' : `(Section ${sections.find(s => s.id === form.sectionId)?.name || ''})`} — Syllabus Target Setup
               </h3>

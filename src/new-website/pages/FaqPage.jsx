@@ -12,10 +12,13 @@ import CtaBanner from "../components/CtaBanner";
 import Footer from "../components/Footer";
 import { faqCategories } from "../data/faq";
 import { HelpCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
+
 
 const totalQuestions = faqCategories.reduce((sum, cat) => sum + cat.questions.length, 0);
 
 const FaqPage = () => {
+  const { t } = useTranslation("faq");
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   return (
@@ -25,15 +28,15 @@ const FaqPage = () => {
       <main>
         <PageHead
           id="nw-faq-head"
-          title="Frequently Asked"
-          accent="Questions"
-          lead="Everything about EDDVA for schools, institutes, teachers, students and parents — in one place."
+          title={t("title")}
+          accent={t("accent")}
+          lead={t("lead")}
           icon={HelpCircle}
           color="#1a56db"
           bg="#eaf1fd"
           stats={[
-            { value: totalQuestions, label: "Questions Answered" },
-            { value: faqCategories.length, label: "Categories" },
+            { value: totalQuestions, label: t("answered") },
+            { value: faqCategories.length, label: t("categories") },
           ]}
         />
         <FaqBrowser />

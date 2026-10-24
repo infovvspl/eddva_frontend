@@ -19,10 +19,11 @@ import {
 } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
 import examIcon from '@/assets/calendar_icons/exam.png';
+import birthdayIcon from '@/assets/calendar_icons/birthday.png';
 import { getHolidayIcon } from '../theme/holidayIcons';
 
 // Categories whose events can carry a named-holiday icon (Diwali, Republic Day, ...).
-const HOLIDAY_ICON_CATEGORIES = ['HOLIDAY', 'VACATION', 'NOTICE', 'CULTURAL'];
+const HOLIDAY_ICON_CATEGORIES = ['HOLIDAY', 'VACATION', 'NOTICE', 'CULTURAL', 'BIRTHDAY'];
 
 /**
  * Category -> flat illustrated icon (image). Categories listed here are rendered as the
@@ -32,6 +33,9 @@ const CATEGORY_IMAGES = {
   // Unit test / exam. Source (Icons8, Officel, saved locally as a 30px PNG):
   // https://img.icons8.com/officel/30/test-partial-passed.png
   EXAM: examIcon,
+  // Birthday. Source (Icons8, 3D Fluency, saved locally as a 94px PNG):
+  // https://img.icons8.com/3d-fluency/94/birthday-cake.png
+  BIRTHDAY: birthdayIcon,
 };
 
 /**
@@ -63,7 +67,7 @@ const CATEGORY_ICONS = {
 const CATEGORY_TILE_COLORS = {
   NOTICE:           'bg-blue-600',
   HOLIDAY:          'bg-emerald-600',
-  VACATION:         'bg-emerald-600',
+  VACATION:         'bg-cyan-600',
   EXAM:             'bg-amber-500',
   SPORTS:           'bg-sky-600',
   SPORTS_EVENT:     'bg-sky-600',

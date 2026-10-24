@@ -2,12 +2,17 @@
 // Uses lucide-react icons
 
 import { Sparkles } from "lucide-react";
-import aboutHome from "../assets/abouthome.png";
-import { aboutCards as cards } from "../data/about";
+import { useTranslation } from "react-i18next";
+import { useLocalized } from "@/i18n/useLocalized";
+import aboutHomeEn from "../assets/abouthome.webp";
+import aboutHomeHi from "../assets/abouthome.hi.webp";
+import { aboutCards } from "../data/about";
 import useInView from "../hooks/useInView";
 
 
 const AboutSection = () => {
+  const { t, i18n } = useTranslation("home");
+  const cards = useLocalized("data-about", aboutCards);
   const [leftRef, leftIn] = useInView({ threshold: 0.2 });
   const [rightRef, rightIn] = useInView({ threshold: 0.2 });
   const [cardsRef, cardsIn] = useInView({ threshold: 0.15 });
@@ -22,25 +27,20 @@ const AboutSection = () => {
             <span className="nw-about__label-icon" aria-hidden="true">
               <Sparkles size={13} strokeWidth={2.2} />
             </span>
-            ABOUT US
+            {t("about.label")}
           </span>
           <h2 className="nw-about__heading" id="nw-about-heading">
-            Empowering Education.<br />
-            Enriching <span className="nw-about__heading-accent">Futures.</span>
+            {t("about.headingLine1")}<br />
+            {t("about.headingPre")}<span className="nw-about__heading-accent">{t("about.headingAccent")}</span>
           </h2>
           <p className="nw-about__desc" id="nw-about-desc">
-            EDDVA is a next generation platform built for the future of
-            education. We combine AI, automation and analytics to deliver
-            personalised learning, simplify school operations and create
-            better outcomes for every stakeholder.
+            {t("about.desc1")}
           </p>
           <p className="nw-about__desc" id="nw-about-desc-2">
-            By bringing students, teachers, parents and school management
-            together on one intelligent ecosystem, EDDVA makes education
-            smarter, more connected and more impactful.
+            {t("about.desc2")}
           </p>
           <p className="nw-about__tagline" id="nw-about-tagline">
-            Learn Smarter. Teach Better. Grow Together.
+            {t("about.tagline")}
           </p>
         </div>
 
@@ -48,8 +48,8 @@ const AboutSection = () => {
         <div className={`nw-about__right${rightIn ? " nw-in" : ""}`} ref={rightRef}>
           <figure className="nw-about__media">
             <img
-              src={aboutHome}
-              alt="A teacher presenting the EDDVA dashboard on a classroom display"
+              src={i18n.language === "hi" ? aboutHomeHi : aboutHomeEn}
+              alt={t("about.imageAlt")}
               loading="lazy"
             />
           </figure>

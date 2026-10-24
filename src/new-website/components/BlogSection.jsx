@@ -5,14 +5,16 @@
 
 import { Link } from "react-router-dom";
 import { ArrowRight, Calendar, Clock } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import useBlogPosts from "../hooks/useBlogPosts";
 import { getCategoryStyle } from "../data/blogCategoryStyle";
 import useInView from "../hooks/useInView";
 
-const formatDate = iso =>
-  new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+const formatDate = (iso, lng) =>
+  new Date(iso).toLocaleDateString(lng === "hi" ? "hi-IN-u-nu-deva" : "en-IN", { day: "numeric", month: "short", year: "numeric" });
 
 const BlogSection = () => {
+  const { t, i18n } = useTranslation("home");
   const { posts } = useBlogPosts();
   const [ref, inView] = useInView({ threshold: 0.12 });
 
@@ -27,10 +29,10 @@ const BlogSection = () => {
       <div className="nw-blogsec__container">
 
         <div className="nw-blogsec__header">
-          <span className="nw-section-label">FROM THE BLOG</span>
-          <h2 className="nw-blogsec__heading">Notes on AI, exam prep &amp; running a school</h2>
+          <span className="nw-section-label">{t("blog.label")}</span>
+          <h2 className="nw-blogsec__heading">{t("blog.heading")}</h2>
           <Link to="/blog" className="nw-blogsec__viewall" id="nw-blogsec-viewall">
-            View all articles
+            {t("blog.viewAll")}
             <ArrowRight size={14} strokeWidth={2.6} />
           </Link>
         </div>
@@ -62,18 +64,18 @@ const BlogSection = () => {
                 <div className="nw-bgrid__meta">
                   <span className="nw-bgrid__meta-item">
                     <Calendar size={13} strokeWidth={2.2} />
-                    {formatDate(post.date)}
+                    {formatDate(post.date, i18n.resolvedLanguage)}
                   </span>
                   {post.readTime && (
                     <span className="nw-bgrid__meta-item">
                       <Clock size={13} strokeWidth={2.2} />
-                      {post.readTime} min read
+                      {t("blog.minRead", { count: post.readTime })}
                     </span>
                   )}
                 </div>
 
                 <span className="nw-bgrid__more">
-                  Read more
+                  {t("blog.readMore")}
                   <ArrowRight size={13} strokeWidth={2.6} />
                 </span>
               </Link>
@@ -82,7 +84,7 @@ const BlogSection = () => {
         </div>
 
         <Link to="/blog" className="nw-blogsec__viewall nw-blogsec__viewall--mobile" id="nw-blogsec-viewall-mobile">
-          View all articles
+          {t("blog.viewAll")}
           <ArrowRight size={14} strokeWidth={2.6} />
         </Link>
 

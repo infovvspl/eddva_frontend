@@ -29,6 +29,7 @@ import {
   useBulkImportCurriculum,
   useBatchContentLectures,
   useContentCoverageSummary,
+  useSaveAiGeneratedResource,
 } from "@/hooks/use-admin";
 import { useMyBatches } from "@/hooks/use-teacher";
 import * as adminApi from "@/lib/api/admin";

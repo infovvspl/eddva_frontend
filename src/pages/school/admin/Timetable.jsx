@@ -69,87 +69,106 @@ const SLOT_TYPE_STYLES = {
   break: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
 };
 
+// Natural order for names: Class 2 before Class 10, Section A before Section B.
+const byNameNatural = (a, b) => {
+  const norm = (v) => String(v ?? '').replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim();
+  return norm(a?.name).localeCompare(norm(b?.name), undefined, { numeric: true, sensitivity: 'base' });
+};
+
+// Solid chip colour per weekday for the Weekly Class Timetable's top row.
+const DAY_CHIP_COLORS = {
+  MONDAY: 'bg-amber-800 shadow-amber-800/30',
+  TUESDAY: 'bg-emerald-600 shadow-emerald-600/30',
+  WEDNESDAY: 'bg-orange-600 shadow-orange-600/30',
+  THURSDAY: 'bg-amber-500 shadow-amber-500/30',
+  FRIDAY: 'bg-rose-600 shadow-rose-600/30',
+  SATURDAY: 'bg-pink-500 shadow-pink-500/30',
+  SUNDAY: 'bg-slate-600 shadow-slate-600/30',
+};
+
 const isBreakPeriod = (period) =>
   period?.periodType === 'Break' || String(period?.periodName || '').toLowerCase().includes('break');
 
-// Read-only cell of the Weekly Class Timetable grid.
-// 'header' = solid colored title band, 'tint' = soft tinted card with initial tile.
-const WEEKLY_CELL_STYLE = 'header';
-function WeeklyGridSlotCard({ slot, subjectName, teacherName, onEdit, onDelete }) {
+// Read-only cell of the Weekly Class Timetable grid: plain coloured text, no card or pill.
+// Subject, teacher, room and class type each get their own text colour.
+const SLOT_TYPE_TEXT = {
+  offline: 'text-blue-600 dark:text-blue-400',
+  live: 'text-rose-600 dark:text-rose-400',
+  lab: 'text-purple-600 dark:text-purple-400',
+  extra: 'text-amber-600 dark:text-amber-400',
+  break: 'text-slate-500 dark:text-slate-400',
+};
+function WeeklyGridSlotCard({ slot, subjectName, teacherName, photoUrl, onEdit, onDelete }) {
+  // Show the teacher's photo when there is one (and it loads); otherwise their initials.
+  const [failedUrl, setFailedUrl] = useState(null);
+  const showPhoto = Boolean(photoUrl) && failedUrl !== photoUrl;
   const isBreak = slot.type === 'break';
   const palette = getSlotPalette(slot);
   const type = slot.type || 'offline';
   const title = isBreak ? (slot.remarks || 'Break') : subjectName;
 
-  if (WEEKLY_CELL_STYLE === 'header') {
-    return (
-      <div className="flex h-full min-h-[104px] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
-        <div className={`flex items-center justify-between gap-1.5 px-2.5 py-1.5 text-white ${palette.bar}`}>
-          <span className="line-clamp-1 text-xs font-black">{title}</span>
-          <span className="shrink-0 rounded-md bg-white/25 px-1.5 py-0.5 text-[9px] font-black uppercase">{type}</span>
-        </div>
-        <div className="flex flex-1 flex-col justify-between gap-2 p-2.5">
-          <div className="flex items-center gap-2">
-            <span className={`flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${palette.avatar}`}>
-              {isBreak ? <Coffee className="size-3" /> : teacherName.split(' ').map((p) => p[0]).join('').toUpperCase().slice(0, 2)}
-            </span>
-            <span className="line-clamp-1 text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-              {isBreak ? 'No teacher' : teacherName}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-              <MapPin className={`size-3 ${palette.icon}`} />
-              {slot.room ? slot.room : 'No room'}
-            </span>
-            <div className="flex gap-1 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100">
-              <button onClick={onEdit} title="Edit Slot" className="rounded-md bg-slate-100 p-1 text-slate-500 hover:text-blue-600 dark:bg-slate-800">
-                <Edit2 className="size-3" />
-              </button>
-              <button onClick={onDelete} title="Delete Slot" className="rounded-md bg-red-50 p-1 text-red-500 hover:text-red-600 dark:bg-red-950/40">
-                <Trash2 className="size-3" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className={`flex h-full min-h-[104px] flex-col justify-between rounded-2xl border p-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${palette.soft}`}>
-      <div className="flex items-start gap-2">
-        <span className={`flex size-8 shrink-0 items-center justify-center rounded-xl text-sm font-black text-white shadow-sm ${palette.bar}`}>
-          {isBreak ? <Coffee className="size-4" /> : title.charAt(0).toUpperCase()}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="line-clamp-1 text-xs font-black text-slate-900 dark:text-white">{title}</p>
-          <p className="mt-0.5 line-clamp-1 text-[11px] font-semibold text-slate-600 dark:text-slate-400">
-            {isBreak ? 'No teacher' : teacherName}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-2.5 flex items-center justify-between gap-1.5">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <span className={`shrink-0 rounded-full bg-white/80 px-1.5 py-0.5 text-[9px] font-black uppercase dark:bg-slate-900/60 ${palette.icon}`}>
-            {type}
-          </span>
-          <span className="inline-flex items-center gap-1 truncate text-[10px] font-bold text-slate-500 dark:text-slate-400">
-            <MapPin className="size-3 shrink-0" />
-            {slot.room ? slot.room : '—'}
-          </span>
-        </div>
-        <div className="flex shrink-0 gap-1 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100">
-          <button onClick={onEdit} title="Edit Slot" className="rounded-lg bg-white/80 p-1 text-slate-500 hover:text-blue-600 dark:bg-slate-900/60">
+    <div className="flex h-[80px] flex-col justify-center gap-1 overflow-hidden px-0.5 py-1">
+      <div className="flex items-start justify-between gap-1.5">
+        <p
+          title={title}
+          className={`flex min-w-0 flex-1 items-center gap-1.5 text-sm font-black ${isBreak ? 'text-amber-600 dark:text-amber-400' : 'text-indigo-700 dark:text-indigo-300'}`}
+        >
+          {isBreak && <Coffee className="size-3.5 shrink-0" />}
+          <span className="min-w-0 truncate">{title}</span>
+        </p>
+        <div className="flex shrink-0 gap-0.5 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100">
+          <button onClick={onEdit} title="Edit Slot" className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-blue-600 dark:hover:bg-slate-800">
             <Edit2 className="size-3" />
           </button>
-          <button onClick={onDelete} title="Delete Slot" className="rounded-lg bg-white/80 p-1 text-red-500 hover:text-red-600 dark:bg-slate-900/60">
+          <button onClick={onDelete} title="Delete Slot" className="rounded-md p-1 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40">
             <Trash2 className="size-3" />
           </button>
         </div>
       </div>
+
+      <p className="truncate text-[11px] font-bold">
+        <span className="text-emerald-600 dark:text-emerald-400">{slot.room ? `Room ${slot.room}` : 'No room'}</span>
+        <span className="mx-1.5 text-slate-300 dark:text-slate-600">•</span>
+        <span className={`capitalize ${SLOT_TYPE_TEXT[type] || SLOT_TYPE_TEXT.offline}`}>{type}</span>
+      </p>
+      <div className="flex items-center gap-2">
+        <span className={`flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full text-[10px] font-black ${palette.avatar}`}>
+          {isBreak ? (
+            <Coffee className="size-3" />
+          ) : showPhoto ? (
+            <img
+              src={photoUrl}
+              alt={teacherName}
+              className="size-full object-cover"
+              loading="lazy"
+              onError={() => setFailedUrl(photoUrl)}
+            />
+          ) : (
+            teacherName.split(' ').map((p) => p[0]).join('').toUpperCase().slice(0, 2)
+          )}
+        </span>
+        <span className="truncate text-xs font-bold text-slate-800 dark:text-slate-200">
+          {isBreak ? 'No teacher' : teacherName}
+        </span>
+      </div>
+
     </div>
+  );
+}
+
+// Round teacher avatar: the photo when there is one (and it loads), otherwise the initials.
+function PhotoAvatar({ src, name, initials, className }) {
+  const [failedSrc, setFailedSrc] = useState(null);
+  const showPhoto = Boolean(src) && failedSrc !== src;
+  return (
+    <span className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full ${className}`}>
+      {showPhoto ? (
+        <img src={src} alt={name} className="size-full object-cover" loading="lazy" onError={() => setFailedSrc(src)} />
+      ) : (
+        initials
+      )}
+    </span>
   );
 }
 
@@ -287,7 +306,11 @@ export default function Timetable() {
       }
 
       const [res, secRes, subjRes, periodRes] = await Promise.allSettled([
-        api.get('/timetable'),
+        // This fetches the whole institute's weekly timetable in one call and filters
+        // client-side per class/section — the backend's default limit (100) silently cut
+        // the response off partway through Monday once every section had a full schedule,
+        // so later classes/sections and every day after Monday just showed "Free".
+        api.get('/timetable', { params: { limit: 5000 } }),
         api.get('/academic/classes'),
         api.get('/academic/subjects?limit=1000'),
         api.get('/academic/periods')
@@ -302,7 +325,9 @@ export default function Timetable() {
       setTimetables(getResponseList(res.value));
 
       const allSections = [];
-      const classesList = listOf(secRes, 'classes');
+      const classesList = [...listOf(secRes, 'classes')]
+        .sort(byNameNatural)
+        .map((cls) => ({ ...cls, sections: [...(cls.sections || [])].sort(byNameNatural) }));
       setAllClasses(classesList);
       classesList.forEach(cls => {
         (cls.sections || []).forEach(section => {
@@ -448,7 +473,7 @@ export default function Timetable() {
 
       if (res.data?.success) {
         setIsBulkEditMode(false);
-        const updatedRes = await api.get('/timetable');
+        const updatedRes = await api.get('/timetable', { params: { limit: 5000 } });
         setTimetables(getResponseList(updatedRes));
       } else if (res.data?.errors) {
         setBulkErrors(res.data.errors);
@@ -497,7 +522,7 @@ export default function Timetable() {
       if (res.data?.success) {
         setIsCopyClassModalOpen(false);
         setTargetClassSectionId('');
-        const updatedRes = await api.get('/timetable');
+        const updatedRes = await api.get('/timetable', { params: { limit: 5000 } });
         setTimetables(getResponseList(updatedRes));
       } else if (res.data?.errors) {
         setBulkErrors(res.data.errors);
@@ -658,6 +683,13 @@ export default function Timetable() {
     setIsModalOpen(true);
   };
 
+  // Teacher photo for a slot: from the slot's own teacher if present, else from the teacher list.
+  const getSlotTeacherPhoto = (slot) =>
+    slot.teacher?.profileImage
+    || slot.teacher?.user?.profileImage
+    || allTeachers.find((t) => String(t.teacherProfile?.id) === String(slot.teacherId || slot.teacher?.id))?.profileImage
+    || null;
+
   const formatTeacherName = (t) => {
     if (!t) return null;
     const u = t.user || {};
@@ -708,20 +740,17 @@ export default function Timetable() {
   const currentDay = dayNames[now.getDay()];
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-  const isCurrentTeacherSlot = (slot) => {
-    if (!isTeacher) return true;
-    const teacherProfileId = teacherProfile?.id;
-    return (
-      (teacherProfileId && String(slot.teacherId || '') === String(teacherProfileId)) ||
-      (teacherProfileId && String(slot.teacher?.id || '') === String(teacherProfileId)) ||
-      (teacherProfileId && String(slot.teacher?.teacherProfile?.id || '') === String(teacherProfileId)) ||
-      (user?.id && String(slot.teacher?.user?.id || '') === String(user.id))
-    );
-  };
-
+  // The backend already scopes GET /timetable to the caller's own schedule whenever the
+  // request comes from a TEACHER (school-timetable.service.ts listTimetables: `t.teacher_id
+  // = <this teacher> OR t.section_id IN (their teacher_academic_assignments)`), so `timetables`
+  // already holds only this teacher's slots — no client-side re-filter is needed. A prior
+  // version re-filtered here against `teacherProfile.id` from a *separate* `/teachers/:id`
+  // call; when that call failed (it does — see the comment in fetchTimetables about a 403 on
+  // the profile), every slot silently failed the match and every day showed "No classes",
+  // even though the data the backend sent was correct.
   const visibleTimetables = useMemo(
-    () => (isTeacher ? timetables.filter(isCurrentTeacherSlot) : timetables),
-    [isTeacher, timetables, teacherProfile, user?.id]
+    () => timetables,
+    [timetables]
   );
 
   const timetableTeachers = useMemo(() => {
@@ -746,6 +775,7 @@ export default function Timetable() {
           name,
           profileId: teacher.teacherProfile?.id,
           userId: teacher.id,
+          photo: teacher.profileImage || teacher.user?.profileImage || null,
           subjects: Array.isArray(teacher.subjects) ? teacher.subjects : [],
         });
       }
@@ -807,6 +837,7 @@ export default function Timetable() {
       teacherMap.set(teacher.id, {
         key: teacher.id,
         teacherName: teacher.name,
+        photo: teacher.photo,
         activeSlot: null,
         nextSlot: null,
         totalSlots: 0,
@@ -1179,28 +1210,31 @@ export default function Timetable() {
               )}
 
               {/* Grid Table */}
-              <div className="overflow-x-auto w-full max-w-full rounded-2xl border border-slate-200 shadow-md dark:border-slate-800">
-                <Table className="min-w-full text-left border-collapse">
+              <div className="overflow-x-auto w-full max-w-full rounded-2xl border border-slate-400 shadow-md dark:border-slate-600">
+                <Table className="min-w-full table-fixed text-left border-collapse" style={{ minWidth: 1170 }}>
                   <TableHeader>
-                    <TableRow className="border-0 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-900 hover:bg-slate-900">
-                      <TableHead className="h-auto w-[104px] sticky left-0 top-0 z-40 bg-slate-900 px-3 py-4 text-xs font-black uppercase tracking-wider text-slate-300">
-                        Day
+                    <TableRow className="border-b border-slate-300 bg-gradient-to-r from-blue-50 via-indigo-50 to-violet-50 hover:bg-blue-50 dark:border-slate-700 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900">
+                      <TableHead className="h-auto w-[150px] sticky left-0 top-0 z-40 bg-gradient-to-br from-blue-600 to-indigo-600 px-4 py-4 text-xs font-black uppercase tracking-wider text-white">
+                        <span className="inline-flex items-center gap-1.5">
+                          <Clock className="size-3.5" />
+                          Period
+                        </span>
                       </TableHead>
-                      {sortedPeriods.map(period => {
-                        const brk = isBreakPeriod(period);
+                      {days.map((day) => {
+                        const isToday = day === currentDay;
                         return (
-                          <TableHead key={period.id} className={`h-auto min-w-[200px] border-l border-white/10 px-4 py-4 ${brk ? 'bg-amber-500/20' : ''}`}>
-                            <div className="flex items-center gap-2.5">
-                              <span className={`flex size-7 shrink-0 items-center justify-center rounded-lg text-[11px] font-black text-white ${brk ? 'bg-amber-500' : 'bg-white/15 ring-1 ring-white/20'}`}>
-                                {brk ? <Coffee className="size-3.5" /> : (period.sequenceNo || '-')}
+                          <TableHead key={day} className={`h-auto min-w-[170px] border-l border-slate-400 px-4 py-3 text-center dark:border-slate-600 ${isToday ? 'bg-white/70 dark:bg-blue-950/30' : ''}`}>
+                            <div className="flex flex-col items-center gap-1">
+                              <span className={`flex h-8 min-w-[2.75rem] items-center justify-center rounded-lg px-2 text-[11px] font-black text-white shadow-md ${DAY_CHIP_COLORS[day] || 'bg-slate-600'} ${isToday ? 'ring-4 ring-blue-200 dark:ring-blue-900/60' : ''}`}>
+                                {dayShortNames[day]}
                               </span>
-                              <div className="min-w-0">
-                                <div className="truncate text-xs font-black uppercase tracking-wider text-white">{period.periodName || `Period ${period.sequenceNo}`}</div>
-                                <div className="mt-0.5 inline-flex items-center gap-1 text-[10px] font-semibold normal-case text-slate-300">
-                                  <Clock className="size-3" />
-                                  {period.startTime} - {period.endTime}
-                                </div>
-                              </div>
+                              <p className="text-[10px] font-black uppercase tracking-wider text-slate-800 dark:text-white">{day.charAt(0) + day.slice(1).toLowerCase()}</p>
+                              {isToday && (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-300">
+                                  <span className="size-1.5 animate-pulse rounded-full bg-blue-500" />
+                                  Today
+                                </span>
+                              )}
                             </div>
                           </TableHead>
                         );
@@ -1208,32 +1242,33 @@ export default function Timetable() {
                     </TableRow>
                   </TableHeader>
                   <TableBody className="bg-white dark:bg-slate-900">
-                    {days.map((day, dayIdx) => (
-                      <TableRow key={day} className={`border-b border-slate-100 dark:border-slate-800 ${day === currentDay ? 'bg-blue-50/70 dark:bg-blue-950/20' : dayIdx % 2 === 1 ? 'bg-slate-50/70 dark:bg-slate-950/40' : 'bg-white dark:bg-slate-900'}`}>
-                        <TableCell className={`sticky left-0 z-20 w-[104px] border-b border-white/10 px-3 py-2 ${day === currentDay ? 'bg-indigo-900' : 'bg-slate-900'}`}>
-                          <div className="flex flex-col items-center gap-1 text-center">
-                            <span className={`flex size-8 shrink-0 items-center justify-center rounded-lg text-[11px] font-black text-white ${
-                              day === currentDay ? 'bg-blue-500 shadow-md shadow-blue-500/30' : 'bg-white/15 ring-1 ring-white/20'
-                            }`}>
-                              {dayShortNames[day]}
+                    {sortedPeriods.map((period, periodIdx) => {
+                      const brk = isBreakPeriod(period);
+                      const rowTone = brk
+                        ? 'bg-amber-50/60 dark:bg-amber-950/10'
+                        : periodIdx % 2 === 1 ? 'bg-slate-50/70 dark:bg-slate-950/40' : 'bg-white dark:bg-slate-900';
+                      return (
+                      <TableRow key={period.id} className={`border-b border-slate-400 dark:border-slate-600 ${rowTone}`}>
+                        <TableCell className={`sticky left-0 z-20 w-[150px] border-r border-slate-300 px-4 py-3 dark:border-slate-700 ${brk ? 'bg-gradient-to-r from-amber-100 to-amber-50 dark:from-slate-900 dark:to-slate-900' : 'bg-gradient-to-r from-blue-100 to-blue-50 dark:from-slate-900 dark:to-slate-900'}`}>
+                          <div className="flex items-center gap-2.5">
+                            <span className={`flex size-8 shrink-0 items-center justify-center rounded-lg text-xs font-black ${brk ? 'bg-amber-500 text-white shadow-md shadow-amber-500/30' : 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-600/30'}`}>
+                              {brk ? <Coffee className="size-4" /> : (period.sequenceNo || '-')}
                             </span>
-                            <div>
-                              <p className="text-[10px] font-black uppercase tracking-wider text-white">{day.charAt(0) + day.slice(1).toLowerCase()}</p>
-                              {day === currentDay && (
-                                <span className="mt-0.5 inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-blue-300">
-                                  <span className="size-1.5 animate-pulse rounded-full bg-blue-400" />
-                                  Today
-                                </span>
-                              )}
+                            <div className="min-w-0">
+                              <p className="truncate text-xs font-black uppercase tracking-wider text-slate-800 dark:text-white">{period.periodName || `Period ${period.sequenceNo}`}</p>
+                              <p className="mt-0.5 inline-flex items-center gap-1 text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                                <Clock className="size-3" />
+                                {period.startTime} - {period.endTime}
+                              </p>
                             </div>
                           </div>
                         </TableCell>
-                        {sortedPeriods.map(period => {
+                        {days.map(day => {
                           const slot = getSlotForGrid(day, period.id);
                           return (
                             <TableCell
-                              key={period.id}
-                              className="relative group align-top border-l border-dashed border-slate-200 p-2 dark:border-slate-800"
+                              key={day}
+                              className={`relative group align-top border-l border-slate-400 p-2 dark:border-slate-700 ${day === currentDay ? 'bg-blue-50/50 dark:bg-blue-950/10' : ''}`}
                               onDragOver={(e) => { if (isBulkEditMode) e.preventDefault(); }}
                               onDrop={(e) => { if (isBulkEditMode) handleDrop(e, day, period.id); }}
                             >
@@ -1356,11 +1391,12 @@ export default function Timetable() {
                                     slot={slot}
                                     subjectName={slot.subject?.name || allSubjects.find(s => s.id === slot.subjectId)?.name || 'Subject'}
                                     teacherName={formatTeacherName(slot.teacher) || allTeachers.find(t => t.teacherProfile?.id === slot.teacherId)?.name || 'Teacher'}
+                                    photoUrl={getSlotTeacherPhoto(slot)}
                                     onEdit={() => handleEditClick(slot)}
                                     onDelete={() => handleDeleteClick(slot.id)}
                                   />
                                 ) : isBreakPeriod(period) ? (
-                                  <div className="relative h-full min-h-[104px] overflow-hidden rounded-xl border border-amber-200/70 bg-gradient-to-br from-amber-50 to-orange-50 dark:border-amber-900/30 dark:from-amber-950/20 dark:to-orange-950/10 flex flex-col items-center justify-center gap-1 p-2.5">
+                                  <div className="relative h-[80px] overflow-hidden rounded-xl border border-amber-200/70 bg-gradient-to-br from-amber-50 to-orange-50 dark:border-amber-900/30 dark:from-amber-950/20 dark:to-orange-950/10 flex flex-col items-center justify-center gap-1 p-2.5">
                                     <Coffee className="size-5 text-amber-500" />
                                     <span className="text-xs font-black text-amber-800 dark:text-amber-300">
                                       {period.periodName || 'Break'}
@@ -1370,7 +1406,7 @@ export default function Timetable() {
                                     </span>
                                   </div>
                                 ) : (
-                                  <div className="h-full min-h-[104px] rounded-xl border border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center gap-1 bg-slate-50/40 dark:bg-slate-900/30 text-slate-300 dark:text-slate-600">
+                                  <div className="h-[80px] rounded-xl border border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center gap-1 bg-slate-50/40 dark:bg-slate-900/30 text-slate-500 dark:text-slate-400">
                                     <Plus className="size-4" />
                                     <span className="text-[10px] font-bold uppercase tracking-wider">Free</span>
                                   </div>
@@ -1380,7 +1416,8 @@ export default function Timetable() {
                           );
                         })}
                       </TableRow>
-                    ))}
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -1632,9 +1669,12 @@ export default function Timetable() {
 
                     <div className="flex flex-1 flex-col gap-3 p-3.5">
                       <div className="flex items-center gap-2.5">
-                        <span className={`flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-black ${isEngaged ? palette.avatar : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>
-                          {initials}
-                        </span>
+                        <PhotoAvatar
+                          src={item.photo}
+                          name={item.teacherName}
+                          initials={initials}
+                          className={`size-9 text-xs font-black ${isEngaged ? palette.avatar : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}
+                        />
                         <div className="min-w-0">
                           <p className="truncate text-sm font-black text-slate-950 dark:text-white">{item.teacherName}</p>
                           <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">{item.totalSlots} period{item.totalSlots === 1 ? '' : 's'} / week</p>

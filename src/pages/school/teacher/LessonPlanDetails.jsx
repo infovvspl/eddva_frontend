@@ -77,7 +77,7 @@ export default function LessonPlanDetails() {
             onClick={() => navigate('/school/teacher/teaching-plan')}
             className="h-auto w-full gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-blue-700 sm:w-auto"
           >
-            <ArrowLeft size={16} /> Back to My Teaching Plan
+            <ArrowLeft size={16} /> Back to Lesson Plan
           </Button>
         </Card>
       </div>
@@ -94,7 +94,7 @@ export default function LessonPlanDetails() {
         onClick={() => navigate('/school/teacher/teaching-plan')}
         className="h-auto gap-2 p-0 text-xs font-bold text-slate-600 hover:bg-transparent hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400"
       >
-        <ArrowLeft size={15} /> Back to My Teaching Plan
+        <ArrowLeft size={15} /> Back to Lesson Plan
       </Button>
 
       <Card className="rounded-3xl border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">

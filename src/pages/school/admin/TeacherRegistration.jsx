@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import AddTeacherMultiStep from '@/components/school/admin/forms/AddTeacherMultiStep';
+import { BackButton } from '@/components/shared/BackButton';
 import { useAuth } from '@/context/SchoolAuthContext';
 import api from '@/lib/api/school-client';
 import { notifyDataChanged } from '@/lib/school/apiData';
@@ -68,25 +69,16 @@ export default function TeacherRegistration() {
   return (
     <div className="min-h-[calc(100vh-72px)] w-full bg-gradient-to-br from-slate-50 via-white to-blue-50/40 px-1.5 py-1.5 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 sm:px-3 sm:py-2">
       <div className="flex w-full flex-col gap-2">
-        <div className="flex rounded-[20px] border border-slate-200 bg-white/95 p-2.5 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-950/85 sm:rounded-[24px] sm:p-3">
-          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-            <button
-              type="button"
-              onClick={goBack}
-              className="grid size-10 shrink-0 place-items-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 sm:size-12"
-              aria-label="Back to teachers"
-            >
-              <ArrowLeft className="size-5" />
-            </button>
-            <div className="min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-600 sm:text-[11px] sm:tracking-[0.22em]">
-                {isEditMode ? 'Edit Teacher' : 'New Teacher'}
-              </p>
-              <h1 className="truncate font-display text-base sm:text-3xl font-black leading-tight text-slate-950 dark:text-white">
-                {isEditMode ? teacher?.name || 'Edit Teacher Profile' : 'Register New Teacher'}
-              </h1>
-            </div>
+        <div className="flex items-center justify-between gap-2 rounded-[20px] border border-slate-200 bg-white/95 p-2.5 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-950/85 sm:rounded-[24px] sm:p-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-600 sm:text-[11px] sm:tracking-[0.22em]">
+              {isEditMode ? 'Edit Teacher' : 'New Teacher'}
+            </p>
+            <h1 className="truncate font-display text-base sm:text-3xl font-black leading-tight text-slate-950 dark:text-white">
+              {isEditMode ? teacher?.name || 'Edit Teacher Profile' : 'Register New Teacher'}
+            </h1>
           </div>
+          <BackButton to="/school/admin/teachers" aria-label="Back to teachers" />
         </div>
 
         <div className="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-xl shadow-slate-200/60 dark:border-slate-800 dark:bg-slate-950 dark:shadow-none sm:rounded-[24px]">

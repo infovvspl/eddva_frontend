@@ -66,6 +66,10 @@ export interface Teacher {
   status: string;
   lastLoginAt?: string;
   createdAt: string;
+  /** Older rows / list endpoints use these instead of phoneNumber / batch relations. */
+  phone?: string;
+  batches?: { id: string; name?: string }[];
+  batchIds?: string[];
 }
 
 export interface CreateTeacherPayload {
@@ -868,6 +872,7 @@ export interface CreateMockTestPayload {
   chapterId?: string;
   topicId?: string;
   scheduledAt?: string;
+  deadlineAt?: string;
   questionIds: string[];
   examMode?: string;
 }
@@ -1110,11 +1115,11 @@ export async function aiGenerateMockTestQuestions(params: {
   const chapter = params.chapter;
   const chapters = params.chapters;
 
-  const queue: { difficulty: GenDiff; n: number }[] = [
+  const queue = ([
     { difficulty: "easy", n: params.easyCount },
     { difficulty: "medium", n: params.mediumCount },
     { difficulty: "hard", n: params.hardCount },
-  ].filter((b) => b.n > 0);
+  ] as { difficulty: GenDiff; n: number }[]).filter((b) => b.n > 0);
 
   const useQueue = queue.length > 0 ? queue : [{ difficulty: "medium" as GenDiff, n: totalCount }];
 
@@ -1201,17 +1206,18 @@ export async function aiGenerateMockTestQuestions(params: {
     const needGap = defE + defM + defH === 0 && shortfall > 0;
     // Top-up: fill per-difficulty deficits; if the mix is already satisfied but we are short
     // (e.g. heavy deduplication), request extra "medium" like the old single-lane top-up.
-    const waves: { difficulty: GenDiff; n: number }[] = needGap
+    const waves = (needGap
       ? [{ difficulty: "medium", n: shortfall }]
       : [
           { difficulty: "easy", n: defE },
           { difficulty: "medium", n: defM },
           { difficulty: "hard", n: defH },
-        ].filter((w) => w.n > 0);
-    if (!waves.length) break;
+        ]) as { difficulty: GenDiff; n: number }[];
+    const activeWaves = waves.filter((w) => w.n > 0);
+    if (!activeWaves.length) break;
 
     const topTasks: { difficulty: GenDiff; size: number }[] = [];
-    for (const w of waves) {
+    for (const w of activeWaves) {
       let rem = w.n;
       while (rem > 0) {
         const s = Math.min(AI_GENERATE_BATCH_SIZE, rem);

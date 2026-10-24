@@ -12,15 +12,25 @@ import {
 } from 'lucide-react';
 import {
   getCurrentBlogAdmin, logoutBlogAdmin,
-  getBlogPosts, createBlogPost, updateBlogPost, deleteBlogPost, uploadBlogCoverImage,
+  getBlogPosts, createBlogPost, updateBlogPost, deleteBlogPost,
   type BlogPost, type BlogPostStatus, type BlogSection, type BlogAdmin, type BlogDocumentSettings,
 } from '@/lib/api/blogAdmin';
 import { blogAdminToken } from '@/lib/api/blogAdminClient';
 import { useConfirm } from '@/context/ConfirmContext';
+import { Skeleton } from '@/components/ui/skeleton';
 import ImageCropModal from './ImageCropModal';
+import { stageBlogImage, uploadStagedImages, clearStagedImages } from './pendingImages';
 import BlogBodyEditor from './BlogBodyEditor';
 
 const STATUSES: BlogPostStatus[] = ['DRAFT', 'PUBLISHED'];
+
+// Mirror the backend DTO limits (blog.dto.ts) so oversize input is caught in the form.
+const TITLE_MAX = 400;
+const EXCERPT_MAX = 1000;
+
+type Locale = 'en' | 'hi';
+const LOCALE_LABEL: Record<Locale, string> = { en: 'English', hi: 'हिन्दी' };
+const otherLocale = (l: Locale): Locale => (l === 'en' ? 'hi' : 'en');
 
 const statusStyle: Record<BlogPostStatus, string> = {
   DRAFT: 'bg-slate-100 text-slate-600',
@@ -43,6 +53,9 @@ const emptySection = (): FormSection => ({ heading: '', body: '', _key: nextSect
 interface FormState {
   id: string | null;
   title: string;
+  slug: string;
+  locale: Locale;
+  translationGroup: string | null;
   category: string;
   excerpt: string;
   author: string;
@@ -56,6 +69,9 @@ interface FormState {
 const emptyForm = (): FormState => ({
   id: null,
   title: '',
+  slug: '',
+  locale: 'en',
+  translationGroup: null,
   category: '',
   excerpt: '',
   author: 'EDDVA Team',
@@ -78,11 +94,11 @@ export default function BlogAdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<BlogPostStatus | ''>('');
   const [search, setSearch] = useState('');
+  const [localeFilter, setLocaleFilter] = useState<Locale | ''>('');
 
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm());
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // ── Session check ──────────────────────────────────────────────────────
@@ -108,6 +124,7 @@ export default function BlogAdminDashboardPage() {
     try {
       const res = await getBlogPosts({
         status: statusFilter || undefined,
+        locale: localeFilter || undefined,
         search: search.trim() || undefined,
         page,
         limit: 20,
@@ -119,13 +136,13 @@ export default function BlogAdminDashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, search, page]);
+  }, [statusFilter, localeFilter, search, page]);
 
   useEffect(() => {
     if (!checkingSession && admin) load();
   }, [checkingSession, admin, load]);
 
-  useEffect(() => { setPage(1); }, [statusFilter, search]);
+  useEffect(() => { setPage(1); }, [statusFilter, localeFilter, search]);
 
   const openCreate = () => {
     setForm(emptyForm());
@@ -136,6 +153,9 @@ export default function BlogAdminDashboardPage() {
     setForm({
       id: post.id,
       title: post.title,
+      slug: post.slug,
+      locale: (post.locale as Locale) || 'en',
+      translationGroup: post.translationGroup ?? null,
       category: post.category || '',
       excerpt: post.excerpt || '',
       author: post.author || '',
@@ -150,7 +170,40 @@ export default function BlogAdminDashboardPage() {
     setFormOpen(true);
   };
 
+  // Start a draft in the other language, linked to this post. The copy keeps
+  // the original text as a starting point for the translator to overwrite.
+  const openTranslation = async (post: BlogPost) => {
+    const locale = otherLocale((post.locale as Locale) || 'en');
+    const group = post.translationGroup || post.id;
+    try {
+      if (!post.translationGroup) await updateBlogPost(post.id, { translationGroup: group });
+    } catch {
+      toast.error('Could not link the translation');
+      return;
+    }
+    setForm({
+      id: null,
+      title: post.title,
+      slug: `${post.slug}-${locale}`,
+      locale,
+      translationGroup: group,
+      category: post.category || '',
+      excerpt: post.excerpt || '',
+      author: post.author || '',
+      coverImage: post.coverImage || '',
+      readTime: post.readTime ? String(post.readTime) : '',
+      sections: post.sections && post.sections.length > 0
+        ? post.sections.map((sec) => ({ ...sec, _key: nextSectionKey() }))
+        : [emptySection()],
+      documentSettings: post.documentSettings || emptyForm().documentSettings,
+      status: 'DRAFT',
+    });
+    setFormOpen(true);
+    load();
+  };
+
   const closeForm = () => {
+    clearStagedImages();
     setFormOpen(false);
     setForm(emptyForm());
   };
@@ -172,15 +225,7 @@ export default function BlogAdminDashboardPage() {
       toast.error('Image must be 5 MB or smaller');
       return;
     }
-    setUploading(true);
-    try {
-      const { url } = await uploadBlogCoverImage(file);
-      setForm((f) => ({ ...f, coverImage: url }));
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || 'Cover image upload failed');
-    } finally {
-      setUploading(false);
-    }
+    setForm((f) => ({ ...f, coverImage: stageBlogImage(file) }));
   };
 
   const handleSubmit = async (statusOverride?: BlogPostStatus) => {
@@ -188,22 +233,45 @@ export default function BlogAdminDashboardPage() {
       toast.error('Title is required');
       return;
     }
+    if (form.excerpt.length > EXCERPT_MAX) {
+      toast.error(`Excerpt is ${form.excerpt.length} characters; the limit is ${EXCERPT_MAX}. Please shorten it.`);
+      return;
+    }
     const sections = form.sections
-      .map((s) => ({ heading: s.heading.trim(), body: s.body.trim(), references: s.references }))
+      .map((s) => ({ heading: s.heading.trim(), body: s.body.trim(), contentJson: s.contentJson, references: s.references }))
       .filter((s) => s.heading || s.body);
+
+    setSaving(true);
+    let coverImage = form.coverImage.trim();
+    try {
+      const uploaded = new Map<string, string>();
+      coverImage = await uploadStagedImages(coverImage, uploaded);
+      for (const section of sections) {
+        section.body = await uploadStagedImages(section.body, uploaded);
+        if (section.contentJson) {
+          section.contentJson = JSON.parse(await uploadStagedImages(JSON.stringify(section.contentJson), uploaded));
+        }
+      }
+    } catch (e: any) {
+      setSaving(false);
+      toast.error(e?.response?.data?.message || 'Image upload failed');
+      return;
+    }
 
     const payload = {
       title: form.title.trim(),
+      slug: form.slug.trim() || undefined,
+      locale: form.locale,
+      translationGroup: form.translationGroup ?? undefined,
       category: form.category.trim() || undefined,
       excerpt: form.excerpt.trim() || undefined,
       author: form.author.trim() || undefined,
-      coverImage: form.coverImage.trim() || undefined,
+      coverImage: coverImage || undefined,
       readTime: form.readTime ? Number(form.readTime) : undefined,
       sections,
       status: statusOverride || form.status,
     };
 
-    setSaving(true);
     try {
       if (form.id) {
         await updateBlogPost(form.id, payload);
@@ -253,8 +321,68 @@ export default function BlogAdminDashboardPage() {
 
   if (checkingSession) {
     return (
-      <div className="grid min-h-dvh place-items-center bg-slate-50 dark:bg-slate-950">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+      <div className="min-h-dvh bg-slate-50 dark:bg-slate-950">
+        {/* Top bar skeleton */}
+        <div className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 p-4 sm:p-6">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-8 w-8 rounded-xl" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-8 w-20 rounded-lg" />
+            </div>
+          </div>
+        </div>
+
+        <div className="mx-auto max-w-6xl p-4 sm:p-6">
+          {/* Heading + actions skeleton */}
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <div className="space-y-2">
+              <Skeleton className="h-7 w-16" />
+              <Skeleton className="h-4 w-48" />
+            </div>
+            <div className="flex gap-2">
+              <Skeleton className="h-9 w-24 rounded-xl" />
+              <Skeleton className="h-9 w-24 rounded-xl" />
+            </div>
+          </div>
+
+          {/* Filter strip skeleton */}
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <Skeleton className="h-9 w-48 rounded-lg" />
+            <Skeleton className="h-9 w-24 rounded-lg" />
+            <Skeleton className="h-9 w-24 rounded-lg" />
+          </div>
+
+          {/* Post rows skeleton */}
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
+            {/* Table header */}
+            <div className="flex items-center gap-4 px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+              <Skeleton className="h-3 w-48" />
+              <Skeleton className="h-3 w-20 ml-auto" />
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+            {/* Rows */}
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-4 py-4 border-b border-slate-50 dark:border-slate-800/50 last:border-0">
+                <Skeleton className="h-12 w-16 rounded-lg shrink-0" />
+                <div className="flex-1 space-y-2 min-w-0">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+                <Skeleton className="h-6 w-20 rounded-full shrink-0" />
+                <Skeleton className="h-4 w-24 shrink-0" />
+                <div className="flex gap-1 shrink-0">
+                  <Skeleton className="h-7 w-7 rounded-md" />
+                  <Skeleton className="h-7 w-7 rounded-md" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -315,6 +443,10 @@ export default function BlogAdminDashboardPage() {
             <option value="">All statuses</option>
             {STATUSES.map((s) => <option key={s} value={s}>{s === 'PUBLISHED' ? 'Published' : 'Draft'}</option>)}
           </select>
+          <select value={localeFilter} onChange={(e) => setLocaleFilter(e.target.value as any)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+            <option value="">All languages</option>
+            {(Object.keys(LOCALE_LABEL) as Locale[]).map((l) => <option key={l} value={l}>{LOCALE_LABEL[l]}</option>)}
+          </select>
         </div>
 
         {/* Create / edit panel */}
@@ -331,11 +463,36 @@ export default function BlogAdminDashboardPage() {
 
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="sm:col-span-2 text-xs font-bold text-slate-600 dark:text-slate-300">
-                Title
+                <span className="flex items-center justify-between">
+                  Title
+                  <span className={`font-medium ${form.title.length >= TITLE_MAX ? 'text-red-500' : 'text-slate-400'}`}>{form.title.length}/{TITLE_MAX}</span>
+                </span>
                 <input
                   value={form.title}
+                  maxLength={TITLE_MAX}
                   onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                   placeholder="How AI Is Personalising Learning for Every Student"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-normal outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                />
+              </label>
+
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                Language
+                <select
+                  value={form.locale}
+                  onChange={(e) => setForm((f) => ({ ...f, locale: e.target.value as Locale }))}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-normal outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                >
+                  {(Object.keys(LOCALE_LABEL) as Locale[]).map((l) => <option key={l} value={l}>{LOCALE_LABEL[l]}</option>)}
+                </select>
+              </label>
+
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                URL slug (English letters, optional)
+                <input
+                  value={form.slug}
+                  onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
+                  placeholder="how-ai-personalises-learning"
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-normal outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 />
               </label>
@@ -364,9 +521,13 @@ export default function BlogAdminDashboardPage() {
               </label>
 
               <label className="sm:col-span-2 text-xs font-bold text-slate-600 dark:text-slate-300">
-                Excerpt
+                <span className="flex items-center justify-between">
+                  Excerpt
+                  <span className={`font-medium ${form.excerpt.length >= EXCERPT_MAX ? 'text-red-500' : 'text-slate-400'}`}>{form.excerpt.length}/{EXCERPT_MAX}</span>
+                </span>
                 <textarea
                   value={form.excerpt}
+                  maxLength={EXCERPT_MAX}
                   onChange={(e) => setForm((f) => ({ ...f, excerpt: e.target.value }))}
                   rows={2}
                   placeholder="One or two sentences shown on the blog card and listing."
@@ -399,13 +560,12 @@ export default function BlogAdminDashboardPage() {
                   )}
                   <div className="flex flex-col items-start gap-1.5">
                     <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
-                      {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImageIcon className="h-3.5 w-3.5" />}
-                      {uploading ? 'Uploading…' : form.coverImage ? 'Replace' : 'Upload'}
+                      <ImageIcon className="h-3.5 w-3.5" />
+                      {form.coverImage ? 'Replace' : 'Upload'}
                       <input
                         type="file"
                         accept="image/jpeg,image/png,image/webp"
                         className="hidden"
-                        disabled={uploading}
                         onChange={(e) => { const file = e.target.files?.[0]; if (file) void handleCoverFile(file); e.target.value = ''; }}
                       />
                     </label>
@@ -414,7 +574,7 @@ export default function BlogAdminDashboardPage() {
                         Remove
                       </button>
                     )}
-                    <span className="text-[11px] font-normal text-slate-400">Original image uploaded unchanged. Maximum size: 5 MB.</span>
+                    <span className="text-[11px] font-normal text-slate-400">Uploaded when you save, converted to WebP. Maximum size: 5 MB.</span>
                   </div>
                 </div>
               </div>
@@ -496,8 +656,8 @@ export default function BlogAdminDashboardPage() {
           <div className="space-y-3">
             {items.map((post) => (
               <div key={post.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="flex min-w-0 gap-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 flex-1 gap-3">
                     {post.coverImage ? (
                       <img src={post.coverImage} alt="" className="h-12 w-12 flex-shrink-0 rounded-lg object-cover" />
                     ) : (
@@ -505,23 +665,26 @@ export default function BlogAdminDashboardPage() {
                         <ImageIcon className="h-5 w-5" />
                       </span>
                     )}
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="truncate text-sm font-black text-slate-900 dark:text-white">{post.title}</h3>
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${statusStyle[post.status]}`}>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="min-w-0 truncate text-sm font-black text-slate-900 dark:text-white">{post.title}</h3>
+                        <span className="flex-shrink-0 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-black text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-300">
+                          {LOCALE_LABEL[(post.locale as Locale) || 'en']}
+                        </span>
+                        <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black ${statusStyle[post.status]}`}>
                           {post.status === 'PUBLISHED' ? 'Published' : 'Draft'}
                         </span>
                       </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-                        {post.category && <span className="rounded-md bg-slate-100 px-1.5 py-0.5 font-bold uppercase text-slate-500 dark:bg-slate-800">{post.category}</span>}
-                        {post.author && <span>{post.author}</span>}
-                        <span>/blog/{post.slug}</span>
-                        <span>{new Date(post.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                      <div className="mt-1 flex items-center gap-x-3 overflow-hidden whitespace-nowrap text-xs text-slate-500">
+                        {post.category && <span className="flex-shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 font-bold uppercase text-slate-500 dark:bg-slate-800">{post.category}</span>}
+                        {post.author && <span className="flex-shrink-0">{post.author}</span>}
+                        <span className="min-w-0 truncate">/blog/{post.slug}</span>
+                        <span className="flex-shrink-0">{new Date(post.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
-                      {post.excerpt && <p className="mt-1.5 max-w-2xl text-xs text-slate-600 dark:text-slate-300">{post.excerpt}</p>}
+                      {post.excerpt && <p className="mt-1.5 line-clamp-2 max-w-2xl text-xs text-slate-600 dark:text-slate-300">{post.excerpt}</p>}
                     </div>
                   </div>
-                  <div className="flex flex-shrink-0 items-center gap-1.5">
+                  <div className="flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap">
                     <button
                       onClick={() => togglePublish(post)}
                       title={post.status === 'PUBLISHED' ? 'Unpublish' : 'Publish'}
@@ -529,6 +692,14 @@ export default function BlogAdminDashboardPage() {
                     >
                       {post.status === 'PUBLISHED' ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                       {post.status === 'PUBLISHED' ? 'Unpublish' : 'Publish'}
+                    </button>
+                    <button
+                      onClick={() => openTranslation(post)}
+                      title={`Create ${LOCALE_LABEL[otherLocale((post.locale as Locale) || 'en')]} version`}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      {LOCALE_LABEL[otherLocale((post.locale as Locale) || 'en')]}
                     </button>
                     <button
                       onClick={() => openEdit(post)}

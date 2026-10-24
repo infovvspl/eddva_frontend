@@ -405,7 +405,7 @@ const AttendanceSystem: React.FC = () => {
            finalOptions = institutePeriods;
         }
 
-        const uniquePeriodOptions = Array.from(new Map(finalOptions.map((item: any) => [item.value, item])).values());
+        const uniquePeriodOptions = Array.from(new Map<string, any>(finalOptions.map((item: any) => [item.value, item])).values());
 
         if (editingSessionId && selectedPeriodRef.current) {
            const exists = uniquePeriodOptions.find((p: any) => p.value === selectedPeriodRef.current);
@@ -902,6 +902,7 @@ const AttendanceSystem: React.FC = () => {
                     label="Attendance Date"
                     type="date"
                     value={date}
+                    max={new Date().toISOString().split('T')[0]}
                     onChange={(e) => setDate(e.target.value)}
                     disabled={editingSessionId !== null}
                   />

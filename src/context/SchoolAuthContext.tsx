@@ -77,7 +77,7 @@ function buildSchoolUserFromStore(
     rawRole: storeUser.rawRole ?? storeUser.role,
     instituteId: storeUser.instituteId ?? storeUser.tenantId ?? null,
     tenantName: storeUser.tenantName,
-    tenantState: (storeUser as any).tenantState,
+    tenantState: storeUser.tenantState,
     profileImage: storeUser.profileImage ?? null,
     phone: storeUser.phone ?? null,
     isActive: true,
@@ -471,6 +471,22 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({
     notifyServerLogout(reason);
     clearAuth();
     tokenStorage.clear();
+
+    // Arrived here via the ERP's "Switch to LMS" SSO hand-off (see SsoLanding.tsx)?
+    // Send the admin back to the ERP's login instead of this app's own one.
+    let ssoOrigin: string | null = null;
+    try {
+      ssoOrigin = sessionStorage.getItem("ssoOrigin");
+      sessionStorage.removeItem("ssoOrigin");
+    } catch {
+      // ignore — falls back to this app's own login below
+    }
+    if (ssoOrigin === "erp") {
+      const erpFrontendUrl = import.meta.env.VITE_ERP_FRONTEND_URL || "http://localhost:5173";
+      window.location.replace(`${erpFrontendUrl}/login`);
+      return;
+    }
+
     window.location.replace("/login");
   };
 

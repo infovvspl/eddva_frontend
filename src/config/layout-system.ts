@@ -49,7 +49,6 @@ const ROUTE_LAYOUT_REGISTRY: Map<string, PageLayoutType> = new Map<string, PageL
   ['/school/student/timetable', 'workspace'],
   ['/school/student/calendar', 'workspace'],
   ['/school/student/analytics', 'workspace'],
-  ['/school/student/planner', 'workspace'],
   ['/school/student/study-materials', 'workspace'],
   ['/school/student/recorded-classes', 'workspace'],
   ['/school/student/live-classes', 'workspace'],
@@ -81,6 +80,10 @@ export function getPageLayoutType(pathname: string, routeHandle?: RouteLayoutMet
   }
 
   // 3. Dynamic pattern fallback
+  // The AI learning path is a full-height chat app: its panes scroll on their own.
+  if (pathname === '/school/student/planner' || pathname.startsWith('/school/student/planner/')) {
+    return 'immersive';
+  }
   if (pathname.includes('/live/') || (pathname.includes('/assessments/') && pathname.includes('/take'))) {
     return 'immersive';
   }

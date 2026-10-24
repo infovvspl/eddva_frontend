@@ -8,7 +8,7 @@ import { useParentContext } from "@/components/school/parent/ParentAuthGuard";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
-import { uploadToS3 } from "@/lib/upload";
+import { uploadToS3 } from "@/lib/api/upload";
 
 export default function ParentProfile() {
   const { user } = useAuthStore();
@@ -16,8 +16,8 @@ export default function ParentProfile() {
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.avatar ?? user?.profileImage ?? null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.avatar ?? user?.profileImage ?? null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.profileImage ?? null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.profileImage ?? null);
   const [form, setForm] = useState({ name: user?.name || "", email: user?.email || "", phone: user?.phone || "" });
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
@@ -36,10 +36,10 @@ export default function ParentProfile() {
   });
 
   useEffect(() => {
-    setAvatarUrl(user?.avatar ?? user?.profileImage ?? null);
-    setAvatarPreview(user?.avatar ?? user?.profileImage ?? null);
+    setAvatarUrl(user?.profileImage ?? null);
+    setAvatarPreview(user?.profileImage ?? null);
     setForm({ name: user?.name || "", email: user?.email || "", phone: user?.phone || "" });
-  }, [user?.avatar, user?.profileImage, user?.name, user?.email, user?.phone]);
+  }, [user?.profileImage, user?.name, user?.email, user?.phone]);
 
   useEffect(() => {
     if (preferences?.enablePush !== undefined) {

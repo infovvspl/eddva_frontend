@@ -7,6 +7,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import GlassCard from '@/components/school/GlassCard';
 import Badge from '@/components/school/Badge';
 import ScoreTrendChart, { scoreTrendDelta } from '@/components/school/student/ScoreTrendChart';
+import SubjectMasteryChart from '@/components/school/student/SubjectMasteryChart';
+import { calculateReportCardPercentage } from '@/lib/school/reportCardCalculator';
 import '@/pages/school/teacher/StudentReportClasses.css';
 
 export default function Analytics() {
@@ -35,209 +37,8 @@ export default function Analytics() {
     }
   };
 
-  const getClassNumberFromName = (className = '') => {
-    const cls = String(className || '').toLowerCase();
-    const numeric = cls.match(/\b(?:class|grade|standard|std)?\s*(\d{1,2})\b/);
-    if (numeric) return Number(numeric[1]);
-
-    const romanMap = {
-      i: 1, ii: 2, iii: 3, iv: 4, v: 5,
-      vi: 6, vii: 7, viii: 8, ix: 9, x: 10, xi: 11, xii: 12
-    };
-    const tokens = cls.split(/[^a-z0-9]+/).filter(Boolean);
-    const roman = tokens.find((token) => romanMap[token]);
-    return roman ? romanMap[roman] : null;
-  };
-
-  const isBoardResultClass = (className = '') => {
-    const classNumber = getClassNumberFromName(className);
-    return classNumber === 10 || classNumber === 12;
-  };
-
-  const isPrePrimaryResultClass = (className = '') => {
-    const cls = String(className || '').toLowerCase();
-    return cls.includes('lkg') || cls.includes('ukg') || cls.includes('nursery') || cls.includes('pre');
-  };
-
-  const isInformationTechnologySubject = (subjectName = '') => {
-    const subject = String(subjectName || '').trim().toLowerCase();
-    return /\b(information|informational)\s+technology\b/.test(subject) || 
-           /\bcomputer\s+science\b/.test(subject) ||
-           /\bcomputer\b/.test(subject) ||
-           subject === 'it' || 
-           subject === 'cs';
-  };
-
-  const calculateReportCardPercentage = (recordsList, className) => {
-    const isBoard = isBoardResultClass(className);
-    const isPrePrimary = isPrePrimaryResultClass(className);
-
-    const subjectResults = recordsList.filter((res) => res.subjectName && !(res.assessmentTitle || '').toLowerCase().includes('(total)'));
-    if (!subjectResults.length) return 0;
-    if (isPrePrimary) return 0;
-
-    const subjectMap = {};
-    subjectResults.forEach((res) => {
-      const sub = res.subjectName || 'General';
-      if (!subjectMap[sub]) subjectMap[sub] = [];
-      subjectMap[sub].push(res);
-    });
-
-    let subjectFinals = [];
-
-    Object.entries(subjectMap).forEach(([subject, records]) => {
-      const isIT = isInformationTechnologySubject(subject);
-      
-      if (isBoard) {
-        let obtained = 0, max = 0;
-        records.forEach((rec) => {
-          try {
-            if (rec.remarks && String(rec.remarks).trim().startsWith('{')) {
-              const parsed = JSON.parse(rec.remarks);
-              if (parsed?.type === 'breakdown' && parsed.components) {
-                Object.values(parsed.components).forEach((comp) => {
-                  if (comp && comp.enabled) {
-                    obtained += Number(comp.obtained || 0);
-                    max += Number(comp.max || 0);
-                  }
-                });
-              }
-            } else {
-              obtained += Number(rec.marksObtained || 0);
-              max += Number(rec.totalMarks || 100);
-            }
-          } catch (e) {
-            obtained += Number(rec.marksObtained || 0);
-            max += Number(rec.totalMarks || 100);
-          }
-        });
-        const finalVal = max > 0 ? (obtained / max) * 100 : 0;
-        subjectFinals.push(finalVal);
-      } else {
-        const slotMap = new Map();
-        const getTermSlot = (titleStr) => {
-          const title = titleStr.toLowerCase();
-          if (title.includes('t1') || title.includes('term 1') || title.includes('mid') || title.includes('half')) {
-            if (title.includes('internal') || title.includes('periodic') || title.includes('unit')) {
-              return 't1Internal';
-            }
-            if (isIT) {
-              if (title.includes('practical')) return 'halfYearlyPractical';
-              if (title.includes('theory')) return 'halfYearlyTheory';
-            }
-            return 'halfYearly';
-          }
-          if (title.includes('t2') || title.includes('term 2') || title.includes('annual')) {
-            if (title.includes('internal') || title.includes('periodic') || title.includes('unit')) {
-              return 't2Internal';
-            }
-            if (isIT) {
-              if (title.includes('practical')) return 'annualPractical';
-              if (title.includes('theory')) return 'annualTheory';
-            }
-            return 'annual';
-          }
-          return null;
-        };
-
-        [...records]
-          .sort((a, b) => {
-            const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
-            const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
-            return aTime - bTime;
-          })
-          .forEach((rec) => {
-            const slot = getTermSlot(rec.assessmentTitle || '');
-            if (slot) {
-              slotMap.set(slot, rec);
-            }
-          });
-
-        let t1Int = 0, h1Exam = 0;
-        let t2Int = 0, aExam = 0;
-        let theoryObtained = 0, theoryMax = 0;
-        let internalObtained = 0;
-
-        Array.from(slotMap.values()).forEach((rec) => {
-          const title = (rec.assessmentTitle || '').toLowerCase();
-          const marks = Number(rec.marksObtained || 0);
-          if (title.includes('t1') || title.includes('term 1') || title.includes('mid') || title.includes('half')) {
-            if (title.includes('internal') || title.includes('periodic') || title.includes('unit')) {
-              t1Int += marks;
-            } else {
-              h1Exam += marks;
-            }
-          } else if (title.includes('t2') || title.includes('term 2') || title.includes('annual')) {
-            if (title.includes('internal') || title.includes('periodic') || title.includes('unit')) {
-              t2Int += marks;
-            } else {
-              aExam += marks;
-            }
-          }
-          
-          try {
-            if (rec.remarks && rec.remarks.trim().startsWith('{')) {
-              const parsed = JSON.parse(rec.remarks);
-              if (parsed.type === 'breakdown' && parsed.components) {
-                const comps = parsed.components;
-                if (comps.theory?.enabled) {
-                  theoryObtained += Number(comps.theory.obtained || 0);
-                  theoryMax += Number(comps.theory.max || 0);
-                }
-                if (comps.internal?.enabled) {
-                  internalObtained += Number(comps.internal.obtained || 0);
-                }
-              }
-            } else {
-              theoryObtained += Number(rec.marksObtained || 0);
-              theoryMax += Number(rec.totalMarks || 100);
-            }
-          } catch (e) {
-            theoryObtained += Number(rec.marksObtained || 0);
-            theoryMax += Number(rec.totalMarks || 100);
-          }
-        });
-
-        if (h1Exam === 0 && aExam === 0) {
-          h1Exam = Math.round(theoryObtained * 0.4);
-          aExam = Math.round(theoryObtained * 0.5);
-          t1Int = Math.round(internalObtained || (theoryObtained * 0.05));
-          t2Int = Math.round(internalObtained || (theoryObtained * 0.05));
-        }
-
-        let h1Max = 80, aMax = 80;
-        Array.from(slotMap.values()).forEach((rec) => {
-          const title = (rec.assessmentTitle || '').toLowerCase();
-          const maxVal = Number(rec.totalMarks || 0);
-          if (maxVal > 0) {
-            if (title.includes('t1') || title.includes('term 1') || title.includes('mid') || title.includes('half')) {
-              if (!title.includes('internal') && !title.includes('periodic') && !title.includes('unit')) {
-                h1Max = maxVal;
-              }
-            } else if (title.includes('t2') || title.includes('term 2') || title.includes('annual')) {
-              if (!title.includes('internal') && !title.includes('periodic') && !title.includes('unit')) {
-                aMax = maxVal;
-              }
-            }
-          }
-        });
-
-        let finalVal = 0;
-        if (isIT) {
-          finalVal = (h1Exam + aExam) / 2;
-        } else {
-          const hyScaled = h1Max > 0 ? (h1Exam / h1Max) * 30 : 0;
-          const annualScaled = aMax > 0 ? (aExam / aMax) * 50 : 0;
-          const internalScaled = (t1Int + t2Int) / 2;
-          finalVal = hyScaled + internalScaled + annualScaled;
-        }
-        subjectFinals.push(Math.min(100, Math.round(finalVal * 100) / 100));
-      }
-    });
-
-    const sum = subjectFinals.reduce((acc, val) => acc + val, 0);
-    return subjectFinals.length > 0 ? Math.round((sum / subjectFinals.length) * 100) / 100 : 0;
-  };
+  // Report-card percentage is computed by the shared calculator so this
+  // agrees with the admin report card and every other dashboard's badge.
 
   const resultsByClass = useMemo(() => {
     if (!student) return {};
@@ -423,42 +224,23 @@ export default function Analytics() {
             <div className="rounded-2xl sm:rounded-[2rem] border border-slate-100 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <h2 className="mb-4 sm:mb-6 text-base sm:text-lg font-black text-slate-900 dark:text-white">Subject Mastery</h2>
               
-              <div className="space-y-4 sm:space-y-6">
-                {currentClassSubjectMastery.length === 0 ? (
-                  <p className="text-xs sm:text-sm text-slate-500">Not enough data to calculate mastery.</p>
-                ) : (
-                  currentClassSubjectMastery.map((sub, i) => (
-                    <div key={i}>
-                      <div className="mb-1.5 flex items-center justify-between text-xs sm:text-sm font-bold">
-                        <span className="text-slate-700 dark:text-slate-300">{sub.subjectName}</span>
-                        <span className="text-indigo-600 dark:text-indigo-400">{sub.accuracy}%</span>
-                      </div>
-                      <div className="h-2.5 sm:h-3 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                        <div 
-                          className="h-full rounded-full bg-indigo-600 transition-all duration-1000" 
-                          style={{ width: `${sub.accuracy}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+              <SubjectMasteryChart data={currentClassSubjectMastery} height={isMobile ? 280 : 320} compact={isMobile} />
             </div>
 
             {/* Class Cards */}
             <div className="space-y-4">
-              <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-1.5 flex items-center gap-2">
+              <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4 flex items-center gap-2">
                 <GraduationCap className="text-indigo-600 size-4" /> Academic Report Cards
               </h3>
               {Object.keys(resultsByClass).length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,17rem),1fr))] gap-4 sm:gap-6">
                   {Object.entries(resultsByClass).map(([classKey, results]) => {
                     const classNameVal = results[0]?.className || classKey;
                     const academicYearVal = results[0]?.academicYear || '';
                     const subjectResults = results.filter((res) => res.subjectName && !(res.assessmentTitle || '').toLowerCase().includes('(total)'));
                     const subjectsList = [...new Set(subjectResults.map((res) => res.subjectName).filter(Boolean))];
                     const subjectsDisplay = subjectsList.length > 0 ? subjectsList.join(', ') : 'General / All Subjects';
-                    const overallPercentage = calculateReportCardPercentage(results, classNameVal);
+                    const overallPercentage = calculateReportCardPercentage(results);
                     const cardStatus = reportCardStatuses[classKey];
                     const notYetApproved = cardStatus && cardStatus !== 'APPROVED';
 
@@ -466,14 +248,14 @@ export default function Analytics() {
                       <GlassCard
                         key={classKey}
                         onClick={() => navigate(`/school/student/analytics/report-card?class=${encodeURIComponent(classNameVal)}&year=${encodeURIComponent(academicYearVal)}`)}
-                        className="group relative cursor-pointer p-6 rounded-3xl border border-slate-200/85 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 flex flex-col justify-between h-48 w-full active:scale-[0.99] student-report-classes__card"
+                        className="group relative cursor-pointer p-5 sm:p-6 rounded-3xl border border-slate-200/85 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 flex flex-col justify-between gap-4 min-h-48 h-auto min-w-0 w-full active:scale-[0.99] student-report-classes__card"
                       >
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-start">
-                            <span className="px-3 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 font-extrabold text-[10px] uppercase tracking-wider">
+                        <div className="min-w-0 space-y-2">
+                          <div className="flex justify-between items-start gap-2">
+                            <span className="min-w-0 truncate px-3 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 font-extrabold text-[10px] uppercase tracking-wider">
                               {academicYearVal || 'Academic Year'}
                             </span>
-                            <div className="size-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-blue-500 group-hover:bg-blue-50 dark:group-hover:bg-blue-950/30 transition-colors">
+                            <div className="size-8 shrink-0 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-blue-500 group-hover:bg-blue-50 dark:group-hover:bg-blue-950/30 transition-colors">
                               <FileText size={16} />
                             </div>
                           </div>
@@ -482,19 +264,19 @@ export default function Analytics() {
                               {cardStatus === 'PUBLISHED' ? 'Awaiting Admin Approval' : 'Not Yet Published'}
                             </span>
                           )}
-                          <h4 className="text-lg font-black text-slate-800 dark:text-white leading-tight tracking-tight group-hover:text-blue-600 transition-colors">
+                          <h4 className="text-lg font-black text-slate-800 dark:text-white leading-tight tracking-tight break-words line-clamp-2 group-hover:text-blue-600 transition-colors" title={classNameVal}>
                             {classNameVal}
                           </h4>
-                          <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 line-clamp-2 pr-4 leading-normal">
+                          <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 line-clamp-2 break-words leading-normal" title={`Subjects: ${subjectsDisplay}`}>
                             Subjects: {subjectsDisplay}
                           </p>
                         </div>
-                        <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
-                          <div>
+                        <div className="flex items-center justify-between gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                          <div className="min-w-0">
                             <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Overall weighted result</div>
                             <div className="text-xs font-black text-slate-400 dark:text-slate-500 mt-0.5">Report Card Score</div>
                           </div>
-                          <div className="text-right">
+                          <div className="shrink-0 text-right">
                             <div className="text-2xl font-black text-blue-600 dark:text-blue-400">{overallPercentage}%</div>
                           </div>
                         </div>

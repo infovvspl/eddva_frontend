@@ -206,7 +206,7 @@ const StudentsTab = ({ batchId, subdomain }: { batchId: string, subdomain?: stri
     </div>
   );
 
-  const students = Array.isArray(data) ? data : data?.items || [];
+  const students = Array.isArray(data) ? data : (data as { items?: any[] } | undefined)?.items || [];
 
   return (
     <div className="bg-white rounded-[28px] border border-slate-100 shadow-sm overflow-hidden">

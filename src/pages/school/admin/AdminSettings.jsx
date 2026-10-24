@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
-import { Bell, Globe, Loader2, Save, Shield, SlidersHorizontal, User, Plus, Trash2, Edit2, Wrench, AlertTriangle } from 'lucide-react';
+import { Camera, Bell, Globe, Loader2, Save, Shield, SlidersHorizontal, User, Plus, Trash2, Edit2, Wrench, AlertTriangle } from 'lucide-react';
 import { EddvaLogo, InstituteLogo, SchoolLogo, StatusBadge } from '@/components/school/admin/Brand';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { formatTenantUrl, getBaseAppUrl } from '@/lib/school/tenantRedirect';
@@ -10,7 +10,32 @@ import { toast } from 'sonner';
 import { useConfirm } from '@/context/ConfirmContext';
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { AvatarUploadPopover } from "@/components/ui/avatar-upload-popover";
+import { useAuthStore } from '@/lib/auth-store';
+import { useAvatarRemove, useAvatarUpload } from "@/hooks/use-avatar-upload";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+function validateProfile(form, touched) {
+  const errors = {};
+  const name = form.name.trim();
+  const email = form.email.trim();
+  if (touched.name) {
+    if (!name) errors.name = 'Name is required';
+    else if (name.length < 2) errors.name = 'Name must be at least 2 characters';
+    else if (name.length > 100) errors.name = 'Name must be 100 characters or fewer';
+  }
+  if (touched.email) {
+    if (!email) errors.email = 'Email is required';
+    else if (!EMAIL_RE.test(email)) errors.email = 'Enter a valid email address';
+  }
+  return errors;
+}
 
 const baseTabs = [
   { id: 'workspace', label: 'Workspace', icon: Globe },
@@ -57,6 +82,36 @@ export default function Settings() {
 
   // Platform maintenance mode (super-admin only)
   const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [photoOpen, setPhotoOpen] = useState(false);
+  const [profileForm, setProfileForm] = useState({ name: user?.name || '', email: user?.email || '' });
+  const [profileTouched, setProfileTouched] = useState({});
+  const [savingProfile, setSavingProfile] = useState(false);
+  const profileErrors = useMemo(() => validateProfile(profileForm, profileTouched), [profileForm, profileTouched]);
+  const profileDirty = profileForm.name.trim() !== (user?.name || '') || profileForm.email.trim().toLowerCase() !== (user?.email || '').toLowerCase();
+  const saveProfile = async (e) => {
+    e.preventDefault();
+    const all = validateProfile(profileForm, { name: true, email: true });
+    setProfileTouched({ name: true, email: true });
+    if (all.name || all.email) return;
+    setSavingProfile(true);
+    try {
+      const res = await api.patch('/auth/profile', { name: profileForm.name.trim(), email: profileForm.email.trim().toLowerCase() });
+      const saved = res.data?.data ?? res.data;
+      const { user: u, setUser } = useAuthStore.getState();
+      if (u) setUser({ ...u, name: saved.name, email: saved.email });
+      setProfileForm({ name: saved.name, email: saved.email });
+      toast.success('Profile updated');
+    } catch (err) {
+      const msg = err?.response?.data?.message;
+      const text = Array.isArray(msg) ? msg.join(', ') : msg || 'Could not update profile';
+      toast.error(text);
+      if (/email/i.test(text)) setProfileTouched((t) => ({ ...t, email: true }));
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+  const uploadPhoto = useAvatarUpload('school');
+  const removePhoto = useAvatarRemove('school');
   const [maintenanceLoading, setMaintenanceLoading] = useState(false);
   const [savingMaintenance, setSavingMaintenance] = useState(false);
 
@@ -219,6 +274,7 @@ export default function Settings() {
                 ['announcementAlerts', 'Announcement Alerts', 'Get alerts for new announcements/notices.'],
                 ['assignmentAlerts', 'Assignment Alerts', 'Deadlines and grading reminders.'],
                 ['attendanceAlerts', 'Attendance Alerts', 'Attendance status notifications.'],
+                ['studyPlannerAlerts', 'AI Study Planner Alerts', 'Weekly notice about students who stop studying, show low engagement, or study without improving.'],
                 ['soundEnabled', 'Notification Sounds', 'Play a sound alert when a message arrives.'],
                 ['doNotDisturb', 'Do Not Disturb Mode', 'Mute all system and desktop notifications.'],
               ].map(([key, label, description]) => (
@@ -241,16 +297,55 @@ export default function Settings() {
           {activeTab === 'profile' && (
             <div className="space-y-6">
               <h2 className="font-display text-lg sm:text-xl font-bold text-surface-950">Profile</h2>
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="block">
-                  <span className="mb-1.5 block text-xs sm:text-sm font-bold text-surface-700">Name</span>
-                  <input defaultValue={user?.name || 'Admin'} className="w-full rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium outline-none focus:border-brand-300 focus:bg-white focus:ring-4 focus:ring-brand-100" />
-                </label>
-                <label className="block">
-                  <span className="mb-1.5 block text-xs sm:text-sm font-bold text-surface-700">Email</span>
-                  <input defaultValue={user?.email || ''} className="w-full rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium outline-none focus:border-brand-300 focus:bg-white focus:ring-4 focus:ring-brand-100" />
-                </label>
-              </div>
+              <form onSubmit={saveProfile} noValidate className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto] lg:items-start">
+                  <Field data-invalid={!!profileErrors.name}>
+                    <FieldLabel htmlFor="profile-name">Name</FieldLabel>
+                    <Input
+                      id="profile-name"
+                      className="h-8 px-2.5 py-1 text-sm md:text-sm"
+                      value={profileForm.name}
+                      maxLength={100}
+                      aria-invalid={!!profileErrors.name}
+                      onChange={(e) => setProfileForm((f) => ({ ...f, name: e.target.value }))}
+                      onBlur={() => setProfileTouched((t) => ({ ...t, name: true }))}
+                    />
+                    <FieldError>{profileErrors.name}</FieldError>
+                  </Field>
+                  <Field data-invalid={!!profileErrors.email}>
+                    <FieldLabel htmlFor="profile-email">Email</FieldLabel>
+                    <Input
+                      id="profile-email"
+                      type="email"
+                      className="h-8 px-2.5 py-1 text-sm md:text-sm"
+                      value={profileForm.email}
+                      maxLength={254}
+                      aria-invalid={!!profileErrors.email}
+                      onChange={(e) => setProfileForm((f) => ({ ...f, email: e.target.value }))}
+                      onBlur={() => setProfileTouched((t) => ({ ...t, email: true }))}
+                    />
+                    <FieldError>{profileErrors.email}</FieldError>
+                  </Field>
+                  <Field className="sm:col-span-2 lg:col-span-1 lg:w-auto">
+                    <FieldLabel>Photo</FieldLabel>
+                    <div className="flex h-8 items-center gap-3">
+                      <Avatar className="size-8">
+                        <AvatarImage src={user?.profileImage || undefined} alt={user?.name || 'Admin'} />
+                        <AvatarFallback className="text-xs font-semibold">{(user?.name || 'A').slice(0, 2).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <AvatarUploadPopover open={photoOpen} onOpenChange={setPhotoOpen} onUpload={uploadPhoto} onRemove={removePhoto} hasPhoto={!!user?.profileImage} currentSrc={user?.profileImage} name={user?.name}>
+                        <Button type="button" variant="outline" size="sm" className="h-8 px-2.5 text-xs" onClick={() => setPhotoOpen((o) => !o)}>
+                          <Camera className="size-4" /> Change photo
+                        </Button>
+                      </AvatarUploadPopover>
+                    </div>
+                  </Field>
+                </div>
+                <Button type="submit" size="sm" className="h-8" disabled={savingProfile || !profileDirty}>
+                  {savingProfile && <Loader2 className="size-4 animate-spin" />}
+                  Save changes
+                </Button>
+              </form>
             </div>
           )}
 

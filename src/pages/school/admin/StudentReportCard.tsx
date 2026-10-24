@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Printer, FileText, Loader2, GraduationCap, Settings, Eye, CheckCircle, Info, QrCode, Upload, Image as ImageIcon, Trash2, Plus, User, Sparkles } from 'lucide-react';
+import { Printer, FileText, Loader2, GraduationCap, Settings, Eye, CheckCircle, Info, QrCode, Upload, Image as ImageIcon, Trash2, Plus, User, Sparkles } from 'lucide-react';
+import { BackButton } from '@/components/shared/BackButton';
 import { toast } from 'sonner';
 import html2canvas from 'html2canvas';
 import api from '@/lib/api/school-client';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { calculateSubjectBreakdown } from '@/lib/school/reportCardCalculator';
 
 type ReportType = 'pre_primary' | 'primary' | 'middle' | 'high_school' | 'board_class';
 
@@ -132,7 +134,7 @@ export default function StudentReportCard() {
     // targetYear/targetClass (from the URL) reflect the specific report card being viewed —
     // e.g. a past class — and must win over the student's current class profile, otherwise
     // actions taken while viewing a historical report card silently apply to the current one.
-    const academicYear = targetYear || profileForRemarks.section?.class?.academicYear || student?.academicYear || '2025-2026';
+    const academicYear = targetYear || profileForRemarks.section?.class?.academicYear || student?.academicYear || '2026-2027';
     const className = targetClass || profileForRemarks.section?.class?.name || student?.className || undefined;
     if (!studentUserId || !academicYear) return;
 
@@ -156,7 +158,7 @@ export default function StudentReportCard() {
     const profileForRemarks = student?.studentProfile || {};
     // See note above: targetYear/targetClass must win so workflow actions apply to the
     // report card actually on screen, not the student's current class.
-    const academicYear = targetYear || profileForRemarks.section?.class?.academicYear || student?.academicYear || '2025-2026';
+    const academicYear = targetYear || profileForRemarks.section?.class?.academicYear || student?.academicYear || '2026-2027';
     const className = targetClass || profileForRemarks.section?.class?.name || student?.className || undefined;
     return { studentUserId, academicYear, className };
   };
@@ -260,7 +262,7 @@ export default function StudentReportCard() {
   const saveTeacherRemarks = async () => {
     const studentUserId = student?.id || student?.userId || id || searchParams.get('studentId');
     const profileForRemarks = student?.studentProfile || {};
-    const academicYear = targetYear || profileForRemarks.section?.class?.academicYear || student?.academicYear || '2025-2026';
+    const academicYear = targetYear || profileForRemarks.section?.class?.academicYear || student?.academicYear || '2026-2027';
     const className = targetClass || profileForRemarks.section?.class?.name || student?.className || undefined;
     if (!studentUserId || !academicYear) return;
 
@@ -397,260 +399,20 @@ export default function StudentReportCard() {
 
   const profile = student?.studentProfile || {};
   const currentClassName = profile.section?.class?.name || student?.className || targetClass || 'Class IX';
-  const currentAcademicYear = profile.section?.class?.academicYear || student?.academicYear || targetYear || '2025-2026';
+  const currentAcademicYear = profile.section?.class?.academicYear || student?.academicYear || targetYear || '2026-2027';
 
-  const isInformationTechnologySubject = (subjectName = '') => {
-    const subject = String(subjectName || '').trim().toLowerCase();
-    return /\b(information|informational)\s+technology\b/.test(subject) || 
-           /\bcomputer\s+science\b/.test(subject) ||
-           /\bcomputer\b/.test(subject) ||
-           subject === 'it' || 
-           subject === 'cs';
-  };
-
-  const getSchoolGrade = (pct: number) => {
-    if (pct >= 91) return 'O';
-    if (pct >= 81) return 'E';
-    if (pct >= 71) return 'A';
-    if (pct >= 61) return 'B';
-    if (pct >= 51) return 'C';
-    if (pct >= 41) return 'D';
-    return 'F';
-  };
-
-  // Parse actual student previousResults dynamically (NOT hardcoded)
+  // Parse actual student previousResults dynamically (NOT hardcoded) via the
+  // shared calculator, so this matches every other view's report-card percentage.
   const scholasticResults = useMemo(() => {
     if (!student || !student.previousResults) return [];
 
-    // Filter results to only match the selected class
     const filtered = student.previousResults.filter((res: any) => {
-      const isTotal = !res.subjectName || (res.assessmentTitle && res.assessmentTitle.toLowerCase().includes('(total)'));
-      if (isTotal) return false; // filter out consolidated overall rows
       if (targetClass && res.className !== targetClass) return false;
       if (targetYear && res.academicYear !== targetYear) return false;
       return true;
     });
 
-    // Group items by subjectName
-    const subjectMap: Record<string, any[]> = {};
-    filtered.forEach((res: any) => {
-      const sub = res.subjectName || 'General';
-      if (!subjectMap[sub]) subjectMap[sub] = [];
-      subjectMap[sub].push(res);
-    });
-
-    return Object.entries(subjectMap).map(([subject, records]) => {
-      const isInformationTechnology = isInformationTechnologySubject(subject);
-      const slotMap = new Map<string, any>();
-      const getTermSlot = (titleStr: string) => {
-        const title = titleStr.toLowerCase();
-        if (title.includes('t1') || title.includes('term 1') || title.includes('mid') || title.includes('half')) {
-          if (title.includes('internal') || title.includes('periodic') || title.includes('unit')) {
-            return 't1Internal';
-          }
-          if (isInformationTechnology) {
-            if (title.includes('practical')) return 'halfYearlyPractical';
-            if (title.includes('theory')) return 'halfYearlyTheory';
-          }
-          return 'halfYearly';
-        }
-        if (title.includes('t2') || title.includes('term 2') || title.includes('annual')) {
-          if (title.includes('internal') || title.includes('periodic') || title.includes('unit')) {
-            return 't2Internal';
-          }
-          if (isInformationTechnology) {
-            if (title.includes('practical')) return 'annualPractical';
-            if (title.includes('theory')) return 'annualTheory';
-          }
-          return 'annual';
-        }
-        return null;
-      };
-
-      [...records]
-        .sort((a: any, b: any) => {
-          const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
-          const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
-          return aTime - bTime;
-        })
-        .forEach((rec: any) => {
-          const slot = getTermSlot(rec.assessmentTitle || '');
-          if (slot) {
-            slotMap.set(slot, rec);
-          }
-        });
-
-      let calculationRecords = Array.from(slotMap.values());
-
-      // Map components from remarks (theory, practical, internal, project, viva)
-      let theoryObtained = 0, theoryMax = 0;
-      let practicalObtained = 0, practicalMax = 0;
-      let internalObtained = 0, internalMax = 0;
-      let projectObtained = 0, projectMax = 0;
-
-      // Look for Term 1 vs Term 2 split if present
-      let t1Int: number | null = null;
-      let h1Exam: number | null = null;
-      let t2Int: number | null = null;
-      let aExam: number | null = null;
-      let halfYearlyTheory: number | null = null;
-      let halfYearlyPractical: number | null = null;
-      let annualTheory: number | null = null;
-      let annualPractical: number | null = null;
-
-      calculationRecords.forEach((rec: any) => {
-        const title = (rec.assessmentTitle || '').toLowerCase();
-        const marks = rec.marksObtained !== undefined && rec.marksObtained !== null ? Number(rec.marksObtained) : null;
-        
-        // Match term-specific marks if title contains T1/T2/Half/Annual
-        if (title.includes('t1') || title.includes('term 1') || title.includes('mid') || title.includes('half')) {
-          if (title.includes('internal') || title.includes('periodic') || title.includes('unit')) {
-            if (marks !== null) t1Int = (t1Int || 0) + marks;
-          } else if (isInformationTechnology && title.includes('practical')) {
-            if (marks !== null) {
-              halfYearlyPractical = (halfYearlyPractical || 0) + marks;
-              h1Exam = (h1Exam || 0) + marks;
-            }
-          } else if (isInformationTechnology && title.includes('theory')) {
-            if (marks !== null) {
-              halfYearlyTheory = (halfYearlyTheory || 0) + marks;
-              h1Exam = (h1Exam || 0) + marks;
-            }
-          } else {
-            if (marks !== null) h1Exam = (h1Exam || 0) + marks;
-          }
-        } else if (title.includes('t2') || title.includes('term 2') || title.includes('annual')) {
-          if (title.includes('internal') || title.includes('periodic') || title.includes('unit')) {
-            if (marks !== null) t2Int = (t2Int || 0) + marks;
-          } else if (isInformationTechnology && title.includes('practical')) {
-            if (marks !== null) {
-              annualPractical = (annualPractical || 0) + marks;
-              aExam = (aExam || 0) + marks;
-            }
-          } else if (isInformationTechnology && title.includes('theory')) {
-            if (marks !== null) {
-              annualTheory = (annualTheory || 0) + marks;
-              aExam = (aExam || 0) + marks;
-            }
-          } else {
-            if (marks !== null) aExam = (aExam || 0) + marks;
-          }
-        }
-
-        // Standard components breakdown
-        try {
-          if (rec.remarks && rec.remarks.trim().startsWith('{')) {
-            const parsed = JSON.parse(rec.remarks);
-            if (parsed.type === 'breakdown' && parsed.components) {
-              const comps = parsed.components;
-              if (comps.theory?.enabled) {
-                theoryObtained += Number(comps.theory.obtained || 0);
-                theoryMax += Number(comps.theory.max || 0);
-              }
-              if (comps.practical?.enabled) {
-                practicalObtained += Number(comps.practical.obtained || 0);
-                practicalMax += Number(comps.practical.max || 0);
-              }
-              if (comps.internal?.enabled) {
-                internalObtained += Number(comps.internal.obtained || 0);
-                internalMax += Number(comps.internal.max || 0);
-              }
-              if (comps.project?.enabled) {
-                projectObtained += Number(comps.project.obtained || 0);
-                projectMax += Number(comps.project.max || 0);
-              }
-            }
-          } else {
-            theoryObtained += Number(rec.marksObtained || 0);
-            theoryMax += Number(rec.totalMarks || 100);
-          }
-        } catch (e) {
-          theoryObtained += Number(rec.marksObtained || 0);
-          theoryMax += Number(rec.totalMarks || 100);
-        }
-      });
-
-      // Default fallback if no Term split matches
-      if (calculationRecords.length > 0 && h1Exam === null && aExam === null) {
-        h1Exam = Math.round(theoryObtained * 0.4);
-        aExam = Math.round(theoryObtained * 0.5);
-        t1Int = Math.round(internalObtained || (theoryObtained * 0.05));
-        t2Int = Math.round(internalObtained || (theoryObtained * 0.05));
-      }
-
-      let h1Max = 80, aMax = 80;
-      calculationRecords.forEach((rec: any) => {
-        const title = (rec.assessmentTitle || '').toLowerCase();
-        const maxVal = Number(rec.totalMarks || 0);
-        if (maxVal > 0) {
-          if (title.includes('t1') || title.includes('term 1') || title.includes('mid') || title.includes('half')) {
-            if (!title.includes('internal') && !title.includes('periodic') && !title.includes('unit')) {
-              h1Max = maxVal;
-            }
-          } else if (title.includes('t2') || title.includes('term 2') || title.includes('annual')) {
-            if (!title.includes('internal') && !title.includes('periodic') && !title.includes('unit')) {
-              aMax = maxVal;
-            }
-          }
-        }
-      });
-
-      const t1Total = (t1Int === null && h1Exam === null) ? null : (t1Int || 0) + (h1Exam || 0);
-      const t2Total = (t2Int === null && aExam === null) ? null : (t2Int || 0) + (aExam || 0);
-
-      // Apply Weighting Formula
-      let finalResult: number | null = null;
-      if (isInformationTechnology) {
-        if (h1Exam !== null || aExam !== null) {
-          finalResult = ((h1Exam || 0) + (aExam || 0)) / 2;
-        }
-      } else if (weightingFormula === 'equal_term') {
-        if (t1Total !== null || t2Total !== null) {
-          finalResult = ((t1Total || 0) + (t2Total || 0)) / 2;
-        }
-      } else if (weightingFormula === 'annual_only') {
-        finalResult = t2Total;
-      } else {
-        // Custom CBSE: 30% HY + 20% Internals + 50% Annual
-        if (h1Exam !== null || t1Int !== null || t2Int !== null || aExam !== null) {
-          const hyScaled = h1Max > 0 && h1Exam !== null ? (h1Exam / h1Max) * 30 : 0;
-          const annualScaled = aMax > 0 && aExam !== null ? (aExam / aMax) * 50 : 0;
-          const internalScaled = (t1Int !== null || t2Int !== null) ? ((t1Int || 0) + (t2Int || 0)) / 2 : 0;
-          finalResult = hyScaled + internalScaled + annualScaled;
-        }
-      }
-
-      // Cap finalResult to 100
-      let finalDisplay: string | number = "";
-      let gradeDisplay = "—";
-      if (finalResult !== null) {
-        finalDisplay = Math.min(100, Math.round(finalResult * 100) / 100);
-        gradeDisplay = getSchoolGrade(Number(finalDisplay));
-      }
-
-      return {
-        subject,
-        isInformationTechnology,
-        theory: theoryObtained,
-        theoryMax,
-        practical: practicalObtained,
-        practicalMax,
-        internal: internalObtained || t1Int,
-        project: projectObtained,
-        t1Internal: t1Int,
-        halfYearlyTheory,
-        halfYearlyPractical,
-        halfYearly: h1Exam,
-        t1Total,
-        t2Internal: t2Int,
-        annualTheory,
-        annualPractical,
-        annual: aExam,
-        t2Total,
-        final: finalDisplay,
-        grade: gradeDisplay
-      };
-    });
+    return calculateSubjectBreakdown(filtered, weightingFormula);
   }, [student, targetClass, targetYear, weightingFormula]);
 
   const overallAvg = useMemo(() => {
@@ -681,7 +443,7 @@ export default function StudentReportCard() {
               ? 'This report card is being revised by your class teacher. Please check back later.'
               : "This report card hasn't been published yet. Please check back later."}
         </p>
-        <button onClick={() => navigate(-1)} className="mt-2 px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-bold">Back</button>
+        <BackButton className="mt-2" />
       </div>
     );
   }
@@ -751,13 +513,6 @@ export default function StudentReportCard() {
       {/* Header controls (no-print) */}
       <div className="flex items-center justify-between no-print border-b border-slate-100 dark:border-slate-800 pb-4">
         <div className="flex items-center gap-3">
-          <button 
-            onClick={() => navigate(-1)} 
-            className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 transition-colors active:scale-95"
-            title={isViewerOnly ? "Back" : "Back to Student Profile"}
-          >
-            <ArrowLeft className="size-4" />
-          </button>
           <div>
             <h1 className="text-xl font-black text-slate-800 dark:text-white flex items-center gap-2">
               {isViewerOnly ? "Report Card" : "Report Card Template Configuration"}
@@ -789,6 +544,7 @@ export default function StudentReportCard() {
             {printing ? <Loader2 className="size-4 animate-spin" /> : <Printer className="size-4" />}
             {printing ? 'Preparing Print...' : 'Print Report Card'}
           </button>
+          <BackButton label={isViewerOnly ? "Back" : "Back to Student Profile"} />
         </div>
       </div>
 
@@ -1338,10 +1094,10 @@ export default function StudentReportCard() {
                           {scholasticResults.map(res => (
                             <TableRow key={res.subject} className="hover:bg-slate-50/50 transition-colors font-bold">
                               <TableCell className="py-1.5 px-2.5 text-slate-900 font-extrabold">{res.subject}</TableCell>
-                              <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{Math.round(res.final * 0.7)}</TableCell>
-                              <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{Math.round(res.final * 0.2)}</TableCell>
-                              <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{Math.round(res.final * 0.1)}</TableCell>
-                              <TableCell className="py-1.5 px-2.5 text-center font-black text-blue-600">{Math.round(res.final)}</TableCell>
+                              <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{Math.round(Number(res.final) * 0.7)}</TableCell>
+                              <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{Math.round(Number(res.final) * 0.2)}</TableCell>
+                              <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{Math.round(Number(res.final) * 0.1)}</TableCell>
+                              <TableCell className="py-1.5 px-2.5 text-center font-black text-blue-600">{Math.round(Number(res.final))}</TableCell>
                               <TableCell className="py-1.5 px-2.5 text-center">
                                 <Badge variant="secondary" className="rounded-md border-transparent bg-blue-50 text-blue-600 font-extrabold uppercase text-[10px] min-w-[20px] h-[20px] leading-none hover:bg-blue-50">
                                   {res.grade}

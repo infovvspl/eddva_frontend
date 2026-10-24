@@ -20,6 +20,7 @@ export function LanguageSelector({ value, onChange, className }: Props) {
       <Globe className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
       <CustomSelect
         value={value}
+        onChange={handleChange}
         options={INDIAN_LANGUAGES.map((lang) => ({ value: lang.code, label: `${lang.native} (${lang.label})` }))}
         className="w-full"
       />

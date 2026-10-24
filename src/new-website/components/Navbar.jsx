@@ -27,6 +27,8 @@
 // to the one-pager carrying the hash — see NavItemLink.
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "./LanguageSwitcher";
 import { ChevronDown, LogIn } from "lucide-react";
 import { LOGO, LOGO_ALT } from "../brand";
 
@@ -41,22 +43,23 @@ const HOME_PATH = "/";
 // anchor put "/#nw-home" in the address bar on every click, even though the
 // hero section it pointed at already sits at the top of "/". Scrolling back
 // to the top when already home is handled separately, in onClick below.
+// `label` is a key into the "common" namespace, resolved with t() at render.
 const links = [
-  { id: "home",     label: "Home",       to: "/" },
-  { id: "about",    label: "About",      to: "/about" },
-  { id: "product",  label: "Product",    to: "/products" },
+  { id: "home",     label: "nav.home",       to: "/" },
+  { id: "about",    label: "nav.about",      to: "/about" },
+  { id: "product",  label: "nav.product",    to: "/products" },
   {
-    id: "solution", label: "Solution",   to: "/solution",
+    id: "solution", label: "nav.solution",   to: "/solution",
     children: [
-      { id: "institutions", label: "For Institutions", to: "/solution/institutions" },
-      { id: "teachers",     label: "For Teachers",     to: "/solution/teachers" },
-      { id: "students",     label: "For Students",     to: "/solution/students" },
-      { id: "parents",      label: "For Parents",      to: "/solution/parents" },
+      { id: "institutions", label: "nav.forInstitutions", to: "/solution/institutions" },
+      { id: "teachers",     label: "nav.forTeachers",     to: "/solution/teachers" },
+      { id: "students",     label: "nav.forStudents",     to: "/solution/students" },
+      { id: "parents",      label: "nav.forParents",      to: "/solution/parents" },
     ],
   },
-  { id: "faq",      label: "FAQ",        to: "/faq" },
-  { id: "blog",     label: "Blog",       to: "/blog" },
-  { id: "contact",  label: "Contact us", to: "/contact" },
+  { id: "faq",      label: "nav.faq",        to: "/faq" },
+  { id: "blog",     label: "nav.blog",       to: "/blog" },
+  { id: "contact",  label: "nav.contact",    to: "/contact" },
 ];
 
 const NavItemLink = ({ link, className, id, onClick, children }) => (
@@ -66,6 +69,7 @@ const NavItemLink = ({ link, className, id, onClick, children }) => (
 );
 
 const Navbar = () => {
+  const { t } = useTranslation();
   const { pathname } = useLocation();
   // In-page anchors only resolve on the one-pager itself; from a sub-page
   // they have to route back to "/" first, carrying the hash.
@@ -148,7 +152,7 @@ const Navbar = () => {
         </Link>
 
         {/* ── Desktop nav links ── */}
-        <nav className="nw-navbar__nav" id="nw-main-nav" aria-label="Main Navigation">
+        <nav className="nw-navbar__nav" id="nw-main-nav" aria-label={t("nav.main")}>
           {links.map(link => (
             <div
               key={link.id}
@@ -162,7 +166,7 @@ const Navbar = () => {
                 className={`nw-navbar__link${current === link.id ? " nw-navbar__link--active" : ""}`}
                 onClick={() => { setActive(link.id); if (link.id === "home") goHome(); }}
               >
-                {link.label}
+                {t(link.label)}
                 {link.children && (
                   <ChevronDown
                     size={14}
@@ -185,7 +189,7 @@ const Navbar = () => {
                       id={`nw-dropdown-${link.id}-${child.id}`}
                       onClick={() => { setActive(link.id); setOpenDropdown(null); }}
                     >
-                      {child.label}
+                      {t(child.label)}
                     </Link>
                   ))}
                 </div>
@@ -198,7 +202,7 @@ const Navbar = () => {
         <div className="nw-navbar__actions">
           <Link to="/login" className="nw-btn nw-btn--pill" id="nw-btn-login">
             <LogIn size={16} strokeWidth={2.2} />
-            Login
+            {t("nav.login")}
           </Link>
         </div>
 
@@ -206,7 +210,7 @@ const Navbar = () => {
         <button
           className="nw-navbar__hamburger"
           id="nw-hamburger-btn"
-          aria-label="Open Menu"
+          aria-label={t("nav.openMenu")}
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen(prev => !prev)}
         >
@@ -224,7 +228,7 @@ const Navbar = () => {
               className={`nw-navbar__mobile-link${current === link.id ? " nw-navbar__link--active" : ""}`}
               onClick={() => { setActive(link.id); setMenuOpen(false); if (link.id === "home") goHome(); }}
             >
-              {link.label}
+              {t(link.label)}
             </NavItemLink>
             {link.children && (
               <div className="nw-navbar__mobile-sub">
@@ -236,7 +240,7 @@ const Navbar = () => {
                     id={`nw-mob-${link.id}-${child.id}`}
                     onClick={() => setMenuOpen(false)}
                   >
-                    {child.label}
+                    {t(child.label)}
                   </Link>
                 ))}
               </div>
@@ -244,10 +248,11 @@ const Navbar = () => {
           </div>
         ))}
         <div className="nw-navbar__mobile-actions">
+          <LanguageSwitcher className="nw-lang--mobile" id="nw-mob-lang" />
           <Link to="/login" className="nw-btn nw-btn--pill" id="nw-mob-login"
                 onClick={() => setMenuOpen(false)}>
             <LogIn size={16} strokeWidth={2.2} />
-            Login
+            {t("nav.login")}
           </Link>
         </div>
       </div>

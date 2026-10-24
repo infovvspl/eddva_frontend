@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { 
   Sparkles, TrendingUp, AlertTriangle, CheckCircle2, BarChart2, 
-  Layers, Loader2, ArrowLeft, ShieldAlert, UserX, Clock, Calendar, 
+  Layers, Loader2, ShieldAlert, UserX, Clock, Calendar,
   Award, Activity, Hourglass, PieChart, LineChart, Gauge
 } from 'lucide-react';
+import { BackButton } from '@/components/shared/BackButton';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import { toast } from 'sonner';
 
@@ -133,18 +134,13 @@ export default function SyllabusAnalytics() {
     <div className="w-full px-4 py-6 sm:px-6 lg:px-8 space-y-6 font-poppins">
       {/* Top Navigation */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div className="space-y-1">
-          <button
-            onClick={() => navigate('/school/admin/syllabus-tracker')}
-            className="inline-flex items-center gap-1.5 text-xs font-extrabold text-blue-600 hover:text-blue-700 transition-colors mb-1"
-          >
-            <ArrowLeft size={15} /> Back to Syllabus Tracker
-          </button>
+        <div className="space-y-1 flex-1 min-w-0">
           <h1 className="text-2xl font-black text-slate-900 dark:text-white">
             Syllabus Analytics Details Hub
           </h1>
           <p className="text-xs text-slate-500">Comprehensive breakdown and actionable insights for your selected syllabus metric.</p>
         </div>
+        <BackButton to="/school/admin/syllabus-tracker" />
       </div>
 
       {/* VIEW TABS SELECTOR */}

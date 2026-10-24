@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   User, GraduationCap, Calendar, BarChart2, DollarSign, 
-  Mail, Smartphone, MapPin, ArrowLeft, Download, Users, Phone, Shield,
+  Mail, Smartphone, MapPin, Download, Users, Phone, Shield,
   Edit2, Clock, CheckCircle, AlertCircle, TrendingUp, HeartPulse, Briefcase, FileText, Printer, Share2, Loader2, Send, Key, X, Plus, Trash2,
   UserX, FileCheck, CheckCircle2, XCircle, UserCheck
 } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { Area, AreaChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { formatDuration, formatDurationShort } from '@/lib/format';
+import { BackButton } from '@/components/shared/BackButton';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/admin/Modal';
 import StudentForm from '@/components/school/admin/forms/StudentForm';
@@ -22,6 +23,9 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { BrainCircuit } from 'lucide-react';
+import { useSchoolFeature } from '@/hooks/use-school-feature';
+import StudentStudyReport from '@/pages/school/reports/study-planner/StudentStudyReport';
 
 const getInitials = (name) => {
   if (!name) return '??';
@@ -59,6 +63,7 @@ export default function StudentProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const hasPlanner = useSchoolFeature('ai', 'ai_study_planner');
   const cameFromAttendanceFlag = searchParams.get('flag') === 'attendance';
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -744,12 +749,7 @@ export default function StudentProfile() {
           <AlertCircle size={48} className="mx-auto mb-4 text-red-500" />
           <h2 className="text-xl font-bold tracking-tight text-red-900 mb-2">Student Not Found</h2>
           <p className="text-sm font-bold text-red-600 mb-6">{student?.error || "We couldn't find the student profile you're looking for."}</p>
-          <button 
-            onClick={() => navigate(-1)}
-            className="px-6 py-2 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 transition-all"
-          >
-            Go Back
-          </button>
+          <BackButton className="mx-auto" />
         </div>
       </div>
     );
@@ -844,16 +844,9 @@ export default function StudentProfile() {
   return (
     <div className="w-full pb-24 sm:pb-36">
       {/* Header */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-0">
-        <button 
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold transition-colors text-sm sm:text-base self-start"
-        >
-          <ArrowLeft size={18} />
-          Back to List
-        </button>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <button 
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end px-4 sm:px-0">
+        <div className="flex gap-2 w-full sm:w-auto flex-wrap sm:justify-end">
+          <button
             onClick={handleExportPDF}
             disabled={exporting}
             className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-slate-100 text-slate-600 font-bold text-xs sm:text-sm hover:bg-slate-50 transition-all disabled:opacity-50 flex-1 sm:flex-initial"
@@ -884,6 +877,7 @@ export default function StudentProfile() {
             <Key size={14} />
             Send Student Credentials
           </button>
+          <BackButton />
         </div>
       </div>
 
@@ -1484,8 +1478,8 @@ export default function StudentProfile() {
             <TabButton active={activeTab === 'academic'} onClick={() => setActiveTab('academic')} icon={GraduationCap} label="Academic" />
             <TabButton active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={Calendar} label="Attendance" />
             <TabButton active={activeTab === 'screentime'} onClick={() => setActiveTab('screentime')} icon={Clock} label="Screen Time" />
-            {/* Performance tab hidden for now */}
-            {/* <TabButton active={activeTab === 'performance'} onClick={() => setActiveTab('performance')} icon={BarChart2} label="Performance" /> */}
+            <TabButton active={activeTab === 'performance'} onClick={() => setActiveTab('performance')} icon={BarChart2} label="Performance" />
+            {hasPlanner && <TabButton active={activeTab === 'study-planner'} onClick={() => setActiveTab('study-planner')} icon={BrainCircuit} label="Study Planner" />}
             <TabButton active={activeTab === 'fees'} onClick={() => setActiveTab('fees')} icon={DollarSign} label="Fees & Payments" />
             <TabButton active={activeTab === 'documents'} onClick={() => setActiveTab('documents')} icon={FileCheck} label="Documents & Verification" />
           </div>
@@ -2223,13 +2217,31 @@ export default function StudentProfile() {
                   )}
                 </div>
               )}
-
+              {activeTab === 'study-planner' && hasPlanner && <StudentStudyReport studentId={id} embedded />}
               {activeTab === 'performance' && (() => {
                 const sessions = performanceSessions;
                 const totalSessions = sessions.length;
                 const avgAccuracy = totalSessions > 0
                   ? Math.round(sessions.reduce((sum, s) => sum + (s.accuracy || 0), 0) / totalSessions)
                   : 0;
+                const monthGroups = new Map();
+                sessions.filter((s) => s.submittedAt).forEach((s) => {
+                  const d = new Date(s.submittedAt);
+                  const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                  if (!monthGroups.has(key)) monthGroups.set(key, []);
+                  monthGroups.get(key).push(s);
+                });
+                const yearlyTrendData = Array.from(monthGroups.entries())
+                  .sort(([a], [b]) => a.localeCompare(b))
+                  .map(([key, monthSessions]) => {
+                    const [y, m] = key.split('-');
+                    const label = new Date(Number(y), Number(m) - 1, 1).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+                    return {
+                      year: label,
+                      accuracy: Math.round(monthSessions.reduce((sum, s) => sum + (s.accuracy || 0), 0) / monthSessions.length),
+                      count: monthSessions.length,
+                    };
+                  });
 
                 return (
                   <div className="space-y-8">
@@ -2254,6 +2266,31 @@ export default function StudentProfile() {
                             </div>
                             <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Average Score</div>
                           </div>
+                        </div>
+
+                        {/* Year-wise Accuracy Trend */}
+                        <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800">
+                          <h4 className="mb-4 text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest">Year-wise Accuracy Trend</h4>
+                          {yearlyTrendData.length === 0 ? (
+                            <div className="flex items-center justify-center text-xs sm:text-sm text-slate-500" style={{ height: 260 }}>
+                              Year-wise trend will appear once assessments are completed.
+                            </div>
+                          ) : (
+                            <ChartContainer config={{ accuracy: { label: 'Accuracy', color: 'hsl(var(--primary))' } }} className="w-full aspect-auto" style={{ height: 260 }}>
+                              <LineChart data={yearlyTrendData} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+                                <CartesianGrid vertical={false} />
+                                <XAxis dataKey="year" tickLine={false} axisLine={false} tickMargin={8} />
+                                <YAxis domain={[0, 100]} tickLine={false} axisLine={false} unit="%" />
+                                <ChartTooltip
+                                  content={<ChartTooltipContent
+                                    labelFormatter={(_, p) => p?.[0]?.payload ? `${p[0].payload.year} · ${p[0].payload.count} assessment${p[0].payload.count === 1 ? '' : 's'}` : ''}
+                                    formatter={(v) => `${Math.round(Number(v))}%`}
+                                  />}
+                                />
+                                <Line dataKey="accuracy" type="monotone" stroke="var(--color-accuracy)" strokeWidth={2.5} dot={{ r: 3, fill: 'var(--color-accuracy)' }} activeDot={{ r: 5 }} />
+                              </LineChart>
+                            </ChartContainer>
+                          )}
                         </div>
 
                         {/* Test Sessions Table */}

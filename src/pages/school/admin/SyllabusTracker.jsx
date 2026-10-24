@@ -9,6 +9,7 @@ import {
 import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
 import { unwrapSchoolList } from '@/lib/api/school-client';
+import { BackButton } from '@/components/shared/BackButton';
 
 export default function SyllabusTracker() {
   const navigate = useNavigate();
@@ -297,26 +298,24 @@ export default function SyllabusTracker() {
         <div>
           <div className="flex items-center gap-2">
             {selectedSectionId ? (
-              <button
+              <BackButton
+                label="Back to Sections"
                 onClick={() => setSelectedSectionId(null)}
-                className="p-1.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 transition-all mr-1 text-xs font-bold"
-              >
-                ← Back to Sections
-              </button>
+                className="mr-1"
+              />
             ) : selectedClassGroup ? (
-              <button
+              <BackButton
+                label="Back to Classes"
                 onClick={() => setSelectedClassId(null)}
-                className="p-1.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 transition-all mr-1 text-xs font-bold"
-              >
-                ← Back to Classes
-              </button>
+                className="mr-1"
+              />
             ) : null}
             <h1 className="text-2xl font-black text-slate-900 dark:text-white">
               {selectedSectionId 
                 ? `${selectedClassGroup?.className} — ${selectedSectionId === 'ALL_SECTIONS' ? 'Entire Class' : `Section ${classSections.find(s => s.id === selectedSectionId)?.name || ''}`}`
                 : selectedClassGroup 
                 ? `${selectedClassGroup.className} Sections`
-                : 'Syllabus Tracker'}
+                : 'Lesson Tracker'}
             </h1>
             <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 text-xs font-black border border-blue-200 dark:border-blue-800">
               Interactive Analytics Cards
@@ -390,7 +389,7 @@ export default function SyllabusTracker() {
             <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
               <BookOpen className="mx-auto size-12 text-slate-300 dark:text-slate-700" />
               <h3 className="mt-4 text-base font-bold text-slate-900 dark:text-white">No assigned syllabus plans</h3>
-              <p className="mt-1 text-xs text-slate-500">Publish target plans in Syllabus Planner first.</p>
+              <p className="mt-1 text-xs text-slate-500">Publish target plans in Lesson Plan first.</p>
             </div>
           ) : (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

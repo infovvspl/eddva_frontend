@@ -12,6 +12,8 @@ export interface NotificationPreferences {
   announcementAlerts: boolean;
   attendanceAlerts: boolean;
   assignmentAlerts: boolean;
+  /** Weekly notice about AI Study Planner defaulters (stopped, low engagement, or studying without improving). */
+  studyPlannerAlerts: boolean;
 }
 
 export interface ActiveEmergencyAlert {
@@ -95,6 +97,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     announcementAlerts: true,
     attendanceAlerts: true,
     assignmentAlerts: true,
+    studyPlannerAlerts: true,
   });
 
   const originalTitleRef = useRef<string>(document.title);
@@ -167,6 +170,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           announcementAlerts: d.announcementAlerts ?? true,
           attendanceAlerts: d.attendanceAlerts ?? true,
           assignmentAlerts: d.assignmentAlerts ?? true,
+          studyPlannerAlerts: d.studyPlannerAlerts ?? true,
         };
         setSettings(mappedPrefs);
         localStorage.setItem("eddva-notification-prefs", JSON.stringify(mappedPrefs));
@@ -338,6 +342,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           announcementAlerts: updated.announcementAlerts,
           attendanceAlerts: updated.attendanceAlerts,
           assignmentAlerts: updated.assignmentAlerts,
+          studyPlannerAlerts: updated.studyPlannerAlerts,
           liveClassAlerts: updated.chatNotificationsEnabled, // maps chat to live class alerts key
           feeAlerts: !updated.doNotDisturb, // maps DND to feeAlerts
         });

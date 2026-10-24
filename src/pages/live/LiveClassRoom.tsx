@@ -1423,6 +1423,11 @@ export default function LiveClassRoom() {
     setIsJoining(true);
     try {
       const r = await getLiveClassToken(lectureId!, "host");
+      if (r.streamType !== "agora" || !("channelName" in r)) {
+        // A Bunny/RTMP session is broadcast from OBS — there is no in-browser room to rejoin.
+        toast.error("This class streams through OBS. Reconnect your broadcaster instead.");
+        return;
+      }
       await joinAgora(r.token, r.channelName, r.uid, "host");
       connectSocket(r.sessionId, r.uid);
       await startBrowserRecording();

@@ -1577,7 +1577,7 @@ export default function StudentCommunications({ heightClass = 'h-[calc(100dvh-15
                       </div>
                       <div className="flex justify-between">
                         <span className="text-slate-400">Institute Name</span>
-                        <span className="text-slate-800 truncate max-w-[180px]">{institute?.name || user?.instituteName || 'Eddva Institute'}</span>
+                        <span className="text-slate-800 truncate max-w-[180px]">{user?.tenantName || 'Eddva Institute'}</span>
                       </div>
                     </div>
                   </div>
@@ -1593,7 +1593,7 @@ export default function StudentCommunications({ heightClass = 'h-[calc(100dvh-15
                       </div>
                       <div className="flex justify-between">
                         <span className="text-slate-400">Institute Name</span>
-                        <span className="text-slate-800 truncate max-w-[180px]">{institute?.name || user?.instituteName || 'Eddva Institute'}</span>
+                        <span className="text-slate-800 truncate max-w-[180px]">{user?.tenantName || 'Eddva Institute'}</span>
                       </div>
                     </div>
                   </div>
@@ -1605,7 +1605,7 @@ export default function StudentCommunications({ heightClass = 'h-[calc(100dvh-15
                     <button
                       onClick={() => {
                         setShowProfileDrawer(false);
-                        const inp = document.querySelector('input[placeholder="Type a message..."]');
+                        const inp = document.querySelector<HTMLInputElement>('input[placeholder="Type a message..."]');
                         inp?.focus();
                       }}
                       className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-100 bg-white p-2.5 font-bold text-slate-700 hover:bg-slate-50 transition"

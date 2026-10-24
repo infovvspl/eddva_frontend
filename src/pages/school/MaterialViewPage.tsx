@@ -4,6 +4,7 @@ import { useSetBreadcrumbLabel } from '@/components/school/breadcrumbs/Breadcrum
 import { ArrowLeft, Check, Download, ExternalLink, FileText, Loader2, Printer, X } from 'lucide-react';
 import FlashcardViewer from '@/components/resources/FlashcardViewer';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
+import HighlightableNotes from '@/components/shared/HighlightableNotes';
 import { MindMapCanvas, type MindMapCanvasHandle, type LayoutMode } from '@/components/school/MindMapVisualizer';
 import { mindmapMarkdownToTree } from '@/lib/mindmap-markdown';
 import { presentationMarkdownToSlides, type Slide } from '@/lib/presentation-markdown';
@@ -240,7 +241,7 @@ function MaterialBody({ material, isStudent }: { material: SchoolMaterial; isStu
                 markdown: content,
                 title: title,
                 theme: 'clean-white',
-                materialId: material.id || materialId,
+                materialId: material.id,
               }, '*');
             }
           }}
@@ -254,7 +255,16 @@ function MaterialBody({ material, isStudent }: { material: SchoolMaterial; isStu
   if ((fileType === 'pyq' || fileType === 'dpp') && content) return <PracticeViewer content={content} typeId={fileType} />;
   if (fileType === 'revision_checklist' && isStudent && content) return <RevisionChecklistViewer content={content} materialId={material.id} />;
   if (isFlashcard && content) return <FlashcardViewer content={content} />;
-  if (content) return <MarkdownRenderer content={content} className="prose-slate max-w-none" />;
+  if (content) {
+    return (
+      <HighlightableNotes
+        materialId={material.id}
+        content={content}
+        className="prose-slate max-w-none"
+        enabled={isStudent}
+      />
+    );
+  }
   if (fileUrl && /\.(pptx?|docx?|xlsx?)$/i.test(fileUrl)) {
     return <iframe title={title} src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`} className="h-[65vh] w-full rounded-xl border border-slate-200 bg-white sm:h-[75vh]" />;
   }
@@ -349,7 +359,7 @@ export default function SchoolMaterialViewPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const isStudent = location.pathname.includes('/student/');
-  const routeState = location.state as { from?: string; courseContentState?: unknown } | null;
+  const routeState = location.state as { from?: string; courseContentState?: unknown; materialTypeLabel?: string } | null;
   const fromPath = routeState?.from;
   const handleBack = () =>
     fromPath

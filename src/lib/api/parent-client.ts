@@ -59,6 +59,11 @@ export const parentClient = {
       .then(extractData)
       .catch((e) => logParentApiError('getScreenTimeMonth', `/school/parent/students/${studentId}/screen-time/month`, e)),
 
+  getFeeSummary: (studentId: string) =>
+    schoolApi.get(`/parent/students/${studentId}/fees`)
+      .then(extractData)
+      .catch((e) => logParentApiError('getFeeSummary', `/school/parent/students/${studentId}/fees`, e)),
+
   submitLeaveRequest: (studentId: string, data: unknown) =>
     schoolApi.post(`/parent/students/${studentId}/leave-request`, data)
       .then(extractData)
