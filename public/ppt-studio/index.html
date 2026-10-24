@@ -530,8 +530,27 @@
               <polyline points="9 18 15 12 9 6"></polyline>
             </svg>
           </button>
+          <button id="fullscreen-exit-btn" class="fullscreen-exit-btn" type="button" aria-label="Exit fullscreen" title="Exit fullscreen" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
-        <p id="slide-counter" class="slide-counter">Slide 1 of 7</p>
+        <div class="slide-counter-row">
+          <p id="slide-counter" class="slide-counter">Slide 1 of 7</p>
+          <button id="fullscreen-btn" class="fullscreen-btn" type="button" aria-label="Fullscreen" title="Fullscreen">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
+              <path d="M21 8V5a2 2 0 0 0-2-2h-3"></path>
+              <path d="M3 16v3a2 2 0 0 0 2 2h3"></path>
+              <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
+            </svg>
+            Fullscreen
+          </button>
+        </div>
 
         <!-- Slide Thumbnails Strip (inside slide area, aligns with edit panel bottom) -->
         <div id="slide-thumbnails" class="slide-thumbnails">

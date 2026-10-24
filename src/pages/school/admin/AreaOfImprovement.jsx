@@ -7,11 +7,13 @@
 // through the EDDVA blue/violet/amber/emerald family only.
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, Users, BookOpen, GraduationCap, IndianRupee, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, Users, BookOpen, GraduationCap, IndianRupee, CheckCircle2, TrendingUp, BarChart3, Download, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   AreaChart,
   Area,
+  LineChart,
+  Line,
   BarChart,
   Bar,
   XAxis,
@@ -28,10 +30,11 @@ import {
   RadialBarChart,
   RadialBar,
 } from 'recharts';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import api from '@/lib/api/school-client';
 import { cn } from '@/lib/utils';
 import { Card, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import LoadingSpinner from '@/components/school/LoadingSpinner';
 
 // ─── Red-free EDDVA analytics palette — severity is shade, not hue ──
@@ -88,6 +91,49 @@ const chartConfig = {
   score: { label: 'Avg. score', color: VIOLET },
 };
 
+const trendChartConfig = {
+  attendance: { label: 'Attendance', color: EDDVA_BLUE },
+  score: { label: 'Avg. score', color: VIOLET },
+  fee: { label: 'Fee collection', color: TEAL },
+};
+
+function downloadCsvReport({ weakSections, weakSubjects, teacherGaps, feeHealth, trends }) {
+  const lines = [];
+  lines.push('Area of Improvement Report');
+  lines.push(`Generated,${new Date().toLocaleString()}`);
+  lines.push('');
+  lines.push('Weak Sections');
+  lines.push('Class/Section,Attendance %,Avg Score %');
+  weakSections.forEach((s) => lines.push(`${s.className}/${s.sectionName},${s.attendancePct},${s.avgScore ?? ''}`));
+  lines.push('');
+  lines.push('Weak Subjects');
+  lines.push('Subject,Avg Score %,Students Below 50%');
+  weakSubjects.forEach((s) => lines.push(`${s.subjectName},${s.avgScore},${s.studentsBelowThreshold}`));
+  lines.push('');
+  lines.push('Teacher Gaps');
+  lines.push('Teacher,Attendance % (30d),Behind Syllabus Plans');
+  teacherGaps.forEach((t) => lines.push(`${t.name},${t.attendancePct ?? ''},${t.behindSyllabusCount}`));
+  lines.push('');
+  lines.push('Fee Collection Health');
+  lines.push(`School-wide Collection Rate %,${feeHealth.schoolCollectionRatePct}`);
+  lines.push('Class/Section,Collection Rate %,Overdue Accounts,Overdue Amount');
+  (feeHealth.bySection || []).forEach((s) => lines.push(`${s.className}/${s.sectionName},${s.collectionRatePct ?? ''},${s.overdueAccounts},${s.overdueAmount}`));
+  lines.push('');
+  lines.push('6-Month Trend');
+  lines.push('Month,Attendance %,Avg Score %,Fee Collection %');
+  (trends || []).forEach((t) => lines.push(`${t.month},${t.attendancePct ?? ''},${t.avgScorePct ?? ''},${t.feeCollectionRatePct ?? ''}`));
+
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `area-of-improvement-report-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 export default function AreaOfImprovement() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -109,6 +155,13 @@ export default function AreaOfImprovement() {
   const weakSubjects = data?.weakSubjects || [];
   const teacherGaps = data?.teacherGaps || [];
   const feeHealth = data?.feeHealth || { schoolCollectionRatePct: 0, bySection: [] };
+  const trends = data?.trends || [];
+  const rankings = data?.rankings || { sections: [], subjects: [], teachers: [] };
+
+  const trendChartData = trends.map((t) => ({ month: t.month, attendance: t.attendancePct, score: t.avgScorePct, fee: t.feeCollectionRatePct }));
+  const rankSectionsData = (rankings.sections || []).slice(0, 15).map((s) => ({ name: `${s.className}/${s.sectionName}`, value: s.attendancePct, isWeak: s.isWeak }));
+  const rankSubjectsData = (rankings.subjects || []).slice(0, 15).map((s) => ({ name: s.subjectName, value: s.avgScore, isWeak: s.isWeak }));
+  const rankTeachersData = (rankings.teachers || []).slice(0, 15).map((t) => ({ name: t.name, value: t.attendancePct, isWeak: t.isWeak }));
 
   // Weak Sections — area chart: attendance vs avg. score per section.
   const sectionsChartData = weakSections.map((s) => ({
@@ -150,11 +203,51 @@ export default function AreaOfImprovement() {
         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/20 shrink-0">
           <AlertCircle size={22} />
         </div>
-        <div>
+        <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-black">Area of Improvement</h1>
           <p className="text-sm text-blue-50">Where the school needs attention — worst first.</p>
         </div>
+        <div className="flex items-center gap-2 no-print shrink-0">
+          <Button
+            size="sm"
+            variant="secondary"
+            className="bg-white/15 hover:bg-white/25 text-white border-0 gap-1.5"
+            onClick={() => downloadCsvReport({ weakSections, weakSubjects, teacherGaps, feeHealth, trends })}
+          >
+            <Download className="w-3.5 h-3.5" /> Download
+          </Button>
+          <Button size="sm" variant="secondary" className="bg-white/15 hover:bg-white/25 text-white border-0 gap-1.5" onClick={() => window.print()}>
+            <Printer className="w-3.5 h-3.5" /> Print
+          </Button>
+        </div>
       </div>
+
+      {/* 6-month trend — line chart */}
+      <SectionCard
+        icon={TrendingUp}
+        iconBg="bg-blue-50 dark:bg-blue-950/40"
+        iconColor="text-[#013889]"
+        title="6-Month Trend"
+        description="Attendance, avg. score and fee collection, school-wide"
+        count={0}
+      >
+        {trendChartData.length > 1 ? (
+          <ChartContainer config={trendChartConfig} className="h-[240px] w-full aspect-auto">
+            <LineChart accessibilityLayer data={trendChartData} margin={{ top: 10, right: 12, left: -16, bottom: 0 }}>
+              <CartesianGrid vertical={false} />
+              <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={10} fontSize={11} />
+              <YAxis domain={[0, 100]} tickLine={false} axisLine={false} unit="%" fontSize={11} />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <ChartLegend content={<ChartLegendContent />} />
+              <Line dataKey="attendance" name="attendance" type="monotone" stroke="var(--color-attendance)" strokeWidth={2.5} dot={{ r: 3 }} connectNulls />
+              <Line dataKey="score" name="score" type="monotone" stroke="var(--color-score)" strokeWidth={2.5} dot={{ r: 3 }} connectNulls />
+              <Line dataKey="fee" name="fee" type="monotone" stroke="var(--color-fee)" strokeWidth={2.5} dot={{ r: 3 }} connectNulls />
+            </LineChart>
+          </ChartContainer>
+        ) : (
+          <EmptyState label="Not enough historical data yet to chart a trend." />
+        )}
+      </SectionCard>
 
       {/* Weak Sections — area chart */}
       <SectionCard
@@ -337,6 +430,47 @@ export default function AreaOfImprovement() {
           <EmptyState label="No sections flagged for fee collection." />
         )}
       </SectionCard>
+
+      {/* Full comparative rankings — every section/subject/teacher, not just the flagged ones */}
+      <SectionCard
+        icon={BarChart3}
+        iconBg="bg-violet-50 dark:bg-violet-950/40"
+        iconColor="text-violet-600"
+        title="Full Rankings"
+        description="Every section, subject and teacher side-by-side — worst 15 of each"
+        count={0}
+      >
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <RankingColumn label="Sections — attendance %" data={rankSectionsData} />
+          <RankingColumn label="Subjects — avg. score %" data={rankSubjectsData} />
+          <RankingColumn label="Teachers — attendance %" data={rankTeachersData} />
+        </div>
+      </SectionCard>
+
+      <style>{`@media print {
+        .no-print { display: none !important; }
+      }`}</style>
+    </div>
+  );
+}
+
+function RankingColumn({ label, data }) {
+  if (!data.length) return <EmptyState label="No data available." />;
+  return (
+    <div>
+      <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">{label}</p>
+      <ChartContainer config={chartConfig} className="w-full aspect-auto" style={{ height: Math.max(140, data.length * 26) }}>
+        <BarChart accessibilityLayer data={data} layout="vertical" margin={{ top: 4, right: 20, left: 4, bottom: 0 }}>
+          <XAxis type="number" domain={[0, 100]} unit="%" tickLine={false} axisLine={false} fontSize={10} />
+          <YAxis type="category" dataKey="name" tickLine={false} axisLine={false} fontSize={10} width={92} />
+          <ChartTooltip content={<ChartTooltipContent formatter={(value) => (
+            <span className="font-mono font-medium tabular-nums text-foreground">{value != null ? `${value}%` : '—'}</span>
+          )} />} />
+          <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+            {data.map((d, i) => <Cell key={i} fill={d.isWeak ? AMBER : EMERALD} />)}
+          </Bar>
+        </BarChart>
+      </ChartContainer>
     </div>
   );
 }
