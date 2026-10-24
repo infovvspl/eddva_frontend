@@ -572,22 +572,56 @@ const Dashboard: React.FC = () => {
 
         {/* Today's Schedule + Today's Overview — side by side, 50/50 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        <Card className="rounded-[2rem] border-slate-100 bg-white shadow-sm flex flex-col overflow-hidden">
-          <CardHeader className="p-5 sm:p-6 flex-row justify-between items-center space-y-0 bg-white">
-            <CardTitle className="text-[15px] sm:text-[17px] font-extrabold text-[#112A46] flex items-center gap-2 leading-normal tracking-normal">
-              <Calendar size={18} className="text-[#1C4ED8]" /> Today's Schedule
-            </CardTitle>
-          </CardHeader>
-          <Separator className="bg-slate-100" />
-          <CardContent className="p-5 sm:p-6">
-            <ScheduleTimeline classes={upcomingClasses} />
-          </CardContent>
-          <Separator className="bg-slate-100" />
-          <CardFooter className="p-4 bg-white">
-            <Button variant="link" onClick={() => navigate('/school/teacher/timetable')} className="w-full h-auto text-[12px] sm:text-[13px] font-bold text-[#1C4ED8] hover:text-[#1E40AF] hover:no-underline gap-1">
-              View Full Calendar <ArrowRight size={16} />
-            </Button>
-          </CardFooter>
+        <Card className="rounded-[2rem] border-slate-100 bg-white shadow-sm p-6 flex flex-col">
+          <div className="flex justify-between items-end mb-1">
+            <CardTitle className="text-[15px] sm:text-[17px] font-extrabold text-[#112A46] tracking-normal">Needs Your Attention</CardTitle>
+            {attentionItems.length > 0 && (
+              <span className="text-[12px] font-bold text-slate-400">{attentionItems.length} {attentionItems.length === 1 ? 'item' : 'items'}</span>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-3 mt-4">
+            {!flags.loaded ? (
+              [0, 1, 2].map((i) => <Skeleton key={i} className="h-[72px] w-full rounded-2xl" />)
+            ) : attentionItems.length === 0 ? (
+              <Card className="bg-white rounded-2xl p-5 shadow-sm border-slate-100 flex items-center gap-3">
+                <div className="size-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                  <CheckSquare size={16} />
+                </div>
+                <div>
+                  <p className="text-[14px] font-bold text-slate-900 leading-tight">You're all caught up</p>
+                  <p className="text-[12px] font-medium text-slate-500 mt-0.5">No pending reviews, doubts or alerts right now.</p>
+                </div>
+              </Card>
+            ) : (
+              attentionItems.map((item) => (
+                <Card
+                  key={item.key}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => navigate(item.path, item.state ? { state: item.state } : undefined)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      navigate(item.path, item.state ? { state: item.state } : undefined);
+                    }
+                  }}
+                  className="bg-white rounded-2xl p-4 shadow-sm border-slate-100 flex items-center justify-between hover:shadow-md hover:border-blue-200 transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`size-10 rounded-full ${item.bg} ${item.color} flex items-center justify-center shrink-0`}>
+                      {item.icon}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[14px] font-bold text-slate-900 leading-tight">{item.title}</p>
+                      <p className="text-[12px] font-medium text-slate-500 mt-0.5 break-words">{item.desc}</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={16} className="shrink-0 text-slate-300 group-hover:text-slate-500 transition-colors" />
+                </Card>
+              ))
+            )}
+          </div>
         </Card>
 
         {/* Today's Overview — full width */}
@@ -939,58 +973,24 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="dashboard__side">
-          {/* Needs Your Attention */}
-          <div className="flex flex-col gap-5 mt-2">
-            <div className="flex justify-between items-end mb-1">
-              <h2 className="text-[20px] font-extrabold text-[#112A46] tracking-tight">Needs Your Attention</h2>
-              {attentionItems.length > 0 && (
-                <span className="text-[12px] font-bold text-slate-400">{attentionItems.length} {attentionItems.length === 1 ? 'item' : 'items'}</span>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-3">
-              {!flags.loaded ? (
-                [0, 1, 2].map((i) => <Skeleton key={i} className="h-[72px] w-full rounded-2xl" />)
-              ) : attentionItems.length === 0 ? (
-                <Card className="bg-white rounded-2xl p-5 shadow-sm border-slate-100 flex items-center gap-3">
-                  <div className="size-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                    <CheckSquare size={16} />
-                  </div>
-                  <div>
-                    <p className="text-[14px] font-bold text-slate-900 leading-tight">You're all caught up</p>
-                    <p className="text-[12px] font-medium text-slate-500 mt-0.5">No pending reviews, doubts or alerts right now.</p>
-                  </div>
-                </Card>
-              ) : (
-                attentionItems.map((item) => (
-                  <Card
-                    key={item.key}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => navigate(item.path, item.state ? { state: item.state } : undefined)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        navigate(item.path, item.state ? { state: item.state } : undefined);
-                      }
-                    }}
-                    className="bg-white rounded-2xl p-4 shadow-sm border-slate-100 flex items-center justify-between hover:shadow-md hover:border-blue-200 transition-all cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`size-10 rounded-full ${item.bg} ${item.color} flex items-center justify-center shrink-0`}>
-                        {item.icon}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[14px] font-bold text-slate-900 leading-tight">{item.title}</p>
-                        <p className="text-[12px] font-medium text-slate-500 mt-0.5 break-words">{item.desc}</p>
-                      </div>
-                    </div>
-                    <ChevronRight size={16} className="shrink-0 text-slate-300 group-hover:text-slate-500 transition-colors" />
-                  </Card>
-                ))
-              )}
-            </div>
-          </div>
+          {/* Today's Schedule */}
+          <Card className="rounded-[2rem] border-slate-100 bg-white shadow-sm flex flex-col overflow-hidden mt-2">
+            <CardHeader className="p-5 sm:p-6 flex-row justify-between items-center space-y-0 bg-white">
+              <CardTitle className="text-[15px] sm:text-[17px] font-extrabold text-[#112A46] flex items-center gap-2 leading-normal tracking-normal">
+                <Calendar size={18} className="text-[#1C4ED8]" /> Today's Schedule
+              </CardTitle>
+            </CardHeader>
+            <Separator className="bg-slate-100" />
+            <CardContent className="p-5 sm:p-6">
+              <ScheduleTimeline classes={upcomingClasses} />
+            </CardContent>
+            <Separator className="bg-slate-100" />
+            <CardFooter className="p-4 bg-white">
+              <Button variant="link" onClick={() => navigate('/school/teacher/timetable')} className="w-full h-auto text-[12px] sm:text-[13px] font-bold text-[#1C4ED8] hover:text-[#1E40AF] hover:no-underline gap-1">
+                View Full Calendar <ArrowRight size={16} />
+              </Button>
+            </CardFooter>
+          </Card>
 
           {/* Quote Card */}
           <Card className="mt-4 bg-gradient-to-br from-[#E8F4FD] to-[#F1F8FE] rounded-2xl p-6 border-[#D1E9FA] shadow-sm relative overflow-hidden">
