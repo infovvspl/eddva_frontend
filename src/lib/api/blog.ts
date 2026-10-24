@@ -6,6 +6,7 @@
 import { apiClient, extractData } from './client';
 
 export type BlogPostStatus = 'DRAFT' | 'PUBLISHED';
+export type BlogLocale = 'en' | 'hi';
 
 export interface BlogSection {
   heading: string;
@@ -22,6 +23,9 @@ export interface BlogPost {
   coverImage?: string;
   readTime?: number;
   sections?: BlogSection[];
+  locale?: BlogLocale;
+  /** Sibling versions of the same article in other languages (detail endpoint only). */
+  translations?: { locale: BlogLocale; slug: string }[];
   status: BlogPostStatus;
   publishedAt: string | null;
   createdAt: string;
@@ -36,6 +40,7 @@ export interface BlogListResponse {
 }
 
 export interface BlogListParams {
+  locale?: BlogLocale;
   category?: string;
   search?: string;
   page?: number;
