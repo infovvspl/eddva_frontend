@@ -8,6 +8,7 @@ import GlassCard from '@/components/school/GlassCard';
 import Badge from '@/components/school/Badge';
 import ScoreTrendChart, { scoreTrendDelta } from '@/components/school/student/ScoreTrendChart';
 import SubjectMasteryChart from '@/components/school/student/SubjectMasteryChart';
+import { calculateReportCardPercentage } from '@/lib/school/reportCardCalculator';
 import '@/pages/school/teacher/StudentReportClasses.css';
 
 export default function Analytics() {
@@ -36,209 +37,8 @@ export default function Analytics() {
     }
   };
 
-  const getClassNumberFromName = (className = '') => {
-    const cls = String(className || '').toLowerCase();
-    const numeric = cls.match(/\b(?:class|grade|standard|std)?\s*(\d{1,2})\b/);
-    if (numeric) return Number(numeric[1]);
-
-    const romanMap = {
-      i: 1, ii: 2, iii: 3, iv: 4, v: 5,
-      vi: 6, vii: 7, viii: 8, ix: 9, x: 10, xi: 11, xii: 12
-    };
-    const tokens = cls.split(/[^a-z0-9]+/).filter(Boolean);
-    const roman = tokens.find((token) => romanMap[token]);
-    return roman ? romanMap[roman] : null;
-  };
-
-  const isBoardResultClass = (className = '') => {
-    const classNumber = getClassNumberFromName(className);
-    return classNumber === 10 || classNumber === 12;
-  };
-
-  const isPrePrimaryResultClass = (className = '') => {
-    const cls = String(className || '').toLowerCase();
-    return cls.includes('lkg') || cls.includes('ukg') || cls.includes('nursery') || cls.includes('pre');
-  };
-
-  const isInformationTechnologySubject = (subjectName = '') => {
-    const subject = String(subjectName || '').trim().toLowerCase();
-    return /\b(information|informational)\s+technology\b/.test(subject) || 
-           /\bcomputer\s+science\b/.test(subject) ||
-           /\bcomputer\b/.test(subject) ||
-           subject === 'it' || 
-           subject === 'cs';
-  };
-
-  const calculateReportCardPercentage = (recordsList, className) => {
-    const isBoard = isBoardResultClass(className);
-    const isPrePrimary = isPrePrimaryResultClass(className);
-
-    const subjectResults = recordsList.filter((res) => res.subjectName && !(res.assessmentTitle || '').toLowerCase().includes('(total)'));
-    if (!subjectResults.length) return 0;
-    if (isPrePrimary) return 0;
-
-    const subjectMap = {};
-    subjectResults.forEach((res) => {
-      const sub = res.subjectName || 'General';
-      if (!subjectMap[sub]) subjectMap[sub] = [];
-      subjectMap[sub].push(res);
-    });
-
-    let subjectFinals = [];
-
-    Object.entries(subjectMap).forEach(([subject, records]) => {
-      const isIT = isInformationTechnologySubject(subject);
-      
-      if (isBoard) {
-        let obtained = 0, max = 0;
-        records.forEach((rec) => {
-          try {
-            if (rec.remarks && String(rec.remarks).trim().startsWith('{')) {
-              const parsed = JSON.parse(rec.remarks);
-              if (parsed?.type === 'breakdown' && parsed.components) {
-                Object.values(parsed.components).forEach((comp) => {
-                  if (comp && comp.enabled) {
-                    obtained += Number(comp.obtained || 0);
-                    max += Number(comp.max || 0);
-                  }
-                });
-              }
-            } else {
-              obtained += Number(rec.marksObtained || 0);
-              max += Number(rec.totalMarks || 100);
-            }
-          } catch (e) {
-            obtained += Number(rec.marksObtained || 0);
-            max += Number(rec.totalMarks || 100);
-          }
-        });
-        const finalVal = max > 0 ? (obtained / max) * 100 : 0;
-        subjectFinals.push(finalVal);
-      } else {
-        const slotMap = new Map();
-        const getTermSlot = (titleStr) => {
-          const title = titleStr.toLowerCase();
-          if (title.includes('t1') || title.includes('term 1') || title.includes('mid') || title.includes('half')) {
-            if (title.includes('internal') || title.includes('periodic') || title.includes('unit')) {
-              return 't1Internal';
-            }
-            if (isIT) {
-              if (title.includes('practical')) return 'halfYearlyPractical';
-              if (title.includes('theory')) return 'halfYearlyTheory';
-            }
-            return 'halfYearly';
-          }
-          if (title.includes('t2') || title.includes('term 2') || title.includes('annual')) {
-            if (title.includes('internal') || title.includes('periodic') || title.includes('unit')) {
-              return 't2Internal';
-            }
-            if (isIT) {
-              if (title.includes('practical')) return 'annualPractical';
-              if (title.includes('theory')) return 'annualTheory';
-            }
-            return 'annual';
-          }
-          return null;
-        };
-
-        [...records]
-          .sort((a, b) => {
-            const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
-            const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
-            return aTime - bTime;
-          })
-          .forEach((rec) => {
-            const slot = getTermSlot(rec.assessmentTitle || '');
-            if (slot) {
-              slotMap.set(slot, rec);
-            }
-          });
-
-        let t1Int = 0, h1Exam = 0;
-        let t2Int = 0, aExam = 0;
-        let theoryObtained = 0, theoryMax = 0;
-        let internalObtained = 0;
-
-        Array.from(slotMap.values()).forEach((rec) => {
-          const title = (rec.assessmentTitle || '').toLowerCase();
-          const marks = Number(rec.marksObtained || 0);
-          if (title.includes('t1') || title.includes('term 1') || title.includes('mid') || title.includes('half')) {
-            if (title.includes('internal') || title.includes('periodic') || title.includes('unit')) {
-              t1Int += marks;
-            } else {
-              h1Exam += marks;
-            }
-          } else if (title.includes('t2') || title.includes('term 2') || title.includes('annual')) {
-            if (title.includes('internal') || title.includes('periodic') || title.includes('unit')) {
-              t2Int += marks;
-            } else {
-              aExam += marks;
-            }
-          }
-          
-          try {
-            if (rec.remarks && rec.remarks.trim().startsWith('{')) {
-              const parsed = JSON.parse(rec.remarks);
-              if (parsed.type === 'breakdown' && parsed.components) {
-                const comps = parsed.components;
-                if (comps.theory?.enabled) {
-                  theoryObtained += Number(comps.theory.obtained || 0);
-                  theoryMax += Number(comps.theory.max || 0);
-                }
-                if (comps.internal?.enabled) {
-                  internalObtained += Number(comps.internal.obtained || 0);
-                }
-              }
-            } else {
-              theoryObtained += Number(rec.marksObtained || 0);
-              theoryMax += Number(rec.totalMarks || 100);
-            }
-          } catch (e) {
-            theoryObtained += Number(rec.marksObtained || 0);
-            theoryMax += Number(rec.totalMarks || 100);
-          }
-        });
-
-        if (h1Exam === 0 && aExam === 0) {
-          h1Exam = Math.round(theoryObtained * 0.4);
-          aExam = Math.round(theoryObtained * 0.5);
-          t1Int = Math.round(internalObtained || (theoryObtained * 0.05));
-          t2Int = Math.round(internalObtained || (theoryObtained * 0.05));
-        }
-
-        let h1Max = 80, aMax = 80;
-        Array.from(slotMap.values()).forEach((rec) => {
-          const title = (rec.assessmentTitle || '').toLowerCase();
-          const maxVal = Number(rec.totalMarks || 0);
-          if (maxVal > 0) {
-            if (title.includes('t1') || title.includes('term 1') || title.includes('mid') || title.includes('half')) {
-              if (!title.includes('internal') && !title.includes('periodic') && !title.includes('unit')) {
-                h1Max = maxVal;
-              }
-            } else if (title.includes('t2') || title.includes('term 2') || title.includes('annual')) {
-              if (!title.includes('internal') && !title.includes('periodic') && !title.includes('unit')) {
-                aMax = maxVal;
-              }
-            }
-          }
-        });
-
-        let finalVal = 0;
-        if (isIT) {
-          finalVal = (h1Exam + aExam) / 2;
-        } else {
-          const hyScaled = h1Max > 0 ? (h1Exam / h1Max) * 30 : 0;
-          const annualScaled = aMax > 0 ? (aExam / aMax) * 50 : 0;
-          const internalScaled = (t1Int + t2Int) / 2;
-          finalVal = hyScaled + internalScaled + annualScaled;
-        }
-        subjectFinals.push(Math.min(100, Math.round(finalVal * 100) / 100));
-      }
-    });
-
-    const sum = subjectFinals.reduce((acc, val) => acc + val, 0);
-    return subjectFinals.length > 0 ? Math.round((sum / subjectFinals.length) * 100) / 100 : 0;
-  };
+  // Report-card percentage is computed by the shared calculator so this
+  // agrees with the admin report card and every other dashboard's badge.
 
   const resultsByClass = useMemo(() => {
     if (!student) return {};
@@ -440,7 +240,7 @@ export default function Analytics() {
                     const subjectResults = results.filter((res) => res.subjectName && !(res.assessmentTitle || '').toLowerCase().includes('(total)'));
                     const subjectsList = [...new Set(subjectResults.map((res) => res.subjectName).filter(Boolean))];
                     const subjectsDisplay = subjectsList.length > 0 ? subjectsList.join(', ') : 'General / All Subjects';
-                    const overallPercentage = calculateReportCardPercentage(results, classNameVal);
+                    const overallPercentage = calculateReportCardPercentage(results);
                     const cardStatus = reportCardStatuses[classKey];
                     const notYetApproved = cardStatus && cardStatus !== 'APPROVED';
 

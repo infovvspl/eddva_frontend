@@ -5,6 +5,7 @@ import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
 import { useSubmitQuiz } from "@/hooks/use-learning-path";
 import { apiErrorMessage, isQuizResult, learningApi, type QuizInProgress, type QuizResult, type QuizView } from "@/lib/api/learning-path";
 import { cn } from "@/lib/utils";
+import { QUIZ_PASS_THRESHOLD } from "./status";
 
 const DRAFT_DELAY_MS = 800;
 
@@ -35,6 +36,9 @@ function QuizTaking({ quiz, threadId, onGraded }: { quiz: QuizInProgress; thread
   const [answers, setAnswers] = useState<Record<string, string>>(quiz.draftAnswers ?? {});
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [confirming, setConfirming] = useState(false);
+  /** One question shown at a time; resets when a retaken quiz replaces this one. */
+  const [current, setCurrent] = useState(0);
+  useEffect(() => setCurrent(0), [quiz.instanceId]);
   const submit = useSubmitQuiz(threadId);
   const draftTimer = useRef<number | null>(null);
   const latest = useRef(answers);
@@ -138,12 +142,24 @@ function QuizTaking({ quiz, threadId, onGraded }: { quiz: QuizInProgress; thread
         </div>
       )}
 
-      <ol className="space-y-4">
-        {quiz.questions.map((q, i) => (
-          <li key={q.id} className="rounded-2xl border border-border bg-card p-4">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-semibold text-muted-foreground">Question {current + 1} of {quiz.questions.length}</p>
+        <div className="flex flex-wrap justify-end gap-1">
+          {quiz.questions.map((q, i) => (
+            <button key={q.id} type="button" onClick={() => setCurrent(i)} aria-label={`Go to question ${i + 1}`} aria-current={i === current ? "step" : undefined}
+              className={cn("h-1.5 w-5 rounded-full transition-colors",
+                i === current ? "bg-primary" : answers[q.id] ? "bg-primary/50" : "bg-muted")} />
+          ))}
+        </div>
+      </div>
+
+      {(() => {
+        const q = quiz.questions[current];
+        return (
+          <div className="rounded-2xl border border-border bg-card p-4">
             <fieldset>
               <legend className="flex gap-2 text-sm font-semibold text-foreground">
-                <span className="text-muted-foreground">{i + 1}.</span>
+                <span className="text-muted-foreground">{current + 1}.</span>
                 <span className="min-w-0 flex-1"><MarkdownRenderer content={q.text} /></span>
               </legend>
               <div className="mt-3 grid gap-2">
@@ -160,15 +176,30 @@ function QuizTaking({ quiz, threadId, onGraded }: { quiz: QuizInProgress; thread
                 })}
               </div>
             </fieldset>
-          </li>
-        ))}
-      </ol>
+          </div>
+        );
+      })()}
+
+      <div className="flex items-center justify-between gap-3">
+        <button type="button" onClick={() => setCurrent((c) => Math.max(0, c - 1))} disabled={current === 0}
+          className="rounded-xl border border-border px-4 py-2 text-sm font-semibold text-foreground disabled:opacity-40">
+          Previous
+        </button>
+        {current < quiz.questions.length - 1 ? (
+          <button type="button" onClick={() => setCurrent((c) => Math.min(quiz.questions.length - 1, c + 1))}
+            className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+            Next
+          </button>
+        ) : (
+          <p className="text-xs text-muted-foreground">Last question — press Submit above when you're ready.</p>
+        )}
+      </div>
     </div>
   );
 }
 
 function QuizResultView({ result, onRetake, retaking }: { result: QuizResult; onRetake?: () => void; retaking?: boolean }) {
-  const good = result.accuracy >= 70;
+  const good = result.accuracy >= QUIZ_PASS_THRESHOLD;
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       <div className={cn("rounded-2xl border p-5", good ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/40" : "border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/40")}>

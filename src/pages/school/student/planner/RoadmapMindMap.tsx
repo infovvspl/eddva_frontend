@@ -1,8 +1,9 @@
-import { memo, useCallback, useEffect, useMemo, type CSSProperties } from "react";
+import { memo, useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import ReactFlow, { Background, Controls, Handle, Position, useNodesInitialized, useReactFlow, useStore, type Edge, type Node, type NodeProps } from "reactflow";
 import "reactflow/dist/style.css";
-import { BookOpen, ChevronDown, ChevronRight, Loader2, MessageCircle, Sparkles, UserRound } from "lucide-react";
+import { BookOpen, ChevronDown, ChevronRight, Loader2, Maximize2, MessageCircle, Minimize2, Sparkles, UserRound } from "lucide-react";
 import type { ChapterNode, SubjectNode, TopicNode } from "@/lib/api/learning-path";
 import { cn } from "@/lib/utils";
 import { homeHeadings, PLANNER_BASE, type MapAction, type MapLayout, type MapNode } from "./mind-map-layout";
@@ -39,24 +40,24 @@ const MindNode = memo(function MindNode({ data }: NodeProps<MindNodeData>) {
       ))}
       {/* Centred: an icon or status dot beside the name, the detail and chat badge under it. */}
       <div className="flex flex-col items-center text-center">
-        <div className="flex max-w-full items-center justify-center gap-1.5">
-          {data.kind === "root" && <UserRound className="size-4 shrink-0" />}
-          {data.kind === "subject" && <BookOpen className="size-4 shrink-0 text-primary" />}
-          {(data.kind === "preparing" || data.pending) && <Loader2 className="size-3.5 shrink-0 animate-spin text-muted-foreground" />}
-          {data.kind === "prerequisite" && <Sparkles className="size-3.5 shrink-0 text-violet-500" />}
-          {style && !data.pending && <span className={cn("size-2 shrink-0 rounded-full", style.dot)} aria-hidden />}
-          <p className={cn("line-clamp-2 break-words font-semibold leading-tight", data.kind === "subtopic" ? "text-xs" : "text-[13px]")} title={data.label}>
+        <div className="flex max-w-full items-center justify-center gap-2">
+          {data.kind === "root" && <UserRound className="size-5 shrink-0" />}
+          {data.kind === "subject" && <BookOpen className="size-5 shrink-0 text-primary" />}
+          {(data.kind === "preparing" || data.pending) && <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />}
+          {data.kind === "prerequisite" && <Sparkles className="size-4 shrink-0 text-violet-500" />}
+          {style && !data.pending && <span className={cn("size-2.5 shrink-0 rounded-full", style.dot)} aria-hidden />}
+          <p className={cn("line-clamp-2 break-words font-bold leading-snug", data.kind === "subtopic" ? "text-sm" : "text-base")} title={data.label}>
             {data.label}
           </p>
         </div>
         {(data.detail || style) && data.kind !== "root" && (
-          <p className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground" title={[style?.label, data.detail].filter(Boolean).join(" · ")}>
+          <p className="mt-1 line-clamp-2 text-xs font-medium text-muted-foreground" title={[style?.label, data.detail].filter(Boolean).join(" · ")}>
             {[style?.label, data.detail].filter(Boolean).join(" · ")}
           </p>
         )}
         {data.hasThread && data.threadStatus && (
-          <p className="mt-1 inline-flex items-center gap-1 text-[10px] font-medium text-primary">
-            <MessageCircle className="size-3" /> {THREAD_STATUS_LABEL[data.threadStatus]}
+          <p className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-primary">
+            <MessageCircle className="size-3.5" /> {THREAD_STATUS_LABEL[data.threadStatus]}
           </p>
         )}
       </div>
@@ -64,13 +65,13 @@ const MindNode = memo(function MindNode({ data }: NodeProps<MindNodeData>) {
         <button
           type="button"
           aria-label={data.expanded ? "Hide subtopics" : "Show subtopics"}
-          className="nodrag absolute right-1 top-1 rounded p-0.5 text-muted-foreground hover:bg-muted"
+          className="nodrag absolute right-1.5 top-1.5 rounded p-0.5 text-muted-foreground hover:bg-muted"
           onClick={(e) => {
             e.stopPropagation();
             if (data.action.type === "open-topic") data.onToggle?.(data.action.topicId);
           }}
         >
-          {data.expanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+          {data.expanded ? <ChevronDown className="size-5" /> : <ChevronRight className="size-5" />}
         </button>
       )}
     </>
@@ -84,7 +85,7 @@ const MindNode = memo(function MindNode({ data }: NodeProps<MindNodeData>) {
         : GLOW_COLOR.default;
   const boxStyle = { width: data.width, "--planner-glow": glow, "--planner-glow-delay": glowDelay(data.id) } as CSSProperties;
   const box = cn(
-    "planner-glow relative rounded-xl border px-3 py-2 shadow-sm text-center text-foreground",
+    "planner-glow relative rounded-2xl border-2 px-4 py-3 shadow-sm text-center text-foreground",
     // Light tints only, no solid fills. "You" is tinted blue. The home map and the top of a
     // chapter or topic map are coloured weak (red) / at risk (yellow); the rest of a chapter or
     // topic map is coloured by progress: white not opened, blue opened, green completed.
@@ -96,7 +97,7 @@ const MindNode = memo(function MindNode({ data }: NodeProps<MindNodeData>) {
     !data.progress && data.kind === "subject" && "border-primary/30 bg-card",
     data.kind === "preparing" && "border-dashed text-muted-foreground",
     clickable && "cursor-pointer transition-shadow hover:shadow-md hover:ring-2 hover:ring-primary/30",
-    data.expandable && data.onToggle && "px-6", // room for the corner arrow, so the text stays centred
+    data.expandable && data.onToggle && "px-8", // room for the corner arrow, so the text stays centred
   );
   return clickable ? (
     <div role="button" tabIndex={0} aria-label={data.label} className={box} style={boxStyle}
@@ -116,7 +117,7 @@ const MindNode = memo(function MindNode({ data }: NodeProps<MindNodeData>) {
 
 const nodeTypes = { mind: MindNode };
 
-const FIT = { padding: 0.15, maxZoom: 1 } as const;
+const FIT = { padding: 0.12, maxZoom: 1.4 } as const;
 
 /**
  * Keeps the map centred and fully in view. React Flow's `fitView` prop fits
@@ -144,6 +145,25 @@ function AutoFit({ layout }: { layout: MapLayout }) {
  * handler, so a handler on the node's own content never receives the click.
  */
 export function MindMapCanvas({ layout, onActivate, onToggle }: { layout: MapLayout; onActivate: (a: MapAction) => void; onToggle?: (topicId: string) => void }) {
+  const [fullscreen, setFullscreen] = useState(false);
+
+  // Full screen: covers the page instead of the card, Esc exits, and the page
+  // behind it stops scrolling. React Flow re-fits to the new size on its own
+  // (AutoFit watches the pane's measured width/height).
+  useEffect(() => {
+    if (!fullscreen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFullscreen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [fullscreen]);
+
   const { nodes, edges } = useMemo(
     () => ({
       nodes: layout.nodes.map<Node<MindNodeData>>((n) => ({
@@ -162,18 +182,32 @@ export function MindMapCanvas({ layout, onActivate, onToggle }: { layout: MapLay
         sourceHandle: e.sourceHandle,
         targetHandle: e.targetHandle,
         type: "step", // right-angled connectors
-        style: { stroke: (e.status && EDGE_COLOR[e.status]) || "#94a3b8", strokeWidth: 1.5 },
+        style: { stroke: (e.status && EDGE_COLOR[e.status]) || "#94a3b8", strokeWidth: 2 },
       })),
     }),
     [layout, onActivate, onToggle],
   );
   const onNodeClick = useCallback((_: unknown, node: Node<MindNodeData>) => onActivate(node.data.action), [onActivate]);
 
-  return (
-    <div className="relative h-full min-h-[420px] w-full overflow-hidden rounded-2xl border border-border bg-muted/30">
+  const canvas = (
+    <div
+      className={cn(
+        "relative overflow-hidden border border-border bg-muted/30",
+        fullscreen ? "fixed inset-0 z-[200] h-screen w-screen rounded-none" : "h-full min-h-[620px] w-full rounded-2xl",
+      )}
+    >
       {layout.nodes.some((n) => n.progress && !n.isRoot) && (
         <ProgressLegend className="absolute left-3 top-3 z-10 rounded-lg border border-border bg-card/90 px-2.5 py-1.5 shadow-sm" />
       )}
+      <button
+        type="button"
+        onClick={() => setFullscreen((f) => !f)}
+        aria-label={fullscreen ? "Exit full screen" : "View full screen"}
+        className="absolute right-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-lg border border-border bg-card/90 px-2.5 py-1.5 text-xs font-semibold text-foreground shadow-sm hover:bg-muted"
+      >
+        {fullscreen ? <Minimize2 className="size-3.5" /> : <Maximize2 className="size-3.5" />}
+        {fullscreen ? "Exit full screen" : "Full screen"}
+      </button>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -181,7 +215,7 @@ export function MindMapCanvas({ layout, onActivate, onToggle }: { layout: MapLay
         fitView
         fitViewOptions={FIT}
         minZoom={0.2}
-        maxZoom={1.5}
+        maxZoom={1.8}
         onNodeClick={onNodeClick}
         nodesDraggable={false}
         nodesConnectable={false}
@@ -194,6 +228,12 @@ export function MindMapCanvas({ layout, onActivate, onToggle }: { layout: MapLay
       </ReactFlow>
     </div>
   );
+
+  // Portalled to <body>: a plain `fixed inset-0` nested inside the dashboard layout
+  // is contained by the nearest transformed ancestor (the page-transition wrapper),
+  // not the real viewport, so it would only cover the content pane. Same pattern as
+  // ResourceViewerModal's full-page overlay.
+  return fullscreen ? createPortal(canvas, document.body) : canvas;
 }
 
 function StatusChip({ status }: { status: TopicNode["status"] }) {

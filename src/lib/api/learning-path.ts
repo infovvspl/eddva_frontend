@@ -111,6 +111,8 @@ export interface ThreadStep {
   watchedCount: number;
   /** The student has opened this step (its video, notes or questions). */
   opened?: boolean;
+  /** A graded quiz/assessment's score (0-100); null until it is submitted, or for other step kinds. */
+  accuracy?: number | null;
 }
 
 export interface ThreadRound {

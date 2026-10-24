@@ -95,7 +95,7 @@ export default function PlannerHome() {
           tone="border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200" />
       </section>
 
-      <section className="flex min-h-[460px] flex-1 flex-col gap-3">
+      <section className="flex min-h-[640px] flex-1 flex-col gap-3">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-foreground">Roadmap</h2>

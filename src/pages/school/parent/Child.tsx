@@ -12,6 +12,7 @@ import GlassCard from '@/components/school/GlassCard';
 import { useSchoolFeature } from "@/hooks/use-school-feature";
 import StudentStudyReport from "@/pages/school/reports/study-planner/StudentStudyReport";
 import { cn } from '@/lib/utils';
+import { calculateReportCardPercentage } from '@/lib/school/reportCardCalculator';
 
 export default function ParentChild() {
   const { activeChildId } = useParentContext();
@@ -347,79 +348,6 @@ function AttendanceTab({ studentId }: { studentId: string | null }) {
 function MarksTab({ studentId }: { studentId: string | null }) {
   const navigate = useNavigate();
 
-  const calculateReportCardPercentage = (results: any[], classNameVal: string) => {
-    if (!results || results.length === 0) return 0;
-    const isClass10 = classNameVal.includes('10');
-    const isIT = results.some((r: any) => (r.subjectName || '').toLowerCase().includes('information technology') || (r.subjectName || '').toLowerCase().includes('it'));
-
-    const subjectFinals: number[] = [];
-    const subjects = [...new Set(results.map((res: any) => res.subjectName).filter(Boolean))];
-
-    subjects.forEach((subject) => {
-      const subjectResults = results.filter((res: any) => res.subjectName === subject);
-      let theoryObtained = 0;
-      let internalObtained = 0;
-      let hyExam = null;
-      let aExam = null;
-      let t1Int = null;
-      let t2Int = null;
-
-      subjectResults.forEach((res: any) => {
-        const title = (res.assessmentTitle || '').toLowerCase();
-        const score = res.marksObtained !== null ? Number(res.marksObtained) : 0;
-
-        if (title.includes('theory')) {
-          theoryObtained = score;
-        } else if (title.includes('internal')) {
-          internalObtained = score;
-        } else if (title.includes('half yearly')) {
-          hyExam = score;
-        } else if (title.includes('annual')) {
-          aExam = score;
-        } else if (title.includes('t1 internal')) {
-          t1Int = score;
-        } else if (title.includes('t2 internal')) {
-          t2Int = score;
-        }
-      });
-
-      if (isClass10) {
-        if (theoryObtained > 0 || internalObtained > 0) {
-          const finalVal = theoryObtained + internalObtained;
-          subjectFinals.push(Math.min(100, finalVal));
-        }
-      } else {
-        if (hyExam === null && aExam === null && t1Int === null && t2Int === null) {
-          hyExam = Math.round(theoryObtained * 0.4);
-          aExam = Math.round(theoryObtained * 0.5);
-          t1Int = Math.round(internalObtained || (theoryObtained * 0.05));
-          t2Int = Math.round(internalObtained || (theoryObtained * 0.05));
-        }
-
-        let finalVal = 0;
-        if (isIT) {
-          const hyScaled = hyExam !== null ? (hyExam / 50) * 35 : 0;
-          const annualScaled = aExam !== null ? (aExam / 50) * 35 : 0;
-          const t1IntVal = t1Int !== null ? t1Int : 0;
-          const t2IntVal = t2Int !== null ? t2Int : 0;
-          const internalScaled = (t1IntVal + t2IntVal) / 2;
-          finalVal = hyScaled + internalScaled + annualScaled;
-        } else {
-          const hyScaled = hyExam !== null ? (hyExam / 80) * 40 : 0;
-          const annualScaled = aExam !== null ? (aExam / 80) * 40 : 0;
-          const t1IntVal = t1Int !== null ? t1Int : 0;
-          const t2IntVal = t2Int !== null ? t2Int : 0;
-          const internalScaled = (t1IntVal + t2IntVal) / 2;
-          finalVal = hyScaled + internalScaled + annualScaled;
-        }
-        subjectFinals.push(Math.min(100, Math.round(finalVal * 100) / 100));
-      }
-    });
-
-    const sum = subjectFinals.reduce((acc, val) => acc + val, 0);
-    return subjectFinals.length > 0 ? Math.round((sum / subjectFinals.length) * 100) / 100 : 0;
-  };
-
   const { data: student, isLoading } = useQuery({
     queryKey: ['parent-student-detail', studentId],
     queryFn: () => studentId ? api.get(`/students/${studentId}`).then(res => res.data?.data || res.data) : null,
@@ -488,7 +416,7 @@ function MarksTab({ studentId }: { studentId: string | null }) {
             const subjectResults = results.filter((res: any) => res.subjectName && !(res.assessmentTitle || '').toLowerCase().includes('(total)'));
             const subjectsList = [...new Set(subjectResults.map((res: any) => res.subjectName).filter(Boolean))];
             const subjectsDisplay = subjectsList.length > 0 ? subjectsList.join(', ') : 'General / All Subjects';
-            const overallPercentage = calculateReportCardPercentage(results, classNameVal);
+            const overallPercentage = calculateReportCardPercentage(results);
             const cardStatus = statusByClassKey[classKey];
             const notYetApproved = cardStatus && cardStatus !== 'APPROVED';
 

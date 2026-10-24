@@ -99,15 +99,15 @@ type NodeSpec = Omit<MapNode, "x" | "y" | "width">;
 /** Sizes and spacing shared by all three maps. */
 export const LAYOUT = {
   /** Box widths; the lowest level is narrower (names wrap to two lines) so a wide chapter stays readable. */
-  width: { root: 140, subject: 200, chapter: 240, topic: 220, subtopic: 180, prerequisite: 180, preparing: 200 } as Record<MapNodeKind, number>,
+  width: { root: 180, subject: 260, chapter: 300, topic: 280, subtopic: 230, prerequisite: 230, preparing: 250 } as Record<MapNodeKind, number>,
   /** Vertical distance between levels (room for a two-line name, a detail line and a chat badge). */
-  levelStep: 140,
+  levelStep: 180,
   /** Gap between neighbours in a row. */
-  siblingGap: 24,
+  siblingGap: 36,
   /** Stacked levels: indent under the parent (so the elbow shows), parent-to-first-child gap, child-to-child step. */
-  indent: 28,
-  stackGap: 100,
-  stackStep: 84,
+  indent: 36,
+  stackGap: 120,
+  stackStep: 104,
 } as const;
 
 const pct = (v: number | null) => (v !== null ? `${Math.round(v)}%` : null);

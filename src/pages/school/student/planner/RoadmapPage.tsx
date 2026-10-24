@@ -141,7 +141,7 @@ export default function RoadmapPage({ kind }: { kind: "chapter" | "topic" }) {
           <p>The AI is laying out the {topic ? "subtopics" : "topics and subtopics"}. This page updates by itself.</p>
         </div>
       ) : (
-        <section className="flex min-h-[460px] flex-1 flex-col gap-2">
+        <section className="flex min-h-[640px] flex-1 flex-col gap-2">
           <p className="text-xs text-muted-foreground">
             {topic ? "Open the topic or a subtopic to start its learning path." : "Open a topic or a subtopic to start its learning path."}
           </p>
