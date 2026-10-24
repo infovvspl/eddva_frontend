@@ -59,48 +59,49 @@ const getTeacherFallbackUrl = (n: any) => {
 
 const MAX_CLASS_CARDS_SHOWN = 4;
 
-// Today's Schedule timeline — shared by the desktop panel (in the banner
-// row) and the mobile/tablet panel (stacked below it, since the two never
-// show at the same time).
-const scheduleItems = [
-  { time: '09:00 AM', timeColor: '#1E293B', subject: 'Mathematics', meta: 'Class 10 - Section A', dot: '#10B981',
-    badge: (
-      <Badge variant="outline" className="gap-1 text-[9px] sm:text-[10px] font-bold text-[#059669] bg-[#ECFDF5] px-2 py-1 border-[#D1FAE5]">
-        <div className="size-1.5 rounded-full bg-[#10B981] animate-pulse" /> Live
-      </Badge>
-    ) },
-  { time: '11:00 AM', timeColor: '#64748B', subject: 'Science', meta: 'Class 9 - Section A', dot: '#3B82F6',
-    badge: (
-      <Badge variant="outline" className="text-[9px] sm:text-[10px] font-bold text-[#2563EB] bg-[#EFF6FF] px-2 py-1 border-[#DBEAFE]">
-        Upcoming
-      </Badge>
-    ) },
-  { time: '02:00 PM', timeColor: '#64748B', subject: 'Assignment Review', meta: 'Class 10 - Section A', dot: '#9333EA',
-    badge: (
-      <Badge variant="outline" className="text-[9px] sm:text-[10px] font-bold text-[#9333EA] bg-[#FAF5FF] px-2 py-1 border-[#F3E8FF]">
-        Review
-      </Badge>
-    ) },
-];
-
-const ScheduleTimeline = () => (
-  <div className="relative pl-6 space-y-8">
-    <div className="absolute left-1 top-2 bottom-2 w-0.5 bg-slate-100" />
-    {scheduleItems.map((item) => (
-      <div className="relative" key={item.subject}>
-        <div className="absolute -left-[27px] top-1 size-3 rounded-full ring-4 ring-white" style={{ background: item.dot }} />
-        <div className="flex justify-between items-start">
-          <div>
-            <p className="text-[11px] font-bold mb-1" style={{ color: item.timeColor }}>{item.time}</p>
-            <p className="text-[14px] sm:text-[15px] font-bold text-[#112A46]">{item.subject}</p>
-            <p className="text-[10px] sm:text-[11px] font-medium text-[#64748B]">{item.meta}</p>
-          </div>
-          {item.badge}
-        </div>
+// Today's Schedule timeline — built from the teacher's real remaining classes
+// today (`upcomingClasses`, fetched from /dashboard/stats). The first item is
+// treated as "now" (closest upcoming/in-progress class), the rest "Upcoming".
+const ScheduleTimeline = ({ classes }: { classes: any[] }) => {
+  if (classes.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 text-center">
+        <Calendar size={28} className="text-slate-300" />
+        <p className="mt-2 text-sm font-bold text-slate-600">No more classes today</p>
+        <p className="mt-1 text-xs font-medium text-slate-400">Your remaining periods for today will appear here.</p>
       </div>
-    ))}
-  </div>
-);
+    );
+  }
+  return (
+    <div className="relative pl-6 space-y-8">
+      <div className="absolute left-1 top-2 bottom-2 w-0.5 rounded-full bg-gradient-to-b from-blue-300 via-indigo-200 to-transparent" />
+      {classes.map((item, i) => (
+        <div className="relative rounded-xl transition-colors hover:bg-slate-50/80 -ml-2 pl-2 py-1 -my-1" key={item.id || i}>
+          <div
+            className="absolute -left-[27px] top-1 size-3 rounded-full ring-4 ring-white shadow-md"
+            style={{ background: i === 0 ? '#10B981' : '#3B82F6' }}
+          />
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-[11px] font-bold mb-1" style={{ color: i === 0 ? '#1E293B' : '#64748B' }}>{item.time}</p>
+              <p className="text-[14px] sm:text-[15px] font-bold text-[#112A46]">{item.subject}</p>
+              <p className="text-[10px] sm:text-[11px] font-medium text-[#64748B]">{item.class}{item.room ? ` • ${item.room}` : ''}</p>
+            </div>
+            {i === 0 ? (
+              <Badge variant="outline" className="gap-1 text-[9px] sm:text-[10px] font-bold text-[#059669] bg-[#ECFDF5] px-2 py-1 border-[#D1FAE5]">
+                <div className="size-1.5 rounded-full bg-[#10B981] animate-pulse" /> Next
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-[9px] sm:text-[10px] font-bold text-[#2563EB] bg-[#EFF6FF] px-2 py-1 border-[#DBEAFE]">
+                Upcoming
+              </Badge>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 // Score bands for the class-performance donut (same cut-offs the Reports page uses).
 const PERFORMANCE_BANDS = [
@@ -515,6 +516,19 @@ const Dashboard: React.FC = () => {
   }, [ownWork, notifications]);
   const hiddenGroupCount = Math.max(0, classSectionGroups.length - MAX_CLASS_CARDS_SHOWN);
 
+  // "My Classes" card art/colors cycle through a fixed palette — purely decorative,
+  // doesn't depend on real data.
+  const CLASS_CARD_STYLES = [
+    { imgBg: 'bg-[#E8F4FD]', img: ImgChalkboard, badgeBg: 'bg-blue-100/50', badgeText: 'text-blue-700', badgeBorder: 'border-blue-200/50' },
+    { imgBg: 'bg-[#F3E8FF]', img: ImgGlobe, badgeBg: 'bg-purple-100/50', badgeText: 'text-purple-700', badgeBorder: 'border-purple-200/50' },
+    { imgBg: 'bg-[#FFF7ED]', img: ImgPencils2, badgeBg: 'bg-orange-100/50', badgeText: 'text-orange-700', badgeBorder: 'border-orange-200/50' },
+  ];
+  const sectionStudentCountMap = useMemo(() => {
+    const map = new Map<string, number>();
+    (stats?.teacherData?.sectionStudentCounts || []).forEach((r: any) => map.set(r.sectionId, r.count));
+    return map;
+  }, [stats]);
+
   // Attendance data from backend
   const attendancePresent = stats?.attendancePresent || 0;
   const attendanceAbsent = stats?.attendanceAbsent || 0;
@@ -542,13 +556,19 @@ const Dashboard: React.FC = () => {
       <MaintenanceBroadcastBanner />
       <div className="flex flex-col gap-6 mb-6">
         {/* Welcome Banner — full width */}
-        <Card className="relative overflow-hidden rounded-[2rem] shadow-sm group min-h-[300px] border-0">
+        <Card className="relative overflow-hidden rounded-[2rem] shadow-xl shadow-blue-900/10 group min-h-[300px] border-0">
           <div className="absolute inset-0 bg-cover bg-[center_top] bg-no-repeat z-0" style={{ backgroundImage: `url(${BgBanner})` }} />
           <div className="absolute inset-y-0 left-0 w-full md:w-[60%] lg:w-[45%] bg-gradient-to-r from-white/95 via-white/70 to-transparent z-10" />
+          <div className="pointer-events-none absolute -left-16 -top-16 z-10 size-64 rounded-full bg-blue-400/20 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-20 left-1/3 z-10 size-64 rounded-full bg-indigo-400/10 blur-3xl" />
 
           <CardContent className="relative z-20 flex flex-col justify-center max-w-xl p-6 md:p-8 min-h-[300px]">
+            <span className="mb-3 inline-flex w-fit items-center gap-2 rounded-full bg-white/80 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-blue-700 shadow-sm ring-1 ring-blue-100 backdrop-blur">
+              <span className="size-1.5 animate-pulse rounded-full bg-blue-500" />
+              {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
+            </span>
             <h1 className="text-3xl md:text-4xl font-extrabold text-[#112A46] tracking-tight leading-tight">
-              Welcome back, <br /><span className="text-blue-600">{user?.name || 'Teacher'}!</span>
+              Welcome back, <br /><span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{user?.name || 'Teacher'}!</span>
             </h1>
             <div className="my-1.5">
               <p className="text-[15px] font-medium text-slate-700/90 leading-relaxed max-w-md">Here's what's happening with your classes today. You have {upcomingClasses.length} upcoming sessions.</p>
@@ -556,99 +576,108 @@ const Dashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Today's Schedule + Today's Overview — side by side, 50/50 */}
+        {/* Needs Your Attention + Today's Overview — side by side, 50/50 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        <Card className="rounded-[2rem] border-slate-100 bg-white shadow-sm flex flex-col overflow-hidden">
-          <CardHeader className="p-5 sm:p-6 flex-row justify-between items-center space-y-0 bg-white">
-            <CardTitle className="text-[15px] sm:text-[17px] font-extrabold text-[#112A46] flex items-center gap-2 leading-normal tracking-normal">
-              <Calendar size={18} className="text-[#1C4ED8]" /> Today's Schedule
-            </CardTitle>
-          </CardHeader>
-          <Separator className="bg-slate-100" />
-          <CardContent className="p-5 sm:p-6">
-            <ScheduleTimeline />
-          </CardContent>
-          <Separator className="bg-slate-100" />
-          <CardFooter className="p-4 bg-white">
-            <Button variant="link" onClick={() => navigate('/school/teacher/timetable')} className="w-full h-auto text-[12px] sm:text-[13px] font-bold text-[#1C4ED8] hover:text-[#1E40AF] hover:no-underline gap-1">
-              View Full Calendar <ArrowRight size={16} />
-            </Button>
-          </CardFooter>
+        {/* Needs Your Attention */}
+        <Card className="bg-white rounded-[2rem] p-6 shadow-lg shadow-slate-200/60 ring-1 ring-slate-100 border-slate-100 flex flex-col">
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-orange-500 text-white shadow-lg shadow-rose-500/30">
+                <AlertCircle size={22} />
+              </span>
+              <div className="min-w-0">
+                <h2 className="text-xl font-extrabold leading-tight tracking-tight text-[#112A46]">Needs Your Attention</h2>
+                <p className="mt-0.5 text-xs font-semibold text-slate-500">Tasks and alerts waiting for you</p>
+              </div>
+            </div>
+            {attentionItems.length > 0 && (
+              <span className="flex h-8 min-w-[2rem] shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-rose-500 to-orange-500 px-2.5 text-[13px] font-black text-white shadow-md shadow-rose-500/30">
+                {attentionItems.length}
+              </span>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-2.5">
+            {!flags.loaded ? (
+              [0, 1, 2].map((i) => <Skeleton key={i} className="h-[76px] w-full rounded-2xl" />)
+            ) : attentionItems.length === 0 ? (
+              <div className="flex flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 px-4 py-10 text-center ring-1 ring-emerald-100">
+                <span className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/30">
+                  <CheckSquare size={26} />
+                </span>
+                <p className="mt-3 text-[15px] font-extrabold text-slate-900 leading-tight">You're all caught up</p>
+                <p className="mt-1 text-xs font-medium text-slate-500">No pending reviews, doubts or alerts right now.</p>
+              </div>
+            ) : (
+              attentionItems.map((item) => (
+                <div
+                  key={item.key}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => navigate(item.path, item.state ? { state: item.state } : undefined)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      navigate(item.path, item.state ? { state: item.state } : undefined);
+                    }
+                  }}
+                  className="group flex cursor-pointer items-center gap-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-3.5 transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-200 hover:bg-white hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                >
+                  <div className={`flex size-12 shrink-0 items-center justify-center rounded-2xl ${item.bg} ${item.color} shadow-sm ring-1 ring-white transition-transform duration-300 group-hover:scale-105`}>
+                    {item.icon}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[14px] font-extrabold leading-tight text-slate-900">{item.title}</p>
+                    <p className="mt-1 break-words text-[12px] font-medium leading-snug text-slate-500">{item.desc}</p>
+                  </div>
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm ring-1 ring-slate-100 transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white group-hover:ring-blue-600">
+                    <ChevronRight size={16} />
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
         </Card>
 
         {/* Today's Overview — full width */}
-        <Card className="bg-white rounded-[2rem] p-6 shadow-sm border-slate-100">
+        <Card className="bg-white rounded-[2rem] p-6 shadow-lg shadow-slate-200/60 ring-1 ring-slate-100 border-slate-100">
         <div className="flex justify-between items-end mb-6">
           <CardTitle className="text-xl font-extrabold text-[#112A46] tracking-tight leading-normal">Today's Overview</CardTitle>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Students Card */}
-          <Card className="bg-[#F0F7FF] rounded-[1.5rem] p-5 border-[#E0F0FE]/60 flex flex-col hover:-translate-y-1 transition-transform cursor-pointer" onClick={() => navigate('/school/teacher/students')}>
-            <div className="flex items-start gap-4">
-              <div className="bg-[#E0F0FE] text-[#2563EB] size-14 flex items-center justify-center rounded-full shrink-0 shadow-sm"><Users size={24} /></div>
-              <div className="flex flex-col min-w-0">
-                <p className="text-3xl font-black text-[#1E293B] leading-none">{stats?.totalStudents ?? 0}</p>
-                <p className="text-sm font-semibold text-[#64748B] mt-1 break-words">Students</p>
+          {[
+            { label: 'Students', value: stats?.totalStudents ?? 0, foot: 'Total Assigned', icon: <Users size={24} />, path: '/school/teacher/students', card: 'from-[#F0F7FF] to-[#DCEBFF] border-[#CFE3FB]', tile: 'from-blue-500 to-blue-600 shadow-blue-500/30', dot: 'bg-[#10B981]', footText: 'text-[#059669]' },
+            { label: 'Classes Today', value: upcomingClasses.length, foot: 'Remaining', icon: <Presentation size={24} />, path: '/school/teacher/timetable', card: 'from-[#FFF7ED] to-[#FFEAD2] border-[#FFDDB8]', tile: 'from-orange-400 to-orange-600 shadow-orange-500/30', dot: 'bg-[#F97316]', footText: 'text-[#EA580C]' },
+            { label: 'Assignments', value: stats?.assignments ?? 0, foot: 'Active', icon: <FileText size={24} />, path: '/school/teacher/assignments', card: 'from-[#F5F3FF] to-[#E7E0FF] border-[#DDD3FB]', tile: 'from-violet-500 to-purple-600 shadow-violet-500/30', dot: 'bg-[#8B5CF6]', footText: 'text-[#7C3AED]' },
+            { label: 'Assessments', value: stats?.assessments ?? 0, foot: 'Scheduled', icon: <CheckSquare size={24} />, path: '/school/teacher/assessments', card: 'from-[#FEF2F2] to-[#FFE0E0] border-[#FBCFCF]', tile: 'from-rose-500 to-red-600 shadow-rose-500/30', dot: 'bg-[#3B82F6]', footText: 'text-[#2563EB]' },
+          ].map((c) => (
+            <Card
+              key={c.label}
+              className={`group relative overflow-hidden bg-gradient-to-br ${c.card} rounded-[1.5rem] p-5 flex flex-col cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-xl`}
+              onClick={() => navigate(c.path)}
+            >
+              <div className="pointer-events-none absolute -bottom-8 -right-8 size-28 rounded-full bg-white/50 transition-transform duration-500 group-hover:scale-125" />
+              <div className="relative flex items-start gap-4">
+                <div className={`bg-gradient-to-br ${c.tile} text-white size-14 flex items-center justify-center rounded-2xl shrink-0 shadow-lg`}>{c.icon}</div>
+                <div className="flex flex-col min-w-0">
+                  <p className="text-4xl font-black text-[#1E293B] leading-none">{c.value}</p>
+                  <p className="text-sm font-bold text-[#64748B] mt-1.5 break-words">{c.label}</p>
+                </div>
               </div>
-            </div>
-            <div className="mt-5 flex items-center gap-1.5 text-[12px] font-bold text-[#059669]">
-              <div className="size-2 rounded-full bg-[#10B981]"></div>
-              Total Assigned
-            </div>
-          </Card>
-
-          {/* Classes Today Card */}
-          <Card className="bg-[#FFF7ED] rounded-[1.5rem] p-5 border-[#FFEDD5]/60 flex flex-col hover:-translate-y-1 transition-transform cursor-pointer" onClick={() => navigate('/school/teacher/timetable')}>
-            <div className="flex items-start gap-4">
-              <div className="bg-[#FFEDD5] text-[#EA580C] size-14 flex items-center justify-center rounded-full shrink-0 shadow-sm"><Presentation size={24} /></div>
-              <div className="flex flex-col min-w-0">
-                <p className="text-3xl font-black text-[#1E293B] leading-none">{upcomingClasses.length}</p>
-                <p className="text-sm font-semibold text-[#64748B] mt-1 break-words">Classes Today</p>
+              <div className={`relative mt-5 flex items-center gap-1.5 text-[12px] font-bold ${c.footText}`}>
+                <div className={`size-2 rounded-full ${c.dot}`}></div>
+                {c.foot}
               </div>
-            </div>
-            <div className="mt-5 flex items-center gap-1.5 text-[12px] font-bold text-[#EA580C]">
-              <div className="size-2 rounded-full bg-[#F97316]"></div>
-              Remaining
-            </div>
-          </Card>
-
-          {/* Assignments Card */}
-          <Card className="bg-[#F5F3FF] rounded-[1.5rem] p-5 border-[#EDE9FE]/60 flex flex-col hover:-translate-y-1 transition-transform cursor-pointer" onClick={() => navigate('/school/teacher/assignments')}>
-            <div className="flex items-start gap-4">
-              <div className="bg-[#EDE9FE] text-[#7C3AED] size-14 flex items-center justify-center rounded-full shrink-0 shadow-sm"><FileText size={24} /></div>
-              <div className="flex flex-col min-w-0">
-                <p className="text-3xl font-black text-[#1E293B] leading-none">{stats?.assignments ?? 0}</p>
-                <p className="text-sm font-semibold text-[#64748B] mt-1 break-words">Assignments</p>
-              </div>
-            </div>
-            <div className="mt-5 flex items-center gap-1.5 text-[12px] font-bold text-[#7C3AED]">
-              <div className="size-2 rounded-full bg-[#8B5CF6]"></div>
-              Active
-            </div>
-          </Card>
-
-          {/* Assessments Card */}
-          <Card className="bg-[#FEF2F2] rounded-[1.5rem] p-5 border-[#FEE2E2]/60 flex flex-col hover:-translate-y-1 transition-transform cursor-pointer" onClick={() => navigate('/school/teacher/assessments')}>
-            <div className="flex items-start gap-4">
-              <div className="bg-[#FEE2E2] text-[#DC2626] size-14 flex items-center justify-center rounded-full shrink-0 shadow-sm"><CheckSquare size={24} /></div>
-              <div className="flex flex-col min-w-0">
-                <p className="text-3xl font-black text-[#1E293B] leading-none">{stats?.assessments ?? 0}</p>
-                <p className="text-sm font-semibold text-[#64748B] mt-1 break-words">Assessments</p>
-              </div>
-            </div>
-            <div className="mt-5 flex items-center gap-1.5 text-[12px] font-bold text-[#2563EB]">
-              <div className="size-2 rounded-full bg-[#3B82F6]"></div>
-              Scheduled
-            </div>
-          </Card>
+            </Card>
+          ))}
         </div>
         </Card>
         </div>
       </div>
 
       {/* Quick Actions */}
-      <Card className="bg-white rounded-[2rem] p-6 shadow-sm border-slate-100 mb-6">
+      <Card className="bg-white rounded-[2rem] p-6 shadow-lg shadow-slate-200/60 ring-1 ring-slate-100 border-slate-100 mb-6">
         <div className="flex justify-between items-end mb-6">
           <CardTitle className="text-[22px] font-extrabold text-[#112A46] tracking-tight leading-normal">Quick Actions</CardTitle>
         </div>
@@ -663,7 +692,7 @@ const Dashboard: React.FC = () => {
               key={label}
               variant="ghost"
               onClick={() => navigate(path, { state })}
-              className={`relative overflow-hidden flex items-center justify-between p-5 h-auto rounded-2xl ${bg} shadow-sm transition-transform hover:-translate-y-1 group border-0 min-h-[100px] whitespace-normal`}
+              className={`relative overflow-hidden flex items-center justify-between p-5 h-auto rounded-2xl ${bg} shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group border-0 min-h-[100px] whitespace-normal`}
             >
               <div className="flex items-center gap-3 z-10 w-full pr-[60px]">
                 <div className={`size-10 rounded-full ${iconBg} flex items-center justify-center transition-colors ${text} shrink-0`}>
@@ -689,13 +718,16 @@ const Dashboard: React.FC = () => {
           {/* Performance & Needs Attention Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-4">
             {/* Student Performance */}
-            <Card className="bg-white rounded-[1.5rem] p-7 border-slate-100 shadow-sm flex flex-col">
+            <Card className="bg-white rounded-[1.5rem] p-7 border-slate-100 shadow-lg shadow-slate-200/60 ring-1 ring-slate-100 flex flex-col">
               <div className="flex justify-between items-start mb-6">
-                <div>
+                <div className="flex items-center gap-3">
+                  <span className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/30"><TrendingUp size={19} /></span>
+                  <div>
                   <CardTitle className="text-lg font-extrabold text-slate-900 tracking-tight leading-normal">Student Performance</CardTitle>
                   <p className="text-xs font-semibold text-slate-500 mt-1">
                     {perfScope ? `${perfScope.className} - ${perfScope.sectionName}` : 'No class assigned'}
                   </p>
+                  </div>
                 </div>
                 {classSectionGroups.length > 0 && (
                   <Select value={perfScope ? `${perfScope.classId}__${perfScope.sectionId}` : ''} onValueChange={setPerfScopeKey}>
@@ -807,15 +839,18 @@ const Dashboard: React.FC = () => {
             </Card>
 
             {/* My Classes */}
-            <Card className="bg-white rounded-[1.5rem] p-7 border-slate-100 shadow-sm flex flex-col">
+            <Card className="bg-white rounded-[1.5rem] p-7 border-slate-100 shadow-lg shadow-slate-200/60 ring-1 ring-slate-100 flex flex-col">
               <div className="flex justify-between items-end mb-6">
-                <CardTitle className="text-lg font-extrabold text-slate-900 tracking-tight leading-normal">My Classes</CardTitle>
+                <div className="flex items-center gap-3">
+                  <span className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/30"><BookOpen size={19} /></span>
+                  <CardTitle className="text-lg font-extrabold text-slate-900 tracking-tight leading-normal">My Classes</CardTitle>
+                </div>
                 <Button variant="link" onClick={() => navigate('/school/teacher/classes')} className="h-auto p-0 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:no-underline">View All</Button>
               </div>
 
               <div className="flex flex-col gap-4 flex-1">
                 {/* Class Card 1 */}
-                <Card className="bg-[#F8FAFC] rounded-[1.5rem] p-3 border-slate-100 shadow-none flex gap-4 hover:shadow-sm transition-shadow cursor-pointer items-stretch" onClick={() => navigate('/school/teacher/classes')}>
+                <Card className="bg-[#F8FAFC] rounded-[1.5rem] p-3 border-slate-100 shadow-none flex gap-4 ring-1 ring-slate-100 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 cursor-pointer items-stretch" onClick={() => navigate('/school/teacher/classes')}>
                   {/* Left Image Placeholder */}
                   <div className="w-[110px] bg-[#E8F4FD] rounded-xl flex items-center justify-center shrink-0 relative overflow-hidden">
                     <img src={ImgChalkboard} alt="Classroom" className="absolute inset-0 size-full object-cover scale-110" />
@@ -847,7 +882,7 @@ const Dashboard: React.FC = () => {
                 </Card>
 
                 {/* Class Card 2 */}
-                <Card className="bg-[#F8FAFC] rounded-[1.5rem] p-3 border-slate-100 shadow-none flex gap-4 hover:shadow-sm transition-shadow cursor-pointer items-stretch" onClick={() => navigate('/school/teacher/classes')}>
+                <Card className="bg-[#F8FAFC] rounded-[1.5rem] p-3 border-slate-100 shadow-none flex gap-4 ring-1 ring-slate-100 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 cursor-pointer items-stretch" onClick={() => navigate('/school/teacher/classes')}>
                   {/* Left Image Placeholder */}
                   <div className="w-[110px] bg-[#F3E8FF] rounded-xl flex items-center justify-center shrink-0 relative overflow-hidden">
                     <img src={ImgGlobe} alt="Globe" className="absolute inset-0 size-full object-cover scale-110" />
@@ -912,10 +947,10 @@ const Dashboard: React.FC = () => {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(item.path); }
                     }}
-                    className="bg-white rounded-3xl p-5 border-slate-100 shadow-sm flex flex-col gap-3 hover:shadow-md hover:border-blue-200 transition-all cursor-pointer"
+                    className="bg-white rounded-3xl p-5 border-slate-100 shadow-md ring-1 ring-slate-100 flex flex-col gap-3 hover:shadow-xl hover:-translate-y-1 hover:border-blue-200 transition-all duration-300 cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`size-9 rounded-xl ${item.bg} ${item.color} flex items-center justify-center shrink-0`}>
+                      <div className={`size-10 rounded-2xl ${item.bg} ${item.color} flex items-center justify-center shrink-0 shadow-sm`}>
                         {item.icon}
                       </div>
                       <div className="min-w-0">
@@ -936,61 +971,27 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="dashboard__side">
-          {/* Needs Your Attention */}
-          <div className="flex flex-col gap-5 mt-2">
-            <div className="flex justify-between items-end mb-1">
-              <h2 className="text-[20px] font-extrabold text-[#112A46] tracking-tight">Needs Your Attention</h2>
-              {attentionItems.length > 0 && (
-                <span className="text-[12px] font-bold text-slate-400">{attentionItems.length} {attentionItems.length === 1 ? 'item' : 'items'}</span>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-3">
-              {!flags.loaded ? (
-                [0, 1, 2].map((i) => <Skeleton key={i} className="h-[72px] w-full rounded-2xl" />)
-              ) : attentionItems.length === 0 ? (
-                <Card className="bg-white rounded-2xl p-5 shadow-sm border-slate-100 flex items-center gap-3">
-                  <div className="size-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                    <CheckSquare size={16} />
-                  </div>
-                  <div>
-                    <p className="text-[14px] font-bold text-slate-900 leading-tight">You're all caught up</p>
-                    <p className="text-[12px] font-medium text-slate-500 mt-0.5">No pending reviews, doubts or alerts right now.</p>
-                  </div>
-                </Card>
-              ) : (
-                attentionItems.map((item) => (
-                  <Card
-                    key={item.key}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => navigate(item.path, item.state ? { state: item.state } : undefined)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        navigate(item.path, item.state ? { state: item.state } : undefined);
-                      }
-                    }}
-                    className="bg-white rounded-2xl p-4 shadow-sm border-slate-100 flex items-center justify-between hover:shadow-md hover:border-blue-200 transition-all cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`size-10 rounded-full ${item.bg} ${item.color} flex items-center justify-center shrink-0`}>
-                        {item.icon}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[14px] font-bold text-slate-900 leading-tight">{item.title}</p>
-                        <p className="text-[12px] font-medium text-slate-500 mt-0.5 break-words">{item.desc}</p>
-                      </div>
-                    </div>
-                    <ChevronRight size={16} className="shrink-0 text-slate-300 group-hover:text-slate-500 transition-colors" />
-                  </Card>
-                ))
-              )}
-            </div>
-          </div>
+          {/* Today's Schedule */}
+          <Card className="rounded-[2rem] border-slate-100 bg-white shadow-lg shadow-slate-200/60 ring-1 ring-slate-100 flex flex-col overflow-hidden">
+            <CardHeader className="p-5 sm:p-6 flex-row justify-between items-center space-y-0 bg-white">
+              <CardTitle className="text-[15px] sm:text-[17px] font-extrabold text-[#112A46] flex items-center gap-2 leading-normal tracking-normal">
+                <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/30"><Calendar size={17} /></span> Today's Schedule
+              </CardTitle>
+            </CardHeader>
+            <Separator className="bg-slate-100" />
+            <CardContent className="p-5 sm:p-6">
+              <ScheduleTimeline classes={upcomingClasses} />
+            </CardContent>
+            <Separator className="bg-slate-100" />
+            <CardFooter className="p-4 bg-white">
+              <Button variant="link" onClick={() => navigate('/school/teacher/timetable')} className="w-full h-auto rounded-xl py-2.5 text-[12px] sm:text-[13px] font-bold text-[#1C4ED8] hover:bg-blue-50 hover:text-[#1E40AF] hover:no-underline gap-1">
+                View Full Calendar <ArrowRight size={16} />
+              </Button>
+            </CardFooter>
+          </Card>
 
           {/* Quote Card */}
-          <Card className="mt-4 bg-gradient-to-br from-[#E8F4FD] to-[#F1F8FE] rounded-2xl p-6 border-[#D1E9FA] shadow-sm relative overflow-hidden">
+          <Card className="mt-4 bg-gradient-to-br from-[#DBEAFE] via-[#E0E7FF] to-[#F5F3FF] rounded-2xl p-6 border-[#C7D8F8] shadow-lg shadow-blue-200/40 relative overflow-hidden">
             <div className="absolute right-2 bottom-0 size-24 opacity-60">
               {/* Stack of books illustration placeholder */}
               <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
