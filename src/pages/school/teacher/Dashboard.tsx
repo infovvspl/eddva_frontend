@@ -59,48 +59,49 @@ const getTeacherFallbackUrl = (n: any) => {
 
 const MAX_CLASS_CARDS_SHOWN = 4;
 
-// Today's Schedule timeline — shared by the desktop panel (in the banner
-// row) and the mobile/tablet panel (stacked below it, since the two never
-// show at the same time).
-const scheduleItems = [
-  { time: '09:00 AM', timeColor: '#1E293B', subject: 'Mathematics', meta: 'Class 10 - Section A', dot: '#10B981',
-    badge: (
-      <Badge variant="outline" className="gap-1 text-[9px] sm:text-[10px] font-bold text-[#059669] bg-[#ECFDF5] px-2 py-1 border-[#D1FAE5]">
-        <div className="size-1.5 rounded-full bg-[#10B981] animate-pulse" /> Live
-      </Badge>
-    ) },
-  { time: '11:00 AM', timeColor: '#64748B', subject: 'Science', meta: 'Class 9 - Section A', dot: '#3B82F6',
-    badge: (
-      <Badge variant="outline" className="text-[9px] sm:text-[10px] font-bold text-[#2563EB] bg-[#EFF6FF] px-2 py-1 border-[#DBEAFE]">
-        Upcoming
-      </Badge>
-    ) },
-  { time: '02:00 PM', timeColor: '#64748B', subject: 'Assignment Review', meta: 'Class 10 - Section A', dot: '#9333EA',
-    badge: (
-      <Badge variant="outline" className="text-[9px] sm:text-[10px] font-bold text-[#9333EA] bg-[#FAF5FF] px-2 py-1 border-[#F3E8FF]">
-        Review
-      </Badge>
-    ) },
-];
-
-const ScheduleTimeline = () => (
-  <div className="relative pl-6 space-y-8">
-    <div className="absolute left-1 top-2 bottom-2 w-0.5 rounded-full bg-gradient-to-b from-blue-300 via-indigo-200 to-transparent" />
-    {scheduleItems.map((item) => (
-      <div className="relative rounded-xl transition-colors hover:bg-slate-50/80 -ml-2 pl-2 py-1 -my-1" key={item.subject}>
-        <div className="absolute -left-[27px] top-1 size-3 rounded-full ring-4 ring-white shadow-md" style={{ background: item.dot }} />
-        <div className="flex justify-between items-start">
-          <div>
-            <p className="text-[11px] font-bold mb-1" style={{ color: item.timeColor }}>{item.time}</p>
-            <p className="text-[14px] sm:text-[15px] font-bold text-[#112A46]">{item.subject}</p>
-            <p className="text-[10px] sm:text-[11px] font-medium text-[#64748B]">{item.meta}</p>
-          </div>
-          {item.badge}
-        </div>
+// Today's Schedule timeline — built from the teacher's real remaining classes
+// today (`upcomingClasses`, fetched from /dashboard/stats). The first item is
+// treated as "now" (closest upcoming/in-progress class), the rest "Upcoming".
+const ScheduleTimeline = ({ classes }: { classes: any[] }) => {
+  if (classes.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 text-center">
+        <Calendar size={28} className="text-slate-300" />
+        <p className="mt-2 text-sm font-bold text-slate-600">No more classes today</p>
+        <p className="mt-1 text-xs font-medium text-slate-400">Your remaining periods for today will appear here.</p>
       </div>
-    ))}
-  </div>
-);
+    );
+  }
+  return (
+    <div className="relative pl-6 space-y-8">
+      <div className="absolute left-1 top-2 bottom-2 w-0.5 rounded-full bg-gradient-to-b from-blue-300 via-indigo-200 to-transparent" />
+      {classes.map((item, i) => (
+        <div className="relative rounded-xl transition-colors hover:bg-slate-50/80 -ml-2 pl-2 py-1 -my-1" key={item.id || i}>
+          <div
+            className="absolute -left-[27px] top-1 size-3 rounded-full ring-4 ring-white shadow-md"
+            style={{ background: i === 0 ? '#10B981' : '#3B82F6' }}
+          />
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-[11px] font-bold mb-1" style={{ color: i === 0 ? '#1E293B' : '#64748B' }}>{item.time}</p>
+              <p className="text-[14px] sm:text-[15px] font-bold text-[#112A46]">{item.subject}</p>
+              <p className="text-[10px] sm:text-[11px] font-medium text-[#64748B]">{item.class}{item.room ? ` • ${item.room}` : ''}</p>
+            </div>
+            {i === 0 ? (
+              <Badge variant="outline" className="gap-1 text-[9px] sm:text-[10px] font-bold text-[#059669] bg-[#ECFDF5] px-2 py-1 border-[#D1FAE5]">
+                <div className="size-1.5 rounded-full bg-[#10B981] animate-pulse" /> Next
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-[9px] sm:text-[10px] font-bold text-[#2563EB] bg-[#EFF6FF] px-2 py-1 border-[#DBEAFE]">
+                Upcoming
+              </Badge>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 // Score bands for the class-performance donut (same cut-offs the Reports page uses).
 const PERFORMANCE_BANDS = [
@@ -515,6 +516,19 @@ const Dashboard: React.FC = () => {
   }, [ownWork, notifications]);
   const hiddenGroupCount = Math.max(0, classSectionGroups.length - MAX_CLASS_CARDS_SHOWN);
 
+  // "My Classes" card art/colors cycle through a fixed palette — purely decorative,
+  // doesn't depend on real data.
+  const CLASS_CARD_STYLES = [
+    { imgBg: 'bg-[#E8F4FD]', img: ImgChalkboard, badgeBg: 'bg-blue-100/50', badgeText: 'text-blue-700', badgeBorder: 'border-blue-200/50' },
+    { imgBg: 'bg-[#F3E8FF]', img: ImgGlobe, badgeBg: 'bg-purple-100/50', badgeText: 'text-purple-700', badgeBorder: 'border-purple-200/50' },
+    { imgBg: 'bg-[#FFF7ED]', img: ImgPencils2, badgeBg: 'bg-orange-100/50', badgeText: 'text-orange-700', badgeBorder: 'border-orange-200/50' },
+  ];
+  const sectionStudentCountMap = useMemo(() => {
+    const map = new Map<string, number>();
+    (stats?.teacherData?.sectionStudentCounts || []).forEach((r: any) => map.set(r.sectionId, r.count));
+    return map;
+  }, [stats]);
+
   // Attendance data from backend
   const attendancePresent = stats?.attendancePresent || 0;
   const attendanceAbsent = stats?.attendanceAbsent || 0;
@@ -562,24 +576,67 @@ const Dashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Today's Schedule + Today's Overview — side by side, 50/50 */}
+        {/* Needs Your Attention + Today's Overview — side by side, 50/50 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        <Card className="rounded-[2rem] border-slate-100 bg-white shadow-lg shadow-slate-200/60 ring-1 ring-slate-100 flex flex-col overflow-hidden">
-          <CardHeader className="p-5 sm:p-6 flex-row justify-between items-center space-y-0 bg-white">
-            <CardTitle className="text-[15px] sm:text-[17px] font-extrabold text-[#112A46] flex items-center gap-2 leading-normal tracking-normal">
-              <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/30"><Calendar size={17} /></span> Today's Schedule
-            </CardTitle>
-          </CardHeader>
-          <Separator className="bg-slate-100" />
-          <CardContent className="p-5 sm:p-6">
-            <ScheduleTimeline />
-          </CardContent>
-          <Separator className="bg-slate-100" />
-          <CardFooter className="p-4 bg-white">
-            <Button variant="link" onClick={() => navigate('/school/teacher/timetable')} className="w-full h-auto rounded-xl py-2.5 text-[12px] sm:text-[13px] font-bold text-[#1C4ED8] hover:bg-blue-50 hover:text-[#1E40AF] hover:no-underline gap-1">
-              View Full Calendar <ArrowRight size={16} />
-            </Button>
-          </CardFooter>
+        {/* Needs Your Attention */}
+        <Card className="bg-white rounded-[2rem] p-6 shadow-lg shadow-slate-200/60 ring-1 ring-slate-100 border-slate-100 flex flex-col">
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-orange-500 text-white shadow-lg shadow-rose-500/30">
+                <AlertCircle size={22} />
+              </span>
+              <div className="min-w-0">
+                <h2 className="text-xl font-extrabold leading-tight tracking-tight text-[#112A46]">Needs Your Attention</h2>
+                <p className="mt-0.5 text-xs font-semibold text-slate-500">Tasks and alerts waiting for you</p>
+              </div>
+            </div>
+            {attentionItems.length > 0 && (
+              <span className="flex h-8 min-w-[2rem] shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-rose-500 to-orange-500 px-2.5 text-[13px] font-black text-white shadow-md shadow-rose-500/30">
+                {attentionItems.length}
+              </span>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-2.5">
+            {!flags.loaded ? (
+              [0, 1, 2].map((i) => <Skeleton key={i} className="h-[76px] w-full rounded-2xl" />)
+            ) : attentionItems.length === 0 ? (
+              <div className="flex flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 px-4 py-10 text-center ring-1 ring-emerald-100">
+                <span className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/30">
+                  <CheckSquare size={26} />
+                </span>
+                <p className="mt-3 text-[15px] font-extrabold text-slate-900 leading-tight">You're all caught up</p>
+                <p className="mt-1 text-xs font-medium text-slate-500">No pending reviews, doubts or alerts right now.</p>
+              </div>
+            ) : (
+              attentionItems.map((item) => (
+                <div
+                  key={item.key}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => navigate(item.path, item.state ? { state: item.state } : undefined)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      navigate(item.path, item.state ? { state: item.state } : undefined);
+                    }
+                  }}
+                  className="group flex cursor-pointer items-center gap-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-3.5 transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-200 hover:bg-white hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                >
+                  <div className={`flex size-12 shrink-0 items-center justify-center rounded-2xl ${item.bg} ${item.color} shadow-sm ring-1 ring-white transition-transform duration-300 group-hover:scale-105`}>
+                    {item.icon}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[14px] font-extrabold leading-tight text-slate-900">{item.title}</p>
+                    <p className="mt-1 break-words text-[12px] font-medium leading-snug text-slate-500">{item.desc}</p>
+                  </div>
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm ring-1 ring-slate-100 transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white group-hover:ring-blue-600">
+                    <ChevronRight size={16} />
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
         </Card>
 
         {/* Today's Overview — full width */}
@@ -914,58 +971,24 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="dashboard__side">
-          {/* Needs Your Attention */}
-          <div className="flex flex-col gap-5 mt-2">
-            <div className="flex justify-between items-end mb-1">
-              <h2 className="text-[20px] font-extrabold text-[#112A46] tracking-tight">Needs Your Attention</h2>
-              {attentionItems.length > 0 && (
-                <span className="text-[12px] font-bold text-slate-400">{attentionItems.length} {attentionItems.length === 1 ? 'item' : 'items'}</span>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-3">
-              {!flags.loaded ? (
-                [0, 1, 2].map((i) => <Skeleton key={i} className="h-[72px] w-full rounded-2xl" />)
-              ) : attentionItems.length === 0 ? (
-                <Card className="bg-white rounded-2xl p-5 shadow-sm border-slate-100 flex items-center gap-3">
-                  <div className="size-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                    <CheckSquare size={16} />
-                  </div>
-                  <div>
-                    <p className="text-[14px] font-bold text-slate-900 leading-tight">You're all caught up</p>
-                    <p className="text-[12px] font-medium text-slate-500 mt-0.5">No pending reviews, doubts or alerts right now.</p>
-                  </div>
-                </Card>
-              ) : (
-                attentionItems.map((item) => (
-                  <Card
-                    key={item.key}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => navigate(item.path, item.state ? { state: item.state } : undefined)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        navigate(item.path, item.state ? { state: item.state } : undefined);
-                      }
-                    }}
-                    className="bg-white rounded-2xl p-4 shadow-md ring-1 ring-slate-100 border-slate-100 flex items-center justify-between hover:shadow-lg hover:-translate-y-0.5 hover:border-blue-200 transition-all duration-300 cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`size-10 rounded-full ${item.bg} ${item.color} flex items-center justify-center shrink-0 shadow-sm`}>
-                        {item.icon}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[14px] font-bold text-slate-900 leading-tight">{item.title}</p>
-                        <p className="text-[12px] font-medium text-slate-500 mt-0.5 break-words">{item.desc}</p>
-                      </div>
-                    </div>
-                    <ChevronRight size={16} className="shrink-0 text-slate-300 group-hover:text-slate-500 transition-colors" />
-                  </Card>
-                ))
-              )}
-            </div>
-          </div>
+          {/* Today's Schedule */}
+          <Card className="rounded-[2rem] border-slate-100 bg-white shadow-lg shadow-slate-200/60 ring-1 ring-slate-100 flex flex-col overflow-hidden">
+            <CardHeader className="p-5 sm:p-6 flex-row justify-between items-center space-y-0 bg-white">
+              <CardTitle className="text-[15px] sm:text-[17px] font-extrabold text-[#112A46] flex items-center gap-2 leading-normal tracking-normal">
+                <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/30"><Calendar size={17} /></span> Today's Schedule
+              </CardTitle>
+            </CardHeader>
+            <Separator className="bg-slate-100" />
+            <CardContent className="p-5 sm:p-6">
+              <ScheduleTimeline classes={upcomingClasses} />
+            </CardContent>
+            <Separator className="bg-slate-100" />
+            <CardFooter className="p-4 bg-white">
+              <Button variant="link" onClick={() => navigate('/school/teacher/timetable')} className="w-full h-auto rounded-xl py-2.5 text-[12px] sm:text-[13px] font-bold text-[#1C4ED8] hover:bg-blue-50 hover:text-[#1E40AF] hover:no-underline gap-1">
+                View Full Calendar <ArrowRight size={16} />
+              </Button>
+            </CardFooter>
+          </Card>
 
           {/* Quote Card */}
           <Card className="mt-4 bg-gradient-to-br from-[#DBEAFE] via-[#E0E7FF] to-[#F5F3FF] rounded-2xl p-6 border-[#C7D8F8] shadow-lg shadow-blue-200/40 relative overflow-hidden">

@@ -740,20 +740,17 @@ export default function Timetable() {
   const currentDay = dayNames[now.getDay()];
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-  const isCurrentTeacherSlot = (slot) => {
-    if (!isTeacher) return true;
-    const teacherProfileId = teacherProfile?.id;
-    return (
-      (teacherProfileId && String(slot.teacherId || '') === String(teacherProfileId)) ||
-      (teacherProfileId && String(slot.teacher?.id || '') === String(teacherProfileId)) ||
-      (teacherProfileId && String(slot.teacher?.teacherProfile?.id || '') === String(teacherProfileId)) ||
-      (user?.id && String(slot.teacher?.user?.id || '') === String(user.id))
-    );
-  };
-
+  // The backend already scopes GET /timetable to the caller's own schedule whenever the
+  // request comes from a TEACHER (school-timetable.service.ts listTimetables: `t.teacher_id
+  // = <this teacher> OR t.section_id IN (their teacher_academic_assignments)`), so `timetables`
+  // already holds only this teacher's slots — no client-side re-filter is needed. A prior
+  // version re-filtered here against `teacherProfile.id` from a *separate* `/teachers/:id`
+  // call; when that call failed (it does — see the comment in fetchTimetables about a 403 on
+  // the profile), every slot silently failed the match and every day showed "No classes",
+  // even though the data the backend sent was correct.
   const visibleTimetables = useMemo(
-    () => (isTeacher ? timetables.filter(isCurrentTeacherSlot) : timetables),
-    [isTeacher, timetables, teacherProfile, user?.id]
+    () => timetables,
+    [timetables]
   );
 
   const timetableTeachers = useMemo(() => {
