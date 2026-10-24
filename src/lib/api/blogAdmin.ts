@@ -35,6 +35,8 @@ export interface BlogSection {
 
 export interface BlogPostPayload {
   title: string;
+  locale?: 'en' | 'hi';
+  translationGroup?: string | null;
   slug?: string;
   category?: string;
   excerpt?: string;
@@ -63,6 +65,7 @@ export interface BlogListResponse {
 }
 
 export interface BlogListParams {
+  locale?: 'en' | 'hi';
   category?: string;
   status?: BlogPostStatus;
   search?: string;

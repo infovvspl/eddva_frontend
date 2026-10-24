@@ -105,7 +105,7 @@ const BlogGrid = ({ posts }) => {
             ))}
           </div>
         ) : (
-          <p className="nw-bgrid__empty">{t("empty")}</p>
+          <p className="nw-bgrid__empty">{posts.length === 0 ? t("emptyLanguage") : t("empty")}</p>
         )}
 
       </div>

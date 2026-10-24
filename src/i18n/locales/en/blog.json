@@ -18,5 +18,10 @@
     "Exam Prep": "Exam Prep",
     "School Management": "School Management",
     "Product Updates": "Product Updates"
+  },
+  "emptyLanguage": "No articles in this language yet.",
+  "onlyIn": {
+    "en": "This article is only available in English.",
+    "hi": "This article is only available in Hindi."
   }
 }
