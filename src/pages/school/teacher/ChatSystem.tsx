@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Send,
   Users,
+  MessageSquare,
   User,
   Headphones,
   Smile,
@@ -109,6 +110,24 @@ const EMOJIS = [
   '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔',
   '🔥', '✨', '🎉', '⭐', '🌈', '☀️', '🌸', '💡', '💬', '🔔'
 ];
+
+// A stable, friendly gradient per person so avatars are easy to tell apart.
+const AVATAR_GRADIENTS = [
+  'from-blue-500 to-indigo-600',
+  'from-emerald-500 to-teal-600',
+  'from-violet-500 to-purple-600',
+  'from-rose-500 to-pink-600',
+  'from-amber-500 to-orange-600',
+  'from-cyan-500 to-sky-600',
+  'from-fuchsia-500 to-pink-600',
+  'from-lime-500 to-green-600',
+];
+const avatarGradient = (name = '') => {
+  let hash = 0;
+  const text = String(name);
+  for (let i = 0; i < text.length; i += 1) hash = (hash * 31 + text.charCodeAt(i)) >>> 0;
+  return AVATAR_GRADIENTS[hash % AVATAR_GRADIENTS.length];
+};
 
 const ChatSystem: React.FC = () => {
   const confirm = useConfirm();
@@ -285,7 +304,7 @@ const ChatSystem: React.FC = () => {
     }
   };
 
-  const renderTicketLinkedText = (text: string) => {
+  const renderTicketLinkedText = (text: string, mine = false) => {
     const parts = String(text || '').split(/((?:PLT|USR)-[A-Z0-9]{8})/gi);
     return parts.map((part, index) => {
       if (/^(?:PLT|USR)-[A-Z0-9]{8}$/i.test(part)) {
@@ -298,7 +317,7 @@ const ChatSystem: React.FC = () => {
               event.stopPropagation();
               openTicketFromMessage(ticketId);
             }}
-            className="font-black text-blue-700 underline decoration-blue-300 underline-offset-2 hover:text-blue-900"
+            className={mine ? 'font-black text-white underline decoration-white/60 underline-offset-2 hover:text-blue-100' : 'font-black text-blue-700 underline decoration-blue-300 underline-offset-2 hover:text-blue-900'}
           >
             {ticketId}
           </Button>
@@ -786,7 +805,7 @@ const ChatSystem: React.FC = () => {
   }
 
   const groupedMessages = useMemo(() => {
-    const groups: Array<{ type: 'separator'; label: string } | { type: 'message'; data: ChatMessage }> = [];
+    const groups: Array<{ type: 'separator'; label: string } | { type: 'message'; data: ChatMessage; joinPrev?: boolean }> = [];
     let lastLabel = '';
     filteredMessages.forEach((msg) => {
       const label = getMessageGroupLabel(msg.created_at);
@@ -795,6 +814,14 @@ const ChatSystem: React.FC = () => {
         lastLabel = label;
       }
       groups.push({ type: 'message', data: msg });
+    });
+    // A run = consecutive messages from the same sender within five minutes.
+    groups.forEach((item, i) => {
+      const prev = groups[i - 1];
+      if (item.type !== 'message' || !prev || prev.type !== 'message') return;
+      item.joinPrev =
+        prev.data.sender === item.data.sender &&
+        Math.abs(new Date((item.data as any).created_at || 0).getTime() - new Date((prev.data as any).created_at || 0).getTime()) < 5 * 60 * 1000;
     });
     return groups;
   }, [filteredMessages]);
@@ -941,41 +968,40 @@ const ChatSystem: React.FC = () => {
       );
     }
     return (
-      <div className="p-2 space-y-1">
+      <div className="p-2.5">
         {filtered.map((contact) => {
           const active = activeContact?.id === contact.id;
+          const unread = contact.unread > 0;
           return (
             <Button variant={null} size={null}
               key={contact.id}
               onClick={() => openConversation(contact)}
-              className={`w-full flex items-center gap-3 rounded-2xl p-3 text-left transition ${active
-                  ? "bg-blue-50/80 border border-blue-100/50 shadow-xs"
-                  : "hover:bg-slate-50/60 border border-transparent"
+              className={`group mb-1 flex h-auto w-full items-center justify-start gap-3.5 whitespace-normal rounded-2xl px-3.5 py-3 text-left font-normal transition-all duration-200 ${active
+                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/25 hover:bg-gradient-to-r"
+                  : "hover:bg-white hover:shadow-md dark:hover:bg-slate-900"
                 }`}
             >
-              <div className="relative shrink-0">
-                <Avatar className="size-10 rounded-2xl shadow-sm">
-                  <AvatarFallback className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white">
+              <div className="relative size-12 shrink-0">
+                <Avatar className={`size-12 rounded-full bg-gradient-to-br shadow-sm ring-2 ${active ? 'ring-white/40' : 'ring-white dark:ring-slate-900'} ${avatarGradient(contact.name)}`}>
+                  <AvatarFallback className="rounded-full bg-transparent text-base font-black text-white">
                     {contact.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 {contact.online && (
-                  <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border border-white bg-emerald-500" />
+                  <span className={`absolute bottom-0 right-0 size-3.5 rounded-full border-2 bg-emerald-500 ${active ? 'border-indigo-600' : 'border-slate-50 group-hover:border-white dark:border-slate-950'}`} />
                 )}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-800 truncate">{contact.name}</span>
-                  <span className="text-[9px] font-semibold text-slate-400 shrink-0">{contact.time}</span>
-                </div>
-                <div className="flex items-center justify-between mt-0.5">
-                  <p className="text-[11px] font-semibold text-slate-500 truncate">{contact.lastMessage}</p>
-                  {contact.unread > 0 && (
-                    <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-600 px-1 text-[9px] font-black text-white shrink-0">
-                      {contact.unread}
-                    </span>
-                  )}
-                </div>
+              <div className="min-w-0 flex-1">
+                <p className={`truncate text-sm ${active ? 'font-bold text-white' : unread ? 'font-black text-slate-900 dark:text-white' : 'font-bold text-slate-800 dark:text-slate-100'}`}>{contact.name}</p>
+                <p className={`mt-0.5 truncate text-xs ${active ? 'font-medium text-blue-100' : unread ? 'font-bold text-slate-700 dark:text-slate-200' : 'font-medium text-slate-500'}`}>{contact.lastMessage}</p>
+              </div>
+              <div className="flex shrink-0 flex-col items-end justify-center gap-1.5 self-stretch">
+                <span className={`text-[10px] ${active ? 'font-semibold text-blue-100' : unread ? 'font-bold text-blue-600' : 'font-semibold text-slate-400'}`}>{contact.time}</span>
+                {unread && (
+                  <span className={`flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-black ${active ? 'bg-white text-blue-600' : 'bg-blue-600 text-white shadow-sm shadow-blue-600/30'}`}>
+                    {contact.unread}
+                  </span>
+                )}
               </div>
             </Button>
           );
@@ -1093,30 +1119,30 @@ const ChatSystem: React.FC = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-140px)] md:h-[calc(100vh-120px)] max-h-[calc(100vh-140px)] md:max-h-[calc(100vh-120px)] min-h-0 rounded-2xl md:rounded-3xl border border-slate-100 bg-white shadow-xl overflow-hidden flex flex-col md:flex-row relative dark:border-slate-800">
+    <div className="h-[calc(100vh-140px)] md:h-[calc(100vh-120px)] max-h-[calc(100vh-140px)] md:max-h-[calc(100vh-120px)] min-h-0 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col md:flex-row relative dark:border-slate-800">
 
       {/* Column 1: Sidebar Directory */}
-      <div className={`w-full md:w-[300px] lg:w-[340px] border-r border-slate-100 flex flex-col shrink-0 min-h-0 bg-slate-50/10 transition-all dark:border-slate-800 ${activeContact ? 'hidden md:flex' : 'flex'}`}>
-        <div className="flex items-center justify-between p-4 border-b border-slate-100/60 bg-white shrink-0 dark:border-slate-800 dark:bg-slate-900">
+      <div className={`w-full md:w-[300px] lg:w-[340px] border-r border-slate-200 flex flex-col shrink-0 min-h-0 bg-slate-50 transition-all dark:border-slate-800 dark:bg-slate-950/40 ${activeContact ? 'hidden md:flex' : 'flex'}`}>
+        <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-white shrink-0 dark:border-slate-800 dark:bg-slate-900">
           <h3 className="text-sm font-black text-slate-800 tracking-tight uppercase dark:text-white">Messages</h3>
           <Button variant="ghost" size={null} className="rounded-xl p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition dark:hover:bg-slate-800" type="button" onClick={() => handleUnavailableAction('Chat options')}>
             <MoreVertical size={16} />
           </Button>
         </div>
-        <div className="p-3 bg-white dark:bg-slate-900">
+        <div className="p-3 bg-slate-50 border-b border-slate-200 dark:border-slate-800 dark:bg-slate-900">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-4 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search conversations..."
-              className="h-auto w-full rounded-2xl border-slate-100 bg-slate-50/50 py-2 pl-9 pr-3 text-xs font-semibold focus-visible:border-blue-400 focus-visible:bg-white focus-visible:ring-0 focus-visible:ring-offset-0 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+              className="h-auto w-full rounded-xl border-slate-200 bg-white py-2.5 pl-10 pr-4 text-xs font-semibold text-slate-800 shadow-sm placeholder:text-slate-400 focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100 focus-visible:ring-offset-0 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
             />
           </div>
         </div>
 
         {/* Tab pills */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="border-b border-slate-100/60 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-950/40">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950/40">
           <TabsList className="no-scrollbar h-auto w-full justify-start gap-1.5 overflow-x-auto bg-transparent px-3 py-2">
             {[
               { id: 'parents', label: 'Parents', icon: <User size={12} /> },
@@ -1126,7 +1152,7 @@ const ChatSystem: React.FC = () => {
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
-                className="gap-1 whitespace-nowrap rounded-full border border-slate-100 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-500 hover:bg-slate-50 data-[state=active]:border-blue-600 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:shadow-blue-500/25 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400"
+                className="gap-1.5 whitespace-nowrap rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-600 hover:border-blue-300 hover:bg-white hover:text-blue-600 data-[state=active]:border-blue-600 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-blue-600/25 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400"
               >
                 {tab.icon}
                 <span>{tab.label}</span>
@@ -1149,7 +1175,7 @@ const ChatSystem: React.FC = () => {
         {activeContact ? (
           <>
             {/* Conversation Header */}
-            <div className="flex items-center justify-between p-3 sm:p-4 border-b border-slate-100 bg-white shrink-0 shadow-xs z-10 dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex items-center justify-between px-3 py-3 sm:px-4 border-b border-slate-200/70 bg-white/80 backdrop-blur-xl shrink-0 shadow-[0_8px_24px_-16px_rgba(30,41,59,0.25)] z-10 dark:border-slate-800 dark:bg-slate-900/80">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 <Button variant={null} size={null}
                   type="button"
@@ -1160,22 +1186,22 @@ const ChatSystem: React.FC = () => {
                 >
                   <ArrowLeft className="size-5 stroke-[2.5]" />
                 </Button>
-                <div className="relative shrink-0">
-                <Avatar className="size-10 rounded-2xl shadow-sm">
-                  <AvatarFallback className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white">
-                    {activeContact.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                {activeContact.online && (
-                    <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border border-white bg-emerald-500" />
+                <div className="relative size-11 shrink-0">
+                  <Avatar className={`size-11 rounded-full bg-gradient-to-br shadow-md ring-2 ring-white dark:ring-slate-900 ${avatarGradient(activeContact.name)}`}>
+                    <AvatarFallback className="rounded-full bg-transparent text-sm font-black text-white">
+                      {activeContact.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  {activeContact.online && (
+                    <span className="absolute bottom-0 right-0 size-3 rounded-full border-2 border-white bg-emerald-500 dark:border-slate-900" />
                   )}
-              </div>
+                </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-800 dark:text-white truncate">{activeContact.name}</span>
+                    <span className="text-sm font-black text-slate-900 dark:text-white truncate">{activeContact.name}</span>
                     {activeContact.online ? (
-                      <Badge variant="outline" className="gap-0.5 rounded-full border-transparent bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400">
-                        <span className="size-1 rounded-full bg-emerald-500" />
+                      <Badge variant="outline" className="gap-1 rounded-full border-transparent bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400">
+                        <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
                         Online
                       </Badge>
                     ) : (
@@ -1189,7 +1215,7 @@ const ChatSystem: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-1">
-                <Button variant="ghost" size={null} onClick={() => handleUnavailableAction('Search in chat')} className="p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-xl transition dark:hover:bg-slate-800">
+                <Button variant="ghost" size={null} onClick={() => handleUnavailableAction('Search in chat')} className="p-2.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 rounded-full transition dark:hover:bg-slate-800">
                   <Search size={16} />
                 </Button>
                 <Button variant={null} size={null}
@@ -1200,10 +1226,10 @@ const ChatSystem: React.FC = () => {
                       setShowDetails(!showDetails);
                     }
                   }}
-                  className={`p-2 rounded-xl transition ${
+                  className={`p-2.5 rounded-full transition ${
                     (window.innerWidth >= 1280 ? showDetails : showProfileDrawer)
-                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400'
-                      : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600 dark:hover:bg-slate-800'
+                      ? 'bg-blue-100 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400'
+                      : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800'
                   }`}
                 >
                   <Info size={16} />
@@ -1212,44 +1238,54 @@ const ChatSystem: React.FC = () => {
             </div>
 
             {/* Messages Scroll Area */}
-            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-slate-50/20 p-3 sm:p-4 space-y-3 sm:space-y-4">
+            <div
+              className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-slate-50 px-3 py-4 sm:px-8 sm:py-5 dark:bg-slate-950/40"
+              style={{ backgroundImage: 'radial-gradient(rgba(100,116,139,0.09) 1px, transparent 1px)', backgroundSize: '24px 24px' }}
+            >
               {groupedMessages.length > 0 ? (
                 groupedMessages.map((item, idx) => {
                   if (item.type === 'separator') {
                     return (
-                      <div key={`sep-${idx}`} className="flex justify-center my-3">
-                        <Badge variant="outline" className="rounded-full border-transparent bg-slate-100/80 px-3 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                      <div key={`sep-${idx}`} className="flex items-center gap-3 py-4">
+                        <span className="h-px flex-1 bg-gradient-to-r from-transparent to-slate-300/80" />
+                        <Badge variant="outline" className="rounded-full border-slate-200/80 bg-white px-3.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 shadow-sm hover:bg-white">
                           {item.label}
                         </Badge>
+                        <span className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-300/80" />
                       </div>
                     );
                   }
 
                   const msg = item.data;
                   const mine = msg.sender === 'me';
+                  // Bubbles in a run stay tight; the sender-side corners flatten so they read as one block.
+                  const { joinPrev } = item;
+                  const bubbleShape = mine
+                    ? (joinPrev ? 'rounded-[20px] rounded-tr-[5px] rounded-br-[5px]' : 'rounded-[20px] rounded-br-[5px]')
+                    : (joinPrev ? 'rounded-[20px] rounded-tl-[5px] rounded-bl-[5px]' : 'rounded-[20px] rounded-bl-[5px]');
 
                   return (
                     <div
                       key={msg.id}
                       id={`msg-${msg.id}`}
-                      className={`flex ${mine ? 'justify-end' : 'justify-start'} transition-all duration-500 rounded-2xl ${highlightedMessageId === msg.id ? 'bg-amber-100 p-2 shadow-sm' : ''
+                      className={`flex ${mine ? 'justify-end' : 'justify-start'} ${joinPrev ? 'mt-0.5' : 'mt-3.5'} transition-all duration-500 rounded-2xl ${highlightedMessageId === msg.id ? 'bg-amber-100 p-2 shadow-sm' : ''
                         }`}
                       onContextMenu={(e) => handleContextMenu(e, msg)}
                     >
                       <div
-                        className={`group relative max-w-[85%] sm:max-w-[70%] rounded-2xl px-3 py-2 sm:px-4 sm:py-2.5 text-xs font-semibold shadow-xs transition duration-200 ${mine
-                            ? 'bg-blue-50 text-slate-800 border border-blue-100/50 rounded-tr-none'
-                            : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
+                        className={`group relative max-w-[85%] sm:max-w-[68%] min-w-[4.5rem] px-3.5 pb-1.5 pt-2 text-[14px] font-medium leading-[1.45] transition duration-200 ${bubbleShape} ${mine
+                            ? 'bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/25 ring-1 ring-inset ring-white/15'
+                            : 'bg-white text-slate-800 ring-1 ring-slate-200/80 shadow-sm dark:bg-slate-900 dark:text-slate-100 dark:ring-slate-800'
                           }`}
                       >
                         {msg.is_forwarded && (
-                          <p className={`mb-1 flex items-center gap-1 text-[9px] font-bold uppercase ${mine ? 'text-blue-600' : 'text-slate-400'}`}>
+                          <p className={`mb-1 flex items-center gap-1 text-[10px] font-bold uppercase ${mine ? 'text-white/80' : 'text-slate-400'}`}>
                             <Forward size={10} /> Forwarded
                           </p>
                         )}
 
                         {msg.parent_message_id && (
-                          <div className={`mb-2 border-l-2 pl-2 text-[10px] opacity-80 ${mine ? 'border-blue-300 text-blue-600' : 'border-slate-300 text-slate-500'}`}>
+                          <div className={`mb-2 rounded-lg border-l-4 px-2 py-1 text-[11px] ${mine ? 'border-white/70 bg-white/15 text-white/90' : 'border-blue-400 bg-slate-50 text-slate-500'}`}>
                             Reply to message
                           </div>
                         )}
@@ -1296,20 +1332,20 @@ const ChatSystem: React.FC = () => {
                         {msg.text?.startsWith('[MEETING_CARD]') ? (
                           renderMeetingCard(msg.text)
                         ) : (
-                          <p className="whitespace-pre-wrap break-words">{renderTicketLinkedText(msg.text)}</p>
+                          <p className="whitespace-pre-wrap break-words">{renderTicketLinkedText(msg.text, mine)}</p>
                         )}
 
-                        <div className="mt-1 flex items-center justify-end gap-1 text-[9px] opacity-85">
-                          <span className={mine ? 'text-blue-500' : 'text-slate-400'}>{msg.time}</span>
-                          {msg.is_edited && <span className={mine ? 'text-blue-500' : 'text-slate-400'}>• Edited</span>}
+                        <div className="-mb-0.5 mt-0.5 flex items-center justify-end gap-1 text-[10px] leading-none">
+                          <span className={mine ? 'text-white/75' : 'text-slate-400'}>{msg.time}</span>
+                          {msg.is_edited && <span className={mine ? 'text-white/75' : 'text-slate-400'}>• Edited</span>}
                           {mine && (
                             <span>
                               {msg.is_read ? (
-                                <CheckCheck size={12} className="text-blue-600 inline" />
+                                <CheckCheck size={13} className="text-sky-200 inline" />
                               ) : msg.is_delivered ? (
-                                <CheckCheck size={12} className="text-slate-400 inline" />
+                                <CheckCheck size={13} className="text-white/60 inline" />
                               ) : (
-                                <Check size={12} className="text-slate-400 inline" />
+                                <Check size={13} className="text-white/60 inline" />
                               )}
                             </span>
                           )}
@@ -1327,8 +1363,10 @@ const ChatSystem: React.FC = () => {
 
               {peerTyping && (
                 <div className="flex justify-start">
-                  <div className="rounded-2xl border border-slate-100 bg-white px-4 py-2 text-xs font-semibold text-slate-400 shadow-xs animate-pulse">
-                    typing...
+                  <div className="mt-3.5 flex items-center gap-1 rounded-2xl rounded-bl-md border border-slate-200/80 bg-white px-4 py-3 shadow-sm" aria-label="typing">
+                    <span className="size-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: '0ms' }} />
+                    <span className="size-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: '150ms' }} />
+                    <span className="size-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: '300ms' }} />
                   </div>
                 </div>
               )}
@@ -1337,7 +1375,7 @@ const ChatSystem: React.FC = () => {
 
             {/* Reply Input Banner */}
             {replyingTo && (
-              <div className="flex items-center justify-between bg-slate-50 px-4 py-2 border-t border-blue-50 text-xs">
+              <div className="flex items-center justify-between bg-blue-50/70 px-4 py-2.5 border-t border-blue-100 text-xs">
                 <div className="flex items-center gap-2 text-slate-600">
                   <ReplyIcon size={12} />
                   <span>Replying to: <strong>{replyingTo.text}</strong></span>
@@ -1349,7 +1387,7 @@ const ChatSystem: React.FC = () => {
             )}
 
             {/* Input Composer Panel */}
-            <div className="relative border-t border-slate-100 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-3 sm:px-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:pt-4 bg-white flex items-center gap-2 shrink-0 z-10">
+            <div className="relative border-t border-slate-200/70 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-3 sm:px-6 sm:pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:pt-3.5 bg-white/90 backdrop-blur-xl flex items-center gap-2 shrink-0 z-10 dark:border-slate-800 dark:bg-slate-900/90">
               {editingMessage ? (
                 <div className="flex w-full gap-2">
                   <Input
@@ -1363,11 +1401,11 @@ const ChatSystem: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  <div className="flex-1 flex items-center rounded-full border border-slate-200 bg-slate-50/50 px-4 py-1.5 transition-all focus-within:border-blue-300 focus-within:bg-white">
+                  <div className="flex-1 flex items-center rounded-full border border-slate-200/80 bg-slate-50 px-2.5 sm:px-3 py-1.5 shadow-inner transition-all focus-within:border-blue-300 focus-within:bg-white focus-within:shadow-none focus-within:ring-4 focus-within:ring-blue-100 dark:border-slate-800 dark:bg-slate-950">
                     <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
                       <PopoverTrigger asChild>
-                        <Button type="button" variant="ghost" size="icon" className="size-8 shrink-0 text-slate-400 hover:bg-transparent hover:text-slate-600" aria-label="Insert emoji">
-                          <Smile size={18} />
+                        <Button type="button" variant="ghost" size="icon" className="mr-1 size-8 shrink-0 rounded-full text-slate-400 hover:bg-blue-50 hover:text-blue-600" aria-label="Insert emoji">
+                          <Smile size={19} />
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent side="top" align="start" className="w-64 max-w-[calc(100vw-2rem)] rounded-2xl p-3">
@@ -1391,7 +1429,7 @@ const ChatSystem: React.FC = () => {
                     </Popover>
                     <Input
                       type="text"
-                      className="h-auto flex-1 rounded-none border-0 bg-transparent px-1 py-1 text-xs font-semibold text-slate-800 shadow-none placeholder:text-slate-400 focus-visible:ring-0 focus-visible:ring-offset-0"
+                      className="h-auto flex-1 rounded-none border-0 bg-transparent px-1 py-1 text-[13px] font-medium text-slate-800 shadow-none placeholder:text-slate-400 focus-visible:ring-0 focus-visible:ring-offset-0 dark:text-slate-100"
                       placeholder="Type a message..."
                       value={message}
                       onChange={(e) => {
@@ -1400,56 +1438,58 @@ const ChatSystem: React.FC = () => {
                       }}
                       onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                     />
-                    <label className="text-slate-400 hover:text-slate-600 pl-2 cursor-pointer transition">
-                      <Paperclip size={18} />
+                    <label className="ml-1 flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-slate-400 transition hover:bg-blue-50 hover:text-blue-600">
+                      <Paperclip size={19} />
                       <input type="file" className="hidden" onChange={handleFileUpload} />
                     </label>
                   </div>
                   <Button variant={null} size={null}
                     disabled={!message.trim() || uploading}
                     onClick={handleSendMessage}
-                    className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20 hover:brightness-110 disabled:opacity-40 transition"
+                    className="flex size-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/30 transition hover:scale-105 hover:brightness-110 active:scale-95 disabled:opacity-40"
                   >
-                    <Send size={14} />
+                    <Send size={16} />
                   </Button>
                 </>
               )}
             </div>
           </>
         ) : (
-          <div className="flex h-full flex-col items-center justify-center text-center p-6 opacity-60">
-            <Users size={40} className="text-slate-300 mb-2" />
-            <h3 className="text-sm font-bold text-slate-700">Select a conversation</h3>
-            <p className="text-xs text-slate-400">Choose a contact or use the Directory to start messaging</p>
+          <div className="flex h-full flex-col items-center justify-center bg-gradient-to-b from-slate-50 to-blue-50/40 p-6 text-center dark:from-slate-950 dark:to-slate-900">
+            <span className="mb-4 flex size-20 items-center justify-center rounded-3xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-xl shadow-blue-500/30">
+              <MessageSquare className="size-9" />
+            </span>
+            <h3 className="text-base font-black text-slate-800 dark:text-white">Select a conversation</h3>
+            <p className="mt-1 text-xs font-medium text-slate-500">Choose a contact or use the Directory to start messaging</p>
           </div>
         )}
       </div>
 
       {/* Column 3: Contact Details Side Panel */}
       {showDetails && activeContact && (
-        <aside className="hidden xl:flex w-[280px] flex-col border-l border-slate-100 bg-slate-50/10 shrink-0">
-          <div className="p-6 text-center border-b border-slate-100 bg-white shrink-0">
-            <Avatar className="mx-auto size-16 shadow-md">
-              <AvatarFallback className="bg-gradient-to-br from-blue-600 to-indigo-600 text-base font-black text-white">
+        <aside className="hidden xl:flex w-[300px] flex-col border-l border-slate-200/80 bg-slate-50/60 shrink-0 dark:border-slate-800 dark:bg-slate-950/40">
+          <div className="p-6 text-center border-b border-slate-100 bg-gradient-to-b from-blue-50/70 to-white shrink-0 dark:border-slate-800 dark:from-slate-900 dark:to-slate-900">
+            <Avatar className={`mx-auto size-20 bg-gradient-to-br shadow-lg ring-4 ring-white dark:ring-slate-900 ${avatarGradient(activeContact.name)}`}>
+              <AvatarFallback className="bg-transparent text-2xl font-black text-white">
                 {activeContact.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <h4 className="mt-3 text-xs font-bold text-slate-900">{activeContact.name}</h4>
+            <h4 className="mt-3 text-base font-black text-slate-900 dark:text-white">{activeContact.name}</h4>
             <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider mt-0.5">{contactSub}</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 px-4 py-4 border-b border-slate-100 bg-white shrink-0 lg:grid-cols-4">
+          <div className="grid grid-cols-4 gap-2 px-4 py-4 border-b border-slate-100 bg-white shrink-0 dark:border-slate-800 dark:bg-slate-900">
             {[
-              { label: 'Profile', icon: <User size={14} />, act: () => setShowProfileDrawer(true) },
-              { label: 'Shared Files', icon: <FileText size={14} />, act: () => setShowSharedFilesModal(true) },
-              { label: 'Info', icon: <Info size={14} />, act: () => setShowDetails(true) },
-              { label: 'More', icon: <MoreVertical size={14} />, act: () => setShowMoreOptions(true) },
+              { label: 'Profile', icon: <User size={15} />, act: () => setShowProfileDrawer(true), tone: 'from-blue-500 to-indigo-600' },
+              { label: 'Files', icon: <FileText size={15} />, act: () => setShowSharedFilesModal(true), tone: 'from-emerald-500 to-teal-600' },
+              { label: 'Info', icon: <Info size={15} />, act: () => setShowDetails(true), tone: 'from-violet-500 to-purple-600' },
+              { label: 'More', icon: <MoreVertical size={15} />, act: () => setShowMoreOptions(true), tone: 'from-amber-500 to-orange-600' },
             ].map((btn, idx) => (
-              <Button variant="ghost" size={null} key={idx} onClick={btn.act} className="flex flex-col items-center gap-1 hover:opacity-80 transition">
-                <div className="flex size-8 items-center justify-center rounded-full bg-slate-50 border border-slate-100 text-slate-500 shadow-xs">
+              <Button variant="ghost" size={null} key={idx} onClick={btn.act} className="group flex h-auto flex-col items-center gap-1.5 p-1 hover:bg-transparent transition">
+                <div className={`flex size-10 items-center justify-center rounded-2xl bg-gradient-to-br ${btn.tone} text-white shadow-md transition group-hover:scale-110 group-hover:shadow-lg`}>
                   {btn.icon}
                 </div>
-                <span className="text-[9px] font-bold text-slate-400">{btn.label}</span>
+                <span className="text-[10px] font-bold text-slate-500 transition group-hover:text-slate-800">{btn.label}</span>
               </Button>
             ))}
           </div>
@@ -1483,16 +1523,16 @@ const ChatSystem: React.FC = () => {
           <div className="p-4 border-b border-slate-100 bg-white shrink-0">
             <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Search in Chat</Label>
             <div className="relative mt-1.5">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
+              <Search className="pointer-events-none absolute left-4 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
               <Input
                 value={inChatSearch}
                 onChange={(e) => setInChatSearch(e.target.value)}
                 placeholder="Search messages..."
-                className="h-auto w-full rounded-xl border-slate-100 bg-slate-50/50 py-1.5 pl-8 pr-3 text-xs font-semibold focus-visible:border-blue-400 focus-visible:bg-white focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="h-auto w-full rounded-full border-transparent bg-slate-100 py-2 pl-10 pr-4 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus-visible:border-blue-300 focus-visible:bg-white focus-visible:ring-4 focus-visible:ring-blue-100 focus-visible:ring-offset-0"
               />
             </div>
             {inChatSearch.trim() && (
-              <div className="mt-2 max-h-[140px] overflow-y-auto space-y-1 bg-slate-50 p-2 rounded-xl border border-slate-100/60 no-scrollbar">
+              <div className="mt-2 max-h-[140px] overflow-y-auto space-y-1 rounded-2xl border border-slate-200/80 bg-slate-50/60 p-2 no-scrollbar">
                 {messages
                   .filter((m) => (m.text || '').toLowerCase().includes(inChatSearch.toLowerCase()))
                   .map((m) => (
@@ -1507,7 +1547,7 @@ const ChatSystem: React.FC = () => {
                           showToast('Message located', 'info');
                         }
                       }}
-                      className="w-full text-left text-[10px] font-semibold text-slate-700 hover:text-blue-600 truncate block py-1 border-b border-slate-100 last:border-0"
+                      className="block h-auto w-full justify-start truncate rounded-lg border-b border-slate-100 px-2 py-1.5 text-left text-[11px] font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-600 last:border-0"
                     >
                       <span className="font-bold text-slate-400">{m.sender === 'me' ? 'Me: ' : 'Them: '}</span>
                       {m.text}
@@ -1520,24 +1560,26 @@ const ChatSystem: React.FC = () => {
             )}
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
             <div>
-              <div className="flex justify-between items-center mb-2">
+              <div className="flex justify-between items-center mb-2.5">
                 <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Shared Files ({sharedFiles.length})</h5>
                 <Button variant="ghost" size={null} className="text-[9px] font-bold text-blue-600 hover:underline" onClick={() => setShowSharedFilesModal(true)}>View all</Button>
               </div>
               <div className="space-y-2">
                 {sharedFiles.slice(0, 3).map((file) => (
-                  <div key={file.id} className="flex items-center gap-2 rounded-xl bg-white p-2 border border-slate-100 shadow-xs">
-                    <FileText size={18} className="text-blue-500 shrink-0" />
+                  <div key={file.id} className="flex items-center gap-3 rounded-2xl bg-white p-2.5 border border-slate-200/80 shadow-sm transition hover:shadow-md dark:bg-slate-900 dark:border-slate-800">
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-sm">
+                      <FileText size={16} />
+                    </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[10px] font-bold text-slate-800">{file.attachment_name}</p>
-                      <span className="text-[9px] text-slate-400">Shared recently</span>
+                      <p className="truncate text-[11px] font-bold text-slate-800 dark:text-slate-100">{file.attachment_name}</p>
+                      <span className="text-[10px] font-medium text-slate-400">Shared recently</span>
                     </div>
                     <a
                       href={file.attachment_url}
                       download
-                      className="rounded p-1 text-slate-400 hover:bg-slate-50"
+                      className="flex size-7 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-blue-50 hover:text-blue-600"
                     >
                       <Download size={12} />
                     </a>
@@ -1559,8 +1601,8 @@ const ChatSystem: React.FC = () => {
                   .filter(f => f.attachment_name?.toLowerCase().match(/\.(jpg|jpeg|png)$/))
                   .slice(0, 3)
                   .map((file) => (
-                    <div key={file.id} className="relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-100 group cursor-pointer" onClick={() => window.open(file.attachment_url, '_blank')}>
-                      <img src={file.attachment_url} alt="media" className="size-full object-cover group-hover:scale-105 transition duration-200" />
+                    <div key={file.id} className="relative aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 group cursor-pointer shadow-sm transition hover:shadow-md" onClick={() => window.open(file.attachment_url, '_blank')}>
+                      <img src={file.attachment_url} alt="media" className="size-full object-cover group-hover:scale-110 transition duration-300" />
                     </div>
                   ))}
               </div>
@@ -1575,7 +1617,7 @@ const ChatSystem: React.FC = () => {
       {/* Right-click Context Menu */}
       {contextMenu && (
         <Card
-          className="fixed z-50 w-40 rounded-2xl border-slate-100 bg-white p-1.5 shadow-2xl"
+          className="fixed z-50 w-44 rounded-2xl border-slate-200/80 bg-white/95 p-1.5 shadow-2xl backdrop-blur"
           style={{ top: contextMenu.y, left: contextMenu.x }}
         >
           {[
@@ -1617,7 +1659,7 @@ const ChatSystem: React.FC = () => {
             <Button variant="ghost" size={null}
               key={actionIdx}
               onClick={action.act}
-              className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-bold text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition"
+              className={`flex w-full items-center justify-start gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold transition ${action.label === 'Delete' ? 'text-rose-500 hover:bg-rose-50 hover:text-rose-600' : 'text-slate-600 hover:bg-blue-50 hover:text-blue-600'}`}
             >
               <action.icon size={14} />
               {action.label}
@@ -1629,12 +1671,12 @@ const ChatSystem: React.FC = () => {
       {/* PDF Modal Viewer */}
       {pdfPreviewUrl && (
         <Dialog open onOpenChange={(open) => { if (!open) setPdfPreviewUrl(null); }}>
-<DialogContent className="flex h-[90vh] w-full max-w-4xl flex-col rounded-3xl bg-white shadow-2xl overflow-hidden gap-0 [&>button:last-child]:hidden sm:rounded-3xl">
+<DialogContent className="flex h-[90vh] w-full max-w-4xl flex-col rounded-[2rem] bg-white shadow-2xl overflow-hidden gap-0 [&>button:last-child]:hidden sm:rounded-[2rem]">
 <DialogTitle className="sr-only">Dialog</DialogTitle>
 <DialogDescription className="sr-only">Dialog</DialogDescription>
 
-            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-              <h3 className="text-xs font-bold text-slate-900">PDF Document Viewer</h3>
+            <div className="flex items-center justify-between border-b border-slate-200/80 px-6 py-4">
+              <h3 className="text-sm font-black text-slate-900">PDF Document Viewer</h3>
               
             </div>
             <div className="flex-1 bg-slate-100">
@@ -1653,21 +1695,23 @@ const ChatSystem: React.FC = () => {
 <DialogDescription className="sr-only">Dialog</DialogDescription>
 
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-xs font-black text-slate-900">Forward Message</h3>
+              <h3 className="text-sm font-black text-slate-900">Forward Message</h3>
               
             </div>
-            <div className="mt-4 max-h-[300px] overflow-y-auto space-y-2">
+            <div className="mt-4 max-h-[300px] overflow-y-auto space-y-1.5">
               {contacts.map((contact) => (
                 <Button variant="ghost" size={null}
                   key={contact.id}
                   onClick={() => handleForwardMessage(contact)}
                   className="flex w-full items-center gap-3 rounded-2xl p-2.5 text-left hover:bg-slate-50 transition"
                 >
-                  <div className="grid size-9 place-items-center rounded-xl bg-blue-100 text-xs font-bold text-blue-700">
-                    {(contact.name || 'U').slice(0, 1).toUpperCase()}
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-slate-900">{contact.name}</p>
+                  <Avatar className={`size-10 shrink-0 rounded-full bg-gradient-to-br shadow-sm ${avatarGradient(contact.name)}`}>
+                    <AvatarFallback className="rounded-full bg-transparent text-xs font-black text-white">
+                      {(contact.name || 'U').slice(0, 1).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-bold text-slate-900">{contact.name}</p>
                   </div>
                 </Button>
               ))}
@@ -1687,8 +1731,8 @@ const ChatSystem: React.FC = () => {
           {activeContact && (
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 <div className="text-center">
-                  <Avatar className="mx-auto size-20 shadow-lg">
-              <AvatarFallback className="bg-gradient-to-br from-blue-600 to-indigo-600 text-xl font-black text-white">
+                  <Avatar className={`mx-auto size-20 bg-gradient-to-br shadow-lg ring-4 ring-white ${avatarGradient(activeContact.name)}`}>
+              <AvatarFallback className="bg-transparent text-2xl font-black text-white">
                 {activeContact.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
