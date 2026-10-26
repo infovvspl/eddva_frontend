@@ -26,7 +26,27 @@ import {
   TrendingUp,
   FileBarChart,
   Sparkles,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+  Columns3,
+  MoreHorizontal,
 } from 'lucide-react';
+import {
+  useTable,
+  tableFeatures,
+  columnFilteringFeature,
+  columnVisibilityFeature,
+  createFilteredRowModel,
+  createPaginatedRowModel,
+  filterFn_includesString,
+  createSortedRowModel,
+  rowPaginationFeature,
+  rowSortingFeature,
+  sortFn_alphanumeric,
+  sortFn_basic,
+  sortFn_text,
+} from '@tanstack/react-table';
 import { toast } from 'sonner';
 import api from '@/lib/api/school-client';
 import { apiClient } from '@/lib/api/client';
@@ -38,15 +58,30 @@ import { useConfirm } from '@/context/ConfirmContext';
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
-function getPaginationWindowSize() {
-  if (typeof window === 'undefined') return 7;
-  if (window.innerWidth < 480) return 3;
-  if (window.innerWidth < 768) return 5;
-  return 7;
-}
+const features = tableFeatures({
+  columnFilteringFeature,
+  columnVisibilityFeature,
+  rowPaginationFeature,
+  rowSortingFeature,
+  filteredRowModel: createFilteredRowModel(),
+  paginatedRowModel: createPaginatedRowModel(),
+  sortedRowModel: createSortedRowModel(),
+  filterFns: { includesString: filterFn_includesString },
+  sortFns: { alphanumeric: sortFn_alphanumeric, basic: sortFn_basic, text: sortFn_text },
+});
 
+const studentCountOf = (item) => item.studentCount ?? item.student_count ?? item._count?.users ?? 0;
 
 const BoardBadge = ({ board }) => {
   const colors = {
@@ -228,7 +263,6 @@ export default function Institutes() {
   const [boardFilter, setBoardFilter] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [maxVisiblePages, setMaxVisiblePages] = useState(getPaginationWindowSize);
   const [selectedInstitute, setSelectedInstitute] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [editForm, setEditForm] = useState(emptyForm);
@@ -377,29 +411,172 @@ export default function Institutes() {
     loadInstitutes(true);
   }, [statusFilter]);
 
-  useEffect(() => {
-    const updatePaginationWindow = () => setMaxVisiblePages(getPaginationWindowSize());
-    updatePaginationWindow();
-    window.addEventListener('resize', updatePaginationWindow);
-    return () => window.removeEventListener('resize', updatePaginationWindow);
-  }, []);
+  const [sorting, setSorting] = useState([]);
+  const [columnVisibility, setColumnVisibility] = useState({});
 
-  const filteredList = useMemo(() => {
-    return list.filter((inst) => {
-      if (boardFilter && inst.board !== boardFilter) return false;
-      if (statusFilter && inst.status?.toLowerCase() !== statusFilter.toLowerCase()) return false;
-      if (search && !inst.name?.toLowerCase().includes(search.toLowerCase())) return false;
-      return true;
-    });
-  }, [list, search, boardFilter, statusFilter]);
+  const columnFilters = useMemo(
+    () => [
+      { id: 'name', value: search },
+      { id: 'board', value: boardFilter },
+      { id: 'status', value: statusFilter },
+    ].filter((filter) => filter.value),
+    [search, boardFilter, statusFilter]
+  );
 
-  const totalPages = Math.max(1, Math.ceil(filteredList.length / pageSize));
-  const paginatedList = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return filteredList.slice(start, start + pageSize);
-  }, [filteredList, page]);
-  const pageStart = filteredList.length === 0 ? 0 : (page - 1) * pageSize + 1;
-  const pageEnd = Math.min(page * pageSize, filteredList.length);
+  const columns = [
+    {
+      id: 'name',
+      header: 'School',
+      accessorFn: (item) => item.name || '',
+      sortFn: 'text',
+      filterFn: 'includesString',
+      meta: { label: 'School' },
+      cell: ({ row }) => {
+        const item = row.original;
+        return (
+          <div className="flex items-center gap-3">
+            <SchoolLogo src={item.logo} alt={item.name} size="navbar" />
+            <div>
+              <p className="font-bold text-surface-950">{item.name}</p>
+              <p className="text-xs font-medium text-surface-500">{item.city || 'No city'}, {item.state || 'No state'}</p>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      id: 'board',
+      header: 'Board',
+      accessorFn: (item) => item.board || '',
+      sortFn: 'text',
+      filterFn: (row, columnId, value) => row.getValue(columnId) === value,
+      meta: { label: 'Board' },
+      cell: ({ row }) => <BoardBadge board={row.original.board} />,
+    },
+    {
+      id: 'contact',
+      header: 'Contact',
+      accessorFn: (item) => item.email || '',
+      sortFn: 'text',
+      meta: { label: 'Contact' },
+      cell: ({ row }) => (
+        <>
+          <p className="text-sm font-semibold text-surface-700">{row.original.email}</p>
+          <p className="text-xs font-medium text-surface-500">{row.original.phone || 'No phone'}</p>
+        </>
+      ),
+    },
+    {
+      id: 'tenant',
+      header: 'Tenant',
+      accessorFn: (item) => item.tenantDomain || '',
+      sortFn: 'text',
+      meta: { label: 'Tenant', cellClassName: 'font-mono text-sm font-bold text-brand-700' },
+      cell: ({ row }) => `${row.original.tenantDomain}.localhost`,
+    },
+    {
+      id: 'students',
+      header: 'Students',
+      accessorFn: studentCountOf,
+      sortFn: 'basic',
+      meta: { label: 'Students', cellClassName: 'text-sm font-bold text-surface-700' },
+      cell: ({ row }) => (
+        <>
+          {studentCountOf(row.original)}
+          {row.original.totalStudents ? (
+            <span className="ml-1 text-xs font-semibold text-surface-400">/ {row.original.totalStudents}</span>
+          ) : null}
+        </>
+      ),
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      accessorFn: (item) => item.status || '',
+      sortFn: 'text',
+      filterFn: (row, columnId, value) => String(row.getValue(columnId)).toLowerCase() === String(value).toLowerCase(),
+      meta: { label: 'Status' },
+      cell: ({ row }) => <StatusBadgeCustom status={row.original.status} isSuspended={row.original.isSuspended} />,
+    },
+    {
+      id: 'ai',
+      header: 'AI',
+      accessorFn: (item) => (item.aiEnabled ? 1 : 0),
+      sortFn: 'basic',
+      meta: { label: 'AI' },
+      cell: ({ row }) =>
+        row.original.aiEnabled ? (
+          <span className="flex items-center gap-1 text-xs text-blue-600 font-medium">
+            <Sparkles className="size-3" />
+            AI On
+          </span>
+        ) : (
+          <span className="text-xs text-gray-400">No AI</span>
+        ),
+    },
+    {
+      id: 'actions',
+      header: '',
+      enableSorting: false,
+      enableHiding: false,
+      meta: { label: 'Actions', headClassName: 'w-12', cellClassName: 'w-12 text-right' },
+      cell: ({ row }) => {
+        const item = row.original;
+        const suspended = item.status?.toLowerCase() === 'suspended' || item.isSuspended;
+        return (
+          <div onClick={(event) => event.stopPropagation()}>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button type="button" className="inline-flex size-8 items-center justify-center rounded-md text-surface-500 outline-none transition hover:bg-surface-100 hover:text-surface-900">
+                  <span className="sr-only">Open menu</span>
+                  <MoreHorizontal className="size-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => navigate(`/school/super-admin/institutes/${item.id}`)}>View</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(`/school/super-admin/institutes/${item.id}/edit`)}>Edit</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className={suspended ? 'text-green-600 focus:text-green-700' : 'text-amber-600 focus:text-amber-700'}
+                  onClick={() => (suspended ? handleReactivate(item.id) : handleSuspend(item.id))}
+                >
+                  {suspended ? 'Reactivate' : 'Suspend'}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        );
+      },
+    },
+  ];
+
+  const table = useTable({
+    features,
+    data: list,
+    columns,
+    onSortingChange: setSorting,
+    onColumnVisibilityChange: setColumnVisibility,
+    onPaginationChange: (updater) => {
+      const next = typeof updater === 'function' ? updater({ pageIndex: page - 1, pageSize }) : updater;
+      setPage(next.pageIndex + 1);
+      setPageSize(next.pageSize);
+    },
+    autoResetPageIndex: false,
+    state: {
+      sorting,
+      columnVisibility,
+      columnFilters,
+      pagination: { pageIndex: page - 1, pageSize },
+    },
+  });
+  const paginatedList = table.getRowModel().rows.map((row) => row.original);
+  const visibleColumnCount = table.getVisibleLeafColumns().length;
+  const filteredCount = table.getFilteredRowModel().rows.length;
+
+  const totalPages = Math.max(1, Math.ceil(filteredCount / pageSize));
+  const pageStart = filteredCount === 0 ? 0 : (page - 1) * pageSize + 1;
+  const pageEnd = Math.min(page * pageSize, filteredCount);
 
   useEffect(() => {
     setPage(1);
@@ -408,15 +585,6 @@ export default function Institutes() {
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
-
-  const visiblePages = useMemo(() => {
-    const visibleCount = Math.min(maxVisiblePages, totalPages);
-    const startPage = Math.min(
-      Math.max(1, page - (maxVisiblePages - 2)),
-      Math.max(1, totalPages - visibleCount + 1)
-    );
-    return Array.from({ length: visibleCount }, (_, index) => startPage + index);
-  }, [maxVisiblePages, page, totalPages]);
 
   const stats = {
     total: list.length,
@@ -753,7 +921,7 @@ export default function Institutes() {
             { value: "IB", label: "IB" },
           ]}
           className="w-full sm:w-48"
-          triggerClassName="flex size-full items-center justify-between gap-2 px-4 py-2.5 rounded-lg border border-surface-200 bg-white text-sm font-medium outline-none hover:bg-slate-50 focus:border-brand-300 focus:ring-4 focus:ring-brand-100 transition"
+          triggerClassName="flex size-full items-center justify-between gap-2 px-4 py-2.5 rounded-lg border border-surface-200 bg-white text-sm font-medium outline-none hover:bg-slate-50 focus:ring-0 focus:ring-offset-0 transition"
         />
         <CustomSelect
           value={statusFilter}
@@ -765,126 +933,86 @@ export default function Institutes() {
             { value: "suspended", label: "Suspended" },
           ]}
           className="w-full sm:w-48"
-          triggerClassName="flex size-full items-center justify-between gap-2 px-4 py-2.5 rounded-lg border border-surface-200 bg-white text-sm font-medium outline-none hover:bg-slate-50 focus:border-brand-300 focus:ring-4 focus:ring-brand-100 transition"
+          triggerClassName="flex size-full items-center justify-between gap-2 px-4 py-2.5 rounded-lg border border-surface-200 bg-white text-sm font-medium outline-none hover:bg-slate-50 focus:ring-0 focus:ring-offset-0 transition"
         />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="hidden md:inline-flex items-center justify-center gap-2 rounded-lg border border-surface-200 bg-white px-4 py-2.5 text-sm font-medium outline-none transition hover:bg-slate-50 focus:border-brand-300 focus:ring-4 focus:ring-brand-100 sm:ml-auto"
+            >
+              <Columns3 className="size-4" />
+              Columns
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {table.getAllColumns().filter((column) => column.getCanHide()).map((column) => (
+              <DropdownMenuCheckboxItem
+                key={column.id}
+                checked={column.getIsVisible()}
+                onCheckedChange={(value) => column.toggleVisibility(!!value)}
+              >
+                {column.columnDef.meta?.label ?? column.id}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      <div className="glass-panel overflow-hidden rounded-lg shadow-soft">
+      <div className="space-y-4">
+      <div className="overflow-hidden rounded-md border border-surface-200 bg-white">
         {/* Desktop View */}
         <div className="hidden md:block overflow-x-auto">
           <Table className="w-full text-left">
             <TableHeader>
-              <TableRow className="bg-surface-50 text-xs font-bold uppercase text-surface-500 hover:bg-surface-50 border-b-0">
-                <TableHead className="h-auto p-4 pl-5 text-surface-500">School</TableHead>
-                <TableHead className="h-auto p-4 text-surface-500">Board</TableHead>
-                <TableHead className="h-auto p-4 text-surface-500">Contact</TableHead>
-                <TableHead className="h-auto p-4 text-surface-500">Tenant</TableHead>
-                <TableHead className="h-auto p-4 text-surface-500">Students</TableHead>
-                <TableHead className="h-auto p-4 text-surface-500">Status</TableHead>
-                <TableHead className="h-auto p-4 text-surface-500">AI</TableHead>
-                <TableHead className="h-auto p-4 text-right text-surface-500">Action</TableHead>
-              </TableRow>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id} className="hover:bg-transparent">
+                  {headerGroup.headers.map((header) => {
+                    const canSort = header.column.getCanSort();
+                    const sorted = header.column.getIsSorted();
+                    return (
+                      <TableHead key={header.id} className={cn('h-11 px-4 text-sm font-medium text-surface-900', header.column.columnDef.meta?.headClassName)}>
+                        {header.isPlaceholder ? null : canSort ? (
+                          <button
+                            type="button"
+                            onClick={() => header.column.toggleSorting(sorted === 'asc')}
+                            className="inline-flex items-center gap-1.5 transition hover:text-surface-600"
+                          >
+                            <table.FlexRender header={header} />
+                            {sorted === 'asc' ? <ArrowUp className="size-3.5" /> : sorted === 'desc' ? <ArrowDown className="size-3.5" /> : <ArrowUpDown className="size-3.5 opacity-40" />}
+                          </button>
+                        ) : (
+                          <table.FlexRender header={header} />
+                        )}
+                      </TableHead>
+                    );
+                  })}
+                </TableRow>
+              ))}
             </TableHeader>
             <TableBody>
               {loading ? (
                 Array.from({ length: 5 }).map((_, index) => (
                   <TableRow key={index} className="border-t border-surface-100 border-b-0 hover:bg-transparent">
-                    <TableCell className="p-4 pl-5"><Skeleton className="h-11 w-52" /></TableCell>
-                    <TableCell className="p-4"><Skeleton className="h-8 w-40" /></TableCell>
-                    <TableCell className="p-4"><Skeleton className="h-8 w-36" /></TableCell>
-                    <TableCell className="p-4"><Skeleton className="h-8 w-12" /></TableCell>
-                    <TableCell className="p-4"><Skeleton className="h-8 w-12" /></TableCell>
-                    <TableCell className="p-4"><Skeleton className="ml-auto h-8 w-20" /></TableCell>
+                    {Array.from({ length: visibleColumnCount }).map((__, cellIndex) => (
+                      <TableCell key={cellIndex} className="p-4"><Skeleton className="h-8 w-full max-w-40" /></TableCell>
+                    ))}
                   </TableRow>
                 ))
-              ) : filteredList.length === 0 ? (
+              ) : filteredCount === 0 ? (
                 <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan="8" className="p-10 text-center text-sm font-semibold text-surface-500">
+                  <TableCell colSpan={visibleColumnCount} className="p-10 text-center text-sm font-semibold text-surface-500">
                     No institutes match this view.
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedList.map((item) => (
-                  <TableRow key={item.id} onClick={() => { setSelectedInstitute(item); setEditMode(false); }} className="cursor-pointer border-t border-surface-100 border-b-0 transition hover:bg-surface-50">
-                    <TableCell className="p-4 pl-5">
-                      <div className="flex items-center gap-3">
-                        <SchoolLogo src={item.logo} alt={item.name} size="navbar" />
-                        <div>
-                          <p className="font-bold text-surface-950">{item.name}</p>
-                          <p className="text-xs font-medium text-surface-500">{item.city || 'No city'}, {item.state || 'No state'}</p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="p-4">
-                      <BoardBadge board={item.board} />
-                    </TableCell>
-                    <TableCell className="p-4">
-                      <p className="text-sm font-semibold text-surface-700">{item.email}</p>
-                      <p className="text-xs font-medium text-surface-500">{item.phone || 'No phone'}</p>
-                    </TableCell>
-                    <TableCell className="p-4 font-mono text-sm font-bold text-brand-700">{item.tenantDomain}.localhost</TableCell>
-                    <TableCell className="p-4 text-sm font-bold text-surface-700">
-                      {item.studentCount ?? item.student_count ?? item._count?.users ?? 0}
-                      {item.totalStudents ? (
-                        <span className="ml-1 text-xs font-semibold text-surface-400">/ {item.totalStudents}</span>
-                      ) : null}
-                    </TableCell>
-                    <TableCell className="p-4">
-                      <StatusBadgeCustom status={item.status} isSuspended={item.isSuspended} />
-                    </TableCell>
-                    <TableCell className="p-4">
-                      {item.aiEnabled ? (
-                        <span className="flex items-center gap-1 text-xs text-blue-600 font-medium">
-                          <Sparkles className="size-3"/>
-                          AI On
-                        </span>
-                      ) : (
-                        <span className="text-xs text-gray-400">No AI</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="p-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            navigate(`/school/super-admin/institutes/${item.id}/edit`);
-                          }}
-                          className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            navigate(`/school/super-admin/institutes/${item.id}`);
-                          }}
-                          className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:border-indigo-300 hover:text-indigo-700 transition-colors"
-                        >
-                          View
-                        </button>
-                        {item.status?.toLowerCase() === 'suspended' || item.isSuspended ? (
-                          <button
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              handleReactivate(item.id);
-                            }}
-                            className="text-green-600 text-xs font-bold hover:underline"
-                          >
-                            Reactivate
-                          </button>
-                        ) : (
-                          <button
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              handleSuspend(item.id);
-                            }}
-                            className="text-amber-600 text-xs font-bold hover:underline"
-                          >
-                            Suspend
-                          </button>
-                        )}
-                      </div>
-                    </TableCell>
+                table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.original.id} onClick={() => { setSelectedInstitute(row.original); setEditMode(false); }} className="cursor-pointer transition hover:bg-surface-50">
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id} className={cn('px-4 py-3', cell.column.columnDef.meta?.cellClassName)}>
+                        <table.FlexRender cell={cell} />
+                      </TableCell>
+                    ))}
                   </TableRow>
                 ))
               )}
@@ -901,7 +1029,7 @@ export default function Institutes() {
                 <Skeleton className="h-4 w-1/2" />
               </div>
             ))
-          ) : filteredList.length === 0 ? (
+          ) : filteredCount === 0 ? (
             <div className="p-10 text-center text-sm font-semibold text-surface-500">
               No institutes match this view.
             </div>
@@ -989,76 +1117,49 @@ export default function Institutes() {
           )}
         </div>
 
-        {!loading && filteredList.length > 0 && (
-          <div className="flex flex-col gap-3 border-t border-surface-200 bg-surface-50 p-3 lg:flex-row lg:items-center lg:justify-between">
-            <p className="text-xs font-medium text-surface-500 sm:text-sm">
-              Showing <span className="font-bold text-surface-900">{pageStart}</span> to <span className="font-bold text-surface-900">{pageEnd}</span> of <span className="font-bold text-surface-900">{filteredList.length}</span> schools
-            </p>
-            <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-              <div className="flex items-center justify-between gap-2 sm:justify-start">
-                <span className="whitespace-nowrap text-xs font-medium text-surface-500 sm:text-sm">Rows</span>
-                <CustomSelect
-                  value={pageSize}
-                  onChange={(value) => {
-                    setPageSize(Number(value));
-                    setPage(1);
-                  }}
-                  options={[
-                    { value: 10, label: '10' },
-                    { value: 20, label: '20' },
-                    { value: 25, label: '25' },
-                    { value: 50, label: '50' },
-                    { value: 100, label: '100' },
-                  ]}
-                  className="w-20"
-                  triggerClassName="flex h-9 w-full items-center justify-between gap-2 rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm font-bold text-surface-700 outline-none transition hover:bg-surface-100 focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
-                />
-              </div>
-              <div className="flex w-full min-w-0 items-center justify-center gap-1 sm:w-auto sm:gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setPage((current) => Math.max(1, current - 1))}
-                  disabled={page === 1}
-                  className="grid size-7 shrink-0 place-items-center rounded-lg border border-surface-200 bg-white text-surface-500 transition hover:bg-surface-100 disabled:cursor-not-allowed disabled:opacity-50 sm:size-8"
-                  aria-label="Previous schools page"
-                >
-                  <ChevronLeft className="size-4" />
-                </button>
-                <div className="min-w-0 max-w-full overflow-hidden">
-                  <div className="flex items-center justify-center gap-1 px-1 sm:gap-1.5">
-                    {visiblePages.map((pageNumber) => {
-                      const isActive = pageNumber === page;
-                      return (
-                        <button
-                          key={pageNumber}
-                          type="button"
-                          onClick={() => setPage(pageNumber)}
-                          aria-current={isActive ? 'page' : undefined}
-                          className={`grid size-7 shrink-0 place-items-center rounded-full border text-xs font-bold transition sm:size-8 ${
-                            isActive
-                              ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
-                              : 'border-surface-200 bg-white text-surface-600 hover:border-indigo-300 hover:text-indigo-700'
-                          }`}
-                        >
-                          {pageNumber}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-                  disabled={page === totalPages}
-                  className="grid size-7 shrink-0 place-items-center rounded-lg border border-surface-200 bg-white text-surface-500 transition hover:bg-surface-100 disabled:cursor-not-allowed disabled:opacity-50 sm:size-8"
-                  aria-label="Next schools page"
-                >
-                  <ChevronRight className="size-4" />
-                </button>
-              </div>
+      </div>
+
+      {!loading && filteredCount > 0 && (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-surface-500">
+            Showing {pageStart} to {pageEnd} of {filteredCount} schools
+          </p>
+          <div className="flex items-center justify-between gap-3 sm:justify-end">
+            <div className="flex items-center gap-2">
+              <span className="whitespace-nowrap text-sm text-surface-500">Rows</span>
+              <CustomSelect
+                value={pageSize}
+                onChange={(value) => {
+                  setPageSize(Number(value));
+                  setPage(1);
+                }}
+                options={[10, 20, 25, 50, 100].map((n) => ({ value: n, label: String(n) }))}
+                className="w-20"
+                triggerClassName="flex h-8 w-full items-center justify-between gap-2 rounded-md border border-surface-200 bg-white px-3 text-sm font-medium text-surface-700 outline-none transition hover:bg-surface-100 focus:ring-0 focus:ring-offset-0"
+              />
+            </div>
+            <span className="whitespace-nowrap text-sm text-surface-500">Page {page} of {totalPages}</span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+                className="rounded-md border border-surface-200 bg-white px-3 py-1.5 text-sm font-medium text-surface-700 transition hover:bg-surface-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+                className="rounded-md border border-surface-200 bg-white px-3 py-1.5 text-sm font-medium text-surface-700 transition hover:bg-surface-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Next
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
       </div>
 
       <AnimatePresence>
