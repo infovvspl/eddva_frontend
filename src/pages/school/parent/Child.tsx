@@ -1,17 +1,37 @@
 import React, { useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, FileText, CheckCircle2, CheckCircle, XCircle, Clock, BookOpen, Search, X, Trophy, Target, Award, MessageSquare, Loader2 } from "lucide-react";
+import { Calendar, FileText, CheckCircle2, CheckCircle, XCircle, Clock, BookOpen, Search, X, Trophy, Target, Award, MessageSquare, Loader2, BarChart2, Flame, Sparkles } from "lucide-react";
+import { Area, AreaChart, CartesianGrid, LabelList, Line, LineChart, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from "recharts";
 import { parentClient } from "@/lib/api/parent-client";
 import { useParentContext } from "@/components/school/parent/ParentAuthGuard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import api from '@/lib/api/school-client';
 import GlassCard from '@/components/school/GlassCard';
+import { formatDuration, formatDurationShort } from "@/lib/format";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { useSchoolFeature } from "@/hooks/use-school-feature";
+import StudentStudyReport from "@/pages/school/reports/study-planner/StudentStudyReport";
+import { cn } from '@/lib/utils';
+import { calculateReportCardPercentage } from '@/lib/school/reportCardCalculator';
+
+type ChildTab = "attendance" | "marks" | "performance" | "homework" | "tests" | "screentime" | "planner";
+const VALID_TABS: ChildTab[] = ["attendance", "marks", "performance", "homework", "tests", "screentime", "planner"];
 
 export default function ParentChild() {
   const { activeChildId } = useParentContext();
-  const [activeTab, setActiveTab] = useState<"attendance" | "marks" | "homework" | "tests">("attendance");
+  const hasPlanner = useSchoolFeature("ai", "ai_study_planner");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab") as ChildTab | null;
+  const [activeTab, setActiveTab] = useState<ChildTab>(
+    tabParam && VALID_TABS.includes(tabParam) ? tabParam : "attendance"
+  );
+
+  const selectTab = (tab: ChildTab) => {
+    setActiveTab(tab);
+    setSearchParams(tab === "attendance" ? {} : { tab }, { replace: true });
+  };
 
   return (
     <div className="space-y-6 md:space-y-8">
@@ -24,12 +44,15 @@ export default function ParentChild() {
         {[
           { id: "attendance", label: "Attendance" },
           { id: "marks", label: "Report Card" },
+          { id: "performance", label: "Performance" },
           { id: "homework", label: "Homework" },
           { id: "tests", label: "Tests" },
+          { id: "screentime", label: "Screen Time" },
+          ...(hasPlanner ? [{ id: "planner", label: "Study Planner" }] : []),
         ].map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
+            onClick={() => selectTab(tab.id as ChildTab)}
             className={`flex-1 rounded-xl px-4 py-2.5 text-sm font-bold transition-all whitespace-nowrap ${
               activeTab === tab.id
                 ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
@@ -44,9 +67,194 @@ export default function ParentChild() {
       <div className="rounded-[2rem] bg-white p-4 sm:p-6 shadow-sm border border-slate-100 min-h-[400px]">
         {activeTab === "attendance" && <AttendanceTab studentId={activeChildId} />}
         {activeTab === "marks" && <MarksTab studentId={activeChildId} />}
+        {activeTab === "performance" && <PerformanceTab studentId={activeChildId} />}
         {activeTab === "homework" && <HomeworkTab studentId={activeChildId} />}
         {activeTab === "tests" && <TestsTab studentId={activeChildId} />}
+        {activeTab === "screentime" && <ScreenTimeTab studentId={activeChildId} />}
+        {activeTab === "planner" && hasPlanner && activeChildId && <StudentStudyReport key={activeChildId} studentId={activeChildId} embedded />}
       </div>
+    </div>
+  );
+}
+
+function PerformanceTab({ studentId }: { studentId: string | null }) {
+  const { data: analytics, isLoading } = useQuery({
+    queryKey: ['parent-student-analytics', studentId],
+    queryFn: () => studentId
+      ? api.get('/reports/student-analytics', { params: { studentId } }).then((res) => res.data?.data ?? res.data)
+      : null,
+    enabled: !!studentId,
+    retry: 1,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-24 w-full rounded-2xl" />
+        <Skeleton className="h-64 w-full rounded-2xl" />
+      </div>
+    );
+  }
+
+  if (!analytics || !analytics.questionsAttempted) {
+    return (
+      <div className="flex flex-col items-center justify-center text-center opacity-50 py-12">
+        <BarChart2 className="size-12 text-slate-400 mb-3" />
+        <p className="text-sm font-bold text-slate-600">No performance data yet</p>
+        <p className="mt-1 text-xs font-semibold text-slate-400 max-w-xs">This will appear once your child's assessment results are published.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-3 gap-3">
+        <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3 text-center">
+          <Target className="mx-auto size-4 text-emerald-600" />
+          <p className="mt-1.5 text-lg sm:text-xl font-black text-emerald-700">{Math.round(analytics.overallAccuracy)}%</p>
+          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Accuracy</p>
+        </div>
+        <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-3 text-center">
+          <BarChart2 className="mx-auto size-4 text-blue-600" />
+          <p className="mt-1.5 text-lg sm:text-xl font-black text-blue-700">{analytics.questionsAttempted}</p>
+          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Attempted</p>
+        </div>
+        <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-3 text-center">
+          <Flame className="mx-auto size-4 text-amber-600" />
+          <p className="mt-1.5 text-lg sm:text-xl font-black text-amber-700">{analytics.streakDays}</p>
+          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Day Streak</p>
+        </div>
+      </div>
+
+      {analytics.subjectPerformance?.length > 0 && (
+        <div className="space-y-2.5">
+          <h3 className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Subject-wise Accuracy</h3>
+          <div style={{ height: 260 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={analytics.subjectPerformance} margin={{ top: 36, right: 20, left: 4, bottom: 40 }}>
+                <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="subjectName"
+                  interval={0}
+                  angle={-35}
+                  textAnchor="end"
+                  height={60}
+                  tick={{ fontSize: 10, fill: '#334155', fontWeight: 800 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  domain={[0, 100]}
+                  ticks={[0, 25, 50, 75, 100]}
+                  width={34}
+                  tick={{ fontSize: 10, fill: '#94a3b8' }}
+                  tickFormatter={(v) => `${v}%`}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <RechartsTooltip
+                  cursor={{ stroke: '#94a3b8', strokeDasharray: '3 3' }}
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null;
+                    const d = payload[0].payload;
+                    return (
+                      <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold shadow-lg">
+                        <p className="text-slate-900">{d.subjectName}</p>
+                        <p className="text-slate-500">
+                          {Math.round(d.accuracy)}% accuracy · {d.attempts} attempt{d.attempts === 1 ? '' : 's'}
+                        </p>
+                      </div>
+                    );
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="accuracy"
+                  stroke="#10b981"
+                  strokeWidth={2.5}
+                  dot={({ cx, cy, payload }) => (
+                    <circle
+                      key={`dot-${payload.subjectName}`}
+                      cx={cx}
+                      cy={cy}
+                      r={4}
+                      fill={payload.accuracy >= 75 ? '#10b981' : payload.accuracy >= 60 ? '#f59e0b' : '#f43f5e'}
+                      stroke="#fff"
+                      strokeWidth={1.5}
+                    />
+                  )}
+                  activeDot={{ r: 6 }}
+                >
+                  <LabelList
+                    dataKey="accuracy"
+                    position="top"
+                    offset={10}
+                    formatter={(v) => `${Math.round(v)}%`}
+                    style={{ fontSize: 9, fontWeight: 700, fill: '#64748b' }}
+                  />
+                </Line>
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {analytics.subjectPerformance.map((subj: any) => {
+              const tone = subj.accuracy >= 75 ? 'emerald' : subj.accuracy >= 60 ? 'amber' : 'rose';
+              return (
+                <div
+                  key={subj.subjectName}
+                  className={cn(
+                    'flex items-center justify-between gap-2 rounded-xl border px-2.5 py-2',
+                    tone === 'emerald' && 'border-emerald-100 bg-emerald-50/50',
+                    tone === 'amber' && 'border-amber-100 bg-amber-50/50',
+                    tone === 'rose' && 'border-rose-100 bg-rose-50/50',
+                  )}
+                >
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <span
+                      className={cn(
+                        'size-2 shrink-0 rounded-full',
+                        tone === 'emerald' && 'bg-emerald-500',
+                        tone === 'amber' && 'bg-amber-500',
+                        tone === 'rose' && 'bg-rose-500',
+                      )}
+                    />
+                    <span className="truncate text-[11px] font-bold text-slate-700">{subj.subjectName}</span>
+                  </div>
+                  <span
+                    className={cn(
+                      'shrink-0 text-xs font-black',
+                      tone === 'emerald' && 'text-emerald-700',
+                      tone === 'amber' && 'text-amber-700',
+                      tone === 'rose' && 'text-rose-700',
+                    )}
+                  >
+                    {Math.round(subj.accuracy)}%
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {analytics.weakTopics?.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Needs focus:</span>
+          {analytics.weakTopics.map((t: any) => (
+            <span key={t.subjectName} className="rounded-lg bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-600">
+              {t.subjectName}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {analytics.insights?.summary && (
+        <div className="flex items-start gap-2 rounded-2xl border border-slate-100 bg-slate-50/30 p-3">
+          <Sparkles className="size-3.5 shrink-0 text-blue-500 mt-0.5" />
+          <p className="text-[11px] sm:text-xs font-medium leading-relaxed text-slate-600">{analytics.insights.summary}</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -153,81 +361,216 @@ function AttendanceTab({ studentId }: { studentId: string | null }) {
   );
 }
 
+function ScreenTimeTab({ studentId }: { studentId: string | null }) {
+  const [view, setView] = useState<"week" | "calendar">("week");
+  const [month, setMonth] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
+
+  const { data: weekData, isLoading: weekLoading } = useQuery<any>({
+    queryKey: ['parent-screentime-week', studentId],
+    queryFn: () => studentId ? parentClient.getScreenTime(studentId, 'week') : null,
+    enabled: !!studentId && view === "week",
+    retry: 1,
+  });
+
+  const { data: monthData, isLoading: monthLoading } = useQuery<any>({
+    queryKey: ['parent-screentime-month', studentId, month],
+    queryFn: () => studentId ? parentClient.getScreenTimeMonth(studentId, month) : null,
+    enabled: !!studentId && view === "calendar",
+    retry: 1,
+  });
+
+  const weekDays: Array<{ date: string; activeSeconds: number }> = weekData?.days ?? [];
+  const weekChartData = useMemo(
+    () => weekDays.map((d) => ({
+      name: new Date(d.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short' }),
+      seconds: d.activeSeconds,
+    })),
+    [weekDays],
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h3 className="text-lg font-black text-slate-900">Screen Time</h3>
+        <div className="flex items-center gap-2 rounded-xl bg-slate-100 p-1">
+          {([
+            { id: "week", label: "This Week" },
+            { id: "calendar", label: "By Month" },
+          ] as const).map((v) => (
+            <button
+              key={v.id}
+              onClick={() => setView(v.id)}
+              className={`rounded-lg px-3.5 py-1.5 text-xs font-bold transition-colors ${
+                view === v.id ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              {v.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {view === "week" ? (
+        weekLoading ? (
+          <Skeleton className="h-64 w-full rounded-2xl" />
+        ) : (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4 rounded-2xl bg-slate-50 p-4 border border-slate-100">
+              <div className="text-center">
+                <p className="text-xs font-black uppercase text-slate-400">Today</p>
+                <p className="text-2xl font-black text-blue-600">{formatDurationShort(weekData?.todaySeconds)}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs font-black uppercase text-slate-400">This Week</p>
+                <p className="text-2xl font-black text-indigo-600">{formatDurationShort(weekData?.totalSeconds)}</p>
+              </div>
+            </div>
+
+            {weekDays.length === 0 ? (
+              <div className="flex flex-col items-center justify-center text-center opacity-50 py-12">
+                <Clock className="size-12 text-slate-400 mb-3" />
+                <p className="text-sm font-bold text-slate-600">No screen time recorded this week yet</p>
+              </div>
+            ) : (
+              <div className="h-56 w-full rounded-2xl border border-slate-100 bg-white p-4">
+                <ChartContainer config={{ seconds: { label: 'Active time', color: 'hsl(var(--primary))' } }} className="h-full w-full aspect-auto">
+                  <AreaChart data={weekChartData} margin={{ top: 5, right: 8, left: -16, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="parentScreenTimeFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--color-seconds)" stopOpacity={0.35} />
+                        <stop offset="95%" stopColor="var(--color-seconds)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} />
+                    <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} />
+                    <YAxis tickLine={false} axisLine={false} tickFormatter={(v) => formatDurationShort(Number(v))} width={48} />
+                    <ChartTooltip content={<ChartTooltipContent formatter={(v) => formatDuration(Number(v)) ?? '0s'} />} />
+                    <Area
+                      dataKey="seconds"
+                      type="monotone"
+                      stroke="var(--color-seconds)"
+                      strokeWidth={2.5}
+                      fill="url(#parentScreenTimeFill)"
+                      dot={{ r: 3, fill: 'var(--color-seconds)' }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </AreaChart>
+                </ChartContainer>
+              </div>
+            )}
+          </div>
+        )
+      ) : (
+        <div className="space-y-6">
+          <div className="flex items-center justify-end">
+            <input
+              type="month"
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              className="rounded-xl border-2 border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-bold text-slate-700 outline-none focus:border-blue-500"
+            />
+          </div>
+
+          {monthLoading ? (
+            <Skeleton className="h-64 w-full rounded-2xl" />
+          ) : (() => {
+            const monthDays: Array<{ date: string; activeSeconds: number }> = monthData?.days ?? [];
+            if (monthDays.length === 0) {
+              return (
+                <div className="flex flex-col items-center justify-center text-center opacity-50 py-12">
+                  <Calendar className="size-12 text-slate-400 mb-3" />
+                  <p className="text-sm font-bold text-slate-600">No screen time recorded for this month</p>
+                </div>
+              );
+            }
+
+            const byDate = new Map(monthDays.map((d) => [d.date, d.activeSeconds]));
+            const maxSeconds = Math.max(1, ...monthDays.map((d) => d.activeSeconds));
+            const activeDays = monthDays.filter((d) => d.activeSeconds > 0);
+            const dailyAverage = activeDays.length > 0
+              ? Math.round((monthData?.totalSeconds ?? 0) / activeDays.length)
+              : 0;
+            const mostActive = monthDays.reduce(
+              (best, d) => (d.activeSeconds > (best?.activeSeconds ?? -1) ? d : best),
+              null as { date: string; activeSeconds: number } | null
+            );
+
+            const [yearStr, monthStr] = month.split('-');
+            const year = parseInt(yearStr, 10);
+            const monthIndex = parseInt(monthStr, 10) - 1;
+            const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+            const firstDayIndex = new Date(year, monthIndex, 1).getDay();
+
+            const calendarCells: Array<{ dayNum: number | null; dateStr: string; activeSeconds: number }> = [];
+            for (let i = 0; i < firstDayIndex; i++) calendarCells.push({ dayNum: null, dateStr: '', activeSeconds: 0 });
+            for (let d = 1; d <= daysInMonth; d++) {
+              const dateStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+              calendarCells.push({ dayNum: d, dateStr, activeSeconds: byDate.get(dateStr) ?? 0 });
+            }
+
+            return (
+              <div className="space-y-6">
+                <div className="grid grid-cols-3 gap-4 rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                  <div className="text-center">
+                    <p className="text-xs font-black uppercase text-slate-400">Total</p>
+                    <p className="text-xl font-black text-indigo-600">{formatDurationShort(monthData?.totalSeconds)}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs font-black uppercase text-slate-400">Daily Avg</p>
+                    <p className="text-xl font-black text-blue-600">{formatDurationShort(dailyAverage)}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs font-black uppercase text-slate-400">Most Active</p>
+                    <p className="text-xl font-black text-emerald-600">
+                      {mostActive && mostActive.activeSeconds > 0
+                        ? new Date(mostActive.date + 'T00:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+                        : '—'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-7 gap-2">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                    <div key={d} className="text-center text-[10px] font-black uppercase text-slate-400 py-2">{d}</div>
+                  ))}
+                  {calendarCells.map((cell, i) => {
+                    if (cell.dayNum === null) {
+                      return <div key={i} className="aspect-square" />;
+                    }
+                    const intensity = cell.activeSeconds / maxSeconds;
+                    const bg =
+                      cell.activeSeconds === 0 ? 'border-slate-100 bg-slate-50 text-slate-300' :
+                      intensity > 0.66 ? 'border-blue-200 bg-blue-100 text-blue-800' :
+                      intensity > 0.33 ? 'border-blue-100 bg-blue-50 text-blue-700' :
+                      'border-blue-50 bg-blue-50/50 text-blue-600';
+                    return (
+                      <div
+                        key={cell.dateStr}
+                        title={cell.activeSeconds > 0 ? formatDuration(cell.activeSeconds) ?? '' : 'No activity'}
+                        className={`flex aspect-square flex-col items-center justify-center rounded-xl border-2 text-sm font-bold ${bg}`}
+                      >
+                        {cell.dayNum}
+                        {cell.activeSeconds > 0 && (
+                          <span className="mt-0.5 text-[9px] font-bold">{formatDurationShort(cell.activeSeconds)}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function MarksTab({ studentId }: { studentId: string | null }) {
   const navigate = useNavigate();
-
-  const calculateReportCardPercentage = (results: any[], classNameVal: string) => {
-    if (!results || results.length === 0) return 0;
-    const isClass10 = classNameVal.includes('10');
-    const isIT = results.some((r: any) => (r.subjectName || '').toLowerCase().includes('information technology') || (r.subjectName || '').toLowerCase().includes('it'));
-
-    const subjectFinals: number[] = [];
-    const subjects = [...new Set(results.map((res: any) => res.subjectName).filter(Boolean))];
-
-    subjects.forEach((subject) => {
-      const subjectResults = results.filter((res: any) => res.subjectName === subject);
-      let theoryObtained = 0;
-      let internalObtained = 0;
-      let hyExam = null;
-      let aExam = null;
-      let t1Int = null;
-      let t2Int = null;
-
-      subjectResults.forEach((res: any) => {
-        const title = (res.assessmentTitle || '').toLowerCase();
-        const score = res.marksObtained !== null ? Number(res.marksObtained) : 0;
-
-        if (title.includes('theory')) {
-          theoryObtained = score;
-        } else if (title.includes('internal')) {
-          internalObtained = score;
-        } else if (title.includes('half yearly')) {
-          hyExam = score;
-        } else if (title.includes('annual')) {
-          aExam = score;
-        } else if (title.includes('t1 internal')) {
-          t1Int = score;
-        } else if (title.includes('t2 internal')) {
-          t2Int = score;
-        }
-      });
-
-      if (isClass10) {
-        if (theoryObtained > 0 || internalObtained > 0) {
-          const finalVal = theoryObtained + internalObtained;
-          subjectFinals.push(Math.min(100, finalVal));
-        }
-      } else {
-        if (hyExam === null && aExam === null && t1Int === null && t2Int === null) {
-          hyExam = Math.round(theoryObtained * 0.4);
-          aExam = Math.round(theoryObtained * 0.5);
-          t1Int = Math.round(internalObtained || (theoryObtained * 0.05));
-          t2Int = Math.round(internalObtained || (theoryObtained * 0.05));
-        }
-
-        let finalVal = 0;
-        if (isIT) {
-          const hyScaled = hyExam !== null ? (hyExam / 50) * 35 : 0;
-          const annualScaled = aExam !== null ? (aExam / 50) * 35 : 0;
-          const t1IntVal = t1Int !== null ? t1Int : 0;
-          const t2IntVal = t2Int !== null ? t2Int : 0;
-          const internalScaled = (t1IntVal + t2IntVal) / 2;
-          finalVal = hyScaled + internalScaled + annualScaled;
-        } else {
-          const hyScaled = hyExam !== null ? (hyExam / 80) * 40 : 0;
-          const annualScaled = aExam !== null ? (aExam / 80) * 40 : 0;
-          const t1IntVal = t1Int !== null ? t1Int : 0;
-          const t2IntVal = t2Int !== null ? t2Int : 0;
-          const internalScaled = (t1IntVal + t2IntVal) / 2;
-          finalVal = hyScaled + internalScaled + annualScaled;
-        }
-        subjectFinals.push(Math.min(100, Math.round(finalVal * 100) / 100));
-      }
-    });
-
-    const sum = subjectFinals.reduce((acc, val) => acc + val, 0);
-    return subjectFinals.length > 0 ? Math.round((sum / subjectFinals.length) * 100) / 100 : 0;
-  };
 
   const { data: student, isLoading } = useQuery({
     queryKey: ['parent-student-detail', studentId],
@@ -256,6 +599,28 @@ function MarksTab({ studentId }: { studentId: string | null }) {
     return grouped;
   }, [student]);
 
+  const classEntries = useMemo(() => Object.entries(resultsByClass), [resultsByClass]);
+
+  const { data: statusByClassKey = {} } = useQuery({
+    queryKey: ['parent-report-card-status', studentId, classEntries.map(([k, r]: any) => `${k}:${r[0]?.academicYear}`).join('|')],
+    queryFn: async () => {
+      const updates: Record<string, string> = {};
+      await Promise.all(classEntries.map(async ([classKey, results]: any) => {
+        const academicYearVal = results[0]?.academicYear || '';
+        if (!academicYearVal) return;
+        try {
+          const res = await api.get('/reports/report-card-status', { params: { studentId, academicYear: academicYearVal } });
+          const data = res.data?.data || res.data || {};
+          updates[classKey] = data.status || 'DRAFT';
+        } catch {
+          // leave this card's status unknown rather than failing the whole list
+        }
+      }));
+      return updates;
+    },
+    enabled: classEntries.length > 0 && !!studentId,
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -275,7 +640,9 @@ function MarksTab({ studentId }: { studentId: string | null }) {
             const subjectResults = results.filter((res: any) => res.subjectName && !(res.assessmentTitle || '').toLowerCase().includes('(total)'));
             const subjectsList = [...new Set(subjectResults.map((res: any) => res.subjectName).filter(Boolean))];
             const subjectsDisplay = subjectsList.length > 0 ? subjectsList.join(', ') : 'General / All Subjects';
-            const overallPercentage = calculateReportCardPercentage(results, classNameVal);
+            const overallPercentage = calculateReportCardPercentage(results);
+            const cardStatus = statusByClassKey[classKey];
+            const notYetApproved = cardStatus && cardStatus !== 'APPROVED';
 
             return (
               <GlassCard
@@ -292,6 +659,11 @@ function MarksTab({ studentId }: { studentId: string | null }) {
                       <FileText size={16} />
                     </div>
                   </div>
+                  {notYetApproved && (
+                    <span className="inline-block px-2.5 py-0.5 rounded-lg bg-amber-500/10 text-amber-700 font-extrabold text-[10px] uppercase tracking-wider">
+                      {cardStatus === 'PUBLISHED' ? 'Awaiting Admin Approval' : 'Not Yet Published'}
+                    </span>
+                  )}
                   <h4 className="text-lg font-black text-slate-800 dark:text-white leading-tight tracking-tight group-hover:text-blue-600 transition-colors">
                     {classNameVal}
                   </h4>

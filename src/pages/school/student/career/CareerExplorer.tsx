@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ChevronRight, Search } from 'lucide-react';
+import { ChevronRight, Search } from 'lucide-react';
+import { BackButton } from '@/components/shared/BackButton';
 import { getCareerPaths, type CareerPath } from '@/lib/api/career';
 import { ErrorState, SkeletonBlock, streamBadge } from './_shared';
 
@@ -42,9 +43,9 @@ export default function CareerExplorer() {
 
   return (
     <div className="w-full space-y-5 p-1">
-      <div>
-        <button onClick={() => navigate('/school/student/career')} className="mb-1 inline-flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-slate-600"><ArrowLeft className="size-3.5" /> Career Home</button>
+      <div className="flex items-start justify-between gap-3">
         <h1 className="text-2xl font-black text-slate-900">Explore Careers</h1>
+        <BackButton to="/school/student/career" aria-label="Career Home" />
       </div>
 
       {/* Search */}

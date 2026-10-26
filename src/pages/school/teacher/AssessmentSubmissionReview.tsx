@@ -40,6 +40,7 @@ type ReviewQuestion = {
   questionText: string;
   maxMarks: number;
   studentAnswer: string;
+  studentAnswerImage?: string | null;
   status: string;
   currentMarks: number | null;
   aiGrading: AiGrading | null;
@@ -140,8 +141,8 @@ const AssessmentSubmissionReview: React.FC = () => {
         ]);
 
         const loadedAssessment = unwrapSchoolData<any>(assessmentRes, null);
-        const loadedSubmissions = unwrapSchoolList(submissionsRes);
-        const loadedResults = unwrapSchoolList(resultsRes);
+        const loadedSubmissions = unwrapSchoolList<any>(submissionsRes);
+        const loadedResults = unwrapSchoolList<any>(resultsRes);
         const loadedSubmission = loadedSubmissions.find((item: any) => {
           return String(item.student_user_id || item.studentId) === String(studentId);
         });
@@ -349,7 +350,7 @@ const AssessmentSubmissionReview: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="w-full space-y-6 p-4 sm:p-6">
+      <div className="w-full space-y-6">
         <div className="space-y-2">
           <Skeleton className="h-5 w-40" />
           <Skeleton className="h-9 w-2/3 max-w-lg" />
@@ -364,14 +365,14 @@ const AssessmentSubmissionReview: React.FC = () => {
 
   if (!assessment) {
     return (
-      <div className="w-full p-4 sm:p-6">
+      <div className="w-full">
         <Card className="rounded-2xl border-dashed border-red-200 bg-white p-12 text-center text-red-500 shadow-none">Assessment not found</Card>
       </div>
     );
   }
 
   return (
-    <div className="w-full space-y-6 p-4 sm:p-6">
+    <div className="w-full space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <Button

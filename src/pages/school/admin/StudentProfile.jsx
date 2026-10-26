@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   User, GraduationCap, Calendar, BarChart2, DollarSign, 
-  Mail, Smartphone, MapPin, ArrowLeft, Download, Users, Phone, Shield,
+  Mail, Smartphone, MapPin, Download, Users, Phone, Shield,
   Edit2, Clock, CheckCircle, AlertCircle, TrendingUp, HeartPulse, Briefcase, FileText, Printer, Share2, Loader2, Send, Key, X, Plus, Trash2,
   UserX, FileCheck, CheckCircle2, XCircle, UserCheck
 } from 'lucide-react';
+import { Area, AreaChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { formatDuration, formatDurationShort } from '@/lib/format';
+import { BackButton } from '@/components/shared/BackButton';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/admin/Modal';
 import StudentForm from '@/components/school/admin/forms/StudentForm';
@@ -19,6 +23,9 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { BrainCircuit } from 'lucide-react';
+import { useSchoolFeature } from '@/hooks/use-school-feature';
+import StudentStudyReport from '@/pages/school/reports/study-planner/StudentStudyReport';
 
 const getInitials = (name) => {
   if (!name) return '??';
@@ -55,14 +62,20 @@ const DetailItem = ({ label, value, icon: Icon, className }) => (
 export default function StudentProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const hasPlanner = useSchoolFeature('ai', 'ai_study_planner');
+  const cameFromAttendanceFlag = searchParams.get('flag') === 'attendance';
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('personal');
+  const [activeTab, setActiveTab] = useState(cameFromAttendanceFlag ? 'attendance' : 'personal');
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [sendCredsOpen, setSendCredsOpen] = useState(false);
   const [sendCredsForm, setSendCredsForm] = useState({ parentEmail: '', tempPassword: '' });
   const [isSendingCreds, setIsSendingCreds] = useState(false);
+  const [sendStudentCredsOpen, setSendStudentCredsOpen] = useState(false);
+  const [studentCredsChannel, setStudentCredsChannel] = useState('student_email');
+  const [isSendingStudentCreds, setIsSendingStudentCreds] = useState(false);
   const [attendance, setAttendance] = useState([]);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [performanceSessions, setPerformanceSessions] = useState([]);
@@ -70,6 +83,10 @@ export default function StudentProfile() {
   const [attendanceMonth, setAttendanceMonth] = useState(
     new Date().toISOString().slice(0, 7) // YYYY-MM
   );
+  // Dashboard "attention required" attendance flags are computed over a trailing 30-day
+  // window, not the calendar month — default to the same window when arriving from one,
+  // so the numbers shown here match the alert that was just clicked.
+  const [last30Mode, setLast30Mode] = useState(cameFromAttendanceFlag);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [teachingMap, setTeachingMap] = useState(null);
@@ -79,6 +96,14 @@ export default function StudentProfile() {
 
   const [minAttendanceOverride, setMinAttendanceOverride] = useState('');
   const [savingAttendanceThreshold, setSavingAttendanceThreshold] = useState(false);
+
+  const [screenTimeView, setScreenTimeView] = useState('week');
+  const [screenTimeMonth, setScreenTimeMonth] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [screenTimeWeek, setScreenTimeWeek] = useState({ loading: true, todaySeconds: 0, totalSeconds: 0, days: [] });
+  const [screenTimeMonthData, setScreenTimeMonthData] = useState({ loading: true, totalSeconds: 0, days: [] });
 
   const getClassNumberFromName = (className = '') => {
     const cls = String(className || '').toLowerCase();
@@ -465,13 +490,54 @@ export default function StudentProfile() {
     if (activeTab === 'attendance' && student?.id) {
       fetchAttendance();
     }
-  }, [activeTab, attendanceMonth, student?.id]);
+  }, [activeTab, attendanceMonth, last30Mode, student?.id]);
 
   useEffect(() => {
     if (activeTab === 'performance' && student?.id) {
       fetchPerformanceSessions();
     }
   }, [activeTab, student?.id, student?.studentProfile?.id]);
+
+  useEffect(() => {
+    if (activeTab !== 'screentime' || screenTimeView !== 'week' || !student?.id) return;
+    let cancelled = false;
+    setScreenTimeWeek((prev) => ({ ...prev, loading: true }));
+    api.get(`/screen-time/user/${student.id}`, { params: { range: 'week' } })
+      .then((res) => {
+        if (cancelled) return;
+        const body = res.data?.data ?? res.data ?? {};
+        setScreenTimeWeek({
+          loading: false,
+          todaySeconds: Number(body.todaySeconds) || 0,
+          totalSeconds: Number(body.totalSeconds) || 0,
+          days: Array.isArray(body.days) ? body.days : [],
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setScreenTimeWeek({ loading: false, todaySeconds: 0, totalSeconds: 0, days: [] });
+      });
+    return () => { cancelled = true; };
+  }, [activeTab, screenTimeView, student?.id]);
+
+  useEffect(() => {
+    if (activeTab !== 'screentime' || screenTimeView !== 'calendar' || !student?.id) return;
+    let cancelled = false;
+    setScreenTimeMonthData((prev) => ({ ...prev, loading: true }));
+    api.get(`/screen-time/user/${student.id}/month`, { params: { month: screenTimeMonth } })
+      .then((res) => {
+        if (cancelled) return;
+        const body = res.data?.data ?? res.data ?? {};
+        setScreenTimeMonthData({
+          loading: false,
+          totalSeconds: Number(body.totalSeconds) || 0,
+          days: Array.isArray(body.days) ? body.days : [],
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setScreenTimeMonthData({ loading: false, totalSeconds: 0, days: [] });
+      });
+    return () => { cancelled = true; };
+  }, [activeTab, screenTimeView, screenTimeMonth, student?.id]);
 
   useEffect(() => {
     const sectionId = student?.studentProfile?.sectionId || student?.studentProfile?.section?.id;
@@ -487,12 +553,23 @@ export default function StudentProfile() {
   const fetchAttendance = async () => {
     setAttendanceLoading(true);
     try {
-      const [year, month] = attendanceMonth.split('-');
-      const startDate = `${year}-${month}-01`;
-      const lastDay = new Date(Number(year), Number(month), 0).getDate();
-      const endDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+      let startDate, endDate;
+      if (last30Mode) {
+        const today = new Date();
+        endDate = today.toISOString().slice(0, 10);
+        const start = new Date(today);
+        start.setDate(start.getDate() - 30);
+        startDate = start.toISOString().slice(0, 10);
+      } else {
+        const [year, month] = attendanceMonth.split('-');
+        startDate = `${year}-${month}-01`;
+        const lastDay = new Date(Number(year), Number(month), 0).getDate();
+        endDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+      }
       const res = await api.get('/attendance', {
-        params: { userId: student.id, startDate, endDate },
+        // The endpoint paginates (default limit 10); a 31-day window can hold more
+        // rows than that, so ask for all of them explicitly.
+        params: { userId: student.id, startDate, endDate, limit: 100 },
       });
       const list = res.data?.data ?? res.data ?? [];
       setAttendance(Array.isArray(list) ? list : []);
@@ -672,12 +749,7 @@ export default function StudentProfile() {
           <AlertCircle size={48} className="mx-auto mb-4 text-red-500" />
           <h2 className="text-xl font-bold tracking-tight text-red-900 mb-2">Student Not Found</h2>
           <p className="text-sm font-bold text-red-600 mb-6">{student?.error || "We couldn't find the student profile you're looking for."}</p>
-          <button 
-            onClick={() => navigate(-1)}
-            className="px-6 py-2 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 transition-all"
-          >
-            Go Back
-          </button>
+          <BackButton className="mx-auto" />
         </div>
       </div>
     );
@@ -708,6 +780,47 @@ export default function StudentProfile() {
     }
   };
 
+  const downloadCredentialSlip = (pdfBase64, studentName) => {
+    const bytes = Uint8Array.from(window.atob(pdfBase64), (c) => c.charCodeAt(0));
+    const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(studentName || 'student').replace(/\s+/g, '-')}-login-credentials.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleSendStudentCredentials = async () => {
+    setIsSendingStudentCreds(true);
+    try {
+      const res = await api.post(`/students/${student.id}/send-student-credentials`, {
+        channel: studentCredsChannel,
+        loginUrl: window.location.origin + '/login',
+      });
+      const data = res.data?.data ?? res.data ?? {};
+      if (studentCredsChannel === 'slip') {
+        downloadCredentialSlip(data.pdfBase64, student.name);
+        toast.success('Credential slip downloaded.');
+        setSendStudentCredsOpen(false);
+      } else if (data.sent) {
+        toast.success(
+          studentCredsChannel === 'parent_email'
+            ? `Login details emailed to ${data.parentEmail}.`
+            : `Login details emailed to ${data.studentEmail}.`
+        );
+        setSendStudentCredsOpen(false);
+      } else {
+        toast.warning(`Credentials email did not send${data.error ? `: ${data.error}` : '.'}`);
+      }
+      await fetchStudent();
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.error || err.response?.data?.message || 'Failed to send student credentials');
+    } finally {
+      setIsSendingStudentCreds(false);
+    }
+  };
+
   const profile = student.studentProfile || {};
   const parents = student.parentDetails || {};
   const primaryContact = parents.primaryContact || 'father';
@@ -731,16 +844,9 @@ export default function StudentProfile() {
   return (
     <div className="w-full pb-24 sm:pb-36">
       {/* Header */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-0">
-        <button 
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold transition-colors text-sm sm:text-base self-start"
-        >
-          <ArrowLeft size={18} />
-          Back to List
-        </button>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <button 
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end px-4 sm:px-0">
+        <div className="flex gap-2 w-full sm:w-auto flex-wrap sm:justify-end">
+          <button
             onClick={handleExportPDF}
             disabled={exporting}
             className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-slate-100 text-slate-600 font-bold text-xs sm:text-sm hover:bg-slate-50 transition-all disabled:opacity-50 flex-1 sm:flex-initial"
@@ -761,6 +867,17 @@ export default function StudentProfile() {
             <Send size={14} />
             Send Credentials
           </button>
+          <button
+            onClick={() => {
+              setStudentCredsChannel('student_email');
+              setSendStudentCredsOpen(true);
+            }}
+            className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 font-bold text-xs sm:text-sm hover:bg-blue-100 transition-all flex-1 sm:flex-initial"
+          >
+            <Key size={14} />
+            Send Student Credentials
+          </button>
+          <BackButton />
         </div>
       </div>
 
@@ -862,6 +979,118 @@ export default function StudentProfile() {
                 >
                   {isSendingCreds ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                   {isSendingCreds ? 'Sending...' : 'Send Email'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Send Student Credentials Modal (student's own login, 3 channels) */}
+      {sendStudentCredsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                    <Key size={20} className="text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Send Student Credentials</h3>
+                    <p className="text-xs text-blue-200 font-bold">Deliver the student's own login</p>
+                  </div>
+                </div>
+                <button onClick={() => setSendStudentCredsOpen(false)} className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-all">
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-8 space-y-5">
+              {/* Student info card */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-lg font-bold">
+                  {getInitials(student.name)}
+                </div>
+                <div>
+                  <div className="font-bold text-slate-900 dark:text-white">{student.name}</div>
+                  <div className="text-xs font-bold text-slate-400">{student.email}</div>
+                </div>
+              </div>
+
+              {/* Channel selector */}
+              <div className="space-y-2">
+                {[
+                  { value: 'student_email', label: "Student's Email", hint: 'Emails the login details directly to the student.', Icon: Mail },
+                  { value: 'parent_email', label: "Parent's Email", hint: "Emails the student's login details to the parent, to pass along.", Icon: Mail },
+                  { value: 'slip', label: 'Printable Slip', hint: 'Downloads a one-page PDF to print and hand out.', Icon: Printer },
+                ].map(({ value, label, hint, Icon }) => (
+                  <label
+                    key={value}
+                    className={cn(
+                      'flex cursor-pointer items-start gap-3 rounded-2xl border-2 p-3 transition-colors',
+                      studentCredsChannel === value
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                        : 'border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="studentCredsChannel"
+                      value={value}
+                      checked={studentCredsChannel === value}
+                      onChange={() => setStudentCredsChannel(value)}
+                      className="mt-0.5 h-4 w-4 text-blue-600 focus:ring-blue-500"
+                    />
+                    <Icon size={16} className="mt-0.5 shrink-0 text-blue-600" />
+                    <span>
+                      <span className="block text-sm font-bold text-slate-900 dark:text-white">{label}</span>
+                      <span className="block text-xs font-bold text-slate-400">{hint}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+
+              {studentCredsChannel === 'student_email' && !student.email && (
+                <p className="text-[10px] font-bold text-amber-500 uppercase">⚠ No student email on record — this will fail</p>
+              )}
+              {studentCredsChannel === 'parent_email' && !(student.parent_email || student.parentEmail) && (
+                <p className="text-[10px] font-bold text-amber-500 uppercase">⚠ No parent email on record — this will fail</p>
+              )}
+
+              {/* Info box */}
+              <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30">
+                <p className="text-xs font-bold text-blue-700 dark:text-blue-400 leading-relaxed">
+                  A fresh temporary password is generated every time, overwriting any previous one.
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setSendStudentCredsOpen(false)}
+                  className="flex-1 py-3 rounded-2xl border-2 border-slate-100 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSendStudentCredentials}
+                  disabled={isSendingStudentCreds}
+                  className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-sm shadow-lg shadow-blue-600/25 hover:shadow-xl hover:shadow-blue-600/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isSendingStudentCreds ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : studentCredsChannel === 'slip' ? (
+                    <Printer size={16} />
+                  ) : (
+                    <Send size={16} />
+                  )}
+                  {isSendingStudentCreds
+                    ? (studentCredsChannel === 'slip' ? 'Generating...' : 'Sending...')
+                    : (studentCredsChannel === 'slip' ? 'Generate Slip' : 'Send Email')}
                 </button>
               </div>
             </div>
@@ -1248,8 +1477,9 @@ export default function StudentProfile() {
             <TabButton active={activeTab === 'family'} onClick={() => setActiveTab('family')} icon={Users} label="Family Details" />
             <TabButton active={activeTab === 'academic'} onClick={() => setActiveTab('academic')} icon={GraduationCap} label="Academic" />
             <TabButton active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={Calendar} label="Attendance" />
-            {/* Performance tab hidden for now */}
-            {/* <TabButton active={activeTab === 'performance'} onClick={() => setActiveTab('performance')} icon={BarChart2} label="Performance" /> */}
+            <TabButton active={activeTab === 'screentime'} onClick={() => setActiveTab('screentime')} icon={Clock} label="Screen Time" />
+            <TabButton active={activeTab === 'performance'} onClick={() => setActiveTab('performance')} icon={BarChart2} label="Performance" />
+            {hasPlanner && <TabButton active={activeTab === 'study-planner'} onClick={() => setActiveTab('study-planner')} icon={BrainCircuit} label="Study Planner" />}
             <TabButton active={activeTab === 'fees'} onClick={() => setActiveTab('fees')} icon={DollarSign} label="Fees & Payments" />
             <TabButton active={activeTab === 'documents'} onClick={() => setActiveTab('documents')} icon={FileCheck} label="Documents & Verification" />
           </div>
@@ -1641,13 +1871,39 @@ export default function StudentProfile() {
                   <div className="flex items-center justify-between flex-wrap gap-4">
                     <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest">Attendance Record</h3>
                     <div className="flex items-center gap-3">
-                      <label className="text-xs font-bold text-slate-400 uppercase">Month</label>
-                      <input
-                        type="month"
-                        value={attendanceMonth}
-                        onChange={(e) => setAttendanceMonth(e.target.value)}
-                        className="rounded-xl border-2 border-slate-100 dark:border-slate-700 px-3 py-2 text-sm font-bold text-slate-700 dark:text-white bg-white dark:bg-slate-900 outline-none focus:border-blue-500"
-                      />
+                      {last30Mode ? (
+                        <>
+                          <Badge className="rounded-lg border-transparent bg-rose-50 text-rose-600 text-[10px] font-bold uppercase tracking-wider hover:bg-rose-50">
+                            Last 30 Days
+                          </Badge>
+                          <button
+                            type="button"
+                            onClick={() => setLast30Mode(false)}
+                            className="text-xs font-bold text-blue-600 hover:text-blue-700"
+                          >
+                            Switch to month view
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <label className="text-xs font-bold text-slate-400 uppercase">Month</label>
+                          <input
+                            type="month"
+                            value={attendanceMonth}
+                            onChange={(e) => setAttendanceMonth(e.target.value)}
+                            className="rounded-xl border-2 border-slate-100 dark:border-slate-700 px-3 py-2 text-sm font-bold text-slate-700 dark:text-white bg-white dark:bg-slate-900 outline-none focus:border-blue-500"
+                          />
+                          {cameFromAttendanceFlag && (
+                            <button
+                              type="button"
+                              onClick={() => setLast30Mode(true)}
+                              className="text-xs font-bold text-blue-600 hover:text-blue-700"
+                            >
+                              Back to last 30 days
+                            </button>
+                          )}
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -1741,14 +1997,13 @@ export default function StudentProfile() {
                                 <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Date</TableHead>
                                 <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Day</TableHead>
                                 <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Status</TableHead>
-                                <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Remarks</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody className="divide-y divide-slate-50 dark:divide-slate-800 text-sm">
                               {attendance.length === 0 ? (
                                 <TableRow className="hover:bg-transparent">
-                                  <TableCell colSpan={4} className="p-10 text-center text-slate-400 font-bold">
-                                    No attendance records for this month.
+                                  <TableCell colSpan={3} className="p-10 text-center text-slate-400 font-bold">
+                                    No attendance records for {last30Mode ? 'the last 30 days' : 'this month'}.
                                   </TableCell>
                                 </TableRow>
                               ) : (
@@ -1769,7 +2024,6 @@ export default function StudentProfile() {
                                             {record.status || 'Unknown'}
                                           </Badge>
                                         </TableCell>
-                                        <TableCell className="p-4 text-slate-400 font-bold">{record.remarks || '—'}</TableCell>
                                       </TableRow>
                                     );
                                   })
@@ -1783,12 +2037,211 @@ export default function StudentProfile() {
                 </div>
               )}
 
+              {activeTab === 'screentime' && (
+                <div className="space-y-6">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest">Screen Time</h3>
+                    <div className="flex items-center gap-2 rounded-xl bg-slate-100 dark:bg-slate-900/50 p-1">
+                      {[
+                        { id: 'week', label: 'This Week' },
+                        { id: 'calendar', label: 'By Month' },
+                      ].map((v) => (
+                        <button
+                          key={v.id}
+                          type="button"
+                          onClick={() => setScreenTimeView(v.id)}
+                          className={`rounded-lg px-3.5 py-1.5 text-xs font-bold transition-colors ${
+                            screenTimeView === v.id
+                              ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                              : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                          }`}
+                        >
+                          {v.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {screenTimeView === 'week' ? (
+                    screenTimeWeek.loading ? (
+                      <div className="flex items-center justify-center py-16">
+                        <Loader2 size={32} className="animate-spin text-blue-500" />
+                      </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-center">
+                            <div className="text-2xl sm:text-4xl font-bold tracking-tight mb-1 text-blue-600 dark:text-blue-400">{formatDurationShort(screenTimeWeek.todaySeconds)}</div>
+                            <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Today</div>
+                          </div>
+                          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-indigo-500/10 border border-indigo-500/20 text-center text-indigo-600 dark:text-indigo-400">
+                            <div className="text-2xl sm:text-4xl font-bold tracking-tight mb-1">{formatDurationShort(screenTimeWeek.totalSeconds)}</div>
+                            <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">This Week</div>
+                          </div>
+                        </div>
+
+                        {screenTimeWeek.days.every((d) => !d.activeSeconds) ? (
+                          <div className="rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 p-10 text-center text-slate-400 font-bold">
+                            No screen time recorded this week yet.
+                          </div>
+                        ) : (
+                          <div className="h-56 w-full rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
+                            <ChartContainer config={{ seconds: { label: 'Active time', color: 'hsl(var(--primary))' } }} className="h-full w-full aspect-auto">
+                              <AreaChart
+                                data={screenTimeWeek.days.map((d) => ({
+                                  name: new Date(`${d.date}T00:00:00`).toLocaleDateString(undefined, { weekday: 'short' }),
+                                  seconds: d.activeSeconds,
+                                }))}
+                                margin={{ top: 5, right: 8, left: -16, bottom: 0 }}
+                              >
+                                <defs>
+                                  <linearGradient id="adminScreenTimeFill" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="var(--color-seconds)" stopOpacity={0.35} />
+                                    <stop offset="95%" stopColor="var(--color-seconds)" stopOpacity={0} />
+                                  </linearGradient>
+                                </defs>
+                                <CartesianGrid vertical={false} />
+                                <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} />
+                                <YAxis tickLine={false} axisLine={false} tickFormatter={(v) => formatDurationShort(Number(v))} width={48} />
+                                <ChartTooltip content={<ChartTooltipContent formatter={(v) => formatDuration(Number(v)) ?? '0s'} />} />
+                                <Area
+                                  dataKey="seconds"
+                                  type="monotone"
+                                  stroke="var(--color-seconds)"
+                                  strokeWidth={2.5}
+                                  fill="url(#adminScreenTimeFill)"
+                                  dot={{ r: 3, fill: 'var(--color-seconds)' }}
+                                  activeDot={{ r: 6 }}
+                                />
+                              </AreaChart>
+                            </ChartContainer>
+                          </div>
+                        )}
+                      </>
+                    )
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-end">
+                        <input
+                          type="month"
+                          value={screenTimeMonth}
+                          onChange={(e) => setScreenTimeMonth(e.target.value)}
+                          className="rounded-xl border-2 border-slate-100 dark:border-slate-700 px-3 py-2 text-sm font-bold text-slate-700 dark:text-white bg-white dark:bg-slate-900 outline-none focus:border-blue-500"
+                        />
+                      </div>
+
+                      {screenTimeMonthData.loading ? (
+                        <div className="flex items-center justify-center py-16">
+                          <Loader2 size={32} className="animate-spin text-blue-500" />
+                        </div>
+                      ) : screenTimeMonthData.days.length === 0 ? (
+                        <div className="rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 p-10 text-center text-slate-400 font-bold">
+                          No screen time recorded for this month.
+                        </div>
+                      ) : (() => {
+                        const byDate = new Map(screenTimeMonthData.days.map((d) => [d.date, d.activeSeconds]));
+                        const maxSeconds = Math.max(1, ...screenTimeMonthData.days.map((d) => d.activeSeconds));
+                        const activeDays = screenTimeMonthData.days.filter((d) => d.activeSeconds > 0);
+                        const dailyAverage = activeDays.length > 0
+                          ? Math.round(screenTimeMonthData.totalSeconds / activeDays.length)
+                          : 0;
+                        const mostActive = screenTimeMonthData.days.reduce(
+                          (best, d) => (d.activeSeconds > (best?.activeSeconds ?? -1) ? d : best),
+                          null
+                        );
+
+                        const [yearStr, monthStr] = screenTimeMonth.split('-');
+                        const year = parseInt(yearStr, 10);
+                        const monthIndex = parseInt(monthStr, 10) - 1;
+                        const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+                        const firstDayIndex = new Date(year, monthIndex, 1).getDay();
+
+                        const calendarCells = [];
+                        for (let i = 0; i < firstDayIndex; i++) calendarCells.push({ dayNum: null, dateStr: '', activeSeconds: 0 });
+                        for (let d = 1; d <= daysInMonth; d++) {
+                          const dateStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                          calendarCells.push({ dayNum: d, dateStr, activeSeconds: byDate.get(dateStr) ?? 0 });
+                        }
+
+                        return (
+                          <>
+                            <div className="grid grid-cols-3 gap-3 sm:gap-4">
+                              <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-indigo-500/10 border border-indigo-500/20 text-center text-indigo-600 dark:text-indigo-400">
+                                <div className="text-xl sm:text-3xl font-bold tracking-tight mb-1">{formatDurationShort(screenTimeMonthData.totalSeconds)}</div>
+                                <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">Total</div>
+                              </div>
+                              <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-blue-500/10 border border-blue-500/20 text-center text-blue-600 dark:text-blue-400">
+                                <div className="text-xl sm:text-3xl font-bold tracking-tight mb-1">{formatDurationShort(dailyAverage)}</div>
+                                <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">Daily Avg</div>
+                              </div>
+                              <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-emerald-500/10 border border-emerald-500/20 text-center text-emerald-600 dark:text-emerald-400">
+                                <div className="text-xl sm:text-3xl font-bold tracking-tight mb-1">
+                                  {mostActive && mostActive.activeSeconds > 0
+                                    ? new Date(`${mostActive.date}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+                                    : '—'}
+                                </div>
+                                <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">Most Active</div>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-7 gap-2">
+                              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+                                <div key={d} className="text-center text-[10px] font-black uppercase text-slate-400 py-2">{d}</div>
+                              ))}
+                              {calendarCells.map((cell, i) => {
+                                if (cell.dayNum === null) return <div key={i} className="aspect-square" />;
+                                const intensity = cell.activeSeconds / maxSeconds;
+                                const bg =
+                                  cell.activeSeconds === 0 ? 'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-slate-300 dark:text-slate-600' :
+                                  intensity > 0.66 ? 'border-blue-200 bg-blue-100 text-blue-800' :
+                                  intensity > 0.33 ? 'border-blue-100 bg-blue-50 text-blue-700' :
+                                  'border-blue-50 bg-blue-50/50 text-blue-600';
+                                return (
+                                  <div
+                                    key={cell.dateStr}
+                                    title={cell.activeSeconds > 0 ? (formatDuration(cell.activeSeconds) ?? '') : 'No activity'}
+                                    className={`flex aspect-square flex-col items-center justify-center rounded-xl border-2 text-sm font-bold ${bg}`}
+                                  >
+                                    {cell.dayNum}
+                                    {cell.activeSeconds > 0 && (
+                                      <span className="mt-0.5 text-[9px] font-bold">{formatDurationShort(cell.activeSeconds)}</span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </>
+                  )}
+                </div>
+              )}
+              {activeTab === 'study-planner' && hasPlanner && <StudentStudyReport studentId={id} embedded />}
               {activeTab === 'performance' && (() => {
                 const sessions = performanceSessions;
                 const totalSessions = sessions.length;
                 const avgAccuracy = totalSessions > 0
                   ? Math.round(sessions.reduce((sum, s) => sum + (s.accuracy || 0), 0) / totalSessions)
                   : 0;
+                const monthGroups = new Map();
+                sessions.filter((s) => s.submittedAt).forEach((s) => {
+                  const d = new Date(s.submittedAt);
+                  const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                  if (!monthGroups.has(key)) monthGroups.set(key, []);
+                  monthGroups.get(key).push(s);
+                });
+                const yearlyTrendData = Array.from(monthGroups.entries())
+                  .sort(([a], [b]) => a.localeCompare(b))
+                  .map(([key, monthSessions]) => {
+                    const [y, m] = key.split('-');
+                    const label = new Date(Number(y), Number(m) - 1, 1).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+                    return {
+                      year: label,
+                      accuracy: Math.round(monthSessions.reduce((sum, s) => sum + (s.accuracy || 0), 0) / monthSessions.length),
+                      count: monthSessions.length,
+                    };
+                  });
 
                 return (
                   <div className="space-y-8">
@@ -1813,6 +2266,31 @@ export default function StudentProfile() {
                             </div>
                             <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Average Score</div>
                           </div>
+                        </div>
+
+                        {/* Year-wise Accuracy Trend */}
+                        <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800">
+                          <h4 className="mb-4 text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest">Year-wise Accuracy Trend</h4>
+                          {yearlyTrendData.length === 0 ? (
+                            <div className="flex items-center justify-center text-xs sm:text-sm text-slate-500" style={{ height: 260 }}>
+                              Year-wise trend will appear once assessments are completed.
+                            </div>
+                          ) : (
+                            <ChartContainer config={{ accuracy: { label: 'Accuracy', color: 'hsl(var(--primary))' } }} className="w-full aspect-auto" style={{ height: 260 }}>
+                              <LineChart data={yearlyTrendData} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+                                <CartesianGrid vertical={false} />
+                                <XAxis dataKey="year" tickLine={false} axisLine={false} tickMargin={8} />
+                                <YAxis domain={[0, 100]} tickLine={false} axisLine={false} unit="%" />
+                                <ChartTooltip
+                                  content={<ChartTooltipContent
+                                    labelFormatter={(_, p) => p?.[0]?.payload ? `${p[0].payload.year} · ${p[0].payload.count} assessment${p[0].payload.count === 1 ? '' : 's'}` : ''}
+                                    formatter={(v) => `${Math.round(Number(v))}%`}
+                                  />}
+                                />
+                                <Line dataKey="accuracy" type="monotone" stroke="var(--color-accuracy)" strokeWidth={2.5} dot={{ r: 3, fill: 'var(--color-accuracy)' }} activeDot={{ r: 5 }} />
+                              </LineChart>
+                            </ChartContainer>
+                          )}
                         </div>
 
                         {/* Test Sessions Table */}

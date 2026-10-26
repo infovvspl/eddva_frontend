@@ -5,16 +5,17 @@ import WordMasterHome from './WordMasterHome';
 import WordMasterPlay from './WordMasterPlay';
 import WordMasterResult from './WordMasterResult';
 import WordMasterLeaderboard from './WordMasterLeaderboard';
+import ArenaDarkFrame from './shared/ArenaDarkFrame';
 
-export default function WordMaster() {
+function WordMasterGame() {
   const [stage, setStage] = useState('home'); // 'home' | 'play' | 'result' | 'leaderboard'
   const [sessionData, setSessionData] = useState(null); // { sessionId, deckName, difficulty, words }
   const [resultData, setResultData] = useState(null); // submit API response
 
-  const handleStartGame = async (deckId, difficulty = 'medium', mode = 'ranked', subjectId = '', chapterId = '') => {
+  const handleStartGame = async (deckId, subjectId = '', chapterId = '') => {
     try {
       const res = await api.get('/school/gamification/word-master/start', {
-        params: { deckId, difficulty: mode === 'ranked' ? undefined : difficulty, mode, subjectId, chapterId },
+        params: { deckId, subjectId, chapterId },
       });
       const data = res.data?.data ?? res.data;
       setSessionData(data);
@@ -86,5 +87,14 @@ export default function WordMaster() {
         />
       )}
     </div>
+  );
+}
+
+// Arena atmosphere + dark styling, same look as Quiz Rush.
+export default function WordMaster() {
+  return (
+    <ArenaDarkFrame>
+      <WordMasterGame />
+    </ArenaDarkFrame>
   );
 }

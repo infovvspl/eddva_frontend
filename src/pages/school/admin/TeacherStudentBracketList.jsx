@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Search, GraduationCap, Award, Loader2, Download, ExternalLink } from 'lucide-react';
+import { Search, GraduationCap, Award, Loader2, Download, ExternalLink } from 'lucide-react';
+import { BackButton } from '@/components/shared/BackButton';
 import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { cn } from '@/components/school/admin/Skeleton';
 
 const BRACKET_CONFIGS = {
   outstanding: {
@@ -162,21 +164,10 @@ export default function TeacherStudentBracketList() {
 
   return (
     <div className="w-full pb-12">
-      {/* Back button */}
-      <div className="mb-6">
-        <button
-          onClick={() => navigate(`/school/admin/teachers/${id}?tab=performance`)}
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold transition-colors outline-none"
-        >
-          <ArrowLeft size={20} />
-          Back to Teacher Profile
-        </button>
-      </div>
-
       {/* Main Header Container */}
       <div className={`p-8 md:p-10 rounded-[2.5rem] bg-gradient-to-br ${config.gradient} text-white shadow-xl ${config.glowColor} mb-8`}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-2 flex-wrap">
               <span className="text-[10px] font-extrabold uppercase tracking-widest bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm">
                 Bracket: {config.title} ({config.range})
@@ -195,18 +186,21 @@ export default function TeacherStudentBracketList() {
             </p>
           </div>
 
-          <div className="flex gap-4 shrink-0">
-            <div className="px-6 py-4 rounded-[2rem] bg-white/10 backdrop-blur-md border border-white/15 text-center min-w-[120px]">
-              <div className="text-3xl font-black">{studentsList.length}</div>
-              <div className="text-[9px] font-bold text-white/70 uppercase tracking-widest mt-1">Students</div>
-            </div>
-            <div className="px-6 py-4 rounded-[2rem] bg-white/10 backdrop-blur-md border border-white/15 text-center min-w-[120px]">
-              <div className="text-3xl font-black">
-                {studentsList.length > 0
-                  ? `${Math.round(studentsList.reduce((sum, s) => sum + s.avgScore, 0) / studentsList.length)}%`
-                  : '—'}
+          <div className="flex flex-col items-end gap-4 shrink-0">
+            <BackButton to={`/school/admin/teachers/${id}?tab=performance`} />
+            <div className="flex gap-4">
+              <div className="px-6 py-4 rounded-[2rem] bg-white/10 backdrop-blur-md border border-white/15 text-center min-w-[120px]">
+                <div className="text-3xl font-black">{studentsList.length}</div>
+                <div className="text-[9px] font-bold text-white/70 uppercase tracking-widest mt-1">Students</div>
               </div>
-              <div className="text-[9px] font-bold text-white/70 uppercase tracking-widest mt-1">Bracket Avg</div>
+              <div className="px-6 py-4 rounded-[2rem] bg-white/10 backdrop-blur-md border border-white/15 text-center min-w-[120px]">
+                <div className="text-3xl font-black">
+                  {studentsList.length > 0
+                    ? `${Math.round(studentsList.reduce((sum, s) => sum + s.avgScore, 0) / studentsList.length)}%`
+                    : '—'}
+                </div>
+                <div className="text-[9px] font-bold text-white/70 uppercase tracking-widest mt-1">Bracket Avg</div>
+              </div>
             </div>
           </div>
         </div>

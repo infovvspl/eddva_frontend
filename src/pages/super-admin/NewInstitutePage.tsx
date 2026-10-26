@@ -16,22 +16,24 @@ const AI_FEATURE_OPTIONS = COACHING_AI_FEATURES.map(f => ({
   desc: f.description,
 }));
 
+const INITIAL_FORM = {
+  name: "", subdomain: "", billingEmail: "",
+  maxStudents: DEFAULT_STUDENTS, maxTeachers: DEFAULT_TEACHERS, adminPhone: "",
+  address: "", city: "", state: "", pincode: "",
+  operationalModel: "TEACHER_BASED",
+  adminPortalEnabled: true,
+  teacherPortalEnabled: true,
+  studentPortalEnabled: true,
+  parentPortalEnabled: true,
+  multiAdminEnabled: false,
+};
+
 const NewInstitutePage = () => {
   const navigate = useNavigate();
   const createTenant = useCreateTenant();
 
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState({
-    name: "", subdomain: "", billingEmail: "",
-    maxStudents: DEFAULT_STUDENTS, maxTeachers: DEFAULT_TEACHERS, adminPhone: "",
-    address: "", city: "", state: "", pincode: "",
-    operationalModel: "TEACHER_BASED",
-    adminPortalEnabled: true,
-    teacherPortalEnabled: true,
-    studentPortalEnabled: true,
-    parentPortalEnabled: true,
-    multiAdminEnabled: false
-  });
+  const [form, setForm] = useState(INITIAL_FORM);
   const [portalSearch, setPortalSearch] = useState("");
   const [aiEnabled, setAiEnabled] = useState(false);
 
@@ -252,7 +254,7 @@ const NewInstitutePage = () => {
               setEmailOtpStep("idle");
               setEmailOtp(["", "", "", "", "", ""]);
               setVerifiedEmail("");
-              setForm({ name: "", subdomain: "", billingEmail: "", maxStudents: DEFAULT_STUDENTS, maxTeachers: DEFAULT_TEACHERS, adminPhone: "", address: "", city: "", state: "", pincode: "" });
+              setForm(INITIAL_FORM);
               setSubdomainStatus("idle"); setStep(1);
             }} className="text-muted-foreground font-bold">
               Add another institute

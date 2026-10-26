@@ -3,6 +3,7 @@ import App from "./App.tsx";
 import { ThemeProvider } from "./components/theme-provider.tsx";
 import { PageErrorBoundary } from "./components/shared/PageErrorBoundary.tsx";
 import "./index.css";
+import { i18nReady } from "./i18n";
 
 // Root-level safety net: previously only DashboardLayout's <Outlet /> was
 // covered, so any uncaught error in a provider mounted above it (auth,
@@ -10,12 +11,12 @@ import "./index.css";
 // exactly what happened when an iOS Safari ReferenceError crashed before
 // React ever painted anything. This can't prevent that class of bug, but it
 // guarantees the next one shows a recoverable error screen instead of blank.
-createRoot(document.getElementById("root")!).render(
+i18nReady.then(() => createRoot(document.getElementById("root")!).render(
   <PageErrorBoundary>
-    <ThemeProvider attribute="class" defaultTheme="light" forcedTheme="light" enableSystem={false}>
+    <ThemeProvider attribute="class" defaultTheme="light" storageKey="eddva-theme" enableSystem={false}>
       <App />
     </ThemeProvider>
   </PageErrorBoundary>,
-);
+));
 
 //eddva

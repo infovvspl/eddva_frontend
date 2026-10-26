@@ -692,36 +692,6 @@ export default function StudentLecturesPage() {
     () => filtered.slice(0, showAllStudentLectures ? filtered.length : 4),
     [filtered, showAllStudentLectures]
   );
-  const hasMoreLectures = visibleCount < filtered.length;
-
-  useEffect(() => {
-    setVisibleCount(initialBatchSize);
-  }, [initialBatchSize, lectureType, subject, status, search, all.length]);
-
-  useEffect(() => {
-    const target = loadMoreRef.current;
-    if (!target || isLoading || !hasMoreLectures) return;
-
-    const scrollRoot = target.closest("main");
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (!entry?.isIntersecting) return;
-        setVisibleCount((v) => {
-          if (v >= filtered.length) return v;
-          return Math.min(v + loadMoreBatchSize, filtered.length);
-        });
-      },
-      {
-        root: scrollRoot instanceof HTMLElement ? scrollRoot : null,
-        rootMargin: "320px 0px",
-        threshold: 0,
-      }
-    );
-
-    observer.observe(target);
-    return () => observer.disconnect();
-  }, [filtered.length, hasMoreLectures, isLoading, loadMoreBatchSize]);
 
   return (
     <div className="min-h-screen pb-24 relative">

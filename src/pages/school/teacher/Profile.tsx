@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Camera, Mail, Phone, Shield, BookOpen, Users, ClipboardList, CheckCircle, Globe, MapPin, Award, Building } from "lucide-react";
+import { toast } from "sonner";
 import { useAuth } from "@/context/SchoolAuthContext";
 import api from "@/lib/api/school-client";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
@@ -59,6 +60,9 @@ const Profile: React.FC = () => {
     assignmentsCreated: 0,
     assessmentsConducted: 0
   });
+  const [todayAttendance, setTodayAttendance] = useState<any>(null);
+  const [checkInLoading, setCheckInLoading] = useState(false);
+  const [checkOutLoading, setCheckOutLoading] = useState(false);
 
   const groupedAssignments = React.useMemo(() => {
     const groups: Record<string, {
@@ -134,13 +138,76 @@ const Profile: React.FC = () => {
           }
         })
         .catch(err => console.error("Failed to fetch teacher profile", err));
+
+      fetchTodayAttendance();
     }
   }, [user]);
+
+  const todayDateStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+
+  const fetchTodayAttendance = async () => {
+    try {
+      const res = await api.get("/teacher-attendance/me", { params: { month: todayDateStr().slice(0, 7) } });
+      const rows = res.data?.data || [];
+      setTodayAttendance(rows.find((r: any) => r.date === todayDateStr()) || null);
+    } catch (err) {
+      console.error("Failed to load today's attendance:", err);
+    }
+  };
+
+  const handleCheckIn = () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported on this device.");
+      return;
+    }
+    setCheckInLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const res = await api.post("/teacher-attendance/check-in", {
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+          });
+          const status = res.data?.data?.status;
+          toast.success(`Checked in — marked ${status === "late" ? "Late" : "Present"}`);
+          fetchTodayAttendance();
+        } catch (err: any) {
+          toast.error(err?.response?.data?.message || "Check-in failed");
+        } finally {
+          setCheckInLoading(false);
+        }
+      },
+      () => {
+        toast.error("Could not get your location — allow location access and try again.");
+        setCheckInLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  };
+
+  const handleCheckOut = async () => {
+    setCheckOutLoading(true);
+    try {
+      await api.post("/teacher-attendance/check-out");
+      toast.success("Checked out");
+      fetchTodayAttendance();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Check-out failed");
+    } finally {
+      setCheckOutLoading(false);
+    }
+  };
+
+  const formatClockTime = (iso?: string) =>
+    iso ? new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }) : null;
 
   const initialsCard = "rounded-2xl border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900";
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 p-4 font-poppins sm:p-6">
+    <div className="mx-auto w-full max-w-6xl space-y-6 font-poppins">
       {/* Header */}
       <Card className={`${initialsCard} p-4 sm:p-6`}>
         <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
@@ -274,6 +341,48 @@ const Profile: React.FC = () => {
             ) : (
               <p className="py-2 text-xs font-semibold text-slate-400">No active assignments found.</p>
             )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Today's self check-in */}
+      <Card className={initialsCard}>
+        <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-4">
+          <CardTitle className="text-base font-semibold leading-normal tracking-normal">Today's Attendance</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 p-4 pt-0 sm:flex-row sm:items-center sm:justify-between sm:p-6 sm:pt-0">
+          <div>
+            {todayAttendance ? (
+              <>
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                  {todayAttendance.status === "late" ? "Marked Late" : "Marked Present"}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {[
+                    todayAttendance.checkInTime && `In ${formatClockTime(todayAttendance.checkInTime)}`,
+                    todayAttendance.checkOutTime && `Out ${formatClockTime(todayAttendance.checkOutTime)}`,
+                  ].filter(Boolean).join(" · ") || "Marked by admin"}
+                </p>
+              </>
+            ) : (
+              <p className="text-sm font-semibold text-slate-500">Not checked in yet today</p>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={handleCheckIn}
+              disabled={checkInLoading || !!todayAttendance?.checkInTime}
+              className="gap-1.5"
+            >
+              <MapPin className="size-4" /> {checkInLoading ? "Checking in…" : "Check In"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleCheckOut}
+              disabled={checkOutLoading || !todayAttendance?.checkInTime || !!todayAttendance?.checkOutTime}
+            >
+              {checkOutLoading ? "Checking out…" : "Check Out"}
+            </Button>
           </div>
         </CardContent>
       </Card>

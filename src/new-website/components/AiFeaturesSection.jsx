@@ -8,11 +8,15 @@
 // aria-hidden so screen readers only announce each feature once.
 
 import { Link } from "react-router-dom";
-import { features } from "../data/features";
+import { useTranslation } from "react-i18next";
+import { useLocalized } from "@/i18n/useLocalized";
+import { features as featuresData } from "../data/features";
 import useInView from "../hooks/useInView";
 
 
-const Strip = ({ clone }) => (
+const Strip = ({ clone }) => {
+  const features = useLocalized("data-features", featuresData);
+  return (
   <div className="nw-marquee__group" aria-hidden={clone || undefined}>
     {features.map(({ id, slug, title, img }) => (
       <Link
@@ -36,9 +40,11 @@ const Strip = ({ clone }) => (
       </Link>
     ))}
   </div>
-);
+  );
+};
 
 const AiFeaturesSection = () => {
+  const { t } = useTranslation("home");
   const [headRef, headIn] = useInView({ threshold: 0.3 });
 
   return (
@@ -46,7 +52,7 @@ const AiFeaturesSection = () => {
       <div className="nw-aifeat__container">
 
         <h2 className={`nw-aifeat__heading${headIn ? " nw-in" : ""}`} id="nw-aifeat-heading" ref={headRef}>
-          Discover Our Top AI Features
+          {t("aiFeatures.heading")}
         </h2>
 
         <div className="nw-marquee nw-marquee--features" id="nw-aifeat-marquee">

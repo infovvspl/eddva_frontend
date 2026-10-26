@@ -1,0 +1,49 @@
+{
+  "audience": {
+    "heading": "Built for Every Kind of Institution",
+    "lead": "The same platform, configured around how your institution actually runs — a school day, a coaching timetable or a university semester.",
+    "talk": "Talk to us"
+  },
+  "roles": {
+    "heading": "What EDDVA Does for Each of Them",
+    "lead": "Every module below is live in the platform. Open a role to see exactly what they get."
+  },
+  "detail": {
+    "title": "What EDDVA Does for {{title}}",
+    "total": "{{count}} capabilities, live in the platform",
+    "ctaTitle": "See it on your own {{title}}",
+    "ctaDesc": "We will walk through these modules against your institution's own setup.",
+    "book": "Book a demo"
+  },
+  "pages": {
+    "capabilities": "Capabilities",
+    "categories": "Categories",
+    "institutionTypes": "Institution Types",
+    "stakeholderRoles": "Stakeholder Roles",
+    "solution": {
+      "title": "Solutions for Every",
+      "accent": "Institution",
+      "lead": "Schools, institutes and the people inside them — each with tools built for the job."
+    },
+    "institutions": {
+      "title": "EDDVA for",
+      "accent": "Institutions",
+      "lead": "Streamlined operations, real-time data and the tools to run your institution with confidence."
+    },
+    "teachers": {
+      "title": "EDDVA for",
+      "accent": "Teachers",
+      "lead": "Smart tools, lesson planning, assessments and insights — built to save teaching time, not add to it."
+    },
+    "students": {
+      "title": "EDDVA for",
+      "accent": "Students",
+      "lead": "Personalized learning paths, progress tracking and everything a student needs in one place."
+    },
+    "parents": {
+      "title": "EDDVA for",
+      "accent": "Parents",
+      "lead": "Real-time updates, direct communication with school and teachers, and a clear view of your child's progress."
+    }
+  }
+}

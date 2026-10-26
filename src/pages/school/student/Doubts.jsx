@@ -5,20 +5,21 @@ import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client
 import {
   ArrowLeft,
   Bot,
+  BrainCircuit,
   BookOpen,
   Check,
   CheckCircle2,
-  ChevronDown,
   Clock,
+  GraduationCap,
   HelpCircle,
   Lightbulb,
   Loader2,
   Plus,
-  Send,
   Sparkles,
   ThumbsDown,
   ThumbsUp,
   User,
+  UsersRound,
   X,
   Zap,
 } from 'lucide-react';
@@ -30,10 +31,10 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { isAnswerPlaceholder } from '@/lib/doubt-answer';
 
 const statusLabels = {
-  ai_answered: { label: 'AI answered', tone: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300' },
-  escalated: { label: 'With teacher', tone: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300' },
-  teacher_answered: { label: 'Teacher answered', tone: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' },
-  open: { label: 'Open', tone: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' },
+  ai_answered: { label: 'AI answered', bar: 'bg-indigo-500', tone: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-300 dark:ring-indigo-900/50' },
+  escalated: { label: 'With teacher', bar: 'bg-amber-500', tone: 'bg-amber-50 text-amber-700 ring-1 ring-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-900/50' },
+  teacher_answered: { label: 'Teacher answered', bar: 'bg-emerald-500', tone: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-900/50' },
+  open: { label: 'Open', bar: 'bg-slate-400', tone: 'bg-slate-100 text-slate-600 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700' },
 };
 
 function sortByNewest(list, dateField = 'createdAt') {
@@ -76,28 +77,30 @@ function DoubtCard({ doubt, onHelpful, escalating }) {
   const [viewMode, setViewMode] = useState('brief');
 
   return (
-    <article className="rounded-xl sm:rounded-2xl border border-slate-100 bg-white p-4 sm:p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <article className="relative overflow-hidden rounded-xl sm:rounded-2xl border border-slate-100 bg-white p-4 pl-5 sm:p-5 sm:pl-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700">
+      <span aria-hidden className={cn('absolute inset-y-0 left-0 w-1', status.bar)} />
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <span className={cn('rounded-lg px-2 py-1 text-[10px] font-black uppercase tracking-widest', status.tone)}>
+          <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-widest', status.tone)}>
+            <span className="size-1.5 rounded-full bg-current" />
             {status.label}
           </span>
-          <div className="mt-2 space-y-1">
+          <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
             {doubt.subjectName && (
-              <p className="text-xs font-bold text-slate-500">Subject: {doubt.subjectName}</p>
+              <p className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">Subject: {doubt.subjectName}</p>
             )}
             {doubt.teacherName && (
-              <p className="text-xs font-bold text-blue-600 dark:text-blue-400">Teacher: {doubt.teacherName}</p>
+              <p className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">Teacher: {doubt.teacherName}</p>
             )}
           </div>
         </div>
-        <time className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+        <time className="rounded-md bg-slate-50 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:bg-slate-800/60 dark:text-slate-500">
           {doubt.createdAt ? new Date(doubt.createdAt).toLocaleString() : ''}
         </time>
       </div>
 
       {doubt.questionText && (
-        <p className="mt-3 text-sm font-semibold text-slate-800 dark:text-slate-200">{doubt.questionText}</p>
+        <p className="mt-3.5 text-[15px] font-semibold leading-relaxed text-slate-900 dark:text-slate-100">{doubt.questionText}</p>
       )}
       {doubt.questionImageUrl && (
         <div className="mt-3">
@@ -106,7 +109,7 @@ function DoubtCard({ doubt, onHelpful, escalating }) {
       )}
 
       {doubt.aiExplanation && (
-        <div className="mt-3 sm:mt-4 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3 sm:p-4 dark:border-indigo-900/40 dark:bg-indigo-950/20">
+        <div className="mt-3 sm:mt-4 rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 to-white p-3 sm:p-4 dark:border-indigo-900/40 dark:from-indigo-950/30 dark:to-slate-900">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
             <p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
               <Sparkles size={14} /> AI explanation
@@ -195,7 +198,7 @@ function DoubtCard({ doubt, onHelpful, escalating }) {
                 type="button"
                 disabled={escalating}
                 onClick={() => onHelpful(doubt.id, true)}
-                className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+                className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:opacity-50"
               >
                 <ThumbsUp size={14} /> Helpful
               </button>
@@ -203,7 +206,7 @@ function DoubtCard({ doubt, onHelpful, escalating }) {
                 type="button"
                 disabled={escalating}
                 onClick={() => onHelpful(doubt.id, false)}
-                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
               >
                 <ThumbsDown size={14} /> Ask teacher instead
               </button>
@@ -213,7 +216,7 @@ function DoubtCard({ doubt, onHelpful, escalating }) {
       )}
 
       {doubt.teacherResponse && (
-        <div className="mt-3 sm:mt-4 rounded-xl border border-emerald-100 bg-emerald-50/50 p-3 sm:p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20">
+        <div className="mt-3 sm:mt-4 rounded-xl border border-emerald-100 bg-gradient-to-br from-emerald-50/80 to-white p-3 sm:p-4 dark:border-emerald-900/40 dark:from-emerald-950/30 dark:to-slate-900">
           <p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
             <User size={14} /> Teacher response
             {doubt.teacherName ? ` · ${doubt.teacherName}` : ''}
@@ -232,14 +235,14 @@ function DoubtCard({ doubt, onHelpful, escalating }) {
       )}
 
       {doubt.status === 'escalated' && !doubt.teacherResponse && (
-        <p className="mt-3 text-xs font-semibold text-amber-600 dark:text-amber-400">
+        <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
           Not resolved yet — waiting for your teacher. You can also message them in{' '}
           <Link to="/school/student/chat" className="font-bold underline">Class Chat</Link>.
         </p>
       )}
 
       {doubt.status === 'teacher_answered' && (
-        <p className="mt-3 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+        <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
           Resolved
           {doubt.resolvedAt ? ` · ${new Date(doubt.resolvedAt).toLocaleString()}` : ''}
         </p>
@@ -264,6 +267,8 @@ export default function Doubts() {
   });
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  // Which button was pressed ('ai' | 'teacher'), so only that one shows the spinner.
+  const [submittingTo, setSubmittingTo] = useState(null);
   const [escalating, setEscalating] = useState(false);
   const [question, setQuestion] = useState('');
   const [subjectId, setSubjectId] = useState('');
@@ -344,7 +349,18 @@ export default function Doubts() {
     [doubts],
   );
   const allDoubts = useMemo(() => sortByActivity(doubts), [doubts]);
-  const shownDoubts = tab === 'pending' ? pendingDoubts : tab === 'answered' ? answeredDoubts : allDoubts;
+  // Split out of "Pending" so a student can tell "AI already answered this" apart
+  // from "nobody has looked at this yet" — both currently count as pending above.
+  const aiAnsweredDoubts = useMemo(
+    () => sortByNewest(doubts.filter((d) => d.status === 'ai_answered')),
+    [doubts],
+  );
+  const teacherAnsweredDoubts = answeredDoubts;
+  const shownDoubts = tab === 'pending' ? pendingDoubts
+    : tab === 'ai' ? aiAnsweredDoubts
+    : tab === 'teacher' ? teacherAnsweredDoubts
+    : tab === 'answered' ? answeredDoubts
+    : allDoubts;
 
   const filteredTeachers = subjectId
     ? context.teachers.filter((t) => !t.subjectId || t.subjectId === subjectId)
@@ -359,6 +375,7 @@ export default function Doubts() {
     if (!canSubmit) return;
     setError('');
     setSubmitting(true);
+    setSubmittingTo(askTeacher ? 'teacher' : 'ai');
     try {
       const subject = context.subjects.find((s) => s.id === subjectId);
       await api.post('/doubts', {
@@ -382,6 +399,7 @@ export default function Doubts() {
       setError(e?.response?.data?.message || 'Failed to submit doubt. Please try again.');
     } finally {
       setSubmitting(false);
+      setSubmittingTo(null);
     }
   };
 
@@ -473,7 +491,6 @@ export default function Doubts() {
                 ]}
                   className="w-full"
                 />
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
               </div>
             </div>
             <div>
@@ -487,7 +504,6 @@ export default function Doubts() {
                 ]}
                   className="w-full"
                 />
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
               </div>
             </div>
           </div>
@@ -516,7 +532,6 @@ export default function Doubts() {
               ]}
               className="w-full"
             />
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
           </div>
         </div>
 
@@ -534,30 +549,32 @@ export default function Doubts() {
 
         {error && <p className="mt-2 text-sm font-semibold text-rose-600">{error}</p>}
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              disabled={!canSubmit}
-              onClick={() => submit(false)}
-              className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-indigo-600 text-sm font-black text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 disabled:opacity-40"
-            >
-              {submitting ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-              Ask AI
-            </button>
-            <button
-              type="button"
-              disabled={!canSubmit}
-              onClick={() => submit(true)}
-              className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-blue-600 text-sm font-black text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700 disabled:opacity-40"
-            >
-              {submitting ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-              Ask Teacher
-            </button>
+          {/* Actions: both buttons on the left, note on the right from sm up; stacked full-width on phones */}
+          <div className="mt-5 flex flex-col gap-3 border-t border-slate-100 pt-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+              <button
+                type="button"
+                disabled={!canSubmit}
+                onClick={() => submit(false)}
+                className="inline-flex h-10 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-indigo-600 px-5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-slate-900 sm:w-auto"
+              >
+                {submittingTo === 'ai' ? <Loader2 className="size-4 animate-spin" /> : <BrainCircuit className="size-4" />}
+                Ask AI Tutor
+              </button>
+              <button
+                type="button"
+                disabled={!canSubmit}
+                onClick={() => submit(true)}
+                className="inline-flex h-10 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-blue-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-blue-700 dark:hover:bg-blue-950/30 dark:hover:text-blue-300 dark:focus-visible:ring-offset-slate-900 sm:w-auto"
+              >
+                {submittingTo === 'teacher' ? <Loader2 className="size-4 animate-spin" /> : <UsersRound className="size-4" />}
+                Ask Teacher
+              </button>
+            </div>
+            <p className="text-center text-[11px] font-semibold text-slate-400 sm:text-right">
+              AI answers instantly · Teacher replies when available
+            </p>
           </div>
-
-          <p className="mt-3 text-center text-[10px] font-bold uppercase tracking-widest text-slate-400">
-            AI answers instantly · Teacher replies when available
-          </p>
         </section>
       </div>
     );
@@ -572,7 +589,8 @@ export default function Doubts() {
             Track your questions and teacher replies.
           </p>
           {classBadge && (
-            <p className="mt-2 inline-flex rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-800 dark:bg-blue-950/40 dark:text-blue-200">
+            <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-200">
+              <span className="size-1.5 rounded-full bg-blue-500" />
               {classBadge}
             </p>
           )}
@@ -580,7 +598,7 @@ export default function Doubts() {
         <button
           type="button"
           onClick={() => setView('ask')}
-          className="inline-flex h-11 shrink-0 items-center gap-2 rounded-2xl bg-blue-600 px-4 text-sm font-black text-white shadow-lg shadow-blue-600/25 hover:bg-blue-700"
+          className="inline-flex h-11 shrink-0 items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 text-sm font-black text-white shadow-lg shadow-blue-600/25 ring-1 ring-inset ring-white/15 transition-all hover:brightness-110 hover:shadow-blue-600/40 active:scale-[0.98]"
         >
           <Plus className="size-5" />
           <span className="hidden sm:inline">Ask a Doubt</span>
@@ -590,24 +608,34 @@ export default function Doubts() {
       {doubts.length > 0 && (
         <>
           <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/50 dark:bg-amber-950/30">
-              <p className="text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-300">Pending</p>
-              <p className="mt-1 text-2xl font-black text-amber-900 dark:text-amber-100">{pendingDoubts.length}</p>
+            <div className="relative overflow-hidden rounded-2xl border border-amber-200 bg-white p-3.5 dark:border-amber-900/50 dark:bg-slate-900 sm:p-4">
+              <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-amber-500" />
+              <span aria-hidden className="pointer-events-none absolute -right-6 -top-6 size-20 rounded-full bg-amber-200/50 dark:bg-amber-500/10" />
+              <p className="relative text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-300">Pending</p>
+              <p className="relative mt-1 text-3xl font-black leading-none text-amber-900 dark:text-amber-100">{pendingDoubts.length}</p>
+              <p className="relative mt-1.5 hidden text-[11px] font-semibold text-amber-700/70 dark:text-amber-300/60 sm:block">Awaiting a reply</p>
             </div>
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/30">
-              <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-300">Answered</p>
-              <p className="mt-1 text-2xl font-black text-emerald-900 dark:text-emerald-100">{answeredDoubts.length}</p>
+            <div className="relative overflow-hidden rounded-2xl border border-emerald-200 bg-white p-3.5 dark:border-emerald-900/50 dark:bg-slate-900 sm:p-4">
+              <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-emerald-500" />
+              <span aria-hidden className="pointer-events-none absolute -right-6 -top-6 size-20 rounded-full bg-emerald-200/50 dark:bg-emerald-500/10" />
+              <p className="relative text-[10px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-300">Answered</p>
+              <p className="relative mt-1 text-3xl font-black leading-none text-emerald-900 dark:text-emerald-100">{answeredDoubts.length}</p>
+              <p className="relative mt-1.5 hidden text-[11px] font-semibold text-emerald-700/70 dark:text-emerald-300/60 sm:block">Replied by your teacher</p>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Total</p>
-              <p className="mt-1 text-2xl font-black text-slate-900 dark:text-white">{doubts.length}</p>
+            <div className="relative overflow-hidden rounded-2xl border border-indigo-200 bg-white p-3.5 dark:border-indigo-900/50 dark:bg-slate-900 sm:p-4">
+              <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-indigo-500" />
+              <span aria-hidden className="pointer-events-none absolute -right-6 -top-6 size-20 rounded-full bg-indigo-200/50 dark:bg-indigo-500/10" />
+              <p className="relative text-[10px] font-black uppercase tracking-widest text-indigo-700 dark:text-indigo-300">Total</p>
+              <p className="relative mt-1 text-3xl font-black leading-none text-indigo-900 dark:text-white">{doubts.length}</p>
+              <p className="relative mt-1.5 hidden text-[11px] font-semibold text-indigo-700/70 dark:text-indigo-300/60 sm:block">Questions asked</p>
             </div>
           </div>
 
-          <div className="flex flex-row flex-nowrap gap-2">
+          <div className="flex flex-row flex-nowrap gap-2 overflow-x-auto">
             {[
               { id: 'pending', label: 'Pending', icon: Clock, count: pendingDoubts.length },
-              { id: 'answered', label: 'Answered', icon: CheckCircle2, count: answeredDoubts.length },
+              { id: 'ai', label: 'AI Answered', icon: Sparkles, count: aiAnsweredDoubts.length },
+              { id: 'teacher', label: 'Teacher Answered', icon: GraduationCap, count: teacherAnsweredDoubts.length },
               { id: 'all', label: 'All', icon: HelpCircle, count: doubts.length },
             ].map(({ id, label, icon: Icon, count }) => (
               <button
@@ -615,15 +643,15 @@ export default function Doubts() {
                 type="button"
                 onClick={() => setTab(id)}
                 className={cn(
-                  'inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-black transition shrink-0',
+                  'inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-xs font-black transition-all shrink-0',
                   tab === id
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300',
+                    ? 'border-transparent bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/25'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-700 dark:hover:bg-blue-950/30',
                 )}
               >
                 <Icon className="size-4 shrink-0" />
                 <span>{label}</span>
-                <span className="rounded bg-white/20 px-1 py-0.5 text-[10px] font-bold">{count}</span>
+                <span className={cn('rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none', tab === id ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400')}>{count}</span>
               </button>
             ))}
           </div>
@@ -631,22 +659,26 @@ export default function Doubts() {
       )}
 
       {doubts.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <HelpCircle className="mx-auto size-12 text-slate-300" />
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-gradient-to-b from-white to-slate-50 p-12 text-center shadow-sm dark:border-slate-800 dark:from-slate-900 dark:to-slate-900">
+          <span className="mx-auto flex size-20 items-center justify-center rounded-3xl bg-gradient-to-br from-blue-50 to-indigo-100 text-blue-400 dark:from-blue-950/40 dark:to-indigo-950/40">
+            <HelpCircle className="size-10" />
+          </span>
           <h3 className="mt-4 text-base font-black text-slate-900 dark:text-white">No doubts yet</h3>
           <p className="mt-2 text-sm text-slate-500">Tap the + button to ask your first question.</p>
           <button
             type="button"
             onClick={() => setView('ask')}
-            className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-black text-white hover:bg-blue-700"
+            className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-600/25 transition-all hover:brightness-110 active:scale-[0.98]"
           >
             <Plus className="size-5" />
             Ask a Doubt
           </button>
         </div>
       ) : shownDoubts.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <HelpCircle className="mx-auto size-10 text-slate-300" />
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-gradient-to-b from-white to-slate-50 p-12 text-center shadow-sm dark:border-slate-800 dark:from-slate-900 dark:to-slate-900">
+          <span className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 text-slate-400 dark:from-slate-800 dark:to-slate-800">
+            <HelpCircle className="size-8" />
+          </span>
           <h3 className="mt-3 text-sm font-black text-slate-900 dark:text-white">
             {tab === 'pending' ? 'No pending doubts' : 'No answered doubts yet'}
           </h3>
@@ -672,7 +704,7 @@ export default function Doubts() {
       <button
         type="button"
         onClick={() => setView('ask')}
-        className="fixed bottom-6 right-6 z-40 flex size-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-xl shadow-blue-600/30 hover:bg-blue-700 sm:hidden"
+        className="fixed bottom-6 right-6 z-40 flex size-14 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-xl shadow-blue-600/35 ring-4 ring-white/60 transition-transform active:scale-95 dark:ring-slate-900/60 sm:hidden"
         aria-label="Ask a new doubt"
       >
         <Plus className="size-7" />

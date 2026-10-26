@@ -13,6 +13,7 @@ import {
   BookOpen,
   Building2,
   CalendarDays,
+  Clock,
   ClipboardCheck,
   ClipboardList,
   FileText,
@@ -24,8 +25,10 @@ import {
   Megaphone,
   MessageSquare,
   MessageSquareWarning,
+  CalendarClock,
   Settings as SettingsIcon,
   Shield,
+  Siren,
   Sparkles,
   Ticket,
   ToggleRight,
@@ -51,6 +54,7 @@ const superAdminGroups = [
     items: [
       { path: '/school/super-admin/communication', label: 'Communication', icon: Megaphone },
       { path: '/school/super-admin/complaints', label: 'Support Tickets', icon: Ticket },
+      { path: '/school/super-admin/grievances', label: 'Grievances', icon: MessageSquareWarning },
     ],
   },
   {
@@ -72,6 +76,48 @@ const superAdminGroups = [
     ],
   },
 ];
+
+// Maps each admin nav item's path to the grantable module key that gates it —
+// kept in sync by hand with eddva_frontend/src/lib/constants/adminPermissionModules.ts
+// and the backend's admin-permission-modules.ts. Paths not listed here (e.g.
+// Dashboard, Administrators) are never restricted by a scoped admin's permissions.
+const ADMIN_NAV_PATH_TO_MODULE = {
+  '/school/admin/students': 'students',
+  '/school/admin/teachers': 'teachers',
+  '/school/admin/academics': 'academics',
+  '/school/admin/subjects': 'subjects',
+  '/school/admin/competitive-subjects': 'competitive_exam_prep',
+  '/school/admin/syllabus-planner': 'syllabus_planner',
+  '/school/admin/syllabus-tracker': 'syllabus_tracker',
+  '/school/admin/attendance': 'attendance',
+  '/school/admin/improvement': 'improvement_areas',
+  '/school/admin/timetable': 'timetable',
+  '/school/admin/calendar': 'academic_calendar',
+  '/school/admin/notices': 'notices',
+  '/school/admin/communications': 'communications',
+  '/school/admin/erp': 'erp',
+  '/school/admin/users': 'user_management',
+  '/school/admin/document-generator': 'document_generator',
+  '/school/admin/audit-logs': 'audit_logs',
+  '/school/admin/complaints': 'complaints',
+  '/school/admin/screen-time': 'screen_time',
+  '/school/admin/emergency-sos': 'emergency_sos',
+};
+
+function filterByAdminPermissions(groups, isPrimaryAdmin, adminPermissions) {
+  if (isPrimaryAdmin) return groups;
+  const granted = Array.isArray(adminPermissions) ? adminPermissions : [];
+  return groups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => {
+        const moduleKey = ADMIN_NAV_PATH_TO_MODULE[item.path];
+        if (!moduleKey) return true; // ungated items (Dashboard, Administrators) always show
+        return granted.includes(moduleKey);
+      }),
+    }))
+    .filter((group) => group.items.length > 0);
+}
 
 function buildInstituteGroups(mods, aiFeats) {
   const chatEnabled = isModuleEnabled(mods, 'chat');
@@ -96,8 +142,9 @@ function buildInstituteGroups(mods, aiFeats) {
         { path: '/school/admin/academics', label: 'Class & Sections', icon: Building2 },
         { path: '/school/admin/subjects', label: 'Subjects', icon: BookOpen },
         competitiveEnabled && { path: '/school/admin/competitive-subjects', label: 'Competitive Exam Prep', icon: Trophy },
-        syllabusPlannerEnabled && { path: '/school/admin/syllabus-planner', label: 'Syllabus Planner', icon: FileText },
-        syllabusTrackerEnabled && { path: '/school/admin/syllabus-tracker', label: 'Syllabus Tracker', icon: BarChart3 },
+        syllabusPlannerEnabled && { path: '/school/admin/syllabus-planner', label: 'Lesson Plan', icon: FileText },
+        syllabusPlannerEnabled && { path: '/school/admin/lesson-plan-approvals', label: 'Lesson Plan Approvals', icon: ClipboardCheck },
+        syllabusTrackerEnabled && { path: '/school/admin/syllabus-tracker', label: 'Lesson Tracker', icon: BarChart3 },
       ].filter(Boolean),
     },
     {
@@ -122,18 +169,15 @@ function buildInstituteGroups(mods, aiFeats) {
     //   ],
     // },
     {
-      heading: 'ERP',
-      items: [
-        isModuleEnabled(mods, 'erp') && { path: '/school/admin/erp', label: 'ERP Dashboard', icon: BarChart3 },
-      ].filter(Boolean),
-    },
-    {
       heading: 'Administration',
       items: [
         { path: '/school/admin/users', label: 'User Management', icon: Users },
         { path: '/school/admin/document-generator', label: 'Document Generator', icon: FileText },
         { path: '/school/admin/audit-logs', label: 'Audit Logs', icon: FileText },
-        { path: '/school/admin/complaints', label: 'Support Tickets', icon: Shield },
+        { path: '/school/admin/complaints', label: 'Help Desk', icon: Shield },
+        { path: '/school/admin/grievances', label: 'Grievances', icon: MessageSquareWarning },
+        { path: '/school/admin/screen-time', label: 'Screen Time', icon: Clock },
+        { path: '/school/admin/emergency-sos', label: 'Emergency SOS', icon: Siren, danger: true },
       ],
     },
   ].filter(group => group.items && group.items.length > 0);
@@ -157,9 +201,9 @@ function buildTeacherGroups(mods, aiFeats) {
       heading: 'Teaching',
       items: [
         { path: '/school/teacher', label: 'Dashboard', icon: LayoutDashboard, end: true },
-        teachingPlanEnabled && { path: '/school/teacher/teaching-plan', label: 'My Teaching Plan', icon: ClipboardList },
-        liveEnabled && { path: '/school/teacher/classes', label: 'Live & Recorded Video', icon: Video },
+        teachingPlanEnabled && { path: '/school/teacher/teaching-plan', label: 'My Lesson Plan', icon: ClipboardList },
         { path: '/school/teacher/course-content', label: 'Course Content', icon: BookOpen },
+        liveEnabled && { path: '/school/teacher/classes', label: 'Live & Recorded Video', icon: Video },
         competitiveEnabled && { path: '/school/teacher/competitive-prep', label: 'Competitive Exam Prep', icon: Trophy },
         { path: '/school/teacher/students', label: 'Students', icon: GraduationCap },
         { path: '/school/teacher/attendance', label: 'Attendance', icon: ClipboardCheck },
@@ -182,11 +226,13 @@ function buildTeacherGroups(mods, aiFeats) {
       items: [
         { path: '/school/teacher/announcements', label: 'Announcements', icon: Megaphone },
         chatEnabled && { path: '/school/teacher/chat', label: 'Chat', icon: MessageSquare },
+        { path: '/school/teacher/emergency-sos', label: 'Emergency SOS', icon: Siren, danger: true },
       ].filter(Boolean),
     },
     {
       heading: 'Tools',
       items: [
+        { path: '/school/teacher/leave', label: 'My Leave', icon: CalendarClock },
         { path: '/school/teacher/grievances', label: 'Grievances', icon: MessageSquareWarning },
       ],
     },
@@ -215,7 +261,9 @@ export default function Sidebar({ open, onClose }) {
 
   const aiFeats = institute?.aiEnabled ? institute.aiFeatures : { ai_doubt_solver: false };
   const teacherGroups = isTeacher || useTeacherFallback ? buildTeacherGroups(institute?.modulesPermissions, aiFeats) : null;
-  const adminGroups = isInstitute ? buildInstituteGroups(institute?.modulesPermissions, aiFeats) : null;
+  const adminGroups = isInstitute
+    ? filterByAdminPermissions(buildInstituteGroups(institute?.modulesPermissions, aiFeats), user?.isPrimaryAdmin, user?.adminPermissions)
+    : null;
 
   const groups = isSuperAdmin ? superAdminGroups : isInstitute ? adminGroups : teacherGroups;
   // Open by default; the toggle collapses it to the icon rail.
@@ -231,6 +279,7 @@ export default function Sidebar({ open, onClose }) {
   return (
     <UnifiedSidebar
       groups={groups}
+      activeStyle="dark"
       collapsed={collapsed}
       onToggleCollapse={() => setCollapsed((v) => !v)}
       mobileOpen={open}

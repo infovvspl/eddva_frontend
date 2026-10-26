@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  ArrowLeft, GraduationCap, Calendar, CheckCircle2, AlertCircle, FileText, 
+  GraduationCap, Calendar, CheckCircle2, AlertCircle, FileText,
   ShieldCheck, Loader2, Save, Send, UserX, Award, Sparkles, Building, User, Phone, Mail
 } from 'lucide-react';
+import { BackButton } from '@/components/shared/BackButton';
 import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
@@ -155,14 +156,7 @@ export default function StudentExitWorkflowPage() {
     <div className="w-full px-4 py-6 sm:px-6 lg:px-8 space-y-6">
       {/* Header & Navigation */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
-          <button
-            onClick={() => navigate(`/school/admin/students/${id}`)}
-            className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-blue-600 transition-colors mb-2"
-          >
-            <ArrowLeft size={16} />
-            Back to Student Profile
-          </button>
+        <div className="space-y-1 flex-1 min-w-0">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
               Student Exit & TC Issuance Workflow
@@ -173,7 +167,7 @@ export default function StudentExitWorkflowPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <button
             type="button"
             onClick={() => handleSubmit(false)}
@@ -192,6 +186,7 @@ export default function StudentExitWorkflowPage() {
             {submitting ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />}
             Complete Withdrawal & Issue TC
           </button>
+          <BackButton to={`/school/admin/students/${id}`} />
         </div>
       </div>
 

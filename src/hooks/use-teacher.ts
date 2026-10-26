@@ -61,7 +61,7 @@ export function useMyLectures(filters?: teacherApi.GetMyLecturesParams) {
 }
 
 export function useLectureStats(id: string, options?: any) {
-  return useQuery({
+  return useQuery<teacherApi.LectureStats>({
     queryKey: teacherKeys.lectureStats(id),
     queryFn: () => teacherApi.getLectureStats(id),
     enabled: !!id,

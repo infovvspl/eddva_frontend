@@ -1,3 +1,5 @@
+import { UserMenu } from "@/components/ui/user-menu"
+import { UserAvatar } from "@/components/ui/user-avatar"
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import {
   BarChart3,
@@ -684,92 +686,17 @@ export default function Navbar({ onMenuClick }) {
             )}
           </div>          {!isMobile && (
             <div className="relative border-l border-slate-100 dark:border-slate-800 pl-4 ml-1.5" ref={profileRef}>
-              <button
-                onClick={() => setProfileOpen((o) => !o)}
-                className="flex items-center gap-2 outline-none group"
-                aria-label="User Profile menu"
-              >
-                <div className="relative transition-transform duration-200">
-                  {user?.profileImage ? (
-                    <img
-                      src={user.profileImage}
-                      alt={user?.name || 'Student'}
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.parentNode.innerHTML = `<div class="grid size-10 place-items-center rounded-2xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-350">${(user?.name || 'S').charAt(0).toUpperCase()}</div>`;
-                      }}
-                      className="size-10 rounded-2xl border border-slate-200 object-cover"
-                    />
-                  ) : (
-                    <div className="grid size-10 place-items-center rounded-2xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-                      {(user?.name || 'S').charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <div className="absolute -bottom-1 -right-1 size-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-950" />
-                </div>
-              </button>
-
-              {profileOpen && (
-                <div className="absolute right-0 z-50 mt-4 w-64 overflow-hidden rounded-[2rem] border border-slate-100 bg-white py-2 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
-                  {/* Profile Header */}
-                  <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800">
-                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user?.name || 'Student'}</p>
-                    <p className="text-[10px] font-bold text-slate-405 uppercase tracking-widest mt-0.5">Student Portal</p>
-                  </div>
-
-                  {/* My Profile Link */}
-                  <Link
-                    to="/school/student/profile"
-                    onClick={() => setProfileOpen(false)}
-                    className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
-                  >
-                    <div className="size-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
-                      <UserCircle size={16} />
-                    </div>
-                    My Profile
-                  </Link>
-
-                  {/* Settings Link */}
-                  <Link
-                    to="/school/student/settings"
-                    onClick={() => setProfileOpen(false)}
-                    className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
-                  >
-                    <div className="size-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
-                      <Settings size={16} />
-                    </div>
-                    Settings
-                  </Link>
-
-                  {/* Change Password Link */}
-                  <Link
-                    to="/school/student/settings"
-                    onClick={() => setProfileOpen(false)}
-                    className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
-                  >
-                    <div className="size-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
-                      <KeyRound size={16} />
-                    </div>
-                    Change Password
-                  </Link>
-
-                  <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 mx-4" />
-
-                  {/* Logout button */}
-                  <button
-                    onClick={() => {
-                      setProfileOpen(false);
-                      logout();
-                    }}
-                    className="w-full flex items-center gap-3 px-5 py-3 text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-left"
-                  >
-                    <div className="size-8 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 flex items-center justify-center">
-                      <LogOut size={16} />
-                    </div>
-                    Logout
-                  </button>
-                </div>
-              )}
+              <UserMenu
+                src={user?.profileImage}
+                name={user?.name || 'Student'}
+                role="Student Portal"
+                items={[
+                  { label: 'My Profile', icon: UserCircle, to: '/school/student/profile' },
+                  { label: 'Settings', icon: Settings, to: '/school/student/settings' },
+                  { label: 'Change Password', icon: KeyRound, to: '/school/student/settings' },
+                  { label: 'Logout', icon: LogOut, onSelect: logout, destructive: true, separator: true },
+                ]}
+              />
             </div>
           )}
         </div>

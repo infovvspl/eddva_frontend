@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Download, Edit2, Plus, Search, Trash2, Users, Eye, Filter, Calendar, School, CheckCircle2, UserPlus, XCircle, X } from 'lucide-react';
+import { Download, Edit2, Plus, Search, Users, Eye, Calendar, School, CheckCircle2, UserPlus, XCircle, X } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import { getResponseList, notifyDataChanged } from '@/lib/school/apiData';
@@ -10,7 +10,6 @@ import { toast } from 'sonner';
 import { handleApiError } from '@/lib/school/errorHandler';
 import { Skeleton, cn } from '@/components/school/admin/Skeleton';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
-import { useConfirm } from '@/context/ConfirmContext';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { VoiceSearchButton } from "@/components/ui/VoiceSearchButton";
@@ -106,6 +105,22 @@ function parseCsv(text) {
   return records;
 }
 
+// One label per real class+section pairing (e.g. "Class 9 A"), not the separately
+// deduped class/section lists — those lose which section belongs to which class.
+function getClassSectionLabels(teacher) {
+  const assignments = teacher.teacherProfile?.assignments || [];
+  const seen = new Set();
+  const labels = [];
+  assignments.forEach((a) => {
+    if (!a.className && !a.sectionName) return;
+    const key = `${a.classId || ''}-${a.sectionId || ''}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    labels.push([a.className, a.sectionName].filter(Boolean).join(' '));
+  });
+  return labels;
+}
+
 function normalizeSections(value) {
   if (Array.isArray(value)) return value;
   if (typeof value === 'string') {
@@ -134,7 +149,6 @@ export default function Teachers() {
   const [selectedSectionId, setSelectedSectionId] = useState('ALL');
   const [institutes, setInstitutes] = useState([]);
   const [selectedInstituteId, setSelectedInstituteId] = useState('ALL');
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -316,28 +330,6 @@ export default function Teachers() {
     navigate(`/school/admin/teachers/${teacher.id}/edit`);
   };
 
-  const confirm = useConfirm();
-
-  const handleDelete = async (id) => {
-    const ok = await confirm({
-      title: 'Delete Teacher Profile',
-      subtitle: 'Danger Zone',
-      message: 'Are you sure you want to permanently delete this teacher record? This will revoke system credentials and erase all profile history.',
-      confirmLabel: 'Delete Teacher',
-      cancelLabel: 'Keep Teacher'
-    });
-    if (ok) {
-      try {
-        await api.delete(`/teachers/${id}`);
-        setTeachers(teachers.filter(t => t.id !== id));
-        notifyDataChanged('teachers');
-        toast.success('Teacher deleted successfully');
-      } catch (error) {
-        handleApiError(error, 'Failed to delete teacher');
-      }
-    }
-  };
-
   const selectedClass = useMemo(
     () => classes.find((cls) => String(cls.id) === String(selectedClassId)),
     [classes, selectedClassId],
@@ -391,14 +383,12 @@ export default function Teachers() {
 
   const exportCsv = () => {
     const rows = [
-      ['Teacher Name', 'School', 'Email', 'Class', 'Section', 'Status'],
+      ['Teacher Name', 'Email', 'Class/Section', 'Status'],
       ...filtered.map((t) => [
         t.name || '-',
-        t.instituteName || '-',
         t.email || '-',
-        (t.classes || []).map(c => c.name).join(', ') || '-',
-        (t.sections || []).map(s => s.name).join(', ') || '-',
-        t.isActive ? 'Active' : 'Inactive'
+        getClassSectionLabels(t).join(', ') || '-',
+        t.isActive ? 'Active' : 'Inactive',
       ]),
     ];
     downloadCsv('eddva-teachers.csv', rows);
@@ -520,139 +510,110 @@ export default function Teachers() {
       </div>
 
       <div className="mt-5 glass-premium rounded-2xl">
-        <div className="relative z-20 border-b border-[rgba(37,99,235,0.10)] bg-white/60 px-4 py-4 backdrop-blur dark:border-slate-700 dark:bg-slate-900/40 space-y-3">
-          {/* ── Mobile Layout Filters ── */}
-          {/* ── Sleek Compact Toolbar (Mobile & Desktop) ── */}
-          <div className="flex flex-col gap-3">
-            {/* Top Toolbar Row */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-              {/* Search & Filter Toggle Group */}
-              <div className="flex items-center gap-2 flex-1 max-w-lg">
-                <div className="relative flex-1 min-w-[180px]">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
-                  <input
-                    value={searchQuery}
-                    onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-                    placeholder="Search teachers…"
-                    className="w-full rounded-xl border border-slate-200/80 bg-white/90 py-1.5 pl-8 pr-9 text-xs font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
-                  />
-                  <VoiceSearchButton
-                    className="absolute right-1 top-1/2 -translate-y-1/2"
-                    onResult={(transcript) => { setSearchQuery(transcript); setPage(1); }}
-                  />
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setShowMobileFilters((prev) => !prev)}
-                  className={cn(
-                    "inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition shrink-0",
-                    showMobileFilters || (statusFilter !== 'ALL' || selectedClassId !== 'ALL' || selectedSectionId !== 'ALL' || selectedYear !== 'ALL' || (isPlatformSuperAdmin && selectedInstituteId !== 'ALL'))
-                      ? "border-blue-500 bg-blue-50/80 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-700"
-                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-                  )}
-                >
-                  <Filter className="size-3.5" />
-                  <span>Filter</span>
-                  {(statusFilter !== 'ALL' || selectedClassId !== 'ALL' || selectedSectionId !== 'ALL' || selectedYear !== 'ALL' || (isPlatformSuperAdmin && selectedInstituteId !== 'ALL')) && (
-                    <span className="size-2 rounded-full bg-blue-600 dark:bg-blue-400" />
-                  )}
-                </button>
-              </div>
-
-              {/* Right Action Badges & Buttons */}
-              <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
-                <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/60 bg-slate-50/80 px-2.5 py-1.5 text-xs font-bold text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-                  <Users className="size-3.5 text-blue-500" />
-                  <span>{formatNumber(filtered.length)} results</span>
-                </div>
-
-                {(statusFilter !== 'ALL' || selectedClassId !== 'ALL' || selectedSectionId !== 'ALL' || selectedYear !== 'ALL' || (isPlatformSuperAdmin && selectedInstituteId !== 'ALL')) && (
-                  <button
-                    type="button"
-                    onClick={clearTeacherFilters}
-                    className="inline-flex items-center gap-1 rounded-xl border border-rose-200/80 bg-rose-50/50 px-2.5 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-100/60 transition dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-400"
-                  >
-                    <X className="size-3.5" />
-                    <span>Clear</span>
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  onClick={exportCsv}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-                >
-                  <Download className="size-3.5 text-slate-500" />
-                  <span>Export</span>
-                </button>
-              </div>
+        <div className="relative z-20 border-b border-[rgba(37,99,235,0.10)] bg-white/60 px-4 py-4 backdrop-blur dark:border-slate-700 dark:bg-slate-900/40">
+          {/* ── Search + all filters inline, no hide/show toggle ── */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative min-w-[180px] flex-1 max-w-xs">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
+              <input
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+                placeholder="Search teachers…"
+                className="w-full rounded-xl border border-slate-200/80 bg-white/90 py-1.5 pl-8 pr-9 text-xs font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+              />
+              <VoiceSearchButton
+                className="absolute right-1 top-1/2 -translate-y-1/2"
+                onResult={(transcript) => { setSearchQuery(transcript); setPage(1); }}
+              />
             </div>
 
-            {/* Expandable Detailed Filters Drawer */}
-            {showMobileFilters && (
-              <div className="flex flex-wrap items-center gap-2 pt-2.5 border-t border-slate-100 dark:border-slate-800/80">
-                <CustomSelect
-                  value={statusFilter}
-                  onChange={setStatusFilter}
-                  options={[
-                    { value: "ALL", label: "All statuses" },
-                    { value: "ACTIVE", label: "Active" },
-                    { value: "INACTIVE", label: "Inactive" },
-                  ]}
-                  className="w-full sm:w-40"
-                  triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-                />
+            <CustomSelect
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={[
+                { value: "ALL", label: "All statuses" },
+                { value: "ACTIVE", label: "Active" },
+                { value: "INACTIVE", label: "Inactive" },
+              ]}
+              className="w-36 shrink-0"
+              triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+            />
 
-                {isPlatformSuperAdmin && (
-                  <CustomSelect
-                    value={selectedInstituteId}
-                    onChange={handleInstituteFilterChange}
-                    options={[
-                      { value: "ALL", label: "All schools" },
-                      ...institutes.map((institute) => ({ value: institute.id, label: institute.name })),
-                    ]}
-                    className="w-full sm:w-44"
-                    triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-                  />
-                )}
-
-                <CustomSelect
-                  value={selectedClassId}
-                  onChange={handleClassFilterChange}
-                  options={[
-                    { value: "ALL", label: isPlatformSuperAdmin && selectedInstituteId === 'ALL' ? 'Select school first' : 'All classes' },
-                    ...classes.map((cls) => ({ value: cls.id, label: cls.name })),
-                  ]}
-                  disabled={isPlatformSuperAdmin && selectedInstituteId === 'ALL'}
-                  className="w-full sm:w-40"
-                  triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-                />
-
-                <CustomSelect
-                  value={selectedSectionId}
-                  onChange={handleSectionFilterChange}
-                  options={[
-                    { value: "ALL", label: selectedClassId === 'ALL' ? 'Select school first' : 'All sections' },
-                    ...sectionOptions.map((section) => ({ value: section.id, label: `Section ${section.name}` })),
-                  ]}
-                  disabled={selectedClassId === 'ALL' || (isPlatformSuperAdmin && selectedInstituteId === 'ALL')}
-                  className="w-full sm:w-40"
-                  triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-                />
-
-                <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
-                  <Calendar className="size-3.5 text-slate-400" />
-                  <CustomSelect
-                    value={selectedYear}
-                    onChange={setSelectedYear}
-                    options={years.map((y) => ({ value: y, label: y }))}
-                    className="w-24"
-                    triggerClassName="flex size-full items-center justify-between gap-1 px-1.5 py-1 text-xs font-semibold text-slate-700 border-none bg-transparent"
-                  />
-                </div>
-              </div>
+            {isPlatformSuperAdmin && (
+              <CustomSelect
+                value={selectedInstituteId}
+                onChange={handleInstituteFilterChange}
+                options={[
+                  { value: "ALL", label: "All schools" },
+                  ...institutes.map((institute) => ({ value: institute.id, label: institute.name })),
+                ]}
+                className="w-40 shrink-0"
+                triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+              />
             )}
+
+            <CustomSelect
+              value={selectedClassId}
+              onChange={handleClassFilterChange}
+              options={[
+                { value: "ALL", label: isPlatformSuperAdmin && selectedInstituteId === 'ALL' ? 'Select school first' : 'All classes' },
+                ...classes.map((cls) => ({ value: cls.id, label: cls.name })),
+              ]}
+              disabled={isPlatformSuperAdmin && selectedInstituteId === 'ALL'}
+              className="w-36 shrink-0"
+              triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+            />
+
+            <CustomSelect
+              value={selectedSectionId}
+              onChange={handleSectionFilterChange}
+              options={[
+                { value: "ALL", label: selectedClassId === 'ALL' ? 'Select school first' : 'All sections' },
+                ...sectionOptions.map((section) => ({ value: section.id, label: `Section ${section.name}` })),
+              ]}
+              disabled={selectedClassId === 'ALL' || (isPlatformSuperAdmin && selectedInstituteId === 'ALL')}
+              className="w-36 shrink-0"
+              triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+            />
+
+            <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
+              <Calendar className="size-3.5 text-slate-400" />
+              <CustomSelect
+                value={selectedYear}
+                onChange={setSelectedYear}
+                options={years.map((y) => ({ value: y, label: y }))}
+                className="w-24"
+                triggerClassName="flex size-full items-center justify-between gap-1 px-1.5 py-1 text-xs font-semibold text-slate-700 border-none bg-transparent"
+              />
+            </div>
+
+            {(statusFilter !== 'ALL' || selectedClassId !== 'ALL' || selectedSectionId !== 'ALL' || selectedYear !== 'ALL' || (isPlatformSuperAdmin && selectedInstituteId !== 'ALL')) && (
+              <button
+                type="button"
+                onClick={clearTeacherFilters}
+                className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-rose-200/80 bg-rose-50/50 px-2.5 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-100/60 transition dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-400"
+              >
+                <X className="size-3.5" />
+                <span>Clear</span>
+              </button>
+            )}
+
+            {/* Right Action Badges & Buttons */}
+            <div className="ml-auto flex shrink-0 items-center gap-2">
+              <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/60 bg-slate-50/80 px-2.5 py-1.5 text-xs font-bold text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+                <Users className="size-3.5 text-blue-500" />
+                <span>{formatNumber(filtered.length)} results</span>
+              </div>
+
+              <button
+                type="button"
+                onClick={exportCsv}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+              >
+                <Download className="size-3.5 text-slate-500" />
+                <span>Export</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -662,10 +623,8 @@ export default function Teachers() {
             <TableHeader className="bg-slate-50/50 text-slate-500 dark:bg-slate-800/40 dark:text-slate-400">
               <TableRow className="hover:bg-transparent border-b-0">
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider sticky left-0 z-20 bg-slate-50 dark:bg-slate-850 shadow-sm text-slate-500 dark:text-slate-400">Teacher Name</TableHead>
-                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">School</TableHead>
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Email</TableHead>
-                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Class</TableHead>
-                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Section</TableHead>
+                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Class/Section</TableHead>
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</TableHead>
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Actions</TableHead>
               </TableRow>
@@ -673,7 +632,7 @@ export default function Teachers() {
             <TableBody className="divide-y divide-slate-100 dark:divide-slate-800 [&_tr]:border-b-0">
               {filtered.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan="7" className="px-5 py-12 text-center text-slate-400">
+                  <TableCell colSpan="5" className="px-5 py-12 text-center text-slate-400">
                     No teachers found.
                   </TableCell>
                 </TableRow>
@@ -689,31 +648,24 @@ export default function Teachers() {
                           </AvatarFallback>
                         </Avatar>
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-bold tracking-tight text-slate-900 dark:text-white">{teacher.name}</p>
-                          <p className="truncate text-[11px] font-bold text-slate-400 dark:text-slate-500">{teacher.teacherProfile?.designation || '—'}</p>
+                          <Link to={`/school/admin/teachers/${teacher.id}`} className="truncate text-sm font-bold tracking-tight text-slate-900 hover:text-blue-600 hover:underline dark:text-white dark:hover:text-blue-400 block">
+                            {teacher.name}
+                          </Link>
+                          {teacher.teacherProfile?.designation && (
+                            <p className="truncate text-[11px] font-bold text-slate-400 dark:text-slate-500">{teacher.teacherProfile.designation}</p>
+                          )}
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="p-4 px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{teacher.instituteName || '-'}</TableCell>
                     <TableCell className="p-4 px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{teacher.email || '-'}</TableCell>
                     <TableCell className="p-4 px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">
                       <div className="flex flex-wrap gap-1">
-                        {(teacher.classes || []).map(c => (
-                          <Badge key={c.id} variant="secondary" className="rounded-full px-2 bg-blue-50 dark:bg-blue-950/30 text-xs font-bold text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30">
-                            {c.name}
+                        {getClassSectionLabels(teacher).map((label) => (
+                          <Badge key={label} variant="secondary" className="rounded-full px-2 bg-blue-50 dark:bg-blue-950/30 text-xs font-bold text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30">
+                            {label}
                           </Badge>
                         ))}
-                        {(!teacher.classes || teacher.classes.length === 0) && <span className="text-slate-400">—</span>}
-                      </div>
-                    </TableCell>
-                    <TableCell className="p-4 px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">
-                      <div className="flex flex-wrap gap-1">
-                        {(teacher.sections || []).map(s => (
-                          <Badge key={s.id} variant="secondary" className="rounded-full px-2 bg-indigo-50 dark:bg-indigo-950/30 text-xs font-bold text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30">
-                            {s.name}
-                          </Badge>
-                        ))}
-                        {(!teacher.sections || teacher.sections.length === 0) && <span className="text-slate-400">—</span>}
+                        {getClassSectionLabels(teacher).length === 0 && <span className="text-slate-400">—</span>}
                       </div>
                     </TableCell>
                     <TableCell className="p-4 px-5 py-4">
@@ -767,14 +719,6 @@ export default function Teachers() {
                           <Edit2 className="size-4" />
                           <span className="absolute -top-10 left-1/2 -translate-x-1/2 scale-0 rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">Edit</span>
                         </button>
-                        <button
-                          onClick={() => handleDelete(teacher.id)}
-                          className="group relative flex size-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 transition-all hover:border-red-400 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
-                          aria-label="Delete teacher"
-                        >
-                          <Trash2 className="size-4" />
-                          <span className="absolute -top-10 left-1/2 -translate-x-1/2 scale-0 rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">Delete</span>
-                        </button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -801,40 +745,29 @@ export default function Teachers() {
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold tracking-tight text-slate-900 dark:text-white">{teacher.name}</p>
-                    <p className="truncate text-[11px] font-bold text-slate-400 dark:text-slate-500">{teacher.teacherProfile?.designation || '—'}</p>
+                    <Link to={`/school/admin/teachers/${teacher.id}`} className="truncate text-sm font-bold tracking-tight text-slate-900 hover:text-blue-600 hover:underline dark:text-white dark:hover:text-blue-400 block">
+                      {teacher.name}
+                    </Link>
+                    {teacher.teacherProfile?.designation && (
+                      <p className="truncate text-[11px] font-bold text-slate-400 dark:text-slate-500">{teacher.teacherProfile.designation}</p>
+                    )}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-xs text-slate-600 dark:text-slate-300 pt-1">
-                  <div>
-                    <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-black">School</span>
-                    <span className="font-bold">{teacher.instituteName || '-'}</span>
-                  </div>
                   <div className="min-w-0">
                     <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-black">Email</span>
                     <span className="font-bold truncate block">{teacher.email || '-'}</span>
                   </div>
                   <div>
-                    <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-black">Classes</span>
+                    <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-black">Class/Section</span>
                     <div className="flex flex-wrap gap-1 mt-0.5">
-                      {(teacher.classes || []).map(c => (
-                        <Badge key={c.id} variant="secondary" className="rounded-full px-2 bg-blue-50 dark:bg-blue-950/30 text-[10px] font-bold text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30">
-                          {c.name}
+                      {getClassSectionLabels(teacher).map((label) => (
+                        <Badge key={label} variant="secondary" className="rounded-full px-2 bg-blue-50 dark:bg-blue-950/30 text-[10px] font-bold text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30">
+                          {label}
                         </Badge>
                       ))}
-                      {(!teacher.classes || teacher.classes.length === 0) && <span className="text-slate-400">—</span>}
-                    </div>
-                  </div>
-                  <div>
-                    <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-black">Sections</span>
-                    <div className="flex flex-wrap gap-1 mt-0.5">
-                      {(teacher.sections || []).map(s => (
-                        <Badge key={s.id} variant="secondary" className="rounded-full px-2 bg-indigo-50 dark:bg-indigo-950/30 text-[10px] font-bold text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30">
-                          {s.name}
-                        </Badge>
-                      ))}
-                      {(!teacher.sections || teacher.sections.length === 0) && <span className="text-slate-400">—</span>}
+                      {getClassSectionLabels(teacher).length === 0 && <span className="text-slate-400">—</span>}
                     </div>
                   </div>
                   <div>
@@ -888,13 +821,6 @@ export default function Teachers() {
                   >
                     <Edit2 className="size-3.5" />
                     <span>Edit</span>
-                  </button>
-                  <button
-                    onClick={() => handleDelete(teacher.id)}
-                    className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-100 bg-white px-3 text-slate-500 hover:border-red-400 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 text-xs font-bold"
-                  >
-                    <Trash2 className="size-3.5" />
-                    <span>Delete</span>
                   </button>
                 </div>
               </div>

@@ -61,6 +61,24 @@ const EMOJIS = [
   '🔥', '✨', '🎉', '⭐', '🌈', '☀️', '🌸', '💡', '💬', '🔔'
 ];
 
+// A stable, friendly gradient per person so avatars are easy to tell apart.
+const AVATAR_GRADIENTS = [
+  'from-blue-500 to-indigo-600',
+  'from-emerald-500 to-teal-600',
+  'from-violet-500 to-purple-600',
+  'from-rose-500 to-pink-600',
+  'from-amber-500 to-orange-600',
+  'from-cyan-500 to-sky-600',
+  'from-fuchsia-500 to-pink-600',
+  'from-lime-500 to-green-600',
+];
+const avatarGradient = (name = '') => {
+  let hash = 0;
+  const text = String(name);
+  for (let i = 0; i < text.length; i += 1) hash = (hash * 31 + text.charCodeAt(i)) >>> 0;
+  return AVATAR_GRADIENTS[hash % AVATAR_GRADIENTS.length];
+};
+
 export default function Communications({ heightClass = 'h-full', institutes = [], onSelectedUserChange }) {
   const confirm = useConfirm();
   const { user, institute } = useAuth();
@@ -250,7 +268,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
     navigate(`${basePath}?tab=${tab}&ticketId=${encodeURIComponent(normalized)}&search=${encodeURIComponent(normalized)}`);
   };
 
-  const renderTicketLinkedText = (text) => {
+  const renderTicketLinkedText = (text, mine = false) => {
     const value = String(text || '');
     const parts = value.split(/((?:PLT|USR)-[A-Z0-9]{8})/gi);
     return parts.map((part, index) => {
@@ -264,7 +282,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
               event.stopPropagation();
               openTicketFromMessage(ticketId);
             }}
-            className="font-black text-blue-700 underline decoration-blue-300 underline-offset-2 hover:text-blue-900"
+            className={mine ? 'font-black text-white underline decoration-white/60 underline-offset-2 hover:text-blue-100' : 'font-black text-blue-700 underline decoration-blue-300 underline-offset-2 hover:text-blue-900'}
           >
             {ticketId}
           </button>
@@ -754,6 +772,16 @@ export default function Communications({ heightClass = 'h-full', institutes = []
       }
       groups.push({ type: 'message', data: msg });
     });
+
+    const sameRun = (a, b) =>
+      a && b && a.type === 'message' && b.type === 'message' &&
+      a.data.sender_id === b.data.sender_id &&
+      Math.abs(new Date(b.data.created_at || 0) - new Date(a.data.created_at || 0)) < 5 * 60 * 1000;
+    groups.forEach((item, i) => {
+      if (item.type !== 'message') return;
+      item.joinPrev = sameRun(groups[i - 1], item);
+      item.joinNext = sameRun(item, groups[i + 1]);
+    });
     return groups;
   }, [filteredMessages]);
 
@@ -795,18 +823,18 @@ export default function Communications({ heightClass = 'h-full', institutes = []
   return (
     <div className={cn("flex min-h-0 w-full flex-1 h-full flex-col overflow-hidden p-3 sm:p-4 lg:p-5 gap-3", heightClass)}>
       {!isSuperAdmin && (
-        <div className={cn("shrink-0 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3", selectedUser && "hidden")}>
+        <div className={cn("shrink-0 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-slate-200 bg-slate-200 shadow-sm sm:grid-cols-4", selectedUser && "hidden")}>
           {[
-            { label: 'Active Chats', val: stats.active, sub: 'This month' },
-            { label: 'Unread Badges', val: stats.unread, sub: 'Needs reply', alert: stats.unread > 0 },
-            { label: 'Online Teachers', val: stats.onlineTeachers, sub: 'Live on system' },
-            { label: 'Online Parents', val: stats.onlineParents, sub: 'Connected now' },
+            { label: 'Active Chats', val: stats.active, sub: 'This month', num: 'text-blue-600' },
+            { label: 'Unread Badges', val: stats.unread, sub: 'Needs reply', alert: stats.unread > 0, num: 'text-rose-600' },
+            { label: 'Online Teachers', val: stats.onlineTeachers, sub: 'Live on system', num: 'text-emerald-600' },
+            { label: 'Online Parents', val: stats.onlineParents, sub: 'Connected now', num: 'text-violet-600' },
           ].map((item, idx) => (
-            <div key={idx} className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{item.label}</p>
-              <div className="mt-1.5 flex items-baseline gap-2">
-                <span className={`text-xl font-black ${item.alert ? 'text-red-500' : 'text-slate-800'}`}>{item.val}</span>
-                <span className="text-[9px] font-bold leading-none text-slate-400">{item.sub}</span>
+            <div key={idx} className="bg-white px-5 py-3.5">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{item.label}</p>
+              <div className="mt-1 flex items-baseline gap-2">
+                <span className={`text-3xl font-black leading-none ${item.alert ? 'text-rose-600' : item.num}`}>{item.val}</span>
+                <span className="truncate text-xs font-semibold text-slate-400">{item.sub}</span>
               </div>
             </div>
           ))}
@@ -817,16 +845,16 @@ export default function Communications({ heightClass = 'h-full', institutes = []
       {PANELS.length > 1 && (
         <div className={cn(
           isSuperAdmin ? '' : 'mt-3',
-          "flex w-fit max-w-full shrink-0 gap-1.5 rounded-2xl border border-slate-100/60 bg-slate-50/50 p-1 mb-2",
+          "flex w-full max-w-full shrink-0 flex-wrap gap-2 mb-2",
           selectedUser && "hidden md:flex"
         )}>
           {PANELS.map((panel) => (
             <button
               key={panel.key}
               onClick={() => setActivePanel(panel.key)}
-              className={`flex-1 rounded-xl px-4 py-2 text-xs font-bold transition-all ${activePanel === panel.key
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+              className={`rounded-full px-4 py-2 text-xs font-bold transition-all ${activePanel === panel.key
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/25'
+                : 'border border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-600'
                 }`}
             >
               {panel.label}
@@ -836,13 +864,13 @@ export default function Communications({ heightClass = 'h-full', institutes = []
       )}
 
       {/* 3-Column Redesigned Layout */}
-      <div className="mt-2 mb-2 flex-1 min-h-0 overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-xl flex flex-col md:flex-row relative">
+      <div className="mt-2 mb-2 flex-1 min-h-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col md:flex-row relative">
 
         {/* Column 1: Contacts List — single-pane takeover below xl (hidden once a
             chat is open, like a mobile messenger); a fixed-width sidebar at xl+
             so it stays visible alongside the chat panel, matching Column 3. */}
-        <div className={`w-full border-r border-slate-100 flex flex-col shrink-0 min-h-0 bg-slate-50/10 transition-all ${selectedUser ? 'hidden xl:flex' : 'flex-1 flex'} xl:w-80 xl:flex-none`}>
-          <div className="p-4 bg-white border-b border-slate-100/60 shrink-0">
+        <div className={`w-full border-r border-slate-200 flex flex-col shrink-0 min-h-0 bg-slate-50 transition-all ${selectedUser ? 'hidden xl:flex' : 'flex-1 flex'} xl:w-80 xl:flex-none`}>
+          <div className="p-3 bg-slate-50 border-b border-slate-200 shrink-0">
             <div className="flex flex-col sm:flex-row items-center gap-2.5">
               {isSuperAdmin && institutes.length > 0 && (
                 <div className="w-full sm:w-48 sm:shrink-0">
@@ -858,7 +886,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                 </div>
               )}
               <div className="relative flex-1 w-full">
-                <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
+                <Search className="pointer-events-none absolute left-4 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -867,13 +895,13 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                         activePanel === 'INSTITUTE_ADMIN' ? 'institute admins' :
                           'super admin'
                     }...`}
-                  className="w-full rounded-2xl border border-slate-100 bg-slate-50/50 py-2 pl-9 pr-3 text-xs font-semibold outline-none focus:border-blue-400 focus:bg-white transition"
+                  className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-xs font-semibold text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                 />
               </div>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+          <div className="flex-1 overflow-y-auto p-2.5">
             {loadingUsers ? (
               <div className="space-y-2 p-2">
                 {Array.from({ length: 4 }).map((_, i) => (
@@ -907,38 +935,36 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                     <button
                       key={item.id}
                       onClick={() => openConversation(item)}
-                      className={`w-full flex items-center gap-3 rounded-2xl p-3 text-left transition ${active
-                        ? 'bg-blue-50/80 border border-blue-100/50 shadow-xs'
-                        : 'hover:bg-slate-50/60 border border-transparent'
+                      className={`group mb-1 flex w-full items-center gap-3.5 rounded-2xl px-3.5 py-3 text-left transition-all duration-200 ${active
+                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/25'
+                        : 'hover:bg-white hover:shadow-md'
                         }`}
                     >
-                      <div className="relative size-10 shrink-0">
-                        <Avatar className="size-10 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-sm">
-                          <AvatarFallback className="rounded-2xl bg-transparent text-xs font-black text-white">
+                      <div className="relative size-12 shrink-0">
+                        <Avatar className={`size-12 rounded-full bg-gradient-to-br shadow-sm ring-2 ${active ? 'ring-white/40' : 'ring-white'} ${avatarGradient(item.name)}`}>
+                          <AvatarFallback className="rounded-full bg-transparent text-base font-black text-white">
                             {(item.name || 'U').slice(0, 1).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         {item.online && (
-                          <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border border-white bg-emerald-500" />
+                          <span className={`absolute bottom-0 right-0 size-3.5 rounded-full border-2 bg-emerald-500 ${active ? 'border-indigo-600' : 'border-slate-50 group-hover:border-white'}`} />
                         )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-slate-800 truncate">{item.name}</span>
-                          <span className="text-[9px] font-semibold text-slate-400 shrink-0">
-                            {item.created_at ? new Date(item.created_at).toLocaleDateString() : ''}
+                      <div className="min-w-0 flex-1">
+                        <p className={`truncate text-sm ${active ? 'font-bold text-white' : unread > 0 ? 'font-black text-slate-900' : 'font-bold text-slate-800'}`}>{item.name}</p>
+                        <p className={`mt-0.5 truncate text-xs ${active ? 'font-medium text-blue-100' : unread > 0 ? 'font-bold text-slate-700' : 'font-medium text-slate-500'}`}>
+                          {item.last_message || (activePanel === 'INSTITUTE_ADMIN' && item.institute_name ? item.institute_name : 'No messages yet')}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 flex-col items-end gap-1.5 self-stretch justify-center">
+                        <span className={`text-[10px] ${active ? 'font-semibold text-blue-100' : unread > 0 ? 'font-bold text-blue-600' : 'font-semibold text-slate-400'}`}>
+                          {item.created_at ? new Date(item.created_at).toLocaleDateString() : ''}
+                        </span>
+                        {unread > 0 && (
+                          <span className={`flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-black ${active ? 'bg-white text-blue-600' : 'bg-blue-600 text-white shadow-sm shadow-blue-600/30'}`}>
+                            {unread}
                           </span>
-                        </div>
-                        <div className="flex items-center justify-between mt-0.5">
-                          <p className="text-[11px] font-semibold text-slate-500 truncate">
-                            {item.last_message || (activePanel === 'INSTITUTE_ADMIN' && item.institute_name ? item.institute_name : 'No messages yet')}
-                          </p>
-                          {unread > 0 && (
-                            <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-600 px-1 text-[9px] font-black text-white shrink-0">
-                              {unread}
-                            </span>
-                          )}
-                        </div>
+                        )}
                       </div>
                     </button>
                   );
@@ -953,41 +979,43 @@ export default function Communications({ heightClass = 'h-full', institutes = []
             the contacts list, same breakpoint convention as Column 3. */}
         <div className={`flex-1 flex flex-col min-w-0 min-h-0 bg-white ${!selectedUser ? 'hidden xl:flex' : 'fixed inset-0 z-[100] size-full bg-white flex flex-col xl:static xl:inset-auto xl:z-auto xl:size-auto'}`}>
           {!selectedUser ? (
-            <div className="flex h-full flex-col items-center justify-center text-center p-6 opacity-60 bg-slate-50/10">
-              <MessageSquare className="size-10 text-slate-350 mb-2" />
-              <h3 className="text-sm font-bold text-slate-700">Select a conversation</h3>
-              <p className="text-xs text-slate-400">Choose a contact to start messaging</p>
+            <div className="flex h-full flex-col items-center justify-center bg-gradient-to-b from-slate-50 to-blue-50/40 p-6 text-center">
+              <span className="mb-4 flex size-20 items-center justify-center rounded-3xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-xl shadow-blue-500/30">
+                <MessageSquare className="size-9" />
+              </span>
+              <h3 className="text-base font-black text-slate-800">Select a conversation</h3>
+              <p className="mt-1 text-xs font-medium text-slate-500">Choose a contact to start messaging</p>
             </div>
           ) : (
             <>
               {/* Conversation Header */}
-              <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white shrink-0 shadow-xs z-10">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200/70 bg-white/80 backdrop-blur-xl shrink-0 shadow-[0_8px_24px_-16px_rgba(30,41,59,0.25)] z-10">
                 <div className="flex items-center gap-3 min-w-0">
                   <button
                     type="button"
-                    className="p-2 -ml-1 rounded-xl bg-slate-100/80 hover:bg-slate-200 text-slate-700 transition shrink-0 cursor-pointer"
+                    className="p-2 -ml-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition shrink-0 cursor-pointer"
                     onClick={handleBack}
                     aria-label="Back to conversations"
                     title="Back to conversations list"
                   >
                     <ArrowLeft size={18} />
                   </button>
-                  <div className="relative size-10 shrink-0">
-                    <Avatar className="size-10 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600">
-                      <AvatarFallback className="rounded-2xl bg-transparent text-xs font-black text-white">
+                  <div className="relative size-11 shrink-0">
+                    <Avatar className={`size-11 rounded-full bg-gradient-to-br shadow-md ring-2 ring-white ${avatarGradient(selectedUser.name)}`}>
+                      <AvatarFallback className="rounded-full bg-transparent text-sm font-black text-white">
                         {(selectedUser.name || 'U').slice(0, 1).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     {selectedUser.online && (
-                      <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border border-white bg-emerald-500" />
+                      <span className="absolute bottom-0 right-0 size-3 rounded-full border-2 border-white bg-emerald-500" />
                     )}
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-800 truncate">{selectedUser.name}</span>
+                      <span className="text-sm font-black text-slate-900 truncate">{selectedUser.name}</span>
                       {selectedUser.online && (
-                        <Badge variant="secondary" className="items-center gap-0.5 rounded-full border-transparent bg-emerald-50 px-1.5 text-[9px] font-bold text-emerald-600 hover:bg-emerald-50">
-                          <span className="size-1 rounded-full bg-emerald-500" />
+                        <Badge variant="secondary" className="items-center gap-1 rounded-full border-transparent bg-emerald-50 px-2 text-[10px] font-bold text-emerald-600 hover:bg-emerald-50">
+                          <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
                           Online
                         </Badge>
                       )}
@@ -1007,7 +1035,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                         return !current;
                       });
                     }}
-                    className={`p-2 rounded-xl transition ${showChatSearch ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
+                    className={`p-2.5 rounded-full transition ${showChatSearch ? 'bg-blue-100 text-blue-600' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}
                     aria-label="Search in chat"
                     title="Search in chat"
                   >
@@ -1015,7 +1043,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                   </button>
                   <button
                     onClick={() => setShowDetails(!showDetails)}
-                    className={`p-2 rounded-xl transition ${showDetails ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:bg-slate-50'}`}
+                    className={`p-2.5 rounded-full transition ${showDetails ? 'bg-blue-100 text-blue-600' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}
                   >
                     <Info size={16} />
                   </button>
@@ -1023,15 +1051,15 @@ export default function Communications({ heightClass = 'h-full', institutes = []
               </div>
 
               {showChatSearch && (
-                <div className="flex shrink-0 items-center gap-2 border-b border-slate-100 bg-white px-4 py-2">
+                <div className="flex shrink-0 items-center gap-2 border-b border-slate-200/80 bg-white px-4 py-2.5">
                   <div className="relative flex-1">
-                    <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
+                    <Search className="pointer-events-none absolute left-3.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
                     <input
                       autoFocus
                       value={inChatSearch}
                       onChange={(e) => setInChatSearch(e.target.value)}
                       placeholder="Search messages..."
-                      className="w-full rounded-xl border border-slate-100 bg-slate-50/50 py-2 pl-9 pr-3 text-xs font-semibold outline-none transition focus:border-blue-400 focus:bg-white"
+                      className="w-full rounded-full border border-transparent bg-slate-100 py-2 pl-10 pr-3 text-xs font-medium outline-none transition focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-100"
                     />
                   </div>
                   {inChatSearch.trim() && (
@@ -1045,7 +1073,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                       setInChatSearch('');
                       setShowChatSearch(false);
                     }}
-                    className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                    className="rounded-full p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
                     aria-label="Close search"
                   >
                     <X size={14} />
@@ -1054,7 +1082,10 @@ export default function Communications({ heightClass = 'h-full', institutes = []
               )}
 
               {/* Messages scrollarea */}
-              <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-slate-50/20 p-4 space-y-4">
+              <div
+                className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-slate-50 px-4 py-5 sm:px-8 space-y-4"
+                style={{ backgroundImage: 'radial-gradient(rgba(100,116,139,0.09) 1px, transparent 1px)', backgroundSize: '24px 24px' }}
+              >
                 {loading ? (
                   <div className="space-y-3">
                     <div className="h-10 w-1/2 animate-pulse rounded-2xl bg-slate-100" />
@@ -1066,43 +1097,50 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                     <p className="text-xs font-bold text-slate-500">No messages yet. Send a message to start.</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div>
                     {groupedMessages.map((item, idx) => {
                       if (item.type === 'separator') {
                         return (
-                          <div key={`sep-${idx}`} className="flex justify-center my-3">
-                            <Badge variant="secondary" className="rounded-full border-transparent bg-slate-100/80 px-3 text-[9px] font-bold uppercase text-slate-400 tracking-wider hover:bg-slate-100/80">
+                          <div key={`sep-${idx}`} className="flex items-center gap-3 py-4">
+                            <span className="h-px flex-1 bg-gradient-to-r from-transparent to-slate-300/80" />
+                            <Badge variant="secondary" className="rounded-full border border-slate-200/80 bg-white px-3.5 py-0.5 text-[10px] font-bold uppercase text-slate-500 tracking-[0.18em] shadow-sm hover:bg-white">
                               {item.label}
                             </Badge>
+                            <span className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-300/80" />
                           </div>
                         );
                       }
 
                       const msg = item.data;
                       const mine = isMe(msg.sender_id);
+                      // Bubbles in a run stay tight; the sender-side corners flatten so they read as one block.
+                      const { joinPrev } = item;
+                      const bubbleShape = mine
+                        ? (joinPrev ? 'rounded-[20px] rounded-tr-[5px] rounded-br-[5px]' : 'rounded-[20px] rounded-br-[5px]')
+                        : (joinPrev ? 'rounded-[20px] rounded-tl-[5px] rounded-bl-[5px]' : 'rounded-[20px] rounded-bl-[5px]');
 
                       return (
                         <div
                           key={msg.id}
                           id={`msg-${msg.id}`}
-                          className={`flex ${mine ? 'justify-end' : 'justify-start'} transition-all duration-500 rounded-2xl ${highlightedMessageId === msg.id ? 'bg-amber-100 p-2 shadow-sm' : ''
+                          className={`animate-fade-in-fast flex ${mine ? 'justify-end' : 'justify-start'} ${joinPrev ? 'mt-0.5' : 'mt-3.5'} transition-all duration-500 rounded-2xl ${highlightedMessageId === msg.id ? 'bg-amber-100 p-2 shadow-sm' : ''
                             }`}
                           onContextMenu={(e) => handleContextMenu(e, msg)}
                         >
                           <div
-                            className={`group relative max-w-[70%] rounded-2xl px-4 py-2.5 text-xs font-semibold shadow-xs transition duration-200 ${mine
-                              ? 'bg-blue-50 text-slate-800 border border-blue-100/50 rounded-tr-none'
-                              : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
+                            className={`group relative max-w-[85%] sm:max-w-[68%] min-w-[4.5rem] px-3.5 pb-1.5 pt-2 text-[14px] font-medium leading-[1.45] transition duration-200 ${bubbleShape} ${mine
+                              ? 'bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/25 ring-1 ring-inset ring-white/15'
+                              : 'bg-white text-slate-800 ring-1 ring-slate-200/80 shadow-sm'
                               }`}
                           >
                             {msg.is_forwarded && (
-                              <p className={`mb-1 flex items-center gap-1 text-[9px] font-bold uppercase ${mine ? 'text-blue-600' : 'text-slate-400'}`}>
+                              <p className={`mb-1 flex items-center gap-1 text-[10px] font-bold uppercase ${mine ? 'text-white/80' : 'text-slate-400'}`}>
                                 <Forward size={10} /> Forwarded
                               </p>
                             )}
 
                             {msg.parent_message_id && (
-                              <div className={`mb-2 border-l-2 pl-2 text-[10px] opacity-80 ${mine ? 'border-blue-300 text-blue-600' : 'border-slate-300 text-slate-500'}`}>
+                              <div className={`mb-2 rounded-lg border-l-4 px-2 py-1 text-[11px] ${mine ? 'border-white/70 bg-white/15 text-white/90' : 'border-blue-400 bg-slate-50 text-slate-500'}`}>
                                 Reply to message
                               </div>
                             )}
@@ -1148,24 +1186,24 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                             {(msg.content ?? msg.text)?.startsWith('[MEETING_CARD]') ? (
                               renderMeetingCard(msg.content ?? msg.text)
                             ) : (
-                              <p className="whitespace-pre-wrap break-words">{renderTicketLinkedText(msg.content ?? msg.text)}</p>
+                              <p className="whitespace-pre-wrap break-words">{renderTicketLinkedText(msg.content ?? msg.text, mine)}</p>
                             )}
 
-                            <div className="mt-1 flex items-center justify-end gap-1 text-[9px] opacity-85">
-                              <span className={mine ? 'text-blue-500' : 'text-slate-400'}>
+                            <div className="-mb-0.5 mt-0.5 flex items-center justify-end gap-1 text-[10px] leading-none">
+                              <span className={mine ? 'text-white/75' : 'text-slate-400'}>
                                 {new Date(msg.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </span>
                               {msg.is_edited && (
-                                <span className={mine ? 'text-blue-500' : 'text-slate-400'}>• Edited</span>
+                                <span className={mine ? 'text-white/75' : 'text-slate-400'}>• Edited</span>
                               )}
                               {mine && (
                                 <span>
                                   {msg.is_read ? (
-                                    <CheckCheck className="size-3.5 text-blue-600 inline" />
+                                    <CheckCheck className="size-3.5 text-sky-200 inline" />
                                   ) : msg.is_delivered ? (
-                                    <CheckCheck className="size-3.5 text-slate-400 inline" />
+                                    <CheckCheck className="size-3.5 text-white/60 inline" />
                                   ) : (
-                                    <Check className="size-3.5 text-slate-400 inline" />
+                                    <Check className="size-3.5 text-white/60 inline" />
                                   )}
                                 </span>
                               )}
@@ -1177,8 +1215,10 @@ export default function Communications({ heightClass = 'h-full', institutes = []
 
                     {peerTyping && (
                       <div className="flex justify-start">
-                        <div className="rounded-2xl border border-slate-100 bg-white px-4 py-2 text-xs font-semibold text-slate-400 shadow-xs animate-pulse">
-                          typing...
+                        <div className="flex items-center gap-1 rounded-2xl rounded-bl-md border border-slate-200/80 bg-white px-4 py-3 shadow-sm" aria-label="typing">
+                          <span className="size-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: '0ms' }} />
+                          <span className="size-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: '150ms' }} />
+                          <span className="size-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: '300ms' }} />
                         </div>
                       </div>
                     )}
@@ -1188,7 +1228,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
               </div>
 
               {replyingTo && (
-                <div className="flex items-center justify-between bg-slate-50 px-4 py-2 border-t border-blue-50 text-xs">
+                <div className="flex items-center justify-between bg-blue-50/70 px-4 py-2.5 border-t border-blue-100 text-xs">
                   <div className="flex items-center gap-2 text-slate-600">
                     <Reply className="size-3.5" />
                     <span>Replying to: <strong>{replyingTo.content || replyingTo.text}</strong></span>
@@ -1200,7 +1240,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
               )}
 
               {/* Input Area */}
-              <div className="relative border-t border-slate-100 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-3 sm:px-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:pt-4 bg-white shrink-0 z-10">
+              <div className="relative border-t border-slate-200/70 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-3 sm:px-6 sm:pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:pt-3.5 bg-white/90 backdrop-blur-xl shrink-0 z-10 shadow-[0_-10px_30px_-20px_rgba(30,41,59,0.25)]">
                 {showEmojiPicker && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setShowEmojiPicker(false)} />
@@ -1247,9 +1287,9 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 w-full min-w-0">
-                    <div className="flex-1 min-w-0 flex items-center rounded-full border border-slate-200 bg-slate-50/50 px-3 sm:px-4 py-1.5 transition-all focus-within:border-blue-300 focus-within:bg-white">
-                      <button className="text-slate-400 hover:text-slate-600 pr-2 shrink-0" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
-                        <Smile size={18} />
+                    <div className="flex-1 min-w-0 flex items-center rounded-full border border-slate-200/80 bg-slate-50 px-2.5 sm:px-3 py-1.5 shadow-inner transition-all focus-within:border-blue-300 focus-within:bg-white focus-within:shadow-none focus-within:ring-4 focus-within:ring-blue-100">
+                      <button className="mr-1 flex size-8 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-blue-50 hover:text-blue-600" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+                        <Smile size={19} />
                       </button>
                       <input
                         value={messageText}
@@ -1264,10 +1304,10 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                           }
                         }}
                         placeholder="Type a message..."
-                        className="flex-1 min-w-0 w-full border-none bg-transparent py-1 text-xs font-semibold outline-none text-slate-800 placeholder-slate-400"
+                        className="flex-1 min-w-0 w-full border-none bg-transparent py-1 text-[13px] font-medium outline-none text-slate-800 placeholder-slate-400"
                       />
-                      <label className="text-slate-400 hover:text-slate-600 pl-2 cursor-pointer transition shrink-0">
-                        <Paperclip className="size-5" />
+                      <label className="ml-1 flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-slate-400 transition hover:bg-blue-50 hover:text-blue-600">
+                        <Paperclip className="size-[19px]" />
                         <input
                           type="file"
                           className="hidden"
@@ -1278,7 +1318,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                     <button
                       onClick={() => void sendMessage()}
                       disabled={!messageText.trim() || uploading}
-                      className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20 hover:brightness-110 disabled:opacity-40 transition"
+                      className="flex size-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/30 transition hover:scale-105 hover:brightness-110 active:scale-95 disabled:opacity-40 disabled:hover:scale-100"
                     >
                       <Send className="size-4.5" />
                     </button>
@@ -1298,7 +1338,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
               onClick={() => setShowDetails(false)}
             />
 
-            <aside className="fixed inset-0 z-[150] w-full max-w-full bg-white flex flex-col xl:relative xl:inset-auto xl:z-auto xl:shadow-none xl:w-[280px] xl:max-w-none xl:border-l xl:border-slate-100 xl:bg-slate-50/10 shrink-0">
+            <aside className="fixed inset-0 z-[150] w-full max-w-full bg-white flex flex-col xl:relative xl:inset-auto xl:z-auto xl:shadow-none xl:w-[300px] xl:max-w-none xl:border-l xl:border-slate-200/80 xl:bg-slate-50/60 shrink-0">
               {/* Header with Back & Close Buttons for Mobile (Full Screen Takeover) */}
               <div className="flex xl:hidden items-center justify-between p-4 border-b border-slate-100 bg-white shrink-0">
                 <div className="flex items-center gap-3 min-w-0">
@@ -1325,29 +1365,28 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                 </button>
               </div>
 
-              <div className="p-6 text-center border-b border-slate-100 bg-white shrink-0">
-                <Avatar className="mx-auto size-20 xl:size-16 bg-gradient-to-br from-blue-600 to-indigo-600 shadow-md">
-                  <AvatarFallback className="bg-transparent text-xl xl:text-base font-black text-white">
+              <div className="p-6 text-center border-b border-slate-100 bg-gradient-to-b from-blue-50/70 to-white shrink-0">
+                <Avatar className={`mx-auto size-20 bg-gradient-to-br shadow-lg ring-4 ring-white ${avatarGradient(selectedUser.name)}`}>
+                  <AvatarFallback className="bg-transparent text-2xl font-black text-white">
                     {(selectedUser.name || 'U').slice(0, 1).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <h4 className="mt-3 text-sm xl:text-xs font-extrabold text-slate-900">{selectedUser.name}</h4>
+                <h4 className="mt-3 text-base font-black text-slate-900">{selectedUser.name}</h4>
                 <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider mt-0.5">{selectedUser.role}</p>
                 <p className="text-[11px] font-medium text-slate-500 truncate mt-1">{selectedUser.email}</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 px-4 py-4 border-b border-slate-100 bg-white shrink-0 lg:grid-cols-4">
-                {[
-                  { label: 'Profile', icon: <User size={14} />, act: () => setShowProfileDrawer(true) },
-                  { label: 'Shared Files', icon: <FileText size={14} />, act: () => setShowSharedFilesModal(true) },
-                  { label: 'Info', icon: <Info size={14} />, act: () => setShowDetails(true) },
-                  { label: 'More', icon: <MoreVertical size={14} />, act: () => setShowMoreOptions(true) },
+              <div className="grid grid-cols-4 gap-2 px-4 py-4 border-b border-slate-100 bg-white shrink-0">
+                {[                  { label: 'Profile', icon: <User size={15} />, act: () => setShowProfileDrawer(true), tone: 'from-blue-500 to-indigo-600' },
+                  { label: 'Files', icon: <FileText size={15} />, act: () => setShowSharedFilesModal(true), tone: 'from-emerald-500 to-teal-600' },
+                  { label: 'Info', icon: <Info size={15} />, act: () => setShowDetails(true), tone: 'from-violet-500 to-purple-600' },
+                  { label: 'More', icon: <MoreVertical size={15} />, act: () => setShowMoreOptions(true), tone: 'from-amber-500 to-orange-600' },
                 ].map((btn, idx) => (
-                  <button key={idx} onClick={btn.act} className="flex flex-col items-center gap-1 hover:opacity-80 transition">
-                    <div className="flex size-8 items-center justify-center rounded-full bg-slate-50 border border-slate-100 text-slate-500 shadow-xs">
+                  <button key={idx} onClick={btn.act} className="flex flex-col items-center gap-1.5 group transition">
+                    <div className={`flex size-10 items-center justify-center rounded-2xl bg-gradient-to-br ${btn.tone} text-white shadow-md transition group-hover:scale-110 group-hover:shadow-lg`}>
                       {btn.icon}
                     </div>
-                    <span className="text-[9px] font-bold text-slate-400">{btn.label}</span>
+                    <span className="text-[10px] font-bold text-slate-500 group-hover:text-slate-800 transition">{btn.label}</span>
                   </button>
                 ))}
               </div>
@@ -1355,17 +1394,17 @@ export default function Communications({ heightClass = 'h-full', institutes = []
               <div className="p-4 border-b border-slate-100 bg-white shrink-0">
                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Search in Chat</label>
                 <div className="relative mt-1.5">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
+                  <Search className="pointer-events-none absolute left-4 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
                   <input
                     value={inChatSearch}
                     onChange={(e) => setInChatSearch(e.target.value)}
                     placeholder="Search messages..."
-                    className="w-full rounded-xl border border-slate-100 bg-slate-50/50 py-1.5 pl-8 pr-3 text-xs font-semibold outline-none focus:border-blue-400 focus:bg-white"
+                    className="w-full rounded-full border border-transparent bg-slate-100 py-2 pl-10 pr-4 text-xs font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-100"
                   />
                 </div>
               </div>
               {inChatSearch.trim() && (
-                <div className="px-4 pb-2 max-h-[140px] overflow-y-auto space-y-1 bg-slate-50 p-2 rounded-xl border border-slate-100/60 no-scrollbar mx-4 mb-2">
+                <div className="mx-4 mb-2 max-h-[140px] overflow-y-auto space-y-1 rounded-2xl border border-slate-200/80 bg-slate-50/60 p-2 no-scrollbar">
                   {messages
                     .filter((m) => (m.content || m.text || '').toLowerCase().includes(inChatSearch.toLowerCase()))
                     .map((m) => (
@@ -1380,64 +1419,67 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                             showToast('Message located', 'info');
                           }
                         }}
-                        className="w-full text-left text-[10px] font-semibold text-slate-700 hover:text-blue-600 truncate block py-1 border-b border-slate-100 last:border-0"
+                        className="w-full text-left text-[11px] font-medium text-slate-700 hover:text-blue-600 truncate block py-1.5 px-2 rounded-lg hover:bg-blue-50 transition border-b border-slate-100 last:border-0"
                       >
                         <span className="font-bold text-slate-400">{(isMe(m.sender_id)) ? 'Me: ' : 'Them: '}</span>
                         {m.content || m.text}
                       </button>
-                    ))}
+                    ))
+                  }
                   {messages.filter((m) => (m.content || m.text || '').toLowerCase().includes(inChatSearch.toLowerCase())).length === 0 && (
-                    <p className="text-[9px] text-slate-400 text-center py-1">No matches found</p>
+                    <p className="text-[10px] text-slate-400 text-center py-2">No matches found</p>
                   )}
                 </div>
               )}
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 <div>
-                  <div className="flex justify-between items-center mb-2">
+                  <div className="flex justify-between items-center mb-2.5">
                     <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Shared Files ({sharedFiles.length})</h5>
-                    <button className="text-[9px] font-bold text-blue-600 hover:underline" onClick={() => setShowSharedFilesModal(true)}>View all</button>
+                    <button className="text-[10px] font-bold text-blue-600 hover:underline" onClick={() => setShowSharedFilesModal(true)}>View all</button>
                   </div>
                   <div className="space-y-2">
                     {sharedFiles.slice(0, 3).map((file) => (
-                      <div key={file.id} className="flex items-center gap-2 rounded-xl bg-white p-2 border border-slate-100 shadow-xs">
-                        <FileText className="size-5 shrink-0 text-blue-500" />
+                      <div key={file.id} className="flex items-center gap-3 rounded-2xl bg-white p-2.5 border border-slate-200/80 shadow-sm hover:shadow-md transition">
+                        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-sm">
+                          <FileText className="size-4" />
+                        </div>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-[10px] font-bold text-slate-800">{file.attachment_name}</p>
-                          <span className="text-[9px] text-slate-400">Shared recently</span>
+                          <p className="truncate text-[11px] font-bold text-slate-800">{file.attachment_name}</p>
+                          <span className="text-[10px] text-slate-400 font-medium">Shared recently</span>
                         </div>
                         <a
                           href={file.attachment_url}
                           download
-                          className="rounded p-1 text-slate-400 hover:bg-slate-50 transition"
+                          className="flex size-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition"
                         >
                           <Download className="size-3.5" />
                         </a>
                       </div>
                     ))}
                     {sharedFiles.length === 0 && (
-                      <p className="text-[10px] font-semibold text-slate-400 text-center py-2">No files shared yet</p>
+                      <p className="text-[11px] font-medium text-slate-400 text-center py-3">No files shared yet</p>
                     )}
                   </div>
                 </div>
 
                 <div>
-                  <div className="flex justify-between items-center mb-2">
+                  <div className="flex justify-between items-center mb-2.5">
                     <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Media</h5>
-                    <button className="text-[9px] font-bold text-blue-600 hover:underline" onClick={() => setShowMediaGalleryModal(true)}>View all</button>
+                    <button className="text-[10px] font-bold text-blue-600 hover:underline" onClick={() => setShowMediaGalleryModal(true)}>View all</button>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     {sharedFiles
                       .filter(f => f.attachment_name?.toLowerCase().match(/\.(jpg|jpeg|png)$/))
                       .slice(0, 3)
                       .map((file) => (
-                        <div key={file.id} className="relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-100 group cursor-pointer" onClick={() => setMediaLightboxUrl(file.attachment_url)}>
-                          <img src={file.attachment_url} alt="media" className="size-full object-cover group-hover:scale-105 transition duration-200" />
+                        <div key={file.id} className="relative aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 group cursor-pointer shadow-sm hover:shadow-md transition" onClick={() => setMediaLightboxUrl(file.attachment_url)}>
+                          <img src={file.attachment_url} alt="media" className="size-full object-cover group-hover:scale-110 transition duration-300" />
                         </div>
                       ))}
                   </div>
                   {sharedFiles.filter(f => f.attachment_name?.toLowerCase().match(/\.(jpg|jpeg|png)$/)).length === 0 && (
-                    <p className="text-[10px] font-semibold text-slate-400 text-center py-2">No media shared yet</p>
+                    <p className="text-[11px] font-medium text-slate-400 text-center py-3">No media shared yet</p>
                   )}
                 </div>
               </div>
@@ -1449,12 +1491,12 @@ export default function Communications({ heightClass = 'h-full', institutes = []
       {/* PDF Modal Viewer */}
       {pdfPreviewUrl && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
-          <div className="flex h-[90vh] w-full max-w-4xl flex-col rounded-3xl bg-white shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-              <h3 className="text-xs font-bold text-slate-900">PDF Document Viewer</h3>
+          <div className="flex h-[90vh] w-full max-w-4xl flex-col rounded-[2rem] bg-white shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between border-b border-slate-200/80 px-6 py-4">
+              <h3 className="text-sm font-black text-slate-900">PDF Document Viewer</h3>
               <button
                 onClick={() => setPdfPreviewUrl(null)}
-                className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
               >
                 <X className="size-5" />
               </button>
@@ -1470,27 +1512,29 @@ export default function Communications({ heightClass = 'h-full', institutes = []
       {forwardMessage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-xs">
           <div className="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-xs font-black text-slate-900">Forward Message</h3>
+            <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
+              <h3 className="text-sm font-black text-slate-900">Forward Message</h3>
               <button
                 onClick={() => setForwardMessage(null)}
-                className="rounded-full p-1.5 hover:bg-slate-100"
+                className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
               >
                 <X className="size-5" />
               </button>
             </div>
-            <div className="mt-4 max-h-[300px] overflow-y-auto space-y-2">
+            <div className="mt-4 max-h-[300px] overflow-y-auto space-y-1.5">
               {mergedList.map((contact) => (
                 <button
                   key={contact.id}
                   onClick={() => handleForwardMessage(contact)}
                   className="flex w-full items-center gap-3 rounded-2xl p-2.5 text-left hover:bg-slate-50 transition"
                 >
-                  <div className="grid size-9 place-items-center rounded-xl bg-blue-100 text-xs font-bold text-blue-700">
-                    {(contact.name || 'U').slice(0, 1).toUpperCase()}
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-slate-900">{contact.name}</p>
+                  <Avatar className={`size-10 rounded-full bg-gradient-to-br shadow-sm shrink-0 ${avatarGradient(contact.name)}`}>
+                    <AvatarFallback className="rounded-full bg-transparent text-xs font-black text-white">
+                      {(contact.name || 'U').slice(0, 1).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-slate-900 truncate">{contact.name}</p>
                     <p className="text-[10px] text-slate-400 uppercase font-black">{contact.role}</p>
                   </div>
                 </button>
@@ -1502,7 +1546,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
       {/* Right-click Context Menu */}
       {contextMenu && (
         <div
-          className="fixed z-50 rounded-2xl border border-slate-100 bg-white p-1.5 shadow-2xl w-40"
+          className="fixed z-50 rounded-2xl border border-slate-200/80 bg-white/95 backdrop-blur p-1.5 shadow-2xl w-44"
           style={{ top: contextMenu.y, left: contextMenu.x }}
         >
           {[
@@ -1544,7 +1588,10 @@ export default function Communications({ heightClass = 'h-full', institutes = []
             <button
               key={actionIdx}
               onClick={action.act}
-              className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-bold text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition"
+              className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold transition ${action.label === 'Delete'
+                ? 'text-rose-500 hover:bg-rose-50'
+                : 'text-slate-600 hover:bg-blue-50 hover:text-blue-600'
+                }`}
             >
               <action.icon className="size-4" />
               {action.label}
@@ -1573,11 +1620,11 @@ export default function Communications({ heightClass = 'h-full', institutes = []
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className="fixed top-0 right-0 z-50 size-full max-w-sm border-l border-slate-100 bg-white shadow-2xl flex flex-col"
             >
-              <div className="flex items-center justify-between border-b border-slate-100 p-4 shrink-0">
+              <div className="flex items-center justify-between border-b border-slate-200/80 p-4 shrink-0">
                 <h3 className="text-sm font-black text-slate-800 tracking-tight uppercase">User Profile</h3>
                 <button
                   onClick={() => setShowProfileDrawer(false)}
-                  className="rounded-full p-1.5 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition"
+                  className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
                 >
                   <X size={18} />
                 </button>
@@ -1585,12 +1632,12 @@ export default function Communications({ heightClass = 'h-full', institutes = []
 
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 <div className="text-center">
-                  <Avatar className="mx-auto size-20 bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg">
+                  <Avatar className={`mx-auto size-20 bg-gradient-to-br shadow-lg ring-4 ring-white ${avatarGradient(selectedUser.name)}`}>
                     <AvatarFallback className="bg-transparent text-xl font-black text-white">
-                      {(selectedUser.name || 'U').slice(0, 2).toUpperCase()}
+                      {(selectedUser.name || 'U').slice(0, 1).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <h4 className="mt-4 text-sm font-bold text-slate-900">{selectedUser.name}</h4>
+                  <h4 className="mt-4 text-sm font-black text-slate-900">{selectedUser.name}</h4>
                   <div className="mt-2 flex items-center justify-center gap-1.5">
                     <span className={`size-2 rounded-full ${selectedUser.online ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
                     <span className="text-[10px] font-bold text-slate-500 uppercase">{selectedUser.online ? 'Online' : 'Offline'}</span>
@@ -1599,20 +1646,20 @@ export default function Communications({ heightClass = 'h-full', institutes = []
 
                 <div className="space-y-4">
                   <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Contact Information</h5>
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-4 space-y-3 text-xs font-semibold text-slate-750">
-                    <div className="flex justify-between">
+                  <div className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-4 space-y-3 text-xs font-semibold text-slate-700">
+                    <div className="flex justify-between items-center">
                       <span className="text-slate-400">Email</span>
                       <span className="text-slate-800 truncate max-w-[180px]">{selectedUser.email || 'N/A'}</span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="text-slate-400">Phone</span>
                       <span className="text-slate-800">{selectedUser.phone || '9348532113'}</span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="text-slate-400">Role</span>
-                      <span className="text-slate-800 uppercase text-[10px] font-black bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">{selectedUser.role || 'User'}</span>
+                      <span className="text-[10px] font-black bg-blue-50 text-blue-600 px-2.5 py-0.5 rounded-full">{selectedUser.role || 'User'}</span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="text-slate-400">Last Seen</span>
                       <span className="text-slate-800">{selectedUser.online ? 'Just now' : selectedUser.lastSeen ? new Date(selectedUser.lastSeen).toLocaleString() : 'Offline'}</span>
                     </div>
@@ -1622,16 +1669,16 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                 {selectedUser.role === 'PARENT' && (
                   <div className="space-y-4">
                     <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Academic Details</h5>
-                    <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-4 space-y-3 text-xs font-semibold text-slate-750">
-                      <div className="flex justify-between">
+                    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-4 space-y-3 text-xs font-semibold text-slate-700">
+                      <div className="flex justify-between items-center">
                         <span className="text-slate-400">Linked Student(s)</span>
                         <span className="text-slate-800">{selectedUser.students || 'Student Name'}</span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between items-center">
                         <span className="text-slate-400">Class & Section</span>
                         <span className="text-slate-800">{selectedUser.class_name || 'Class A'}</span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between items-center">
                         <span className="text-slate-400">Institute Name</span>
                         <span className="text-slate-800 truncate max-w-[180px]">{institute?.name || user?.instituteName || 'Eddva Institute'}</span>
                       </div>
@@ -1642,12 +1689,12 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                 {selectedUser.role === 'TEACHER' && (
                   <div className="space-y-4">
                     <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Professional Details</h5>
-                    <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-4 space-y-3 text-xs font-semibold text-slate-750">
-                      <div className="flex justify-between">
+                    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-4 space-y-3 text-xs font-semibold text-slate-700">
+                      <div className="flex justify-between items-center">
                         <span className="text-slate-400">Subject(s) Taught</span>
                         <span className="text-slate-800">{selectedUser.subjects || 'Multiple Subjects'}</span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between items-center">
                         <span className="text-slate-400">Institute Name</span>
                         <span className="text-slate-800 truncate max-w-[180px]">{institute?.name || user?.instituteName || 'Eddva Institute'}</span>
                       </div>
@@ -1664,9 +1711,9 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                         const inp = document.querySelector('input[placeholder="Type a message..."]');
                         inp?.focus();
                       }}
-                      className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-100 bg-white p-2.5 font-bold text-slate-700 hover:bg-slate-50 transition"
+                      className="flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200/80 bg-white p-3 font-bold text-slate-700 shadow-sm hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition"
                     >
-                      <Send size={12} className="text-blue-500" />
+                      <Send size={13} className="text-blue-500" />
                       Send Message
                     </button>
                     <button
@@ -1674,9 +1721,9 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                         setShowProfileDrawer(false);
                         setShowSharedFilesModal(true);
                       }}
-                      className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-100 bg-white p-2.5 font-bold text-slate-700 hover:bg-slate-50 transition"
+                      className="flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200/80 bg-white p-3 font-bold text-slate-700 shadow-sm hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 transition"
                     >
-                      <FileText size={12} className="text-indigo-500" />
+                      <FileText size={13} className="text-emerald-500" />
                       Shared Files
                     </button>
                   </div>
@@ -1697,37 +1744,37 @@ export default function Communications({ heightClass = 'h-full', institutes = []
               exit={{ scale: 0.95, opacity: 0 }}
               className="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl"
             >
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
                 <h3 className="text-sm font-black text-slate-900 uppercase">Schedule Meeting</h3>
                 <button
                   onClick={() => setShowVideoMeetModal(false)}
-                  className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
+                  className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
                 >
                   <X className="size-5" />
                 </button>
               </div>
 
               <div className="mt-4 space-y-4 text-xs font-semibold text-slate-700">
-                <div className="space-y-1">
-                  <label className="text-slate-400">Meeting Title</label>
+                <div className="space-y-1.5">
+                  <label className="text-slate-400 font-bold">Meeting Title</label>
                   <input
                     type="text"
                     value={meetTitle}
                     onChange={(e) => setMeetTitle(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 p-2.5 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-slate-400">Meeting Description</label>
+                <div className="space-y-1.5">
+                  <label className="text-slate-400 font-bold">Meeting Description</label>
                   <textarea
                     value={meetDesc}
                     onChange={(e) => setMeetDesc(e.target.value)}
                     rows={2}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400 resize-none"
+                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 p-2.5 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100 resize-none"
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-slate-400">Meeting Type</label>
+                <div className="space-y-1.5">
+                  <label className="text-slate-400 font-bold">Meeting Type</label>
                   <div className="grid grid-cols-2 gap-2">
                     {['online', 'offline'].map((mode) => (
                       <button
@@ -1735,8 +1782,8 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                         type="button"
                         onClick={() => setMeetMode(mode)}
                         className={`rounded-xl border px-3 py-2 text-xs font-black capitalize transition ${meetMode === mode
-                          ? 'border-blue-500 bg-blue-50 text-blue-700'
-                          : 'border-slate-200 text-slate-500'
+                          ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-100'
+                          : 'border-slate-200/80 text-slate-500 hover:bg-slate-50'
                           }`}
                       >
                         {mode}
@@ -1745,22 +1792,22 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-slate-400">Meeting Date</label>
+                  <div className="space-y-1.5">
+                    <label className="text-slate-400 font-bold">Meeting Date</label>
                     <input
                       type="date"
                       value={meetDate}
                       onChange={(e) => setMeetDate(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                      className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 p-2.5 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
                     />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-slate-400">Start Time</label>
+                  <div className="space-y-1.5">
+                    <label className="text-slate-400 font-bold">Start Time</label>
                     <input
                       type="time"
                       value={meetTime}
                       onChange={(e) => setMeetTime(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                      className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 p-2.5 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
                     />
                   </div>
                 </div>
@@ -1780,35 +1827,35 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                 </div>
                 {meetMode === 'online' ? (
                   <>
-                    <div className="space-y-1">
-                      <label className="text-slate-400">Meeting Platform</label>
+                    <div className="space-y-1.5">
+                      <label className="text-slate-400 font-bold">Meeting Platform</label>
                       <input
                         type="text"
                         value={meetPlatform}
                         onChange={(e) => setMeetPlatform(e.target.value)}
-                        className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                        className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 p-2.5 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
                       />
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-slate-400">Meeting Link</label>
+                    <div className="space-y-1.5">
+                      <label className="text-slate-400 font-bold">Meeting Link</label>
                       <input
                         type="url"
                         value={meetLink}
                         onChange={(e) => setMeetLink(e.target.value)}
                         placeholder="https://meet.google.com/..."
-                        className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                        className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 p-2.5 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
                       />
                     </div>
                   </>
                 ) : (
-                  <div className="space-y-1">
-                    <label className="text-slate-400">Meeting Location</label>
+                  <div className="space-y-1.5">
+                    <label className="text-slate-400 font-bold">Meeting Location</label>
                     <input
                       type="text"
                       value={meetLocation}
                       onChange={(e) => setMeetLocation(e.target.value)}
                       placeholder="Conference hall / office / campus"
-                      className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                      className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 p-2.5 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
                     />
                   </div>
                 )}
@@ -1836,7 +1883,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                       showToast('Failed to create meeting request', 'error');
                     }
                   }}
-                  className="flex-1 rounded-xl bg-blue-600 py-2.5 text-xs font-bold text-white shadow-md hover:bg-blue-700 transition"
+                  className="flex-1 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 py-2.5 text-xs font-bold text-white shadow-lg shadow-blue-600/30 hover:brightness-110 transition"
                 >
                   Save Meeting
                 </button>
@@ -1844,7 +1891,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                   onClick={() => {
                     setShowVideoMeetModal(false);
                   }}
-                  className="flex-1 rounded-xl bg-slate-100 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-200 transition"
+                  className="flex-1 rounded-2xl bg-slate-100 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-200 transition"
                 >
                   Cancel
                 </button>
@@ -1863,19 +1910,19 @@ export default function Communications({ heightClass = 'h-full', institutes = []
               exit={{ scale: 0.95, opacity: 0 }}
               className="w-full max-w-lg rounded-[2rem] bg-white p-6 shadow-2xl"
             >
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
                 <h3 className="text-sm font-black text-slate-900 uppercase">Bulk Meeting Scheduler</h3>
                 <button
                   onClick={() => setShowBulkMeetModal(false)}
-                  className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
+                  className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
                 >
                   <X className="size-5" />
                 </button>
               </div>
 
               <div className="mt-4 space-y-4 text-xs font-semibold text-slate-700">
-                <div className="space-y-1">
-                  <label className="text-slate-400">Audience</label>
+                <div className="space-y-1.5">
+                  <label className="text-slate-400 font-bold">Audience</label>
                   <CustomSelect
           onChange={setBulkTargetType}
                     value={bulkTargetType}
@@ -1888,8 +1935,8 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-slate-400">Class</label>
+                  <div className="space-y-1.5">
+                    <label className="text-slate-400 font-bold">Class</label>
                     <CustomSelect
           onChange={setBulkClassId}
                       value={bulkClassId}
@@ -1899,8 +1946,8 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                       className="w-full"
                     />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-slate-400">Section</label>
+                  <div className="space-y-1.5">
+                    <label className="text-slate-400 font-bold">Section</label>
                     <CustomSelect
           onChange={setBulkSectionId}
                       value={bulkSectionId}
@@ -1911,41 +1958,41 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                     />
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-slate-400">Meeting Title</label>
+                <div className="space-y-1.5">
+                  <label className="text-slate-400 font-bold">Meeting Title</label>
                   <input
                     type="text"
                     value={meetTitle}
                     onChange={(e) => setMeetTitle(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 p-2.5 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-slate-400">Meeting Description</label>
+                <div className="space-y-1.5">
+                  <label className="text-slate-400 font-bold">Meeting Description</label>
                   <textarea
                     value={meetDesc}
                     onChange={(e) => setMeetDesc(e.target.value)}
                     rows={2}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400 resize-none"
+                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 p-2.5 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100 resize-none"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-slate-400">Meeting Date</label>
+                  <div className="space-y-1.5">
+                    <label className="text-slate-400 font-bold">Meeting Date</label>
                     <input
                       type="date"
                       value={meetDate}
                       onChange={(e) => setMeetDate(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                      className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 p-2.5 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
                     />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-slate-400">Start Time</label>
+                  <div className="space-y-1.5">
+                    <label className="text-slate-400 font-bold">Start Time</label>
                     <input
                       type="time"
                       value={meetTime}
                       onChange={(e) => setMeetTime(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                      className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 p-2.5 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
                     />
                   </div>
                 </div>
@@ -1979,35 +2026,35 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                 </div>
                 {meetMode === 'online' ? (
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className="text-slate-400">Meeting Platform</label>
+                    <div className="space-y-1.5">
+                      <label className="text-slate-400 font-bold">Meeting Platform</label>
                       <input
                         type="text"
                         value={meetPlatform}
                         onChange={(e) => setMeetPlatform(e.target.value)}
-                        className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                        className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 p-2.5 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
                       />
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-slate-400">Meeting Link</label>
+                    <div className="space-y-1.5">
+                      <label className="text-slate-400 font-bold">Meeting Link</label>
                       <input
                         type="url"
                         value={meetLink}
                         onChange={(e) => setMeetLink(e.target.value)}
                         placeholder="https://meet.google.com/..."
-                        className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                        className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 p-2.5 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
                       />
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-1">
-                    <label className="text-slate-400">Meeting Location</label>
+                  <div className="space-y-1.5">
+                    <label className="text-slate-400 font-bold">Meeting Location</label>
                     <input
                       type="text"
                       value={meetLocation}
                       onChange={(e) => setMeetLocation(e.target.value)}
                       placeholder="Conference hall / office / campus"
-                      className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
+                      className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 p-2.5 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
                     />
                   </div>
                 )}
@@ -2038,13 +2085,13 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                       showToast('Failed to create bulk meeting requests', 'error');
                     }
                   }}
-                  className="flex-1 rounded-xl bg-blue-600 py-2.5 text-xs font-bold text-white shadow-md hover:bg-blue-700 transition disabled:opacity-50"
+                  className="flex-1 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 py-2.5 text-xs font-bold text-white shadow-lg shadow-blue-600/30 hover:brightness-110 transition disabled:opacity-50"
                 >
                   Create Bulk Meeting
                 </button>
                 <button
                   onClick={() => setShowBulkMeetModal(false)}
-                  className="flex-1 rounded-xl bg-slate-100 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-200 transition"
+                  className="flex-1 rounded-2xl bg-slate-100 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-200 transition"
                 >
                   Cancel
                 </button>
@@ -2064,35 +2111,35 @@ export default function Communications({ heightClass = 'h-full', institutes = []
               exit={{ scale: 0.95, opacity: 0 }}
               className="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl overflow-hidden"
             >
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+              <div className="flex items-center justify-between border-b border-slate-200/80 pb-3 mb-4">
                 <h3 className="text-sm font-black text-slate-900 uppercase">Conversation Settings</h3>
                 <button
                   onClick={() => setShowMoreOptions(false)}
-                  className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
+                  className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
                 >
                   <X className="size-5" />
                 </button>
               </div>
 
-              <div className="space-y-4 text-xs font-semibold text-slate-700">
-                <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-3 text-xs font-semibold text-slate-700">
+                <div className="grid grid-cols-2 gap-2.5">
                   <button
                     onClick={() => {
                       setShowMoreOptions(false);
                       setShowProfileDrawer(true);
                     }}
-                    className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
+                    className="flex items-center gap-2.5 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm hover:bg-blue-50 hover:border-blue-200 transition"
                   >
-                    <User size={14} className="text-blue-500" /> View Profile
+                    <User size={15} className="text-blue-500" /> View Profile
                   </button>
                   <button
                     onClick={() => {
                       setShowMoreOptions(false);
                       setShowSharedFilesModal(true);
                     }}
-                    className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
+                    className="flex items-center gap-2.5 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm hover:bg-emerald-50 hover:border-emerald-200 transition"
                   >
-                    <FileText size={14} className="text-indigo-500" /> Shared Files
+                    <FileText size={15} className="text-emerald-500" /> Shared Files
                   </button>
                   <button
                     onClick={async () => {
@@ -2101,18 +2148,18 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                       showToast('Conversation marked as read', 'success');
                       setShowMoreOptions(false);
                     }}
-                    className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
+                    className="flex items-center gap-2.5 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm hover:bg-violet-50 hover:border-violet-200 transition"
                   >
-                    <CheckCheck size={14} className="text-emerald-500" /> Mark as Read
+                    <CheckCheck size={15} className="text-violet-500" /> Mark as Read
                   </button>
                   <button
                     onClick={() => {
                       setShowMoreOptions(false);
                       setShowDetails(true);
                     }}
-                    className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-2.5 hover:bg-slate-50 transition"
+                    className="flex items-center gap-2.5 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm hover:bg-amber-50 hover:border-amber-200 transition"
                   >
-                    <Info size={14} className="text-slate-500" /> Conversation Info
+                    <Info size={15} className="text-amber-500" /> Info
                   </button>
                 </div>
               </div>
@@ -2131,36 +2178,36 @@ export default function Communications({ heightClass = 'h-full', institutes = []
               exit={{ scale: 0.95, opacity: 0 }}
               className="w-full max-w-xl rounded-[2rem] bg-white p-6 shadow-2xl flex flex-col h-[70vh]"
             >
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4 shrink-0">
+              <div className="flex items-center justify-between border-b border-slate-200/80 pb-3 mb-4 shrink-0">
                 <h3 className="text-sm font-black text-slate-900 uppercase">Shared Documents ({sharedFiles.length})</h3>
                 <button
                   onClick={() => setShowSharedFilesModal(false)}
-                  className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
+                  className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
                 >
                   <X size={18} />
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto space-y-3 pr-1 text-slate-700">
+              <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 text-slate-700">
                 {sharedFiles.map((file) => (
-                  <div key={file.id} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50/30 p-3 hover:bg-slate-50 transition">
+                  <div key={file.id} className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50/30 p-3 hover:bg-slate-50 transition shadow-sm">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="grid size-10 place-items-center rounded-xl bg-blue-50 text-blue-600">
-                        <FileText size={20} />
+                      <div className="flex size-10 shrink-0 place-items-center items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-sm">
+                        <FileText size={18} />
                       </div>
                       <div className="min-w-0">
                         <h4 className="truncate text-xs font-bold text-slate-800">{file.attachment_name}</h4>
-                        <p className="text-[9px] text-slate-400 font-semibold mt-0.5 font-bold">Shared recently</p>
+                        <p className="text-[10px] text-slate-400 font-medium mt-0.5">Shared recently</p>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 shrink-0">
                       {file.attachment_name?.toLowerCase().endsWith('.pdf') && (
                         <button
                           onClick={() => {
                             setPdfPreviewUrl(file.attachment_url);
                             setShowSharedFilesModal(false);
                           }}
-                          className="rounded-xl bg-blue-50 p-2 text-xs font-bold text-blue-600 hover:bg-blue-100 transition"
+                          className="rounded-xl bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-600 hover:bg-blue-100 transition"
                         >
                           Preview
                         </button>
@@ -2168,7 +2215,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                       <a
                         href={file.attachment_url}
                         download
-                        className="rounded-xl bg-slate-100 p-2 text-xs font-bold text-slate-600 hover:bg-slate-200 transition"
+                        className="rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-200 transition"
                       >
                         Download
                       </a>
@@ -2178,7 +2225,9 @@ export default function Communications({ heightClass = 'h-full', institutes = []
 
                 {sharedFiles.length === 0 && (
                   <div className="flex flex-col items-center justify-center h-full text-slate-400">
-                    <FileText size={32} className="opacity-40 mb-2" />
+                    <span className="mb-3 flex size-16 items-center justify-center rounded-3xl bg-slate-100">
+                      <FileText size={28} className="opacity-50" />
+                    </span>
                     <p className="text-xs font-bold">No documents shared in this conversation</p>
                   </div>
                 )}
@@ -2198,11 +2247,11 @@ export default function Communications({ heightClass = 'h-full', institutes = []
               exit={{ scale: 0.95, opacity: 0 }}
               className="w-full max-w-2xl rounded-[2rem] bg-white p-6 shadow-2xl flex flex-col h-[75vh]"
             >
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4 shrink-0">
+              <div className="flex items-center justify-between border-b border-slate-200/80 pb-3 mb-4 shrink-0">
                 <h3 className="text-sm font-black text-slate-900 uppercase">Shared Media</h3>
                 <button
                   onClick={() => setShowMediaGalleryModal(false)}
-                  className="rounded-full p-1.5 hover:bg-slate-100 text-slate-400"
+                  className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
                 >
                   <X size={18} />
                 </button>
@@ -2215,10 +2264,10 @@ export default function Communications({ heightClass = 'h-full', institutes = []
                     <div
                       key={file.id}
                       onClick={() => setMediaLightboxUrl(file.attachment_url)}
-                      className="relative aspect-square rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 group cursor-pointer shadow-xs hover:shadow-md transition"
+                      className="relative aspect-square rounded-2xl overflow-hidden bg-slate-50 border border-slate-200/80 group cursor-pointer shadow-sm hover:shadow-lg transition"
                     >
-                      <img src={file.attachment_url} alt="gallery" className="size-full object-cover group-hover:scale-105 transition duration-300" />
-                      <div className="absolute inset-0 bg-slate-900/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                      <img src={file.attachment_url} alt="gallery" className="size-full object-cover group-hover:scale-110 transition duration-300" />
+                      <div className="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
                         <Eye size={20} className="text-white" />
                       </div>
                     </div>
@@ -2226,7 +2275,9 @@ export default function Communications({ heightClass = 'h-full', institutes = []
 
                 {sharedFiles.filter(f => f.attachment_name?.toLowerCase().match(/\.(jpg|jpeg|png)$/)).length === 0 && (
                   <div className="col-span-full flex flex-col items-center justify-center h-full text-slate-400">
-                    <Smile size={32} className="opacity-40 mb-2" />
+                    <span className="mb-3 flex size-16 items-center justify-center rounded-3xl bg-slate-100">
+                      <Smile size={28} className="opacity-50" />
+                    </span>
                     <p className="text-xs font-bold">No images or media shared in this conversation</p>
                   </div>
                 )}
@@ -2242,7 +2293,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
           <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/90 p-4">
             <button
               onClick={() => setMediaLightboxUrl(null)}
-              className="absolute top-4 right-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition"
+              className="absolute top-4 right-4 rounded-full bg-white/10 p-2.5 text-white hover:bg-white/20 transition backdrop-blur"
             >
               <X size={20} />
             </button>
@@ -2255,7 +2306,7 @@ export default function Communications({ heightClass = 'h-full', institutes = []
               <a
                 href={mediaLightboxUrl}
                 download
-                className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-lg hover:bg-blue-700 transition"
+                className="flex items-center gap-1.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-blue-600/30 hover:brightness-110 transition"
               >
                 <Download size={14} /> Download Image
               </a>
@@ -2274,9 +2325,10 @@ export default function Communications({ heightClass = 'h-full', institutes = []
             initial={{ opacity: 0, x: 50, y: -20 }}
             animate={{ opacity: 1, x: 0, y: 0 }}
             exit={{ opacity: 0, x: 50 }}
-            className={`pointer-events-auto flex items-center gap-2 rounded-2xl px-4 py-3 text-xs font-bold text-white shadow-xl ${t.type === 'success' ? 'bg-emerald-600' : t.type === 'error' ? 'bg-rose-600' : 'bg-blue-600'
+            className={`pointer-events-auto flex items-center gap-2 rounded-2xl px-4 py-3 text-xs font-bold text-white shadow-xl backdrop-blur ${t.type === 'success' ? 'bg-emerald-600/95' : t.type === 'error' ? 'bg-rose-600/95' : 'bg-blue-600/95'
               }`}
           >
+            {t.type === 'success' ? <Check className="size-4 shrink-0" /> : t.type === 'error' ? <X className="size-4 shrink-0" /> : <Info className="size-4 shrink-0" />}
             {t.message}
           </motion.div>
         ))}

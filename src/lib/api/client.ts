@@ -130,6 +130,12 @@ apiClient.interceptors.request.use(
       if (hostSub && config.headers) {
         config.headers["X-Institute-Domain"] = hostSub;
       }
+      // From the teacher portal, a teacher who also holds an admin role acts as
+      // a plain teacher: limits on their admin access must not reach their
+      // teacher pages (see actingUser in the backend's school-jwt.guard).
+      if (typeof window !== "undefined" && /^\/school\/teacher(\/|$)/.test(window.location.pathname)) {
+        config.headers["X-School-Portal"] = "teacher";
+      }
     }
 
     // Auth header only for non-public endpoints

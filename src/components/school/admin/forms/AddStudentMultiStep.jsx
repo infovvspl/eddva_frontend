@@ -10,6 +10,10 @@ import {
 import api from '@/lib/api/school-client';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { putFileToS3 } from '@/lib/api/upload';
+import { toast } from 'sonner';
+
+const MAX_PHOTO_MB = 10;
 
 const STEPS = [
   { id: 1, title: 'Basic Information', icon: User, description: 'Personal & identity details' },
@@ -37,6 +41,20 @@ function getScopedId(instituteName, existingCount = 0) {
   return `${getInstituteCode(instituteName)}-${year}-${String(existingCount + 1).padStart(3, '0')}`;
 }
 
+// Class names like "Class 10" were sorting as plain text (10, 11, 12, then
+// 3..9) — sort by the number embedded in the name instead; names with no
+// number fall back to alphabetical and sort after the numbered ones.
+function sortClassesByNumber(list) {
+  return [...list].sort((a, b) => {
+    const numA = parseInt(String(a.name).match(/\d+/)?.[0], 10);
+    const numB = parseInt(String(b.name).match(/\d+/)?.[0], 10);
+    if (Number.isNaN(numA) && Number.isNaN(numB)) return String(a.name).localeCompare(String(b.name));
+    if (Number.isNaN(numA)) return 1;
+    if (Number.isNaN(numB)) return -1;
+    return numA - numB;
+  });
+}
+
 const FloatingInput = ({ label, icon: Icon, type = 'text', name, value, onChange, placeholder, error, required, ...props }) => {
   const [isFocused, setIsFocused] = useState(false);
   const hasValue = value && String(value).length > 0;
@@ -50,7 +68,7 @@ const FloatingInput = ({ label, icon: Icon, type = 'text', name, value, onChange
         </label>
         <div className={`
           relative flex items-center rounded-2xl border-2 transition-all duration-300
-          ${isFocused ? 'border-blue-500 shadow-lg shadow-blue-500/10' : 'border-slate-100 dark:border-slate-800'}
+          ${isFocused ? 'border-blue-500 shadow-lg shadow-blue-500/10' : 'border-slate-300 dark:border-slate-700'}
           ${error ? 'border-red-500' : ''}
           bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl
         `}>
@@ -79,8 +97,8 @@ const FloatingInput = ({ label, icon: Icon, type = 'text', name, value, onChange
   return (
     <div className="relative group">
       <div className={`
-        relative flex items-center h-[50px] min-h-[50px] transition-all duration-300 rounded-2xl border-2 
-        ${isFocused ? 'border-blue-500 shadow-lg shadow-blue-500/10' : 'border-slate-100 dark:border-slate-800'}
+        relative flex items-center h-[50px] min-h-[50px] transition-all duration-300 rounded-2xl border-2
+        ${isFocused ? 'border-blue-500 shadow-lg shadow-blue-500/10' : 'border-slate-300 dark:border-slate-700'}
         ${error ? 'border-red-500' : ''}
         bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl
       `}>
@@ -150,18 +168,8 @@ const SectionHeader = ({ title, description, badge }) => (
 
 const AIAssistantCard = () => null;
 
-const StepIntroCard = () => (
-  <div className="rounded-[26px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-600">Student Setup</p>
-    <h3 className="mt-2 text-xl font-black tracking-tight text-slate-950 dark:text-white">EDDVA Student</h3>
-    <p className="mt-2 max-w-[220px] text-xs font-semibold leading-relaxed text-slate-500">
-      Complete each step to enroll the student.
-    </p>
-  </div>
-);
-
 const StepRail = ({ currentStep, onStepClick, compact = false }) => (
-  <div className={compact ? 'flex gap-2 overflow-x-auto pb-1.5 scrollbar-none sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0' : 'space-y-3'}>
+  <div className={compact ? 'flex gap-2 overflow-x-auto pb-1.5 scrollbar-none sm:grid sm:grid-cols-3 lg:grid-cols-6 sm:overflow-visible sm:pb-0' : 'space-y-3'}>
     {STEPS.map(step => {
       const Icon = step.icon;
       const isActive = currentStep === step.id;
@@ -190,8 +198,10 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
   const { institute } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState({});
+  const [photoUploading, setPhotoUploading] = useState(false);
   const [formData, setFormData] = useState({
-    name: '', email: '', password: '', confirmPassword: '', phone: '',
+    name: '', email: '', password: '', confirmPassword: '', autoGeneratePassword: true,
+    credentialDeliveryChannel: 'student_email', phone: '',
     dob: '', gender: '', bloodGroup: '', nationalId: '', profileImage: null,
     casteCategory: '', previousSchoolName: '', previousAdmissionNo: '', reasonForTransfer: '', boardRegistrationNo: '', boardName: '',
     enrollmentNo: '', rollNo: '', classId: '', sectionId: '', admissionDate: '',
@@ -250,7 +260,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
     try {
       const res = await api.get('/academic/classes');
       const data = res.data?.data ?? res.data;
-      setClasses(Array.isArray(data) ? data : []);
+      setClasses(Array.isArray(data) ? sortClassesByNumber(data) : []);
     } catch (error) {
       console.error("Failed to fetch classes:", error);
     }
@@ -334,49 +344,51 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
     updateField(name, type === 'checkbox' ? checked : value);
   };
 
-  const validateStep3 = () => {
-    const errs = {};
-    const phoneRegex = /^\d{10}$/;
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    e.target.value = ''; // allow re-selecting the same file after a failed attempt
+    if (!file) return;
 
-    if (formData.primaryContact === 'father') {
-      if (!formData.fatherName?.trim()) errs.fatherName = "Required";
-      if (!formData.fatherPhone || !phoneRegex.test(formData.fatherPhone)) errs.fatherPhone = "Valid 10-digit number required";
-    } else if (formData.primaryContact === 'mother') {
-      if (!formData.motherName?.trim()) errs.motherName = "Required";
-      if (!formData.motherPhone || !phoneRegex.test(formData.motherPhone)) errs.motherPhone = "Valid 10-digit number required";
-    } else if (formData.primaryContact === 'guardian') {
-      if (!formData.guardianName?.trim()) errs.guardianName = "Required";
-      if (!formData.guardianPhone || !phoneRegex.test(formData.guardianPhone)) errs.guardianPhone = "Valid 10-digit number required";
-      if (!formData.guardianRelation?.trim()) errs.guardianRelation = "Required";
+    if (file.size > MAX_PHOTO_MB * 1024 * 1024) {
+      toast.error(`Photo is ${(file.size / 1024 / 1024).toFixed(1)}MB — must be ${MAX_PHOTO_MB}MB or smaller.`);
+      return;
     }
 
-    if (formData.fatherPhone && !phoneRegex.test(formData.fatherPhone) && formData.primaryContact !== 'father') errs.fatherPhone = "Valid 10-digit number required";
-    if (formData.motherPhone && !phoneRegex.test(formData.motherPhone) && formData.primaryContact !== 'mother') errs.motherPhone = "Valid 10-digit number required";
-    if (formData.guardianPhone && !phoneRegex.test(formData.guardianPhone) && formData.primaryContact !== 'guardian') errs.guardianPhone = "Valid 10-digit number required";
-    if (formData.whatsappNumber && !phoneRegex.test(formData.whatsappNumber)) errs.whatsappNumber = "Valid 10-digit number required";
-
-    if (formData.parentEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.parentEmail)) {
-      errs.parentEmail = "Invalid email format";
+    setPhotoUploading(true);
+    try {
+      const contentType = file.type || 'image/jpeg';
+      const presign = await api.post('/students/photo-upload-url', {
+        fileName: file.name,
+        contentType,
+        fileSize: file.size,
+      });
+      const { uploadUrl, fileUrl } = presign.data?.data ?? presign.data;
+      await putFileToS3(uploadUrl, file, contentType);
+      updateField('profileImage', fileUrl);
+    } catch (err) {
+      console.error('Student photo upload failed:', err);
+      toast.error('Failed to upload photo. Please try again.');
+    } finally {
+      setPhotoUploading(false);
     }
+  };
 
-    if (formData.createParentLogin) {
-      if (!formData.sendViaSms && !formData.sendViaEmail) {
-        errs.sendViaSms = "Select at least one delivery method";
-      }
-      if (formData.sendViaEmail && !formData.parentEmail) {
-        errs.parentEmail = "Email required for delivery";
-      }
-    }
-
-    return errs;
+  // Strips non-digits as the admin types, so a phone/Aadhaar/PIN box can never
+  // hold letters or extra digits in the first place, instead of only flagging
+  // it after Next is clicked.
+  const handleDigitsChange = (maxLen) => (e) => {
+    updateField(e.target.name, e.target.value.replace(/\D/g, '').slice(0, maxLen));
   };
 
   const generateEnrollmentNo = async () => {
     setIdLoading(true);
     try {
-      const res = await api.get('/students');
+      // `total` is the institute's real student count; the `data` array is
+      // just the current page (defaults to 10), so counting it instead
+      // under-counts past page 1 and keeps generating the same duplicate ID.
+      const res = await api.get('/students', { params: { limit: 1 } });
       const list = res.data?.data ?? res.data;
-      const count = Array.isArray(list) ? list.length : 0;
+      const count = typeof res.data?.total === 'number' ? res.data.total : (Array.isArray(list) ? list.length : 0);
       setFormData(prev => ({ ...prev, enrollmentNo: getScopedId(institute?.name, count) }));
     } catch (error) {
       console.error('Failed to generate student id:', error);
@@ -408,25 +420,38 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
     reader.readAsDataURL(file);
   };
 
-  const validateStep = (step) => {
+  const NAME_REGEX = /^[A-Za-z][A-Za-z .'-]{1,79}$/;
+  const PHONE_REGEX = /^\d{10}$/;
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  // Pure — computes a step's errors without touching state, so it can be
+  // reused for the Next button, jump-ahead navigation, the final pre-submit
+  // sweep, and the Review step's "what's still missing" summary alike.
+  const getStepErrors = (step) => {
     const newErrors = {};
     if (step === 1) {
-      if (!formData.name?.trim()) newErrors.name = 'Full Name is required';
+      if (!formData.name?.trim()) {
+        newErrors.name = 'Full Name is required';
+      } else if (!NAME_REGEX.test(formData.name.trim())) {
+        newErrors.name = 'Name can only contain letters, spaces, and - . \'';
+      }
 
       if (!formData.email?.trim()) {
         newErrors.email = 'Email Address is required';
-      } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      } else if (!EMAIL_REGEX.test(formData.email)) {
         newErrors.email = 'Invalid email address';
       }
 
       if (!formData.phone?.trim()) {
         newErrors.phone = 'Mobile Number is required';
-      } else if (!/^\d{10}$/.test(formData.phone?.trim())) {
+      } else if (!PHONE_REGEX.test(formData.phone?.trim())) {
         newErrors.phone = 'Mobile number must be exactly 10 digits';
       }
 
       if (!formData.nationalId?.trim()) {
         newErrors.nationalId = 'Aadhaar ID is required';
+      } else if (!/^\d{12}$/.test(formData.nationalId.trim())) {
+        newErrors.nationalId = 'Aadhaar ID must be exactly 12 digits';
       }
 
       if (!formData.dob) {
@@ -437,20 +462,18 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
         newErrors.gender = 'Gender is required';
       }
 
-      if (!student) {
-        if (!formData.password) {
-          newErrors.password = 'Student Password is required';
-        } else if (formData.password.length < 6) {
+      // Password is only ever required (and validated) when the admin has
+      // switched off auto-generation — a blank password is a valid, normal
+      // state now, filled in server-side.
+      if (!formData.autoGeneratePassword) {
+        if (!student && !formData.password) {
+          newErrors.password = 'Student Password is required (or turn Auto-generate back on)';
+        } else if (formData.password && formData.password.length < 6) {
           newErrors.password = 'Password must be at least 6 characters';
         }
-        if (formData.password !== formData.confirmPassword) {
-          newErrors.confirmPassword = 'Passwords do not match';
-        }
-      } else {
-        if (formData.password && formData.password.length < 6) {
-          newErrors.password = 'Password must be at least 6 characters';
-        }
-        if (formData.password && formData.password !== formData.confirmPassword) {
+        if (formData.password && !formData.confirmPassword) {
+          newErrors.confirmPassword = 'Please confirm the password';
+        } else if (formData.password && formData.password !== formData.confirmPassword) {
           newErrors.confirmPassword = 'Passwords do not match';
         }
       }
@@ -465,12 +488,36 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
       if (!formData.classId) newErrors.classId = 'Class is required';
       if (!formData.sectionId) newErrors.sectionId = 'Section is required';
     } else if (step === 3) {
-      if (!formData.fatherName?.trim()) newErrors.fatherName = "Father's name is required";
-      if (!formData.motherName?.trim()) newErrors.motherName = "Mother's name is required";
-      if (!formData.parentPhone?.trim()) {
-        newErrors.parentPhone = 'Parent phone is required';
-      } else if (!/^\d{10}$/.test(formData.parentPhone?.trim())) {
-        newErrors.parentPhone = 'Parent phone must be exactly 10 digits';
+      if (formData.primaryContact === 'father') {
+        if (!formData.fatherName?.trim()) newErrors.fatherName = "Father's name is required";
+        if (!formData.fatherPhone || !PHONE_REGEX.test(formData.fatherPhone)) newErrors.fatherPhone = 'Valid 10-digit number required';
+      } else if (formData.primaryContact === 'mother') {
+        if (!formData.motherName?.trim()) newErrors.motherName = "Mother's name is required";
+        if (!formData.motherPhone || !PHONE_REGEX.test(formData.motherPhone)) newErrors.motherPhone = 'Valid 10-digit number required';
+      } else if (formData.primaryContact === 'guardian') {
+        if (!formData.guardianName?.trim()) newErrors.guardianName = "Guardian's name is required";
+        if (!formData.guardianPhone || !PHONE_REGEX.test(formData.guardianPhone)) newErrors.guardianPhone = 'Valid 10-digit number required';
+        if (!formData.guardianRelation?.trim()) newErrors.guardianRelation = 'Required';
+      }
+
+      // Any phone the admin HAS filled in (even for a non-primary contact)
+      // must still be well-formed — only presence is optional for those.
+      if (formData.fatherPhone && !PHONE_REGEX.test(formData.fatherPhone) && formData.primaryContact !== 'father') newErrors.fatherPhone = 'Valid 10-digit number required';
+      if (formData.motherPhone && !PHONE_REGEX.test(formData.motherPhone) && formData.primaryContact !== 'mother') newErrors.motherPhone = 'Valid 10-digit number required';
+      if (formData.guardianPhone && !PHONE_REGEX.test(formData.guardianPhone) && formData.primaryContact !== 'guardian') newErrors.guardianPhone = 'Valid 10-digit number required';
+      if (formData.whatsappNumber && !PHONE_REGEX.test(formData.whatsappNumber)) newErrors.whatsappNumber = 'Valid 10-digit number required';
+
+      if (formData.parentEmail && !EMAIL_REGEX.test(formData.parentEmail)) {
+        newErrors.parentEmail = 'Invalid email format';
+      }
+
+      if (formData.createParentLogin) {
+        if (!formData.sendViaSms && !formData.sendViaEmail) {
+          newErrors.sendViaSms = 'Select at least one delivery method';
+        }
+        if (formData.sendViaEmail && !formData.parentEmail) {
+          newErrors.parentEmail = 'Email required for delivery';
+        }
       }
     } else if (step === 4) {
       if (!formData.currentAddress?.trim()) newErrors.currentAddress = 'Address is required';
@@ -483,9 +530,23 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
       }
     }
 
+    return newErrors;
+  };
+
+  const validateStep = (step) => {
+    const newErrors = getStepErrors(step);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+  // Steps with actual required/validated fields — 5 (uploads) and 6 (review)
+  // have none of their own, so there's nothing to gate there.
+  const VALIDATED_STEPS = [1, 2, 3, 4];
+
+  // Used by the Review step to show real status instead of an unconditional
+  // "verified" banner, and by the final submit to catch anything a user
+  // reached via the sidebar's jump-to-a-later-completed-step shortcut.
+  const firstInvalidStep = () => VALIDATED_STEPS.find((s) => Object.keys(getStepErrors(s)).length > 0) || null;
 
   const renderStep = () => {
     switch (currentStep) {
@@ -496,71 +557,84 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
             <div className="mb-5 grid gap-4 lg:grid-cols-[150px_1fr] xl:grid-cols-[160px_1fr]">
               <div className="flex flex-col items-start gap-3 sm:items-center">
                 <div className="relative flex size-32 sm:size-36 flex-col items-center justify-center overflow-hidden rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50 transition-all hover:border-blue-500 dark:border-slate-700 dark:bg-slate-800/50 group cursor-pointer">
-                  {formData.profileImage ? (
+                  {photoUploading ? (
+                    <Loader2 className="text-blue-500 animate-spin" size={32} />
+                  ) : formData.profileImage ? (
                     <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} alt="Preview" className="size-full object-cover" />
                   ) : (
                     <Camera className="text-slate-400 group-hover:text-blue-500" size={32} />
                   )}
                   <input
                     type="file"
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                    onChange={(e) => {
-                      const file = e.target.files[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          setFormData(prev => ({ ...prev, profileImage: reader.result }));
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
+                    accept="image/*"
+                    disabled={photoUploading}
+                    className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                    onChange={handlePhotoUpload}
                   />
                 </div>
-                <p className="text-xs font-semibold text-slate-400">Student photo</p>
+                <p className="text-xs font-semibold text-slate-400">{photoUploading ? 'Uploading...' : `Student photo (max ${MAX_PHOTO_MB}MB)`}</p>
               </div>
               <div className="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2">
-                <FloatingInput label="Full Name" name="name" value={formData.name} onChange={handleChange} icon={User} error={errors.name} required />
-                <FloatingInput label="Email Address" name="email" value={formData.email} onChange={handleChange} icon={Mail} error={errors.email} required />
-                <div className="relative">
-                  <FloatingInput
-                    label="Student Password"
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    icon={Shield}
-                    error={errors.password}
-                    required={!student}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-4 top-4 text-slate-400 hover:text-blue-500"
-                  >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-                <div className="relative">
-                  <FloatingInput
-                    label="Confirm Student Password"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    icon={Shield}
-                    error={errors.confirmPassword}
-                    required={!student}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword((v) => !v)}
-                    className="absolute right-4 top-4 text-slate-400 hover:text-blue-500"
-                  >
-                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-                <FloatingInput label="Mobile Number" name="phone" value={formData.phone} onChange={handleChange} icon={Smartphone} error={errors.phone} required />
-                <FloatingInput label="Aadhaar ID" name="nationalId" value={formData.nationalId} onChange={handleChange} icon={Fingerprint} error={errors.nationalId} required />
+                <FloatingInput label="Full Name" name="name" value={formData.name} onChange={handleChange} icon={User} error={errors.name} required autoComplete="off" />
+                <FloatingInput label="Email Address" type="email" name="email" value={formData.email} onChange={handleChange} icon={Mail} error={errors.email} required autoComplete="off" />
+                {!student && (
+                  <label className="md:col-span-2 -mt-1 mb-1 flex items-center gap-2.5 text-xs font-bold text-slate-600 dark:text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={formData.autoGeneratePassword}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, autoGeneratePassword: e.target.checked, password: '', confirmPassword: '' }))}
+                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    Auto-generate a secure password
+                    <span className="font-medium text-slate-400">(recommended — you'll choose how to deliver it in the last step)</span>
+                  </label>
+                )}
+                {(!student && formData.autoGeneratePassword) ? null : (
+                  <>
+                    <div className="relative">
+                      <FloatingInput
+                        label="Student Password"
+                        type={showPassword ? 'text' : 'password'}
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        icon={Shield}
+                        error={errors.password}
+                        required={!student}
+                        autoComplete="new-password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        className="absolute right-4 top-4 text-slate-400 hover:text-blue-500"
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <FloatingInput
+                        label="Confirm Student Password"
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        icon={Shield}
+                        error={errors.confirmPassword}
+                        required={!student}
+                        autoComplete="new-password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword((v) => !v)}
+                        className="absolute right-4 top-4 text-slate-400 hover:text-blue-500"
+                      >
+                        {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </>
+                )}
+                <FloatingInput label="Mobile Number" name="phone" value={formData.phone} onChange={handleDigitsChange(10)} icon={Smartphone} error={errors.phone} required inputMode="numeric" maxLength={10} autoComplete="off" />
+                <FloatingInput label="Aadhaar ID" name="nationalId" value={formData.nationalId} onChange={handleDigitsChange(12)} icon={Fingerprint} error={errors.nationalId} required inputMode="numeric" maxLength={12} autoComplete="off" />
                 <div className="relative md:col-span-2">
                   <FloatingInput
                     label="Institute Admin Password"
@@ -571,6 +645,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                     icon={Shield}
                     error={errors.instituteAdminPassword}
                     required
+                    autoComplete="new-password"
                   />
                   <button
                     type="button"
@@ -758,7 +833,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
               </p>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <FloatingInput label="Father's Name" name="fatherName" value={formData.fatherName} onChange={handleChange} error={errors.fatherName} icon={User} />
-                <FloatingInput label="Father's Phone" name="fatherPhone" value={formData.fatherPhone} onChange={handleChange} error={errors.fatherPhone} icon={Smartphone} />
+                <FloatingInput label="Father's Phone" name="fatherPhone" value={formData.fatherPhone} onChange={handleDigitsChange(10)} error={errors.fatherPhone} icon={Smartphone} inputMode="numeric" maxLength={10} />
               </div>
             </div>
 
@@ -768,13 +843,13 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
               </p>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <FloatingInput label="Mother's Name" name="motherName" value={formData.motherName} onChange={handleChange} error={errors.motherName} icon={User} />
-                <FloatingInput label="Mother's Phone" name="motherPhone" value={formData.motherPhone} onChange={handleChange} error={errors.motherPhone} icon={Smartphone} />
+                <FloatingInput label="Mother's Phone" name="motherPhone" value={formData.motherPhone} onChange={handleDigitsChange(10)} error={errors.motherPhone} icon={Smartphone} inputMode="numeric" maxLength={10} />
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mb-4">
-              <FloatingInput label="Parent Email" name="parentEmail" value={formData.parentEmail} onChange={handleChange} error={errors.parentEmail} icon={Mail} />
-              <FloatingInput label="WhatsApp Number" name="whatsappNumber" placeholder="WhatsApp number (for notifications)" value={formData.whatsappNumber} onChange={handleChange} error={errors.whatsappNumber} icon={Smartphone} />
+              <FloatingInput label="Parent Email" type="email" name="parentEmail" value={formData.parentEmail} onChange={handleChange} error={errors.parentEmail} icon={Mail} />
+              <FloatingInput label="WhatsApp Number" name="whatsappNumber" placeholder="WhatsApp number (for notifications)" value={formData.whatsappNumber} onChange={handleDigitsChange(10)} error={errors.whatsappNumber} icon={Smartphone} inputMode="numeric" maxLength={10} />
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mb-4">
@@ -810,7 +885,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                     error={errors.guardianRelation}
                     options={['', 'Uncle', 'Aunt', 'Grandparent', 'Elder Sibling', 'Other']}
                   />
-                  <FloatingInput label="Guardian Phone" name="guardianPhone" value={formData.guardianPhone} onChange={handleChange} error={errors.guardianPhone} icon={Smartphone} />
+                  <FloatingInput label="Guardian Phone" name="guardianPhone" value={formData.guardianPhone} onChange={handleDigitsChange(10)} error={errors.guardianPhone} icon={Smartphone} inputMode="numeric" maxLength={10} />
                 </div>
               )}
             </div>
@@ -873,7 +948,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <FloatingInput label="City" name="city" value={formData.city} onChange={handleChange} error={errors.city} required />
                 <FloatingInput label="State" name="state" value={formData.state} onChange={handleChange} error={errors.state} required />
-                <FloatingInput label="PIN Code" name="pinCode" value={formData.pinCode} onChange={handleChange} error={errors.pinCode} required />
+                <FloatingInput label="PIN Code" name="pinCode" value={formData.pinCode} onChange={handleDigitsChange(6)} error={errors.pinCode} required inputMode="numeric" maxLength={6} />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 border-t border-slate-100">
                 <FloatingInput label="Allergies" name="allergies" value={formData.allergies} onChange={handleChange} icon={AlertCircle} />
@@ -941,7 +1016,8 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
             </div>
           </motion.div>
         );
-      case 6:
+      case 6: {
+        const reviewBadStep = firstInvalidStep();
         return (
           <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}>
             <SectionHeader title="Review & Submit" description="Verify all student information." badge="Review" />
@@ -959,12 +1035,92 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-4 p-5 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 mb-8">
-              <CheckCircle className="text-emerald-500" size={20} />
-              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Information verified and ready for enrollment.</p>
-            </div>
+            {reviewBadStep ? (
+              <button
+                type="button"
+                onClick={() => { validateStep(reviewBadStep); setCurrentStep(reviewBadStep); }}
+                className="flex w-full items-center gap-4 p-5 rounded-3xl bg-amber-500/10 border border-amber-500/20 mb-8 text-left transition hover:bg-amber-500/15"
+              >
+                <AlertCircle className="text-amber-500 shrink-0" size={20} />
+                <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                  Missing or invalid information in "{STEPS.find((s) => s.id === reviewBadStep)?.title}" — tap to go fix it.
+                </p>
+              </button>
+            ) : (
+              <div className="flex items-center gap-4 p-5 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 mb-8">
+                <CheckCircle className="text-emerald-500" size={20} />
+                <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Information verified and ready for enrollment.</p>
+              </div>
+            )}
 
             <div className="grid gap-6">
+              <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-4 uppercase tracking-wider flex items-center gap-2">
+                  <User size={16} className="text-blue-500" /> Student Details Summary
+                </h4>
+                <div className="grid grid-cols-1 gap-y-4 gap-x-6 text-sm md:grid-cols-2">
+                  <div>
+                    <span className="text-slate-500 block text-xs mb-1">Mobile</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">{formData.phone || '—'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-xs mb-1">Aadhaar ID</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">{formData.nationalId || '—'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-xs mb-1">Date of Birth</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">{formData.dob || '—'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-xs mb-1">Gender</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200 capitalize">{formData.gender?.toLowerCase() || '—'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-4 uppercase tracking-wider flex items-center gap-2">
+                  <GraduationCap size={16} className="text-blue-500" /> Academic Details Summary
+                </h4>
+                <div className="grid grid-cols-1 gap-y-4 gap-x-6 text-sm md:grid-cols-2">
+                  <div>
+                    <span className="text-slate-500 block text-xs mb-1">Roll No</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">{formData.rollNo || '—'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-xs mb-1">Admission Date</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">{formData.admissionDate || '—'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-xs mb-1">Class & Section</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">
+                      {classes.find((c) => c.id === formData.classId)?.name || '—'}
+                      {formData.sectionId ? ` • ${sections.find((s) => s.id === formData.sectionId)?.name || ''}` : ''}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-4 uppercase tracking-wider flex items-center gap-2">
+                  <MapPin size={16} className="text-blue-500" /> Address Summary
+                </h4>
+                <div className="grid grid-cols-1 gap-y-4 gap-x-6 text-sm md:grid-cols-2">
+                  <div className="md:col-span-2">
+                    <span className="text-slate-500 block text-xs mb-1">Address</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">{formData.currentAddress || '—'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-xs mb-1">City / State</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">{[formData.city, formData.state].filter(Boolean).join(', ') || '—'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-xs mb-1">PIN Code</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">{formData.pinCode || '—'}</span>
+                  </div>
+                </div>
+              </div>
+
               <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
                 <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-4 uppercase tracking-wider flex items-center gap-2">
                   <Users size={16} className="text-blue-500" /> Parent Details Summary
@@ -1009,9 +1165,51 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                   </div>
                 </div>
               </div>
+
+              {!student && (
+                <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-1 uppercase tracking-wider flex items-center gap-2">
+                    <Shield size={16} className="text-blue-500" /> Student Login Delivery
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                    How should {formData.name || 'the student'} receive their login details?
+                  </p>
+                  <div className="grid gap-2.5 sm:grid-cols-2">
+                    {[
+                      { value: 'student_email', label: "Student's Email", hint: formData.email || 'No email on file' },
+                      { value: 'parent_email', label: "Parent's Email", hint: formData.parentEmail || 'No parent email on file' },
+                      { value: 'slip', label: 'Printable Slip', hint: 'Download a PDF to hand out' },
+                      { value: 'skip', label: "Skip for now", hint: "You'll send it later from the student's profile" },
+                    ].map((opt) => (
+                      <label
+                        key={opt.value}
+                        className={`flex cursor-pointer items-start gap-2.5 rounded-2xl border p-3.5 transition ${
+                          formData.credentialDeliveryChannel === opt.value
+                            ? 'border-blue-400 bg-blue-50 dark:border-blue-600 dark:bg-blue-950/30'
+                            : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="credentialDeliveryChannel"
+                          value={opt.value}
+                          checked={formData.credentialDeliveryChannel === opt.value}
+                          onChange={handleChange}
+                          className="mt-0.5 h-4 w-4 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span>
+                          <span className="block text-sm font-bold text-slate-800 dark:text-slate-100">{opt.label}</span>
+                          <span className="block text-xs text-slate-400">{opt.hint}</span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
         );
+      }
       default: return null;
     }
   };
@@ -1028,16 +1226,8 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
   };
 
   return (
-    <div className={`flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-950 lg:flex-row ${pageMode ? 'min-h-[calc(100vh-150px)] rounded-[20px] lg:h-[calc(100vh-168px)] lg:min-h-[620px] lg:rounded-[24px]' : 'h-[calc(90vh-88px)] min-h-[520px]'}`}>
-      <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-[#f3f6fb] p-4 dark:border-slate-800 dark:bg-slate-900/50 lg:block">
-        <div className="mb-4">
-          <StepIntroCard />
-        </div>
-        <StepRail currentStep={currentStep} onStepClick={goToStep} />
-      </aside>
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="shrink-0 border-b border-slate-200 bg-[#f3f6fb] p-2 dark:border-slate-800 dark:bg-slate-950 lg:hidden">
+    <div className={`flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-950 ${pageMode ? 'min-h-[calc(100vh-150px)] rounded-[20px] lg:h-[calc(100vh-168px)] lg:min-h-[620px] lg:rounded-[24px]' : 'h-[calc(90vh-88px)] min-h-[520px]'}`}>
+        <div className="shrink-0 border-b border-slate-200 bg-[#f3f6fb] p-2 dark:border-slate-800 dark:bg-slate-950 lg:p-3">
           <StepRail currentStep={currentStep} onStepClick={goToStep} compact />
         </div>
 
@@ -1058,21 +1248,28 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
               {currentStep > 1 && <button onClick={() => setCurrentStep(s => s - 1)} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-slate-700 transition hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-900 sm:px-5 sm:py-3"><ChevronLeft size={16} /> Back</button>}
               <button
                 onClick={() => {
-                  if (currentStep === 3) {
-                    const errs = validateStep3();
-                    if (Object.keys(errs).length > 0) {
-                      setErrors(errs);
-                      return;
-                    }
-                    setErrors({});
+                  if (VALIDATED_STEPS.includes(currentStep) && !validateStep(currentStep)) {
+                    return;
                   }
+                  setErrors({});
                   if (currentStep < STEPS.length) {
                     setCurrentStep(s => s + 1);
                   } else {
+                    // Safety net: re-check every step before the real submit,
+                    // in case one was reached without going through Next (e.g.
+                    // the sidebar's own jump-ahead guard, or state restored
+                    // from an edit). Jump to the first thing still wrong
+                    // instead of silently failing at the API.
+                    const badStep = firstInvalidStep();
+                    if (badStep) {
+                      validateStep(badStep);
+                      setCurrentStep(badStep);
+                      return;
+                    }
                     onSubmit(formData);
                   }
                 }}
-                disabled={isLoading}
+                disabled={isLoading || photoUploading}
                 className={`${currentStep === 1 ? 'col-span-2 sm:col-span-1' : ''} inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700 disabled:opacity-50 sm:px-6 sm:py-3`}
               >
                 {currentStep < STEPS.length ? (
@@ -1088,6 +1285,5 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
           </div>
         </div>
       </div>
-    </div>
   );
 }

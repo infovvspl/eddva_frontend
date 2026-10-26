@@ -37,12 +37,18 @@ export interface SchoolMaterial {
   isAiGenerated?: boolean;
   /** 'upload' (file/link), 'manual' (typed by a teacher), 'ai'; null for older rows. */
   contentSource?: 'upload' | 'manual' | 'ai' | null;
+  /** The chapter's currently-indexed AI-grounding textbook — admin-managed and
+   *  class-wide, so teachers may not delete it (backend enforces this too). */
+  isTrainedTextbook?: boolean;
   topicId?: string | null;
   chapterId?: string | null;
   topicName?: string | null;
   chapterName?: string | null;
   subjectName?: string | null;
   subjectIdFk?: string | null;
+  /** Older rows carry the file kind in `type` instead of `fileType`. */
+  type?: string | null;
+  tenantId?: string | null;
   createdAt?: string | null;
 }
 
@@ -79,6 +85,9 @@ export const schoolContent = {
     topicId?: string;
     classId?: string;
     sectionId?: string;
+    /** Publish the same material to several sections of the class in one call — takes
+     *  priority over `sectionId` when present. Returns an array in `data` when > 1. */
+    sectionIds?: string[];
   }) => schoolApi.post('/materials', body).then(extractData),
 
   /** Partial update — omitted fields are left unchanged. */
@@ -143,6 +152,10 @@ export const schoolContent = {
     resourceType: string;
     classId?: string;
     sectionId?: string;
+    /** Publish the same AI-generated material to several sections of the class in one
+     *  call — takes priority over `sectionId` when present. Returns an array in `data`
+     *  when > 1. */
+    sectionIds?: string[];
   }) =>
     schoolApi.post('/materials/ai-save', body).then(extractData),
 

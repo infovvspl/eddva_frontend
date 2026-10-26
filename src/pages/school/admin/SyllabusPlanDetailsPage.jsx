@@ -2,9 +2,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  ArrowLeft, BookOpen, Calendar, Clock, User, Layers,
-  Sparkles, CheckCircle2, AlertCircle, Edit3, Shield, ListTree, ChevronRight, Zap, X
+  BookOpen, Calendar, Clock, User, Layers,
+  Sparkles, AlertCircle, Edit3, Shield, ListTree, ChevronRight, Zap
 } from 'lucide-react';
+import { BackButton } from '@/components/shared/BackButton';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import { toast } from 'sonner';
 
@@ -13,18 +14,6 @@ export default function SyllabusPlanDetailsPage() {
   const navigate = useNavigate();
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  const [updatingTopic, setUpdatingTopic] = useState(null);
-  const [topicProgressForm, setTopicProgressForm] = useState({
-    status: 'in_progress',
-    progress: 50,
-    actualPeriods: 2,
-    remarks: '',
-    delayReason: '',
-    carryForwardDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-    startDate: new Date().toISOString().split('T')[0],
-    completionDate: ''
-  });
 
   useEffect(() => {
     fetchPlan();
@@ -88,12 +77,7 @@ export default function SyllabusPlanDetailsPage() {
     return (
       <div className="p-8 text-center space-y-4">
         <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">Syllabus Plan Not Found</h2>
-        <button
-          onClick={() => navigate('/school/admin/syllabus-planner')}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-xs font-bold text-white shadow-md hover:bg-blue-700"
-        >
-          <ArrowLeft size={16} /> Back to Syllabus Planner
-        </button>
+        <BackButton fallback="/school/admin/syllabus-planner" />
       </div>
     );
   }
@@ -114,84 +98,6 @@ export default function SyllabusPlanDetailsPage() {
   const otherChs = allocs.filter(a => !['unit 1', 'term 1', 'unit 2', 'term 2'].includes(normTerm(a.term)));
 
   const totalTopicsCount = allocs.reduce((acc, c) => acc + (Array.isArray(c.topics) ? c.topics.length : 0), 0);
-
-  const handleOpenTopicModal = (t, plannedPeriodsForTopic = 2) => {
-    const currentStatus = t.status || 'pending';
-    setUpdatingTopic({ ...t, plannedPeriodsForTopic });
-    setTopicProgressForm({
-      status: currentStatus,
-      progress: t.progress ?? (currentStatus === 'completed' ? 100 : 0),
-      actualPeriods: t.actualPeriods ?? (currentStatus === 'pending' ? 0 : (t.periods || 1)),
-      remarks: t.remarks || '',
-      delayReason: t.delayReason || '',
-      carryForwardDate: t.carryForwardDate || new Date(Date.now() + 86400000).toISOString().split('T')[0],
-      startDate: t.startDate || new Date().toISOString().split('T')[0],
-      completionDate: t.completionDate || (currentStatus === 'completed' ? new Date().toISOString().split('T')[0] : '')
-    });
-  };
-
-  const handleSaveTopicProgress = async () => {
-    if (!updatingTopic) return;
-    try {
-      const topicIdToUpdate = updatingTopic.topicId || updatingTopic.id;
-      const topicNameToUpdate = (updatingTopic.topicName || updatingTopic.name || '').trim().toLowerCase();
-      const updatedStatus = topicProgressForm.status;
-      const updatedProgress = parseInt(topicProgressForm.progress, 10) || 0;
-      const updatedActualPeriods = parseInt(topicProgressForm.actualPeriods, 10) || 1;
-
-      await api.patch(`/syllabus/plans/${planId}/progress`, {
-        topicId: topicIdToUpdate,
-        topicName: updatingTopic.topicName || updatingTopic.name,
-        chapterId: updatingTopic.chapterId,
-        chapterName: updatingTopic.chapterName,
-        status: updatedStatus,
-        progress: updatedProgress,
-        actualPeriods: updatedActualPeriods,
-        remarks: topicProgressForm.remarks,
-        delayReason: updatedStatus !== 'completed' ? topicProgressForm.delayReason : null,
-        carryForwardDate: updatedStatus !== 'completed' ? topicProgressForm.carryForwardDate : null,
-        startDate: topicProgressForm.startDate,
-        completionDate: updatedStatus === 'completed' ? (topicProgressForm.completionDate || new Date().toISOString().split('T')[0]) : null
-      });
-
-      // Optimistically update local plan state so UI reflects changes immediately without relying solely on refetching
-      if (plan && Array.isArray(plan.chapter_allocations)) {
-        const updatedAllocations = plan.chapter_allocations.map((ch) => {
-          const topics = Array.isArray(ch.topics) ? ch.topics : [];
-          const updatedTopics = topics.map((t) => {
-            const tId = String(t.topicId || t.id || '').trim();
-            const tName = String(t.topicName || t.name || '').trim().toLowerCase();
-            const isMatch = (tId && String(topicIdToUpdate) === tId) || (tName && topicNameToUpdate && tName === topicNameToUpdate);
-            if (isMatch) {
-              return {
-                ...t,
-                status: updatedStatus,
-                progress: updatedProgress,
-                actualPeriods: updatedActualPeriods,
-                remarks: topicProgressForm.remarks,
-                delayReason: updatedStatus !== 'completed' ? topicProgressForm.delayReason : null,
-                carryForwardDate: updatedStatus !== 'completed' ? topicProgressForm.carryForwardDate : null
-              };
-            }
-            return t;
-          });
-          return { ...ch, topics: updatedTopics };
-        });
-        setPlan({ ...plan, chapter_allocations: updatedAllocations });
-      }
-
-      toast.success(
-        updatedStatus === 'completed' 
-          ? 'Topic marked as completed!' 
-          : 'Topic set as In Progress / Partial and carried forward as pending.'
-      );
-      setUpdatingTopic(null);
-      fetchPlan(true);
-    } catch (err) {
-      console.error('Failed to update topic progress:', err);
-      toast.error('Failed to update topic progress');
-    }
-  };
 
   const isTeacherView = typeof window !== 'undefined' && window.location.pathname.includes('/school/teacher');
 
@@ -273,58 +179,26 @@ export default function SyllabusPlanDetailsPage() {
                     )}
                   </div>
 
-                  {isTeacherView ? (
+                  <div className="flex flex-col items-end gap-1 text-[11px]">
                     <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenTopicModal({ ...t, chapterId: c.chapterId, chapterName: c.chapterName }, plannedPeriodsPerTopic)}
-                        className="text-[11px] font-extrabold px-3 py-1.5 rounded-xl bg-blue-600 text-white shadow-sm hover:bg-blue-700 transition-all flex items-center gap-1"
-                      >
-                        <Edit3 size={13} /> Update Progress & Details
-                      </button>
-
-                      {!isTopicDone && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setTopicProgressForm({
-                              status: 'completed',
-                              progress: 100,
-                              actualPeriods: t.actualPeriods || 2,
-                              remarks: 'Finished topic coverage',
-                              startDate: new Date().toISOString().split('T')[0],
-                              completionDate: new Date().toISOString().split('T')[0]
-                            });
-                            setUpdatingTopic(t);
-                          }}
-                          className="text-[11px] font-black px-3 py-1.5 rounded-xl bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all flex items-center gap-1"
-                        >
-                          <CheckCircle2 size={13} /> Mark Done
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-end gap-1 text-[11px]">
-                      <div className="flex items-center gap-2">
-                        <span className="font-extrabold text-blue-600 dark:text-blue-400">{topicProg}% Completed</span>
-                        <span className="font-bold text-slate-500">({actualP} Periods Spent)</span>
-                        {/* Overrun badge: shown when actual periods exceed per-topic planned share */}
-                        {typeof actualP === 'number' && actualP > plannedPeriodsPerTopic && (
-                          <span className="font-black px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-900 flex items-center gap-1">
-                            <AlertCircle size={10} /> Overrun: +{actualP - plannedPeriodsPerTopic} Periods
-                          </span>
-                        )}
-                        <span className={`font-black px-2.5 py-1 rounded-lg ${isTopicDone ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : (t.status === 'in_progress' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300' : 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300')}`}>
-                          {isTopicDone ? 'Completed' : t.status === 'in_progress' ? 'In Progress' : 'Pending'}
-                        </span>
-                      </div>
-                      {!isTopicDone && topicProg > 0 && (
-                        <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 inline-flex items-center gap-1">
-                          <Zap className="size-2.5 shrink-0" /> Carried forward as pending execution
+                      <span className="font-extrabold text-blue-600 dark:text-blue-400">{topicProg}% Completed</span>
+                      <span className="font-bold text-slate-500">({actualP} Periods Spent)</span>
+                      {/* Overrun badge: shown when actual periods exceed per-topic planned share */}
+                      {typeof actualP === 'number' && actualP > plannedPeriodsPerTopic && (
+                        <span className="font-black px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-900 flex items-center gap-1">
+                          <AlertCircle size={10} /> Overrun: +{actualP - plannedPeriodsPerTopic} Periods
                         </span>
                       )}
+                      <span className={`font-black px-2.5 py-1 rounded-lg ${isTopicDone ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : (t.status === 'in_progress' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300' : 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300')}`}>
+                        {isTopicDone ? 'Completed' : t.status === 'in_progress' ? 'In Progress' : 'Pending'}
+                      </span>
                     </div>
-                  )}
+                    {!isTopicDone && topicProg > 0 && (
+                      <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 inline-flex items-center gap-1">
+                        <Zap className="size-2.5 shrink-0" /> Carried forward as pending execution
+                      </span>
+                    )}
+                  </div>
                 </div>
               );
           })}
@@ -340,20 +214,13 @@ export default function SyllabusPlanDetailsPage() {
     <div className="space-y-6 font-poppins pb-12">
       {/* Header & Back Navigation */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-3xl shadow-sm">
-        <div className="space-y-2">
-          <button
-            onClick={() => isTeacherView ? navigate('/school/teacher/teaching-plan') : navigate('/school/admin/syllabus-planner')}
-            className="inline-flex items-center gap-1.5 text-xs font-extrabold text-blue-600 hover:text-blue-700 transition-colors mb-1"
-          >
-            <ArrowLeft size={15} /> {isTeacherView ? 'Back to My Teaching Plan' : 'Back to Syllabus Planner'}
-          </button>
-          
+        <div className="space-y-2 flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="px-3 py-1 rounded-full text-xs font-black uppercase bg-blue-600 text-white">
               {plan.class_name} {plan.section_name ? `(${plan.section_name})` : ''}
             </span>
             <span className="px-3 py-1 rounded-full text-xs font-extrabold uppercase bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-              Session {plan.academic_year || '2025-2026'}
+              Session {plan.academic_year || '2026-2027'}
             </span>
           </div>
 
@@ -378,6 +245,7 @@ export default function SyllabusPlanDetailsPage() {
               <Shield size={14} /> Official Admin Plan
             </span>
           )}
+          <BackButton fallback={isTeacherView ? '/school/teacher/teaching-plan' : '/school/admin/syllabus-planner'} />
         </div>
       </div>
 
@@ -531,144 +399,6 @@ export default function SyllabusPlanDetailsPage() {
           </div>
         )}
       </div>
-
-      {/* UPDATE TOPIC PROGRESS & DETAILS MODAL FOR TEACHER */}
-      {updatingTopic && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900 space-y-4 font-poppins">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div>
-                <h3 className="text-base font-black text-slate-900 dark:text-white">Update Topic Execution & Progress</h3>
-                <p className="text-xs text-slate-500">{updatingTopic.topicName || updatingTopic.name}</p>
-              </div>
-              <button
-                onClick={() => setUpdatingTopic(null)}
-                className="p-1 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-              >
-                <X className="size-4" />
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Execution Status *</label>
-                <select
-                  value={topicProgressForm.status}
-                  onChange={e => {
-                    const st = e.target.value;
-                    setTopicProgressForm(f => ({
-                      ...f,
-                      status: st,
-                      progress: st === 'completed' ? 100 : (st === 'pending' ? 0 : (f.progress || 50)),
-                      actualPeriods: st === 'pending' ? 0 : (f.actualPeriods || 1)
-                    }));
-                  }}
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-                >
-                  <option value="pending">Pending / Scheduled</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="completed">Completed (Mark Done)</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Completion Progress (%) *</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={topicProgressForm.progress}
-                    onChange={e => setTopicProgressForm(f => ({ ...f, progress: parseInt(e.target.value, 10) || 0 }))}
-                    className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Actual Periods Spent *</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="50"
-                    value={topicProgressForm.actualPeriods}
-                    onChange={e => setTopicProgressForm(f => ({ ...f, actualPeriods: parseInt(e.target.value, 10) || 1 }))}
-                    className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-                  />
-                </div>
-              </div>
-
-              {/* Overrun warning — shown live as teacher types */}
-              {updatingTopic && topicProgressForm.actualPeriods > (updatingTopic.plannedPeriodsForTopic || 2) && (
-                <div className="flex items-start gap-2 p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200">
-                  <AlertCircle size={15} className="mt-0.5 shrink-0 text-amber-600" />
-                  <div>
-                    <p className="text-xs font-extrabold">Exceeds planned periods</p>
-                    <p className="text-[11px] font-semibold mt-0.5">
-                      Planned: <strong>{updatingTopic.plannedPeriodsForTopic || 2} periods</strong> — you are spending <strong>{topicProgressForm.actualPeriods} periods</strong>, which is <strong>+{topicProgressForm.actualPeriods - (updatingTopic.plannedPeriodsForTopic || 2)}</strong> over budget. This will be flagged to the admin.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Execution Remarks & Class Notes</label>
-                <textarea
-                  rows="2"
-                  value={topicProgressForm.remarks}
-                  onChange={e => setTopicProgressForm(f => ({ ...f, remarks: e.target.value }))}
-                  placeholder="e.g. Completed theory & solved exercise problems with students..."
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-2 font-semibold outline-none focus:border-blue-600 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-                />
-              </div>
-
-              {/* Carry Forward & Delay Reason fields if topic is not fully completed */}
-              {topicProgressForm.status !== 'completed' && topicProgressForm.progress < 100 && (
-                <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 space-y-3">
-                  <div className="flex items-center gap-2 font-extrabold text-amber-900 dark:text-amber-200 text-xs">
-                    <AlertCircle size={15} /> Carry Forward & Delay Reason
-                  </div>
-                  <div>
-                    <label className="block font-bold text-amber-900 dark:text-amber-300 text-[11px] mb-1">Reason for Non-Completion / Partial Progress *</label>
-                    <input
-                      type="text"
-                      value={topicProgressForm.delayReason}
-                      onChange={e => setTopicProgressForm(f => ({ ...f, delayReason: e.target.value }))}
-                      placeholder="e.g. Doubts clarification took extra time, sports assembly delay..."
-                      className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2 text-xs font-semibold outline-none dark:bg-slate-900 dark:text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-amber-900 dark:text-amber-300 text-[11px] mb-1">Carried Forward Rescheduled Date</label>
-                    <input
-                      type="date"
-                      value={topicProgressForm.carryForwardDate}
-                      onChange={e => setTopicProgressForm(f => ({ ...f, carryForwardDate: e.target.value }))}
-                      className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2 text-xs font-semibold outline-none dark:bg-slate-900 dark:text-white"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={() => setUpdatingTopic(null)}
-                className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 dark:border-slate-800 dark:text-slate-300"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveTopicProgress}
-                className="px-5 py-2 rounded-xl bg-blue-600 text-xs font-extrabold text-white shadow-md hover:bg-blue-700 transition-all flex items-center gap-1.5"
-              >
-                <CheckCircle2 size={15} /> Save & Update Plan
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
     </div>
   );

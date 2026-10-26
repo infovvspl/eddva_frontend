@@ -4,12 +4,13 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   User, BookOpen, Calendar, BarChart2, Briefcase,
-  Mail, Smartphone, MapPin, ArrowLeft, Download,
+  Mail, Smartphone, MapPin, Download,
   Edit2, Clock, CheckCircle, Award, Globe, Building,
   Printer, Share2, Loader2, FileText, ChevronDown, ChevronUp,
   Video, TrendingUp, Eye, Brain, Star, Play, AlertCircle,
   CheckCircle2, Sparkles, RotateCcw, X, Upload, Trash2, File,
 } from 'lucide-react';
+import { BackButton } from '@/components/shared/BackButton';
 import api from '@/lib/api/school-client';
 import { getUploadUrl, uploadToS3 } from '@/lib/upload';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -383,7 +384,7 @@ export default function TeacherProfile() {
   };
 
   const profile = teacher?.teacherProfile || {};
-  const isTeacher = teacher?.role === 'TEACHER';
+  const isTeacher = (teacher?.role || '').includes('TEACHER');
   const docs = profile.docs || {};
   const teacherDetails = docs.teacherDetails || docs.profileDetails || {};
   const detailValue = (...values) => values.find((value) => value !== undefined && value !== null && value !== '');
@@ -428,15 +429,8 @@ export default function TeacherProfile() {
   return (
     <div className="w-full pb-24 sm:pb-36">
       {/* Header */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-0">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold transition-colors text-sm sm:text-base self-start"
-        >
-          <ArrowLeft size={18} />
-          Back to List
-        </button>
-        <div className="flex gap-2 w-full sm:w-auto">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end px-4 sm:px-0">
+        <div className="flex gap-2 w-full sm:w-auto flex-wrap sm:justify-end">
           <button
             onClick={handleExportPDF}
             disabled={exporting}
@@ -451,6 +445,7 @@ export default function TeacherProfile() {
           <button className="flex size-10 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 shrink-0">
             <Share2 size={16} />
           </button>
+          <BackButton />
         </div>
       </div>
 
@@ -922,13 +917,12 @@ export default function TeacherProfile() {
                                 <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Date</TableHead>
                                 <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Day</TableHead>
                                 <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Status</TableHead>
-                                <TableHead className="h-auto p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Remarks</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody className="divide-y divide-slate-50 dark:divide-slate-800 text-sm">
                               {attendance.length === 0 ? (
                                 <TableRow className="hover:bg-transparent">
-                                  <TableCell colSpan={4} className="p-10 text-center text-slate-400 font-bold">
+                                  <TableCell colSpan={3} className="p-10 text-center text-slate-400 font-bold">
                                     No attendance records for this month.
                                   </TableCell>
                                 </TableRow>
@@ -950,7 +944,6 @@ export default function TeacherProfile() {
                                             {record.status || 'Unknown'}
                                           </Badge>
                                         </TableCell>
-                                        <TableCell className="p-4 text-slate-400 font-bold">{record.remarks || '—'}</TableCell>
                                       </TableRow>
                                     );
                                   })
@@ -1411,10 +1404,25 @@ export default function TeacherProfile() {
                                 <div key={rec.id} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
                                   {/* Recording row */}
                                   <div className="p-4 flex flex-col sm:flex-row sm:items-center gap-4">
-                                    {/* Icon */}
-                                    <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-blue-50 dark:bg-blue-950">
-                                      <Play size={18} className="text-blue-600" />
-                                    </div>
+                                    {/* Thumbnail */}
+                                    <button
+                                      type="button"
+                                      onClick={() => openWatch(rec)}
+                                      title="Watch recording"
+                                      className="relative grid h-14 w-24 shrink-0 place-items-center overflow-hidden rounded-xl bg-slate-900 sm:h-16 sm:w-28"
+                                    >
+                                      {rec.thumbnail_url ? (
+                                        <img
+                                          src={rec.thumbnail_url}
+                                          alt=""
+                                          className="absolute inset-0 h-full w-full object-cover"
+                                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                        />
+                                      ) : (
+                                        <div className="absolute inset-0 bg-blue-50 dark:bg-blue-950" />
+                                      )}
+                                      <Play size={18} className={`relative z-10 ${rec.thumbnail_url ? 'text-white drop-shadow' : 'text-blue-600'}`} />
+                                    </button>
 
                                     {/* Meta */}
                                     <div className="flex-1 min-w-0">

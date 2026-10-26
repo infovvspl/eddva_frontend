@@ -5,13 +5,14 @@ import { Loader2 } from 'lucide-react';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import AiTutorWidget from './AiTutorWidget';
-import BreadcrumbBar from '@/components/school/breadcrumbs/BreadcrumbBar';
+// import BreadcrumbBar from '@/components/school/breadcrumbs/BreadcrumbBar';
 import { BreadcrumbProvider } from '@/components/school/breadcrumbs/BreadcrumbContext';
 import { isNavItemActive } from '@/components/layout/nav-active';
 import { PageTransition } from '@/components/school/admin/PageTransition';
 import MaintenanceNotice from '@/components/shared/MaintenanceNotice';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSchoolFeature } from '@/hooks/use-school-feature';
+import { useScreenTimeTracking } from '@/hooks/use-screen-time-tracking';
 import { useAuth } from '@/context/SchoolAuthContext';
 import {
   LayoutDashboard,
@@ -41,6 +42,7 @@ function StudentLayoutShell() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { logout } = useAuth();
+  useScreenTimeTracking();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [moreDrawerOpen, setMoreDrawerOpen] = useState(false);
@@ -79,7 +81,7 @@ function StudentLayoutShell() {
     { label: 'Live Classes', path: '/school/student/live-classes', matchPaths: ['/school/student/live'], icon: MonitorPlay, color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/20', enabled: hasLiveClasses },
     { label: 'Recorded Classes', path: '/school/student/recorded-classes', icon: Video, color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20', enabled: true },
     { label: 'Study Materials', path: '/school/student/study-materials', matchPaths: ['/school/student/classes', '/school/student/syllabus'], icon: BookOpen, color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/20', enabled: true },
-    { label: 'AI Planner', path: '/school/student/planner', matchPaths: ['/school/student/ai-study', '/school/student/quiz'], icon: BrainCircuit, color: 'text-purple-500 bg-purple-50 dark:bg-purple-950/20', enabled: hasPlanner },
+    { label: 'AI Planner', path: '/school/student/planner', icon: BrainCircuit, color: 'text-purple-500 bg-purple-50 dark:bg-purple-950/20', enabled: hasPlanner },
     { label: 'Assignments', path: '/school/student/assignments', icon: FileText, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20', enabled: hasAssignments },
     { label: 'Assessments', path: '/school/student/assessments', icon: ClipboardList, color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/20', enabled: hasAssessments },
     { label: 'Attendance', path: '/school/student/attendance', icon: UserCheck, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20', enabled: true },
@@ -104,7 +106,8 @@ function StudentLayoutShell() {
         <Navbar />
 
         <MaintenanceNotice />
-        <BreadcrumbBar />
+        {/* Breadcrumb hidden for the student module for now */}
+        {/* <BreadcrumbBar /> */}
 
         {/* Scrollable Container */}
         <main className={`flex-1 min-h-0 ${layoutConfig.type === 'immersive' && !layoutConfig.isScrollable ? 'p-0 overflow-y-hidden' : 'p-0 overflow-y-auto'} scrollbar-none`}>
@@ -226,7 +229,8 @@ function StudentLayoutShell() {
       >
         <Navbar onMenuClick={() => setSidebarOpen(true)} />
         <MaintenanceNotice />
-        <BreadcrumbBar />
+        {/* Breadcrumb hidden for the student module for now */}
+        {/* <BreadcrumbBar /> */}
         <main className={`flex-1 overflow-x-hidden ${layoutConfig.isScrollable ? 'overflow-y-auto' : 'overflow-y-hidden'} ${layoutConfig.mainPaddingClass}`}>
           <AnimatePresence initial={false} mode="wait">
             <PageTransition key={location.pathname} duration={0.2}>

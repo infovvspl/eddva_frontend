@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Search, Play, ChevronDown, Star, Filter, Users, Loader2 } from "lucide-react";
-import { LandingNavbar } from "@/components/landing/LandingNavbar";
+import LandingNavbar from "@/components/landing/LandingNavbar";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { B, P, T, gText, SG, TYPO, BG_STUDIO } from "@/components/landing/DesignTokens";
 import { useAllPublicBatches } from "@/hooks/use-student";

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { getApiOrigin } from '@/lib/api-config';
@@ -77,6 +77,21 @@ function getQuestionTypeLabel(type) {
   return labels[type] || 'Question';
 }
 
+// Per test type: chip colour, marks tile gradient and window-progress bar gradient.
+const TYPE_THEME = {
+  topic: { soft: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400', grad: 'from-blue-400 to-indigo-500', border: 'border-blue-200 hover:border-blue-400 dark:border-blue-900/60 dark:hover:border-blue-700' },
+  chapter: { soft: 'bg-violet-50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400', grad: 'from-violet-400 to-fuchsia-500', border: 'border-violet-200 hover:border-violet-400 dark:border-violet-900/60 dark:hover:border-violet-700' },
+  subject: { soft: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400', grad: 'from-emerald-400 to-teal-500', border: 'border-emerald-200 hover:border-emerald-400 dark:border-emerald-900/60 dark:hover:border-emerald-700' },
+  mock: { soft: 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400', grad: 'from-amber-400 to-orange-500', border: 'border-amber-200 hover:border-amber-400 dark:border-amber-900/60 dark:hover:border-amber-700' },
+  final: { soft: 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400', grad: 'from-rose-400 to-pink-500', border: 'border-rose-200 hover:border-rose-400 dark:border-rose-900/60 dark:hover:border-rose-700' },
+};
+
+const STATUS_SOFT = {
+  scheduled: 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
+  completed: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400',
+  active: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
+};
+
 const TEST_TYPE_FILTERS = [
   { id: 'topic', label: 'Topic Tests', icon: ClipboardList },
   { id: 'chapter', label: 'Chapter Tests', icon: BarChart3 },
@@ -141,9 +156,10 @@ export default function Assessments() {
   const [subjectFilter, setSubjectFilter] = useState('all');
   const [classSubjects, setClassSubjects] = useState([]);
   const [assessments, setAssessments] = useState([]);
-  // myResults: array of { assessment, result } objects
-  const [myResults, setMyResults] = useState([]);
-  const [resultsLoading, setResultsLoading] = useState(false);
+  // resultsById: assessment id -> the student's result (or null). Filled in as each request returns,
+  // so cards appear one by one instead of all at once after the slowest request.
+  const [resultsById, setResultsById] = useState({});
+  const [resultsPending, setResultsPending] = useState(0);
   const [submitTarget, setSubmitTarget] = useState(null);
   const [answerText, setAnswerText] = useState('');
   const [answerFile, setAnswerFile] = useState(null);
@@ -204,40 +220,56 @@ export default function Assessments() {
   }, [user?.studentProfile?.sectionId, user?.sectionId]);
 
 
-  // Fetch results when switching to the results tab
+  // Results used to be fetched only after the My Results tab was opened, and nothing showed until the
+  // slowest of the per-assessment requests finished. Now they load in the background as soon as the
+  // assessments are known (the selected test type first), each card appears as soon as its own request
+  // returns, and opening the tab just refreshes what is already on screen.
+  const resultsTabOpen = activeTab === 'results';
   useEffect(() => {
-    if (activeTab !== 'results' || !assessments.length) return;
-    const fetchResults = async () => {
-      setResultsLoading(true);
+    if (!assessments.length) return undefined;
+    let cancelled = false;
+
+    const queue = [...assessments].sort(
+      (a, b) => Number(normalizeAssessmentType(b) === typeFilter) - Number(normalizeAssessmentType(a) === typeFilter)
+    );
+    setResultsPending(queue.length);
+
+    const loadOne = async (asm) => {
+      let result = null;
+      let failed = false;
       try {
-        const pairs = await Promise.all(
-          assessments.map(async (asm) => {
-            try {
-              const res = await api.get(`/assessments/${asm.id}/results`);
-              const all = res.data?.data ?? res.data ?? [];
-              const mine = Array.isArray(all)
-                ? all.find(
-                    (r) =>
-                      String(r.student_id) === String(user?.id) ||
-                      String(r.student_user_id) === String(user?.id)
-                  ) ?? (all.length === 1 ? all[0] : null)
-                : null;
-              return { assessment: asm, result: mine ?? null };
-            } catch {
-              return { assessment: asm, result: null };
-            }
-          })
-        );
-        // Show only assessments that have a result OR were scheduled in past
-        setMyResults(pairs.filter((p) => p.result || p.assessment.status === 'completed'));
-      } catch (err) {
-        console.error('Failed to load results', err);
-      } finally {
-        setResultsLoading(false);
+        const res = await api.get(`/assessments/${asm.id}/results`);
+        const all = res.data?.data ?? res.data ?? [];
+        result = Array.isArray(all)
+          ? all.find(
+              (r) =>
+                String(r.student_id) === String(user?.id) ||
+                String(r.student_user_id) === String(user?.id)
+            ) ?? (all.length === 1 ? all[0] : null)
+          : null;
+      } catch {
+        failed = true;
       }
+      if (cancelled) return;
+      // A failed refresh keeps whatever result was already on screen.
+      setResultsById((prev) => (failed && asm.id in prev ? prev : { ...prev, [asm.id]: result ?? null }));
+      setResultsPending((n) => Math.max(0, n - 1));
     };
-    fetchResults();
-  }, [activeTab, assessments, user?.id]);
+
+    // All at once, the selected type's requests first. Each card shows up as soon as its own request returns.
+    queue.forEach((asm) => { void loadOne(asm); });
+
+    return () => { cancelled = true; };
+  }, [assessments, user?.id, resultsTabOpen]);
+
+  // Show only assessments that have a result OR were scheduled in past
+  const myResults = useMemo(
+    () => assessments
+      .filter((asm) => Object.prototype.hasOwnProperty.call(resultsById, asm.id))
+      .map((asm) => ({ assessment: asm, result: resultsById[asm.id] }))
+      .filter((p) => p.result || p.assessment.status === 'completed'),
+    [assessments, resultsById]
+  );
 
   useEffect(() => {
     latestAnswerTextRef.current = answerText;
@@ -539,6 +571,7 @@ export default function Assessments() {
   };
   const filteredAssessments = typeAssessments.filter(matchesSubject);
   const filteredResults = typeResults.filter(({ assessment }) => matchesSubject(assessment));
+  const resultsLoading = resultsPending > 0 && filteredResults.length === 0;
   const subjectOptionsKey = subjectOptions.map((subject) => subject.id).join('|');
 
   useEffect(() => {
@@ -578,7 +611,7 @@ export default function Assessments() {
           />
         </div>
       ) : (
-        <div className="flex w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex w-fit max-w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="flex min-w-max gap-1">
             {TEST_TYPE_FILTERS.map((filter) => {
               const Icon = filter.icon;
@@ -618,7 +651,7 @@ export default function Assessments() {
       </div>
 
       {/* Tabs */}
-      <div className="flex w-full overflow-x-auto border-b border-slate-100 pb-px custom-scrollbar dark:border-slate-800">
+      <div className="flex w-fit max-w-full overflow-x-auto pb-px custom-scrollbar dark:border-slate-800">
         <div className="flex gap-6">
           {[
             { id: 'available', label: 'Available Tests' },
@@ -665,68 +698,71 @@ export default function Assessments() {
               const isNotStartedYet = startTime && !isNaN(startTime.getTime()) && now < startTime;
               const isWindowClosed = endTime && !isNaN(endTime.getTime()) && now > endTime;
               const isStartDisabled = attemptStarting || isSubmitted || isNotStartedYet || isWindowClosed;
+              const typeKey = normalizeAssessmentType(test);
+              const theme = TYPE_THEME[typeKey] || TYPE_THEME.topic;
+              const statusKey = isNotStartedYet ? 'scheduled' : isWindowClosed ? 'completed' : (test.status || 'active');
+              const meta = getAssessmentMeta(test, subjectNameById);
+              const windowPct = !endTime ? 0
+                : isNotStartedYet ? 0
+                : isWindowClosed ? 100
+                : Math.min(100, Math.max(0, Math.round(((now - startTime) / (endTime - startTime)) * 100)));
 
               return (
-              <div key={test.id} className="flex flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900">
-                <div className="flex flex-1 flex-col p-3.5 sm:p-4">
-                  <div className="mb-2.5 flex items-center justify-between sm:mb-3">
-                    <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-widest text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 sm:rounded-lg sm:px-2 sm:py-1 sm:text-[10px]">
-                      {test.type || test.assessment_type || 'Assessment'}
-                    </span>
-                    <span className="text-[10px] font-bold text-slate-400 sm:text-xs">
-                      {isNotStartedYet ? 'scheduled' : isWindowClosed ? 'completed' : (test.status || 'active')}
-                    </span>
-                  </div>
-                  
-                  <h3 className="mb-2 text-sm font-bold text-slate-900 dark:text-white line-clamp-1 sm:text-base">
-                    {test.title}
-                  </h3>
-                  
-                  {isMobile ? (
-                    <div className="mb-3 flex flex-wrap gap-1.5">
-                      {getAssessmentMeta(test, subjectNameById).className && (
-                        <span className="rounded bg-slate-50 px-1.5 py-0.5 text-[10px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                          Class {getAssessmentMeta(test, subjectNameById).className}
+              <div key={test.id} className={`flex flex-col rounded-[2rem] border-1 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:bg-slate-900 ${theme.border}`}>
+                <div className="flex flex-1 flex-col p-5">
+                  <div className="flex items-start gap-4">
+                    {/* Left: chips, title and meta */}
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                        <span className={`rounded-md px-2 py-0.5 text-[10px] font-black uppercase tracking-widest ${theme.soft}`}>
+                          {test.type || test.assessment_type || 'Assessment'}
                         </span>
-                      )}
-                      {getAssessmentMeta(test, subjectNameById).subjectName && (
-                        <span className="rounded bg-indigo-50/50 px-1.5 py-0.5 text-[10px] font-bold text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400">
-                          {getAssessmentMeta(test, subjectNameById).subjectName}
+                        <span className={`rounded-md px-2 py-0.5 text-[10px] font-black uppercase tracking-widest ${STATUS_SOFT[statusKey] || STATUS_SOFT.completed}`}>
+                          {statusKey}
                         </span>
-                      )}
+                      </div>
+                      <h3 className="text-base font-black text-slate-900 dark:text-white line-clamp-1" title={test.title}>
+                        {test.title}
+                      </h3>
+                      <p className="mt-0.5 text-xs font-medium text-slate-400 line-clamp-2">
+                        {durationMins} mins
+                        {meta.className && ` · Class ${meta.className}`}
+                        {meta.subjectName && ` · ${meta.subjectName}`}
+                      </p>
                     </div>
-                  ) : (
-                    <p className="mb-4 text-xs font-medium leading-5 text-slate-500 line-clamp-2">
-                      {getAssessmentSummary(test, subjectNameById)}
-                    </p>
-                  )}
-                  
-                  <div className="mb-3 flex items-center gap-3.5 text-[11px] font-semibold text-slate-500 sm:mb-4 sm:gap-4 sm:text-xs">
-                    <div className="flex items-center gap-1">
-                      <Clock size={12} className="text-slate-400 sm:size-3.5" />
-                      <span>{durationMins} mins</span>
+
+                    {/* Right: marks tile */}
+                    <div className={`flex size-16 shrink-0 flex-col items-center justify-center rounded-2xl bg-gradient-to-br ${theme.grad} text-white font-black shadow-sm`}>
+                      <span className="text-lg">{test.total_marks || test.totalMarks || 100}</span>
+                      <span className="text-[10px] font-bold uppercase">marks</span>
                     </div>
-                    <div>{test.total_marks || test.totalMarks || 100} marks</div>
                   </div>
 
+                  {/* Test window */}
                   {startTime && !isNaN(startTime.getTime()) && (
-                    <div className="mb-3 rounded-xl border border-slate-100 bg-slate-50 p-2.5 text-[10px] font-semibold text-slate-500 flex flex-col gap-1 dark:border-slate-800 dark:bg-slate-950/50">
-                      <div className="flex items-center justify-between">
-                        <span>Start:</span>
-                        <strong className="text-slate-700 dark:text-slate-300">
-                          {startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({startTime.toLocaleDateString([], { month: 'short', day: 'numeric' })})
-                        </strong>
+                    <div className="mt-4">
+                      <div className="mb-1 flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
+                        <span>{startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span>{endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span>Auto Ends:</span>
-                        <strong className="text-slate-700 dark:text-slate-300">
-                          {endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({endTime.toLocaleDateString([], { month: 'short', day: 'numeric' })})
-                        </strong>
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                        <div
+                          className={`h-full rounded-full bg-gradient-to-r ${isWindowClosed ? 'from-slate-300 to-slate-400' : theme.grad} transition-all duration-1000`}
+                          style={{ width: `${windowPct}%` }}
+                        />
+                      </div>
+                      <div className="mt-1 flex justify-between text-[10px] font-semibold text-slate-400">
+                        <span>{startTime.toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                        <span className={isNotStartedYet ? 'text-amber-500' : isWindowClosed ? 'text-slate-400' : 'text-emerald-500'}>
+                          {isNotStartedYet ? 'Not started' : isWindowClosed ? 'Window closed' : 'Live now'}
+                        </span>
+                        <span>Auto ends</span>
                       </div>
                     </div>
                   )}
-                  
-                  <div className="mt-auto flex flex-col gap-1.5 border-t border-slate-100 pt-3 dark:border-slate-800 sm:gap-2">
+
+                  <div className="mt-auto pt-4">
+                  <div className="flex flex-col gap-1.5 border-t border-slate-100 pt-3 dark:border-slate-800 sm:gap-2">
                     {mySubmission && (
                       <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-50 py-2 text-xs font-bold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300 sm:py-2.5 sm:text-sm">
                         <CheckCircle2 size={14} className="sm:h-[15px] sm:w-[15px]" />
@@ -738,7 +774,7 @@ export default function Assessments() {
                         href={uploadUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-2 text-xs font-bold text-slate-600 transition-colors hover:bg-slate-100 sm:py-2.5 sm:text-sm"
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-2 text-xs font-bold text-slate-600 transition-colors hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 sm:py-2.5 sm:text-sm"
                       >
                         <Download size={14} className="sm:size-4" />
                         Download Paper
@@ -750,12 +786,12 @@ export default function Assessments() {
                         onClick={() => openSubmit(test)}
                         disabled={isStartDisabled}
                         className={cn(
-                          'flex w-full items-center justify-center gap-2 rounded-xl py-2 text-xs font-bold transition-colors sm:py-2.5 sm:text-sm',
+                          'flex w-full items-center justify-center gap-2 rounded-xl py-2 text-xs font-bold transition-all sm:py-2.5 sm:text-sm',
                           isStartDisabled
                             ? 'cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500'
                             : isInProgress
                             ? 'bg-slate-50 text-slate-700 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-200'
-                            : 'bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-600/20'
+                            : 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-600/20 hover:brightness-110 hover:shadow-lg'
                         )}
                       >
                         <UploadCloud size={14} className="sm:size-4" />
@@ -776,12 +812,13 @@ export default function Assessments() {
                       <button
                         type="button"
                         onClick={() => window.open(submittedFileUrl, '_blank')}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-50 py-2 text-xs font-bold text-blue-600 transition-colors hover:bg-blue-100 sm:py-2.5 sm:text-sm"
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-50 py-2 text-xs font-bold text-blue-600 transition-colors hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-300 sm:py-2.5 sm:text-sm"
                       >
                         <FileText size={14} className="sm:size-4" />
                         View my submission
                       </button>
                     )}
+                  </div>
                   </div>
                 </div>
               </div>

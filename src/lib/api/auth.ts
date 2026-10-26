@@ -24,6 +24,8 @@ export interface AuthUser {
   email?: string;
   role: string;
   avatar?: string;
+  profileImage?: string;
+  permissionGroup?: string;
   tenantId?: string;
   tenantName?: string;
   tenant?: { id: string; name: string; subdomain?: string; logoUrl?: string; brandColor?: string };
@@ -136,6 +138,8 @@ export interface SchoolLoginResponse {
     phone?: string;
     instituteId?: string;
     profileImage?: string | null;
+    isPrimaryAdmin?: boolean;
+    adminPermissions?: string[] | null;
     studentProfile?: {
       id?: string;
       sectionId?: string;
@@ -145,10 +149,43 @@ export interface SchoolLoginResponse {
       enrollmentNo?: string;
       rollNo?: string;
       currentClass?: string;
+      subjects?: string[];
     } | null;
   };
-  institute: { id: string; name: string; tenantDomain?: string; logo?: string } | null;
+  institute: {
+    id: string;
+    name: string;
+    tenantDomain?: string;
+    logo?: string;
+    erpEnabled?: boolean;
+    lmsEnabled?: boolean;
+    // The backend is not consistent about casing; SchoolAuthContext reads both forms.
+    logo_url?: string;
+    state?: string;
+    city?: string;
+    location?: string;
+    tenant_domain?: string;
+    erp_enabled?: boolean;
+    lms_enabled?: boolean;
+    aiEnabled?: boolean;
+    ai_enabled?: boolean;
+    // JSON object, or a JSON string depending on how the row was serialised.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    aiFeatures?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ai_features?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    modulesPermissions?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    modules_permissions?: any;
+  } | null;
   tenantDomain?: string;
+}
+
+/** Mints a short-lived bridge token the ERP frontend's /sso route exchanges for a real ERP session. */
+export async function mintErpSsoToken(): Promise<{ success: boolean; token: string }> {
+  const res = await apiClient.post("/school/auth/erp-sso-token", {});
+  return extractData(res);
 }
 
 /** Login via school backend — returns token (not accessToken) */
@@ -206,19 +243,12 @@ export async function completeTeacherOnboarding(payload: TeacherOnboardingPayloa
 
 /** Upload avatar image (unified S3 flow) */
 export async function uploadAvatar(file: File): Promise<{ avatarUrl: string }> {
-  // Step 1 — Upload to S3
-  const fileUrl = await uploadToS3(
-    {
-      type: "profile",
-      fileName: file.name,
-      contentType: file.type,
-      fileSize: file.size,
-    },
-    file
-  );
-
-  // Step 2 — Confirm with backend and persist in DB
-  const res = await apiClient.post("/auth/profile/avatar", { fileUrl });
+  // Backend streams the file to S3 and saves the URL in one call
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await apiClient.post("/auth/profile/avatar", fd, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
   return extractData<{ avatarUrl: string }>(res);
 }
 

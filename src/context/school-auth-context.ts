@@ -12,7 +12,10 @@ export interface SchoolInstitute {
   modulesPermissions?: Record<string, boolean>;
   state?: string | null;
   city?: string | null;
+  address?: string | null;
   location?: string | null;
+  erpEnabled?: boolean;
+  lmsEnabled?: boolean;
 }
 
 export interface SchoolStudentProfile {
@@ -35,9 +38,15 @@ export interface SchoolUser {
   rawRole?: string;
   instituteId?: string | null;
   institute?: SchoolInstitute | null;
+  tenantName?: string;
+  tenantState?: string;
   profileImage?: string | null;
   phone?: string | null;
   isActive?: boolean;
+  /** True for the institute's SuperAdmin-onboarded admin (unrestricted admin-panel access). */
+  isPrimaryAdmin?: boolean;
+  /** null for unrestricted admins (primary admin / SUPER_ADMIN); a module-key array for a scoped sub-admin. */
+  adminPermissions?: string[] | null;
   studentProfile?: SchoolStudentProfile | null;
 }
 

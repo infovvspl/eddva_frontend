@@ -11,8 +11,9 @@ import { soundEngine } from '@/lib/audioManager';
 import TreasureMap from './TreasureMap';
 import TreasureChallenge from './TreasureChallenge';
 import TreasureChest from './TreasureChest';
+import ArenaDarkFrame from './shared/ArenaDarkFrame';
 
-export default function TreasureHunt() {
+function TreasureHuntGame() {
   const { user } = useAuth();
   const hasGameQuizzes = useSchoolFeature('ai', 'ai_game_quizzes');
   const [stage, setStage] = useState('lobby'); // 'lobby' | 'map' | 'challenge' | 'result' | 'chest'
@@ -25,7 +26,6 @@ export default function TreasureHunt() {
   const [challengeData, setChallengeData] = useState(null);
   const [resultData, setResultData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [playMode, setPlayMode] = useState('ranked');
 
   useEffect(() => {
     const fetchSubjects = async () => {
@@ -113,7 +113,6 @@ export default function TreasureHunt() {
         params: {
           questId: selectedMap.quest.id,
           stageOrder: stageObj.stageOrder,
-          mode: playMode,
           subjectId: selectedMap.quest.subjectId || selectedMap.quest.id,
           chapterId: selectedMap?.selectedChapterId || 'any',
         },
@@ -213,32 +212,6 @@ export default function TreasureHunt() {
               </span>
               <h1 className="text-xl font-bold text-slate-900 dark:text-white">Treasure Hunt Adventure</h1>
               <p className="text-xs text-slate-500 font-normal">Brave checkpoints, unlock mysterious maps, and retrieve epic treasure chest rewards!</p>
-            </div>
-            
-            <div className="flex flex-col gap-1 shrink-0 min-w-[220px]">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                🎮 Game Mode
-              </label>
-              <div className="grid grid-cols-2 gap-1 bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
-                {[
-                  { id: 'ranked', label: 'Ranked', desc: 'Auto skill diff' },
-                  { id: 'free_play', label: 'Free Play', desc: 'Custom diff' }
-                ].map((m) => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => setPlayMode(m.id)}
-                    className={`py-1.5 px-2.5 text-xs font-bold rounded-lg transition-all text-center flex flex-col gap-0.5 ${
-                      playMode === m.id
-                        ? 'bg-sky-600 text-white shadow'
-                        : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
-                    }`}
-                  >
-                    <span>{m.label}</span>
-                    <span className={`text-[8px] font-medium ${playMode === m.id ? 'text-sky-100' : 'text-slate-400'}`}>{m.desc}</span>
-                  </button>
-                ))}
-              </div>
             </div>
           </div>
 
@@ -555,5 +528,14 @@ export default function TreasureHunt() {
         </div>
       )}
     </div>
+  );
+}
+
+// Arena atmosphere + dark styling, same look as Quiz Rush.
+export default function TreasureHunt() {
+  return (
+    <ArenaDarkFrame>
+      <TreasureHuntGame />
+    </ArenaDarkFrame>
   );
 }

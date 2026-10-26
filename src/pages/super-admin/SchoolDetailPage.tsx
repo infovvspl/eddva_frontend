@@ -28,6 +28,8 @@ import { toast } from "sonner";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 import { AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog";
+import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const TextbookCoverage = lazy(() => import("@/pages/school/teacher/TextbookCoverage"));
 
@@ -115,6 +117,8 @@ const SchoolDetailPage = () => {
   const [deleteInput, setDeleteInput] = useState("");
   const [deleting, setDeleting] = useState(false);
   const deleteInputRef = useRef<HTMLInputElement>(null);
+  const [savingModule, setSavingModule] = useState<"erp" | "lms" | null>(null);
+  const [resendingCreds, setResendingCreds] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -196,6 +200,36 @@ const SchoolDetailPage = () => {
     }
   };
 
+  const resendCredentials = async () => {
+    setResendingCreds(true);
+    try {
+      const res = await apiClient.post(`/school/institutes/${id}/resend-credentials`);
+      const data = (res.data as any)?.data ?? res.data;
+      if (data?.emailSent === false) {
+        toast.warning(data?.message || "Password reset, but the email could not be sent");
+      } else {
+        toast.success(data?.message || "Credentials re-sent to the institute admin");
+      }
+    } catch {
+      toast.error("Failed to resend credentials");
+    } finally {
+      setResendingCreds(false);
+    }
+  };
+
+  const toggleModuleAccess = async (module: "erp" | "lms", next: boolean) => {
+    setSavingModule(module);
+    try {
+      await apiClient.put(`/school/institutes/${id}`, module === "erp" ? { erpEnabled: next } : { lmsEnabled: next });
+      setInstitute((prev: any) => (prev ? { ...prev, [module === "erp" ? "erp_enabled" : "lms_enabled"]: next } : prev));
+      toast.success(`${module === "erp" ? "ERP" : "LMS"} access ${next ? "enabled" : "disabled"}`);
+    } catch {
+      toast.error(`Failed to update ${module === "erp" ? "ERP" : "LMS"} access`);
+    } finally {
+      setSavingModule(null);
+    }
+  };
+
   const openDeleteModal = () => {
     setDeleteInput("");
     setDeleteModalOpen(true);
@@ -253,7 +287,50 @@ const SchoolDetailPage = () => {
   }, [parents, search]);
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-slate-400" /></div>;
+    return (
+      <div className="space-y-6 p-4 sm:p-6 min-h-screen">
+        <Skeleton className="h-8 w-24 rounded-xl" />
+        <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 flex flex-col sm:flex-row items-start gap-5">
+          <Skeleton className="h-16 w-16 rounded-2xl shrink-0" />
+          <div className="flex-1 space-y-3">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-32" />
+            <div className="flex gap-2">
+              <Skeleton className="h-6 w-20 rounded-full" />
+              <Skeleton className="h-6 w-16 rounded-full" />
+            </div>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <Skeleton className="h-9 w-24 rounded-xl" />
+            <Skeleton className="h-9 w-24 rounded-xl" />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-3">
+              <Skeleton className="h-8 w-8 rounded-lg" />
+              <Skeleton className="h-6 w-16" />
+              <Skeleton className="h-3 w-20" />
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-2 border-b border-slate-100 dark:border-slate-800 pb-1">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-8 w-20 rounded-t-lg" />)}
+        </div>
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex items-center gap-4 px-4 py-3.5 border-b border-slate-50 dark:border-slate-800/50 last:border-0">
+              <Skeleton className="h-9 w-9 rounded-full shrink-0" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-3 w-40" />
+                <Skeleton className="h-3 w-28" />
+              </div>
+              <Skeleton className="h-6 w-16 rounded-full" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   if (!institute) {
@@ -381,7 +458,7 @@ const SchoolDetailPage = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 w-full lg:flex lg:w-auto lg:items-center">
+          <div className="grid grid-cols-2 gap-2 w-full lg:flex lg:w-auto lg:flex-wrap lg:items-center">
             {institute.status !== "ACTIVE" && (
               <button onClick={approve} className="flex h-9 sm:h-auto items-center justify-center gap-1.5 rounded-xl bg-emerald-50 px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-emerald-700 transition-colors hover:bg-emerald-100">
                 <CheckCircle className="h-4 w-4 shrink-0" /> Approve
@@ -392,7 +469,15 @@ const SchoolDetailPage = () => {
                 <XCircle className="h-4 w-4 shrink-0" /> Suspend
               </button>
             )}
-            <button onClick={openDeleteModal} className="flex h-9 sm:h-auto items-center justify-center gap-1.5 rounded-xl bg-rose-50 px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-rose-700 transition-colors hover:bg-rose-100 col-start-3">
+            <button
+              onClick={resendCredentials}
+              disabled={resendingCreds}
+              className="flex h-9 sm:h-auto items-center justify-center gap-1.5 rounded-xl bg-indigo-50 px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-indigo-700 transition-colors hover:bg-indigo-100 disabled:opacity-50"
+            >
+              {resendingCreds ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : <Mail className="h-4 w-4 shrink-0" />}
+              Resend Credentials
+            </button>
+            <button onClick={openDeleteModal} className="flex h-9 sm:h-auto items-center justify-center gap-1.5 rounded-xl bg-rose-50 px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-rose-700 transition-colors hover:bg-rose-100">
               <Trash2 className="h-4 w-4 shrink-0" /> Delete
             </button>
           </div>
@@ -455,6 +540,34 @@ const SchoolDetailPage = () => {
         <div className="p-4 sm:p-5">
           {activeTab === "overview" && (
             <div className="space-y-6">
+              <section>
+                <h2 className="mb-3 text-sm font-black uppercase tracking-wider text-slate-500">Module Access</h2>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-4">
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">EDDVA ERP</p>
+                      <p className="text-xs font-semibold text-slate-400">School administration modules</p>
+                    </div>
+                    <Switch
+                      checked={!!(institute.erp_enabled ?? institute.erpEnabled)}
+                      disabled={savingModule === "erp"}
+                      onCheckedChange={(checked) => toggleModuleAccess("erp", checked)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-4">
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">EDDVA LMS</p>
+                      <p className="text-xs font-semibold text-slate-400">AI learning management</p>
+                    </div>
+                    <Switch
+                      checked={institute.lms_enabled ?? institute.lmsEnabled ?? true}
+                      disabled={savingModule === "lms"}
+                      onCheckedChange={(checked) => toggleModuleAccess("lms", checked)}
+                    />
+                  </div>
+                </div>
+              </section>
+
               {overviewSections.map((section) => (
                 <section key={section.title}>
                   <h2 className="mb-3 text-sm font-black uppercase tracking-wider text-slate-500">{section.title}</h2>

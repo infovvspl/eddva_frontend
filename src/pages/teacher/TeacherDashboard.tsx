@@ -19,6 +19,7 @@ import {
 import { useTeacherPresenceStats } from "@/hooks/use-presence";
 import { useIsCompactLayout } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /* ── colours ────────────────────────────────────────────────────────────── */
 const C = {
@@ -110,8 +111,62 @@ const TeacherDashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="space-y-[30px] sm:pt-4 lg:pb-4 sm:px-6">
+        {/* Hero banner skeleton — teal gradient to match the real banner */}
+        <div className="relative overflow-hidden rounded-2xl sm:rounded-[2rem] bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 p-5 sm:p-8">
+          <Skeleton className="h-8 w-56 mb-3 bg-white/40 dark:bg-slate-600" />
+          <Skeleton className="h-4 w-44 bg-white/30 dark:bg-slate-600" />
+        </div>
+
+        {/* KPI stat row */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-3">
+              <Skeleton className="h-10 w-10 rounded-xl" />
+              <Skeleton className="h-6 w-16" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          ))}
+        </div>
+
+        {/* KPI progress bars */}
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 space-y-4">
+          <Skeleton className="h-5 w-32 mb-2" />
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="space-y-2">
+              <div className="flex justify-between">
+                <Skeleton className="h-3 w-28" />
+                <Skeleton className="h-3 w-12" />
+              </div>
+              <Skeleton className="h-2 w-full rounded-full" />
+            </div>
+          ))}
+        </div>
+
+        {/* Charts skeleton */}
+        <div className="grid gap-4 lg:grid-cols-2">
+          {[...Array(2)].map((_, i) => (
+            <div key={i} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 space-y-4">
+              <Skeleton className="h-5 w-36" />
+              <Skeleton className="h-44 w-full rounded-xl" />
+            </div>
+          ))}
+        </div>
+
+        {/* Doubts list skeleton */}
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 space-y-3">
+          <Skeleton className="h-5 w-28 mb-4" />
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="flex items-center gap-3 py-2">
+              <Skeleton className="h-9 w-9 rounded-full shrink-0" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-3 w-48" />
+                <Skeleton className="h-3 w-32" />
+              </div>
+              <Skeleton className="h-6 w-16 rounded-full" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

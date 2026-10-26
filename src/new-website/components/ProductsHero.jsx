@@ -13,6 +13,7 @@
 import {
   PlayCircle, BarChart3, Cpu, ClipboardCheck, Settings2, GraduationCap,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import useInView from "../hooks/useInView";
 
 const chips = [
@@ -25,6 +26,7 @@ const chips = [
 ];
 
 const ProductsHero = () => {
+  const { t } = useTranslation("products");
   const [ref, inView] = useInView({ threshold: 0.2 });
 
   return (
@@ -36,14 +38,13 @@ const ProductsHero = () => {
 
       <div className="nw-phero__container">
         <div className="nw-phero__copy">
-          <span className="nw-phero__badge">Our Products</span>
+          <span className="nw-phero__badge">{t("hero.badge")}</span>
           <h1 className="nw-phero__title">
-            Smarter Technology for<br />
-            <span className="nw-phero__title-accent">Smarter Education</span>
+            {t("hero.titleLine1")}<br />
+            <span className="nw-phero__title-accent">{t("hero.titleAccent")}</span>
           </h1>
           <p className="nw-phero__lead">
-            A unified ecosystem of LMS, ERP and AI tools — empowering
-            institutes, teachers and students to achieve more.
+            {t("hero.lead")}
           </p>
         </div>
 

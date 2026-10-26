@@ -156,6 +156,24 @@ function prepareAssessmentText(raw: string): string {
     })
     .join("$");
 
+  // A surviving bare run of underscores (not already converted via the
+  // \text{____} case above, e.g. one sitting directly inside a \frac{}{}
+  // argument like \frac{a}{____}) is a fill-in-blank placeholder, not
+  // markdown emphasis or a KaTeX subscript. Done AFTER the frac/sqrt/
+  // underline wrap above — that regex forbids nested braces, so it only
+  // matches \frac{}{} while its blank argument is still plain "____".
+  // Re-splitting on $ now: inside an existing $...$ pair the run becomes
+  // \underline{\quad\quad} in place (already in math mode, needs no extra
+  // wrap); in prose it gets its own $ wrap, same as the \text{____} case.
+  text = text
+    .split("$")
+    .map((segment, index) =>
+      index % 2 === 1
+        ? segment.replace(/_{2,}/g, "\\underline{\\quad\\quad}")
+        : segment.replace(/(?<!\\)_{2,}/g, "$$\\underline{\\quad\\quad}$$"),
+    )
+    .join("$");
+
   // Heuristic: wrap entire "math-like" trailing portions of lines that mix
   // bare caret-exponents / LaTeX symbols without any $ delimiters.
   // e.g. "The prime factorisation of 120 is 2^3 \times 3 \times \text{____}."

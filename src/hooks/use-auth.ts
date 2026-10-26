@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { authApi } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth-store";
 import type { OtpSendPayload, OtpVerifyPayload, TeacherOnboardingPayload } from "@/lib/api/auth";
+import type { Tenant } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
 // Query keys
@@ -57,7 +58,8 @@ export function useVerifyOtp() {
           tenantName: profile.tenant?.name || profile.tenantName || "",
           isFirstLogin: (profile as any).isFirstLogin ?? false,
           permissionGroup: profile.permissionGroup,
-          tenant: profile.tenant,
+          // The profile endpoint returns only a subset of the Tenant fields.
+          tenant: profile.tenant as Tenant | undefined,
           teacherProfile: (meData.teacherProfile ?? null) as any,
           studentProfile: studentRaw ? {
             id: studentRaw.id ?? "",

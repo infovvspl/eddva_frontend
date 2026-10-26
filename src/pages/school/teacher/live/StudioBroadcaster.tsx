@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
-  MonitorUp, Mic, MicOff, Video, VideoOff, Radio, Loader2, ArrowLeft,
+  MonitorUp, Mic, MicOff, Video, VideoOff, Radio, Loader2,
   AlertTriangle, PenLine, Presentation, PanelRightClose, PanelRightOpen,
   Circle, Users, PhoneOff, Columns2,
 } from 'lucide-react';
+import { BackButton } from '@/components/shared/BackButton';
 import { schoolLive, endLectureBeacon } from '@/lib/api/school-live';
 import { useStudioBroadcast, SPLIT_CONTENT_RATIO } from '@/components/school/live/studio/useStudioBroadcast';
 import Whiteboard from '@/components/school/live/studio/Whiteboard';
@@ -157,14 +158,6 @@ export default function StudioBroadcaster() {
     }
   };
 
-  const exit = async () => {
-    if (studio.isLive) {
-      const ok = await confirm({ title: 'Leave Studio', message: 'You are live. Leave the Studio? This will stop your broadcast.' });
-      if (!ok) return;
-    }
-    navigate('/school/teacher/live');
-  };
-
   if (loading) {
     return (
       <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950">
@@ -179,9 +172,7 @@ export default function StudioBroadcaster() {
         <div className="max-w-sm rounded-2xl border border-amber-500/30 bg-amber-500/10 p-6 text-center">
           <AlertTriangle className="mx-auto mb-3 size-8 text-amber-400" />
           <p className="font-bold text-amber-200">{loadError || 'Live class unavailable'}</p>
-          <button onClick={() => navigate('/school/teacher/live')} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-bold text-slate-900">
-            <ArrowLeft className="size-4" /> Back
-          </button>
+          <BackButton to="/school/teacher/live" className="mt-4" />
         </div>
       </div>
     );
@@ -192,9 +183,6 @@ export default function StudioBroadcaster() {
       {/* ── Top bar ─────────────────────────────────────────────────────── */}
       <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-white/10 px-3 sm:px-5">
         <div className="flex min-w-0 items-center gap-3">
-          <button onClick={exit} className="grid size-9 place-items-center rounded-xl text-slate-300 hover:bg-white/10" title="Leave Studio">
-            <ArrowLeft className="size-5" />
-          </button>
           <div className="min-w-0">
             <h1 className="truncate text-sm font-black leading-tight">{title}</h1>
             <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Studio</p>
@@ -234,6 +222,7 @@ export default function StudioBroadcaster() {
           <button onClick={() => setPanelOpen((o) => !o)} className="grid size-9 place-items-center rounded-xl text-slate-300 hover:bg-white/10" title={panelOpen ? 'Hide panel' : 'Show panel'}>
             {panelOpen ? <PanelRightClose className="size-5" /> : <PanelRightOpen className="size-5" />}
           </button>
+          <BackButton to="/school/teacher/live" confirmMessage="Leave this live session?" title="Leave Studio" />
         </div>
       </header>
 

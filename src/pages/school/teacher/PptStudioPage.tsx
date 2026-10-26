@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ChevronRight, Presentation } from 'lucide-react';
+import { ChevronRight, Presentation } from 'lucide-react';
 import { toast } from 'sonner';
+import { BackButton } from '@/components/shared/BackButton';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { getApiBaseUrl } from '@/lib/api-config';
 import { schoolContent } from '@/lib/api/school-content';
+import { dismissPptJob } from '@/lib/pptJobs';
 
 // The studio is a separate static app (public/ppt-studio) so it can be
 // iterated on without rebuilding the panel. Override via VITE_PPT_STUDIO_URL
@@ -170,6 +172,14 @@ export default function PptStudioPage() {
         });
         toast.success('PPT saved to Course Content');
         reply('EDVA_PPT_SAVED');
+        // Once a deck is saved to Course Content it's done — this background
+        // job must stop offering "Open" (AI Generate list, the Presentation
+        // card, the "ready" toast), or a teacher could keep re-entering the
+        // full editor for a PPT that's already final. The saved material
+        // itself is view-only (Course Content's materials list has no Edit
+        // action for a ppt); this is what makes the in-progress job agree.
+        const jobId = params.get('job');
+        if (jobId) void dismissPptJob(jobId);
         back();
       } catch (err: unknown) {
         const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Save failed';
@@ -186,16 +196,7 @@ export default function PptStudioPage() {
     // The bar sits on the studio's own lavender background, so the page and
     // the studio read as one screen.
     <div className="flex h-screen w-full flex-col bg-[#eef0f8]">
-      <div className="flex shrink-0 items-center gap-4 px-4 pb-1 pt-3 sm:px-[2.5%]">
-        <button
-          type="button"
-          onClick={back}
-          className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-[0_1px_4px_rgba(15,23,42,0.08)] ring-1 ring-slate-200/70 transition hover:text-blue-700 hover:ring-blue-200"
-        >
-          <ArrowLeft size={14} />
-          <span className="hidden sm:inline">Back to Course Content</span>
-          <span className="sm:hidden">Back</span>
-        </button>
+      <div className="flex shrink-0 items-center justify-between gap-4 px-4 pb-1 pt-3 sm:px-[2.5%]">
         <div className="flex min-w-0 items-center gap-2 text-xs">
           <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-gradient-to-br from-blue-500 to-violet-500 text-white shadow-sm">
             <Presentation size={13} />
@@ -212,6 +213,7 @@ export default function PptStudioPage() {
             </span>
           )}
         </div>
+        <BackButton fallback="/school/teacher/course-content" />
       </div>
       <iframe
         title="AI PPT Studio"

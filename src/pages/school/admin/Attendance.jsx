@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, Users, GraduationCap, UserCheck, Filter, Search, Flag } from 'lucide-react';
+import { Eye, Users, GraduationCap, UserCheck, Filter, Search, Flag, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import api from '@/lib/api/school-client';
 import { getResponseList } from '@/lib/school/apiData';
@@ -14,6 +14,60 @@ const TYPE_OPTIONS = [
   { value: 'monthly', label: 'By Month' },
   { value: 'weekly', label: 'By Week' },
 ];
+
+const LOW_ATTENDANCE_THRESHOLD = 75;
+
+function AttendanceRing({ value }) {
+  if (typeof value !== 'number') {
+    return <span className="text-surface-400">-</span>;
+  }
+
+  const pct = Math.min(100, Math.max(0, value));
+  const size = 40;
+  const strokeWidth = 4;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (pct / 100) * circumference;
+  const isLow = pct < LOW_ATTENDANCE_THRESHOLD;
+  const ringColor = isLow ? '#dc2626' : pct < 90 ? '#d97706' : '#16a34a';
+
+  return (
+    <div className="group relative flex items-center gap-2">
+      <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+        <svg width={size} height={size} className="-rotate-90">
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="#e5e7eb"
+            strokeWidth={strokeWidth}
+          />
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke={ringColor}
+            strokeWidth={strokeWidth}
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+            strokeLinecap="round"
+          />
+        </svg>
+        <span className="absolute text-[10px] font-bold text-surface-700">{Math.round(pct)}%</span>
+      </div>
+      {isLow && (
+        <>
+          <AlertTriangle className="size-4 shrink-0 text-red-600" />
+          <span className="pointer-events-none absolute -top-9 left-1/2 z-10 -translate-x-1/2 scale-0 whitespace-nowrap rounded bg-surface-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">
+            Low attendance: below {LOW_ATTENDANCE_THRESHOLD}%
+          </span>
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function Attendance() {
   const [attendance, setAttendance] = useState([]);
@@ -545,11 +599,11 @@ export default function Attendance() {
             <TableHeader className="bg-surface-50 text-surface-500">
               <TableRow className="hover:bg-transparent border-b-0">
                 <TableHead className="h-auto px-6 py-4 font-semibold sticky left-0 z-20 bg-surface-50 dark:bg-slate-850 shadow-sm text-surface-500">Name</TableHead>
-                <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Role</TableHead>
+                <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">{selectedRole === 'STUDENT' ? 'Roll No.' : 'Role'}</TableHead>
                 {selectedRole === 'STUDENT' && <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Class / Section</TableHead>}
                 <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Date</TableHead>
                 <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Status</TableHead>
-                <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Remarks</TableHead>
+                <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Attendance %</TableHead>
                 <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -565,7 +619,9 @@ export default function Attendance() {
                   <TableRow key={record.id} className="hover:bg-surface-50 transition-colors">
                     <TableCell className="p-4 px-6 py-4 font-semibold text-surface-950 sticky left-0 z-20 bg-white dark:bg-slate-900">{record.user?.name || '-'}</TableCell>
                     <TableCell className="p-4 px-6 py-4">
-                      {hasRole(record.user?.role, 'STUDENT') ? (
+                      {selectedRole === 'STUDENT' ? (
+                        <span className="font-semibold text-surface-700">{record.user?.studentProfile?.rollNo || '-'}</span>
+                      ) : hasRole(record.user?.role, 'STUDENT') ? (
                         <Badge variant="secondary" className="items-center gap-1 rounded-full border-transparent bg-blue-50 text-xs font-bold text-blue-700 hover:bg-blue-50">
                           <GraduationCap className="size-3" /> Student
                         </Badge>
@@ -600,7 +656,7 @@ export default function Attendance() {
                       </Badge>
                     </TableCell>
                     <TableCell className="p-4 px-6 py-4 text-surface-600">
-                      {record.remarks || '-'}
+                      <AttendanceRing value={record.attendancePercentage} />
                     </TableCell>
                     <TableCell className="p-4 px-6 py-4">
                       <div className="flex gap-2">
@@ -650,8 +706,10 @@ export default function Attendance() {
 
               <div className="grid grid-cols-2 gap-3 text-xs text-surface-600 pt-1">
                 <div>
-                  <span className="block text-[9px] uppercase tracking-wider text-surface-400 font-bold">Role</span>
-                  {hasRole(record.user?.role, 'STUDENT') ? (
+                  <span className="block text-[9px] uppercase tracking-wider text-surface-400 font-bold">{selectedRole === 'STUDENT' ? 'Roll No.' : 'Role'}</span>
+                  {selectedRole === 'STUDENT' ? (
+                    <span className="font-semibold block mt-0.5">{record.user?.studentProfile?.rollNo || '-'}</span>
+                  ) : hasRole(record.user?.role, 'STUDENT') ? (
                     <Badge variant="secondary" className="items-center gap-1 rounded-full border-transparent bg-blue-50 text-xs font-bold text-blue-700 mt-0.5 hover:bg-blue-50">
                       <GraduationCap className="size-3.5" /> Student
                     </Badge>
@@ -684,8 +742,8 @@ export default function Attendance() {
                   <span className="font-semibold block mt-0.5">{new Date(record.date).toLocaleDateString()}</span>
                 </div>
                 <div>
-                  <span className="block text-[9px] uppercase tracking-wider text-surface-400 font-bold">Remarks</span>
-                  <span className="font-semibold block mt-0.5">{record.remarks || '-'}</span>
+                  <span className="block text-[9px] uppercase tracking-wider text-surface-400 font-bold">Attendance %</span>
+                  <span className="font-semibold block mt-0.5"><AttendanceRing value={record.attendancePercentage} /></span>
                 </div>
               </div>
 

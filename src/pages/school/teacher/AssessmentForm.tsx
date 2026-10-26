@@ -4,6 +4,9 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   AlertTriangle,
   ArrowLeft,
+  ArrowRight,
+  History,
+  Trash2,
   Calendar,
   Check,
   ChevronsUpDown,
@@ -13,8 +16,10 @@ import {
   FileText,
   Loader2,
   Printer,
+  Settings2,
   RefreshCw,
   Save,
+  Send,
   Sparkles,
   Upload,
 } from "lucide-react";
@@ -41,8 +46,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { downloadPaperPdf, printPaper, type PaperPart } from "@/lib/school/paperExport";
+import {
+  SCHOOL_DEFAULTS, clearSavedFormat, currentSession, formatPaperDate, formatTimeAllowed,
+  loadSavedFormat, saveFormatAsDefault, type PaperFormat,
+} from "@/lib/school/paperFormat";
+import PaperFormatDialog from "@/components/school/teacher/PaperFormatDialog";
+import PaperHeader from "@/components/school/teacher/PaperHeader";
+import { useAuth } from "@/context/SchoolAuthContext";
 import { toUtcIsoDateTime } from "./assessment-utils";
 import { ContentEditor, computeAiConfigTotal, distributeMarksForTotal } from "./AssessmentContentEditor";
+import { EDITOR_TOOLBAR_BUTTON } from "@/components/school/editorToolbarStyles";
 
 type Scope = { id: string; name: string } | null;
 type ContentMode = "manual" | "upload" | "ai";
@@ -54,6 +67,20 @@ const TEST_TYPES = [
   { value: "mock", label: "Mock Test" },
   { value: "final", label: "Final Exam" },
 ];
+
+// Even three-way split of a question count, extra remainder going to the
+// easier buckets first — used both as the live preview for "Mix" and as the
+// starting point handed to the teacher when they switch into "Custom".
+function splitDifficultyEvenly(total: number) {
+  const t = Math.max(0, Math.round(total || 0));
+  const base = Math.floor(t / 3);
+  const remainder = t % 3;
+  return {
+    easy: base + (remainder > 0 ? 1 : 0),
+    medium: base + (remainder > 1 ? 1 : 0),
+    hard: base,
+  };
+}
 
 const LANGUAGES = [
   { value: "en", label: "English" },
@@ -316,6 +343,37 @@ function PaperExportMenu({
   );
 }
 
+/** An earlier AI-generated paper, kept when the teacher regenerates. */
+type PaperDraft = { id: string; savedAt: number; label: string; contentText: string; answerKey: string };
+
+const PAPER_DRAFT_LIMIT = 10;
+
+// Drafts live in this browser, per test (or per subject + scope for a new
+// test), so they survive going back, a reload or a closed tab without
+// filling the assessments list with half-finished papers. Storage can be
+// unavailable (private mode, blocked site data): the form then works the
+// same, the drafts just last for this visit.
+function readPaperDrafts(key: string): PaperDraft[] {
+  try {
+    const raw = window.localStorage.getItem(key);
+    const list = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) ? list.filter((d) => d && typeof d.contentText === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function writePaperDrafts(key: string, drafts: PaperDraft[]) {
+  try {
+    if (drafts.length) window.localStorage.setItem(key, JSON.stringify(drafts));
+    else window.localStorage.removeItem(key);
+  } catch {
+    /* storage full or blocked — drafts stay in memory for this visit */
+  }
+}
+
+const newDraftId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
 function StepHeader({ step, title, description }: { step: number; title: string; description: string }) {
   return (
     <CardHeader className="flex-row items-start gap-3 space-y-0 border-b border-slate-100 p-4 dark:border-slate-800 sm:p-5">
@@ -346,12 +404,43 @@ export default function AssessmentForm() {
   const [selectedSection, setSelectedSection] = useState<Scope>(workspace.selectedSection || null);
   const [selectedSubject, setSelectedSubject] = useState<Scope>(workspace.selectedSubject || null);
 
+  // ── Question-paper format (school letterhead printed on the paper) ─────────
+  const { institute } = useAuth();
+  const [formatOpen, setFormatOpen] = useState(false);
+  const [formatOverrides, setFormatOverrides] = useState<Partial<PaperFormat>>(() => loadSavedFormat(institute?.id));
+  useEffect(() => { setFormatOverrides(loadSavedFormat(institute?.id)); }, [institute?.id]);
+
   // ── The test being edited (from the list, or fetched on a direct visit) ────
   const [editingTest, setEditingTest] = useState<any>(routeState.test || null);
   const [loadingTest, setLoadingTest] = useState(isEdit && !routeState.test);
 
   // ── Form state ─────────────────────────────────────────────────────────────
   const [formData, setFormData] = useState(() => formFromTest(routeState.test));
+
+  // The school-style header. Per-test fields follow the test; anything the teacher edits in the
+  // format dialog overrides them, and school-level fields can be saved as the school's default.
+  const paperFormat: PaperFormat = useMemo(() => ({
+    ...SCHOOL_DEFAULTS,
+    schoolName: institute?.name || "",
+    logo: institute?.logo || "",
+    session: currentSession(),
+    examTitle: formData.title || "",
+    className: selectedClass?.name || "",
+    sectionName: selectedSection?.name || "",
+    subjectName: selectedSubject?.name || "",
+    date: formatPaperDate(formData.scheduled_date),
+    timeAllowed: formatTimeAllowed(formData.duration_minutes),
+    maxMarks: formData.total_marks ? String(formData.total_marks) : "",
+    ...formatOverrides,
+  }), [institute?.name, institute?.logo, formData.title, formData.scheduled_date, formData.duration_minutes, formData.total_marks, selectedClass?.name, selectedSection?.name, selectedSubject?.name, formatOverrides]);
+
+  const changePaperFormat = (patch: Partial<PaperFormat>) => setFormatOverrides((prev) => ({ ...prev, ...patch }));
+  const resetPaperFormat = () => { clearSavedFormat(institute?.id); setFormatOverrides({}); toast.success("Paper format reset"); };
+  const savePaperFormatDefault = () => {
+    const ok = saveFormatAsDefault(institute?.id, paperFormat);
+    if (ok) toast.success("Saved as your school's default paper format");
+    else toast.error("Could not save — the logo may be too large for this browser");
+  };
   const [contentMode, setContentMode] = useState<ContentMode>(() => {
     const src = routeState.test?.raw?.content_source;
     return src === "upload" ? "upload" : src === "ai" ? "ai" : "manual";
@@ -368,6 +457,11 @@ export default function AssessmentForm() {
     shortCount: 3,
     longCount: 2,
     difficulty: "intermediate",
+    // Only used when difficulty === "custom" — how many of each difficulty
+    // the teacher wants, independent of the question-type counts above.
+    easyCount: 0,
+    mediumCount: 0,
+    hardCount: 0,
   });
   const [generatingAi, setGeneratingAi] = useState(false);
   const [aiGrounding, setAiGrounding] = useState<{ grounded?: boolean; groundedChapters?: string[]; ungroundedChapters?: string[] } | null>(null);
@@ -380,10 +474,19 @@ export default function AssessmentForm() {
   const exportPaper = async (kind: "pdf" | "print", part: PaperPart) => {
     setExporting(true);
     try {
-      const input = { title: formData.title, questions: contentText, answerKey, part };
-      const ok = kind === "pdf" ? await downloadPaperPdf(input) : await printPaper(input);
-      if (!ok) toast.error("Nothing to export yet");
-      else if (kind === "pdf") toast.success("PDF downloaded");
+      const input = { title: formData.title, questions: contentText, answerKey, part, format: paperFormat };
+      if (kind === "print") {
+        const ok = await printPaper(input);
+        if (!ok) toast.error("Nothing to export yet");
+      } else {
+        const outcome = await downloadPaperPdf(input);
+        if (outcome === "empty") toast.error("Nothing to export yet");
+        else if (outcome === "unsupported") {
+          // Hindi / Odia etc. can't be drawn with the PDF's built-in font — print keeps them intact.
+          toast.info("This paper has non-English text. Opening Print — choose \"Save as PDF\" there.");
+          await printPaper(input);
+        } else toast.success("PDF downloaded");
+      }
     } catch (err) {
       console.error("Paper export failed:", err);
       toast.error(kind === "pdf" ? "Could not create the PDF" : "Could not open the print view");
@@ -392,7 +495,11 @@ export default function AssessmentForm() {
     }
   };
   const [submitting, setSubmitting] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // The form is two steps: 1. test details, 2. question paper. Step 2 only
+  // opens once the details are valid, because AI generation reads them.
+  const [step, setStep] = useState<1 | 2 | 3>(1);
 
   const [chapters, setChapters] = useState<any[]>([]);
   const [topics, setTopics] = useState<any[]>([]);
@@ -588,12 +695,77 @@ export default function AssessmentForm() {
     return next;
   };
 
+  // ── Earlier AI papers kept as drafts ──────────────────────────────────────
+  const draftScope = editingTest?.id
+    ? `test:${editingTest.id}`
+    : `new:${selectedSubject?.id || ""}:${formData.type}:${selectedTopicId || selectedChapterId || selectedChapterIds.join(",")}`;
+  const draftStorageKey = `eddva:assessment-paper-drafts:${institute?.id || "school"}:${draftScope}`;
+  const [paperDrafts, setPaperDrafts] = useState<PaperDraft[]>([]);
+  const [currentPaperLabel, setCurrentPaperLabel] = useState(() => (routeState.test?.raw?.content_text ? "Saved paper" : ""));
+  const [viewingDraft, setViewingDraft] = useState<PaperDraft | null>(null);
+  useEffect(() => { setPaperDrafts(readPaperDrafts(draftStorageKey)); }, [draftStorageKey]);
+
+  /** The list with the given paper added on top (skipped when empty or already kept). */
+  const withDraft = (list: PaperDraft[], text: string, key: string, label: string) => {
+    if (!text.trim() || list.some((d) => d.contentText === text && d.answerKey === key)) return list;
+    return [{ id: newDraftId(), savedAt: Date.now(), label: label || "Earlier version", contentText: text, answerKey: key }, ...list]
+      .slice(0, PAPER_DRAFT_LIMIT);
+  };
+
+  const updateDrafts = (fn: (list: PaperDraft[]) => PaperDraft[]) => {
+    setPaperDrafts((prev) => {
+      const next = fn(prev);
+      writePaperDrafts(draftStorageKey, next);
+      return next;
+    });
+  };
+
+  const restoreDraft = (draft: PaperDraft) => {
+    // The paper being replaced is kept, so restoring never loses work.
+    updateDrafts((list) => withDraft(list.filter((d) => d.id !== draft.id), contentText, answerKey, currentPaperLabel));
+    setContentText(draft.contentText);
+    setAnswerKey(draft.answerKey);
+    setCurrentPaperLabel(draft.label);
+    setContentMode("ai");
+    setViewingDraft(null);
+    setStep(3);
+    toast.success("Draft restored as the current paper");
+  };
+
+  const deleteDraft = (id: string) => updateDrafts((list) => list.filter((d) => d.id !== id));
+
+  const goToReview = () => {
+    if (!contentText.trim()) return;
+    setStep(3);
+    requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
+  };
+
+  const showInvalidDetails = () => {
+    // Every validated field is on step 1, so show it there.
+    setStep(1);
+    toast.error("Please fix the highlighted fields");
+    requestAnimationFrame(() => document.querySelector('[aria-invalid="true"], [data-invalid="true"]')?.scrollIntoView({ behavior: "smooth", block: "center" }));
+  };
+
+  const goToQuestionPaper = () => {
+    if (Object.keys(validate()).length > 0) {
+      showInvalidDetails();
+      return;
+    }
+    setStep(2);
+    requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
+  };
+
+  const goToDetails = () => {
+    setStep(1);
+    requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
+  };
+
   const submit = async () => {
     if (submitting) return;
     const found = validate();
     if (Object.keys(found).length > 0) {
-      toast.error("Please fix the highlighted fields");
-      requestAnimationFrame(() => document.querySelector('[aria-invalid="true"], [data-invalid="true"]')?.scrollIntoView({ behavior: "smooth", block: "center" }));
+      showInvalidDetails();
       return;
     }
 
@@ -636,13 +808,32 @@ export default function AssessmentForm() {
         data.append("file", uploadFile);
         await api.post("/assessments", data);
       }
-      toast.success(editingTest ? "Test updated" : "Test created");
+      if (!editingTest) writePaperDrafts(draftStorageKey, []);
+      toast.success(editingTest ? "Test updated" : "Test saved as a draft — publish it when you're ready for students to see it.");
       await goBack(true);
     } catch (err: any) {
       console.error("Save assessment error:", err);
       toast.error(err?.response?.data?.message || "Could not save the test. Please try again.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // A test is a draft (hidden from students) until explicitly published — see
+  // the "status" column on the assessments table, defaulted to 'draft' on create.
+  const isDraft = (editingTest?.raw?.status || "scheduled") === "draft";
+
+  const handlePublish = async () => {
+    if (!editingTest || publishing) return;
+    setPublishing(true);
+    try {
+      await api.post(`/assessments/${editingTest.id}/publish`);
+      toast.success("Test published — students can now see it.");
+      setEditingTest((prev: any) => (prev ? { ...prev, raw: { ...prev.raw, status: "scheduled" } } : prev));
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Could not publish the test. Please try again.");
+    } finally {
+      setPublishing(false);
     }
   };
 
@@ -702,6 +893,12 @@ export default function AssessmentForm() {
       toast.error("Select a topic before generating questions.");
       return;
     }
+    if (aiConfig.difficulty === "custom" && !customDifficultyMatches) {
+      toast.error(
+        `Custom difficulty counts (${customDifficultyTotal}) must match the question types & counts total (${totalQuestionCount}) before generating.`,
+      );
+      return;
+    }
 
     const start = Date.now();
     setGeneratingAi(true);
@@ -740,10 +937,18 @@ export default function AssessmentForm() {
         shortCount: aiConfig.shortCount,
         longCount: aiConfig.longCount,
         difficulty: aiConfig.difficulty,
+        easyCount: aiConfig.easyCount,
+        mediumCount: aiConfig.mediumCount,
+        hardCount: aiConfig.hardCount,
         language: aiLanguage,
       });
       const draft = res.data?.data || res.data || {};
       if (draft.title && !formData.title.trim()) setFormData((c) => ({ ...c, title: draft.title }));
+      // The paper this one replaces (with any edits made to it) is kept as a
+      // draft. Only on success: a failed regeneration leaves it in place.
+      updateDrafts((list) => withDraft(list, contentText, answerKey, currentPaperLabel));
+      const questionCount = aiConfig.mcqCount + aiConfig.trueFalseCount + aiConfig.fillBlankCount + aiConfig.shortCount + aiConfig.longCount;
+      setCurrentPaperLabel(`${questionCount} questions · ${aiConfig.difficulty} · ${aiLanguage.toUpperCase()}`);
       setContentText(draft.contentText || draft.content_text || "");
       setAnswerKey(draft.answerKey || draft.answer_key || "");
       setAiGrounding({
@@ -753,7 +958,8 @@ export default function AssessmentForm() {
       });
       setContentMode("ai");
       setGenDurationMs(Date.now() - start);
-      setReviewOpen(true);
+      setStep(3);
+      requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
     } catch (err) {
       console.error("AI assessment generation error:", err);
       toast.error("AI could not generate the assessment right now. Please use manual entry or upload.");
@@ -766,7 +972,7 @@ export default function AssessmentForm() {
   // ── Render ─────────────────────────────────────────────────────────────────
   if (loadingContext || loadingTest) {
     return (
-      <div className="mx-auto w-full max-w-6xl space-y-5 p-4 sm:p-6">
+      <div className="mx-auto w-full max-w-6xl space-y-5">
         <Skeleton className="h-9 w-64" />
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-5">
@@ -782,12 +988,37 @@ export default function AssessmentForm() {
   const computedTotal = computeAiConfigTotal(aiConfig);
   const aiTotalMatches = computedTotal === Number(formData.total_marks);
 
+  const totalQuestionCount =
+    aiConfig.mcqCount + aiConfig.trueFalseCount + aiConfig.fillBlankCount + aiConfig.shortCount + aiConfig.longCount;
+  const mixPreview = splitDifficultyEvenly(totalQuestionCount);
+  const customDifficultyTotal = aiConfig.easyCount + aiConfig.mediumCount + aiConfig.hardCount;
+  const customDifficultyMatches = customDifficultyTotal === totalQuestionCount;
+
+  const saveLabel = submitting ? "Saving…" : editingTest ? "Update Test" : "Create Test";
+  const hasAiPaper = contentMode === "ai" && !!contentText.trim();
+  const fullyGrounded = !!aiGrounding?.grounded && !(aiGrounding?.ungroundedChapters?.length);
+  // Step 1 → details are checked; step 2 with a generated paper → review it;
+  // otherwise save.
+  const primaryAction =
+    step === 1
+      ? { label: "Next: Question paper", short: "Next", onClick: goToQuestionPaper, next: true, disabled: false }
+      : step === 2 && hasAiPaper
+        ? { label: "Next: Review paper", short: "Review", onClick: goToReview, next: true, disabled: generatingAi }
+        : { label: saveLabel, short: saveLabel, onClick: submit, next: false, disabled: submitting || generatingAi };
+  const primaryIcon = primaryAction.next
+    ? <ArrowRight className="size-4" />
+    : submitting ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />;
   const actionButtons = (
     <>
-      <Button type="button" onClick={submit} disabled={submitting} className="h-11 w-full gap-2 rounded-xl bg-blue-600 font-bold text-white hover:bg-blue-700 sm:h-10">
-        {submitting ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-        {submitting ? "Saving…" : editingTest ? "Update Test" : "Create Test"}
+      <Button type="button" onClick={primaryAction.onClick} disabled={primaryAction.disabled} className="h-11 w-full gap-2 rounded-xl bg-blue-600 font-bold text-white hover:bg-blue-700 sm:h-10">
+        {primaryAction.next ? <>{primaryAction.label} {primaryIcon}</> : <>{primaryIcon} {primaryAction.label}</>}
       </Button>
+      {editingTest && isDraft && (
+        <Button type="button" onClick={handlePublish} disabled={publishing || submitting} className="h-11 w-full gap-2 rounded-xl bg-emerald-600 font-bold text-white hover:bg-emerald-700 sm:h-10">
+          {publishing ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+          {publishing ? "Publishing…" : "Publish to students"}
+        </Button>
+      )}
       <Button type="button" variant="outline" onClick={() => goBack()} disabled={submitting} className="h-11 w-full rounded-xl font-bold sm:h-10">
         Cancel
       </Button>
@@ -795,7 +1026,7 @@ export default function AssessmentForm() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-5 p-4 sm:p-6">
+    <div className="mx-auto w-full max-w-6xl space-y-5">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 items-start gap-3">
@@ -813,6 +1044,11 @@ export default function AssessmentForm() {
         </div>
         {selectedClass && selectedSubject && (
           <div className="flex flex-wrap items-center gap-1.5">
+            {editingTest && (
+              <Badge variant="outline" className={isDraft ? "border-transparent bg-amber-50 text-amber-700" : "border-transparent bg-emerald-50 text-emerald-700"}>
+                {isDraft ? "Draft" : "Published"}
+              </Badge>
+            )}
             <Badge variant="outline" className="border-transparent bg-blue-50 text-blue-700">{selectedClass.name}</Badge>
             {selectedSection && <Badge variant="outline" className="border-transparent bg-emerald-50 text-emerald-700">{sectionLabel(selectedSection)}</Badge>}
             <Badge variant="outline" className="border-transparent bg-violet-50 text-violet-700">{selectedSubject.name}</Badge>
@@ -820,9 +1056,52 @@ export default function AssessmentForm() {
         )}
       </div>
 
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+      {editingTest && isDraft && (
+        <Alert className="flex flex-wrap items-center justify-between gap-3 rounded-xl border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-900 [&>svg]:static [&>svg]:text-amber-600 [&>svg~*]:pl-0 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+          <span>This test is a draft — students can't see it yet. Edit anything you like, then publish when it's ready.</span>
+          <Button type="button" size="sm" onClick={handlePublish} disabled={publishing} className="h-8 gap-1.5 rounded-lg bg-emerald-600 font-bold text-white hover:bg-emerald-700">
+            {publishing ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5" />}
+            {publishing ? "Publishing…" : "Publish now"}
+          </Button>
+        </Alert>
+      )}
+
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-10">
         <div className="min-w-0 space-y-5">
+          {/* Steps */}
+          <nav aria-label="Steps" className="flex items-center gap-2 text-xs font-bold">
+            {([
+              { n: 1 as const, label: "Test details", onClick: goToDetails },
+              { n: 2 as const, label: "Question paper", onClick: goToQuestionPaper },
+              ...(contentMode === "ai"
+                ? [{ n: 3 as const, label: "Review paper", onClick: goToReview, disabled: !hasAiPaper }]
+                : []),
+            ] as { n: 1 | 2 | 3; label: string; onClick: () => void; disabled?: boolean }[]).map((s, i) => (
+              <React.Fragment key={s.n}>
+                {i > 0 && <span className="h-px w-6 bg-slate-300 dark:bg-slate-700" aria-hidden />}
+                <button
+                  type="button"
+                  onClick={s.onClick}
+                  disabled={s.disabled}
+                  aria-current={step === s.n ? "step" : undefined}
+                  className={cn(
+                    "flex items-center gap-2 rounded-full px-3 py-1.5 transition disabled:cursor-not-allowed disabled:opacity-50",
+                    step === s.n
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "bg-white text-slate-500 hover:text-slate-900 dark:bg-slate-900 dark:hover:text-white",
+                  )}
+                >
+                  <span className={cn("flex size-5 items-center justify-center rounded-full text-[10px]", step === s.n ? "bg-white/20" : "bg-slate-100 dark:bg-slate-800")}>
+                    {step > s.n ? <Check className="size-3" /> : s.n}
+                  </span>
+                  {s.label}
+                </button>
+              </React.Fragment>
+            ))}
+          </nav>
+
           {/* 1. Details */}
+          {step === 1 && (
           <Card className="rounded-2xl border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <StepHeader step={1} title="Test details" description="Who it is for, what it covers and when it runs." />
             <CardContent className="space-y-5 p-4 sm:p-5">
@@ -1002,9 +1281,16 @@ export default function AssessmentForm() {
                 </Alert>
               )}
             </CardContent>
+            <div className="flex justify-end border-t border-slate-100 p-4 dark:border-slate-800 sm:px-5">
+              <Button type="button" onClick={goToQuestionPaper} className="h-11 w-full gap-2 rounded-xl bg-blue-600 px-6 font-bold text-white hover:bg-blue-700 sm:h-10 sm:w-auto">
+                Next <ArrowRight className="size-4" />
+              </Button>
+            </div>
           </Card>
+          )}
 
           {/* 2. Question paper */}
+          {step === 2 && (
           <Card className="rounded-2xl border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <StepHeader step={2} title="Question paper" description="Write it yourself, upload a document, or let AI draft it." />
             <CardContent className="space-y-4 p-4 sm:p-5">
@@ -1034,6 +1320,7 @@ export default function AssessmentForm() {
                   answerKey={answerKey}
                   onAnswerKeyChange={setAnswerKey}
                   assessmentId={editingTest?.id}
+                  previewHeader={<PaperHeader format={paperFormat} />}
                 />
               )}
 
@@ -1062,6 +1349,7 @@ export default function AssessmentForm() {
                     answerKey={answerKey}
                     onAnswerKeyChange={setAnswerKey}
                     assessmentId={editingTest?.id}
+                    previewHeader={<PaperHeader format={paperFormat} />}
                   />
                 </div>
               )}
@@ -1121,8 +1409,20 @@ export default function AssessmentForm() {
                             { value: "easy", label: "Easy" },
                             { value: "intermediate", label: "Intermediate" },
                             { value: "hard", label: "Hard" },
+                            { value: "mix", label: "Mix (equal easy/medium/hard)" },
+                            { value: "custom", label: "Custom" },
                           ]}
-                          onChange={(v) => setAiConfig((prev) => ({ ...prev, difficulty: v }))}
+                          onChange={(v) =>
+                            setAiConfig((prev) => {
+                              // Seed Custom with an even split the first time it's picked, so
+                              // the teacher edits numbers instead of starting from zero.
+                              if (v === "custom" && prev.difficulty !== "custom") {
+                                const split = splitDifficultyEvenly(totalQuestionCount);
+                                return { ...prev, difficulty: v, easyCount: split.easy, mediumCount: split.medium, hardCount: split.hard };
+                              }
+                              return { ...prev, difficulty: v };
+                            })
+                          }
                         />
                       </Field>
                       {hasTranslation && (
@@ -1137,6 +1437,57 @@ export default function AssessmentForm() {
                         ? ` — matches Total Marks (${formData.total_marks}).`
                         : ` — does not match Total Marks (${formData.total_marks}). Adjust the counts or Total Marks above.`}
                     </p>
+
+                    {aiConfig.difficulty === "mix" && (
+                      <p className="mt-2 text-xs font-semibold text-slate-500">
+                        Mix generates roughly equal shares of each difficulty: {mixPreview.easy} easy ·{" "}
+                        {mixPreview.medium} intermediate · {mixPreview.hard} hard, out of {totalQuestionCount} question
+                        {totalQuestionCount === 1 ? "" : "s"} total.
+                      </p>
+                    )}
+
+                    {aiConfig.difficulty === "custom" && (
+                      <div className="mt-3 space-y-2 rounded-xl border border-slate-200 p-3 dark:border-slate-800">
+                        <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                          How many of each difficulty?
+                        </p>
+                        <div className="grid grid-cols-3 gap-3">
+                          <Field label="Easy" htmlFor="ai-easyCount">
+                            <Input
+                              id="ai-easyCount"
+                              type="number"
+                              min={0}
+                              value={aiConfig.easyCount}
+                              onChange={(e) => setAiConfig((c) => ({ ...c, easyCount: Math.max(0, Number(e.target.value) || 0) }))}
+                            />
+                          </Field>
+                          <Field label="Intermediate" htmlFor="ai-mediumCount">
+                            <Input
+                              id="ai-mediumCount"
+                              type="number"
+                              min={0}
+                              value={aiConfig.mediumCount}
+                              onChange={(e) => setAiConfig((c) => ({ ...c, mediumCount: Math.max(0, Number(e.target.value) || 0) }))}
+                            />
+                          </Field>
+                          <Field label="Hard" htmlFor="ai-hardCount">
+                            <Input
+                              id="ai-hardCount"
+                              type="number"
+                              min={0}
+                              value={aiConfig.hardCount}
+                              onChange={(e) => setAiConfig((c) => ({ ...c, hardCount: Math.max(0, Number(e.target.value) || 0) }))}
+                            />
+                          </Field>
+                        </div>
+                        <p className={cn("text-xs font-bold", customDifficultyMatches ? "text-emerald-600" : "text-amber-600")}>
+                          These counts total {customDifficultyTotal} question{customDifficultyTotal === 1 ? "" : "s"}
+                          {customDifficultyMatches
+                            ? ` — matches the ${totalQuestionCount} questions above.`
+                            : ` — does not match the ${totalQuestionCount} questions above. Adjust the split or the question-type counts.`}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <Field label="Extra instructions (optional)" htmlFor="ai-prompt">
@@ -1150,34 +1501,123 @@ export default function AssessmentForm() {
                     />
                   </Field>
 
-                  <Button type="button" onClick={handleAiGenerate} disabled={generatingAi} className="h-11 w-full gap-2 rounded-xl font-bold sm:w-auto">
+                  <Button
+                    type="button"
+                    onClick={handleAiGenerate}
+                    disabled={generatingAi || (aiConfig.difficulty === "custom" && !customDifficultyMatches)}
+                    className="h-11 w-full gap-2 rounded-xl font-bold sm:w-auto"
+                  >
                     {generatingAi ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
                     {generatingAi ? `Generating… ${fmtDuration(genElapsedMs)}` : contentText ? "Regenerate question paper" : "Generate question paper"}
                   </Button>
 
-                  {contentText && (
+                  {contentText.trim() && (
                     <Card className="flex flex-col gap-3 rounded-xl border-emerald-200 bg-emerald-50/60 p-4 shadow-none sm:flex-row sm:items-center sm:justify-between dark:border-emerald-900/50 dark:bg-emerald-950/20">
                       <div className="flex items-start gap-3">
                         <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
                           <Check className="size-4" />
                         </span>
                         <div>
-                          <p className="text-sm font-bold text-slate-900 dark:text-white">Question paper ready</p>
+                          <p className="text-sm font-bold text-slate-900 dark:text-white">A question paper is already generated</p>
                           <p className="text-xs font-medium text-slate-500">
-                            {genDurationMs != null ? `Generated in ${fmtDuration(genDurationMs)} · ` : ""}
-                            {answerKey.trim() ? "Answer key included" : "No answer key"}
+                            Regenerating with the settings above keeps the current paper as a draft you can go back to.
                           </p>
                         </div>
                       </div>
-                      <Button type="button" variant="outline" onClick={() => setReviewOpen(true)} className="h-10 w-full gap-2 rounded-xl bg-white font-bold sm:w-auto">
-                        <Eye className="size-4" /> Review &amp; edit
+                      <Button type="button" variant="outline" onClick={goToReview} className="h-10 w-full gap-2 rounded-xl bg-white font-bold sm:w-auto">
+                        <Eye className="size-4" /> View paper
                       </Button>
                     </Card>
                   )}
                 </div>
               )}
             </CardContent>
+            <div className="flex flex-col-reverse gap-2 border-t border-slate-100 p-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+              <Button type="button" variant="outline" onClick={goToDetails} disabled={submitting} className="h-11 w-full gap-2 rounded-xl font-bold sm:h-10 sm:w-auto">
+                <ArrowLeft className="size-4" /> Back to details
+              </Button>
+              <Button type="button" onClick={primaryAction.onClick} disabled={primaryAction.disabled} className="h-11 w-full gap-2 rounded-xl bg-blue-600 px-6 font-bold text-white hover:bg-blue-700 sm:h-10 sm:w-auto">
+                {primaryAction.next ? <>{primaryAction.label} {primaryIcon}</> : <>{primaryIcon} {primaryAction.label}</>}
+              </Button>
+            </div>
           </Card>
+          )}
+
+          {/* 3. Review the generated paper */}
+          {step === 3 && (
+          <Card className="rounded-2xl border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <StepHeader step={3} title="Review question paper" description="Check or edit it. To change the settings, go back and regenerate — this version is kept as a draft." />
+            <CardContent className="space-y-3 px-3 py-4 sm:px-4">
+              {!contentText.trim() ? (
+                <p className="text-sm font-semibold text-slate-500">No paper yet. Go back and generate one.</p>
+              ) : (
+                <>
+                  {/* Only a warning earns its own banner: part of the paper not from the book. */}
+                  {aiGrounding && !fullyGrounded && <GroundingNotice grounding={aiGrounding} />}
+                  <ContentEditor
+                    compact
+                    toolbarExtra={
+                      // Opens the review with PDF export, print and paper format.
+                      <Button type="button" variant="outline" size="sm" onClick={() => setReviewOpen(true)} className={EDITOR_TOOLBAR_BUTTON}>
+                        <Eye className="size-3.5 text-slate-500" /> Full screen
+                      </Button>
+                    }
+                    questions={contentText}
+                    onQuestionsChange={setContentText}
+                    answerKey={answerKey}
+                    onAnswerKeyChange={setAnswerKey}
+                    assessmentId={editingTest?.id}
+                    previewHeader={<PaperHeader format={paperFormat} />}
+                  />
+                </>
+              )}
+
+              {paperDrafts.length > 0 && (
+                <div className="space-y-2 rounded-xl border border-slate-200 p-3 dark:border-slate-800">
+                  <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-500">
+                    <History className="size-3.5" /> Earlier drafts ({paperDrafts.length})
+                  </div>
+                  <p className="text-[11px] font-medium text-slate-500">
+                    Kept in this browser each time you regenerate. Use one to make it the current paper — the current one is kept as a draft.
+                  </p>
+                  <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {paperDrafts.map((d, i) => (
+                      <li key={d.id} className="flex flex-col gap-2 py-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-bold text-slate-800 dark:text-slate-200">Draft {paperDrafts.length - i} · {d.label}</p>
+                          <p className="text-[11px] font-medium text-slate-500">
+                            {new Date(d.savedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+                            {d.answerKey.trim() ? " · answer key included" : ""}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 gap-2">
+                          <Button type="button" variant="outline" size="sm" onClick={() => setViewingDraft(d)} className="h-8 gap-1.5 rounded-lg font-bold">
+                            <Eye className="size-3.5" /> View
+                          </Button>
+                          <Button type="button" size="sm" onClick={() => restoreDraft(d)} disabled={generatingAi} className="h-8 gap-1.5 rounded-lg bg-blue-600 font-bold text-white hover:bg-blue-700">
+                            <RefreshCw className="size-3.5" /> Use this
+                          </Button>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => deleteDraft(d.id)} aria-label={`Delete draft ${paperDrafts.length - i}`} className="h-8 rounded-lg px-2 text-slate-400 hover:text-red-600">
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </CardContent>
+            <div className="flex flex-col-reverse gap-2 border-t border-slate-100 p-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+              <Button type="button" variant="outline" onClick={goToQuestionPaper} disabled={submitting || generatingAi} className="h-11 w-full gap-2 rounded-xl font-bold sm:h-10 sm:w-auto">
+                <ArrowLeft className="size-4" /> Back to settings
+              </Button>
+              <Button type="button" onClick={submit} disabled={submitting || generatingAi} className="h-11 w-full gap-2 rounded-xl bg-blue-600 px-6 font-bold text-white hover:bg-blue-700 sm:h-10 sm:w-auto">
+                {submitting ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                {saveLabel}
+              </Button>
+            </div>
+          </Card>
+          )}
         </div>
 
         {/* Summary + actions (desktop) */}
@@ -1197,6 +1637,7 @@ export default function AssessmentForm() {
                 { label: "Starts", value: startTimeLabel || "Not set" },
                 { label: "Ends", value: endTimeLabel || "Not set" },
                 { label: "Content", value: contentMode === "manual" ? "Manual" : contentMode === "upload" ? "Upload" : "AI generated" },
+                ...(paperDrafts.length ? [{ label: "Earlier drafts", value: String(paperDrafts.length) }] : []),
               ].map((row) => (
                 <div key={row.label} className="flex items-start justify-between gap-3">
                   <span className="font-semibold text-slate-400">{row.label}</span>
@@ -1204,10 +1645,26 @@ export default function AssessmentForm() {
                 </div>
               ))}
               <Separator />
-              <div className="flex items-center gap-2 font-semibold text-slate-500">
-                <Calendar className="size-3.5 shrink-0" />
-                {contentText.trim() ? "Question paper added" : "No question paper yet — you can add it later"}
-              </div>
+              {generatingAi ? (
+                <div className="flex items-center gap-2 rounded-lg bg-blue-50 px-2.5 py-2 font-semibold text-blue-700 dark:bg-blue-950/30 dark:text-blue-300" role="status">
+                  <Loader2 className="size-3.5 shrink-0 animate-spin" />
+                  Generating question paper… {fmtDuration(genElapsedMs)}
+                </div>
+              ) : contentText.trim() && contentMode === "ai" ? (
+                <div className="flex items-start gap-2 rounded-lg bg-emerald-50 px-2.5 py-2 font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                  <Sparkles className="mt-0.5 size-3.5 shrink-0" />
+                  <span>
+                    AI question paper ready
+                    {genDurationMs != null ? ` · ${fmtDuration(genDurationMs)}` : ""}
+                    {answerKey.trim() ? " · answer key included" : ""}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 font-semibold text-slate-500">
+                  <Calendar className="size-3.5 shrink-0" />
+                  {contentText.trim() ? "Question paper added" : step === 1 ? "Next: choose how to add the question paper" : "No question paper yet — you can add it later"}
+                </div>
+              )}
             </CardContent>
             <div className="space-y-2 border-t border-slate-100 p-4 dark:border-slate-800">{actionButtons}</div>
           </Card>
@@ -1220,13 +1677,59 @@ export default function AssessmentForm() {
           <Button type="button" variant="outline" onClick={() => goBack()} disabled={submitting} className="h-11 rounded-xl font-bold sm:h-10">
             Cancel
           </Button>
-          <Button type="button" onClick={submit} disabled={submitting} className="h-11 gap-2 rounded-xl bg-blue-600 font-bold text-white hover:bg-blue-700 sm:h-10">
-            {submitting ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-            {submitting ? "Saving…" : editingTest ? "Update Test" : "Create Test"}
+          <Button type="button" onClick={primaryAction.onClick} disabled={primaryAction.disabled} className="h-11 gap-2 rounded-xl bg-blue-600 font-bold text-white hover:bg-blue-700 sm:h-10">
+            {primaryAction.next ? <>{primaryAction.short} {primaryIcon}</> : <>{primaryIcon} {primaryAction.short}</>}
           </Button>
+          {editingTest && isDraft && (
+            <Button type="button" onClick={handlePublish} disabled={publishing || submitting} className="h-11 gap-2 rounded-xl bg-emerald-600 font-bold text-white hover:bg-emerald-700 sm:h-10">
+              {publishing ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+              {publishing ? "Publishing…" : "Publish"}
+            </Button>
+          )}
         </div>
       </div>
+      <PaperFormatDialog
+        open={formatOpen}
+        onOpenChange={setFormatOpen}
+        format={paperFormat}
+        onChange={changePaperFormat}
+        onReset={resetPaperFormat}
+        onSaveDefault={savePaperFormatDefault}
+      />
+
       {/* Review the AI-generated paper without leaving the form */}
+      <Dialog open={!!viewingDraft} onOpenChange={(open) => { if (!open) setViewingDraft(null); }}>
+        <DialogContent className="flex h-[92vh] w-[calc(100%-1rem)] max-w-6xl flex-col gap-0 overflow-hidden rounded-2xl p-0 sm:rounded-2xl">
+          <DialogHeader className="shrink-0 border-b border-slate-100 p-4 pr-12 text-left dark:border-slate-800 sm:p-5 sm:pr-14">
+            <DialogTitle className="text-base font-bold leading-normal tracking-normal sm:text-lg">Earlier draft</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
+              {viewingDraft ? `${viewingDraft.label} · ${new Date(viewingDraft.savedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}` : ""}
+              {" "}— a copy: closing changes nothing. Use it to make it the current paper.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+            {viewingDraft && (
+              <ContentEditor
+                key={viewingDraft.id}
+                questions={viewingDraft.contentText}
+                onQuestionsChange={(v) => setViewingDraft((d) => (d ? { ...d, contentText: v } : d))}
+                answerKey={viewingDraft.answerKey}
+                onAnswerKeyChange={(v) => setViewingDraft((d) => (d ? { ...d, answerKey: v } : d))}
+                previewHeader={<PaperHeader format={paperFormat} />}
+              />
+            )}
+          </div>
+          <DialogFooter className="shrink-0 flex-col-reverse gap-2 border-t border-slate-100 p-4 dark:border-slate-800 sm:flex-row sm:justify-between sm:space-x-0 sm:px-5">
+            <Button type="button" variant="outline" onClick={() => setViewingDraft(null)} className="h-10 rounded-xl font-bold">
+              Close
+            </Button>
+            <Button type="button" onClick={() => viewingDraft && restoreDraft(viewingDraft)} disabled={generatingAi} className="h-10 gap-2 rounded-xl bg-blue-600 font-bold text-white hover:bg-blue-700">
+              <RefreshCw className="size-4" /> Use this draft
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={reviewOpen} onOpenChange={setReviewOpen}>
         <DialogContent className="flex h-[92vh] w-[calc(100%-1rem)] max-w-6xl flex-col gap-0 overflow-hidden rounded-2xl p-0 sm:rounded-2xl">
           <DialogHeader className="shrink-0 border-b border-slate-100 p-4 pr-12 text-left dark:border-slate-800 sm:p-5 sm:pr-14">
@@ -1239,33 +1742,39 @@ export default function AssessmentForm() {
           <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-slate-100 bg-slate-50/60 px-4 py-2.5 dark:border-slate-800 dark:bg-slate-900/40 sm:px-5">
             <PaperExportMenu kind="pdf" hasQuestions={!!contentText.trim()} hasAnswers={!!answerKey.trim()} disabled={generatingAi || exporting} onPick={(part) => exportPaper("pdf", part)} />
             <PaperExportMenu kind="print" hasQuestions={!!contentText.trim()} hasAnswers={!!answerKey.trim()} disabled={generatingAi || exporting} onPick={(part) => exportPaper("print", part)} />
+            <Button type="button" variant="outline" size="sm" onClick={() => setFormatOpen(true)} className="h-9 flex-1 gap-1.5 rounded-xl font-bold sm:flex-none">
+              <Settings2 className="size-4" /> Paper format
+            </Button>
             <span className="w-full text-[11px] text-slate-500 sm:ml-auto sm:w-auto">For formulas and diagrams, use Print → Save as PDF.</span>
           </div>
 
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
-            {generatingAi ? (
+            {generatingAi && (
               <Alert className="flex items-center gap-2 rounded-lg border-blue-200 bg-blue-50 p-2.5 text-xs font-bold text-blue-800 [&>svg]:static [&>svg]:text-current [&>svg~*]:pl-0">
                 <Loader2 className="size-4 animate-spin" /> Regenerating… {fmtDuration(genElapsedMs)}
               </Alert>
-            ) : (
-              genDurationMs != null && (
-                <Alert className="rounded-lg border-emerald-300 bg-emerald-50 p-2.5 text-xs font-bold text-emerald-800">
-                  Generated in {fmtDuration(genDurationMs)}
-                </Alert>
-              )
             )}
-            {aiGrounding && contentText && <GroundingNotice grounding={aiGrounding} />}
+            {/* Only a warning earns a banner: part of the paper not from the book. */}
+            {aiGrounding && contentText && !fullyGrounded && <GroundingNotice grounding={aiGrounding} />}
             <ContentEditor
+              compact
               questions={contentText}
               onQuestionsChange={setContentText}
               answerKey={answerKey}
               onAnswerKeyChange={setAnswerKey}
               assessmentId={editingTest?.id}
+              previewHeader={<PaperHeader format={paperFormat} />}
             />
           </div>
 
           <DialogFooter className="shrink-0 flex-col-reverse gap-2 border-t border-slate-100 p-4 dark:border-slate-800 sm:flex-row sm:justify-between sm:space-x-0 sm:px-5">
-            <Button type="button" variant="outline" onClick={handleAiGenerate} disabled={generatingAi} className="h-10 gap-2 rounded-xl font-bold">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleAiGenerate}
+              disabled={generatingAi || (aiConfig.difficulty === "custom" && !customDifficultyMatches)}
+              className="h-10 gap-2 rounded-xl font-bold"
+            >
               {generatingAi ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
               Regenerate
             </Button>

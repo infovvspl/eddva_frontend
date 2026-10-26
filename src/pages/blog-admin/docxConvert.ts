@@ -13,15 +13,14 @@ import {
   AlignmentType, Document, ExternalHyperlink, HeadingLevel, ImageRun, Packer, Paragraph, TextRun,
   Footer, Header, SimpleField, FootnoteReferenceRun, EndnoteReferenceRun,
 } from 'docx';
-import { uploadBlogCoverImage } from '@/lib/api/blogAdmin';
+import { stageBlogImage } from './pendingImages';
 import type { BlogDocumentSettings, BlogReference } from '@/lib/api/blogAdmin';
 
 /**
  * mammoth embeds a Word doc's pictures as base64 data URIs. The editor's
  * Image extension won't render those (`allowBase64` stays off on purpose —
  * a data URI can be hundreds of KB and the section body has a size cap), so
- * each one is uploaded to blog storage here and swapped for its hosted URL.
- * An image that fails to upload is dropped rather than left as inert base64.
+ * each one is staged locally here (uploaded when the post is saved).
  */
 async function hostInlineImages(html: string): Promise<string> {
   const container = document.createElement('div');
@@ -32,12 +31,9 @@ async function hostInlineImages(html: string): Promise<string> {
   await Promise.all(dataImages.map(async (img) => {
     try {
       const blob = await (await fetch(img.getAttribute('src') || '')).blob();
-      const { url } = await uploadBlogCoverImage(blob);
-      img.setAttribute('src', url);
+      img.setAttribute('src', stageBlogImage(blob));
     } catch (error) {
-      // Keep the data URI as a local fallback. The editor allows base64 images
-      // so a transient storage/upload failure does not erase imported artwork.
-      console.warn('Could not upload imported Word image; keeping local image', error);
+      console.warn('Could not stage imported Word image; keeping local image', error);
     }
   }));
   return container.innerHTML;
@@ -97,9 +93,9 @@ function runsFromInline(node: Element | ChildNode, marks: Marks = {}): Inline[] 
       underline: marks.underline || tag === 'u',
       strike: marks.strike || tag === 's' || tag === 'del',
       code: marks.code || tag === 'code',
-      color: el.getAttribute('data-color') || el.style.color || marks.color,
-      fontFamily: el.style.fontFamily || marks.fontFamily,
-      fontSize: el.style.fontSize || marks.fontSize,
+      color: el.getAttribute('data-color') || (el as HTMLElement).style.color || marks.color,
+      fontFamily: (el as HTMLElement).style.fontFamily || marks.fontFamily,
+      fontSize: (el as HTMLElement).style.fontSize || marks.fontSize,
     };
     runs.push(...runsFromInline(el, nextMarks));
   });
@@ -209,7 +205,7 @@ export async function htmlToDocxBlob(html: string, options: { settings?: BlogDoc
   });
   if (references.length && paragraphs.length) {
     const refs = references.map((reference, index) => reference.kind === 'endnote' ? new EndnoteReferenceRun(index + 1) : new FootnoteReferenceRun(index + 1));
-    paragraphs[paragraphs.length - 1] = new Paragraph({ children: [...(paragraphs[paragraphs.length - 1].options.children || []), ...refs] });
+    paragraphs[paragraphs.length - 1] = new Paragraph({ children: [...((paragraphs[paragraphs.length - 1] as any).options.children || []), ...refs] });
   }
   const pageWidth = settings.pageSize === 'LETTER' ? 12240 : 11906;
   const pageHeight = settings.pageSize === 'LETTER' ? 15840 : 16838;

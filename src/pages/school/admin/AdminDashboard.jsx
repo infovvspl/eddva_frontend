@@ -23,6 +23,8 @@ import { useAuth } from '@/context/SchoolAuthContext';
 import InstituteDashboardWorkspace from './InstituteDashboardWorkspace';
 import SuperAdminDashboardWorkspace from './SuperAdminDashboardWorkspace';
 import MaintenanceBroadcastBanner from '@/components/shared/MaintenanceBroadcastBanner';
+import { useSchoolFeature } from '@/hooks/use-school-feature';
+import StudyPlannerDashboardCard from '@/pages/school/reports/study-planner/StudyPlannerDashboardCard';
 
 
 function formatNumber(value) {
@@ -72,6 +74,8 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, institute: storedInstitute } = useAuth();
+  // The AI Study Planner snapshot (charts only), for schools that use the planner.
+  const hasPlanner = useSchoolFeature('ai', 'ai_study_planner');
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -210,6 +214,7 @@ export default function Dashboard() {
       <div className="space-y-6">
         <MaintenanceBroadcastBanner />
         <InstituteDashboardWorkspace stats={stats} institute={institute} loading={false} />
+        {hasPlanner && <StudyPlannerDashboardCard />}
       </div>
     );
   }

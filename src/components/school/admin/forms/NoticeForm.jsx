@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, Loader } from 'lucide-react';
+import { AlertCircle, Loader, Loader2 } from 'lucide-react';
 import api from '@/lib/api/school-client';
+import { putFileToS3 } from '@/lib/api/upload';
 import { CustomSelect } from "@/components/ui/CustomSelect";
+
+const MAX_ATTACHMENT_MB = 20;
 
 const hasAttachments = (attachments) => Boolean(attachments && Object.keys(attachments).length > 0);
 
@@ -18,6 +21,7 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
   });
   const [error, setError] = useState('');
   const [step, setStep] = useState(1);
+  const [uploadingFile, setUploadingFile] = useState(false);
 
   useEffect(() => {
     setStep(1);
@@ -45,17 +49,37 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
     }
   };
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = async (e) => {
     const file = e.target.files[0];
+    e.target.value = ''; // allow re-selecting the same file after a failed attempt
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
+    setError('');
+
+    if (file.size > MAX_ATTACHMENT_MB * 1024 * 1024) {
+      setError(`"${file.name}" is ${(file.size / 1024 / 1024).toFixed(1)}MB — attachments must be ${MAX_ATTACHMENT_MB}MB or smaller.`);
+      return;
+    }
+
+    setUploadingFile(true);
+    try {
+      const contentType = file.type || 'application/octet-stream';
+      const presign = await api.post('/notices/upload-url', {
+        fileName: file.name,
+        contentType,
+        fileSize: file.size,
+      });
+      const { uploadUrl, fileUrl } = presign.data?.data ?? presign.data;
+      await putFileToS3(uploadUrl, file, contentType);
       setFormData(prev => ({
         ...prev,
-        attachments: { ...prev.attachments, [file.name]: reader.result }
+        attachments: { ...prev.attachments, [file.name]: fileUrl }
       }));
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Notice attachment upload failed:', err);
+      setError(err?.response?.data?.message || `Failed to upload "${file.name}". Please try again.`);
+    } finally {
+      setUploadingFile(false);
+    }
   };
 
   const handleNextStep = () => {
@@ -115,6 +139,7 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
                   options={[
                   { value: "GENERAL", label: "General" },
                   { value: "ACADEMIC", label: "Academic" },
+                  { value: "ACHIEVEMENT", label: "Achievement" },
                   { value: "EVENT", label: "Event" },
                   { value: "HOLIDAY", label: "Holiday" },
                   { value: "EXAM", label: "Exam" },
@@ -207,11 +232,20 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
 
         <div>
           <label className="block text-sm font-semibold text-surface-700 mb-2">Attachments</label>
-          <input
-            type="file"
-            onChange={handleFileUpload}
-            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-          />
+          <div className="relative">
+            <input
+              type="file"
+              onChange={handleFileUpload}
+              disabled={uploadingFile}
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 disabled:opacity-50"
+            />
+            {uploadingFile && (
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-xs font-bold text-brand-600">
+                <Loader2 className="size-3.5 animate-spin" /> Uploading...
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-xs text-surface-500">Up to {MAX_ATTACHMENT_MB}MB per file.</p>
           {Object.keys(formData.attachments).length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
               {Object.keys(formData.attachments).map(filename => (
@@ -245,10 +279,10 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
 
       <div className="flex flex-col sm:flex-row gap-3 pt-4">
         {step === 1 ? (
-          <>
+          <React.Fragment key="step-1-actions">
             <button
               type="button"
-              onClick={handleNextStep}
+              onClick={(e) => { e.preventDefault(); handleNextStep(); }}
               className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 active:scale-[0.98] px-4 py-2.5 font-bold text-white shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-all duration-200"
             >
               Continue
@@ -260,12 +294,12 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
             >
               Cancel
             </button>
-          </>
+          </React.Fragment>
         ) : (
-          <>
+          <React.Fragment key="step-2-actions">
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || uploadingFile}
               className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 active:scale-[0.98] px-4 py-2.5 font-bold text-white shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 transition-all duration-200"
             >
               {isLoading && <Loader className="size-4 animate-spin" />}
@@ -278,7 +312,7 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
             >
               Back
             </button>
-          </>
+          </React.Fragment>
         )}
       </div>
     </form>

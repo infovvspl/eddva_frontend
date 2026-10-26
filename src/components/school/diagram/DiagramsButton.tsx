@@ -15,18 +15,41 @@
 import React from 'react';
 import { Shapes } from 'lucide-react';
 import Button from '@/components/school/Button';
+import { Button as ToolbarButton } from '@/components/ui/button';
+import { EDITOR_TOOLBAR_BUTTON } from '@/components/school/editorToolbarStyles';
 
 export const UNSAVED_ASSESSMENT_HINT = 'Save this test first — diagrams attach to a saved paper.';
 
 export default function DiagramsButton({
   assessmentId,
   onOpen,
+  compact = false,
 }: {
   /** Present only once the assessment exists. */
   assessmentId?: string;
   onOpen: () => void;
+  /** Keeps the reason visible (touch screens have no tooltip) but inside the
+   *  button's own label, so it fits on one toolbar line. */
+  compact?: boolean;
 }) {
   const disabled = !assessmentId;
+  if (compact) {
+    // Same look as the other toolbar buttons beside it.
+    return (
+      <ToolbarButton
+        type="button"
+        variant="outline"
+        size="sm"
+        className={EDITOR_TOOLBAR_BUTTON}
+        disabled={disabled}
+        title={disabled ? UNSAVED_ASSESSMENT_HINT : undefined}
+        onClick={onOpen}
+      >
+        <Shapes size={14} className="text-violet-600" />
+        {disabled ? 'Diagrams · save first' : 'Diagrams'}
+      </ToolbarButton>
+    );
+  }
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Button

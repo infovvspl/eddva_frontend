@@ -1,7 +1,7 @@
 import { defineConfig, loadEnv, createLogger, type Logger } from "vite";
-import react from "@vitejs/plugin-react-swc";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 import path from "path";
-import { componentTagger } from "lovable-tagger";
 
 /** Omit Vite's default "[vite] http proxy error … ECONNREFUSED" spam when the API is down. */
 function createQuietProxyLogger(): Logger {
@@ -34,6 +34,7 @@ export default defineConfig(({ mode }) => {
     // Target iOS Safari 14+ and equivalent — prevents SWC outputting syntax
     // that older iOS WebKit cannot parse (private class fields, etc.)
     target: ["es2019", "safari14", "chrome87", "firefox78"],
+    chunkSizeWarningLimit: 2000, // kB
   },
   server: {
     host: "0.0.0.0",
@@ -42,7 +43,7 @@ export default defineConfig(({ mode }) => {
       overlay: false,
     },
     // Allow subdomain access like soa.localhost:8080
-    allowedHosts: "all",
+    allowedHosts: true,
     proxy: {
       "/api": {
         target: proxyTarget,
@@ -63,10 +64,10 @@ export default defineConfig(({ mode }) => {
       },
     },
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(import.meta.dirname, "./src"),
     },
   },
   optimizeDeps: {

@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { 
   Sparkles, TrendingUp, AlertTriangle, CheckCircle2, BarChart2, 
-  Layers, Loader2, ArrowLeft, ShieldAlert, UserX, Clock, Calendar, 
+  Layers, Loader2, ShieldAlert, UserX, Clock, Calendar,
   Award, Activity, Hourglass, PieChart, LineChart, Gauge
 } from 'lucide-react';
+import { BackButton } from '@/components/shared/BackButton';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import { toast } from 'sonner';
 
@@ -16,6 +17,8 @@ export default function SyllabusAnalytics() {
   const [trackerData, setTrackerData] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [classFilter, setClassFilter] = useState('ALL');
+  const [sectionFilter, setSectionFilter] = useState('ALL');
 
   useEffect(() => {
     fetchData();
@@ -47,9 +50,34 @@ export default function SyllabusAnalytics() {
     );
   }
 
+  // Class/Section filter options, derived from the loaded tracker rows so they always
+  // match what's actually filterable (no separate classes/sections API call needed).
+  const uniqueClasses = Array.from(
+    new Map(trackerData.filter(i => i.classId).map(i => [i.classId, { classId: i.classId, className: i.className }])).values()
+  ).sort((a, b) => (a.className || '').localeCompare(b.className || ''));
+
+  const uniqueSections = Array.from(
+    new Map(
+      trackerData
+        .filter(i => (classFilter === 'ALL' || i.classId === classFilter) && i.sectionId)
+        .map(i => [i.sectionId, { sectionId: i.sectionId, sectionName: i.sectionName }])
+    ).values()
+  ).sort((a, b) => (a.sectionName || '').localeCompare(b.sectionName || ''));
+
+  const classSectionFilteredData = trackerData.filter(i => {
+    if (classFilter !== 'ALL' && i.classId !== classFilter) return false;
+    if (sectionFilter !== 'ALL' && i.sectionId !== sectionFilter) return false;
+    return true;
+  });
+
+  const handleClassFilterChange = (value) => {
+    setClassFilter(value);
+    setSectionFilter('ALL');
+  };
+
   // Aggregate Data
   const overallProgress = summary?.overallProgress || 0;
-  const subjectsAtRisk = trackerData.filter(i => i.status === 'BEHIND' || (i.progressPercentage || 0) < 50);
+  const subjectsAtRisk = classSectionFilteredData.filter(i => i.status === 'BEHIND' || (i.progressPercentage || 0) < 50);
 
   const classRiskMap = {};
   trackerData.forEach(i => {
@@ -87,7 +115,7 @@ export default function SyllabusAnalytics() {
   // Each plan's own time-elapsed-vs-duration benchmark, computed server-side from its
   // real planned dates — the same formula used everywhere else "expected progress"
   // appears, so this stays honest instead of a guessed month-by-month curve.
-  const plansWithExpected = trackerData.filter(i => typeof i.expectedProgressPercentage === 'number');
+  const plansWithExpected = classSectionFilteredData.filter(i => typeof i.expectedProgressPercentage === 'number');
   const currentMonthName = new Date().toLocaleString('default', { month: 'long' });
 
   const viewsList = [
@@ -106,18 +134,13 @@ export default function SyllabusAnalytics() {
     <div className="w-full px-4 py-6 sm:px-6 lg:px-8 space-y-6 font-poppins">
       {/* Top Navigation */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div className="space-y-1">
-          <button
-            onClick={() => navigate('/school/admin/syllabus-tracker')}
-            className="inline-flex items-center gap-1.5 text-xs font-extrabold text-blue-600 hover:text-blue-700 transition-colors mb-1"
-          >
-            <ArrowLeft size={15} /> Back to Syllabus Tracker
-          </button>
+        <div className="space-y-1 flex-1 min-w-0">
           <h1 className="text-2xl font-black text-slate-900 dark:text-white">
             Syllabus Analytics Details Hub
           </h1>
           <p className="text-xs text-slate-500">Comprehensive breakdown and actionable insights for your selected syllabus metric.</p>
         </div>
+        <BackButton to="/school/admin/syllabus-tracker" />
       </div>
 
       {/* VIEW TABS SELECTOR */}
@@ -167,9 +190,19 @@ export default function SyllabusAnalytics() {
 
       {selectedType === 'expected-vs-actual' && (
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-6">
-          <div className="border-b border-slate-100 dark:border-slate-800 pb-4">
-            <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase">Expected vs Actual Progress by Plan</h2>
-            <p className="text-xs text-slate-500">Expected % is each plan's elapsed time as a share of its planned start–completion window; Actual % is real topic completion.</p>
+          <div className="border-b border-slate-100 dark:border-slate-800 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase">Expected vs Actual Progress by Plan</h2>
+              <p className="text-xs text-slate-500">Expected % is each plan's elapsed time as a share of its planned start–completion window; Actual % is real topic completion.</p>
+            </div>
+            <ClassSectionFilter
+              classFilter={classFilter}
+              sectionFilter={sectionFilter}
+              uniqueClasses={uniqueClasses}
+              uniqueSections={uniqueSections}
+              onClassChange={handleClassFilterChange}
+              onSectionChange={setSectionFilter}
+            />
           </div>
 
           {plansWithExpected.length === 0 ? (
@@ -211,10 +244,22 @@ export default function SyllabusAnalytics() {
 
       {selectedType === 'subjects-at-risk' && (
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
-          <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase flex items-center gap-2">
-            <ShieldAlert className="text-rose-500" size={20} /> Subjects at Risk Breakdown ({subjectsAtRisk.length})
-          </h2>
-          <p className="text-xs text-slate-500">Subjects progressing under 50% target or marked behind schedule.</p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase flex items-center gap-2">
+                <ShieldAlert className="text-rose-500" size={20} /> Subjects at Risk Breakdown ({subjectsAtRisk.length})
+              </h2>
+              <p className="text-xs text-slate-500">Subjects progressing under 50% target or marked behind schedule.</p>
+            </div>
+            <ClassSectionFilter
+              classFilter={classFilter}
+              sectionFilter={sectionFilter}
+              uniqueClasses={uniqueClasses}
+              uniqueSections={uniqueSections}
+              onClassChange={handleClassFilterChange}
+              onSectionChange={setSectionFilter}
+            />
+          </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             {subjectsAtRisk.map((s, idx) => (
@@ -328,6 +373,34 @@ export default function SyllabusAnalytics() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function ClassSectionFilter({ classFilter, sectionFilter, uniqueClasses, uniqueSections, onClassChange, onSectionChange }) {
+  return (
+    <div className="flex items-center gap-2 shrink-0">
+      <select
+        value={classFilter}
+        onChange={(e) => onClassChange(e.target.value)}
+        className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200"
+      >
+        <option value="ALL">All Classes</option>
+        {uniqueClasses.map(c => (
+          <option key={c.classId} value={c.classId}>{c.className}</option>
+        ))}
+      </select>
+      <select
+        value={sectionFilter}
+        onChange={(e) => onSectionChange(e.target.value)}
+        disabled={classFilter === 'ALL'}
+        className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 disabled:opacity-50"
+      >
+        <option value="ALL">All Sections</option>
+        {uniqueSections.map(s => (
+          <option key={s.sectionId} value={s.sectionId}>{s.sectionName}</option>
+        ))}
+      </select>
     </div>
   );
 }

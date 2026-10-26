@@ -8,6 +8,7 @@
 // (nw-sol-admin), via RoleDetail — matching TeacherSolutionPage /
 // StudentSolutionPage / ParentSolutionPage exactly.
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import "../new-website.css";
 import TopBar from "../components/TopBar";
 import Navbar from "../components/Navbar";
@@ -24,6 +25,7 @@ const adminCapabilityCount = admin
   : 0;
 
 const InstitutionSolutionPage = () => {
+  const { t } = useTranslation("solutions");
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   return (
@@ -34,15 +36,15 @@ const InstitutionSolutionPage = () => {
         {admin && (
           <PageHead
             id="nw-institution-sol-head"
-            title="EDDVA for"
-            accent="Institutions"
-            lead="Streamlined operations, real-time data and the tools to run your institution with confidence."
+            title={t("pages.institutions.title")}
+            accent={t("pages.institutions.accent")}
+            lead={t("pages.institutions.lead")}
             icon={admin.Icon}
             color={admin.color}
             bg={admin.bg}
             stats={[
-              { value: adminCapabilityCount, label: "Capabilities" },
-              { value: admin.groups.length, label: "Categories" },
+              { value: adminCapabilityCount, label: t("pages.capabilities") },
+              { value: admin.groups.length, label: t("pages.categories") },
             ]}
           />
         )}

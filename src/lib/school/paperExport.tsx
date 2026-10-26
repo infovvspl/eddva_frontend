@@ -1,70 +1,73 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import AssessmentContentRenderer from '@/components/school/AssessmentContentRenderer';
+import PaperHeader from '@/components/school/teacher/PaperHeader';
+import { stripGeneratedHeader, type PaperFormat } from './paperFormat';
 
 export type PaperPart = 'questions' | 'answers' | 'both';
 
 type PaperInput = {
+  /** Used for the file name; the printed title comes from `format.examTitle`. */
   title: string;
   questions: string;
   answerKey: string;
   part: PaperPart;
+  format: PaperFormat;
 };
 
 const safeName = (s: string) =>
   (s || 'question-paper').replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '').slice(0, 80) || 'question-paper';
 
-const partLabel = (part: PaperPart) =>
-  part === 'questions' ? 'Question Paper' : part === 'answers' ? 'Answer Key' : 'Question Paper & Answer Key';
-
 /** Which sections of the paper the chosen part covers, skipping empty ones. */
 function sectionsFor({ questions, answerKey, part }: PaperInput) {
-  const out: { heading: string; body: string }[] = [];
-  if ((part === 'questions' || part === 'both') && questions.trim()) out.push({ heading: 'Question Paper', body: questions });
-  if ((part === 'answers' || part === 'both') && answerKey.trim()) out.push({ heading: 'Answer Key', body: answerKey });
+  const out: { kind: 'questions' | 'answers'; body: string }[] = [];
+  if ((part === 'questions' || part === 'both') && questions.trim()) out.push({ kind: 'questions', body: questions });
+  if ((part === 'answers' || part === 'both') && answerKey.trim()) out.push({ kind: 'answers', body: answerKey });
   return out;
 }
 
-/**
- * Real PDF download (selectable text, A4, page numbers). Math is flattened to
- * plain text and figures are skipped — use Print → "Save as PDF" when the paper
- * has formulas or diagrams that must look exactly as on screen.
- */
-export async function downloadPaperPdf(input: PaperInput): Promise<boolean> {
-  const sections = sectionsFor(input);
-  if (!sections.length) return false;
-  const markdown = sections
-    .map((s, i) => (sections.length > 1 ? `${i > 0 ? '\n\n---\n\n' : ''}# ${s.heading}\n\n${s.body}` : s.body))
-    .join('');
-  const { downloadNotesAsPDF } = await import('./notesPdf');
-  const title = input.title.trim() || 'Question Paper';
-  await downloadNotesAsPDF({
-    markdown,
-    title: sections.length === 1 && input.part === 'answers' ? `${title} - Answer Key` : title,
-    filename: `${safeName(title)}${input.part === 'answers' ? '_answer_key' : input.part === 'both' ? '_with_answers' : ''}.pdf`,
-    subtitle: partLabel(input.part),
-  });
-  return true;
-}
+export type PdfOutcome = 'ok' | 'empty' | 'unsupported';
 
 /**
- * Print through a hidden iframe so the paper keeps its formulas, tables and
- * figures. Page styles are copied in so KaTeX and the exam typography apply.
- * The answer key always starts on a fresh page.
+ * School-format PDF download (letterhead, class / subject / time / marks, instructions, page
+ * numbers; selectable text). Maths is flattened to plain text and figures are skipped, and
+ * scripts the built-in font can't draw return 'unsupported' — the caller falls back to Print,
+ * which keeps formulas, diagrams and every script exactly as on screen.
+ */
+export async function downloadPaperPdf(input: PaperInput): Promise<PdfOutcome> {
+  if (!sectionsFor(input).length) return 'empty';
+  const { buildPaperPdf } = await import('./paperPdf');
+  const base = safeName(input.title || input.format.examTitle);
+  const suffix = input.part === 'answers' ? '_answer_key' : input.part === 'both' ? '_with_answers' : '';
+  return buildPaperPdf({
+    format: input.format,
+    questions: stripGeneratedHeader(input.questions),
+    answerKey: stripGeneratedHeader(input.answerKey),
+    part: input.part,
+    filename: `${base}${suffix}.pdf`,
+  });
+}
+
+const escapeHtml = (s: string) =>
+  s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+
+/**
+ * Print through a hidden iframe so the paper keeps its formulas, tables and figures, under the
+ * same school header shown in the preview. Page styles are copied in so KaTeX applies. The
+ * answer key always starts on a fresh page.
  */
 export async function printPaper(input: PaperInput): Promise<boolean> {
   const sections = sectionsFor(input);
   if (!sections.length) return false;
-  const title = input.title.trim() || 'Question Paper';
+  const title = input.format.examTitle || input.title || 'Question Paper';
 
   const body = sections
     .map((s, i) => {
-      const html = renderToStaticMarkup(<AssessmentContentRenderer>{s.body}</AssessmentContentRenderer>);
-      const showHeading = sections.length > 1 || s.heading === 'Answer Key';
+      const header = renderToStaticMarkup(<PaperHeader format={input.format} variant={s.kind} />);
+      const content = renderToStaticMarkup(<AssessmentContentRenderer>{stripGeneratedHeader(s.body)}</AssessmentContentRenderer>);
       return `<section class="paper-part"${i > 0 ? ' style="break-before:page;page-break-before:always"' : ''}>
-        <h1 class="paper-title">${escapeHtml(title)}</h1>
-        ${showHeading ? `<p class="paper-kind">${s.heading}</p>` : ''}
-        ${html}
+        ${header}
+        <div class="paper-body">${content}</div>
       </section>`;
     })
     .join('');
@@ -85,22 +88,23 @@ export async function printPaper(input: PaperInput): Promise<boolean> {
     return false;
   }
 
+  const border = input.format.showBorder ? '1.5px solid #0f172a' : 'none';
   doc.open();
   doc.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>
     <base href="${document.baseURI}">
     ${styles}
     <style>
-      @page { size: A4; margin: 16mm; }
+      @page { size: A4; margin: 12mm; }
       html, body { background: #fff !important; color: #0f172a; }
-      body { margin: 0; padding: 0; font-family: 'Times New Roman', Georgia, serif; font-size: 12pt; line-height: 1.55; }
-      .paper-title { font-size: 18pt; margin: 0 0 4px; text-align: center; }
-      .paper-kind { text-align: center; font-size: 10pt; letter-spacing: .08em; text-transform: uppercase; color: #475569; margin: 0 0 14px; border-bottom: 1px solid #cbd5e1; padding-bottom: 8px; }
-      .paper-part { max-width: none; }
+      body { margin: 0; padding: 0; font-family: 'Times New Roman', Times, Georgia, serif; font-size: 12pt; line-height: 1.55; }
+      .paper-part { border: ${border}; padding: 10mm 9mm; box-sizing: border-box; }
+      .paper-body { margin-top: 10px; }
+      .paper-foot { margin-top: 14px; padding-top: 6px; border-top: 1px solid #cbd5e1; font-size: 10px; color: #475569; text-align: center; }
       img, svg, table { max-width: 100%; break-inside: avoid; page-break-inside: avoid; }
       h2, h3 { break-after: avoid; page-break-after: avoid; }
       table { border-collapse: collapse; }
-      th, td { border: 1px solid #94a3b8; padding: 4px 8px; }
-    </style></head><body>${body}</body></html>`);
+      .paper-body th, .paper-body td { border: 1px solid #94a3b8; padding: 4px 8px; }
+    </style></head><body>${body}${input.format.footerNote ? `<div class="paper-foot">${escapeHtml(input.format.footerNote)}</div>` : ''}</body></html>`);
   doc.close();
 
   const cleanup = () => setTimeout(() => iframe.remove(), 1000);
@@ -127,8 +131,4 @@ export async function printPaper(input: PaperInput): Promise<boolean> {
   // Browsers that never fire afterprint would otherwise leak the iframe.
   setTimeout(() => iframe.remove(), 120000);
   return true;
-}
-
-function escapeHtml(s: string) {
-  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
 }

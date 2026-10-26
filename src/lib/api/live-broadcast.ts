@@ -17,6 +17,8 @@ export interface BroadcastLecture {
   subjectId?: string;
   subjectName?: string;
   description?: string;
+  recordingUrl?: string;
+  durationSeconds?: number;
   /** Only present for the owning teacher / admin */
   streamKey?: string;
   rtmpUrl?: string;
@@ -63,6 +65,7 @@ export interface BroadcastQuestion {
 export interface BroadcastParticipant {
   userId: string;
   userName: string;
+  initials?: string;
   joinedAt?: string;
   handRaised?: boolean;
 }

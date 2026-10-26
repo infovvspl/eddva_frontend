@@ -120,31 +120,31 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
   const isCorrectChoice = selectedOption?.isCorrect;
 
   return (
-    <div className="relative min-h-[80vh] rounded-3xl border border-sky-200/90 bg-gradient-to-b from-sky-50 via-sky-100/50 to-blue-50/60 text-slate-900 p-6 md:p-8 shadow-xl shadow-sky-500/10 overflow-hidden flex flex-col justify-between max-w-4xl mx-auto">
+    <div className="relative min-h-[80vh] rounded-3xl border border-sky-200/90 dark:border-sky-900/60 bg-gradient-to-b from-sky-50 dark:from-slate-900 via-sky-100/50 dark:via-slate-900 to-blue-50/60 dark:to-slate-950 text-slate-900 dark:text-slate-100 p-6 md:p-8 shadow-xl shadow-sky-500/10 overflow-hidden flex flex-col justify-between max-w-4xl mx-auto">
       {/* Background decoration */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#0284c712_1px,transparent_1px),linear-gradient(to_bottom,#0284c712_1px,transparent_1px)] bg-[size:16px_28px] pointer-events-none" />
       <div className="absolute -top-32 -right-32 size-80 rounded-full blur-[100px] pointer-events-none opacity-25 bg-sky-400" />
       <div className="absolute -bottom-32 -left-32 size-80 rounded-full blur-[100px] pointer-events-none opacity-20 bg-cyan-300" />
 
       {/* Header HUD */}
-      <div className="relative z-10 flex items-center justify-between border-b border-sky-200/80 pb-4">
+      <div className="relative z-10 flex items-center justify-between border-b border-sky-200/80 dark:border-sky-900/50 pb-4">
         <div>
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest text-sky-700 bg-sky-500/15 border border-sky-300/80 px-3 py-1 rounded-full">
-            <Compass className="size-4 animate-spin-slow text-sky-600" />
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest text-sky-700 dark:text-sky-300 bg-sky-500/15 border border-sky-300/80 dark:border-sky-700/60 px-3 py-1 rounded-full">
+            <Compass className="size-4 animate-spin-slow text-sky-600 dark:text-sky-400" />
             Checkpoint {stageOrder}
           </span>
-          <h2 className="text-xl font-black text-slate-900 mt-1">{stageName}</h2>
+          <h2 className="text-xl font-black text-slate-900 dark:text-slate-100 mt-1">{stageName}</h2>
         </div>
         <div className="text-right">
-          <p className="text-xs font-semibold text-slate-500">Riddle Challenge</p>
-          <p className="text-base font-black text-sky-800">
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Riddle Challenge</p>
+          <p className="text-base font-black text-sky-800 dark:text-sky-200">
             {currentIdx + 1} of {totalQuestions}
           </p>
         </div>
       </div>
 
       {/* Progress Bar */}
-      <div className="relative z-10 mt-4 h-2.5 w-full bg-sky-100 rounded-full overflow-hidden border border-sky-200">
+      <div className="relative z-10 mt-4 h-2.5 w-full bg-sky-100 dark:bg-sky-900/40 rounded-full overflow-hidden border border-sky-200 dark:border-sky-900/60">
         <div
           className="h-full bg-gradient-to-r from-sky-500 to-cyan-500 transition-all duration-300"
           style={{ width: `${((currentIdx + (hasAnswered ? 1 : 0)) / totalQuestions) * 100}%` }}
@@ -153,18 +153,18 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
 
       {/* Question Card */}
       <div className="relative z-10 my-6 flex-1 flex flex-col justify-center">
-        <div className="bg-white/95 border border-sky-200 rounded-2xl p-6 sm:p-8 lg:p-10 backdrop-blur-md shadow-md shadow-sky-500/5">
+        <div className="bg-white/95 dark:bg-slate-900/90 border border-sky-200 dark:border-sky-900/60 rounded-2xl p-6 sm:p-8 lg:p-10 backdrop-blur-md shadow-md shadow-sky-500/5">
           <div className="flex items-center gap-2 mb-4">
-            <HelpCircle className="size-5 text-sky-600" />
-            <span className="text-xs font-black uppercase tracking-wider text-sky-700">NCERT Riddle</span>
+            <HelpCircle className="size-5 text-sky-600 dark:text-sky-400" />
+            <span className="text-xs font-black uppercase tracking-wider text-sky-700 dark:text-sky-300">NCERT Riddle</span>
           </div>
 
-          <h3 className="text-lg sm:text-xl lg:text-2xl font-black text-slate-900 leading-relaxed">
+          <h3 className="text-lg sm:text-xl lg:text-2xl font-black text-slate-900 dark:text-slate-100 leading-relaxed">
             {currentQuestion?.content}
           </h3>
 
           {currentQuestion?.contentImageUrl && (
-            <div className="mt-5 rounded-xl border border-sky-200 bg-sky-50/50 p-2 overflow-hidden flex justify-center">
+            <div className="mt-5 rounded-xl border border-sky-200 dark:border-sky-900/60 bg-sky-50/50 dark:bg-sky-950/40 p-2 overflow-hidden flex justify-center">
               <img
                 src={currentQuestion.contentImageUrl}
                 alt="Riddle visual helper"
@@ -187,19 +187,19 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
           {hasAnswered && (
             <div className={`mt-6 flex items-start gap-3.5 p-4 sm:p-5 rounded-xl border animate-fade-in ${
               isCorrectChoice
-                ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
-                : 'bg-rose-50 border-rose-300 text-rose-900'
+                ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200'
+                : 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-200'
             }`}>
               {isCorrectChoice ? (
-                <Check className="size-6 text-emerald-600 shrink-0 mt-0.5" />
+                <Check className="size-6 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
               ) : (
-                <X className="size-6 text-rose-600 shrink-0 mt-0.5" />
+                <X className="size-6 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
               )}
               <div>
                 <p className="font-black text-base">
                   {isCorrectChoice ? 'Correct! Checkpoint unlocked.' : 'Incorrect riddle choice.'}
                 </p>
-                <p className="mt-1 font-semibold text-sm text-slate-600">
+                <p className="mt-1 font-semibold text-sm text-slate-600 dark:text-slate-300">
                   {isCorrectChoice ? 'You found the correct mechanism!' : `Correct answer: ${correctOption?.content}`}
                 </p>
               </div>
@@ -214,20 +214,20 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
           const isSelected = selectedOptionId === option.id;
           const isCorrect = option.isCorrect;
           
-          let cardStyle = 'border-sky-200/90 bg-white hover:bg-sky-50/80 hover:border-sky-300 text-slate-800 shadow-sm';
+          let cardStyle = 'border-sky-200/90 dark:border-sky-900/60 bg-white dark:bg-slate-900 hover:bg-sky-50/80 dark:hover:bg-sky-950/60 hover:border-sky-300 dark:hover:border-sky-700 text-slate-800 dark:text-slate-100 shadow-sm';
           let badgeLabel = String.fromCharCode(65 + idx); // A, B, C, D
-          let badgeStyle = 'bg-sky-100 text-sky-700 font-black';
+          let badgeStyle = 'bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 font-black';
 
           if (hasAnswered) {
             if (isCorrect) {
-              cardStyle = 'border-emerald-500 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-400/20 shadow-md shadow-emerald-500/10';
+              cardStyle = 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 ring-2 ring-emerald-400/20 shadow-md shadow-emerald-500/10';
               badgeStyle = 'bg-emerald-500 text-white';
             } else if (isSelected) {
-              cardStyle = 'border-rose-500 bg-rose-50 text-rose-900 ring-2 ring-rose-400/20 shadow-md shadow-rose-500/10';
+              cardStyle = 'border-rose-500 bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200 ring-2 ring-rose-400/20 shadow-md shadow-rose-500/10';
               badgeStyle = 'bg-rose-500 text-white';
             } else {
-              cardStyle = 'border-slate-200 bg-slate-50 text-slate-400 opacity-50 cursor-not-allowed';
-              badgeStyle = 'bg-slate-200 text-slate-400';
+              cardStyle = 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 text-slate-400 opacity-50 cursor-not-allowed';
+              badgeStyle = 'bg-slate-200 dark:bg-slate-700 text-slate-400';
             }
           }
 
@@ -249,11 +249,11 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
       </div>
 
       {/* Control Buttons */}
-      <div className="relative z-10 mt-6 border-t border-sky-200/80 pt-4 flex items-center justify-between">
+      <div className="relative z-10 mt-6 border-t border-sky-200/80 dark:border-sky-900/50 pt-4 flex items-center justify-between">
         <button
           onClick={onQuit}
           disabled={submitting}
-          className="text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors px-3 py-2"
+          className="text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 transition-colors px-3 py-2"
         >
           Quit Adventure
         </button>

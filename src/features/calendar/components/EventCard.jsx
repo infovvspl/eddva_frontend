@@ -6,6 +6,11 @@ import { cn } from '@/components/school/admin/Skeleton';
 
 export const EventCard = ({ event, onViewEdit, onDelete, handleEventClick }) => {
   const details = getEventDetails(event);
+  // Built-in holidays/vacations (HOLIDAYS_2026/VACATIONS_2026) are synthesized
+  // server-side with ids like "static_hol_3" — they aren't real rows in the
+  // `events` table, so calling edit/delete on them would 500 on an invalid
+  // UUID. Hide the actions instead of letting that happen.
+  const isBuiltIn = typeof event.id === 'string' && event.id.startsWith('static_');
   const hasTime = event.isAllDay === false || (event.startTime && !event.isAllDay);
   const timeStr = hasTime 
     ? new Date(event.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -24,7 +29,7 @@ export const EventCard = ({ event, onViewEdit, onDelete, handleEventClick }) => 
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3 min-w-0 flex-1">
           {/* Large Left Icon Badge */}
-          <EventIcon category={details.category} className="h-10 w-10 shadow-xs shrink-0" />
+          <EventIcon category={details.category} title={event.title} variant="solid" className="h-10 w-10 shrink-0 rounded-xl" />
           
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
@@ -48,20 +53,20 @@ export const EventCard = ({ event, onViewEdit, onDelete, handleEventClick }) => 
           </div>
         </div>
 
-        {/* Action Buttons */}
-        {(onViewEdit || onDelete) && (
+        {/* Action Buttons — hidden for built-in holidays/vacations, which aren't editable rows */}
+        {!isBuiltIn && (onViewEdit || onDelete) && (
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200" onClick={(e) => e.stopPropagation()}>
             {onViewEdit && (
-              <button 
-                onClick={() => onViewEdit(event)} 
+              <button
+                onClick={() => onViewEdit(event)}
                 className="rounded-lg border border-slate-200/60 bg-white dark:bg-slate-800 p-1.5 text-slate-600 dark:text-slate-355 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-xs transition"
               >
                 <Edit3 className="h-3.5 w-3.5" />
               </button>
             )}
             {onDelete && (
-              <button 
-                onClick={() => onDelete(event.id)} 
+              <button
+                onClick={() => onDelete(event.id)}
                 className="rounded-lg border border-red-100 bg-white dark:bg-slate-800 p-1.5 text-red-650 dark:text-rose-455 hover:bg-red-50 dark:hover:bg-red-950/20 shadow-xs transition"
               >
                 <Trash2 className="h-3.5 w-3.5" />

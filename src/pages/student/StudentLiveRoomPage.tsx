@@ -694,7 +694,7 @@ export default function StudentLiveRoomPage() {
   const selectQuality = (qual: { label: string; url: string }) => {
     setSelectedQuality(qual.label);
     setShowQualityMenu(false);
-    if (phase === 'live' && qualityRef.current) {
+    if (phase === 'live' && hlsRef.current) {
       // In live view, notify layout/HLS
       if (qual.label === 'Auto') {
         if (hlsRef.current) hlsRef.current.currentLevel = -1;

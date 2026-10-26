@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { useSchoolFeature } from '@/hooks/use-school-feature';
-import { UnifiedSidebar, SidebarProfileCard } from '@/components/layout/UnifiedSidebar';
+import { UnifiedSidebar } from '@/components/layout/UnifiedSidebar';
 import { SchoolLogo } from '@/components/school/admin/Brand';
 import {
   BarChart3,
@@ -28,24 +28,24 @@ const allItems = [
   { group: 'My Learning', path: '/school/student/recorded-classes', label: 'Recorded Classes', icon: Video },
   { group: 'My Learning', path: '/school/student/study-materials', matchPaths: ['/school/student/classes', '/school/student/syllabus'], label: 'Study Materials', icon: BookOpen },
   { group: 'My Learning', path: '/school/student/planner', matchPaths: ['/school/student/ai-study', '/school/student/quiz'], label: 'AI Study Planner', icon: BrainCircuit, featType: 'ai', featKey: 'ai_study_planner' },
-  { group: 'Academic Work', path: '/school/student/assignments', label: 'Assignments', icon: FileText, featType: 'module', featKey: 'assignments' },
   { group: 'Academic Work', path: '/school/student/assessments', label: 'Assessments', icon: ClipboardList, featType: 'module', featKey: 'assessments' },
+  { group: 'Academic Work', path: '/school/student/assignments', label: 'Assignments', icon: FileText, featType: 'module', featKey: 'assignments' },
   { group: 'Academic Work', path: '/school/student/attendance', label: 'Attendance', icon: UserCheck },
   { group: 'Academic Work', path: '/school/student/analytics', label: 'Performance Analytics', icon: BarChart3, featType: 'module', featKey: 'reports' },
   { group: 'Growth', path: '/school/student/doubts', label: 'My Doubts', icon: HelpCircle, featType: 'ai', featKey: 'ai_doubt_solver' },
   { group: 'Growth', path: '/school/student/competitive-prep', label: 'Competitive Exam Prep', icon: Trophy, featType: 'ai', featKey: 'competitive_exams' },
-  { group: 'Growth', path: '/school/student/career', label: 'Career Guidance', icon: Compass, badge: 'New', featType: 'ai', featKey: 'ai_career_guidance' },
+  { group: 'Growth', path: '/school/student/career', label: 'Career Guidance', icon: Compass, featType: 'ai', featKey: 'ai_career_guidance' },
   // Demonstration feature — shares the career-guidance flag so it appears and
   // disappears with the section it belongs to.
   { group: 'Growth', path: '/school/student/astro-profile', label: 'AI Astro Profile', icon: Sparkles, badge: 'Demo', featType: 'ai', featKey: 'ai_astro_profile' },
-  { group: 'Growth', path: '/school/student/gamification', label: 'Gamification', icon: Trophy, badge: 'New' },
+  { group: 'Growth', path: '/school/student/gamification', label: 'Gamification', icon: Trophy },
   { group: 'Growth', path: '/school/student/timetable', label: 'Timetable', icon: CalendarDays, featType: 'module', featKey: 'timetable' },
   { group: 'Growth', path: '/school/student/calendar', label: 'Calendar', icon: CalendarDays, featType: 'module', featKey: 'academic_calendar' },
   { group: 'Communication', path: '/school/student/announcements', label: 'Announcements', icon: Megaphone },
 ];
 
 export default function Sidebar({ open, onClose }) {
-  const { user, institute } = useAuth();
+  const { institute } = useAuth();
   const location = useLocation();
   const isGameRoute = location.pathname.includes('/game-zone');
   const isGamificationRoute = location.pathname.includes('/gamification') || isGameRoute;
@@ -130,6 +130,7 @@ export default function Sidebar({ open, onClose }) {
   return (
     <UnifiedSidebar
       groups={filteredGroups.filter(g => g.items.length > 0)}
+      activeStyle="dark"
       collapsed={collapsed}
       onToggleCollapse={handleToggleCollapse}
       mobileOpen={open}
@@ -137,20 +138,6 @@ export default function Sidebar({ open, onClose }) {
       logo={<SchoolLogo src={institute?.logo} alt={institute?.name} size="navbar" className="h-10 w-auto max-w-full object-contain" />}
       logoCollapsed={<SchoolLogo src={institute?.logo} alt={institute?.name} size="navbar" className="h-9 w-auto max-w-full object-contain" />}
       onNavClick={() => onClose?.()}
-      profileCard={(isCollapsed) => (
-        <SidebarProfileCard
-          collapsed={isCollapsed}
-          avatar={
-            <div className="grid size-full place-items-center rounded-xl border border-blue-200 bg-blue-50 text-xs font-bold tracking-tight text-blue-700 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300">
-              {(user?.name || 'S').charAt(0).toUpperCase()}
-            </div>
-          }
-          name={user?.name || 'Student'}
-          roleLabel={user?.role || 'Student'}
-          title={user?.name || 'Student'}
-          subtitle={user?.role || 'Student'}
-        />
-      )}
     />
   );
 }

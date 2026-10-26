@@ -1,22 +1,24 @@
-// TeacherTeachingPlan - My Teaching Plan Dashboard & Lesson Execution Portal
+// TeacherTeachingPlan - "My Lesson Plan": chapter lesson plans first (created here,
+// approved by the admin, taught from). The older planning tools (annual syllabus
+// target from the admin, earlier per-session lesson notes) sit below, collapsed,
+// and load only when opened: before, the whole page waited for the older data and
+// the new section loaded after it, so the old page showed first and then changed.
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Calendar, Clock, CheckCircle2, AlertCircle, Plus, Sparkles,
-  Layers, BookOpen, Loader2, ArrowRight, Play, Filter, TrendingUp,
-  AlertTriangle, Hourglass, ShieldAlert, CheckSquare, CalendarDays,
-  ChevronLeft, ChevronRight
+  Layers, BookOpen, Loader2, ArrowRight, Play, Filter,
+  ShieldAlert, CheckSquare,
+  ChevronLeft, ChevronRight, ChevronDown, History
 } from 'lucide-react';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import { toast } from 'sonner';
-import LessonPlanFormModal from '@/components/school/teacher/LessonPlanFormModal';
 import LessonCompletionModal from '@/components/school/teacher/LessonCompletionModal';
-import LessonTemplatesModal from '@/components/school/teacher/LessonTemplatesModal';
+import ChapterLessonPlansPanel from '@/components/school/teacher/lesson-plans/ChapterLessonPlansPanel';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const PAGE_SIZE = 6;
@@ -142,7 +144,52 @@ function LessonPlanCard({ lesson, onMarkComplete }) {
   );
 }
 
+const OLDER_OPEN_KEY = 'teaching-plan:older-tools-open';
+
 export default function TeacherTeachingPlan() {
+  const [showOlder, setShowOlder] = useState(() => {
+    try { return localStorage.getItem(OLDER_OPEN_KEY) === '1'; } catch { return false; }
+  });
+  const toggleOlder = () => setShowOlder((open) => {
+    try { localStorage.setItem(OLDER_OPEN_KEY, open ? '0' : '1'); } catch { /* storage blocked */ }
+    return !open;
+  });
+
+  return (
+    <div className="w-full space-y-6 font-poppins">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-black text-slate-900 dark:text-white">My Lesson Plan</h1>
+            <Badge variant="outline" className="px-3 py-1 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 text-xs font-black border-blue-200 dark:border-blue-800">
+              Teacher Portal
+            </Badge>
+          </div>
+          <p className="text-xs text-slate-500 mt-1">Create a lesson plan for each chapter, send it for approval, and record what you teach.</p>
+        </div>
+      </div>
+
+      {/* Chapter lesson plans: created here, approved by the admin */}
+      <ChapterLessonPlansPanel />
+
+      <Card className="rounded-2xl border-slate-200 bg-white p-0 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+        <button type="button" onClick={toggleOlder} aria-expanded={showOlder} aria-controls="older-planning-tools"
+          className="flex w-full items-center gap-3 px-5 py-4 text-left">
+          <History className="size-4 shrink-0 text-slate-400" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-black text-slate-900 dark:text-white">Older planning tools</p>
+            <p className="text-xs text-slate-500">The annual syllabus target from the admin, and your earlier per-session lesson notes.</p>
+          </div>
+          <ChevronDown className={`size-4 shrink-0 text-slate-400 transition-transform ${showOlder ? 'rotate-180' : ''}`} />
+        </button>
+      </Card>
+      {showOlder && <div id="older-planning-tools"><OlderPlanningTools /></div>}
+    </div>
+  );
+}
+
+/** The previous "My Teaching Plan" dashboard, minus its header and metric cards. */
+function OlderPlanningTools() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -161,7 +208,7 @@ export default function TeacherTeachingPlan() {
   const [selectedSubject, setSelectedSubject] = useState('ALL');
   const [selectedChapter, setSelectedChapter] = useState('ALL');
   const [selectedTopic, setSelectedTopic] = useState('ALL');
-  const [activeTab, setActiveTab] = useState('ALL');
+  const [activeTab] = useState('ALL'); // timeline tabs removed — the topics list is always unfiltered by tab
 
   // Per-section pagination
   const [annualPage, setAnnualPage] = useState(1);
@@ -216,9 +263,9 @@ export default function TeacherTeachingPlan() {
 
   if (loading) {
     return (
-      <div className="flex h-[80vh] flex-col items-center justify-center gap-3">
-        <Loader2 className="size-8 animate-spin text-blue-600" />
-        <p className="text-xs font-bold text-slate-400">Loading your teaching plan dashboard…</p>
+      <div className="flex flex-col items-center justify-center gap-3 py-10">
+        <Loader2 className="size-6 animate-spin text-blue-600" />
+        <p className="text-xs font-bold text-slate-400">Loading the older planning tools…</p>
       </div>
     );
   }
@@ -326,6 +373,7 @@ export default function TeacherTeachingPlan() {
       return topics.map(t => ({
         ...t,
         planId: plan.id,
+        planEndDate: plan.planned_completion_date || plan.plannedCompletionDate || null,
         chapterId: ch.chapterId,
         chapterName: ch.chapterName,
         // IDs (not just display names) are required here — matchesFilter compares by ID
@@ -367,11 +415,19 @@ export default function TeacherTeachingPlan() {
       case 'TODAY': return filteredPlanTopics.filter(t => t.status === 'in_progress' || t.startDate === todayStr);
       case 'PENDING':   return filteredPlanTopics.filter(t => t.status === 'pending' || !t.status || t.status === 'in_progress');
       case 'COMPLETED': return filteredPlanTopics.filter(t => t.status === 'completed' || t.progress >= 100);
-      case 'DELAYED':   return filteredPlanTopics.filter(t => t.delayReason && t.status !== 'completed');
+      case 'DELAYED':   return filteredPlanTopics.filter(isTopicBehind);
       default:          return filteredPlanTopics;
     }
   };
   const displayPlanTopics = getDisplayPlanTopics();
+
+  // A topic is behind schedule when its plan's target date has passed and it isn't finished.
+  // Progress itself is computed server-side from conducted classes (no teacher-entered status).
+  const isTopicBehind = (t) =>
+    !!t.planEndDate &&
+    new Date(t.planEndDate).getTime() < Date.now() &&
+    t.status !== 'completed' &&
+    !(t.progress >= 100);
 
   // 1. Today's lessons / topics scheduled today or in_progress
   const todaysLessons = filteredPlanTopics.filter(t => t.status === 'in_progress' || t.startDate === todayStr);
@@ -383,15 +439,7 @@ export default function TeacherTeachingPlan() {
   const completedLessons = filteredPlanTopics.filter(t => t.status === 'completed' || t.progress >= 100);
 
   // 4. Delayed topics
-  const delayedLessons = filteredPlanTopics.filter(t => t.delayReason && t.status !== 'completed');
-
-  // 5. Syllabus completion %
-  const rawTotalTopicsCount = filteredPlanTopics.length;
-  const totalTopicsCount = rawTotalTopicsCount || 1;
-  const syllabusCompletionPercentage = Math.round((completedLessons.length / totalTopicsCount) * 100);
-
-  // 6. Topics behind schedule
-  const topicsBehindScheduleCount = delayedLessons.length;
+  const delayedLessons = filteredPlanTopics.filter(isTopicBehind);
 
   // Filter lessons based on selected tab
   const getDisplayLessons = () => {
@@ -421,99 +469,7 @@ export default function TeacherTeachingPlan() {
   const paginatedPlanTopics = displayPlanTopics.slice((safeTopicsPage - 1) * PAGE_SIZE, safeTopicsPage * PAGE_SIZE);
 
   return (
-    <div className="w-full px-4 py-6 sm:px-6 lg:px-8 space-y-6 font-poppins">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-black text-slate-900 dark:text-white">My Teaching Plan</h1>
-            <Badge variant="outline" className="px-3 py-1 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 text-xs font-black border-blue-200 dark:border-blue-800">
-              Teacher Portal
-            </Badge>
-          </div>
-          <p className="text-xs text-slate-500 mt-1">Track today's sessions, lesson progress, remaining topics, and classroom execution.</p>
-        </div>
-      </div>
-
-      {/* DASHBOARD: METRIC CARDS GRID */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
-        {/* 1. Today's lessons */}
-        <Card
-          onClick={() => setActiveTab('TODAY')}
-          className="cursor-pointer rounded-2xl p-4 transition-colors shadow-xs border-slate-200 bg-white hover:border-blue-500 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-500"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">1. Today's Lessons</span>
-            <div className="p-1.5 rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-900/40">
-              <CalendarDays size={16} />
-            </div>
-          </div>
-          <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{todaysLessons.length}</p>
-          <p className="text-xs font-semibold text-slate-500 mt-1">Scheduled for today</p>
-        </Card>
-
-        {/* 2. Pending lessons */}
-        <Card
-          onClick={() => setActiveTab('PENDING')}
-          className="cursor-pointer rounded-2xl p-4 transition-colors shadow-xs border-slate-200 bg-white hover:border-amber-500 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-amber-500"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">2. Pending Lessons</span>
-            <div className="p-1.5 rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-900/40">
-              <Hourglass size={16} />
-            </div>
-          </div>
-          <p className="text-2xl font-black text-amber-900 dark:text-amber-100 mt-1">{pendingLessons.length}</p>
-          <p className="text-xs font-semibold text-amber-700 dark:text-amber-300 mt-1">Awaiting execution</p>
-        </Card>
-
-        {/* 3. Completed lessons */}
-        <Card
-          onClick={() => setActiveTab('COMPLETED')}
-          className="cursor-pointer rounded-2xl p-4 transition-colors shadow-xs border-slate-200 bg-white hover:border-emerald-500 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-emerald-500"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">3. Completed Lessons</span>
-            <div className="p-1.5 rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40">
-              <CheckCircle2 size={16} />
-            </div>
-          </div>
-          <p className="text-2xl font-black text-emerald-900 dark:text-emerald-100 mt-1">{completedLessons.length}</p>
-          <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 mt-1">Classroom verified</p>
-        </Card>
-
-        {/* 4. Syllabus completion % */}
-        <Card className="rounded-2xl border-blue-200 bg-blue-50/40 p-4 shadow-xs transition-colors hover:border-blue-500 dark:border-blue-900/40 dark:bg-blue-950/20 dark:hover:border-blue-500">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase tracking-wider text-blue-700 dark:text-blue-300">4. Syllabus Completion %</span>
-            <div className="p-1.5 rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-900/40">
-              <TrendingUp size={16} />
-            </div>
-          </div>
-          <p className="text-2xl font-black text-blue-900 dark:text-blue-100 mt-1">{syllabusCompletionPercentage}%</p>
-          <Progress
-            value={syllabusCompletionPercentage}
-            className="h-2 mt-2 bg-blue-200 dark:bg-blue-900"
-            indicatorClassName="bg-blue-600 duration-500"
-          />
-        </Card>
-
-        {/* 5. Topics behind schedule */}
-        <Card
-          onClick={() => setActiveTab('DELAYED')}
-          className="col-span-2 sm:col-span-1 xl:col-span-1 cursor-pointer rounded-2xl p-4 transition-colors shadow-xs border-rose-200 bg-rose-50/40 hover:border-rose-500 dark:border-rose-900/40 dark:bg-rose-950/20 dark:hover:border-rose-500"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase tracking-wider text-rose-700 dark:text-rose-300">5. Topics Behind Schedule</span>
-            <div className="p-1.5 rounded-xl bg-rose-100 text-rose-700 dark:bg-rose-900/40">
-              <AlertTriangle size={16} />
-            </div>
-          </div>
-          <p className="text-2xl font-black text-rose-900 dark:text-rose-100 mt-1">{topicsBehindScheduleCount}</p>
-          <p className="text-xs font-semibold text-rose-700 dark:text-rose-300 mt-1">Requires priority coverage</p>
-        </Card>
-      </div>
-
+    <div className="w-full space-y-6 font-poppins">
       {/* Class, Section, Subject, Chapter & Topic Filter Bar */}
       <Card className="rounded-3xl border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2 text-xs font-extrabold text-slate-700 dark:text-slate-200">
@@ -659,9 +615,9 @@ export default function TeacherTeachingPlan() {
                         e.stopPropagation();
                         navigate(`/school/teacher/syllabus-planner/${plan.id}`, { state: { subjectName: plan.subject_name || plan.subjectName } });
                       }}
-                      className="w-full gap-1.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 text-white text-xs font-extrabold shadow-md shadow-blue-600/20"
+                      className="h-auto w-full gap-1.5 whitespace-normal rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2.5 text-center text-xs font-extrabold leading-snug text-white shadow-md shadow-blue-600/20 hover:brightness-110"
                     >
-                      <CheckSquare size={15} /> Update Progress & Execution Details →
+                      <CheckSquare size={15} className="shrink-0" /> <span>View Plan & Progress →</span>
                     </Button>
                   </div>
                 </Card>
@@ -680,27 +636,11 @@ export default function TeacherTeachingPlan() {
               <Sparkles size={20} />
             </div>
             <div>
-              <CardTitle className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider leading-normal">My Lesson Plans</CardTitle>
-              <CardDescription className="text-xs text-slate-500">Lesson plans you've created — AI briefs and manual write-ups.</CardDescription>
+              <CardTitle className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider leading-normal">Earlier Lesson Notes</CardTitle>
+              <CardDescription className="text-xs text-slate-500">Per-class notes and briefs made before chapter lesson plans. Create new plans under Chapter lesson plans above.</CardDescription>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              onClick={() => {
-                setSelectedTimetableSlot(null);
-                setCreateModalOpen(true);
-              }}
-              className="gap-2 rounded-2xl bg-blue-600 text-xs font-bold text-white shadow-sm hover:bg-blue-700"
-            >
-              <Plus size={15} /> New Lesson
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setTemplatesModalOpen(true)}
-              className="gap-2 rounded-2xl text-xs font-bold shadow-sm"
-            >
-              <Layers size={15} /> Lesson Templates
-            </Button>
             <Badge variant="secondary" className="px-3 py-1 bg-indigo-100 text-indigo-800 hover:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-300 text-xs font-black border-0">
               {filteredLessons.length} Lesson{filteredLessons.length === 1 ? '' : 's'}
             </Badge>
@@ -709,7 +649,7 @@ export default function TeacherTeachingPlan() {
 
         <CardContent className="p-6 space-y-4">
           {filteredLessons.length === 0 ? (
-            <p className="text-xs text-slate-400 py-4 text-center italic">No lesson plans yet for this filter selection — create one with "+ New Lesson."</p>
+            <p className="text-xs text-slate-400 py-4 text-center italic">No earlier lesson notes for this filter. New lesson plans are made per chapter, above.</p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {paginatedLessons.map(lesson => (
@@ -737,7 +677,7 @@ export default function TeacherTeachingPlan() {
             </div>
             <div>
               <CardTitle className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider leading-normal">Syllabus Topics — Progress Tracker</CardTitle>
-              <CardDescription className="text-xs text-slate-500">Topics from your assigned syllabus plan, with status and delay reason at a glance.</CardDescription>
+              <CardDescription className="text-xs text-slate-500">Topics from your assigned syllabus plan. Progress is worked out automatically from the classes you conduct.</CardDescription>
             </div>
           </div>
 
@@ -757,19 +697,6 @@ export default function TeacherTeachingPlan() {
               optionLabel={s => `Section ${s.name}`}
               className={INLINE_TRIGGER}
             />
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="h-auto flex-wrap gap-1 bg-transparent p-0">
-                {['ALL', 'TODAY', 'PENDING', 'COMPLETED', 'DELAYED'].map(tab => (
-                  <TabsTrigger
-                    key={tab}
-                    value={tab}
-                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-xs dark:bg-slate-800 dark:text-slate-300"
-                  >
-                    {tab}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
           </div>
         </CardHeader>
 
@@ -783,7 +710,7 @@ export default function TeacherTeachingPlan() {
               {paginatedPlanTopics.map((topic, idx) => {
                 const isDone = topic.status === 'completed' || topic.progress >= 100;
                 const isInProgress = topic.status === 'in_progress' && !isDone;
-                const hasDelay = !isDone && topic.delayReason;
+                const hasDelay = !isDone && isTopicBehind(topic);
                 return (
                   <Card
                     key={topic.topicId || idx}
@@ -834,10 +761,12 @@ export default function TeacherTeachingPlan() {
                     <CardFooter className="p-0 pt-2 border-t border-slate-100 dark:border-slate-800 block">
                       {hasDelay ? (
                         <p className="text-[10px] font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
-                          <AlertCircle size={12} className="shrink-0" /> {topic.delayReason}
+                          <AlertCircle size={12} className="shrink-0" /> Target date passed — {topic.actualPeriods ?? 0} of {topic.plannedPeriods ?? '—'} periods conducted
                         </p>
                       ) : (
-                        <p className="text-[10px] font-semibold text-slate-400">No delay reported.</p>
+                        <p className="text-[10px] font-semibold text-slate-400">
+                          {topic.actualPeriods ?? 0} of {topic.plannedPeriods ?? '—'} periods conducted
+                        </p>
                       )}
                     </CardFooter>
                   </Card>
@@ -850,36 +779,12 @@ export default function TeacherTeachingPlan() {
       </Card>
 
       {/* Modals */}
-      {createModalOpen && (
-        <LessonPlanFormModal
-          open={createModalOpen}
-          onClose={() => { setCreateModalOpen(false); setSelectedTemplateData(null); }}
-          onSuccess={fetchTeachingPlan}
-          timetableSlot={selectedTimetableSlot}
-          publishedPlans={publishedPlans}
-          templateData={selectedTemplateData}
-          teacherAssignments={teacherAssignments}
-        />
-      )}
-
       {completionModalOpen && selectedLesson && (
         <LessonCompletionModal
           open={completionModalOpen}
           onClose={() => setCompletionModalOpen(false)}
           onSuccess={fetchTeachingPlan}
           lesson={selectedLesson}
-        />
-      )}
-
-      {templatesModalOpen && (
-        <LessonTemplatesModal
-          open={templatesModalOpen}
-          onClose={() => setTemplatesModalOpen(false)}
-          onSelectTemplate={(contentJson) => {
-            setSelectedTemplateData(contentJson || null);
-            setTemplatesModalOpen(false);
-            setCreateModalOpen(true);
-          }}
         />
       )}
     </div>

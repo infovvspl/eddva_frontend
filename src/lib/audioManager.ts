@@ -494,7 +494,7 @@ class AudioManager {
   }
 
   public playCountdownTick() {
-    this.playSfx('/assets/audio/Countdown%20Tick.mp3', AudioPriority.COUNTDOWN || AudioPriority.NOTIFICATION);
+    this.playSfx('/assets/audio/Countdown%20Tick.mp3', AudioPriority.NOTIFICATION);
   }
 
   /** Play any SFX audio file with priority preempting */

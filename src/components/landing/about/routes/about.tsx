@@ -1,1 +1,1 @@
-export { AboutMarketing } from "../AboutMarketing";
+export { default as AboutMarketing } from "../AboutMarketing";

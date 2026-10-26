@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Download, Edit2, Plus, Search, Trash2, Users, Eye, Filter, Calendar, School, CheckCircle2, UserPlus, XCircle, Shield } from 'lucide-react';
+import { Download, Edit2, Plus, Search, Trash2, Users, Eye, Filter, Calendar, School, CheckCircle2, UserPlus, XCircle, Shield, KeyRound, Lock, Loader2 } from 'lucide-react';
+import { ADMIN_PERMISSION_MODULES } from '@/lib/constants/adminPermissionModules';
 import api from '@/lib/api/school-client';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import { getResponseList, notifyDataChanged } from '@/lib/school/apiData';
@@ -57,6 +58,10 @@ export default function Admins() {
   const { user } = useAuth();
   const isSuperAdmin = String(user?.role || '').toUpperCase() === 'SUPER_ADMIN';
   const isPlatformSuperAdmin = isSuperAdmin && !(user?.instituteId || user?.institute_id);
+  // Only the primary institute admin (onboarded by the SuperAdmin) or the
+  // SuperAdmin itself may grant/manage administrator access — mirrors the
+  // backend check in school-teacher.service.ts: setAdminRole().
+  const canManageAdmins = isSuperAdmin || user?.isPrimaryAdmin;
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -74,6 +79,11 @@ export default function Admins() {
   const [teachersList, setTeachersList] = useState([]);
   const [teachersLoading, setTeachersLoading] = useState(false);
   const [modalSearch, setModalSearch] = useState('');
+
+  // Permission picker sub-modal — replaces the old binary admin toggle.
+  const [permissionTeacher, setPermissionTeacher] = useState(null);
+  const [selectedPermissions, setSelectedPermissions] = useState([]);
+  const [savingPermissions, setSavingPermissions] = useState(false);
 
   const years = ['ALL', '2023', '2024', '2025', '2026', '2027'];
 
@@ -156,10 +166,18 @@ export default function Admins() {
     setTeachersLoading(true);
     setModalSearch('');
     try {
-      const [teachersRes, adminsRes] = await Promise.all([
+      const [teachersRes, staffRes, adminsRes] = await Promise.all([
         api.get('/teachers', {
           params: {
             role: 'TEACHER',
+            limit: 200,
+            ...(isPlatformSuperAdmin && selectedInstituteId !== 'ALL' ? { instituteId: selectedInstituteId } : {}),
+          }
+        }),
+        // Staff accounts are eligible for admin access too, same as teachers —
+        // the backend's setAdminRole() is role-agnostic over the users table.
+        api.get('/staff', {
+          params: {
             limit: 200,
             ...(isPlatformSuperAdmin && selectedInstituteId !== 'ALL' ? { instituteId: selectedInstituteId } : {}),
           }
@@ -173,9 +191,11 @@ export default function Admins() {
         })
       ]);
       const teachers = getResponseList(teachersRes);
+      const staff = getResponseList(staffRes);
       const admins = getResponseList(adminsRes);
       const map = new Map();
       teachers.forEach(t => map.set(t.id, t));
+      staff.forEach(s => map.set(s.id, s));
       admins.forEach(a => map.set(a.id, a));
       const combined = Array.from(map.values());
       setTeachersList(combined);
@@ -187,22 +207,56 @@ export default function Admins() {
     }
   };
 
-  const handleToggleAdmin = async (teacher) => {
-    const roleString = teacher.role || '';
-    const rolesList = roleString.split(',').map(r => r.trim().toUpperCase());
-    const isCurrentlyAdmin = rolesList.includes('INSTITUTE_ADMIN');
+  const openPermissionModal = (teacher) => {
+    setPermissionTeacher(teacher);
+    if (Array.isArray(teacher.adminPermissions)) {
+      // Scoped admin — reflect exactly what they've been granted.
+      setSelectedPermissions(teacher.adminPermissions);
+    } else if ((teacher.role || '').toUpperCase().includes('INSTITUTE_ADMIN')) {
+      // Legacy/unrestricted ("Full Access") admin — show every module checked
+      // so the picker honestly reflects their current access; unchecking some
+      // and saving converts them to a scoped admin.
+      setSelectedPermissions(ADMIN_PERMISSION_MODULES.map((m) => m.key));
+    } else {
+      // Not yet an admin — fresh grant, nothing checked.
+      setSelectedPermissions([]);
+    }
+  };
 
+  const togglePermission = (key) => {
+    setSelectedPermissions((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+  };
+
+  const handleSavePermissions = async () => {
+    if (!permissionTeacher) return;
+    if (selectedPermissions.length === 0) {
+      toast.error('Select at least one module to grant access to');
+      return;
+    }
+    setSavingPermissions(true);
     try {
-      // A dedicated endpoint, not PUT /teachers/:id — that route's `role` field
-      // means the teacher's designation (job title), not the system access
-      // role, so sending it there silently updated the wrong column and admin
-      // access was never actually granted.
-      const res = await api.put(`/teachers/${teacher.id}/admin-role`, {
-        isAdmin: !isCurrentlyAdmin,
+      const res = await api.put(`/teachers/${permissionTeacher.id}/admin-role`, {
+        isAdmin: true,
+        permissions: selectedPermissions,
       });
-      const newRole = res?.data?.data?.role ?? (isCurrentlyAdmin ? 'TEACHER' : `${roleString},INSTITUTE_ADMIN`);
-      toast.success(`${teacher.name} ${isCurrentlyAdmin ? 'removed as' : 'added as'} administrator`);
-      setTeachersList(prev => prev.map(t => t.id === teacher.id ? { ...t, role: newRole } : t));
+      const data = res?.data?.data || {};
+      toast.success(`${permissionTeacher.name} granted access to ${selectedPermissions.length} module${selectedPermissions.length !== 1 ? 's' : ''}`);
+      setTeachersList((prev) => prev.map((t) => (t.id === permissionTeacher.id ? { ...t, role: data.role ?? t.role, adminPermissions: data.adminPermissions ?? selectedPermissions } : t)));
+      setPermissionTeacher(null);
+      fetchAdmins();
+    } catch (error) {
+      handleApiError(error, 'Failed to update administrator access');
+    } finally {
+      setSavingPermissions(false);
+    }
+  };
+
+  const handleRevokeAdmin = async (teacher) => {
+    try {
+      const res = await api.put(`/teachers/${teacher.id}/admin-role`, { isAdmin: false });
+      const newRole = res?.data?.data?.role ?? 'TEACHER';
+      toast.success(`${teacher.name} removed as administrator`);
+      setTeachersList((prev) => prev.map((t) => (t.id === teacher.id ? { ...t, role: newRole, adminPermissions: null } : t)));
       fetchAdmins();
     } catch (error) {
       handleApiError(error, 'Failed to update administrator status');
@@ -298,13 +352,20 @@ export default function Admins() {
           <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">Manage school administrators and credentials.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button
-            onClick={openAddModal}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]"
-          >
-            <Plus className="size-5" />
-            Add Administrator
-          </button>
+          {canManageAdmins ? (
+            <button
+              onClick={openAddModal}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]"
+            >
+              <Plus className="size-5" />
+              Add Administrator
+            </button>
+          ) : (
+            <div className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+              <Lock className="size-3.5" />
+              Only the primary admin can manage administrator access
+            </div>
+          )}
         </div>
       </div>
 
@@ -457,13 +518,14 @@ export default function Admins() {
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Admin Name</TableHead>
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">School</TableHead>
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Email</TableHead>
+                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Access</TableHead>
                 <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="divide-y divide-slate-100 dark:divide-slate-800 [&_tr]:border-b-0">
               {filtered.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan="4" className="px-5 py-12 text-center text-slate-400">
+                  <TableCell colSpan="5" className="px-5 py-12 text-center text-slate-400">
                     No administrators found.
                   </TableCell>
                 </TableRow>
@@ -487,6 +549,30 @@ export default function Admins() {
                     <TableCell className="p-4 px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{admin.instituteName || '-'}</TableCell>
                     <TableCell className="p-4 px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{admin.email || '-'}</TableCell>
                     <TableCell className="p-4 px-5 py-4">
+                      {admin.isPrimaryAdmin ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400">
+                          <Shield className="size-3" /> Primary Admin
+                        </span>
+                      ) : Array.isArray(admin.adminPermissions) && admin.adminPermissions.length > 0 ? (
+                        <div className="flex flex-wrap gap-1 max-w-[220px]">
+                          {admin.adminPermissions.slice(0, 3).map((key) => (
+                            <span key={key} className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                              {ADMIN_PERMISSION_MODULES.find((m) => m.key === key)?.label || key}
+                            </span>
+                          ))}
+                          {admin.adminPermissions.length > 3 && (
+                            <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                              +{admin.adminPermissions.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
+                          Full Access
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="p-4 px-5 py-4">
                       <div className="flex items-center gap-2">
                         <Link
                           to={`/school/admin/teachers/${admin.id}`}
@@ -495,22 +581,36 @@ export default function Admins() {
                           <Eye className="size-4" />
                           <span className="absolute -top-10 left-1/2 -translate-x-1/2 scale-0 rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">View</span>
                         </Link>
-                        <button
-                          onClick={() => handleEdit(admin)}
-                          className="group relative flex size-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
-                          aria-label="Edit administrator"
-                        >
-                          <Edit2 className="size-4" />
-                          <span className="absolute -top-10 left-1/2 -translate-x-1/2 scale-0 rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">Edit</span>
-                        </button>
-                        <button
-                          onClick={() => handleDelete(admin.id)}
-                          className="group relative flex size-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 transition-all hover:border-red-400 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
-                          aria-label="Delete administrator"
-                        >
-                          <Trash2 className="size-4" />
-                          <span className="absolute -top-10 left-1/2 -translate-x-1/2 scale-0 rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">Delete</span>
-                        </button>
+                        {canManageAdmins && !admin.isPrimaryAdmin && (
+                          <button
+                            onClick={() => openPermissionModal(admin)}
+                            className="group relative flex size-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 transition-all hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                            aria-label="Manage access"
+                          >
+                            <KeyRound className="size-4" />
+                            <span className="absolute -top-10 left-1/2 -translate-x-1/2 scale-0 rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">Manage Access</span>
+                          </button>
+                        )}
+                        {canManageAdmins && (
+                          <button
+                            onClick={() => handleEdit(admin)}
+                            className="group relative flex size-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                            aria-label="Edit administrator"
+                          >
+                            <Edit2 className="size-4" />
+                            <span className="absolute -top-10 left-1/2 -translate-x-1/2 scale-0 rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">Edit</span>
+                          </button>
+                        )}
+                        {canManageAdmins && !admin.isPrimaryAdmin && (
+                          <button
+                            onClick={() => handleDelete(admin.id)}
+                            className="group relative flex size-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 transition-all hover:border-red-400 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                            aria-label="Delete administrator"
+                          >
+                            <Trash2 className="size-4" />
+                            <span className="absolute -top-10 left-1/2 -translate-x-1/2 scale-0 rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">Delete</span>
+                          </button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -561,8 +661,8 @@ export default function Admins() {
               {filteredTeachers.map((teacher) => {
                 const isAdmin = (teacher.role || '').toUpperCase().includes('INSTITUTE_ADMIN');
                 return (
-                  <div key={teacher.id} className="flex items-center justify-between py-3">
-                    <div className="flex items-center gap-3">
+                  <div key={teacher.id} className="flex items-center justify-between py-3 gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
                       <div className="relative size-10 shrink-0 overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800">
                         {teacher.profileImage ? (
                           <img src={teacher.profileImage} alt={teacher.name} className="size-full object-cover" />
@@ -575,36 +675,107 @@ export default function Admins() {
                       <div className="min-w-0">
                         <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{teacher.name}</p>
                         <p className="truncate text-[11px] text-slate-400 dark:text-slate-500">{teacher.email || 'No email'}</p>
+                        {isAdmin && (
+                          <p className="truncate text-[10px] font-bold text-indigo-500">
+                            {teacher.isPrimaryAdmin
+                              ? 'Primary Admin'
+                              : Array.isArray(teacher.adminPermissions) && teacher.adminPermissions.length > 0
+                                ? `${teacher.adminPermissions.length} module${teacher.adminPermissions.length !== 1 ? 's' : ''} granted`
+                                : 'Full Access'}
+                          </p>
+                        )}
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleToggleAdmin(teacher)}
-                      className="flex items-center gap-1.5 outline-none group cursor-pointer"
-                      title={isAdmin ? "Remove administrator role" : "Assign administrator role"}
-                    >
-                      <div className={cn(
-                        "relative w-9 h-5 rounded-full transition-colors duration-200 flex items-center px-0.5 border",
-                        isAdmin 
-                          ? "bg-emerald-500 border-emerald-600" 
-                          : "bg-slate-200 border-slate-300 dark:bg-slate-800 dark:border-slate-700"
-                      )}>
-                        <div className={cn(
-                          "size-3.5 rounded-full bg-white transition-transform duration-200 shadow-sm",
-                          isAdmin ? "translate-x-4" : "translate-x-0"
-                        )} />
+                    {teacher.isPrimaryAdmin ? (
+                      <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-slate-400">Primary</span>
+                    ) : isAdmin ? (
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        <button
+                          onClick={() => openPermissionModal(teacher)}
+                          className="rounded-xl border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-[11px] font-bold text-indigo-700 transition hover:bg-indigo-100 dark:border-indigo-900/40 dark:bg-indigo-950/20 dark:text-indigo-400"
+                        >
+                          Manage
+                        </button>
+                        <button
+                          onClick={() => handleRevokeAdmin(teacher)}
+                          className="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-500 transition hover:border-red-300 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
+                        >
+                          Revoke
+                        </button>
                       </div>
-                      <span className={cn(
-                        "text-[11px] font-bold tracking-tight min-w-[32px] text-left",
-                        isAdmin ? "text-emerald-600" : "text-slate-400"
-                      )}>
-                        {isAdmin ? 'Admin' : 'Staff'}
-                      </span>
-                    </button>
+                    ) : (
+                      <button
+                        onClick={() => openPermissionModal(teacher)}
+                        className="shrink-0 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-1.5 text-[11px] font-bold text-white transition hover:brightness-110"
+                      >
+                        Grant Access
+                      </button>
+                    )}
                   </div>
                 );
               })}
             </div>
           )}
+        </div>
+      </Modal>
+
+      {/* Permission picker — grant/manage a teacher's scoped admin-panel access */}
+      <Modal
+        isOpen={!!permissionTeacher}
+        title={`Admin Access — ${permissionTeacher?.name || ''}`}
+        onClose={() => { if (!savingPermissions) setPermissionTeacher(null); }}
+        size="lg"
+      >
+        <div className="space-y-4">
+          <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-4 text-sm font-semibold text-blue-900 dark:border-blue-900/40 dark:bg-blue-950/20 dark:text-sky-200">
+            Select which admin-panel modules {permissionTeacher?.name || 'this person'} can access. They will only see and be able to use these sections.
+          </div>
+
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 max-h-[45vh] overflow-y-auto pr-1">
+            {ADMIN_PERMISSION_MODULES.map(({ key, label, icon: Icon }) => {
+              const checked = selectedPermissions.includes(key);
+              return (
+                <label
+                  key={key}
+                  className={cn(
+                    'flex cursor-pointer items-center gap-2.5 rounded-xl border p-3 transition',
+                    checked
+                      ? 'border-indigo-300 bg-indigo-50/60 dark:border-indigo-700 dark:bg-indigo-950/20'
+                      : 'border-slate-200 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900'
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => togglePermission(key)}
+                    className="size-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <Icon className="size-4 shrink-0 text-indigo-600" />
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-100">{label}</span>
+                </label>
+              );
+            })}
+          </div>
+
+          <div className="flex gap-3 pt-1">
+            <button
+              type="button"
+              onClick={() => setPermissionTeacher(null)}
+              disabled={savingPermissions}
+              className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSavePermissions}
+              disabled={savingPermissions || selectedPermissions.length === 0}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {savingPermissions ? <Loader2 className="size-4 animate-spin" /> : <KeyRound className="size-4" />}
+              {savingPermissions ? 'Saving…' : 'Save Access'}
+            </button>
+          </div>
         </div>
       </Modal>
     </div>

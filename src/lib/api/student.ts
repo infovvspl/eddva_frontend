@@ -460,6 +460,7 @@ export interface StudentLecture {
   type: "recorded" | "live";
   status: string;
   batchId: string;
+  batch?: { id: string; name?: string };
   topicId?: string;
   videoUrl?: string;
   liveMeetingUrl?: string;
@@ -545,6 +546,7 @@ export interface MockTestListItem {
   chapterId?: string;
   topicId?: string;
   batchId?: string;
+  examMode?: string | null;
   questionIds?: string[];
   isPublished: boolean;
   scheduledAt?: string;
@@ -741,6 +743,7 @@ export interface StudyPlanItem {
   refId: string;
   scheduledDate: string;
   xpReward?: number;
+  description?: string | null;
   content?: {
     topicId?: string;
     topicName?: string;
@@ -1369,21 +1372,13 @@ export async function updateProfile(payload: {
 }
 
 export async function uploadAvatar(file: File): Promise<string> {
-  // Step 1 — Upload to S3
-  const fileUrl = await uploadToS3(
-    {
-      type: "profile",
-      fileName: file.name,
-      contentType: file.type,
-      fileSize: file.size,
-    },
-    file
-  );
-
-  // Step 2 — Confirm with backend
-  const res = await apiClient.post("/auth/profile/avatar", { fileUrl });
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await apiClient.post("/auth/profile/avatar", fd, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
   const data = extractData<{ avatarUrl: string }>(res);
-  return data?.avatarUrl ?? fileUrl;
+  return data?.avatarUrl;
 }
 
 
@@ -1439,6 +1434,8 @@ export interface AiQuestionResponse {
 
 export interface AiCompleteResponse {
   xpEarned: number;
+  /** Same value as xpEarned; older responses used this name. */
+  xpAwarded?: number;
   newXpTotal: number;
 }
 
@@ -1500,7 +1497,7 @@ export interface AiQuizOption {
 export interface AiQuizQuestion {
   id: string;
   content: string;
-  type: "mcq_single";
+  type: "mcq_single" | "mcq_multi";
   difficulty: "easy" | "medium" | "hard";
   marksCorrect: number;
   marksWrong: number;

@@ -10,10 +10,16 @@
 
 import { Link } from "react-router-dom";
 import { Check, ArrowRight, ArrowLeft, Users } from "lucide-react";
-import { features, featureCategories } from "../data/features";
+import { useTranslation } from "react-i18next";
+import { useLocalized } from "@/i18n/useLocalized";
+import { features as featuresData, featureCategories as featureCategoriesData } from "../data/features";
 import useInView from "../hooks/useInView";
 
-const FeatureDetail = ({ feature }) => {
+const FeatureDetail = ({ feature: featureSource }) => {
+  const { t } = useTranslation("features");
+  const features = useLocalized("data-features", featuresData);
+  const featureCategories = useLocalized("data-features", featureCategoriesData);
+  const feature = features.find(f => f.id === featureSource.id) ?? featureSource;
   const { slug, title, tagline, intro, img, cat, roles, highlights } = feature;
   const category = featureCategories.find(c => c.id === cat);
   const [ref, inView] = useInView({ threshold: 0.08 });
@@ -35,7 +41,7 @@ const FeatureDetail = ({ feature }) => {
           <div className="nw-fdet__hero-copy">
             <Link to="/#nw-ai-features" className="nw-fdet__back">
               <ArrowLeft size={15} strokeWidth={2.4} />
-              All features
+              {t("back")}
             </Link>
             <span className="nw-fdet__tag">{category.label}</span>
             <h1 className="nw-fdet__title">{title}</h1>
@@ -45,7 +51,7 @@ const FeatureDetail = ({ feature }) => {
             <div className="nw-fdet__roles">
               <span className="nw-fdet__roles-label">
                 <Users size={14} strokeWidth={2.1} aria-hidden="true" />
-                Used by
+                {t("usedBy")}
               </span>
               {roles.map(role => (
                 <span className="nw-fdet__role" key={role}>{role}</span>
@@ -63,7 +69,7 @@ const FeatureDetail = ({ feature }) => {
       {/* ── What it does ── */}
       <section className="nw-fdet__body">
         <div className={`nw-fdet__body-inner${inView ? " nw-in" : ""}`} ref={ref}>
-          <h2 className="nw-fdet__h2">What it does</h2>
+          <h2 className="nw-fdet__h2">{t("whatItDoes")}</h2>
           <ul className="nw-fdet__points">
             {highlights.map((point, i) => (
               <li className="nw-fdet__point" key={point} style={{ "--i": i }}>
@@ -77,13 +83,13 @@ const FeatureDetail = ({ feature }) => {
 
           <div className="nw-fdet__cta-card">
             <div>
-              <h3 className="nw-fdet__cta-title">See {title} in your institution</h3>
+              <h3 className="nw-fdet__cta-title">{t("seeIn", { title })}</h3>
               <p className="nw-fdet__cta-desc">
-                We will walk you through it on your own syllabus and batches.
+                {t("walk")}
               </p>
             </div>
             <Link to="/contact" className="nw-fdet__cta" id={`nw-feature-${slug}-cta`}>
-              Book a demo
+              {t("book")}
               <ArrowRight size={15} strokeWidth={2.6} />
             </Link>
           </div>
@@ -93,7 +99,7 @@ const FeatureDetail = ({ feature }) => {
       {/* ── Related ── */}
       <section className="nw-fdet__related">
         <div className="nw-fdet__related-inner">
-          <h2 className="nw-fdet__h2">More features</h2>
+          <h2 className="nw-fdet__h2">{t("more")}</h2>
           <div className="nw-fdet__related-grid">
             {related.map(item => {
               const itemCat = featureCategories.find(c => c.id === item.cat);

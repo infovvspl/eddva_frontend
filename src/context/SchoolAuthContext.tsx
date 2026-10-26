@@ -77,10 +77,12 @@ function buildSchoolUserFromStore(
     rawRole: storeUser.rawRole ?? storeUser.role,
     instituteId: storeUser.instituteId ?? storeUser.tenantId ?? null,
     tenantName: storeUser.tenantName,
-    tenantState: (storeUser as any).tenantState,
+    tenantState: storeUser.tenantState,
     profileImage: storeUser.profileImage ?? null,
     phone: storeUser.phone ?? null,
     isActive: true,
+    isPrimaryAdmin: storeUser.isPrimaryAdmin ?? false,
+    adminPermissions: storeUser.adminPermissions ?? null,
     institute,
     studentProfile: storeUser.studentProfile
       ? {
@@ -201,6 +203,8 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({
                       : (inst.modulesPermissions ??
                         inst.modules_permissions ??
                         {}),
+                  erpEnabled: inst.erpEnabled ?? inst.erp_enabled ?? false,
+                  lmsEnabled: inst.lmsEnabled ?? inst.lms_enabled ?? true,
                 });
               }
             })
@@ -252,6 +256,8 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({
                         : (inst.modulesPermissions ??
                           inst.modules_permissions ??
                           {}),
+                    erpEnabled: inst.erpEnabled ?? inst.erp_enabled ?? false,
+                    lmsEnabled: inst.lmsEnabled ?? inst.lms_enabled ?? true,
                   });
                 }
               })
@@ -269,6 +275,8 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({
             name: me.name ?? storeUser.name,
             phone: me.phone ?? storeUser.phone,
             rawRole: me.role ?? storeUser.rawRole ?? storeUser.role,
+            isPrimaryAdmin: me.isPrimaryAdmin ?? storeUser.isPrimaryAdmin ?? false,
+            adminPermissions: me.adminPermissions ?? storeUser.adminPermissions ?? null,
             profileImage:
               "profileImage" in me
                 ? me.profileImage
@@ -282,6 +290,8 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({
               name: me.name ?? storeUser.name,
               phone: me.phone ?? storeUser.phone,
               rawRole: me.role ?? storeUser.rawRole ?? storeUser.role,
+              isPrimaryAdmin: me.isPrimaryAdmin ?? storeUser.isPrimaryAdmin ?? false,
+              adminPermissions: me.adminPermissions ?? storeUser.adminPermissions ?? null,
               profileImage:
                 "profileImage" in me
                   ? me.profileImage
@@ -346,6 +356,8 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({
       role: u.role.toLowerCase() as UserRole,
       rawRole: u.role,
       profileImage: u.profileImage ?? undefined,
+      isPrimaryAdmin: u.isPrimaryAdmin ?? false,
+      adminPermissions: u.adminPermissions ?? null,
       instituteId: u.instituteId ?? undefined,
       tenantId: u.instituteId ?? undefined,
       tenantName: inst?.name ?? undefined,
@@ -394,6 +406,8 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({
           "string"
             ? JSON.parse(inst.modulesPermissions ?? inst.modules_permissions)
             : (inst.modulesPermissions ?? inst.modules_permissions ?? {}),
+        erpEnabled: inst.erpEnabled ?? inst.erp_enabled ?? false,
+        lmsEnabled: inst.lmsEnabled ?? inst.lms_enabled ?? true,
       });
     }
 
@@ -424,6 +438,8 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({
       role: schoolRoleToZustand(userData.role),
       rawRole: userData.rawRole ?? userData.role,
       profileImage: userData.profileImage ?? undefined,
+      isPrimaryAdmin: userData.isPrimaryAdmin ?? false,
+      adminPermissions: userData.adminPermissions ?? null,
       instituteId: userData.instituteId ?? undefined,
       tenantId: userData.instituteId ?? undefined,
       tenantName: instData?.name ?? undefined,
@@ -455,6 +471,22 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({
     notifyServerLogout(reason);
     clearAuth();
     tokenStorage.clear();
+
+    // Arrived here via the ERP's "Switch to LMS" SSO hand-off (see SsoLanding.tsx)?
+    // Send the admin back to the ERP's login instead of this app's own one.
+    let ssoOrigin: string | null = null;
+    try {
+      ssoOrigin = sessionStorage.getItem("ssoOrigin");
+      sessionStorage.removeItem("ssoOrigin");
+    } catch {
+      // ignore — falls back to this app's own login below
+    }
+    if (ssoOrigin === "erp") {
+      const erpFrontendUrl = import.meta.env.VITE_ERP_FRONTEND_URL || "http://localhost:5173";
+      window.location.replace(`${erpFrontendUrl}/login`);
+      return;
+    }
+
     window.location.replace("/login");
   };
 

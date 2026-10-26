@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AlertCircle, Loader } from 'lucide-react';
 import { CustomSelect } from "@/components/ui/CustomSelect";
 
-export default function ClassForm({ classData, onSubmit, onCancel, isLoading, defaultAcademicYear = '2025-2026' }) {
+export default function ClassForm({ classData, onSubmit, onCancel, isLoading, defaultAcademicYear = '2026-2027' }) {
   const [formData, setFormData] = useState({
     name: '',
     level: '',

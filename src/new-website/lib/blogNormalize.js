@@ -17,6 +17,8 @@ export const normalizeApiPost = post => ({
   readTime: post.readTime || null,
   coverImage: post.coverImage || null,
   sections: post.sections || [],
+  locale: post.locale || "en",
+  translations: post.translations || [],
 });
 
 export const normalizeStaticPost = post => ({
@@ -30,4 +32,6 @@ export const normalizeStaticPost = post => ({
   readTime: post.readTime,
   coverImage: null,
   sections: post.sections,
+  locale: "en",
+  translations: [],
 });

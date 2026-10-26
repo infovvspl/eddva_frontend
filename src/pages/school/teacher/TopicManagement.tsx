@@ -2,6 +2,8 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import FlashcardViewer from '@/components/resources/FlashcardViewer';
 import FlashcardEditor from '@/components/resources/FlashcardEditor';
 import ChecklistEditor from '@/components/resources/ChecklistEditor';
@@ -18,6 +20,7 @@ import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 
 import {
   Plus,
+  AlertCircle,
   BookOpen,
   ChevronRight,
   Library,
@@ -53,6 +56,7 @@ import {
   Clapperboard,
   Play,
   ScanLine,
+  ChevronsUpDown,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -62,11 +66,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Breadcrumb as UiBreadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import SearchBar from '@/components/school/SearchBar';
 import { Badge } from '@/components/ui/badge';
 import Modal from '@/components/school/Modal';
 import InputField from '@/components/school/InputField';
 
+import { cn } from '@/lib/utils';
 import api from '@/lib/api/school-client';
 import { MindMapCanvas } from '@/components/school/MindMapVisualizer';
 import { mindmapMarkdownToTree } from '@/lib/mindmap-markdown';
@@ -112,6 +120,94 @@ interface CourseContentReturnState {
   selectedTopic?: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' | 'subject' } | null;
 }
 
+function SectionMultiSelect({
+  sections,
+  selected,
+  onChange,
+}: {
+  sections: Ref[];
+  selected: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const toggle = (id: string) => onChange(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
+  const label = selected.length === 0
+    ? sections.length ? 'Select sections' : 'No sections found'
+    : `${selected.length} section${selected.length === 1 ? '' : 's'} selected`;
+
+  return (
+    <div className="space-y-2">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            disabled={sections.length === 0}
+            className={cn('w-full justify-between font-semibold', selected.length === 0 && 'text-muted-foreground')}
+          >
+            <span className="truncate">{label}</span>
+            <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+          <Command>
+            <CommandInput placeholder="Search sections…" />
+            <CommandList>
+              <CommandEmpty>No section found.</CommandEmpty>
+              <CommandGroup>
+                {sections.map((s) => {
+                  const id = String(s.id);
+                  const name = formatSectionName(s.name);
+                  return (
+                    <CommandItem key={id} value={name} onSelect={() => toggle(id)} className="gap-2">
+                      <Checkbox checked={selected.includes(id)} className="pointer-events-none" />
+                      <span className="truncate">{name}</span>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      {sections.length > 0 && (
+        <div className="flex items-center gap-3 text-[11px] font-semibold">
+          <Button type="button" variant="link" className="h-auto p-0 text-[11px]" onClick={() => onChange(sections.map((s) => String(s.id)))}>
+            Select all
+          </Button>
+          {selected.length > 0 && (
+            <Button type="button" variant="link" className="h-auto p-0 text-[11px] text-slate-500" onClick={() => onChange([])}>
+              Clear
+            </Button>
+          )}
+          <span className="ml-auto text-slate-400">
+            {selected.length} of {sections.length} selected
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Column count for the class cards: 1 on phones, 2 from md, 3 from xl (matches Tailwind breakpoints). */
+function useColumnCount() {
+  const pick = () => {
+    if (typeof window === 'undefined' || !window.matchMedia) return 1;
+    if (window.matchMedia('(min-width: 1280px)').matches) return 3;
+    if (window.matchMedia('(min-width: 768px)').matches) return 2;
+    return 1;
+  };
+  const [count, setCount] = useState(pick);
+  useEffect(() => {
+    const queries = [window.matchMedia('(min-width: 768px)'), window.matchMedia('(min-width: 1280px)')];
+    const update = () => setCount(pick());
+    queries.forEach((q) => q.addEventListener('change', update));
+    return () => queries.forEach((q) => q.removeEventListener('change', update));
+  }, []);
+  return count;
+}
 
 const TopicManagement: React.FC = () => {
   const confirm = useConfirm();
@@ -157,6 +253,9 @@ const TopicManagement: React.FC = () => {
   const [search, setSearch] = useState('');
   const [loadingAssignments, setLoadingAssignments] = useState(true);
   const [cardActiveSections, setCardActiveSections] = useState<Record<string, string>>({});
+  const columnCount = useColumnCount();
+  // Only one chapter is expanded at a time in the curriculum tree: opening another closes the previous.
+  const [openChapterId, setOpenChapterId] = useState<string | null>(null);
   const [expandedClasses, setExpandedClasses] = useState<Record<string, boolean>>({});
 
   // ── Curriculum (chapters / topics tree + selected topic) ───────────────────
@@ -237,7 +336,9 @@ const TopicManagement: React.FC = () => {
       if (a.subjectId) entry.subjects.add(a.subjectId);
       map.set(a.sectionId, entry);
     });
-    return Array.from(map.values());
+    const result = Array.from(map.values());
+    result.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+    return result;
   }, [all, selectedClass]);
 
   const subjects = useMemo(() => {
@@ -248,6 +349,20 @@ const TopicManagement: React.FC = () => {
       .forEach((a) => { if (a.subjectId) map.set(a.subjectId, { id: a.subjectId, name: a.subjectName }); });
     return Array.from(map.values());
   }, [all, selectedClass, selectedSection]);
+
+  // Every section (of the selected class) where this teacher teaches the selected
+  // subject — lets AI Generate and Add Material publish to several sections at once
+  // instead of repeating the whole flow once per section.
+  const topicSections = useMemo(() => {
+    if (!selectedClass || !selectedSubject) return [];
+    const map = new Map<string, Ref>();
+    all
+      .filter((a) => a.classId === selectedClass.id && a.subjectId === selectedSubject.id)
+      .forEach((a) => { if (a.sectionId) map.set(a.sectionId, { id: a.sectionId, name: formatSectionName(a.sectionName) }); });
+    const result = Array.from(map.values());
+    result.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+    return result;
+  }, [all, selectedClass, selectedSubject]);
 
   // ── Curriculum fetches ─────────────────────────────────────────────────────
   const fetchChapters = async (subjectId: string) => {
@@ -277,10 +392,12 @@ const TopicManagement: React.FC = () => {
     if (!state?.selectedSubject) return;
     restoredReturnState.current = true;
     restoredSubjectId.current = state.selectedSubject.id;
-    setSelectedClass(state.selectedClass ?? null);
-    setSelectedSection(state.selectedSection ?? null);
-    setSelectedSubject(state.selectedSubject ?? null);
-    setSelectedTopic(state.selectedTopic ?? null);
+    updateUrlState({
+      class: state.selectedClass ?? null,
+      section: state.selectedSection ?? null,
+      subject: state.selectedSubject ?? null,
+      topic: state.selectedTopic ?? null,
+    });
     setSearch('');
   }, [location.state]);
 
@@ -291,11 +408,10 @@ const TopicManagement: React.FC = () => {
   const goToClasses = () => { updateUrlState({ class: null, section: null, subject: null, topic: null }); setSearch(''); };
   const goToSections = () => { updateUrlState({ section: null, subject: null, topic: null }); setSearch(''); };
   const goToSubjects = () => { updateUrlState({ subject: null, topic: null }); setSearch(''); };
-  const goBack = () => {
-    if (level === 'curriculum') goToSubjects();
-    else if (level === 'subjects') goToSections();
-    else if (level === 'sections') goToClasses();
-  };
+  // Class, section and subject are picked on the class cards in one go, so there is no section or
+  // subject screen to step back to: Back returns to the class cards and clears the whole selection
+  // (which also resets the breadcrumb to just "Classes").
+  const goBack = () => { if (level !== 'classes') goToClasses(); };
 
   // ── Chapter create / edit / delete ─────────────────────────────────────────
   const openCreateChapter = () => {
@@ -424,7 +540,7 @@ const TopicManagement: React.FC = () => {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-2">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -437,7 +553,7 @@ const TopicManagement: React.FC = () => {
         </div>
         {level !== 'classes' && (
           <Button variant="outline" size="sm" onClick={goBack}>
-<ChevronLeft size={16} />
+            <ChevronLeft size={16} />
             Back
           </Button>
         )}
@@ -447,9 +563,10 @@ const TopicManagement: React.FC = () => {
       <Breadcrumb
         items={[
           { label: 'Classes', icon: <Home size={14} />, onClick: goToClasses, active: level === 'classes' },
-          ...(selectedClass ? [{ label: selectedClass.name, onClick: goToSections, active: level === 'sections' }] : []),
-          ...(selectedSection ? [{ label: selectedSection.name, onClick: goToSubjects, active: level === 'subjects' }] : []),
-          ...(selectedSubject ? [{ label: selectedSubject.name, onClick: () => { }, active: true }] : []),
+          // Only "Classes" is clickable; the rest just show where you are.
+          ...(selectedClass ? [{ label: selectedClass.name, active: false }] : []),
+          ...(selectedSection ? [{ label: selectedSection.name, active: false }] : []),
+          ...(selectedSubject ? [{ label: selectedSubject.name, active: true }] : []),
         ]}
       />
 
@@ -472,11 +589,15 @@ const TopicManagement: React.FC = () => {
           <EmptyState icon={<GraduationCap size={40} />} title="No classes assigned" message="You haven't been assigned to any classes yet. Contact your administrator." />
         ) : (
           <Accordion
-            type="multiple"
-            defaultValue={filteredClasses.slice(0, 1).map((c) => c.id)}
-            className="grid grid-cols-1 items-start gap-6 md:grid-cols-2 xl:grid-cols-3"
+            type="single"
+            collapsible
+            className="grid items-start gap-4"
+            style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}
           >
-            {filteredClasses.map((c, classIdx) => {
+            {/* Cards are dealt into independent columns (1, 2, 3 across, then 4, 5, 6 underneath), so
+                opening one only grows its own column and never reflows the cards beside it. */}
+            {(() => {
+              const cards = filteredClasses.map((c) => {
               // 1. All sections for this class
               const classSecs: { id: string; name: string }[] = [];
               const secMap = new Map<string, string>();
@@ -486,6 +607,7 @@ const TopicManagement: React.FC = () => {
                   classSecs.push({ id: a.sectionId, name: formatSectionName(a.sectionName) });
                 }
               });
+              classSecs.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
 
               // Active selected section for this card (defaults to first section)
               const activeSecId = cardActiveSections[c.id] || classSecs[0]?.id;
@@ -508,75 +630,80 @@ const TopicManagement: React.FC = () => {
               // Pre-calculate all unique subjects for this class
               const totalClassSubjectsCount = new Set(all.filter((a) => a.classId === c.id && a.subjectId).map((a) => a.subjectId)).size;
 
-              // Card theme gradients per card index for rich visual variety
+              // Five calm hues. The colour comes from the class id (not its position in the list), so a
+              // class keeps the same colour when the list is filtered or reordered.
+              // Closed: white header. Open: the tinted header.
+              // Full class names on purpose — Tailwind can't see classes built from template strings.
               const cardThemes = [
                 {
-                  gradient: 'from-blue-600 via-indigo-600 to-violet-600',
-                  accentBg: 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
-                  badge: 'bg-blue-500/10 text-blue-600 border-blue-200/60 dark:bg-blue-400/10 dark:text-blue-300',
-                  glow: 'hover:border-blue-400/50 hover:shadow-blue-500/10',
+                  card: 'hover:border-blue-500 hover:shadow-md hover:shadow-blue-500/10 dark:hover:border-blue-500',
+                  header: 'bg-white hover:bg-blue-50 group-data-[state=open]:bg-blue-100/80 group-data-[state=open]:hover:bg-blue-100 dark:bg-surface-900 dark:hover:bg-blue-950/30 dark:group-data-[state=open]:bg-blue-950/40 dark:group-data-[state=open]:hover:bg-blue-950/60',
+                  tile: 'bg-blue-600 text-white shadow-sm shadow-blue-600/30',
+                  title: 'text-blue-900 dark:text-blue-50',
+                  sub: 'text-blue-700 dark:text-blue-300',
+                  chevron: 'text-blue-700 dark:text-blue-300',
                 },
                 {
-                  gradient: 'from-violet-600 via-purple-600 to-fuchsia-600',
-                  accentBg: 'bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300',
-                  badge: 'bg-purple-500/10 text-purple-600 border-purple-200/60 dark:bg-purple-400/10 dark:text-purple-300',
-                  glow: 'hover:border-purple-400/50 hover:shadow-purple-500/10',
+                  card: 'hover:border-indigo-500 hover:shadow-md hover:shadow-indigo-500/10 dark:hover:border-indigo-500',
+                  header: 'bg-white hover:bg-indigo-50 group-data-[state=open]:bg-indigo-100/80 group-data-[state=open]:hover:bg-indigo-100 dark:bg-surface-900 dark:hover:bg-indigo-950/30 dark:group-data-[state=open]:bg-indigo-950/40 dark:group-data-[state=open]:hover:bg-indigo-950/60',
+                  tile: 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30',
+                  title: 'text-indigo-900 dark:text-indigo-50',
+                  sub: 'text-indigo-700 dark:text-indigo-300',
+                  chevron: 'text-indigo-700 dark:text-indigo-300',
                 },
                 {
-                  gradient: 'from-emerald-600 via-teal-600 to-cyan-600',
-                  accentBg: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
-                  badge: 'bg-emerald-500/10 text-emerald-600 border-emerald-200/60 dark:bg-emerald-400/10 dark:text-emerald-300',
-                  glow: 'hover:border-emerald-400/50 hover:shadow-emerald-500/10',
+                  card: 'hover:border-teal-500 hover:shadow-md hover:shadow-teal-500/10 dark:hover:border-teal-500',
+                  header: 'bg-white hover:bg-teal-50 group-data-[state=open]:bg-teal-100/80 group-data-[state=open]:hover:bg-teal-100 dark:bg-surface-900 dark:hover:bg-teal-950/30 dark:group-data-[state=open]:bg-teal-950/40 dark:group-data-[state=open]:hover:bg-teal-950/60',
+                  tile: 'bg-teal-600 text-white shadow-sm shadow-teal-600/30',
+                  title: 'text-teal-900 dark:text-teal-50',
+                  sub: 'text-teal-700 dark:text-teal-300',
+                  chevron: 'text-teal-700 dark:text-teal-300',
                 },
                 {
-                  gradient: 'from-amber-500 via-orange-600 to-rose-600',
-                  accentBg: 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
-                  badge: 'bg-amber-500/10 text-amber-600 border-amber-200/60 dark:bg-amber-400/10 dark:text-amber-300',
-                  glow: 'hover:border-amber-400/50 hover:shadow-amber-500/10',
+                  card: 'hover:border-violet-500 hover:shadow-md hover:shadow-violet-500/10 dark:hover:border-violet-500',
+                  header: 'bg-white hover:bg-violet-50 group-data-[state=open]:bg-violet-100/80 group-data-[state=open]:hover:bg-violet-100 dark:bg-surface-900 dark:hover:bg-violet-950/30 dark:group-data-[state=open]:bg-violet-950/40 dark:group-data-[state=open]:hover:bg-violet-950/60',
+                  tile: 'bg-violet-600 text-white shadow-sm shadow-violet-600/30',
+                  title: 'text-violet-900 dark:text-violet-50',
+                  sub: 'text-violet-700 dark:text-violet-300',
+                  chevron: 'text-violet-700 dark:text-violet-300',
+                },
+                {
+                  card: 'hover:border-amber-500 hover:shadow-md hover:shadow-amber-500/10 dark:hover:border-amber-500',
+                  header: 'bg-white hover:bg-amber-50 group-data-[state=open]:bg-amber-100/80 group-data-[state=open]:hover:bg-amber-100 dark:bg-surface-900 dark:hover:bg-amber-950/30 dark:group-data-[state=open]:bg-amber-950/40 dark:group-data-[state=open]:hover:bg-amber-950/60',
+                  tile: 'bg-amber-600 text-white shadow-sm shadow-amber-600/30',
+                  title: 'text-amber-900 dark:text-amber-50',
+                  sub: 'text-amber-700 dark:text-amber-300',
+                  chevron: 'text-amber-700 dark:text-amber-300',
                 },
               ];
-              const theme = cardThemes[classIdx % cardThemes.length];
+              const theme = cardThemes[Array.from(String(c.id)).reduce((n, ch) => n + ch.charCodeAt(0), 0) % cardThemes.length];
 
               return (
                 <AccordionItem
                   key={c.id}
                   value={c.id}
-                  className={`group relative flex h-fit self-start flex-col justify-start overflow-hidden rounded-3xl border border-surface-200/80 bg-white shadow-xs transition-all duration-300 hover:shadow-lg dark:border-surface-800 dark:bg-surface-900 ${theme.glow}`}
+                  className={`group relative flex flex-col justify-start overflow-hidden rounded-2xl border border-surface-200 bg-white shadow-sm transition-all duration-200 dark:border-surface-800 dark:bg-surface-900 ${theme.card}`}
                 >
-                  {/* shadcn Accordion Trigger as the Card Hero Header */}
+                  {/* Accordion trigger as the card header — soft tint, coloured icon tile */}
                   <AccordionTrigger
-                    className={`relative w-full text-left overflow-hidden bg-gradient-to-r ${theme.gradient} px-5 py-4 text-white shadow-inner transition-all duration-200 hover:no-underline hover:brightness-105 [&[data-state=open]>svg]:rotate-180 [&>svg]:hidden`}
+                    className={`relative w-full overflow-hidden px-4 py-3.5 text-left transition-colors duration-200 hover:no-underline sm:px-5 [&>svg]:hidden ${theme.header}`}
                   >
-                    {/* Abstract background blur orbs */}
-                    <div className="pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-full bg-white/10 blur-xl transition-transform duration-500 group-hover:scale-150" />
-                    <div className="pointer-events-none absolute -left-6 -bottom-6 h-24 w-24 rounded-full bg-black/10 blur-lg" />
-
                     <div className="relative flex w-full items-center justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md ring-1 ring-white/30 shadow-xs transition-transform duration-300 group-hover:scale-105">
-                          <GraduationCap className="h-6 w-6 text-white" />
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${theme.tile}`}>
+                          <GraduationCap className="size-5" />
                         </div>
-                        <div className="truncate">
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-xl font-black tracking-tight leading-tight drop-shadow-xs truncate text-white">
-                              {c.name}
-                            </h3>
-                            {/* {c.isClassTeacher && (
-                              <span className="shrink-0 rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold tracking-wide text-white backdrop-blur-md ring-1 ring-white/30">
-                                ★ Incharge
-                              </span>
-                            )} */}
-                          </div>
-                          <p className="text-xs font-medium text-white/80 mt-0.5">
+                        <div className="min-w-0">
+                          <h3 className={`truncate text-lg font-bold leading-tight tracking-tight ${theme.title}`}>
+                            {c.name}
+                          </h3>
+                          <p className={`mt-0.5 truncate text-xs font-medium ${theme.sub}`}>
                             {classSecs.length} {classSecs.length === 1 ? 'Section' : 'Sections'} • {totalClassSubjectsCount} {totalClassSubjectsCount === 1 ? 'Subject' : 'Subjects'}
                           </p>
                         </div>
                       </div>
 
-                      {/* Styled indicator icon that rotates on data-state=open */}
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm ring-1 ring-white/25 transition-transform duration-300 group-hover:bg-white/25 group-data-[state=open]:rotate-180">
-                        <ChevronDown className="h-4 w-4 text-white" />
-                      </div>
+                      <ChevronDown className={`size-4 shrink-0 transition-transform duration-300 group-data-[state=open]:rotate-180 ${theme.chevron}`} />
                     </div>
                   </AccordionTrigger>
 
@@ -644,9 +771,14 @@ const TopicManagement: React.FC = () => {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (!activeSecObj) return;
-                                setSelectedClass({ id: c.id, name: c.name });
-                                setSelectedSection({ id: activeSecObj.id, name: activeSecObj.name });
-                                setSelectedSubject({ id: sub.id, name: sub.name });
+                                // One combined URL update: three separate ones each start from the old URL,
+                                // so only the last survived and the breadcrumb lost the class and section.
+                                updateUrlState({
+                                  class: { id: c.id, name: c.name },
+                                  section: { id: activeSecObj.id, name: activeSecObj.name },
+                                  subject: { id: sub.id, name: sub.name },
+                                  topic: null,
+                                });
                                 setSearch('');
                               }}
                               className="group/sub flex flex-col justify-between rounded-2xl border border-surface-200/80 bg-surface-50/50 p-3 text-left transition-all duration-200 hover:border-brand-400 hover:bg-brand-50/30 hover:shadow-xs dark:border-surface-800 dark:bg-surface-800/40 dark:hover:border-brand-600 dark:hover:bg-brand-950/20"
@@ -673,14 +805,20 @@ const TopicManagement: React.FC = () => {
                   </AccordionContent>
                 </AccordionItem>
               );
-            })}
+              });
+              return Array.from({ length: columnCount }, (_, col) => (
+                <div key={col} className="flex min-w-0 flex-col gap-4">
+                  {cards.filter((_, i) => i % columnCount === col)}
+                </div>
+              ));
+            })()}
           </Accordion>
         )
       )}
 
       {/* ── CURRICULUM (chapters + topics) ── */}
       {level === 'curriculum' && selectedSubject && (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(300px,380px)_1fr]">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
           {/* Curriculum tree: chapters → topics */}
           <Card className="self-start lg:sticky lg:top-6 rounded-2xl border-surface-100 bg-white dark:border-surface-700 dark:bg-surface-900/40 shadow-none">
             <div className="flex items-center justify-between border-b border-surface-100 p-4 dark:border-surface-700">
@@ -735,6 +873,8 @@ const TopicManagement: React.FC = () => {
                       key={`${chapter.id}-${ci}`}
                       chapter={chapter}
                       chapterIndex={ci}
+                      open={openChapterId === String(chapter.id)}
+                      onToggle={() => setOpenChapterId((cur) => (cur === String(chapter.id) ? null : String(chapter.id)))}
                       version={curriculumVersion}
                       canEdit={canEditCurriculum}
                       selectedScopeId={selectedTopic?.id ?? null}
@@ -761,6 +901,7 @@ const TopicManagement: React.FC = () => {
                 subjectId={selectedSubject.id}
                 classId={selectedClass?.id}
                 sectionId={selectedSection?.id}
+                availableSections={topicSections}
                 canEdit={canEditCurriculum}
                 returnState={{ selectedClass, selectedSection, selectedSubject, selectedTopic }}
                 onOpenPptStudio={() => navigate(pptStudioPath({
@@ -884,7 +1025,7 @@ function IconButton({ children, label, danger, onClick }: { children: React.Reac
   );
 }
 
-function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode; onClick: () => void; active: boolean }[] }) {
+function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode; onClick?: () => void; active: boolean }[] }) {
   return (
     <UiBreadcrumb>
       <BreadcrumbList className="gap-1.5 text-sm sm:gap-1.5">
@@ -896,6 +1037,11 @@ function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode;
                 <BreadcrumbPage className="inline-flex items-center gap-1.5 rounded-lg bg-brand-50 px-2.5 py-1 font-semibold text-brand-700 dark:bg-brand-900/30 dark:text-brand-300">
                   {it.icon}{it.label}
                 </BreadcrumbPage>
+              ) : !it.onClick ? (
+                // No click handler: shown as plain text, not a link.
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 font-semibold text-surface-500 dark:text-surface-400">
+                  {it.icon}{it.label}
+                </span>
               ) : (
                 <BreadcrumbLink asChild>
                   <Button variant="ghost" size={null}
@@ -948,7 +1094,7 @@ function RowSkeleton() {
 
 // ── Material type config ─────────────────────────────────────────────────────
 
-const MATERIAL_TYPES: { value: SchoolMaterialType; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; soft: string; text: string }[] = [
+const MATERIAL_TYPES: { value: SchoolMaterialType; label: string; icon: React.ComponentType<{ size?: number | string; className?: string }>; soft: string; text: string }[] = [
   { value: 'notes', label: 'Notes', icon: FileText, soft: 'bg-blue-50 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400' },
   { value: 'study_guide', label: 'Study Guide', icon: BookOpen, soft: 'bg-indigo-50 dark:bg-indigo-900/30', text: 'text-indigo-600 dark:text-indigo-400' },
   { value: 'key_concepts', label: 'Key Concepts', icon: Lightbulb, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
@@ -971,17 +1117,54 @@ function resolveFileUrl(url?: string | null) {
   return `${getApiOrigin() || ''}${url}`;
 }
 
+/**
+ * A teacher adding an "Animation" material can paste a YouTube/Vimeo/Drive
+ * share link just as easily as uploading a direct .mp4 — the "Paste link"
+ * tips explicitly invite it — but a bare <video src> element can only decode
+ * a direct media file, not a YouTube watch page or a Drive share page, so it
+ * silently fails to play. This resolves a pasted link to its embeddable
+ * iframe form when it's one of those platforms, so "Play" actually works
+ * instead of showing a black box with no error.
+ */
+function resolveAnimationEmbed(url: string): { kind: 'iframe' | 'video'; src: string } {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\./, '');
+
+    if (host === 'youtube.com' || host === 'm.youtube.com') {
+      const id = u.pathname === '/watch'
+        ? u.searchParams.get('v')
+        : u.pathname.match(/^\/(?:embed|shorts)\/([^/?#]+)/)?.[1];
+      if (id) return { kind: 'iframe', src: `https://www.youtube-nocookie.com/embed/${id}` };
+    }
+    if (host === 'youtu.be') {
+      const id = u.pathname.slice(1).split(/[/?#]/)[0];
+      if (id) return { kind: 'iframe', src: `https://www.youtube-nocookie.com/embed/${id}` };
+    }
+    if (host === 'vimeo.com') {
+      const id = u.pathname.match(/^\/(\d+)/)?.[1];
+      if (id) return { kind: 'iframe', src: `https://player.vimeo.com/video/${id}` };
+    }
+    if (host === 'drive.google.com') {
+      const id = u.pathname.match(/\/file\/d\/([^/]+)/)?.[1] ?? u.searchParams.get('id');
+      if (id) return { kind: 'iframe', src: `https://drive.google.com/file/d/${id}/preview` };
+    }
+  } catch {
+    // Not a parseable absolute URL — fall through to treating it as a direct file.
+  }
+  return { kind: 'video', src: url };
+}
+
 // ── Chapter node (accordion: chapter → its topics) ───────────────────────────
 
 function ChapterNode({
-  chapter, chapterIndex, version, canEdit, selectedScopeId,
+  chapter, chapterIndex, open, onToggle, version, canEdit, selectedScopeId,
   onSelectTopic, onSelectChapter, onAddTopic, onEditTopic, onDeleteTopic, onEditChapter, onDeleteChapter,
 }: {
-  chapter: any; chapterIndex: number; version: number; canEdit: boolean; selectedScopeId: string | null;
+  chapter: any; chapterIndex: number; open: boolean; onToggle: () => void; version: number; canEdit: boolean; selectedScopeId: string | null;
   onSelectTopic: (t: any) => void; onSelectChapter: () => void; onAddTopic: (count: number) => void;
   onEditTopic: (t: any, fallbackIndex?: number) => void; onDeleteTopic: (t: any) => void; onEditChapter: () => void; onDeleteChapter: () => void;
 }) {
-  const [open, setOpen] = useState(false);
   const [topics, setTopics] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -1005,7 +1188,7 @@ function ChapterNode({
       <div className={`group flex items-center gap-2 rounded-xl px-2.5 py-2 transition-all ${anyChildSelected && !open ? 'bg-brand-50/60 dark:bg-brand-900/10' : 'hover:bg-surface-50 dark:hover:bg-surface-800'}`}>
         <Button variant="ghost" size={null}
           type="button"
-          onClick={() => setOpen((o) => !o)}
+          onClick={onToggle}
           className="h-auto min-w-0 flex-1 justify-start gap-2 whitespace-normal p-0 text-left font-normal hover:bg-transparent"
         >
           {/* Chapter number badge */}
@@ -1142,6 +1325,7 @@ function MaterialWorkspace({
   subjectId,
   classId,
   sectionId,
+  availableSections,
   canEdit,
   returnState,
   onOpenPptStudio,
@@ -1151,6 +1335,9 @@ function MaterialWorkspace({
   subjectId: string;
   classId?: string;
   sectionId?: string;
+  /** Sections (of this class) this teacher also teaches this subject in — lets
+   *  Add Material / AI Generate target several sections in one save. */
+  availableSections?: Ref[];
   canEdit: boolean;
   returnState: CourseContentReturnState;
   onOpenPptStudio: () => void;
@@ -1159,6 +1346,8 @@ function MaterialWorkspace({
   const confirm = useConfirm();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
+  const isTeacherRole = user?.role === 'TEACHER';
   const hasAiMaterials = useSchoolFeature('ai', 'ai_content_generator_materials');
   const hasPptGen = useSchoolFeature('ai', 'ai_ppt_generator');
   const isChapter = topic.kind === 'chapter';
@@ -1173,6 +1362,7 @@ function MaterialWorkspace({
   const [editingFlashcards, setEditingFlashcards] = useState<SchoolMaterial | null>(null);
   const [editingChecklist, setEditingChecklist] = useState<SchoolMaterial | null>(null);
   const [animationUrl, setAnimationUrl] = useState<string | null>(null);
+  const [animationLoadFailed, setAnimationLoadFailed] = useState(false);
   const [downloadingAll, setDownloadingAll] = useState(false);
 
   const load = React.useCallback(() => {
@@ -1225,6 +1415,10 @@ function MaterialWorkspace({
   }, [materials, topic.kind]);
 
   const handleDelete = async (m: SchoolMaterial) => {
+    if (isTeacherRole && m.isTrainedTextbook) {
+      toast.error('Only an admin can delete a trained textbook');
+      return;
+    }
     const isConfirmed = await confirm({
       title: "Confirm Delete",
       message: `Delete material "${m.title}"?`,
@@ -1269,7 +1463,7 @@ function MaterialWorkspace({
           <p className="text-[11px] font-bold uppercase tracking-wider text-surface-400">{isChapter ? 'Chapter' : 'Topic'}</p>
           <h3 className="truncate text-lg font-bold text-surface-900 dark:text-white">{topic.name}</h3>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex max-w-full flex-wrap items-center gap-2">
           <Badge variant="outline" className="rounded-lg border-surface-100 bg-surface-50 px-2.5 py-1 text-xs font-bold text-surface-500 dark:border-surface-700 dark:bg-surface-800">
             {materials.length} item{materials.length === 1 ? '' : 's'}
           </Badge>
@@ -1399,7 +1593,7 @@ function MaterialWorkspace({
                             )}
                             {isAnimation && href ? (
                               <Button variant={null} size={null}
-                                onClick={() => setAnimationUrl(href)}
+                                onClick={() => { setAnimationLoadFailed(false); setAnimationUrl(href); }}
                                 className="inline-flex h-8 items-center gap-1 rounded-lg border border-purple-200 bg-purple-50 px-2.5 text-xs font-bold text-purple-600 transition-colors hover:bg-purple-100 dark:border-purple-800 dark:bg-purple-900/30"
                               >
                                 <Play size={13} /> Play
@@ -1437,7 +1631,7 @@ function MaterialWorkspace({
                             {canEdit && isText && isTypedChecklistMaterial(m) && (
                               <IconButton label="Edit checklist" onClick={() => setEditingChecklist(m)}><Pencil size={15} /></IconButton>
                             )}
-                            {canEdit && (
+                            {canEdit && !(isTeacherRole && m.isTrainedTextbook) && (
                               <IconButton label="Delete material" danger onClick={() => handleDelete(m)}><Trash2 size={15} /></IconButton>
                             )}
                           </div>
@@ -1458,6 +1652,7 @@ function MaterialWorkspace({
           subjectId={subjectId}
           classId={classId}
           sectionId={sectionId}
+          availableSections={availableSections}
           initialType={addType}
           onClose={() => setShowAdd(false)}
           onSaved={() => { setShowAdd(false); load(); }}
@@ -1470,6 +1665,7 @@ function MaterialWorkspace({
           topic={topic}
           classId={classId}
           sectionId={sectionId}
+          availableSections={availableSections}
           onClose={() => setShowAi(false)}
           onSaved={() => { load(); }}
           onOpenPptStudio={() => { setShowAi(false); onOpenPptStudio(); }}
@@ -1514,14 +1710,47 @@ function MaterialWorkspace({
                 <X size={16} />
               </Button>
             </div>
-            <video
-              src={animationUrl}
-              controls
-              autoPlay
-              className="w-full bg-black"
-              style={{ maxHeight: '75vh' }}
-            />
-          
+            {(() => {
+              const embed = resolveAnimationEmbed(animationUrl);
+              if (embed.kind === 'iframe') {
+                return (
+                  <iframe
+                    src={embed.src}
+                    className="aspect-video w-full"
+                    style={{ maxHeight: '75vh' }}
+                    allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                    allowFullScreen
+                    title="Animation player"
+                  />
+                );
+              }
+              if (animationLoadFailed) {
+                return (
+                  <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
+                    <AlertCircle size={28} className="text-white/60" />
+                    <p className="max-w-sm text-sm font-medium text-white/80">
+                      This video couldn&apos;t be played here — the link may not be a direct video file.
+                    </p>
+                    <Button asChild variant="outline" size={null} className="gap-1.5 border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold text-white hover:bg-white/20">
+                      <a href={embed.src} target="_blank" rel="noreferrer">
+                        <ExternalLink size={13} /> Open link instead
+                      </a>
+                    </Button>
+                  </div>
+                );
+              }
+              return (
+                <video
+                  src={embed.src}
+                  controls
+                  autoPlay
+                  className="w-full bg-black"
+                  style={{ maxHeight: '75vh' }}
+                  onError={() => setAnimationLoadFailed(true)}
+                />
+              );
+            })()}
+
   </DialogContent>
 </Dialog>
       )}
@@ -2123,7 +2352,7 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
 
 // ── AI Content Generator panel ───────────────────────────────────────────────
 
-const AI_GEN_TYPES: { id: string; label: string; desc: string; saveAs: string; icon: React.ComponentType<{ size?: number; className?: string }>; soft: string; text: string }[] = [
+const AI_GEN_TYPES: { id: string; label: string; desc: string; saveAs: string; icon: React.ComponentType<{ size?: number | string; className?: string }>; soft: string; text: string }[] = [
   { id: 'presentation', label: 'Presentation', desc: 'Opens AI PPT Studio — build, edit & save a slide deck to this topic', saveAs: 'ppt', icon: Presentation, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
   { id: 'study_guide', label: 'Study Guide', desc: 'Exam-ready summary with must-know points for revision', saveAs: 'study_guide', icon: BookOpen, soft: 'bg-indigo-50 dark:bg-indigo-900/30', text: 'text-indigo-600 dark:text-indigo-400' },
   { id: 'key_concepts', label: 'Key Concepts', desc: 'Bulleted must-know concepts, formulas & definitions', saveAs: 'key_concepts', icon: Lightbulb, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
@@ -2284,6 +2513,7 @@ function AiGeneratePanel({
   topic,
   classId,
   sectionId,
+  availableSections,
   onClose,
   onSaved,
   onOpenPptStudio,
@@ -2291,10 +2521,13 @@ function AiGeneratePanel({
   topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' | 'subject' };
   classId?: string;
   sectionId?: string;
+  availableSections?: Ref[];
   onClose: () => void;
   onSaved: () => void;
   onOpenPptStudio: () => void;
 }) {
+  const sectionOptions = availableSections ?? [];
+  const [selectedSectionIds, setSelectedSectionIds] = useState<string[]>(() => (sectionId ? [sectionId] : []));
   const scopeRef = topic.kind === 'subject' ? { subjectId: topic.id } : topic.kind === 'chapter' ? { chapterId: topic.id } : { topicId: topic.id };
   const hasAiMaterials = useSchoolFeature('ai', 'ai_content_generator_materials');
   const hasPptGen = useSchoolFeature('ai', 'ai_ppt_generator');
@@ -2434,6 +2667,10 @@ function AiGeneratePanel({
       toast.error('This does not look like an FAQ yet. Generate again before saving.');
       return;
     }
+    if (sectionOptions.length > 1 && !selectedSectionIds.length) {
+      toast.warning('Select at least one section to publish to');
+      return;
+    }
     setSaving(true);
     try {
       await schoolContent.saveAiMaterial({
@@ -2443,6 +2680,7 @@ function AiGeneratePanel({
         resourceType: cfg.saveAs,
         classId,
         sectionId,
+        sectionIds: selectedSectionIds.length ? selectedSectionIds : undefined,
       });
       toast.success(`${cfg.label} saved — students can now access it!`);
       onSaved();
@@ -2498,11 +2736,18 @@ function AiGeneratePanel({
           </div>
         </main>
 
-        <footer className="flex shrink-0 flex-wrap items-center justify-end gap-3 border-t border-surface-200 bg-white px-5 py-4 dark:border-surface-700 dark:bg-surface-900">
-          <Button variant="outline" onClick={() => setContent(null)} disabled={saving}>Edit settings & regenerate</Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Publishing…</span> : 'Confirm & publish to students'}
-          </Button>
+        <footer className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-surface-200 bg-white px-5 py-4 dark:border-surface-700 dark:bg-surface-900">
+          {sectionOptions.length > 1 ? (
+            <div className="min-w-[220px] flex-1">
+              <SectionMultiSelect sections={sectionOptions} selected={selectedSectionIds} onChange={setSelectedSectionIds} />
+            </div>
+          ) : <span />}
+          <div className="flex items-center gap-3">
+            <Button variant="outline" onClick={() => setContent(null)} disabled={saving}>Edit settings & regenerate</Button>
+            <Button onClick={handleSave} disabled={saving || (sectionOptions.length > 1 && !selectedSectionIds.length)}>
+              {saving ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Publishing…</span> : 'Confirm & publish to students'}
+            </Button>
+          </div>
         </footer>
       
   </DialogContent>
@@ -2512,7 +2757,10 @@ function AiGeneratePanel({
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
-  <DialogContent className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900 gap-0 p-0 [&>button:last-child]:hidden sm:rounded-3xl">
+  <DialogContent
+    onPointerDownOutside={(e) => e.preventDefault()}
+    onInteractOutside={(e) => e.preventDefault()}
+    className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900 gap-0 p-0 [&>button:last-child]:hidden sm:rounded-3xl">
     <DialogTitle className="sr-only">AI content generator</DialogTitle>
     <DialogDescription className="sr-only">AI content generator</DialogDescription>
 
@@ -2642,6 +2890,7 @@ function AiGeneratePanel({
                 placeholder="e.g. focus on numericals, include real-world examples…"
                 className="w-full resize-none rounded-xl border-2 border-surface-200 bg-surface-50 px-3 py-2 text-sm outline-none focus:border-violet-400 dark:border-surface-700 dark:bg-surface-800" />
             </div>
+            <SectionMultiSelect sections={sectionOptions} selected={selectedSectionIds} onChange={setSelectedSectionIds} />
           </div>
 
           {(generating || content) && (
@@ -2682,7 +2931,7 @@ function AiGeneratePanel({
             {generating ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Generating… {fmtDuration(genElapsedMs)}</span> : (content ? 'Regenerate' : 'Generate')}
           </Button>
           {content && (
-            <Button className="flex-1 justify-center" onClick={handleSave} disabled={saving}>
+            <Button className="flex-1 justify-center" onClick={handleSave} disabled={saving || (sectionOptions.length > 1 && !selectedSectionIds.length)}>
               {saving ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Saving…</span> : 'Save for students'}
             </Button>
           )}
@@ -2858,17 +3107,20 @@ function EditChecklistModal({ material, onClose, onSaved }: {
 }
 
 function AddMaterialModal({
-  topic, subjectId, classId, sectionId, initialType, onClose, onSaved, onOpenPptStudio,
+  topic, subjectId, classId, sectionId, availableSections, initialType, onClose, onSaved, onOpenPptStudio,
 }: {
   topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' | 'subject' };
   subjectId: string;
   classId?: string;
   sectionId?: string;
+  availableSections?: Ref[];
   initialType?: SchoolMaterialType;
   onClose: () => void;
   onSaved: () => void;
   onOpenPptStudio: () => void;
 }) {
+  const sectionOptions = availableSections ?? [];
+  const [selectedSectionIds, setSelectedSectionIds] = useState<string[]>(() => (sectionId ? [sectionId] : []));
   const isSubject = topic.kind === 'subject';
   const [step, setStep] = useState<'type' | 'input'>(initialType || isSubject ? 'input' : 'type');
   const [type, setType] = useState<SchoolMaterialType>(initialType ?? (isSubject ? 'ebook' : 'notes'));
@@ -2929,6 +3181,7 @@ function AddMaterialModal({
     if (incomplete) { toast.warning(`${incomplete} card${incomplete === 1 ? ' is' : 's are'} missing a front or back`); return; }
     const complete = completeCards(cards);
     if (!complete.length) { toast.warning('Add at least one card'); return; }
+    if (sectionOptions.length > 1 && !selectedSectionIds.length) { toast.warning('Select at least one section to publish to'); return; }
     setBusy(true);
     try {
       await schoolContent.createMaterial({
@@ -2941,6 +3194,7 @@ function AddMaterialModal({
         topicId: topic.kind === 'topic' ? topic.id : undefined,
         classId,
         sectionId,
+        sectionIds: selectedSectionIds.length ? selectedSectionIds : undefined,
       });
       toast.success(`${complete.length} flashcard${complete.length === 1 ? '' : 's'} saved — students can now study them`);
       onSaved();
@@ -2955,6 +3209,7 @@ function AddMaterialModal({
     const complete = completeRows(checklistRows);
     const itemCount = complete.filter((r) => !r.heading).length;
     if (!itemCount) { toast.warning('Add at least one checklist item'); return; }
+    if (sectionOptions.length > 1 && !selectedSectionIds.length) { toast.warning('Select at least one section to publish to'); return; }
     setBusy(true);
     try {
       await schoolContent.createMaterial({
@@ -2967,6 +3222,7 @@ function AddMaterialModal({
         topicId: topic.kind === 'topic' ? topic.id : undefined,
         classId,
         sectionId,
+        sectionIds: selectedSectionIds.length ? selectedSectionIds : undefined,
       });
       toast.success(`${itemCount} checklist item${itemCount === 1 ? '' : 's'} saved — students can now tick them off`);
       onSaved();
@@ -2980,6 +3236,7 @@ function AddMaterialModal({
   const save = async () => {
     if (isTypingCards) { await saveTypedCards(); return; }
     if (isTypingChecklist) { await saveTypedChecklist(); return; }
+    if (sectionOptions.length > 1 && !selectedSectionIds.length) { toast.warning('Select at least one section to publish to'); return; }
     const finalTitle = title.trim() || (file ? cleanName(file.name) : 'Material');
     setBusy(true);
     try {
@@ -3006,6 +3263,7 @@ function AddMaterialModal({
         topicId: topic.kind === 'topic' ? topic.id : undefined,
         classId,
         sectionId,
+        sectionIds: selectedSectionIds.length ? selectedSectionIds : undefined,
       });
       toast.success('Material added');
       onSaved();
@@ -3018,7 +3276,10 @@ function AddMaterialModal({
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) void requestClose(); }}>
-  <DialogContent className={`flex max-h-[92vh] w-full flex-col ${(isTypingCards || isTypingChecklist) && step === 'input' ? 'max-w-3xl' : 'max-w-md'} overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900 gap-0 p-0 [&>button:last-child]:hidden sm:rounded-3xl`}>
+  <DialogContent
+    onPointerDownOutside={(e) => e.preventDefault()}
+    onInteractOutside={(e) => e.preventDefault()}
+    className={`flex max-h-[92vh] w-full flex-col ${(isTypingCards || isTypingChecklist) && step === 'input' ? 'max-w-3xl' : 'max-w-md'} overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900 gap-0 p-0 [&>button:last-child]:hidden sm:rounded-3xl`}>
     <DialogTitle className="sr-only">Add material</DialogTitle>
     <DialogDescription className="sr-only">Add material</DialogDescription>
 
@@ -3061,6 +3322,8 @@ function AddMaterialModal({
           <div className="space-y-4 overflow-y-auto p-5">
             <InputField label="Title" value={title} onChange={(e) => setTitle(e.target.value)}
               placeholder={isTypingCards ? `Flashcards — ${topic.name}` : isTypingChecklist ? `Revision Checklist — ${topic.name}` : 'Give this material a clear title…'} />
+
+            <SectionMultiSelect sections={sectionOptions} selected={selectedSectionIds} onChange={setSelectedSectionIds} />
 
             <div className="flex gap-2">
               {type === 'flashcard' && (
@@ -3143,7 +3406,7 @@ function AddMaterialModal({
               tips={isTypingCards ? TYPED_CARD_TIPS : isTypingChecklist ? TYPED_CHECKLIST_TIPS : source === 'link' ? LINK_TIPS : guide.tips}
             />
 
-            <Button className="w-full justify-center" onClick={save} disabled={busy}>
+            <Button className="w-full justify-center" onClick={save} disabled={busy || (sectionOptions.length > 1 && !selectedSectionIds.length)}>
               {busy
                 ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> {source === 'file' ? 'Uploading…' : 'Saving…'}</span>
                 : isTypingCards ? 'Save Flashcards' : isTypingChecklist ? 'Save Checklist' : source === 'file' ? 'Upload & Save' : 'Save Link'}
