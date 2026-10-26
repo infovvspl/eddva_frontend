@@ -1,15 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowDownUp, LayoutDashboard, Loader2, Printer, Search, Users } from "lucide-react";
-import { CartesianGrid, ReferenceLine, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis } from "recharts";
+import { Activity, AlertTriangle, ArrowDownUp, Clock, LayoutDashboard, Loader2, Moon, Printer, Search, TrendingUp, Users, Zap } from "lucide-react";
 import { learningReportsApi, type ReportPeriod, type ReportStudentRow, type TrendGranularity } from "@/lib/api/learning-reports";
 import { apiErrorMessage } from "@/lib/api/learning-path";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
 import { cn } from "@/lib/utils";
 import { classLabel, formatDuration, formatImprovement, PERIOD_LABEL } from "./report-format";
-import { Card, LevelChip, lastSeen, PeriodToggle, StatTile, StudentList, timeAndGain, TrendChart, TrendToggle } from "./ReportParts";
+import { Card, InitialAvatar, LevelChip, lastSeen, PeriodToggle, StatTile, StudentList, TimeVsGainChart, timeAndGain, TrendChart, TrendToggle, WeakTopicBars } from "./ReportParts";
 
 type SortKey = "name" | "time" | "engagement" | "improvement" | "weak";
 
@@ -137,43 +136,27 @@ export default function StudyPlannerOverview({ studentHref, embedded = false }: 
 
         <TabsContent value="overview" className="space-y-4">
           <section className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6" aria-label="Summary">
-            <StatTile label="Students" value={String(t.students)} hint={`${t.activeStudents} studied in this period`} />
-            <StatTile label="Total study time" value={formatDuration(t.seconds)} hint={`${formatDuration(t.averageSecondsPerActiveStudent)} per active student`} />
-            <StatTile label="Average engagement" value={`${t.averageEngagement} / 100`} tone={t.averageEngagement >= 70 ? "good" : t.averageEngagement >= 40 ? "warn" : "bad"} />
-            <StatTile label="Average improvement" value={formatImprovement(t.averageImprovement)} hint="Score after a topic's path vs before" tone={t.averageImprovement === null ? "default" : t.averageImprovement > 2 ? "good" : "warn"} />
-            <StatTile label="Inactive" value={String(t.inactive)} hint="No study in the last 7 days" tone={t.inactive ? "bad" : "good"} />
-            <StatTile label="Time without improvement" value={String(t.effortWithoutGain)} hint="An hour or more, 2 pts or less" tone={t.effortWithoutGain ? "warn" : "good"} />
+            <StatTile icon={Users} label="Students" value={String(t.students)} hint={`${t.activeStudents} studied in this period`} />
+            <StatTile icon={Clock} label="Total study time" value={formatDuration(t.seconds)} hint={`${formatDuration(t.averageSecondsPerActiveStudent)} per active student`} />
+            <StatTile icon={Activity} label="Average engagement" value={`${t.averageEngagement} / 100`} tone={t.averageEngagement >= 70 ? "good" : t.averageEngagement >= 40 ? "warn" : "bad"} />
+            <StatTile icon={TrendingUp} label="Average improvement" value={formatImprovement(t.averageImprovement)} hint="Score after a topic's path vs before" tone={t.averageImprovement === null ? "default" : t.averageImprovement > 2 ? "good" : "warn"} />
+            <StatTile icon={Moon} label="Inactive" value={String(t.inactive)} hint="No study in the last 7 days" tone={t.inactive ? "bad" : "good"} />
+            <StatTile icon={Zap} label="Time without improvement" value={String(t.effortWithoutGain)} hint="An hour or more, 2 pts or less" tone={t.effortWithoutGain ? "warn" : "good"} />
           </section>
 
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Card title="Usage trend" subtitle="Study time, and how many students studied" action={<span className="print:hidden"><TrendToggle value={trend} onChange={setTrend} /></span>}>
-              <TrendChart trend={data.trend} granularity={data.granularity} showStudents />
-            </Card>
-            <Card title="Time against improvement" subtitle="Each dot is a student whose improvement has been measured. Lots of time with little improvement (bottom right) needs help.">
-              {scatter.length ? (
-                <div className="h-56 w-full" aria-label="Time against improvement chart">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ScatterChart margin={{ top: 4, right: 12, bottom: 4, left: -12 }}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                      <XAxis type="number" dataKey="minutes" name="Study time" unit=" min" tick={{ fontSize: 11 }} />
-                      <YAxis type="number" dataKey="improvement" name="Improvement" unit=" pts" tick={{ fontSize: 11 }} />
-                      <ZAxis range={[60, 60]} />
-                      <ReferenceLine y={0} className="stroke-muted-foreground" />
-                      <Tooltip cursor={{ strokeDasharray: "3 3" }} contentStyle={{ fontSize: 12, borderRadius: 12 }}
-                        formatter={(v: number, n: string) => (n === "Study time" ? [formatDuration(v * 60), n] : [formatImprovement(v), n])}
-                        labelFormatter={() => ""} />
-                      <Scatter data={scatter.filter((s) => !s.flagged)} fill="hsl(var(--primary))" />
-                      <Scatter data={scatter.filter((s) => s.flagged)} fill="#f43f5e" />
-                    </ScatterChart>
-                  </ResponsiveContainer>
-                </div>
-              ) : (
-                <p className="py-10 text-center text-sm text-muted-foreground">No student has finished a topic's assessment yet, so improvement has not been measured.</p>
-              )}
-            </Card>
-          </div>
+          <Card title="Usage trend" subtitle="Study time, and how many students studied" action={<span className="print:hidden"><TrendToggle value={trend} onChange={setTrend} /></span>}>
+            <TrendChart trend={data.trend} granularity={data.granularity} showStudents />
+          </Card>
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <Card title="Time against improvement" subtitle="Each dot is a student whose improvement has been measured. Dots in the shaded corner studied a lot and gained little.">
+            {scatter.length ? (
+              <TimeVsGainChart points={scatter} />
+            ) : (
+              <p className="py-10 text-center text-sm text-muted-foreground">No student has finished a topic's assessment yet, so improvement has not been measured.</p>
+            )}
+          </Card>
+
+          <div className="grid gap-4 md:grid-cols-2 md:items-start">
             <Card title={`Inactive (${data.lists.inactive.length})`} subtitle="No study in the last 7 days">
               <StudentList items={data.lists.inactive} studentHref={studentHref} empty="Everyone has studied this week." detail={lastSeen} />
             </Card>
@@ -184,22 +167,7 @@ export default function StudyPlannerOverview({ studentHref, embedded = false }: 
               <StudentList items={data.lists.effortWithoutGain} studentHref={studentHref} empty="No one is stuck right now." detail={timeAndGain} />
             </Card>
             <Card title="Most common weak topics" subtitle="Students weak or at risk in each">
-              {data.weakTopics.length ? (
-                <ul className="max-h-64 space-y-1 overflow-y-auto pr-1">
-                  {data.weakTopics.map((w) => (
-                    <li key={`${w.subjectName}-${w.name}`} className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm">
-                      <span className="min-w-0">
-                        <span className="block truncate font-medium text-foreground">{w.name}</span>
-                        <span className="block truncate text-[11px] text-muted-foreground">{w.subjectName ?? "—"}</span>
-                      </span>
-                      <span className="shrink-0 text-right text-[11px]">
-                        <span className="font-semibold text-rose-600">{w.weakStudents} weak</span>
-                        {w.atRiskStudents > 0 && <span className="text-amber-600"> · {w.atRiskStudents} at risk</span>}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : <p className="text-xs text-muted-foreground">No weak topics found.</p>}
+              <WeakTopicBars items={data.weakTopics} />
             </Card>
           </div>
         </TabsContent>
@@ -224,8 +192,8 @@ export default function StudyPlannerOverview({ studentHref, embedded = false }: 
             <div className="overflow-x-auto">
               <table className="w-full min-w-[760px] text-sm">
                 <thead>
-                  <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                    <th className="py-2 pr-3 font-medium">Student</th>
+                  <tr className="border-b border-border bg-muted/40 text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+                    <th className="py-2 pl-2 pr-3 font-medium">Student</th>
                     <th className="py-2 pr-3 font-medium">Class</th>
                     <th className="py-2 pr-3 font-medium">Study time</th>
                     <th className="py-2 pr-3 font-medium">Active days</th>
@@ -239,8 +207,13 @@ export default function StudyPlannerOverview({ studentHref, embedded = false }: 
                   {pagedRows.map((s) => (
                     <tr key={s.studentId} className="border-b border-border/60 last:border-0 hover:bg-muted/50">
                       <td className="py-2 pr-3">
-                        <Link to={studentHref(s.userId)} className="font-medium text-primary hover:underline">{s.name}</Link>
-                        {s.rollNo && <span className="ml-1 text-[11px] text-muted-foreground">#{s.rollNo}</span>}
+                        <div className="flex items-center gap-2.5">
+                          <InitialAvatar name={s.name} />
+                          <span className="min-w-0">
+                            <Link to={studentHref(s.userId)} className="font-medium text-primary hover:underline">{s.name}</Link>
+                            {s.rollNo && <span className="ml-1 text-[11px] text-muted-foreground">#{s.rollNo}</span>}
+                          </span>
+                        </div>
                       </td>
                       <td className="py-2 pr-3 text-muted-foreground">{classLabel(s)}</td>
                       <td className="py-2 pr-3">{formatDuration(s.seconds)}</td>

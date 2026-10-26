@@ -74,12 +74,15 @@ const ScheduleTimeline = ({ classes }: { classes: any[] }) => {
     );
   }
   return (
-    <div className="relative pl-6 space-y-8">
-      <div className="absolute left-1 top-2 bottom-2 w-0.5 rounded-full bg-gradient-to-b from-blue-300 via-indigo-200 to-transparent" />
+    <div className="relative space-y-6">
       {classes.map((item, i) => (
-        <div className="relative rounded-xl transition-colors hover:bg-slate-50/80 -ml-2 pl-2 py-1 -my-1" key={item.id || i}>
+        <div className="relative rounded-xl py-1 pl-8 pr-2 transition-colors hover:bg-slate-50/80" key={item.id || i}>
+          {/* The line is drawn per item, from this dot down to the next one, so it never overshoots the last dot. */}
+          {i < classes.length - 1 && (
+            <span className="absolute -bottom-[33px] left-[5px] top-[21px] w-0.5 rounded-full bg-blue-200" aria-hidden="true" />
+          )}
           <div
-            className="absolute -left-[27px] top-1 size-3 rounded-full ring-4 ring-white shadow-md"
+            className="absolute left-0 top-[9px] z-10 size-3 rounded-full shadow-md ring-4 ring-white"
             style={{ background: i === 0 ? '#10B981' : '#3B82F6' }}
           />
           <div className="flex justify-between items-start">
