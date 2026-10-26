@@ -125,15 +125,27 @@ function overdueSince(dueDateStr) {
   return `${Math.floor(days / 365)}y overdue`;
 }
 
+// ─── Colour tones shared by the KPI cards and section headings ───────────────
+const TONES = {
+  blue:    { card: 'from-[#EEF4FF] to-white border-blue-100 dark:from-blue-950/30 dark:to-slate-900 dark:border-blue-900/40', tile: 'from-[#013889] to-blue-500 shadow-blue-600/30', blob: 'bg-blue-400/10' },
+  emerald: { card: 'from-emerald-50 to-white border-emerald-100 dark:from-emerald-950/30 dark:to-slate-900 dark:border-emerald-900/40', tile: 'from-emerald-500 to-teal-600 shadow-emerald-500/30', blob: 'bg-emerald-400/10' },
+  violet:  { card: 'from-violet-50 to-white border-violet-100 dark:from-violet-950/30 dark:to-slate-900 dark:border-violet-900/40', tile: 'from-violet-500 to-purple-600 shadow-violet-500/30', blob: 'bg-violet-400/10' },
+  amber:   { card: 'from-amber-50 to-white border-amber-100 dark:from-amber-950/30 dark:to-slate-900 dark:border-amber-900/40', tile: 'from-amber-400 to-orange-500 shadow-amber-500/30', blob: 'bg-amber-400/10' },
+  rose:    { card: 'from-rose-50 to-white border-rose-100 dark:from-rose-950/30 dark:to-slate-900 dark:border-rose-900/40', tile: 'from-rose-500 to-red-500 shadow-rose-500/30', blob: 'bg-rose-400/10' },
+  indigo:  { card: 'from-indigo-50 to-white border-indigo-100 dark:from-indigo-950/30 dark:to-slate-900 dark:border-indigo-900/40', tile: 'from-indigo-500 to-blue-600 shadow-indigo-500/30', blob: 'bg-indigo-400/10' },
+};
+
 // ─── A. Summary KPI card ────────────────────────────────────────────────────
-function KpiCard({ title, value, sub, subTone, icon: Icon, iconBg, iconColor }) {
+function KpiCard({ title, value, sub, subTone, icon: Icon, tone = 'blue' }) {
+  const t = TONES[tone] || TONES.blue;
   return (
-    <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm rounded-2xl p-5 flex items-center justify-between font-semibold hover:shadow-md transition-shadow">
-      <div className="flex flex-col min-w-0 flex-1 pr-2">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 truncate">
+    <Card className={cn('group relative overflow-hidden bg-gradient-to-br border shadow-lg shadow-slate-200/60 dark:shadow-none rounded-2xl p-5 flex items-center justify-between font-semibold transition-all duration-300 hover:-translate-y-1 hover:shadow-xl', t.card)}>
+      <div className={cn('pointer-events-none absolute -bottom-8 -right-8 size-28 rounded-full transition-transform duration-500 group-hover:scale-125', t.blob)} />
+      <div className="relative flex flex-col min-w-0 flex-1 pr-2">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">
           {title}
         </p>
-        <p className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight mt-1">
+        <p className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight mt-1">
           {value}
         </p>
         {sub && (
@@ -142,23 +154,24 @@ function KpiCard({ title, value, sub, subTone, icon: Icon, iconBg, iconColor }) 
           </p>
         )}
       </div>
-      <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs', iconBg)}>
-        <Icon className={cn('w-6 h-6', iconColor)} />
+      <div className={cn('relative w-14 h-14 rounded-2xl bg-gradient-to-br flex items-center justify-center shrink-0 shadow-lg transition-transform duration-300 group-hover:scale-110', t.tile)}>
+        <Icon className="w-6 h-6 text-white" />
       </div>
     </Card>
   );
 }
 
 // ─── Shared section header (icon badge + title + description) ─────────────
-function SectionHeading({ icon: Icon, title, description, iconBg, iconColor, action }) {
+function SectionHeading({ icon: Icon, title, description, tone = 'blue', action }) {
+  const t = TONES[tone] || TONES.blue;
   return (
     <div className="flex items-center justify-between gap-3 mb-1">
       <div className="flex items-center gap-3 min-w-0">
-        <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center shrink-0', iconBg)}>
-          <Icon className={cn('w-4.5 h-4.5', iconColor)} />
+        <div className={cn('w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center shrink-0 shadow-lg', t.tile)}>
+          <Icon className="w-5 h-5 text-white" />
         </div>
         <div className="min-w-0">
-          <h2 className="text-sm font-bold text-slate-900 dark:text-white truncate">{title}</h2>
+          <h2 className="text-sm font-extrabold text-slate-900 dark:text-white truncate">{title}</h2>
           {description && <p className="text-xs font-semibold text-slate-400 truncate">{description}</p>}
         </div>
       </div>
@@ -256,14 +269,19 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
 
       {/* ── Top Hero Section ── */}
       <div className="w-full px-4 md:px-6 pt-4 sm:pt-6 mb-6">
-        <Card className="relative w-full overflow-hidden rounded-[2rem] p-6 sm:p-8 lg:p-9 flex flex-col justify-between min-h-[200px] sm:min-h-[230px] shadow-sm border border-white/80 dark:border-slate-800 bg-white dark:bg-slate-900">
+        <Card className="relative w-full overflow-hidden rounded-[2rem] p-6 sm:p-8 lg:p-9 flex flex-col justify-between min-h-[200px] sm:min-h-[230px] shadow-xl shadow-blue-900/10 border border-white/80 dark:border-slate-800 bg-white dark:bg-slate-900">
           <div className="absolute inset-0 z-0">
             <img src={adminBanner} alt="Admin Banner" className="size-full object-cover object-[center_35%]" />
           </div>
+          <div className="pointer-events-none absolute -left-16 -top-16 z-[1] size-64 rounded-full bg-blue-400/20 blur-3xl" />
           <div className="relative z-10 flex flex-col justify-between size-full py-1">
             <div className="flex flex-col items-start gap-1.5 min-w-0 w-full md:max-w-[70%]">
-              <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight text-slate-900 leading-snug">
-                Welcome, {institute?.name || 'Eddva School'}!
+              <span className="mb-1 inline-flex w-fit items-center gap-2 rounded-full bg-white/85 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-blue-700 shadow-sm ring-1 ring-blue-100 backdrop-blur">
+                <span className="size-1.5 animate-pulse rounded-full bg-blue-500" />
+                {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
+              </span>
+              <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-900 leading-snug">
+                Welcome, <span className="bg-gradient-to-r from-[#013889] to-blue-500 bg-clip-text text-transparent">{institute?.name || 'Eddva School'}</span>!
               </h1>
               <p className="text-xs sm:text-sm md:text-base text-slate-700 font-semibold mt-1 max-w-[500px] leading-relaxed">
                 Empowering education through AI intelligence and seamless administration.
@@ -296,8 +314,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
             sub={`${formatNumber(animTeachers)} teachers on roll`}
             subTone="text-slate-500 dark:text-slate-400"
             icon={GraduationCap}
-            iconBg="bg-[#013889]/10"
-            iconColor="text-[#013889]"
+            tone="blue"
           />
           <KpiCard
             title="Attendance"
@@ -305,8 +322,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
             sub={`${presentToday} / ${students} present ${attendanceDayLabel.toLowerCase()}`}
             subTone="text-emerald-600 dark:text-emerald-400"
             icon={ClipboardList}
-            iconBg="bg-emerald-50 dark:bg-emerald-950/40"
-            iconColor="text-emerald-600"
+            tone="emerald"
           />
           <KpiCard
             title="Avg. Score"
@@ -314,8 +330,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
             sub={avgScore != null ? 'Latest month, all classes' : 'No assessments graded yet'}
             subTone="text-slate-500 dark:text-slate-400"
             icon={Award}
-            iconBg="bg-violet-50 dark:bg-violet-950/40"
-            iconColor="text-violet-600"
+            tone="violet"
           />
           <KpiCard
             title="Pending Fees"
@@ -323,8 +338,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
             sub={Number(stats?.feesOverdue) > 0 ? `incl. ${formatINR(stats?.feesOverdue)} overdue` : 'Nothing overdue'}
             subTone={Number(stats?.feesOverdue) > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}
             icon={IndianRupee}
-            iconBg="bg-amber-50 dark:bg-amber-950/40"
-            iconColor="text-amber-600"
+            tone="amber"
           />
         </div>
       </div>
@@ -333,11 +347,14 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
       <div className="px-4 md:px-6 grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
 
         {/* Attendance Trends */}
-        <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm rounded-2xl p-5 sm:p-6 font-semibold">
+        <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-lg shadow-slate-200/60 dark:shadow-none ring-1 ring-slate-100 dark:ring-0 rounded-2xl p-5 sm:p-6 font-semibold">
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <CardTitle className="text-base font-bold text-slate-900 dark:text-white">Attendance Trends</CardTitle>
-              <CardDescription className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">Students vs teachers, daily</CardDescription>
+            <div className="flex items-center gap-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/30"><ClipboardList className="size-5" /></span>
+              <div>
+                <CardTitle className="text-base font-extrabold text-slate-900 dark:text-white">Attendance Trends</CardTitle>
+                <CardDescription className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">Students vs teachers, daily</CardDescription>
+              </div>
             </div>
             <Badge variant="secondary" className="bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 font-semibold text-xs px-2.5 py-1 gap-1 rounded-full">
               <TrendingUp className="w-3.5 h-3.5" />
@@ -382,11 +399,14 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
         </Card>
 
         {/* Academic Performance */}
-        <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm rounded-2xl p-5 sm:p-6 font-semibold">
+        <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-lg shadow-slate-200/60 dark:shadow-none ring-1 ring-slate-100 dark:ring-0 rounded-2xl p-5 sm:p-6 font-semibold">
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <CardTitle className="text-base font-bold text-slate-900 dark:text-white">Academic Performance</CardTitle>
-              <CardDescription className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">Avg. scores vs attendance, monthly</CardDescription>
+            <div className="flex items-center gap-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/30"><Award className="size-5" /></span>
+              <div>
+                <CardTitle className="text-base font-extrabold text-slate-900 dark:text-white">Academic Performance</CardTitle>
+                <CardDescription className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">Avg. scores vs attendance, monthly</CardDescription>
+              </div>
             </div>
             <Badge variant="secondary" className="bg-blue-50 text-[#013889] dark:bg-blue-950/40 dark:text-blue-300 font-semibold text-xs px-2.5 py-1 gap-1 rounded-full">
               <TrendingUp className="w-3.5 h-3.5" />
@@ -446,11 +466,10 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
       <div className="px-4 md:px-6 grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
 
         {/* Attention Required — compact rows: severity, name, metric, action */}
-        <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm rounded-2xl p-5 font-semibold">
+        <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-lg shadow-slate-200/60 dark:shadow-none ring-1 ring-slate-100 dark:ring-0 rounded-2xl p-5 font-semibold">
           <SectionHeading
             icon={AlertCircle}
-            iconBg="bg-rose-50 dark:bg-rose-950/40"
-            iconColor="text-rose-500"
+            tone="rose"
             title="Attention Required"
             description="Low attendance, low scores, missing work"
             action={
@@ -467,7 +486,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
                   <button
                     type="button"
                     onClick={() => navigate(fl.actionUrl || '/school/admin/students')}
-                    className="w-full text-left flex items-start gap-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 px-3 py-2.5 transition-colors"
+                    className="w-full text-left flex items-start gap-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 ring-1 ring-slate-100 dark:ring-0 hover:bg-white hover:ring-rose-200 hover:-translate-y-0.5 dark:hover:bg-slate-800 px-3 py-3 transition-all duration-300"
                   >
                     <span className={cn('mt-1.5 size-2 shrink-0 rounded-full', String(fl.priority).toUpperCase() === 'HIGH' ? 'bg-rose-500' : 'bg-amber-400')} />
                     <span className="min-w-0">
@@ -487,11 +506,10 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
         </Card>
 
         {/* Fee Follow-ups — total overdue, account count, reminders, direct action */}
-        <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm rounded-2xl p-5 font-semibold flex flex-col">
+        <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-lg shadow-slate-200/60 dark:shadow-none ring-1 ring-slate-100 dark:ring-0 rounded-2xl p-5 font-semibold flex flex-col">
           <SectionHeading
             icon={IndianRupee}
-            iconBg="bg-amber-50 dark:bg-amber-950/40"
-            iconColor="text-amber-600"
+            tone="amber"
             title="Fee Follow-ups"
             description="Overdue payments needing contact"
             action={
@@ -546,11 +564,10 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
       <div className="px-4 md:px-6 grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
 
         {/* Attendance Summary (donut) + Attendance by Role */}
-        <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm rounded-2xl p-5 font-semibold">
+        <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-lg shadow-slate-200/60 dark:shadow-none ring-1 ring-slate-100 dark:ring-0 rounded-2xl p-5 font-semibold">
           <SectionHeading
             icon={Users}
-            iconBg="bg-blue-50 dark:bg-blue-950/40"
-            iconColor="text-[#013889]"
+            tone="blue"
             title="Attendance Summary"
             description={`${attendanceDayLabel} · all students`}
           />
@@ -599,11 +616,10 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
         </Card>
 
         {/* Recent Activity */}
-        <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm rounded-2xl p-5 font-semibold flex flex-col">
+        <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-lg shadow-slate-200/60 dark:shadow-none ring-1 ring-slate-100 dark:ring-0 rounded-2xl p-5 font-semibold flex flex-col">
           <SectionHeading
             icon={Bell}
-            iconBg="bg-blue-50 dark:bg-blue-950/40"
-            iconColor="text-[#013889]"
+            tone="indigo"
             title="Recent Activity"
             description="Admissions, attendance, fees, results"
             action={
@@ -631,20 +647,20 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
       {/* ── Calendar & Notices ── */}
       <div className="px-4 md:px-6 grid grid-cols-1 lg:grid-cols-12 gap-5 mb-6">
         <div className="lg:col-span-7 flex">
-          <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm rounded-2xl p-5 sm:p-6 w-full font-semibold">
+          <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-lg shadow-slate-200/60 dark:shadow-none ring-1 ring-slate-100 dark:ring-0 rounded-2xl p-5 sm:p-6 w-full font-semibold">
             <SmartCalendar />
           </Card>
         </div>
 
         <div className="lg:col-span-5 flex">
-          <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm rounded-2xl p-5 sm:p-6 w-full flex flex-col justify-between font-semibold">
+          <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-lg shadow-slate-200/60 dark:shadow-none ring-1 ring-slate-100 dark:ring-0 rounded-2xl p-5 sm:p-6 w-full flex flex-col justify-between font-semibold">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <CardTitle className="text-base font-bold text-slate-900 dark:text-white uppercase tracking-wider">Notices</CardTitle>
                   <CardDescription className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">Recent announcements</CardDescription>
                 </div>
-                <MessageSquare className="w-5 h-5" style={{ color: EDDVA_BLUE }} />
+                <span className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#013889] to-blue-500 text-white shadow-lg shadow-blue-600/30"><MessageSquare className="w-5 h-5" /></span>
               </div>
 
               <div className="space-y-3">
@@ -656,10 +672,10 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
                   <div
                     key={idx}
                     onClick={() => navigate('/school/admin/notices')}
-                    className="p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-slate-100/60 cursor-pointer transition-colors flex items-start gap-3"
+                    className="p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 hover:bg-white hover:border-blue-200 hover:-translate-y-0.5 cursor-pointer transition-all duration-300 flex items-start gap-3"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center shrink-0 mt-0.5">
-                      <Megaphone className="w-4 h-4" style={{ color: EDDVA_BLUE }} />
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#013889] to-blue-500 flex items-center justify-center shrink-0 mt-0.5 shadow-md shadow-blue-600/25">
+                      <Megaphone className="w-4 h-4 text-white" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{n.title}</p>
@@ -684,7 +700,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
       {/* ── Fee Overview, Star Students, Support & Security ── */}
       <div className="px-4 md:px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
 
-        <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm rounded-2xl p-5 flex flex-col justify-between font-semibold">
+        <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-lg shadow-slate-200/60 dark:shadow-none ring-1 ring-slate-100 dark:ring-0 rounded-2xl p-5 flex flex-col justify-between font-semibold">
           <div>
             <div className="flex items-center justify-between mb-4">
               <CardTitle className="text-sm font-bold text-slate-900 dark:text-white">Fee Overview</CardTitle>
@@ -719,21 +735,20 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
 
           <Button
             onClick={() => navigate('/school/admin/erp')}
-            className="w-full text-white font-semibold text-xs py-2.5 rounded-xl shadow-sm mt-4"
-            style={{ backgroundColor: EDDVA_BLUE }}
+            className="w-full bg-gradient-to-r from-[#013889] to-blue-600 text-white font-bold text-xs py-2.5 rounded-xl shadow-lg shadow-blue-600/25 hover:brightness-110 transition-all mt-4"
           >
             View Fees Report
           </Button>
         </Card>
 
-        <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm rounded-2xl p-5 flex flex-col justify-between font-semibold">
+        <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-lg shadow-slate-200/60 dark:shadow-none ring-1 ring-slate-100 dark:ring-0 rounded-2xl p-5 flex flex-col justify-between font-semibold">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <CardTitle className="text-sm font-bold text-slate-900 dark:text-white">Star Students</CardTitle>
                 <CardDescription className="text-[10px] font-semibold text-slate-400 mt-0.5">Top XP earners this term</CardDescription>
               </div>
-              <Trophy className="w-5 h-5 text-amber-500" />
+              <span className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-500/30"><Trophy className="w-5 h-5" /></span>
             </div>
 
             {(stats?.topStudents || []).length > 0 ? (
@@ -741,10 +756,10 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
                 {stats.topStudents.slice(0, 5).map((st, i) => (
                   <li key={st.userId || i} className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 px-3 py-2">
                     <span className="min-w-0">
-                      <span className="block truncate text-xs text-slate-900 dark:text-white">{i + 1}. {st.name}</span>
+                      <span className="block truncate text-xs text-slate-900 dark:text-white"><span className={cn("mr-1.5 inline-flex size-5 items-center justify-center rounded-full text-[10px] font-black", i === 0 ? "bg-amber-400 text-white" : i === 1 ? "bg-slate-300 text-slate-700" : i === 2 ? "bg-orange-300 text-orange-900" : "bg-slate-100 text-slate-500")}>{i + 1}</span>{st.name}</span>
                       {st.className && <span className="block text-[10px] text-slate-400">{st.className}{st.sectionName ? ` · ${st.sectionName}` : ''}</span>}
                     </span>
-                    <span className="text-xs text-amber-600">{st.xp} XP</span>
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">{st.xp} XP</span>
                   </li>
                 ))}
               </ul>
@@ -756,14 +771,14 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
           </div>
         </Card>
 
-        <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm rounded-2xl p-5 flex flex-col justify-between font-semibold">
+        <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-lg shadow-slate-200/60 dark:shadow-none ring-1 ring-slate-100 dark:ring-0 rounded-2xl p-5 flex flex-col justify-between font-semibold">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">Support & Security</CardTitle>
                 <CardDescription className="text-[10px] font-semibold text-slate-400 mt-0.5">Assigned and open tickets</CardDescription>
               </div>
-              <Ticket className="w-5 h-5 text-amber-500" />
+              <span className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 text-white shadow-lg shadow-rose-500/30"><Ticket className="w-5 h-5" /></span>
             </div>
 
             <div className="space-y-2">
