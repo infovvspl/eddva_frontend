@@ -64,7 +64,9 @@ describe("study planner overview", () => {
     wrap(<StudyPlannerOverview embedded studentHref={(id) => `/school/teacher/reports/student/${id}?tab=study-planner`} />);
     expect(await screen.findByRole("heading", { name: "AI Study Planner" })).toBeInTheDocument();
     expect(screen.getByText("Your students and subjects.", { exact: false })).toBeInTheDocument();
-    expect(screen.getByText("2h 30m")).toBeInTheDocument(); // total study time
+    // Asha improved (+12), Meera didn't (-3), Ravi isn't measured yet (null).
+    expect(screen.getByText("Students improved").closest("div")).toHaveTextContent("1");
+    expect(screen.getByText("Students not improved").closest("div")).toHaveTextContent("1");
     expect(screen.getByText("Inactive (1)")).toBeInTheDocument();
     expect(screen.getByText("Time without improvement (1)")).toBeInTheDocument();
     expect(screen.getByText("Magnetic field lines")).toBeInTheDocument();

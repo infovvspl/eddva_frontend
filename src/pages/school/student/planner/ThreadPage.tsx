@@ -31,7 +31,7 @@ export default function ThreadPage() {
   const { threadId = "" } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const navState = (location.state ?? {}) as { focusSubtopic?: string | null; draft?: string };
+  const navState = (location.state ?? {}) as { draft?: string };
   const query = useLearningThread(threadId);
   const openStep = useOpenStep(threadId);
   const progress = useStepProgress(threadId);
@@ -44,7 +44,6 @@ export default function ThreadPage() {
   /** The AI answer that just arrived, written out word by word. */
   const [streamingId, setStreamingId] = useState<string | null>(null);
   const [videoPlaying, setVideoPlaying] = useState(false);
-  const [focusSubtopic, setFocusSubtopic] = useState<string | null>(navState.focusSubtopic ?? null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const workspaceScrollRef = useRef<HTMLDivElement>(null);
   const draftSent = useRef(false);
@@ -84,14 +83,6 @@ export default function ThreadPage() {
     },
     [openStep],
   );
-
-  // Opened from a subtopic on a mind map: the path is shown first (the student picks the step);
-  // the notes highlight that subtopic when opened. The history entry forgets it, so coming back
-  // to this page later does not bring it back.
-  useEffect(() => {
-    if (navState.focusSubtopic && !navState.draft) navigate(location.pathname, { replace: true, state: {} });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // A question typed on the home screen is sent once the general chat is open.
   useEffect(() => {
@@ -192,6 +183,15 @@ export default function ThreadPage() {
       },
     );
 
+  const openSubtopic = (subtopicId: string) =>
+    openThread.mutate(
+      { subtopicId },
+      {
+        onSuccess: (v) => navigate(`/school/student/planner/t/${v.thread.id}`),
+        onError: (err) => toast.error(apiErrorMessage(err)),
+      },
+    );
+
   if (query.isLoading) {
     return <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" /> Opening your chat…</div>;
   }
@@ -205,7 +205,7 @@ export default function ThreadPage() {
     );
   }
 
-  const title = isGeneral ? "AI Tutor" : thread.topicName ?? "Topic";
+  const title = isGeneral ? "AI Tutor" : thread.subtopicName ?? thread.topicName ?? "Topic";
   const composerLocked = assessmentInProgress;
 
   return (
@@ -256,7 +256,7 @@ export default function ThreadPage() {
 
           {workspace ? (
             <div ref={workspaceScrollRef} className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
-              <button type="button" onClick={() => { setWorkspace(null); setFocusSubtopic(null); }}
+              <button type="button" onClick={() => setWorkspace(null)}
                 className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
                 <ArrowLeft className="size-4" /> Back to chat
               </button>
@@ -269,7 +269,7 @@ export default function ThreadPage() {
                 <VideosStep videos={workspace.result.videos} watched={workspace.result.watched}
                   onWatched={(id) => markWatched(workspace.stepId, id)} onSkip={() => skipVideos(workspace.stepId)} onPlayingChange={setVideoPlaying} />
               ) : workspace.result.kind === "notes" ? (
-                <AiNotesPanel notes={workspace.result.notes} onAsk={askFromNotes} onSave={saveNotes} scrollRef={workspaceScrollRef} focusSubtopic={focusSubtopic}
+                <AiNotesPanel notes={workspace.result.notes} onAsk={askFromNotes} onSave={saveNotes} scrollRef={workspaceScrollRef}
                   footer={
                     (() => {
                       const step = steps.find((s) => s.id === workspace.stepId);
@@ -305,7 +305,7 @@ export default function ThreadPage() {
                 <p className="mx-auto mt-10 max-w-sm text-center text-sm text-muted-foreground">Ask any study question. This chat is saved, so you can come back to it.</p>
               )}
               <MessageList threadId={threadId} messages={messages} topicName={thread.topicName}
-                streamingId={streamingId} onStreamGrow={keepNewestInView} onStreamDone={() => setStreamingId(null)} onOpenStep={(id) => { const s = steps.find((x) => x.id === id); if (s) showStep(s); }} onOpenTopic={openTopic} />
+                streamingId={streamingId} onStreamGrow={keepNewestInView} onStreamDone={() => setStreamingId(null)} onOpenStep={(id) => { const s = steps.find((x) => x.id === id); if (s) showStep(s); }} onOpenTopic={openTopic} onOpenSubtopic={openSubtopic} />
               {pending && (
                 <div className="mt-3 space-y-3">
                   <div className="flex justify-end"><p className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-primary/70 px-4 py-3 text-sm text-primary-foreground">{pending}</p></div>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, AlertTriangle, ArrowDownUp, Clock, LayoutDashboard, Loader2, Moon, Printer, Search, TrendingUp, Users, Zap } from "lucide-react";
+import { Activity, AlertTriangle, ArrowDownUp, LayoutDashboard, Loader2, Moon, Printer, Search, TrendingUp, Users, Zap } from "lucide-react";
 import { learningReportsApi, type ReportPeriod, type ReportStudentRow, type TrendGranularity } from "@/lib/api/learning-reports";
 import { apiErrorMessage } from "@/lib/api/learning-path";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -87,6 +87,17 @@ export default function StudyPlannerOverview({ studentHref, embedded = false }: 
   const scatter = data.students
     .filter((s) => s.improvement !== null && s.seconds > 0)
     .map((s) => ({ name: s.name, minutes: Math.round(s.seconds / 60), improvement: s.improvement as number, flagged: s.effortWithoutGain }));
+  // Same ">2 pts" line this report already draws elsewhere (StudentStudyReport's tone), so
+  // "improved" here means the same thing a student's own page calls a good result.
+  const improvement = data.students.reduce(
+    (acc, s) => {
+      if (s.improvement === null) acc.notMeasured++;
+      else if (s.improvement > 2) acc.improved++;
+      else acc.notImproved++;
+      return acc;
+    },
+    { improved: 0, notImproved: 0, notMeasured: 0 },
+  );
 
   return (
     <div className={cn("space-y-4", !embedded && "p-4 sm:p-6")}>
@@ -137,11 +148,11 @@ export default function StudyPlannerOverview({ studentHref, embedded = false }: 
         <TabsContent value="overview" className="space-y-4">
           <section className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6" aria-label="Summary">
             <StatTile icon={Users} label="Students" value={String(t.students)} hint={`${t.activeStudents} studied in this period`} />
-            <StatTile icon={Clock} label="Total study time" value={formatDuration(t.seconds)} hint={`${formatDuration(t.averageSecondsPerActiveStudent)} per active student`} />
+            <StatTile icon={TrendingUp} label="Students improved" value={String(improvement.improved)} hint={`> 2 pts gain${improvement.notMeasured ? ` · ${improvement.notMeasured} not yet measured` : ""}`} tone="good" />
+            <StatTile icon={Zap} label="Students not improved" value={String(improvement.notImproved)} hint="2 pts or less gain" tone={improvement.notImproved ? "warn" : "good"} />
             <StatTile icon={Activity} label="Average engagement" value={`${t.averageEngagement} / 100`} tone={t.averageEngagement >= 70 ? "good" : t.averageEngagement >= 40 ? "warn" : "bad"} />
             <StatTile icon={TrendingUp} label="Average improvement" value={formatImprovement(t.averageImprovement)} hint="Score after a topic's path vs before" tone={t.averageImprovement === null ? "default" : t.averageImprovement > 2 ? "good" : "warn"} />
             <StatTile icon={Moon} label="Inactive" value={String(t.inactive)} hint="No study in the last 7 days" tone={t.inactive ? "bad" : "good"} />
-            <StatTile icon={Zap} label="Time without improvement" value={String(t.effortWithoutGain)} hint="An hour or more, 2 pts or less" tone={t.effortWithoutGain ? "warn" : "good"} />
           </section>
 
           <Card title="Usage trend" subtitle="Study time, and how many students studied" action={<span className="print:hidden"><TrendToggle value={trend} onChange={setTrend} /></span>}>

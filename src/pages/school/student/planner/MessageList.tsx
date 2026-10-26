@@ -18,6 +18,7 @@ interface MessageListProps {
   topicName: string | null;
   onOpenStep: (stepId: string) => void;
   onOpenTopic: (topicId: string) => void;
+  onOpenSubtopic: (subtopicId: string) => void;
 }
 
 
@@ -66,7 +67,7 @@ function ActionCard({ icon: Icon, title, body, action, onAction, tone = "default
 }
 
 /** One chat's history: the student's questions, the AI's answers, and the path's cards. */
-export function MessageList({ threadId, messages, topicName, onOpenStep, onOpenTopic, streamingId, onStreamGrow, onStreamDone }: MessageListProps) {
+export function MessageList({ threadId, messages, topicName, onOpenStep, onOpenTopic, onOpenSubtopic, streamingId, onStreamGrow, onStreamDone }: MessageListProps) {
   return (
     <div className="space-y-3">
       {messages.map((m) => {
@@ -125,9 +126,9 @@ export function MessageList({ threadId, messages, topicName, onOpenStep, onOpenT
             );
           case "prerequisite_suggestion":
             return (
-              <ActionCard key={m.id} icon={Sparkles} title={`Try "${c.topicName}" first`}
+              <ActionCard key={m.id} icon={Sparkles} title={`Try "${c.subtopicName ?? c.topicName}" first`}
                 body="This earlier topic is likely the gap. Its chat is ready in your list."
-                action="Open it" onAction={() => onOpenTopic(c.topicId)} />
+                action="Open it" onAction={() => (c.subtopicId ? onOpenSubtopic(c.subtopicId) : onOpenTopic(c.topicId))} />
             );
           case "path_complete": {
             const gain = c.baselineMastery !== null && c.baselineMastery !== undefined ? Math.round(c.latestMastery - c.baselineMastery) : null;

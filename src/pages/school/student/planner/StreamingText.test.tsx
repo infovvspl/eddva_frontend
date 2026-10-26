@@ -70,13 +70,13 @@ describe("MessageList while an answer is being written", () => {
   it("writes out only the new answer, and shows its quiz once it has finished", () => {
     const quiz = { questions: [{ question: "Which pole?", options: ["North", "South"], answerIndex: 0, explanation: "" }] };
     const { rerender } = render(
-      <MessageList threadId="th1" topicName="X" onOpenStep={vi.fn()} onOpenTopic={vi.fn()} streamingId="new"
+      <MessageList threadId="th1" topicName="X" onOpenStep={vi.fn()} onOpenTopic={vi.fn()} onOpenSubtopic={vi.fn()} streamingId="new"
         messages={[msg("old", { text: "An earlier answer." }), msg("new", { text: ANSWER, quiz })]} />,
     );
     expect(screen.getByText("An earlier answer.")).toBeInTheDocument(); // older messages appear at once
     expect(screen.queryByText("Which pole?")).not.toBeInTheDocument(); // the quiz waits for the intro
     rerender(
-      <MessageList threadId="th1" topicName="X" onOpenStep={vi.fn()} onOpenTopic={vi.fn()} streamingId={null}
+      <MessageList threadId="th1" topicName="X" onOpenStep={vi.fn()} onOpenTopic={vi.fn()} onOpenSubtopic={vi.fn()} streamingId={null}
         messages={[msg("old", { text: "An earlier answer." }), msg("new", { text: ANSWER, quiz })]} />,
     );
     expect(screen.getByText("Which pole?")).toBeInTheDocument();

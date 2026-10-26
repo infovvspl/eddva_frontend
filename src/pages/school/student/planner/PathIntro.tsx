@@ -4,11 +4,17 @@ import { cn } from "@/lib/utils";
 import { formatPct } from "./status";
 
 /** What the path is for, shown below the curved path: the steps, and the score before starting. */
-export function PathIntro({ thread, className }: { thread: Pick<ThreadSummary, "topicName" | "baselineMastery" | "origin">; className?: string }) {
+export function PathIntro({
+  thread,
+  className,
+}: {
+  thread: Pick<ThreadSummary, "topicName" | "subtopicName" | "baselineMastery" | "origin">;
+  className?: string;
+}) {
   return (
     <section className={cn("rounded-2xl border border-primary/20 bg-primary/5 p-3", className)}>
       <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-        <Route className="size-4 shrink-0 text-primary" /> Your path for {thread.topicName ?? "this topic"}
+        <Route className="size-4 shrink-0 text-primary" /> Your path for {thread.subtopicName ?? thread.topicName ?? "this topic"}
       </p>
       <p className="mt-1 text-xs leading-5 text-muted-foreground">
         Watch the videos, read your AI notes, take the quiz, then the formal assessment. Ask me anything along the way.
