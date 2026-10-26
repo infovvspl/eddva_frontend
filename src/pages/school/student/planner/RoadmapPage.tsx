@@ -23,7 +23,10 @@ export default function RoadmapPage({ kind }: { kind: "chapter" | "topic" }) {
   const { data: home, isLoading, isError, refetch } = useLearningHome();
   const openThread = useOpenThread();
   const [view, setView] = useRoadmapView();
-  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+  // Every topic starts collapsed, same as the home map's subjects; opening one
+  // reveals its subtopics, and closing it again returns the map to that exact
+  // starting layout.
+  const [expandedTopics, setExpandedTopics] = useState<Set<string>>(() => new Set());
   useActivityTracker({ section: "home" });
 
   const found = useMemo(() => {
@@ -37,8 +40,8 @@ export default function RoadmapPage({ kind }: { kind: "chapter" | "topic" }) {
 
   const layout = useMemo(() => {
     if (!found) return null;
-    return found.topic ? layoutTopicMap(found.topic) : layoutChapterMap(found.chapter, collapsed);
-  }, [found, collapsed]);
+    return found.topic ? layoutTopicMap(found.topic) : layoutChapterMap(found.chapter, expandedTopics);
+  }, [found, expandedTopics]);
 
   const title = found ? (found.topic ? found.topic.name : found.chapter.name) : null;
   useSetBreadcrumbLabel(title);
@@ -60,7 +63,7 @@ export default function RoadmapPage({ kind }: { kind: "chapter" | "topic" }) {
     if (a.type === "open-topic") openTopic(a.topicId, a.focusSubtopic);
   }, [openTopic]);
   const toggle = useCallback((id: string) => {
-    setCollapsed((prev) => {
+    setExpandedTopics((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -107,7 +110,7 @@ export default function RoadmapPage({ kind }: { kind: "chapter" | "topic" }) {
   const pending = topic ? topic.roadmapState === "pending" : chapter.roadmapState === "pending";
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto p-4 pt-14 sm:p-6 lg:pt-6">
+    <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden p-4 pt-14 sm:p-6 lg:pt-6">
       <div>{back}</div>
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
@@ -141,13 +144,13 @@ export default function RoadmapPage({ kind }: { kind: "chapter" | "topic" }) {
           <p>The AI is laying out the {topic ? "subtopics" : "topics and subtopics"}. This page updates by itself.</p>
         </div>
       ) : (
-        <section className="flex min-h-[640px] flex-1 flex-col gap-2">
+        <section className="flex min-h-0 flex-1 flex-col gap-2">
           <p className="text-xs text-muted-foreground">
             {topic ? "Open the topic or a subtopic to start its learning path." : "Open a topic or a subtopic to start its learning path."}
           </p>
           {view === "map" ? (
-            <div className="relative flex-1">
-              <MindMapCanvas layout={layout} onActivate={activate} onToggle={topic ? undefined : toggle} />
+            <div className="relative min-h-0 flex-1">
+              <MindMapCanvas layout={layout} onActivate={activate} onToggle={topic ? undefined : toggle} large />
               {openThread.isPending && (
                 <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-background/60 text-sm text-muted-foreground">
                   <Loader2 className="mr-2 size-4 animate-spin" /> Opening your learning path…
@@ -155,7 +158,9 @@ export default function RoadmapPage({ kind }: { kind: "chapter" | "topic" }) {
               )}
             </div>
           ) : (
-            <RoadmapList chapter={topic ? undefined : chapter} topic={topic ?? undefined} onOpenTopic={openTopic} />
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <RoadmapList chapter={topic ? undefined : chapter} topic={topic ?? undefined} onOpenTopic={openTopic} />
+            </div>
           )}
         </section>
       )}

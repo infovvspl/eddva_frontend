@@ -115,26 +115,34 @@ describe("PlannerHome", () => {
     try { localStorage.removeItem("planner-roadmap-view"); } catch { /* ignore */ }
   });
 
-  it("shows what was found weak, the study time, and only the weak chapter and topic headings", async () => {
-    wrap(<PlannerHome />);
+  it("shows what was found weak, the study time, and — once its subject is opened — the weak chapter and topic headings", async () => {
+    const { container } = wrap(<PlannerHome />);
     expect(await screen.findByText("Your learning roadmap")).toBeInTheDocument();
     expect(screen.getByText(/4 assessments, 8 games/)).toBeInTheDocument();
     expect(screen.getByText("2h 05m")).toBeInTheDocument();
     expect(screen.getByText(/3-day streak/)).toBeInTheDocument();
+    // Collapsed by default: the subject shows, its weak chapters/topics do not yet.
+    await screen.findByText("Science");
+    expect(screen.queryByText("Magnetic Effects")).not.toBeInTheDocument();
+    const subjectNode = Array.from(container.querySelectorAll<HTMLElement>(".react-flow__node")).find((n) => n.textContent?.includes("Science"))!;
+    fireEvent.click(subjectNode);
     expect(await screen.findByText("Magnetic Effects")).toBeInTheDocument(); // weak chapter
     expect(screen.getByText("Refraction")).toBeInTheDocument(); // weak topic of a chapter that is fine
     expect(screen.queryByText(/Magnetic field lines/)).not.toBeInTheDocument(); // the chapter's topics wait for its page
     expect(screen.queryByText("Bar magnet field")).not.toBeInTheDocument();
   });
 
-  it("lets the student click a mind-map node to open its roadmap", async () => {
+  it("lets the student click a subject to open its branches, then a mind-map node to open its roadmap", async () => {
     const { container } = wrap(<PlannerHome />);
-    expect(await screen.findByText("Magnetic Effects")).toBeInTheDocument();
-    const nodes = Array.from(container.querySelectorAll<HTMLElement>(".react-flow__node"));
-    expect(nodes.length).toBeGreaterThan(0);
+    await screen.findByText("Science");
+    const nodesBefore = Array.from(container.querySelectorAll<HTMLElement>(".react-flow__node"));
+    expect(nodesBefore.length).toBeGreaterThan(0);
     // React Flow turns clicks off (pointer-events: none) on a node unless the flow handles clicks.
-    nodes.forEach((n) => expect(n.style.pointerEvents).not.toBe("none"));
-    const chapterNode = nodes.find((n) => n.textContent?.includes("Magnetic Effects"))!;
+    nodesBefore.forEach((n) => expect(n.style.pointerEvents).not.toBe("none"));
+    const subjectNode = nodesBefore.find((n) => n.textContent?.includes("Science"))!;
+    fireEvent.click(subjectNode);
+    expect(await screen.findByText("Magnetic Effects")).toBeInTheDocument();
+    const chapterNode = Array.from(container.querySelectorAll<HTMLElement>(".react-flow__node")).find((n) => n.textContent?.includes("Magnetic Effects"))!;
     fireEvent.click(chapterNode);
     expect(await screen.findByRole("heading", { name: "Magnetic Effects" })).toBeInTheDocument();
     expect(screen.getByText(/Chapter roadmap/)).toBeInTheDocument();

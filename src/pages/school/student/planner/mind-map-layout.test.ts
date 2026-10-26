@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ChapterNode, SubjectNode, SubtopicNode, TopicNode } from "@/lib/api/learning-path";
-import { combineProgress, findChapter, findTopic, homeHeadings, LAYOUT, subtopicProgress, threadProgress, layoutChapterMap, layoutHomeMap, layoutTopicMap, roadmapHref, type MapLayout } from "./mind-map-layout";
+import { combineProgress, findChapter, findTopic, homeHeadings, subtopicProgress, threadProgress, layoutChapterMap, layoutHomeMap, layoutTopicMap, roadmapHref, type MapLayout } from "./mind-map-layout";
 
 const topic = (id: string, status: TopicNode["status"], over: Partial<TopicNode> = {}): TopicNode => ({
   topicId: id,
@@ -45,35 +45,50 @@ const subjects: SubjectNode[] = [
 const index = (l: MapLayout) => Object.fromEntries(l.nodes.map((n) => [n.id, n]));
 
 describe("layoutHomeMap", () => {
-  const home = layoutHomeMap(subjects);
+  // Nothing expanded: like a mind map that opens only the root and the next
+  // node, every subject's own weak chapters and topics stay hidden until clicked.
+  const collapsed = layoutHomeMap(subjects);
+  const collapsedById = index(collapsed);
+  // Both shown subjects expanded, for the tests that need their headings.
+  const home = layoutHomeMap(subjects, new Set(["s1", "s3"]));
   const byId = index(home);
 
-  it("shows only you, subjects, and their weak chapters and weak topics: no topics of a weak chapter, no subtopics", () => {
-    expect(home.nodes.map((n) => n.kind).sort()).toEqual(["chapter", "chapter", "chapter", "root", "subject", "subject", "topic"]);
-    expect(byId["topic-t1"]).toBeUndefined();
-    expect(home.nodes.some((n) => n.kind === "subtopic")).toBe(false);
-    expect(byId["subject-s2"]).toBeUndefined();
+  it("starts with only 'You' and its subjects — every subject collapsed, expandable, and marked which id to expand", () => {
+    expect(collapsed.nodes.map((n) => n.kind).sort()).toEqual(["root", "subject", "subject"]);
+    expect(collapsedById["subject-s2"]).toBeUndefined(); // Hindi has nothing weak, never shown
+    expect(collapsedById["subject-s1"]).toMatchObject({ expandable: true, expanded: false, toggleKey: "s1" });
+    expect(collapsedById["subject-s3"]).toMatchObject({ expandable: true, expanded: false, toggleKey: "s3" });
   });
 
-  it("is a complete top-to-bottom tree: one row per level, each parent centred over its children", () => {
-    const rows = [["root"], ["subject-s1", "subject-s3"], ["chapter-c1", "chapter-c2", "topic-t3", "chapter-c4"]];
-    const ys = rows.map((ids) => new Set(ids.map((id) => byId[id].y)));
-    ys.forEach((row) => expect(row.size).toBe(1)); // every node of a level on the same row
-    const [rootY, subjectY, headingY] = ys.map((row) => [...row][0]);
-    expect(rootY).toBeLessThan(subjectY);
-    expect(subjectY).toBeLessThan(headingY);
-    // headings run left to right in the subject's order, and never overlap
-    const headings = rows[2].map((id) => byId[id]);
-    headings.slice(1).forEach((h, i) => expect(h.x).toBeGreaterThanOrEqual(headings[i].x + headings[i].width));
+  it("expanding a subject shows its weak chapters and weak topics: no topics of a weak chapter, no subtopics", () => {
+    expect(home.nodes.map((n) => n.kind).sort()).toEqual(["chapter", "chapter", "chapter", "root", "subject", "subject", "topic"]);
+    expect(byId["topic-t1"]).toBeUndefined(); // t1 belongs to the weak (expanded) chapter c1, not shown on its own
+    expect(home.nodes.some((n) => n.kind === "subtopic")).toBe(false);
+    expect(byId["subject-s1"]).toMatchObject({ expanded: true });
+  });
+
+  it("fans subjects out in one row under 'You', and an expanded subject's headings out in a row under it", () => {
+    const subjectRow = new Set(["subject-s1", "subject-s3"].map((id) => byId[id].y));
+    expect(subjectRow.size).toBe(1);
+    expect(byId.root.y).toBeLessThan([...subjectRow][0]);
     const centre = (id: string) => byId[id].x + byId[id].width / 2;
+    expect(centre("root")).toBeCloseTo((centre("subject-s1") + centre("subject-s3")) / 2, 5);
+
+    // s1's three headings run left to right under it, on the same row as s3's —
+    // every level is a row, same as the subjects' own row above it.
+    const headingRow = new Set(["chapter-c1", "chapter-c2", "topic-t3", "chapter-c4"].map((id) => byId[id].y));
+    expect(headingRow.size).toBe(1);
+    expect([...subjectRow][0]).toBeLessThan([...headingRow][0]);
+    const [c1, c2, t3] = [byId["chapter-c1"], byId["chapter-c2"], byId["topic-t3"]];
+    expect(c1.x + c1.width).toBeLessThanOrEqual(c2.x);
+    expect(c2.x + c2.width).toBeLessThanOrEqual(t3.x);
     expect(centre("subject-s1")).toBeCloseTo((centre("chapter-c1") + centre("topic-t3")) / 2, 5);
     expect(centre("subject-s3")).toBeCloseTo(centre("chapter-c4"), 5);
-    expect(centre("root")).toBeCloseTo((centre("subject-s1") + centre("subject-s3")) / 2, 5);
   });
 
-  it("connects every level from the parent's bottom to the child's top", () => {
+  it("joins 'You' to each subject, and an expanded subject to its headings, from the bottom to the top", () => {
     expect(home.edges).toContainEqual(expect.objectContaining({ source: "root", target: "subject-s1", sourceHandle: "bottom", targetHandle: "top" }));
-    expect(home.edges).toContainEqual(expect.objectContaining({ source: "subject-s1", target: "topic-t3", sourceHandle: "bottom", targetHandle: "top" }));
+    expect(home.edges).toContainEqual(expect.objectContaining({ source: "subject-s1", target: "chapter-c1", sourceHandle: "bottom", targetHandle: "top" }));
     expect(home.edges.every((e) => e.sourceHandle === "bottom" && e.targetHandle === "top")).toBe(true);
   });
 
@@ -98,8 +113,19 @@ describe("layoutHomeMap", () => {
 });
 
 describe("layoutChapterMap", () => {
-  it("shows every topic of the chapter in order with all its subtopics", () => {
+  // Both of weakChapter's topics opened, for the tests that need its subtopics.
+  const bothTopicsExpanded = new Set(["t1", "t2"]);
+
+  it("starts with only the chapter and its topics — every topic collapsed and expandable", () => {
     const byId = index(layoutChapterMap(weakChapter));
+    expect(byId["sub-t1-1"]).toBeUndefined();
+    expect(byId["sub-t2-2"]).toBeUndefined();
+    expect(byId["topic-t1"]).toMatchObject({ expandable: true, expanded: false, toggleKey: "t1" });
+    expect(byId["topic-t2"]).toMatchObject({ expandable: true, expanded: false, toggleKey: "t2" });
+  });
+
+  it("opening a topic shows every topic of the chapter in order with its subtopics", () => {
+    const byId = index(layoutChapterMap(weakChapter, bothTopicsExpanded));
     expect(byId["chapter-c1"].action).toEqual({ type: "none" });
     expect(byId["topic-t1"].label).toBe("1. Topic t1");
     expect(byId["topic-t2"].label).toBe("2. Topic t2");
@@ -107,8 +133,8 @@ describe("layoutChapterMap", () => {
     expect(byId["sub-t2-2"]).toBeDefined(); // a mastered topic's subtopics show too
   });
 
-  it("runs top to bottom for the chapter and its row of topics, then stacks each topic's subtopics under it", () => {
-    const byId = index(layoutChapterMap(weakChapter));
+  it("runs top to bottom for the chapter and its row of topics, then each topic's subtopics in a row under it", () => {
+    const byId = index(layoutChapterMap(weakChapter, bothTopicsExpanded));
     const [c, t1, t2] = [byId["chapter-c1"], byId["topic-t1"], byId["topic-t2"]];
     const [s1, s2] = [byId["sub-t1-1"], byId["sub-t1-2"]];
     // levels 1-2: top to bottom, topics side by side in order, the chapter centred over them
@@ -117,27 +143,23 @@ describe("layoutChapterMap", () => {
     expect(t1.x + t1.width).toBeLessThanOrEqual(t2.x);
     const centre = (n: { x: number; width: number }) => n.x + n.width / 2;
     expect(centre(c)).toBeCloseTo((centre(t1) + centre(t2)) / 2, 5);
-    // level 3 on: a column under the topic, indented, one below the other
-    expect(s1.x).toBe(t1.x + LAYOUT.indent);
-    expect(s2.x).toBe(s1.x);
+    // level 3: t1's subtopics run left to right under it, on their own row
     expect(s1.y).toBeGreaterThan(t1.y);
-    expect(s2.y - s1.y).toBe(LAYOUT.stackStep);
-    // a topic's column never reaches the next topic
-    expect(s1.x + s1.width).toBeLessThanOrEqual(t2.x);
+    expect(s1.y).toBe(s2.y);
+    expect(s1.x + s1.width).toBeLessThanOrEqual(s2.x);
+    expect(centre(t1)).toBeCloseTo((centre(s1) + centre(s2)) / 2, 5);
+    // t1's subtopic row never reaches t2's own column
+    expect(s2.x + s2.width).toBeLessThanOrEqual(t2.x);
   });
 
-  it("joins the topics from the chapter's bottom to their tops, and each subtopic with an elbow to its left side", () => {
-    const { edges } = layoutChapterMap(weakChapter);
+  it("joins the topics from the chapter's bottom to their tops, and each subtopic the same way", () => {
+    const { edges } = layoutChapterMap(weakChapter, bothTopicsExpanded);
     expect(edges).toContainEqual(expect.objectContaining({ source: "chapter-c1", target: "topic-t1", sourceHandle: "bottom", targetHandle: "top" }));
-    expect(edges).toContainEqual(expect.objectContaining({ source: "topic-t1", target: "sub-t1-1", sourceHandle: "bottom", targetHandle: "left" }));
-  });
-
-  it("keeps the home map fully top to bottom", () => {
-    expect(layoutHomeMap(subjects).edges.every((e) => e.targetHandle === "top")).toBe(true);
+    expect(edges).toContainEqual(expect.objectContaining({ source: "topic-t1", target: "sub-t1-1", sourceHandle: "bottom", targetHandle: "top" }));
   });
 
   it("never overlaps two nodes", () => {
-    const { nodes } = layoutChapterMap(weakChapter);
+    const { nodes } = layoutChapterMap(weakChapter, bothTopicsExpanded);
     for (const a of nodes)
       for (const b of nodes) {
         if (a === b) continue;
@@ -146,16 +168,26 @@ describe("layoutChapterMap", () => {
       }
   });
 
-  it("collapses a topic the student closed", () => {
-    const byId = index(layoutChapterMap(weakChapter, new Set(["t1"])));
-    expect(byId["sub-t1-1"]).toBeUndefined();
-    expect(byId["topic-t1"]).toMatchObject({ expandable: true, expanded: false });
+  it("closing an opened topic again returns the exact starting layout", () => {
+    const initial = layoutChapterMap(weakChapter);
+    const openedThenClosed = layoutChapterMap(weakChapter, new Set()); // t1 opened and closed, same end state
+    expect(openedThenClosed).toEqual(initial);
+    const opened = index(layoutChapterMap(weakChapter, new Set(["t1"])));
+    expect(opened["sub-t1-1"]).toBeDefined();
+    expect(opened["topic-t1"]).toMatchObject({ expandable: true, expanded: true });
+    expect(opened["sub-t2-1"]).toBeUndefined(); // t2 stays collapsed on its own
   });
 
-  it("makes topics and subtopics open the topic's learning path, focused on the subtopic", () => {
-    const byId = index(layoutChapterMap(weakChapter));
-    expect(byId["topic-t1"].action).toEqual({ type: "open-topic", topicId: "t1" });
+  it("makes a subtopic open the topic's learning path focused on it, not the topic itself (the subtopic is what's being learned)", () => {
+    const byId = index(layoutChapterMap(weakChapter, bothTopicsExpanded));
+    expect(byId["topic-t1"].action).toEqual({ type: "none" }); // toggles its subtopics instead
     expect(byId["sub-t1-2"].action).toEqual({ type: "open-topic", topicId: "t1", focusSubtopic: "t1 part B" });
+  });
+
+  it("still opens a topic's own chat directly when it has no subtopics to expand into", () => {
+    const noSubtopics: ChapterNode = { ...weakChapter, topics: [{ ...weakChapter.topics[0], subtopics: [] }] };
+    const byId = index(layoutChapterMap(noSubtopics));
+    expect(byId["topic-t1"]).toMatchObject({ expandable: false, action: { type: "open-topic", topicId: "t1" } });
   });
 
   it("shows a chapter whose roadmap is being made as preparing", () => {
@@ -163,6 +195,7 @@ describe("layoutChapterMap", () => {
     expect(index(l)["prep-c2"]).toMatchObject({ kind: "preparing", label: "Preparing your roadmap…" });
     expect(l.edges.some((e) => e.source === "chapter-c2" && e.target === "prep-c2")).toBe(true);
   });
+
 });
 
 describe("layoutTopicMap", () => {
@@ -233,7 +266,7 @@ describe("progress colours", () => {
         weakChapter.topics[1],
       ],
     };
-    const map = index(layoutChapterMap(opened));
+    const map = index(layoutChapterMap(opened, new Set(["t1", "t2"])));
     expect(map["topic-t1"].progress).toBe("in_progress"); // opened
     expect(map["sub-t1-2"].progress).toBe("not_started"); // not answered yet
     expect(map["sub-t1-1"].progress).toBe("in_progress"); // answered, still weak

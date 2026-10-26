@@ -7,10 +7,13 @@ import type { ChapterNode, MasteryStatus, SubjectNode, SubtopicNode, ThreadStatu
  *
  * All three are complete top-to-bottom trees: one row per level, children
  * side by side under their parent, each parent centred over its children.
+ * What stays small is how much of the tree is actually in the layout at
+ * once — a subject or a topic with children to show starts collapsed, so
+ * only "You" and the next row are there until it is clicked (see
+ * `layoutHomeMap`, `layoutChapterMap`'s `collapsedTopics`).
  * - Home: You -> subjects -> each subject's weak chapters and weak topics.
- * - Chapter roadmap: chapter -> its AI topics, then from the third level on
- *   each topic's subtopics stacked in a column under it.
- * - Topic roadmap: topic -> its AI subtopics (anything deeper is stacked).
+ * - Chapter roadmap: chapter -> its AI topics -> each topic's subtopics.
+ * - Topic roadmap: topic -> its AI subtopics.
  */
 
 export type MapNodeKind = "root" | "subject" | "chapter" | "topic" | "subtopic" | "prerequisite" | "preparing";
@@ -75,6 +78,8 @@ export interface MapNode {
   isRoot?: boolean;
   expandable?: boolean;
   expanded?: boolean;
+  /** The id `onToggle` is called with when this node is expandable — independent of `id` (which carries a kind prefix) and of `action` (a toggle has none). */
+  toggleKey?: string;
 }
 
 /** Which side of a node an edge leaves or enters. */
@@ -99,15 +104,11 @@ type NodeSpec = Omit<MapNode, "x" | "y" | "width">;
 /** Sizes and spacing shared by all three maps. */
 export const LAYOUT = {
   /** Box widths; the lowest level is narrower (names wrap to two lines) so a wide chapter stays readable. */
-  width: { root: 180, subject: 260, chapter: 300, topic: 280, subtopic: 230, prerequisite: 230, preparing: 250 } as Record<MapNodeKind, number>,
+  width: { root: 200, subject: 290, chapter: 330, topic: 310, subtopic: 260, prerequisite: 260, preparing: 280 } as Record<MapNodeKind, number>,
   /** Vertical distance between levels (room for a two-line name, a detail line and a chat badge). */
-  levelStep: 180,
+  levelStep: 190,
   /** Gap between neighbours in a row. */
-  siblingGap: 36,
-  /** Stacked levels: indent under the parent (so the elbow shows), parent-to-first-child gap, child-to-child step. */
-  indent: 36,
-  stackGap: 120,
-  stackStep: 104,
+  siblingGap: 32,
 } as const;
 
 const pct = (v: number | null) => (v !== null ? `${Math.round(v)}%` : null);
@@ -120,57 +121,31 @@ interface TreeSpec {
 }
 
 /**
- * A full top-to-bottom tree: one row per level, children side by side under
- * their parent, the parent centred over them. Each subtree gets a block as wide
- * as its children (or itself, if wider), so neighbouring subtrees never overlap.
- */
-/**
  * Lays a tree out top to bottom: one row per level, children side by side
  * under their parent, the parent centred over them. Each subtree gets a block
- * as wide as its children (or itself, if wider), so neighbours never overlap.
- *
- * From level `stackFrom` on (0 = the root), children are stacked instead: a
- * column under their parent, indented, joined by an elbow from the parent's
- * bottom to each child's left side, and their own children stacked further in.
- * The chapter map stacks from level 3 (a topic's subtopics), so a chapter stays
- * as wide as its row of topics rather than as wide as every subtopic.
+ * as wide as its children (or itself, if wider), so neighbouring subtrees
+ * never overlap.
  */
-function layoutTopDown(root: TreeSpec, stackFrom = Infinity): MapLayout {
+function layoutTopDown(root: TreeSpec): MapLayout {
   const out: MapLayout = { nodes: [], edges: [] };
   const widths = new Map<TreeSpec, number>();
-  const stacks = (depth: number) => depth + 1 >= stackFrom; // are this node's children stacked?
   const widthOf = (t: TreeSpec) => LAYOUT.width[t.node.kind];
 
-  /** A stacked subtree: as wide as its widest indented descendant. */
-  const stackedWidth = (t: TreeSpec): number =>
-    Math.max(widthOf(t), ...t.children.map((c) => LAYOUT.indent + stackedWidth(c)));
-  const measure = (t: TreeSpec, depth: number): number => {
-    const w = stacks(depth)
-      ? stackedWidth(t)
-      : Math.max(widthOf(t), t.children.reduce((sum, c) => sum + measure(c, depth + 1), 0) + Math.max(0, t.children.length - 1) * LAYOUT.siblingGap);
+  const measure = (t: TreeSpec): number => {
+    const w = Math.max(widthOf(t), t.children.reduce((sum, c) => sum + measure(c), 0) + Math.max(0, t.children.length - 1) * LAYOUT.siblingGap);
     widths.set(t, w);
     return w;
   };
 
-  const link = (from: MapNode, to: MapNode, stacked: boolean) =>
+  const link = (from: MapNode, to: MapNode) =>
     out.edges.push({
       id: `${from.id}->${to.id}`,
       source: from.id,
       target: to.id,
       sourceHandle: "bottom",
-      targetHandle: stacked ? "left" : "top",
+      targetHandle: "top",
       status: to.status,
     });
-
-  /** Places a stacked subtree with its top-left at (x, y); returns the y just below it. */
-  const placeStacked = (t: TreeSpec, parent: MapNode, x: number, y: number): number => {
-    const node: MapNode = { ...t.node, x, y, width: widthOf(t) };
-    out.nodes.push(node);
-    link(parent, node, true);
-    let next = y + LAYOUT.stackStep;
-    for (const c of t.children) next = placeStacked(c, node, x + LAYOUT.indent, next);
-    return next;
-  };
 
   /** Places a subtree in its block starting at `left`; returns the node so the parent can link to it. */
   const place = (t: TreeSpec, left: number, depth: number): MapNode => {
@@ -178,15 +153,6 @@ function layoutTopDown(root: TreeSpec, stackFrom = Infinity): MapLayout {
     const width = widthOf(t);
     const y = depth * LAYOUT.levelStep;
     const root = depth === 0 ? { isRoot: true } : {};
-
-    if (stacks(depth)) {
-      // Children in a column under this node, so it sits at the left of its block.
-      const node: MapNode = { ...t.node, x: left, y, width, ...root };
-      out.nodes.push(node);
-      let next = y + LAYOUT.stackGap;
-      for (const c of t.children) next = placeStacked(c, node, left + LAYOUT.indent, next);
-      return node;
-    }
 
     const kidsWidth = t.children.reduce((sum, c) => sum + widths.get(c)!, 0) + Math.max(0, t.children.length - 1) * LAYOUT.siblingGap;
     let cursor = left + (block - kidsWidth) / 2;
@@ -200,10 +166,10 @@ function layoutTopDown(root: TreeSpec, stackFrom = Infinity): MapLayout {
     const x = Math.min(Math.max(centre - width / 2, left), left + block - width);
     const node: MapNode = { ...t.node, x, y, width, ...root };
     out.nodes.push(node);
-    for (const k of kids) link(node, k, false);
+    for (const k of kids) link(node, k);
     return node;
   };
-  measure(root, 0);
+  measure(root);
   place(root, 0, 0);
   return out;
 }
@@ -220,21 +186,33 @@ export function homeHeadings(subject: SubjectNode): { kind: "chapter" | "topic";
   return out;
 }
 
-export function layoutHomeMap(subjects: SubjectNode[]): MapLayout {
+/**
+ * Home map: "You" and its subjects are always shown; a subject's own weak
+ * chapters/topics are hidden until it is clicked, like a mind map that opens
+ * only the root and the next node, each branch expanding in focus from there.
+ * `expandedSubjects` is empty by default (every subject starts collapsed).
+ */
+export function layoutHomeMap(subjects: SubjectNode[], expandedSubjects: Set<string> = new Set()): MapLayout {
   const shown = subjects.filter((s) => homeHeadings(s).length > 0);
   if (!shown.length) return { nodes: [], edges: [] };
   return layoutTopDown({
     node: { id: "root", kind: "root", label: "You", action: { type: "none" } },
-    children: shown.map((s) => ({
-      node: {
-        id: `subject-${s.subjectId}`,
-        kind: "subject",
-        label: s.name,
-        detail: joinDetail(s.weakChapters ? `${s.weakChapters} weak` : null, s.atRiskChapters ? `${s.atRiskChapters} at risk` : null),
-        action: { type: "none" },
-      },
-      children: homeHeadings(s).map((h): TreeSpec => ({ node: headingSpec(h), children: [] })),
-    })),
+    children: shown.map((s) => {
+      const open = expandedSubjects.has(s.subjectId);
+      return {
+        node: {
+          id: `subject-${s.subjectId}`,
+          kind: "subject",
+          label: s.name,
+          detail: joinDetail(s.weakChapters ? `${s.weakChapters} weak` : null, s.atRiskChapters ? `${s.atRiskChapters} at risk` : null),
+          action: { type: "none" },
+          expandable: true,
+          expanded: open,
+          toggleKey: s.subjectId,
+        },
+        children: open ? homeHeadings(s).map((h): TreeSpec => ({ node: headingSpec(h), children: [] })) : [],
+      };
+    }),
   });
 }
 
@@ -286,6 +264,7 @@ function topicSpec(t: TopicNode, expanded: boolean, numbered: boolean): NodeSpec
     pending: t.roadmapState === "pending",
     expandable: t.roadmapState === "ready" && t.subtopics.length > 0,
     expanded,
+    toggleKey: t.topicId,
   };
 }
 
@@ -323,15 +302,22 @@ function topicChildren(t: TopicNode, expanded: boolean): NodeSpec[] {
 
 const leaf = (node: NodeSpec): TreeSpec => ({ node, children: [] });
 
-/** Chapter and topic maps: levels 1-2 top to bottom, the third level on stacked. */
-const STACK_FROM_LEVEL_3 = 2;
-
 /**
  * A weak chapter's roadmap: chapter -> its AI topics in teaching order, top to
- * bottom -> from the third level on, each topic's subtopics (unless collapsed)
- * stacked in a column under it.
+ * bottom -> each topic's subtopics, in a row under it once that topic is
+ * opened. Same as the home map: `expandedTopics` is empty by default (every
+ * topic starts collapsed), so only the chapter and its row of topics show
+ * until one is clicked — closing it again reproduces that exact starting
+ * layout, since the result depends only on which topics are in the set now,
+ * not on how it got there.
+ *
+ * With a third layer to show, clicking a topic opens its subtopics rather
+ * than its chat: a subtopic is the thing actually being learned and tested,
+ * so the "start learning" click belongs on it, not on the topic that groups
+ * them. A topic with nothing to expand into (still preparing, or genuinely
+ * no subtopics) keeps its own chat as the click, same as before.
  */
-export function layoutChapterMap(chapter: ChapterNode, collapsedTopics: Set<string> = new Set()): MapLayout {
+export function layoutChapterMap(chapter: ChapterNode, expandedTopics: Set<string> = new Set()): MapLayout {
   const pending = chapter.roadmapState === "pending";
   const root: NodeSpec = {
     id: `chapter-${chapter.chapterId}`,
@@ -349,15 +335,17 @@ export function layoutChapterMap(chapter: ChapterNode, collapsedTopics: Set<stri
   return layoutTopDown({
     node: root,
     children: chapter.topics.map((t) => {
-      const expanded = !collapsedTopics.has(t.topicId);
-      return { node: topicSpec(t, expanded, true), children: topicChildren(t, expanded).map(leaf) };
+      const expanded = expandedTopics.has(t.topicId);
+      const spec = topicSpec(t, expanded, true);
+      const node = spec.expandable ? { ...spec, action: { type: "none" as const } } : spec;
+      return { node, children: topicChildren(t, expanded).map(leaf) };
     }),
-  }, STACK_FROM_LEVEL_3);
+  });
 }
 
 /** A weak topic's roadmap: topic -> its AI subtopics. */
 export function layoutTopicMap(topic: TopicNode): MapLayout {
-  return layoutTopDown({ node: topicSpec(topic, true, false), children: topicChildren(topic, true).map(leaf) }, STACK_FROM_LEVEL_3);
+  return layoutTopDown({ node: topicSpec(topic, true, false), children: topicChildren(topic, true).map(leaf) });
 }
 
 // ── Finding a roadmap in the home data ──────────────────────────────────────
