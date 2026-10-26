@@ -8,6 +8,11 @@ describe("report formatting", () => {
     expect(formatDuration(7500)).toBe("2h 05m");
   });
 
+  it("rolls over into days once the total reaches 24h", () => {
+    expect(formatDuration(86400)).toBe("1d 00h 00m"); // exactly 24h
+    expect(formatDuration(2109960)).toBe("24d 10h 06m"); // 586h 06m
+  });
+
   it("formats improvement, saying when it has not been measured", () => {
     expect(formatImprovement(12.54)).toBe("+12.5 pts");
     expect(formatImprovement(-3)).toBe("−3 pts");

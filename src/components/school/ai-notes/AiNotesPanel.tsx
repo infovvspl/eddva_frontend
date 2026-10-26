@@ -32,8 +32,6 @@ interface AiNotesPanelProps {
   onSave: (update: NotesUpdate) => void;
   /** The scrolling element the notes sit in; the reading position is kept against it. */
   scrollRef: RefObject<HTMLElement>;
-  /** Scroll to this subtopic's part of the lesson when opened from the mind map. */
-  focusSubtopic?: string | null;
   footer?: ReactNode;
 }
 
@@ -43,7 +41,7 @@ interface AiNotesPanelProps {
  * page; highlights and comments are kept on the server, so they follow the
  * student across devices.
  */
-export function AiNotesPanel({ notes, onAsk, onSave, scrollRef, focusSubtopic, footer }: AiNotesPanelProps) {
+export function AiNotesPanel({ notes, onAsk, onSave, scrollRef, footer }: AiNotesPanelProps) {
   const isCompact = useIsCompactLayout();
   const [zoom, setZoom] = useState<"sm" | "md" | "lg">("md");
   const [highlights, setHighlights] = useState<SavedHighlight[]>(notes.highlights ?? []);
@@ -96,13 +94,7 @@ export function AiNotesPanel({ notes, onAsk, onSave, scrollRef, focusSubtopic, f
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    const target = focusSubtopic
-      ? Array.from(contentRef.current?.querySelectorAll("h2, h3, h4") ?? []).find((h) =>
-          h.textContent?.toLowerCase().includes(focusSubtopic.toLowerCase()),
-        )
-      : null;
-    if (target) target.scrollIntoView({ block: "start" });
-    else if (notes.lastAnchor?.offsetPct) el.scrollTop = (notes.lastAnchor.offsetPct / 100) * (el.scrollHeight - el.clientHeight);
+    if (notes.lastAnchor?.offsetPct) el.scrollTop = (notes.lastAnchor.offsetPct / 100) * (el.scrollHeight - el.clientHeight);
     const onScroll = () => {
       const max = el.scrollHeight - el.clientHeight;
       if (max > 0) queueSave({ lastAnchor: { offsetPct: Math.round((el.scrollTop / max) * 1000) / 10 } });

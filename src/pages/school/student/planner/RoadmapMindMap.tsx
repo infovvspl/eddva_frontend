@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProper
 import { Link } from "react-router-dom";
 import ReactFlow, { Background, ControlButton, Controls, Handle, Position, useNodesInitialized, useReactFlow, useStore, type Edge, type Node, type NodeProps } from "reactflow";
 import "reactflow/dist/style.css";
-import { BookOpen, ChevronDown, ChevronRight, Loader2, Maximize2, MessageCircle, Minimize2, Sparkles, UserRound } from "lucide-react";
+import { BookOpen, CheckCircle2, ChevronDown, ChevronRight, Loader2, Maximize2, MessageCircle, Minimize2, Sparkles, UserRound } from "lucide-react";
 import type { ChapterNode, SubjectNode, TopicNode } from "@/lib/api/learning-path";
 import { cn } from "@/lib/utils";
 import { homeHeadings, PLANNER_BASE, type MapAction, type MapLayout, type MapNode } from "./mind-map-layout";
@@ -55,6 +55,11 @@ const MindNode = memo(function MindNode({ data }: NodeProps<MindNodeData>) {
           {(data.kind === "preparing" || data.pending) && <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />}
           {data.kind === "prerequisite" && <Sparkles className="size-4 shrink-0 text-violet-500" />}
           {style && !data.pending && <span className={cn("size-2.5 shrink-0 rounded-full", style.dot)} aria-hidden />}
+          {/* A completed path (every subtopic's thread done, or its own) — distinct from the
+              weak/at-risk status dot above: a topic can be both "weak" and "completed". */}
+          {data.progress === "completed" && (data.kind === "chapter" || data.kind === "topic" || data.kind === "subtopic") && (
+            <CheckCircle2 className="size-4 shrink-0 text-emerald-500" aria-label="Completed" />
+          )}
           <p
             className={cn(
               "line-clamp-2 break-words font-bold leading-snug",
@@ -387,15 +392,15 @@ export function HomeList({ subjects }: { subjects: SubjectNode[] }) {
   );
 }
 
-function SubtopicList({ topic, onOpenTopic }: { topic: TopicNode; onOpenTopic: (topicId: string, focusSubtopic?: string) => void }) {
+function SubtopicList({ topic, onOpenSubtopic }: { topic: TopicNode; onOpenSubtopic: (subtopicId: string) => void }) {
   if (!topic.subtopics.length) return null;
   return (
     <ul className="ml-6 mt-1 space-y-0.5">
       {topic.subtopics.map((st) => (
-        <li key={st.order}>
+        <li key={st.id}>
           <button
             type="button"
-            onClick={() => onOpenTopic(topic.topicId, st.name)}
+            onClick={() => onOpenSubtopic(st.id)}
             className="flex w-full items-center gap-2 rounded px-2 py-1 text-left text-xs text-muted-foreground hover:bg-muted"
           >
             <span className={cn("size-1.5 shrink-0 rounded-full", STATUS_STYLE[st.status].dot)} aria-hidden />
@@ -408,7 +413,17 @@ function SubtopicList({ topic, onOpenTopic }: { topic: TopicNode; onOpenTopic: (
 }
 
 /** A chapter or topic roadmap as a list: better on a phone and for screen readers. */
-export function RoadmapList({ chapter, topic, onOpenTopic }: { chapter?: ChapterNode; topic?: TopicNode; onOpenTopic: (topicId: string, focusSubtopic?: string) => void }) {
+export function RoadmapList({
+  chapter,
+  topic,
+  onOpenTopic,
+  onOpenSubtopic,
+}: {
+  chapter?: ChapterNode;
+  topic?: TopicNode;
+  onOpenTopic: (topicId: string) => void;
+  onOpenSubtopic: (subtopicId: string) => void;
+}) {
   const topics = topic ? [topic] : chapter?.topics ?? [];
   return (
     <ol className="space-y-2 rounded-2xl border border-border bg-card p-4">
@@ -416,15 +431,17 @@ export function RoadmapList({ chapter, topic, onOpenTopic }: { chapter?: Chapter
         <li key={t.topicId}>
           <button
             type="button"
-            disabled={t.roadmapState === "pending"}
-            onClick={() => onOpenTopic(t.topicId)}
+            // A topic with subtopics has nothing of its own to open any more — its subtopics
+            // (always listed below, never collapsed in list view) are the only way in.
+            disabled={t.roadmapState === "pending" || t.subtopics.length > 0}
+            onClick={() => t.subtopics.length === 0 && onOpenTopic(t.topicId)}
             className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-muted disabled:cursor-default disabled:opacity-70"
           >
             <span className={cn("size-2 shrink-0 rounded-full", STATUS_STYLE[t.status].dot)} aria-hidden />
             <span className="flex-1 truncate font-medium text-foreground">{!topic && t.order ? `${t.order}. ` : ""}{t.name}</span>
             {t.roadmapState === "pending" ? <Loader2 className="size-3 animate-spin text-muted-foreground" /> : <StatusChip status={t.status} />}
           </button>
-          <SubtopicList topic={t} onOpenTopic={onOpenTopic} />
+          <SubtopicList topic={t} onOpenSubtopic={onOpenSubtopic} />
         </li>
       ))}
     </ol>

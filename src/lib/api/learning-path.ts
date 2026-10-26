@@ -17,13 +17,14 @@ export type ThreadStatus = "suggested" | "active" | "completed" | "needs_teacher
 export type ActivitySection = "home" | "videos" | "notes" | "quiz" | "assessment" | "chat";
 
 export interface SubtopicNode {
+  id: string;
   name: string;
   order: number;
   status: MasteryStatus;
   accuracy: number | null;
   answered: number;
-  /** The student opened the topic's path from this subtopic. */
-  opened?: boolean;
+  /** Its own video/notes/quiz/assessment/chat; null until the student opens it. */
+  thread: ThreadRef | null;
 }
 
 export interface ThreadRef {
@@ -42,9 +43,12 @@ export interface TopicNode {
   mastery: number | null;
   estMinutes: number;
   roadmapState: "ready" | "pending";
+  /** Null (and never created) once the topic has subtopics — each of those has its own thread instead. */
   thread: ThreadRef | null;
   subtopics: SubtopicNode[];
-  children: { threadId: string; topicId: string; name: string; status: ThreadStatus; stepsDone?: number }[];
+  /** All its subtopics' threads completed (or, with none, its own thread) — never its mastery/status. */
+  completed: boolean;
+  children: { threadId: string; topicId: string; name: string; status: ThreadStatus; stepsDone?: number; subtopicId: string | null }[];
 }
 
 export interface ChapterNode {
@@ -55,6 +59,8 @@ export interface ChapterNode {
   estMinutes: number;
   expanded: boolean;
   roadmapState: "ready" | "pending" | null;
+  /** Every topic in its full roadmap roster completed — independent of which topics are shown above. */
+  completed: boolean;
   topics: TopicNode[];
 }
 
@@ -84,12 +90,14 @@ export interface LearningHome {
 
 export interface ThreadSummary {
   id: string;
-  scope: "topic" | "general";
+  scope: "topic" | "subtopic" | "general";
   status: ThreadStatus;
   origin: "mind_map" | "prerequisite" | "general";
   parentThreadId: string | null;
   topicId: string | null;
   topicName: string | null;
+  subtopicId: string | null;
+  subtopicName: string | null;
   chapterId: string | null;
   chapterName: string | null;
   subjectId: string | null;
@@ -153,7 +161,6 @@ export interface ThreadView {
   nextCursor: string | null;
   resume: { stepId: string; kind: StepKind; refId: string | null } | null;
   assessmentInProgress: boolean;
-  focusSubtopic?: string | null;
 }
 
 export interface StepVideo {
@@ -246,7 +253,7 @@ const data = <T,>(res: { data?: unknown }) => unwrapSchoolData<T>(res, undefined
 export const learningApi = {
   home: async () => data<LearningHome>(await schoolApi.get("/learning/home")),
   threads: async () => data<ThreadSummary[]>(await schoolApi.get("/learning/threads")),
-  openThread: async (body: { topicId?: string; general?: boolean; focusSubtopic?: string }) =>
+  openThread: async (body: { topicId?: string; subtopicId?: string; general?: boolean }) =>
     data<ThreadView>(await schoolApi.post("/learning/threads", body)),
   thread: async (id: string, before?: string) =>
     data<ThreadView>(await schoolApi.get(`/learning/threads/${id}`, { params: before ? { before } : undefined })),
