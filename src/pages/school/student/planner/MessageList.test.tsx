@@ -26,6 +26,7 @@ describe("MessageList", () => {
         topicName="Discriminant"
         onOpenStep={onOpenStep}
         onOpenTopic={onOpenTopic}
+        onOpenSubtopic={onOpenTopic}
         messages={[
           msg("1", "welcome", { topicName: "Discriminant", baselineMastery: 31.6 }),
           msg("2", "text", { text: "What is b² − 4ac?" }, { role: "student" }),
@@ -50,7 +51,7 @@ describe("MessageList", () => {
 
   it("shows answers without citation marks or a sources list", () => {
     render(
-      <MessageList threadId="th1" topicName="Magnetic field" onOpenStep={vi.fn()} onOpenTopic={vi.fn()}
+      <MessageList threadId="th1" topicName="Magnetic field" onOpenStep={vi.fn()} onOpenTopic={vi.fn()} onOpenSubtopic={vi.fn()}
         messages={[msg("1", "text", {
           text: "Place a compass near the wire; the needle points along the field line. [C4] Field lines never cross [C1, W2].",
           sources: [{ id: "C4", kind: "course", type: "textbook", title: "Magnetic Effects of Electric Current", label: "p. 3" }],
@@ -68,7 +69,7 @@ describe("MessageList", () => {
       { question: "What do field lines never do?", options: ["Cross", "Curve"], answerIndex: 0, explanation: "Two directions at one point are impossible." },
     ];
     render(
-      <MessageList threadId="th1" topicName="X" onOpenStep={vi.fn()} onOpenTopic={vi.fn()}
+      <MessageList threadId="th1" topicName="X" onOpenStep={vi.fn()} onOpenTopic={vi.fn()} onOpenSubtopic={vi.fn()}
         messages={[msg("m1", "text", { text: "Here is a quick quiz.", quiz: { questions } })]} />,
     );
     expect(screen.getByText("Question 1 of 2")).toBeInTheDocument();
@@ -89,7 +90,7 @@ describe("MessageList", () => {
 
   it("shows quiz questions, options and explanations without citation marks", () => {
     render(
-      <MessageList threadId="th1" topicName="X" onOpenStep={vi.fn()} onOpenTopic={vi.fn()}
+      <MessageList threadId="th1" topicName="X" onOpenStep={vi.fn()} onOpenTopic={vi.fn()} onOpenSubtopic={vi.fn()}
         messages={[msg("m1", "text", {
           text: "Quiz",
           quiz: { questions: [{ question: "Where does a compass needle point? [C4]", options: ["Along the field line [C2]", "Into the wire"], answerIndex: 0, explanation: "It lines up with the field. [C1, W2]" }] },
@@ -103,7 +104,7 @@ describe("MessageList", () => {
 
   it("shows a saved quiz result when the chat is opened again", () => {
     render(
-      <MessageList threadId="th1" topicName="X" onOpenStep={vi.fn()} onOpenTopic={vi.fn()}
+      <MessageList threadId="th1" topicName="X" onOpenStep={vi.fn()} onOpenTopic={vi.fn()} onOpenSubtopic={vi.fn()}
         messages={[msg("m1", "text", {
           text: "Quiz",
           quiz: { questions: [{ question: "Q?", options: ["Yes", "No"], answerIndex: 0, explanation: "" }] },
@@ -116,7 +117,7 @@ describe("MessageList", () => {
 
   it("celebrates a completed topic with its improvement", () => {
     render(
-      <MessageList threadId="th1" topicName="X" onOpenStep={vi.fn()} onOpenTopic={vi.fn()}
+      <MessageList threadId="th1" topicName="X" onOpenStep={vi.fn()} onOpenTopic={vi.fn()} onOpenSubtopic={vi.fn()}
         messages={[msg("1", "path_complete", { baselineMastery: 30, latestMastery: 81.25 })]} />,
     );
     expect(screen.getByText("Topic complete!")).toBeInTheDocument();

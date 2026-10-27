@@ -19,7 +19,8 @@ import type { ChapterNode, MasteryStatus, SubjectNode, SubtopicNode, ThreadStatu
 export type MapNodeKind = "root" | "subject" | "chapter" | "topic" | "subtopic" | "prerequisite" | "preparing";
 
 export type MapAction =
-  | { type: "open-topic"; topicId: string; focusSubtopic?: string }
+  | { type: "open-topic"; topicId: string }
+  | { type: "open-subtopic"; subtopicId: string }
   | { type: "open-chapter-map"; chapterId: string }
   | { type: "open-topic-map"; topicId: string }
   | { type: "none" };
@@ -27,21 +28,11 @@ export type MapAction =
 /** How far the student has got: shown as the node's colour on every map and on the curved path. */
 export type Progress = "not_started" | "in_progress" | "completed";
 
-/** A topic's progress, from its chat: in progress once the student has opened it, completed once its path is finished. */
+/** A topic's or subtopic's progress, from its own chat: in progress once the student has opened it, completed once its path is finished. */
 export function threadProgress(thread: { status: ThreadStatus } | null | undefined): Progress {
   if (!thread) return "not_started";
   if (thread.status === "completed") return "completed";
   return thread.status === "active" || thread.status === "needs_teacher" ? "in_progress" : "not_started"; // "suggested": not opened yet
-}
-
-/**
- * A subtopic's own progress: completed once the student's answers on it are OK
- * or mastered; in progress once answered, or once the student opened the
- * topic's path from it; otherwise not started.
- */
-export function subtopicProgress(s: SubtopicNode): Progress {
-  if (s.answered) return s.status === "ok" || s.status === "mastered" ? "completed" : "in_progress";
-  return s.opened ? "in_progress" : "not_started";
 }
 
 /** Progress of a group (a chapter's topics, a subject's chapters and topics): completed when all are, in progress once any has started. */
@@ -51,7 +42,13 @@ export function combineProgress(parts: Progress[]): Progress {
   return parts.some((p) => p !== "not_started") ? "in_progress" : "not_started";
 }
 
-export const chapterProgress = (c: ChapterNode): Progress => combineProgress(c.topics.map((t) => threadProgress(t.thread)));
+/** A topic with subtopics has no thread of its own (see topicSpec) — its node colour comes from its subtopics' own threads instead. */
+export const subtopicsProgress = (subtopics: SubtopicNode[]): Progress => combineProgress(subtopics.map((s) => threadProgress(s.thread)));
+
+/** A topic's own progress for its node colour: from its subtopics once it has any, else from its own thread. */
+const topicProgress = (t: TopicNode): Progress => (t.subtopics.length ? subtopicsProgress(t.subtopics) : threadProgress(t.thread));
+
+export const chapterProgress = (c: ChapterNode): Progress => combineProgress(c.topics.map(topicProgress));
 
 export interface MapNode {
   id: string;
@@ -247,6 +244,8 @@ function headingSpec(h: ReturnType<typeof homeHeadings>[number]): NodeSpec {
 // ── Chapter and topic roadmaps ──────────────────────────────────────────────
 
 function topicSpec(t: TopicNode, expanded: boolean, numbered: boolean): NodeSpec {
+  const hasSubtopics = t.roadmapState === "ready" && t.subtopics.length > 0;
+  const doneCount = hasSubtopics ? t.subtopics.filter((s) => threadProgress(s.thread) === "completed").length : 0;
   return {
     id: `topic-${t.topicId}`,
     kind: "topic",
@@ -255,14 +254,26 @@ function topicSpec(t: TopicNode, expanded: boolean, numbered: boolean): NodeSpec
     detail: joinDetail(
       pct(t.mastery),
       mins(t.estMinutes),
-      t.thread ? (t.thread.status === "completed" ? "Done" : `Round ${t.thread.round}`) : null,
+      hasSubtopics
+        ? t.completed
+          ? "Done"
+          : doneCount
+            ? `${doneCount}/${t.subtopics.length} done`
+            : null
+        : t.thread
+          ? t.thread.status === "completed"
+            ? "Done"
+            : `Round ${t.thread.round}`
+          : null,
     ),
-    action: t.roadmapState === "pending" ? { type: "none" } : { type: "open-topic", topicId: t.topicId },
-    progress: threadProgress(t.thread),
-    threadStatus: t.thread?.status ?? null,
-    hasThread: !!t.thread,
+    // A topic with subtopics has nothing of its own to open — each subtopic has its own path
+    // instead (see topicChildren) — so its card only ever toggles them open, never opens a chat.
+    action: t.roadmapState === "pending" || hasSubtopics ? { type: "none" } : { type: "open-topic", topicId: t.topicId },
+    progress: hasSubtopics ? subtopicsProgress(t.subtopics) : threadProgress(t.thread),
+    threadStatus: hasSubtopics ? null : t.thread?.status ?? null,
+    hasThread: hasSubtopics ? t.subtopics.some((s) => !!s.thread) : !!t.thread,
     pending: t.roadmapState === "pending",
-    expandable: t.roadmapState === "ready" && t.subtopics.length > 0,
+    expandable: hasSubtopics,
     expanded,
     toggleKey: t.topicId,
   };
@@ -281,8 +292,8 @@ function topicChildren(t: TopicNode, expanded: boolean): NodeSpec[] {
         label: s.name,
         status: s.status,
         detail: s.answered ? `${Math.round(s.accuracy ?? 0)}% of ${s.answered}` : undefined,
-        progress: subtopicProgress(s),
-        action: { type: "open-topic", topicId: t.topicId, focusSubtopic: s.name },
+        progress: threadProgress(s.thread),
+        action: { type: "open-subtopic", subtopicId: s.id },
       });
     }
   }
@@ -294,7 +305,7 @@ function topicChildren(t: TopicNode, expanded: boolean): NodeSpec[] {
       detail: "Suggested first",
       progress: threadProgress({ status: p.status }),
       threadStatus: p.status,
-      action: { type: "open-topic", topicId: p.topicId },
+      action: p.subtopicId ? { type: "open-subtopic", subtopicId: p.subtopicId } : { type: "open-topic", topicId: p.topicId },
     });
   }
   return items;
@@ -336,9 +347,7 @@ export function layoutChapterMap(chapter: ChapterNode, expandedTopics: Set<strin
     node: root,
     children: chapter.topics.map((t) => {
       const expanded = expandedTopics.has(t.topicId);
-      const spec = topicSpec(t, expanded, true);
-      const node = spec.expandable ? { ...spec, action: { type: "none" as const } } : spec;
-      return { node, children: topicChildren(t, expanded).map(leaf) };
+      return { node: topicSpec(t, expanded, true), children: topicChildren(t, expanded).map(leaf) };
     }),
   });
 }

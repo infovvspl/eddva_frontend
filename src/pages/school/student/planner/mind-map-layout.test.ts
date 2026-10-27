@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ChapterNode, SubjectNode, SubtopicNode, TopicNode } from "@/lib/api/learning-path";
-import { combineProgress, findChapter, findTopic, homeHeadings, subtopicProgress, threadProgress, layoutChapterMap, layoutHomeMap, layoutTopicMap, roadmapHref, type MapLayout } from "./mind-map-layout";
+import { combineProgress, findChapter, findTopic, homeHeadings, subtopicsProgress, threadProgress, layoutChapterMap, layoutHomeMap, layoutTopicMap, roadmapHref, type MapLayout } from "./mind-map-layout";
 
 const topic = (id: string, status: TopicNode["status"], over: Partial<TopicNode> = {}): TopicNode => ({
   topicId: id,
@@ -12,9 +12,10 @@ const topic = (id: string, status: TopicNode["status"], over: Partial<TopicNode>
   roadmapState: "ready",
   thread: null,
   subtopics: [
-    { name: `${id} part A`, order: 1, status: "weak", accuracy: 25, answered: 4 },
-    { name: `${id} part B`, order: 2, status: "not_assessed", accuracy: null, answered: 0 },
+    { id: `${id}-a`, name: `${id} part A`, order: 1, status: "weak", accuracy: 25, answered: 4, thread: null },
+    { id: `${id}-b`, name: `${id} part B`, order: 2, status: "not_assessed", accuracy: null, answered: 0, thread: null },
   ],
+  completed: false,
   children: [],
   ...over,
 });
@@ -27,12 +28,13 @@ const weakChapter: ChapterNode = {
   estMinutes: 90,
   expanded: true,
   roadmapState: "ready",
+  completed: false,
   topics: [topic("t1", "weak", { order: 1 }), topic("t2", "mastered", { order: 2 })],
 };
-const preparingChapter: ChapterNode = { chapterId: "c2", name: "Triangles", status: "weak", mastery: 20, estMinutes: 60, expanded: true, roadmapState: "pending", topics: [] };
+const preparingChapter: ChapterNode = { chapterId: "c2", name: "Triangles", status: "weak", mastery: 20, estMinutes: 60, expanded: true, roadmapState: "pending", completed: false, topics: [] };
 // A chapter that is fine overall, with one weak topic (shown on its own).
 const fineChapter: ChapterNode = {
-  chapterId: "c3", name: "Statistics", status: "ok", mastery: 72, estMinutes: 20, expanded: false, roadmapState: null,
+  chapterId: "c3", name: "Statistics", status: "ok", mastery: 72, estMinutes: 20, expanded: false, roadmapState: null, completed: false,
   topics: [topic("t3", "weak", { thread: { id: "th3", status: "active", round: 2 } })],
 };
 
@@ -178,10 +180,10 @@ describe("layoutChapterMap", () => {
     expect(opened["sub-t2-1"]).toBeUndefined(); // t2 stays collapsed on its own
   });
 
-  it("makes a subtopic open the topic's learning path focused on it, not the topic itself (the subtopic is what's being learned)", () => {
+  it("makes a subtopic open its own learning path, not the topic's (the subtopic is what's being learned)", () => {
     const byId = index(layoutChapterMap(weakChapter, bothTopicsExpanded));
-    expect(byId["topic-t1"].action).toEqual({ type: "none" }); // toggles its subtopics instead
-    expect(byId["sub-t1-2"].action).toEqual({ type: "open-topic", topicId: "t1", focusSubtopic: "t1 part B" });
+    expect(byId["topic-t1"].action).toEqual({ type: "none" }); // nothing of its own to open — toggles its subtopics instead
+    expect(byId["sub-t1-2"].action).toEqual({ type: "open-subtopic", subtopicId: "t1-b" });
   });
 
   it("still opens a topic's own chat directly when it has no subtopics to expand into", () => {
@@ -199,14 +201,15 @@ describe("layoutChapterMap", () => {
 });
 
 describe("layoutTopicMap", () => {
-  it("shows the topic and its subtopics, and opens the topic's learning path", () => {
+  it("shows the topic with nothing of its own to open, and each subtopic opening its own learning path", () => {
     const byId = index(layoutTopicMap(fineChapter.topics[0]));
-    expect(byId["topic-t3"]).toMatchObject({ label: "Topic t3", action: { type: "open-topic", topicId: "t3" }, y: 0 });
+    // Same rule as the chapter map now: a topic with subtopics has nothing of its own to open.
+    expect(byId["topic-t3"]).toMatchObject({ label: "Topic t3", action: { type: "none" }, y: 0 });
     const [a, b] = [byId["sub-t3-1"], byId["sub-t3-2"]];
     expect(a.y).toBeGreaterThan(0);
     expect(a.y).toBe(b.y); // subtopics side by side in one row under the topic
     expect(b.x).toBeGreaterThanOrEqual(a.x + a.width);
-    expect(byId["sub-t3-1"].action).toEqual({ type: "open-topic", topicId: "t3", focusSubtopic: "t3 part A" });
+    expect(byId["sub-t3-1"].action).toEqual({ type: "open-subtopic", subtopicId: "t3-a" });
   });
 
   it("does not let a topic still waiting for its subtopics be opened", () => {
@@ -240,14 +243,11 @@ describe("progress colours", () => {
     expect(threadProgress({ status: "completed" })).toBe("completed");
   });
 
-  it("gives each subtopic its own progress from the student's answers on it", () => {
-    const sub = (status: SubtopicNode["status"], answered: number): SubtopicNode => ({ name: "x", order: 1, status, accuracy: null, answered });
-    expect(subtopicProgress(sub("not_assessed", 0))).toBe("not_started");
-    expect(subtopicProgress(sub("weak", 4))).toBe("in_progress");
-    expect(subtopicProgress(sub("insufficient_data", 1))).toBe("in_progress");
-    expect(subtopicProgress(sub("ok", 6))).toBe("completed");
-    expect(subtopicProgress(sub("mastered", 6))).toBe("completed");
-    expect(subtopicProgress({ ...sub("not_assessed", 0), opened: true })).toBe("in_progress"); // opened from the mind map
+  it("gives each subtopic its own progress from its own thread, and rolls a topic's up from all of them", () => {
+    const sub = (thread: SubtopicNode["thread"]): SubtopicNode => ({ id: "x", name: "x", order: 1, status: "not_assessed", accuracy: null, answered: 0, thread });
+    expect(subtopicsProgress([sub(null), sub(null)])).toBe("not_started");
+    expect(subtopicsProgress([sub({ id: "th", status: "active", round: 1 }), sub(null)])).toBe("in_progress");
+    expect(subtopicsProgress([sub({ id: "th1", status: "completed", round: 1 }), sub({ id: "th2", status: "completed", round: 1 })])).toBe("completed");
   });
 
   it("marks a group completed only when all of it is, and in progress once any part has started", () => {
@@ -258,31 +258,41 @@ describe("progress colours", () => {
     expect(combineProgress(["completed", "completed"])).toBe("completed");
   });
 
-  it("turns only the opened topic blue, not its siblings or its unanswered subtopics", () => {
+  it("turns a topic's colour from its subtopics' own threads (never a direct thread, once it has any), not its siblings", () => {
     const opened: ChapterNode = {
       ...weakChapter,
       topics: [
-        { ...weakChapter.topics[0], thread: { id: "th1", status: "active", round: 1, stepsDone: 0 } },
+        {
+          ...weakChapter.topics[0],
+          subtopics: [
+            { ...weakChapter.topics[0].subtopics[0], thread: { id: "th-a", status: "active", round: 1, stepsDone: 0 } },
+            weakChapter.topics[0].subtopics[1],
+          ],
+        },
         weakChapter.topics[1],
       ],
     };
     const map = index(layoutChapterMap(opened, new Set(["t1", "t2"])));
-    expect(map["topic-t1"].progress).toBe("in_progress"); // opened
-    expect(map["sub-t1-2"].progress).toBe("not_started"); // not answered yet
-    expect(map["sub-t1-1"].progress).toBe("in_progress"); // answered, still weak
+    expect(map["topic-t1"].progress).toBe("in_progress"); // one of its subtopics opened
+    expect(map["sub-t1-2"].progress).toBe("not_started"); // its sibling untouched
+    expect(map["sub-t1-1"].progress).toBe("in_progress");
     expect(map["topic-t2"].progress).toBe("not_started");
   });
 
   it("colours the chapter and topic maps by progress, not the home map", () => {
     expect(layoutHomeMap(subjects).nodes.every((n) => n.progress === undefined)).toBe(true);
 
-    const done: ChapterNode = { ...weakChapter, topics: weakChapter.topics.map((t) => ({ ...t, thread: { id: `th-${t.topicId}`, status: "completed" as const, round: 1, stepsDone: 4 } })) };
+    // No subtopics here, so each topic's own thread drives its progress directly.
+    const done: ChapterNode = {
+      ...weakChapter,
+      topics: weakChapter.topics.map((t) => ({ ...t, subtopics: [], thread: { id: `th-${t.topicId}`, status: "completed" as const, round: 1, stepsDone: 4 } })),
+    };
     const chapter = index(layoutChapterMap(done));
     expect(chapter["chapter-c1"].progress).toBe("completed");
     expect(chapter["topic-t1"].progress).toBe("completed");
 
-    const topicMap = index(layoutTopicMap(fineChapter.topics[0])); // round 2 of its chat
-    expect(topicMap["topic-t3"].progress).toBe("in_progress");
+    const topicMap = index(layoutTopicMap(topic("t9x", "weak", { subtopics: [], thread: { id: "th9x", status: "active", round: 2 } })));
+    expect(topicMap["topic-t9x"].progress).toBe("in_progress");
   });
 
   it("marks the top of every map, which keeps its home-map colour", () => {

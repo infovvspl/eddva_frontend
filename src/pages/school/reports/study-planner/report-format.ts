@@ -18,11 +18,15 @@ export const SECTION_LABEL: Record<string, string> = {
   chat: "AI Tutor chat",
 };
 
-/** 0 → "0m", 300 → "5m", 7500 → "2h 05m". */
+/** 0 → "0m", 300 → "5m", 7500 → "2h 05m", 2109960 → "24d 10h 06m". */
 export function formatDuration(seconds: number): string {
   const minutes = Math.round((seconds || 0) / 60);
   if (minutes < 60) return `${minutes}m`;
-  return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, "0")}m`;
+  if (minutes < 1440) return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, "0")}m`;
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.floor((minutes % 1440) / 60);
+  const mins = minutes % 60;
+  return `${days}d ${String(hours).padStart(2, "0")}h ${String(mins).padStart(2, "0")}m`;
 }
 
 /** +12.5 → "+12.5 pts", -3 → "−3 pts", null → "Not measured yet". */

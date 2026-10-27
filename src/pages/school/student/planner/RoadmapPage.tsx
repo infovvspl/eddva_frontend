@@ -47,21 +47,35 @@ export default function RoadmapPage({ kind }: { kind: "chapter" | "topic" }) {
   useSetBreadcrumbLabel(title);
 
   const openTopic = useCallback(
-    (id: string, focusSubtopic?: string) => {
+    (id: string) => {
       if (openThread.isPending) return;
       openThread.mutate(
-        { topicId: id, focusSubtopic },
+        { topicId: id },
         {
-          onSuccess: (v) => navigate(`${PLANNER_BASE}/t/${v.thread.id}`, { state: { focusSubtopic: v.focusSubtopic ?? null } }),
+          onSuccess: (v) => navigate(`${PLANNER_BASE}/t/${v.thread.id}`),
           onError: (err) => toast.error(apiErrorMessage(err, "Could not open this topic. Please try again.")),
         },
       );
     },
     [navigate, openThread],
   );
+  const openSubtopic = useCallback(
+    (id: string) => {
+      if (openThread.isPending) return;
+      openThread.mutate(
+        { subtopicId: id },
+        {
+          onSuccess: (v) => navigate(`${PLANNER_BASE}/t/${v.thread.id}`),
+          onError: (err) => toast.error(apiErrorMessage(err, "Could not open this subtopic. Please try again.")),
+        },
+      );
+    },
+    [navigate, openThread],
+  );
   const activate = useCallback((a: MapAction) => {
-    if (a.type === "open-topic") openTopic(a.topicId, a.focusSubtopic);
-  }, [openTopic]);
+    if (a.type === "open-topic") openTopic(a.topicId);
+    else if (a.type === "open-subtopic") openSubtopic(a.subtopicId);
+  }, [openTopic, openSubtopic]);
   const toggle = useCallback((id: string) => {
     setExpandedTopics((prev) => {
       const next = new Set(prev);
@@ -125,7 +139,7 @@ export default function RoadmapPage({ kind }: { kind: "chapter" | "topic" }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {topic && !pending && (
+          {topic && !pending && !topic.subtopics.length && (
             <button type="button" onClick={() => openTopic(topic.topicId)} disabled={openThread.isPending}
               className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60"
             >
@@ -159,7 +173,7 @@ export default function RoadmapPage({ kind }: { kind: "chapter" | "topic" }) {
             </div>
           ) : (
             <div className="min-h-0 flex-1 overflow-y-auto">
-              <RoadmapList chapter={topic ? undefined : chapter} topic={topic ?? undefined} onOpenTopic={openTopic} />
+              <RoadmapList chapter={topic ? undefined : chapter} topic={topic ?? undefined} onOpenTopic={openTopic} onOpenSubtopic={openSubtopic} />
             </div>
           )}
         </section>
