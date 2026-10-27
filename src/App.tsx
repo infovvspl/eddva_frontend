@@ -245,7 +245,6 @@ const SchoolExams = lazy(() => import("./pages/school/admin/Exams"));
 const SchoolQuestionBank = lazy(() => import("./pages/school/admin/QuestionBank"));
 const SchoolMarksEntry = lazy(() => import("./pages/school/admin/MarksEntry"));
 const SchoolResults = lazy(() => import("./pages/school/admin/Results"));
-const SchoolReportCards = lazy(() => import("./pages/school/admin/ReportCards"));
 const SchoolFeeStructures = lazy(() => import("./pages/school/admin/FeeStructures"));
 const SchoolPaymentCollection = lazy(() => import("./pages/school/admin/PaymentCollection"));
 const SchoolPaymentHistory = lazy(() => import("./pages/school/admin/PaymentHistory"));

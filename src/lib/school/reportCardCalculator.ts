@@ -4,7 +4,42 @@
 // Every other view (parent, teacher, student dashboards) must call into this
 // module instead of re-deriving its own weightage formula, so all views agree.
 
-export type WeightingFormula = 'equal_term' | 'annual_only' | 'custom_cbse';
+export type WeightingFormula = 'equal_term' | 'cbse_20_80' | 'custom_cbse';
+
+/**
+ * Indian school academic year runs April-March. Used only as a last-resort
+ * fallback when a student record has no class/section (and therefore no
+ * academicYear) to key remarks/status lookups off of — never hardcode a
+ * literal year string, since it silently goes stale every April.
+ */
+export function getCurrentAcademicYear(now: Date = new Date()): string {
+  const year = now.getFullYear();
+  return now.getMonth() >= 3 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
+}
+
+/**
+ * Same class-name -> weighting-formula auto-detect used by the report-card
+ * template configurator, exported so every view that shows a report-card
+ * percentage for a given class picks the same formula that class's actual
+ * report card will use. Returns null for pre-primary, which has no
+ * scholastic marks table and so no weighting formula to apply.
+ */
+export function getDefaultWeightingFormula(className: string | null | undefined): WeightingFormula | null {
+  const cls = String(className || '').toLowerCase();
+  if (cls.includes('lkg') || cls.includes('ukg') || cls.includes('nursery') || cls.includes('pre')) {
+    return null;
+  }
+  if (cls.includes('6') || cls.includes('7') || cls.includes('8') || cls.includes('vi') || cls.includes('vii') || cls.includes('viii')) {
+    return 'equal_term';
+  }
+  if (cls.includes('10') || cls.includes('12') || cls.match(/\b(x|xii)\b/)) {
+    return 'cbse_20_80';
+  }
+  if (cls.includes('1') || cls.includes('2') || cls.includes('3') || cls.includes('4') || cls.includes('5') || cls.match(/\b(i|ii|iii|iv|v)\b/)) {
+    return 'equal_term';
+  }
+  return 'custom_cbse';
+}
 
 export interface ReportCardResultRow {
   subjectName?: string | null;
@@ -121,6 +156,12 @@ export function calculateSubjectBreakdown(
       });
 
     const calculationRecords = Array.from(slotMap.values());
+    // If none of this subject's assessment titles matched a recognized term
+    // slot (e.g. "Unit Test 3"), fall back to every entered record so the
+    // subject still shows up and still counts toward the average, rather
+    // than silently vanishing from both.
+    const noRecognizedSlot = calculationRecords.length === 0 && records.length > 0;
+    const theoryRecords = noRecognizedSlot ? records : calculationRecords;
 
     let theoryObtained = 0, theoryMax = 0;
     let practicalObtained = 0, practicalMax = 0;
@@ -173,7 +214,9 @@ export function calculateSubjectBreakdown(
           aExam = (aExam || 0) + marks;
         }
       }
+    });
 
+    theoryRecords.forEach((rec) => {
       try {
         if (rec.remarks && String(rec.remarks).trim().startsWith('{')) {
           const parsed = JSON.parse(String(rec.remarks));
@@ -207,26 +250,18 @@ export function calculateSubjectBreakdown(
       }
     });
 
-    if (calculationRecords.length > 0 && h1Exam === null && aExam === null) {
-      h1Exam = Math.round(theoryObtained * 0.4);
-      aExam = Math.round(theoryObtained * 0.5);
-      t1Int = Math.round(internalObtained || (theoryObtained * 0.05));
-      t2Int = Math.round(internalObtained || (theoryObtained * 0.05));
-    }
-
-    let h1Max = 80, aMax = 80;
+    let h1Max = 80, aMax = 80, internalMax = 0;
     calculationRecords.forEach((rec) => {
       const title = (rec.assessmentTitle || '').toLowerCase();
       const maxVal = Number(rec.totalMarks || 0);
       if (maxVal > 0) {
-        if (title.includes('t1') || title.includes('term 1') || title.includes('mid') || title.includes('half')) {
-          if (!title.includes('internal') && !title.includes('periodic') && !title.includes('unit')) {
-            h1Max = maxVal;
-          }
+        const isInternalTitle = title.includes('internal') || title.includes('periodic') || title.includes('unit');
+        if (isInternalTitle) {
+          internalMax += maxVal;
+        } else if (title.includes('t1') || title.includes('term 1') || title.includes('mid') || title.includes('half')) {
+          h1Max = maxVal;
         } else if (title.includes('t2') || title.includes('term 2') || title.includes('annual')) {
-          if (!title.includes('internal') && !title.includes('periodic') && !title.includes('unit')) {
-            aMax = maxVal;
-          }
+          aMax = maxVal;
         }
       }
     });
@@ -243,8 +278,18 @@ export function calculateSubjectBreakdown(
       if (t1Total !== null || t2Total !== null) {
         finalResult = ((t1Total || 0) + (t2Total || 0)) / 2;
       }
-    } else if (weightingFormula === 'annual_only') {
-      finalResult = t2Total;
+    } else if (weightingFormula === 'cbse_20_80') {
+      // CBSE board-class convention: internal/periodic assessment marks across
+      // both terms count for 20% of the final result, the annual/final exam
+      // for the other 80% — each normalized to its own entered max, not just
+      // summed raw, so a 20-mark internal test and an 80-mark exam combine
+      // correctly regardless of what totals were actually entered.
+      const internalObtainedCombined = (t1Int || 0) + (t2Int || 0);
+      const internalScaled = internalMax > 0 ? (internalObtainedCombined / internalMax) * 20 : 0;
+      const annualScaled = aMax > 0 && aExam !== null ? (aExam / aMax) * 80 : 0;
+      if (internalMax > 0 || aExam !== null) {
+        finalResult = internalScaled + annualScaled;
+      }
     } else {
       if (h1Exam !== null || t1Int !== null || t2Int !== null || aExam !== null) {
         const hyScaled = h1Max > 0 && h1Exam !== null ? (h1Exam / h1Max) * 30 : 0;
@@ -252,6 +297,10 @@ export function calculateSubjectBreakdown(
         const internalScaled = (t1Int !== null || t2Int !== null) ? ((t1Int || 0) + (t2Int || 0)) / 2 : 0;
         finalResult = hyScaled + internalScaled + annualScaled;
       }
+    }
+
+    if (finalResult === null && noRecognizedSlot && theoryMax > 0) {
+      finalResult = (theoryObtained / theoryMax) * 100;
     }
 
     let finalDisplay: number | '' = '';

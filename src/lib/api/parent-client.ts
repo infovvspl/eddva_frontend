@@ -59,6 +59,11 @@ export const parentClient = {
       .then(extractData)
       .catch((e) => logParentApiError('getScreenTimeMonth', `/school/parent/students/${studentId}/screen-time/month`, e)),
 
+  getScreenTimeYear: (studentId: string, year: string) =>
+    schoolApi.get(`/parent/students/${studentId}/screen-time/year?year=${year}`)
+      .then(extractData)
+      .catch((e) => logParentApiError('getScreenTimeYear', `/school/parent/students/${studentId}/screen-time/year`, e)),
+
   getFeeSummary: (studentId: string) =>
     schoolApi.get(`/parent/students/${studentId}/fees`)
       .then(extractData)

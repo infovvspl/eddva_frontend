@@ -7,7 +7,11 @@ import { apiErrorMessage } from "@/lib/api/learning-path";
 import { useSetBreadcrumbLabel } from "@/components/school/breadcrumbs/BreadcrumbContext";
 import { cn } from "@/lib/utils";
 import { classLabel, formatDay, formatDuration, formatImprovement, PERIOD_LABEL, SECTION_LABEL } from "./report-format";
-import { Card, LevelChip, PeriodToggle, SectionDonut, StatTile, SubjectBars, TrendChart, TrendToggle } from "./ReportParts";
+import { Card, LevelChip, PeriodToggle, SectionDonut, StatTile, SubjectBars, TrendChart } from "./ReportParts";
+
+// The trend chart's bar granularity follows the selected period automatically
+// (a year of daily bars is unreadable) instead of a second, redundant toggle.
+const TREND_FOR_PERIOD: Record<ReportPeriod, TrendGranularity> = { today: "day", week: "day", month: "day", year: "month" };
 
 const PATH_STATUS: Record<string, string> = { active: "In progress", completed: "Completed", needs_teacher: "Needs teacher help", suggested: "Suggested" };
 
@@ -90,7 +94,7 @@ function SubjectBlock({ s }: { s: ReportSubject }) {
  */
 export default function StudentStudyReport({ studentId, backHref, backLabel, embedded = false }: { studentId: string; backHref?: string; backLabel?: string; embedded?: boolean }) {
   const [period, setPeriod] = useState<ReportPeriod>("month");
-  const [trend, setTrend] = useState<TrendGranularity>("day");
+  const trend = TREND_FOR_PERIOD[period];
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["learning-report", "student", studentId, period, trend],
     queryFn: () => learningReportsApi.student(studentId, { period, trend }),
@@ -172,7 +176,7 @@ export default function StudentStudyReport({ studentId, backHref, backLabel, emb
       </section>
 
       <div className="space-y-4">
-        <Card title="Usage trend" action={<span className="print:hidden"><TrendToggle value={trend} onChange={setTrend} /></span>}>
+        <Card title="Usage trend">
           <TrendChart trend={data.trend} granularity={data.granularity} />
         </Card>
         <div className="grid gap-4 md:grid-cols-2 md:items-start lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
