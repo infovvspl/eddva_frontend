@@ -74,7 +74,7 @@ function PlainSelect({
 }
 
 const FIELD_LABEL = 'text-[10px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400';
-const FIELD_INPUT = 'h-auto rounded-xl sm:rounded-2xl border-slate-200 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-bold text-slate-800 focus-visible:border-cyan-400 focus-visible:bg-white focus-visible:ring-0 focus-visible:ring-offset-0';
+const FIELD_INPUT = 'h-auto rounded-xl sm:rounded-2xl border-slate-200 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-bold text-slate-800 focus-visible:border-blue-400 focus-visible:bg-white focus-visible:ring-0 focus-visible:ring-offset-0';
 const FIELD_SELECT = 'h-auto rounded-xl sm:rounded-2xl border-slate-200 bg-white px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-semibold text-slate-700 shadow-sm';
 
 type MeetingRow = {
@@ -338,12 +338,14 @@ export default function TeacherMeetingsPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <Card className="rounded-2xl sm:rounded-[28px] border-0 bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-700 px-4 py-4 sm:px-6 sm:py-8 text-white shadow-[0_30px_80px_-35px_rgba(14,116,144,0.6)]">
-        <div className="flex flex-row items-center justify-between gap-4">
+      <Card className="relative overflow-hidden rounded-2xl sm:rounded-3xl border-0 bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-600 px-4 py-4 sm:px-6 sm:py-7 text-white shadow-lg shadow-blue-600/20">
+        <div className="pointer-events-none absolute -right-10 -top-14 size-44 rounded-full bg-white/10" />
+        <div className="pointer-events-none absolute -bottom-16 right-24 hidden size-40 rounded-full bg-white/[0.07] sm:block" />
+        <div className="relative flex flex-row items-center justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-white/75 hidden sm:block">Teacher Workspace</p>
-            <h1 className="text-xl sm:text-3xl font-black tracking-tight sm:mt-3">Meetings</h1>
-            <p className="mt-3 max-w-2xl text-sm font-semibold text-white/80 hidden sm:block">
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/70 hidden sm:block">Teacher Workspace</p>
+            <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight sm:mt-2">Meetings</h1>
+            <p className="mt-2 max-w-2xl text-sm font-medium text-white/80 hidden sm:block">
               Review parent meeting requests, confirm schedules, and manage online or offline discussions from one place.
             </p>
           </div>
@@ -357,7 +359,7 @@ export default function TeacherMeetingsPage() {
               setSectionFilter('');
               setShowCreate(true);
             }}
-            className="h-auto shrink-0 rounded-xl bg-white px-3 py-2 text-[11px] font-black text-cyan-700 shadow-lg hover:bg-cyan-50 sm:rounded-2xl sm:px-5 sm:py-3 sm:text-sm"
+            className="h-auto shrink-0 rounded-xl bg-white px-3 py-2 text-[11px] font-bold text-blue-700 shadow-md hover:bg-blue-50 sm:px-5 sm:py-2.5 sm:text-sm"
           >
             <CalendarDays className="mr-1.5 size-3.5 shrink-0 sm:mr-2 sm:size-4" />
             <span>Schedule Meeting</span>
@@ -365,26 +367,26 @@ export default function TeacherMeetingsPage() {
         </div>
       </Card>
 
-      <section className="grid grid-cols-4 gap-1.5 sm:gap-4">
+      <section className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
         {[
-          { label: 'Total Meetings', value: summary.total, icon: CalendarDays, tone: 'text-blue-600 bg-blue-50', bgMobile: 'bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-900/40', textTone: 'text-blue-800 dark:text-blue-300', valTone: 'text-blue-900 dark:text-blue-100' },
-          { label: 'Pending Actions', value: summary.pending, icon: Clock3, tone: 'text-amber-600 bg-amber-50', bgMobile: 'bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/40', textTone: 'text-amber-800 dark:text-amber-300', valTone: 'text-amber-900 dark:text-amber-100' },
-          { label: 'Incoming Requests', value: summary.incoming, icon: Users, tone: 'text-violet-600 bg-violet-50', bgMobile: 'bg-violet-50 border-violet-200 dark:bg-violet-950/20 dark:border-violet-900/40', textTone: 'text-violet-800 dark:text-violet-300', valTone: 'text-violet-900 dark:text-violet-100' },
-          { label: 'Scheduled / Done', value: summary.scheduled, icon: CheckCircle2, tone: 'text-emerald-600 bg-emerald-50', bgMobile: 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-900/40', textTone: 'text-emerald-800 dark:text-emerald-300', valTone: 'text-emerald-900 dark:text-emerald-100' },
+          { label: 'Total Meetings', value: summary.total, icon: CalendarDays, icon_tone: 'from-blue-500 to-blue-600 shadow-blue-500/30', ring: 'hover:border-blue-300' },
+          { label: 'Pending Actions', value: summary.pending, icon: Clock3, icon_tone: 'from-orange-400 to-orange-600 shadow-orange-500/30', ring: 'hover:border-amber-300' },
+          { label: 'Incoming Requests', value: summary.incoming, icon: Users, icon_tone: 'from-violet-500 to-purple-600 shadow-violet-500/30', ring: 'hover:border-violet-300' },
+          { label: 'Scheduled / Done', value: summary.scheduled, icon: CheckCircle2, icon_tone: 'from-emerald-500 to-teal-600 shadow-emerald-500/30', ring: 'hover:border-emerald-300' },
         ].map((item) => (
-          <Card key={item.label} className={`rounded-xl sm:rounded-3xl p-2 sm:p-5 shadow-sm flex flex-col items-center sm:items-start text-center sm:text-left ${item.bgMobile} sm:bg-white sm:border-slate-200 dark:sm:bg-slate-900 dark:sm:border-slate-800`}>
-            <div className={`mb-2 sm:mb-4 flex size-7 sm:size-12 items-center justify-center rounded-lg sm:rounded-2xl ${item.tone}`}>
-              <item.icon className="size-3.5 sm:size-5" />
+          <Card key={item.label} className={`flex items-center gap-3 rounded-xl sm:rounded-2xl border-slate-200 bg-white p-3 sm:p-4 shadow-none transition-colors dark:border-slate-800 dark:bg-slate-900 ${item.ring}`}>
+            <div className={`flex size-9 sm:size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-lg ${item.icon_tone}`}>
+              <item.icon className="size-4 sm:size-5" />
             </div>
-            <p className={`text-[8px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] leading-tight sm:leading-normal ${item.textTone} sm:text-slate-400`}>
-              {item.label.split(' ')[0]} <span className="hidden sm:inline">{item.label.split(' ').slice(1).join(' ')}</span>
-            </p>
-            <p className={`mt-1 text-base sm:text-3xl font-black ${item.valTone} sm:text-slate-900 dark:sm:text-white`}>{item.value}</p>
+            <div className="min-w-0">
+              <p className="text-xl sm:text-2xl font-extrabold leading-none text-slate-900 dark:text-white">{item.value}</p>
+              <p className="mt-1 truncate text-[10px] sm:text-xs font-semibold text-slate-500">{item.label}</p>
+            </div>
           </Card>
         ))}
       </section>
 
-      <Card className="rounded-2xl sm:rounded-[28px] border-slate-200 bg-white p-3.5 sm:p-5 shadow-sm">
+      <Card className="rounded-2xl border-slate-200 bg-white p-3 sm:p-4 shadow-none">
         <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 sm:left-4 top-1/2 size-3.5 sm:size-4 -translate-y-1/2 text-slate-400" />
@@ -392,7 +394,7 @@ export default function TeacherMeetingsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search parent, title, date"
-              className="h-auto w-full rounded-xl border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-xs font-semibold text-slate-700 focus-visible:border-cyan-400 focus-visible:bg-white focus-visible:ring-0 focus-visible:ring-offset-0 sm:rounded-2xl sm:py-3 sm:pl-11"
+              className="h-auto w-full rounded-xl border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-xs font-semibold text-slate-700 focus-visible:border-blue-400 focus-visible:bg-white focus-visible:ring-0 focus-visible:ring-offset-0 sm:rounded-2xl sm:py-3 sm:pl-11"
             />
           </div>
           <div className="grid w-full grid-cols-2 gap-2 lg:flex lg:w-auto">
@@ -431,7 +433,7 @@ export default function TeacherMeetingsPage() {
         {loading ? (
           <div className="space-y-3" aria-busy="true">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Card key={i} className="rounded-xl border-slate-200 p-4 shadow-sm sm:rounded-[28px] sm:p-5">
+              <Card key={i} className="rounded-xl border-slate-200 p-4 shadow-none sm:rounded-2xl sm:p-5">
                 <Skeleton className="h-5 w-1/3" />
                 <Skeleton className="mt-3 h-4 w-1/4" />
                 <div className="mt-4 grid grid-cols-2 gap-2 xl:grid-cols-4">
@@ -444,80 +446,79 @@ export default function TeacherMeetingsPage() {
             ))}
           </div>
         ) : filteredMeetings.length === 0 ? (
-          <Card className="rounded-[28px] border-dashed border-slate-300 bg-white p-8 text-center shadow-sm sm:p-12">
-            <CalendarDays className="mx-auto size-12 text-slate-300" />
-            <h3 className="mt-4 text-lg font-black text-slate-800">No meetings found</h3>
-            <p className="mt-2 text-sm font-semibold text-slate-500">
+          <Card className="rounded-2xl border-dashed border-slate-300 bg-white p-8 text-center shadow-none sm:p-12">
+            <span className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-500"><CalendarDays className="size-7" /></span>
+            <h3 className="mt-4 text-lg font-bold text-slate-800">No meetings found</h3>
+            <p className="mt-1.5 text-sm font-medium text-slate-500">
               Parent requests and your scheduled meetings will appear here.
             </p>
           </Card>
         ) : (
           filteredMeetings.map((meeting) => {
             const status = String(meeting.status || 'pending').toLowerCase();
-            const statusTone =
+            const statusStyle =
               status === 'pending'
-                ? 'bg-amber-100 text-amber-700'
-                : ['accepted', 'scheduled', 'completed'].includes(status)
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'bg-rose-100 text-rose-700';
+                ? { bar: 'from-orange-400 to-orange-600', wash: 'from-orange-50/70', avatar: 'from-orange-400 to-orange-600 shadow-orange-500/30', tile: 'bg-orange-50 text-orange-600', badge: 'bg-orange-50 text-orange-700 ring-orange-200' }
+                : status === 'scheduled'
+                  ? { bar: 'from-amber-400 to-amber-600', wash: 'from-amber-50/70', avatar: 'from-amber-400 to-amber-600 shadow-amber-500/30', tile: 'bg-amber-50 text-amber-600', badge: 'bg-amber-50 text-amber-700 ring-amber-200' }
+                  : status === 'accepted'
+                    ? { bar: 'from-blue-400 to-blue-600', wash: 'from-blue-50/70', avatar: 'from-blue-400 to-blue-600 shadow-blue-500/30', tile: 'bg-blue-50 text-blue-600', badge: 'bg-blue-50 text-blue-700 ring-blue-200' }
+                    : status === 'completed'
+                      ? { bar: 'from-emerald-400 to-emerald-600', wash: 'from-emerald-50/70', avatar: 'from-emerald-400 to-emerald-600 shadow-emerald-500/30', tile: 'bg-emerald-50 text-emerald-600', badge: 'bg-emerald-50 text-emerald-700 ring-emerald-200' }
+                      : status === 'cancelled'
+                        ? { bar: 'from-red-400 to-red-600', wash: 'from-red-50/70', avatar: 'from-red-400 to-red-600 shadow-red-500/30', tile: 'bg-red-50 text-red-600', badge: 'bg-red-50 text-red-700 ring-red-200' }
+                        : { bar: 'from-rose-400 to-rose-600', wash: 'from-rose-50/70', avatar: 'from-rose-400 to-rose-600 shadow-rose-500/30', tile: 'bg-rose-50 text-rose-600', badge: 'bg-rose-50 text-rose-700 ring-rose-200' };
+            const counterpart = meeting.counterpartName || 'Parent';
 
             return (
               <Card
                 key={meeting.id}
-                className="rounded-xl sm:rounded-[28px] border-slate-200 bg-white p-3.5 sm:p-5 shadow-sm transition hover:shadow-md"
+                className={`relative overflow-hidden rounded-xl sm:rounded-2xl border-slate-200 bg-gradient-to-br ${statusStyle.wash} via-white to-white p-3.5 pl-5 sm:p-5 sm:pl-6 shadow-none transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg dark:border-slate-800`}
               >
+                <span className={`absolute inset-y-0 left-0 w-1 sm:w-1.5 bg-gradient-to-b ${statusStyle.bar}`} />
                 <div className="flex flex-col gap-3.5 sm:gap-5 xl:flex-row xl:items-start xl:justify-between">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                      <h3 className="text-sm sm:text-lg font-black text-slate-900">{meeting.title || 'Meeting'}</h3>
-                      <Badge variant="outline" className={`border-transparent px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-[0.2em] ${statusTone}`}>
+                      <h3 className={`text-sm sm:text-lg font-bold text-slate-900 dark:text-white`}>{meeting.title || 'Meeting'}</h3>
+                      <Badge variant="outline" className={`border-transparent px-2 py-0.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider ring-1 ring-inset ${statusStyle.badge}`}>
                         {status}
                       </Badge>
-                      <Badge variant="outline" className={`border-transparent px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-[0.2em] ${
-                        meeting.isIncoming ? 'bg-violet-100 text-violet-700' : 'bg-blue-100 text-blue-700'
-                      }`}>
+                      <Badge variant="outline" className="border-transparent bg-slate-100 px-2 py-0.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-600">
                         {meeting.isIncoming ? 'Incoming' : 'Outgoing'}
                       </Badge>
                     </div>
 
-                    <div className="mt-2 sm:mt-3 flex flex-wrap gap-2 text-xs sm:text-sm font-semibold text-slate-500">
-                      <span>{meeting.counterpartName || 'Parent'}</span>
+                    <div className="mt-2 sm:mt-3 flex flex-wrap items-center gap-2 text-xs sm:text-sm font-medium text-slate-500">
+                      <span className={`flex size-6 sm:size-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-[10px] sm:text-xs font-bold text-white shadow-md ${statusStyle.avatar}`}>
+                        {counterpart.trim().charAt(0).toUpperCase() || 'P'}
+                      </span>
+                      <span className="font-semibold text-slate-700">{counterpart}</span>
                       {meeting.counterpartRole && (
-                        <Badge variant="outline" className="rounded border-transparent bg-slate-100 px-1.5 py-0.5 text-[9px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.16em] text-slate-500">
+                        <Badge variant="outline" className="rounded border-transparent bg-slate-100 px-1.5 py-0.5 text-[9px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500">
                           {String(meeting.counterpartRole).replace('_', ' ')}
                         </Badge>
                       )}
                     </div>
 
-                    <div className="mt-3 sm:mt-4 grid grid-cols-2 gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                      <Card className="rounded-xl border-0 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 shadow-none">
-                        <p className="text-[9px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Date & Time</p>
-                        <p className="mt-0.5 text-[11px] sm:text-sm font-bold text-slate-800">
-                          {formatMeetingDate(meeting.meetingDate) || 'TBD'}{meeting.startTime ? ` • ${meeting.startTime}` : ''}
-                        </p>
-                      </Card>
-                      <Card className="rounded-xl border-0 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 shadow-none">
-                        <p className="text-[9px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Mode</p>
-                        <p className="mt-0.5 text-[11px] sm:text-sm font-bold capitalize text-slate-800">{meeting.meetingMode || 'online'}</p>
-                      </Card>
-                      <Card className="rounded-xl border-0 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 shadow-none">
-                        <p className="text-[9px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Duration</p>
-                        <p className="mt-0.5 text-[11px] sm:text-sm font-bold text-slate-800">
-                          {meeting.durationMinutes ? `${meeting.durationMinutes} mins` : 'Not set'}
-                        </p>
-                      </Card>
-                      <Card className="rounded-xl border-0 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 shadow-none">
-                        <p className="text-[9px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400">Location / Link</p>
-                        <p className="mt-0.5 truncate text-[11px] sm:text-sm font-bold text-slate-800">
-                          {meeting.meetingMode === 'offline'
-                            ? meeting.location || 'Campus'
-                            : meeting.meetingPlatform || meeting.meetingLink || 'Online'}
-                        </p>
-                      </Card>
+                    <div className="mt-3 sm:mt-4 grid grid-cols-2 gap-2 xl:grid-cols-4">
+                      {[
+                        { label: 'Date & Time', icon: CalendarDays, value: `${formatMeetingDate(meeting.meetingDate) || 'TBD'}${meeting.startTime ? ` \u2022 ${meeting.startTime}` : ''}` },
+                        { label: 'Mode', icon: meeting.meetingMode === 'offline' ? MapPin : Video, value: meeting.meetingMode || 'online', capitalize: true },
+                        { label: 'Duration', icon: Clock3, value: meeting.durationMinutes ? `${meeting.durationMinutes} mins` : 'Not set' },
+                        { label: 'Location / Link', icon: MapPin, value: meeting.meetingMode === 'offline' ? meeting.location || 'Campus' : meeting.meetingPlatform || meeting.meetingLink || 'Online', truncate: true },
+                      ].map((info) => (
+                        <div key={info.label} className="flex min-w-0 items-center gap-2 rounded-xl border border-slate-100 bg-white px-2.5 py-2 shadow-sm sm:gap-2.5 sm:px-3 sm:py-2.5">
+                          <span className={`flex size-6 sm:size-8 shrink-0 items-center justify-center rounded-lg ${statusStyle.tile}`}><info.icon className="size-3 sm:size-4" /></span>
+                          <div className="min-w-0">
+                            <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400">{info.label}</p>
+                            <p className={`mt-0.5 text-[11px] sm:text-sm font-semibold text-slate-800 ${info.capitalize ? 'capitalize' : ''} ${info.truncate ? 'truncate' : ''}`}>{info.value}</p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
 
                     {meeting.description && (
-                      <p className="mt-3 rounded-xl bg-slate-50 px-3 py-2.5 text-xs sm:text-sm font-medium text-slate-600">
+                      <p className="mt-3 rounded-xl border-l-2 border-slate-200 bg-slate-50/70 px-3 py-2.5 text-xs sm:text-sm font-medium text-slate-600">
                         {meeting.description}
                       </p>
                     )}
@@ -527,7 +528,7 @@ export default function TeacherMeetingsPage() {
                     {meeting.meetingMode === 'online' && meeting.meetingLink && !['completed', 'cancelled'].includes(status) && (
                       <Button
                         asChild
-                        className="h-auto flex-1 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white hover:bg-blue-700 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm"
+                        className="h-auto flex-1 rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700 sm:px-4 sm:py-2.5 sm:text-sm"
                       >
                         <a href={meeting.meetingLink} target="_blank" rel="noreferrer">
                           <Video className="mr-1.5 size-3.5 sm:mr-2 sm:size-4" />
@@ -537,7 +538,7 @@ export default function TeacherMeetingsPage() {
                     )}
 
                     {meeting.meetingMode === 'offline' && meeting.location && (
-                      <Card className="flex-1 inline-flex items-center justify-center rounded-xl sm:rounded-2xl border-slate-200 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-bold text-slate-700 shadow-none">
+                      <Card className="flex-1 inline-flex items-center justify-center rounded-xl border-slate-200 bg-slate-50 px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-semibold text-slate-700 shadow-none">
                         <MapPin className="mr-1.5 size-3.5 sm:mr-2 sm:size-4" />
                         {meeting.location}
                       </Card>
@@ -549,7 +550,7 @@ export default function TeacherMeetingsPage() {
                           type="button"
                           disabled={updatingId === meeting.id}
                           onClick={() => void updateStatus(meeting.id, 'accepted')}
-                          className="h-auto flex-1 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black text-white shadow-none hover:bg-emerald-700 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm"
+                          className="h-auto flex-1 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white shadow-none hover:bg-emerald-700 sm:px-4 sm:py-2.5 sm:text-sm"
                         >
                           Accept
                         </Button>
@@ -558,7 +559,7 @@ export default function TeacherMeetingsPage() {
                           variant="ghost"
                           disabled={updatingId === meeting.id}
                           onClick={() => void updateStatus(meeting.id, 'rejected')}
-                          className="h-auto flex-1 rounded-xl bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 hover:bg-rose-100 hover:text-rose-700 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm"
+                          className="h-auto flex-1 rounded-xl border border-rose-200 bg-white px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 hover:text-rose-700 sm:px-4 sm:py-2.5 sm:text-sm"
                         >
                           Reject
                         </Button>
@@ -571,7 +572,7 @@ export default function TeacherMeetingsPage() {
                         variant="secondary"
                         disabled={updatingId === meeting.id}
                         onClick={() => void updateStatus(meeting.id, 'cancelled')}
-                        className="h-auto flex-1 rounded-xl border-0 bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-200 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm"
+                        className="h-auto flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 sm:px-4 sm:py-2.5 sm:text-sm"
                       >
                         Cancel
                       </Button>
@@ -583,7 +584,7 @@ export default function TeacherMeetingsPage() {
                         variant="ghost"
                         disabled={updatingId === meeting.id}
                         onClick={() => void updateStatus(meeting.id, 'completed')}
-                        className="h-auto flex-1 rounded-xl bg-blue-100 px-3 py-2 text-xs font-black text-blue-700 hover:bg-blue-200 hover:text-blue-700 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm"
+                        className="h-auto flex-1 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100 hover:text-blue-700 sm:px-4 sm:py-2.5 sm:text-sm"
                       >
                         Complete
                       </Button>
@@ -597,7 +598,7 @@ export default function TeacherMeetingsPage() {
       </section>
 
       <Dialog open={showCreate} onOpenChange={(open) => { if (!open) resetCreateForm(); }}>
-        <DialogContent className="max-h-[92vh] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:rounded-[30px] sm:p-6">
+        <DialogContent className="max-h-[92vh] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
           <DialogHeader className="mb-1 text-left sm:mb-2">
             <DialogTitle className="text-base font-black leading-normal tracking-normal text-slate-900 sm:text-xl">Schedule Parent Meeting</DialogTitle>
             <DialogDescription className="sr-only">Pick a parent, then choose when and where to meet.</DialogDescription>
@@ -610,14 +611,14 @@ export default function TeacherMeetingsPage() {
                 { n: 2, label: 'When & where' },
               ].map((s, i) => (
                 <React.Fragment key={s.n}>
-                  {i > 0 && <div className={`h-0.5 flex-1 rounded-full ${step > 1 ? 'bg-cyan-500' : 'bg-slate-200'}`} />}
+                  {i > 0 && <div className={`h-0.5 flex-1 rounded-full ${step > 1 ? 'bg-blue-500' : 'bg-slate-200'}`} />}
                   <div className="flex items-center gap-1.5 shrink-0">
                     <span
                       className={`flex size-5 sm:size-6 items-center justify-center rounded-full text-[10px] sm:text-xs font-black ${
                         step === s.n
-                          ? 'bg-cyan-600 text-white'
+                          ? 'bg-blue-600 text-white'
                           : step > s.n
-                            ? 'bg-cyan-100 text-cyan-700'
+                            ? 'bg-blue-100 text-blue-700'
                             : 'bg-slate-100 text-slate-400'
                       }`}
                     >
@@ -632,8 +633,8 @@ export default function TeacherMeetingsPage() {
             </div>
 
             {selectedParent && (
-              <Card className="mb-3 sm:mb-4 flex items-center gap-2.5 rounded-xl sm:rounded-2xl border-cyan-100 bg-cyan-50/60 px-3 py-2 sm:px-4 sm:py-2.5 shadow-none">
-                <span className="flex size-7 sm:size-8 shrink-0 items-center justify-center rounded-full bg-cyan-100 text-cyan-700">
+              <Card className="mb-3 sm:mb-4 flex items-center gap-2.5 rounded-xl sm:rounded-2xl border-blue-100 bg-blue-50/60 px-3 py-2 sm:px-4 sm:py-2.5 shadow-none">
+                <span className="flex size-7 sm:size-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700">
                   <User className="size-3.5 sm:size-4" />
                 </span>
                 <div className="min-w-0">
@@ -740,7 +741,7 @@ export default function TeacherMeetingsPage() {
                       rows={2}
                       value={form.description}
                       onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-                      className="min-h-0 resize-none rounded-xl border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 focus-visible:border-cyan-400 focus-visible:bg-white focus-visible:ring-0 focus-visible:ring-offset-0 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm"
+                      className="min-h-0 resize-none rounded-xl border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 focus-visible:border-blue-400 focus-visible:bg-white focus-visible:ring-0 focus-visible:ring-offset-0 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm"
                       placeholder="Discuss attendance, performance, assessments, or classroom follow-up."
                     />
                   </div>
@@ -761,7 +762,7 @@ export default function TeacherMeetingsPage() {
                         <ToggleGroupItem
                           key={mode}
                           value={mode}
-                          className="h-auto gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black capitalize text-slate-500 data-[state=on]:border-cyan-500 data-[state=on]:bg-cyan-50 data-[state=on]:text-cyan-700 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm"
+                          className="h-auto gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black capitalize text-slate-500 data-[state=on]:border-blue-500 data-[state=on]:bg-blue-50 data-[state=on]:text-blue-700 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm"
                         >
                           {mode === 'online' ? <Video className="size-3.5" /> : <MapPin className="size-3.5" />}
                           {mode}
@@ -875,7 +876,7 @@ export default function TeacherMeetingsPage() {
                   type="button"
                   disabled={!form.parentId || !form.title.trim()}
                   onClick={() => setStep(2)}
-                  className="h-auto flex-1 rounded-xl bg-cyan-600 px-4 py-2.5 text-xs font-black text-white shadow-none hover:bg-cyan-700 sm:flex-initial sm:rounded-2xl sm:px-5 sm:py-3 sm:text-sm"
+                  className="h-auto flex-1 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-black text-white shadow-none hover:bg-blue-700 sm:flex-initial sm:rounded-2xl sm:px-5 sm:py-3 sm:text-sm"
                 >
                   Continue
                 </Button>
@@ -884,7 +885,7 @@ export default function TeacherMeetingsPage() {
                   type="button"
                   disabled={creating || !form.parentId}
                   onClick={() => void createMeeting()}
-                  className="h-auto flex-1 rounded-xl bg-cyan-600 px-4 py-2.5 text-xs font-black text-white shadow-none hover:bg-cyan-700 sm:flex-initial sm:rounded-2xl sm:px-5 sm:py-3 sm:text-sm"
+                  className="h-auto flex-1 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-black text-white shadow-none hover:bg-blue-700 sm:flex-initial sm:rounded-2xl sm:px-5 sm:py-3 sm:text-sm"
                 >
                   {creating ? 'Scheduling...' : 'Create Meeting'}
                 </Button>
