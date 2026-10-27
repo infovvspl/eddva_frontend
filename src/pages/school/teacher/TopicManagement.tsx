@@ -40,6 +40,7 @@ import {
   FileQuestion,
   FileSpreadsheet,
   ListChecks,
+  Check,
   ExternalLink,
   X,
   Sparkles,
@@ -2365,6 +2366,31 @@ const AI_GEN_TYPES: { id: string; label: string; desc: string; saveAs: string; i
   { id: 'dpp', label: 'Daily Assessment', desc: 'Daily Practice Problems with MCQs, numericals & answer key', saveAs: 'dpp', icon: ListChecks, soft: 'bg-orange-50 dark:bg-orange-900/30', text: 'text-orange-600 dark:text-orange-400' },
 ];
 
+// Gradient icon tile per content type, same treatment as the dashboard cards.
+const AI_GEN_TILE: Record<string, string> = {
+  presentation: 'from-rose-500 to-pink-600 shadow-rose-500/30',
+  study_guide: 'from-indigo-500 to-indigo-600 shadow-indigo-500/30',
+  key_concepts: 'from-amber-400 to-yellow-600 shadow-amber-500/30',
+  formula_sheet: 'from-orange-400 to-orange-600 shadow-orange-500/30',
+  mindmap: 'from-teal-500 to-cyan-600 shadow-teal-500/30',
+  flashcard: 'from-blue-500 to-blue-600 shadow-blue-500/30',
+  revision_checklist: 'from-emerald-500 to-teal-600 shadow-emerald-500/30',
+  faq: 'from-sky-400 to-sky-600 shadow-sky-500/30',
+  pyq: 'from-violet-500 to-purple-600 shadow-violet-500/30',
+  dpp: 'from-fuchsia-500 to-pink-600 shadow-fuchsia-500/30',
+};
+
+// Section heading inside the generator: numbered badge + title.
+function AiStep({ n, children }: { n: number; children: React.ReactNode }) {
+  return (
+    <div className="mb-3 flex items-center gap-2.5">
+      <span className="grid size-6 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-[11px] font-black text-white shadow-md shadow-violet-500/30">{n}</span>
+      <p className="text-xs font-black uppercase tracking-wider text-surface-600 dark:text-surface-300">{children}</p>
+      <span className="h-px flex-1 bg-surface-100 dark:bg-surface-700" />
+    </div>
+  );
+}
+
 function findGeneratedSectionStart(content: string, patterns: RegExp[]) {
   const lines = String(content || '').split(/\r?\n/);
   let cursor = 0;
@@ -2764,15 +2790,17 @@ function AiGeneratePanel({
     <DialogTitle className="sr-only">AI content generator</DialogTitle>
     <DialogDescription className="sr-only">AI content generator</DialogDescription>
 
-        <div className="flex items-start justify-between border-b border-surface-100 bg-gradient-to-r from-violet-50 to-blue-50 px-5 py-4 dark:border-surface-700 dark:from-violet-900/20 dark:to-blue-900/20">
-          <div className="flex items-center gap-2">
-            <div className="grid size-7 place-items-center rounded-lg bg-violet-600 text-white"><Sparkles size={15} /></div>
-            <div>
-              <p className="text-[11px] font-black uppercase tracking-wider text-violet-600">AI Content Generator</p>
-              <p className="truncate text-sm font-bold text-surface-900 dark:text-white">{topic.name}</p>
+        <div className="relative flex items-center justify-between gap-3 overflow-hidden bg-gradient-to-r from-blue-700 to-blue-500 px-5 py-4 text-white">
+          <div className="pointer-events-none absolute -right-8 -top-10 size-32 rounded-full bg-white/10" />
+          <div className="pointer-events-none absolute -bottom-12 right-24 hidden size-28 rounded-full bg-white/[0.07] sm:block" />
+          <div className="relative flex min-w-0 items-center gap-3">
+            <div className="grid size-11 shrink-0 place-items-center rounded-2xl bg-white/20 text-white shadow-lg ring-1 ring-white/30 backdrop-blur"><Sparkles size={20} /></div>
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/70">AI Content Generator</p>
+              <p className="truncate text-base font-extrabold leading-tight">{topic.name}</p>
             </div>
           </div>
-          <Button variant={null} size={null} onClick={onClose} aria-label="Close" className="grid size-8 place-items-center rounded-xl bg-white/70 text-surface-500 hover:bg-white focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-surface-800"><X size={16} /></Button>
+          <Button variant={null} size={null} onClick={onClose} aria-label="Close" className="relative grid size-8 shrink-0 place-items-center rounded-xl bg-white/15 text-white hover:bg-white/25 focus-visible:ring-0 focus-visible:ring-offset-0"><X size={16} /></Button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-5">
@@ -2784,7 +2812,7 @@ function AiGeneratePanel({
               onDismiss={(job) => { void dismissPptJob(job.jobId); }}
             />
           )}
-          <p className="mb-3 text-[11px] font-black uppercase tracking-wider text-surface-400">1 · Choose content type</p>
+          <AiStep n={1}>Choose content type</AiStep>
           <div className="grid grid-cols-2 gap-2.5">
             {AI_GEN_TYPES.map((t) => {
               if (t.id === 'presentation') {
@@ -2796,10 +2824,11 @@ function AiGeneratePanel({
               const active = typeId === t.id;
               return (
                 <Button variant={null} size={null} key={t.id} onClick={() => { if (t.id === 'presentation') { openPresentation(); return; } setTypeId(t.id); setContent(null); }}
-                  className={`h-auto w-full flex-col items-start justify-start gap-0 whitespace-normal rounded-2xl border-2 p-3 text-left font-normal transition-all ${active ? 'border-violet-400 bg-violet-50 dark:bg-violet-900/30' : 'border-surface-100 hover:border-surface-200 dark:border-surface-700'}`}>
-                  <div className={`mb-1.5 inline-flex rounded-lg p-1.5 ${t.soft}`}><Icon size={16} className={t.text} /></div>
+                  className={`group relative h-auto w-full flex-col items-start justify-start gap-0 whitespace-normal rounded-2xl border-1 p-3 text-left font-normal transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${active ? 'border-violet-500 bg-violet-50 shadow-md shadow-violet-500/10 dark:bg-violet-900/30' : 'border-surface-100 bg-white hover:border-violet-200 dark:border-surface-700 dark:bg-surface-900'}`}>
+                  {active && <span className="absolute right-2.5 top-2.5 grid size-5 place-items-center rounded-full bg-violet-600 text-white"><Check size={12} strokeWidth={3} /></span>}
+                  <div className={`mb-2 inline-flex rounded-xl bg-gradient-to-br p-2 text-white shadow-lg ${AI_GEN_TILE[t.id] || 'from-violet-500 to-purple-600 shadow-violet-500/30'}`}><Icon size={16} className="text-white" /></div>
                   <p className="text-sm font-bold text-surface-900 dark:text-white">{t.label}</p>
-                  <p className="mt-0.5 text-[11px] font-medium leading-snug text-surface-400">{t.desc}</p>
+                  <p className="mt-0.5 text-[11px] font-medium leading-snug text-surface-500">{t.desc}</p>
                   {t.id === 'presentation' && pptJobHere && (
                     isGenerating(pptJobHere) ? (
                       <p data-testid="ppt-card-state" className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
@@ -2816,11 +2845,11 @@ function AiGeneratePanel({
             })}
           </div>
 
-          <p className="mb-3 mt-6 text-[11px] font-black uppercase tracking-wider text-surface-400">2 · Settings</p>
+          <div className="mt-6"><AiStep n={2}>Settings</AiStep></div>
           <div className="space-y-4">
             {showLectureOption && (
               <div>
-                <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-surface-400">Generate from</p>
+                <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-surface-500">Generate from</p>
                 <div className="flex gap-2">
                   {([
                     ['ebook', 'Textbook', sourceAvailability?.ebookAvailable !== false],
@@ -2834,7 +2863,7 @@ function AiGeneratePanel({
                       onClick={() => { setSourceMode(mode); setContent(null); }}
                       title={!enabled ? 'No indexed textbook for this chapter yet' : undefined}
                       className={`rounded-xl border-2 px-3 py-2 text-sm font-bold transition-all disabled:cursor-not-allowed disabled:opacity-40 ${sourceMode === mode
-                          ? 'border-violet-400 bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300'
+                          ? 'border-violet-600 bg-violet-600 text-white shadow-md shadow-violet-500/25'
                           : 'border-surface-200 text-surface-600 hover:border-surface-300 dark:border-surface-700 dark:text-surface-300'
                         }`}
                     >
@@ -2852,7 +2881,7 @@ function AiGeneratePanel({
               </div>
             )}
             <div>
-              <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-surface-400">Language</p>
+              <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-surface-500">Language</p>
               <div className="flex gap-2">
                 {(['english', 'hindi', 'odia'] as const).map((lang) => {
                   const labels: Record<string, string> = { english: 'English', hindi: 'Hindi (हिंदी)', odia: 'Odia (ଓଡ଼ିଆ)' };
@@ -2861,7 +2890,7 @@ function AiGeneratePanel({
                       key={lang}
                       onClick={() => { setLanguage(lang); setContent(null); }}
                       className={`rounded-xl border-2 px-3 py-2 text-sm font-bold transition-all ${language === lang
-                          ? 'border-violet-400 bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300'
+                          ? 'border-violet-600 bg-violet-600 text-white shadow-md shadow-violet-500/25'
                           : 'border-surface-200 text-surface-600 hover:border-surface-300 dark:border-surface-700 dark:text-surface-300'
                         }`}
                     >
@@ -2873,11 +2902,11 @@ function AiGeneratePanel({
             </div>
             {isQuestionType && (
               <div>
-                <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-surface-400">Number of Questions</p>
+                <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-surface-500">Number of Questions</p>
                 <div className="flex flex-wrap gap-2">
                   {[5, 10, 15, 20, 25, 30].map((n) => (
                     <Button variant={null} size={null} key={n} onClick={() => setQuestionCount(n)}
-                      className={`h-9 w-10 rounded-xl border-2 text-sm font-bold transition-colors ${questionCount === n ? 'border-violet-400 bg-violet-500 text-white' : 'border-surface-200 text-surface-600 dark:border-surface-700'}`}>
+                      className={`h-9 w-10 rounded-xl border-2 text-sm font-bold transition-colors ${questionCount === n ? 'border-violet-600 bg-violet-600 text-white shadow-md shadow-violet-500/25' : 'border-surface-200 text-surface-600 hover:border-violet-200 dark:border-surface-700'}`}>
                       {n}
                     </Button>
                   ))}
@@ -2885,7 +2914,7 @@ function AiGeneratePanel({
               </div>
             )}
             <div>
-              <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-surface-400">Extra context (optional)</p>
+              <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-surface-500">Extra context (optional)</p>
               <Textarea value={extraContext} onChange={(e) => setExtraContext(e.target.value)} rows={2}
                 placeholder="e.g. focus on numericals, include real-world examples…"
                 className="w-full resize-none rounded-xl border-2 border-surface-200 bg-surface-50 px-3 py-2 text-sm outline-none focus:border-violet-400 dark:border-surface-700 dark:bg-surface-800" />
@@ -2926,12 +2955,13 @@ function AiGeneratePanel({
           )}
         </div>
 
-        <div className="flex gap-2 border-t border-surface-100 p-4 dark:border-surface-700">
-          <Button variant="outline" className="flex-1 justify-center" onClick={handleGenerate} disabled={generating}>
+        <div className="flex gap-2 border-t border-surface-100 bg-surface-50/60 p-4 dark:border-surface-700 dark:bg-surface-900">
+          <Button className="flex-1 justify-center bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md shadow-violet-500/25 hover:brightness-110" onClick={handleGenerate} disabled={generating}>
+            {!generating && <Sparkles size={15} className="mr-1.5" />}
             {generating ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Generating… {fmtDuration(genElapsedMs)}</span> : (content ? 'Regenerate' : 'Generate')}
           </Button>
           {content && (
-            <Button className="flex-1 justify-center" onClick={handleSave} disabled={saving || (sectionOptions.length > 1 && !selectedSectionIds.length)}>
+            <Button className="flex-1 justify-center bg-emerald-600 text-white hover:bg-emerald-700" onClick={handleSave} disabled={saving || (sectionOptions.length > 1 && !selectedSectionIds.length)}>
               {saving ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Saving…</span> : 'Save for students'}
             </Button>
           )}
