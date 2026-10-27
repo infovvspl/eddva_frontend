@@ -163,8 +163,11 @@ const Dashboard: React.FC = () => {
 
   const loadDashboard = async () => {
     try {
-      const [statsRes] = await Promise.allSettled([
+      // The three calls do not depend on each other, so they travel together.
+      const [statsRes, notificationsRes, doubtsRes] = await Promise.allSettled([
         api.get('/dashboard/stats', { params: { portal: 'teacher' } }),
+        api.get('/notifications'),
+        api.get('/doubts'),
       ]);
 
       if (statsRes.status === 'fulfilled') {
@@ -185,23 +188,21 @@ const Dashboard: React.FC = () => {
         })));
       }
 
-      try {
-        const res = await api.get('/notifications');
-        const list = res.data?.data ?? res.data;
+      if (notificationsRes.status === 'fulfilled') {
+        const list = notificationsRes.value.data?.data ?? notificationsRes.value.data;
         setNotifications(Array.isArray(list) ? list : []);
-      } catch {
+      } else {
         setNotifications([]);
       }
 
-      try {
-        const doubtRes = await api.get('/doubts');
-        const list = unwrapSchoolList(doubtRes);
+      if (doubtsRes.status === 'fulfilled') {
+        const list = unwrapSchoolList(doubtsRes.value);
         setPendingDoubts(
           list.filter((d: { status?: string }) =>
             ['escalated', 'open', 'ai_answered'].includes(d.status || ''),
           ).length,
         );
-      } catch {
+      } else {
         setPendingDoubts(0);
       }
     } catch (error) {
@@ -209,7 +210,8 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  useLiveRefresh(loadDashboard, [], 20000);
+  // Edits already refresh this at once (eddva:data-changed); the timer is only a safety net.
+  useLiveRefresh(loadDashboard, [], 60000);
 
   // Teacher assignments: group flat list by class+section so each card shows all subjects
   const teacherSubjects: any[] = stats?.teacherData?.assignments || [];
