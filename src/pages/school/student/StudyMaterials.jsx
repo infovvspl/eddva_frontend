@@ -5,7 +5,7 @@ import HighlightableNotes from '@/components/shared/HighlightableNotes';
 import { AnimatePresence, motion } from 'framer-motion';
 import { MindMapCanvas } from '@/components/school/MindMapVisualizer';
 import { useAuth } from '@/context/SchoolAuthContext';
-import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
+import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import { mindmapMarkdownToTree } from '@/lib/mindmap-markdown';
 import FlashcardViewer from '@/components/resources/FlashcardViewer';
 import ResourceViewerModal from '@/components/resources/ResourceViewerModal';
@@ -393,29 +393,12 @@ export default function StudyMaterials() {
   useEffect(() => {
     const fetchMaterials = async () => {
       try {
+        // The API already answers with no-store, so no cache-busting parameter is needed.
         const [materialsRes, recordingsRes, coursesRes] = await Promise.all([
-          api.get('/materials', { params: { _ts: Date.now() }, headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' } }),
-          api.get('/classes/recordings', { params: { _ts: Date.now() }, headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' } }),
-          api.get('/students/courses/my', { params: { _ts: Date.now() }, headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' } }),
+          api.get('/materials'),
+          api.get('/classes/recordings'),
+          api.get('/students/courses/my'),
         ]);
-        const courseData = unwrapSchoolData(coursesRes, {});
-        const curriculum = Array.isArray(courseData?.curriculum) ? courseData.curriculum : unwrapSchoolList(coursesRes);
-        const chapterGroups = await Promise.all(
-          curriculum
-            .map((subject) => subject.id || subject.subjectId || subject.subject_id)
-            .filter(Boolean)
-            .map(async (subjectId) => {
-              try {
-                const res = await api.get('/topics/chapters', {
-                  params: { subjectId, _ts: Date.now() },
-                  headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
-                });
-                return { subjectId, chapters: unwrapSchoolList(res) };
-              } catch {
-                return { subjectId, chapters: [] };
-              }
-            })
-        );
         setMaterials(unwrapSchoolList(materialsRes));
         setRecordings(unwrapSchoolList(recordingsRes));
         setCourses(unwrapSchoolList(coursesRes));
