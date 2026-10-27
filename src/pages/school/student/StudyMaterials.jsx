@@ -18,6 +18,7 @@ import {
   ClipboardList,
   ExternalLink,
   Eye,
+  FileSpreadsheet,
   FileText,
   GraduationCap,
   HelpCircle,
@@ -52,6 +53,7 @@ const materialTypes = [
   { label: 'Revision Checklist', value: 'checklist' },
   { label: 'Key Concepts', value: 'keyconcept' },
   { label: 'Study Guides', value: 'studyguide' },
+  { label: 'Formula Sheet', value: 'formulasheet' },
   { label: 'Flashcards', value: 'flashcard' },
   { label: 'Mind Maps', value: 'mindmap' },
   { label: 'DPP', value: 'dpp' },
@@ -84,6 +86,7 @@ const RESOURCE_META = {
   checklist: { label: 'Revision Checklist', icon: ListChecks, color: 'text-amber-600', bg: 'bg-amber-50', ring: 'ring-amber-200', dot: 'bg-amber-500', grad: 'from-amber-500 to-yellow-500', cardBorder: 'border-l-amber-400', cardBg: 'bg-amber-50/40' },
   keyconcept: { label: 'Key Concepts', icon: Lightbulb, color: 'text-violet-600', bg: 'bg-violet-50', ring: 'ring-violet-200', dot: 'bg-violet-500', grad: 'from-violet-500 to-purple-500', cardBorder: 'border-l-violet-400', cardBg: 'bg-violet-50/40' },
   studyguide: { label: 'Study Guide', icon: BookMarked, color: 'text-emerald-600', bg: 'bg-emerald-50', ring: 'ring-emerald-200', dot: 'bg-emerald-500', grad: 'from-emerald-500 to-green-500', cardBorder: 'border-l-emerald-400', cardBg: 'bg-emerald-50/40' },
+  formulasheet: { label: 'Formula Sheet', icon: FileSpreadsheet, color: 'text-amber-600', bg: 'bg-amber-50', ring: 'ring-amber-200', dot: 'bg-amber-500', grad: 'from-amber-500 to-yellow-500', cardBorder: 'border-l-amber-400', cardBg: 'bg-amber-50/40' },
   flashcard: { label: 'Flashcards', icon: Layers, color: 'text-indigo-600', bg: 'bg-indigo-50', ring: 'ring-indigo-200', dot: 'bg-indigo-500', grad: 'from-indigo-500 to-blue-500', cardBorder: 'border-l-indigo-400', cardBg: 'bg-indigo-50/40' },
   mindmap: { label: 'Mind Map', icon: Network, color: 'text-green-600', bg: 'bg-green-50', ring: 'ring-green-200', dot: 'bg-green-500', grad: 'from-green-500 to-teal-500', cardBorder: 'border-l-green-400', cardBg: 'bg-green-50/40' },
   dpp: { label: 'DPP', icon: ClipboardList, color: 'text-orange-600', bg: 'bg-orange-50', ring: 'ring-orange-200', dot: 'bg-orange-500', grad: 'from-orange-500 to-amber-500', cardBorder: 'border-l-orange-400', cardBg: 'bg-orange-50/40' },
@@ -137,7 +140,8 @@ function getResourceMeta(type, fileUrl = '', title = '') {
   if (t.includes('ppt') || t.includes('presentation') || url.endsWith('.ppt') || url.endsWith('.pptx')) return RESOURCE_META.ppt;
   if (t.includes('pdf') || t.includes('ebook') || url.endsWith('.pdf')) return RESOURCE_META.pdf;
   if (t.includes('assignment') || t.includes('dpp')) return RESOURCE_META.dpp;
-  if (t.includes('pyq') || t.includes('question_bank') || t.includes('formula_sheet')) return RESOURCE_META.pyq;
+  if (t.includes('formula_sheet') || t.includes('formulasheet') || ttl.includes('formula sheet')) return RESOURCE_META.formulasheet;
+  if (t.includes('pyq') || t.includes('question_bank')) return RESOURCE_META.pyq;
   if (t.includes('mindmap') || t.includes('mind_map') || ttl.includes('mindmap') || ttl.includes('mind map')) return RESOURCE_META.mindmap;
   if (t.includes('flashcard') || ttl.includes('flashcard')) return RESOURCE_META.flashcard;
 
@@ -153,18 +157,20 @@ function getResourceMeta(type, fileUrl = '', title = '') {
 
 function getMaterialSequenceRank(m) {
   const meta = getResourceMeta(m.fileType, m.fileUrl, m.title);
-  if (meta === RESOURCE_META.ppt) return 1;
-  if (meta === RESOURCE_META.animation) return 2;
-  if (meta === RESOURCE_META.studyguide) return 3;
-  if (meta === RESOURCE_META.checklist) return 4;
-  if (meta === RESOURCE_META.keyconcept) return 5;
-  if (meta === RESOURCE_META.flashcard) return 6;
-  if (meta === RESOURCE_META.mindmap) return 7;
-  if (meta === RESOURCE_META.faq) return 8;
-  if (meta === RESOURCE_META.pyq || meta === RESOURCE_META.dpp) return 9;
-  if (meta === RESOURCE_META.pdf) return 10;
-  if (meta === RESOURCE_META.notes) return 11;
-  return 12;
+  if (meta === RESOURCE_META.animation) return 1;
+  if (meta === RESOURCE_META.ppt) return 2;
+  if (meta === RESOURCE_META.mindmap) return 3;
+  if (meta === RESOURCE_META.notes) return 4;
+  if (meta === RESOURCE_META.studyguide) return 5;
+  if (meta === RESOURCE_META.keyconcept) return 6;
+  if (meta === RESOURCE_META.formulasheet) return 7;
+  if (meta === RESOURCE_META.flashcard) return 8;
+  if (meta === RESOURCE_META.dpp) return 9;
+  if (meta === RESOURCE_META.pyq) return 10;
+  if (meta === RESOURCE_META.faq) return 11;
+  if (meta === RESOURCE_META.checklist) return 12;
+  if (meta === RESOURCE_META.pdf) return 13;
+  return 14;
 }
 
 function getMaterialDisplayTitle(m) {
