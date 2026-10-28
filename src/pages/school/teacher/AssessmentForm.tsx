@@ -205,22 +205,27 @@ function OptionSelect({
   );
 }
 
-function ChapterMultiSelect({
-  chapters,
+/** Checkbox popover for picking several chapters or topics at once. */
+function MultiSelect({
+  items,
   selected,
   onChange,
   invalid,
+  noun,
+  emptyMessage,
 }: {
-  chapters: any[];
+  items: any[];
   selected: string[];
   onChange: (ids: string[]) => void;
   invalid?: boolean;
+  noun: string;
+  emptyMessage: string;
 }) {
   const [open, setOpen] = useState(false);
   const toggle = (id: string) => onChange(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
   const label = selected.length === 0
-    ? chapters.length ? "Select chapters" : "No chapters found for this subject"
-    : `${selected.length} chapter${selected.length === 1 ? "" : "s"} selected`;
+    ? items.length ? `Select ${noun}s` : emptyMessage
+    : `${selected.length} ${noun}${selected.length === 1 ? "" : "s"} selected`;
 
   return (
     <div className="space-y-2">
@@ -231,7 +236,7 @@ function ChapterMultiSelect({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            disabled={chapters.length === 0}
+            disabled={items.length === 0}
             className={cn("w-full justify-between font-semibold", invalid && "border-destructive", selected.length === 0 && "text-muted-foreground")}
           >
             <span className="truncate">{label}</span>
@@ -240,11 +245,11 @@ function ChapterMultiSelect({
         </PopoverTrigger>
         <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
           <Command>
-            <CommandInput placeholder="Search chapters…" />
+            <CommandInput placeholder={`Search ${noun}s…`} />
             <CommandList>
-              <CommandEmpty>No chapter found.</CommandEmpty>
+              <CommandEmpty>No {noun} found.</CommandEmpty>
               <CommandGroup>
-                {chapters.map((c: any, i: number) => {
+                {items.map((c: any, i: number) => {
                   const id = String(c.id);
                   return (
                     <CommandItem key={id} value={`${i + 1} ${c.name}`} onSelect={() => toggle(id)} className="gap-2">
@@ -258,9 +263,9 @@ function ChapterMultiSelect({
           </Command>
         </PopoverContent>
       </Popover>
-      {chapters.length > 0 && (
+      {items.length > 0 && (
         <div className="flex items-center gap-3 text-[11px] font-semibold">
-          <Button type="button" variant="link" className="h-auto p-0 text-[11px]" onClick={() => onChange(chapters.map((c: any) => String(c.id)))}>
+          <Button type="button" variant="link" className="h-auto p-0 text-[11px]" onClick={() => onChange(items.map((c: any) => String(c.id)))}>
             Select all
           </Button>
           {selected.length > 0 && (
@@ -269,7 +274,7 @@ function ChapterMultiSelect({
             </Button>
           )}
           <span className="ml-auto text-slate-400">
-            {selected.length} of {chapters.length} selected
+            {selected.length} of {items.length} selected
           </span>
         </div>
       )}
@@ -505,7 +510,7 @@ export default function AssessmentForm() {
   const [topics, setTopics] = useState<any[]>([]);
   const [selectedChapterId, setSelectedChapterId] = useState("");
   const [selectedChapterIds, setSelectedChapterIds] = useState<string[]>([]);
-  const [selectedTopicId, setSelectedTopicId] = useState("");
+  const [selectedTopicIds, setSelectedTopicIds] = useState<string[]>([]);
 
   const fmtDuration = (ms: number) => (ms >= 10000 ? `${Math.round(ms / 1000)}s` : `${(ms / 1000).toFixed(1)}s`);
   const clearError = (key: string) => setErrors((e) => (e[key] ? { ...e, [key]: "" } : e));
@@ -631,8 +636,17 @@ export default function AssessmentForm() {
   }, [selectedSubject?.id, editingTest]);
 
   useEffect(() => {
-    if (!selectedChapterId) { setTopics([]); setSelectedTopicId(""); return; }
-    setSelectedTopicId(editingTest?.raw?.chapter_id === selectedChapterId ? (editingTest?.raw?.topic_id || "") : "");
+    if (!selectedChapterId) { setTopics([]); setSelectedTopicIds([]); return; }
+    if (editingTest?.raw?.chapter_id === selectedChapterId) {
+      const savedTopicIds: string[] = Array.isArray(editingTest?.raw?.topic_ids)
+        ? editingTest.raw.topic_ids.map((x: any) => String(x))
+        : editingTest?.raw?.topic_id
+          ? [String(editingTest.raw.topic_id)]
+          : [];
+      setSelectedTopicIds(savedTopicIds);
+    } else {
+      setSelectedTopicIds([]);
+    }
     let cancelled = false;
     api.get(`/topics?chapterId=${selectedChapterId}`)
       .then((res) => { if (!cancelled) setTopics(res.data?.data || res.data || []); })
@@ -641,6 +655,19 @@ export default function AssessmentForm() {
   }, [selectedChapterId, editingTest]);
 
   // ── Derived ────────────────────────────────────────────────────────────────
+  // Stops the date/time pickers from offering an already-passed slot when
+  // scheduling a NEW test — an edit keeps full range so a test that already
+  // happened can still be corrected. Computed once per mount; validate()
+  // below is the authoritative, always-current check at submit time.
+  const nowDateStr = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }, []);
+  const nowTimeStr = useMemo(() => {
+    const d = new Date();
+    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  }, []);
+
   const endTimeLabel = useMemo(() => {
     if (!formData.scheduled_date || !formData.start_time) return "";
     const start = new Date(`${formData.scheduled_date}T${formData.start_time}`);
@@ -686,11 +713,21 @@ export default function AssessmentForm() {
     if (!formData.title.trim()) next.title = "Enter a test title";
     if (!formData.scheduled_date) next.date = "Pick the test date";
     if (!formData.start_time) next.time = "Pick a start time";
+    if (formData.scheduled_date && formData.start_time) {
+      const scheduledMoment = new Date(`${formData.scheduled_date}T${formData.start_time}`);
+      if (isNaN(scheduledMoment.getTime())) {
+        next.time = "Enter a valid date and time";
+      } else if (!isEdit && scheduledMoment.getTime() < Date.now() - 60_000) {
+        // Only enforced when scheduling a new test — editing one already in
+        // the past (to fix a typo, add questions, etc.) must stay possible.
+        next.date = "Test date and time must be in the future";
+      }
+    }
     if (!(Number(formData.total_marks) > 0)) next.marks = "Total marks must be more than 0";
     if (!(Number(formData.duration_minutes) > 0)) next.duration = "Duration must be more than 0";
     if (formData.type === "chapter" && selectedChapterIds.length === 0) next.chapters = "Select at least one chapter";
     if (formData.type === "topic" && !selectedChapterId) next.chapter = "Select a chapter";
-    if (formData.type === "topic" && selectedChapterId && !selectedTopicId) next.topic = "Select a topic";
+    if (formData.type === "topic" && selectedChapterId && selectedTopicIds.length === 0) next.topics = "Select at least one topic";
     setErrors(next);
     return next;
   };
@@ -698,7 +735,7 @@ export default function AssessmentForm() {
   // ── Earlier AI papers kept as drafts ──────────────────────────────────────
   const draftScope = editingTest?.id
     ? `test:${editingTest.id}`
-    : `new:${selectedSubject?.id || ""}:${formData.type}:${selectedTopicId || selectedChapterId || selectedChapterIds.join(",")}`;
+    : `new:${selectedSubject?.id || ""}:${formData.type}:${selectedTopicIds.join(",") || selectedChapterId || selectedChapterIds.join(",")}`;
   const draftStorageKey = `eddva:assessment-paper-drafts:${institute?.id || "school"}:${draftScope}`;
   const [paperDrafts, setPaperDrafts] = useState<PaperDraft[]>([]);
   const [currentPaperLabel, setCurrentPaperLabel] = useState(() => (routeState.test?.raw?.content_text ? "Saved paper" : ""));
@@ -792,7 +829,8 @@ export default function AssessmentForm() {
         contentSource: contentMode,
         chapterIds: isChapterTest ? selectedChapterIds : undefined,
         chapterId: isChapterTest ? (selectedChapterIds[0] || undefined) : (needsChapter ? selectedChapterId : undefined),
-        topicId: needsTopic ? selectedTopicId : undefined,
+        topicIds: needsTopic ? selectedTopicIds : undefined,
+        topicId: needsTopic ? (selectedTopicIds[0] || undefined) : undefined,
         language: aiLanguage,
       };
 
@@ -888,9 +926,9 @@ export default function AssessmentForm() {
       toast.error("Select a chapter before generating questions.");
       return;
     }
-    if (formData.type === "topic" && !selectedTopicId) {
-      setErrors((e) => ({ ...e, topic: "Select a topic" }));
-      toast.error("Select a topic before generating questions.");
+    if (formData.type === "topic" && selectedTopicIds.length === 0) {
+      setErrors((e) => ({ ...e, topics: "Select at least one topic" }));
+      toast.error("Select at least one topic before generating questions.");
       return;
     }
     if (aiConfig.difficulty === "custom" && !customDifficultyMatches) {
@@ -914,7 +952,10 @@ export default function AssessmentForm() {
       const chapterName = isChapterTest
         ? chapterNames?.[0]
         : (needsChapter ? chapters.find((c: any) => c.id === selectedChapterId)?.name : undefined);
-      const topicName = needsTopic ? topics.find((t: any) => t.id === selectedTopicId)?.name : undefined;
+      const topicNames = needsTopic
+        ? selectedTopicIds.map((tid) => topics.find((t: any) => String(t.id) === String(tid))?.name).filter(Boolean)
+        : undefined;
+      const topicName = needsTopic ? topicNames?.[0] : undefined;
       const res = await api.post("/assessments/ai-generate", {
         title: formData.title,
         type: formData.type,
@@ -928,7 +969,9 @@ export default function AssessmentForm() {
         chapterNames,
         chapterId: isChapterTest ? (selectedChapterIds[0] || undefined) : (needsChapter ? selectedChapterId : undefined),
         chapterName,
-        topicId: needsTopic ? selectedTopicId : undefined,
+        topicIds: needsTopic ? selectedTopicIds : undefined,
+        topicNames,
+        topicId: needsTopic ? (selectedTopicIds[0] || undefined) : undefined,
         topicName,
         prompt: aiPrompt,
         mcqCount: aiConfig.mcqCount,
@@ -1181,7 +1224,7 @@ export default function AssessmentForm() {
                     type="number"
                     min={1}
                     placeholder="100"
-                    value={formData.total_marks}
+                    value={String(formData.total_marks)}
                     aria-invalid={!!errors.marks}
                     className={cn(errors.marks && "border-destructive")}
                     onChange={(e) => { setFormData({ ...formData, total_marks: Number(e.target.value) }); clearError("marks"); }}
@@ -1191,10 +1234,12 @@ export default function AssessmentForm() {
                 {formData.type === "chapter" && (
                   <Field label="Chapters" required error={errors.chapters} hint="Pick one or more — for example chapters 1 to 10." className="sm:col-span-2">
                     <div data-invalid={errors.chapters ? "true" : undefined}>
-                      <ChapterMultiSelect
-                        chapters={chapters}
+                      <MultiSelect
+                        items={chapters}
                         selected={selectedChapterIds}
                         invalid={!!errors.chapters}
+                        noun="chapter"
+                        emptyMessage="No chapters found for this subject"
                         onChange={(ids) => { setSelectedChapterIds(ids); clearError("chapters"); }}
                       />
                     </div>
@@ -1213,15 +1258,17 @@ export default function AssessmentForm() {
                         onChange={(v) => { setSelectedChapterId(v); clearError("chapter"); }}
                       />
                     </Field>
-                    <Field label="Topic" required error={errors.topic}>
-                      <OptionSelect
-                        value={selectedTopicId}
-                        options={topics.map((t: any) => ({ value: String(t.id), label: t.name }))}
-                        placeholder={!selectedChapterId ? "Select a chapter first" : topics.length ? "Select topic" : "No topics found for this chapter"}
-                        disabled={!selectedChapterId || topics.length === 0}
-                        invalid={!!errors.topic}
-                        onChange={(v) => { setSelectedTopicId(v); clearError("topic"); }}
-                      />
+                    <Field label="Topics" required error={errors.topics} hint="Pick one or more topics within this chapter.">
+                      <div data-invalid={errors.topics ? "true" : undefined}>
+                        <MultiSelect
+                          items={topics}
+                          selected={selectedTopicIds}
+                          invalid={!!errors.topics}
+                          noun="topic"
+                          emptyMessage={!selectedChapterId ? "Select a chapter first" : "No topics found for this chapter"}
+                          onChange={(ids) => { setSelectedTopicIds(ids); clearError("topics"); }}
+                        />
+                      </div>
                     </Field>
                   </>
                 )}
@@ -1234,6 +1281,7 @@ export default function AssessmentForm() {
                   <Input
                     id="test-date"
                     type="date"
+                    min={isEdit ? undefined : nowDateStr}
                     value={formData.scheduled_date}
                     aria-invalid={!!errors.date}
                     className={cn(errors.date && "border-destructive")}
@@ -1244,6 +1292,7 @@ export default function AssessmentForm() {
                   <Input
                     id="test-time"
                     type="time"
+                    min={!isEdit && formData.scheduled_date === nowDateStr ? nowTimeStr : undefined}
                     value={formData.start_time}
                     aria-invalid={!!errors.time}
                     className={cn(errors.time && "border-destructive")}
@@ -1256,7 +1305,7 @@ export default function AssessmentForm() {
                     type="number"
                     min={1}
                     placeholder="120"
-                    value={formData.duration_minutes}
+                    value={String(formData.duration_minutes)}
                     aria-invalid={!!errors.duration}
                     className={cn(errors.duration && "border-destructive")}
                     onChange={(e) => { setFormData({ ...formData, duration_minutes: Number(e.target.value) }); clearError("duration"); }}
@@ -1376,7 +1425,14 @@ export default function AssessmentForm() {
                         {" "}&rsaquo;{" "}
                         {chapters.find((c: any) => c.id === selectedChapterId)?.name || <span className="text-red-600">no chapter selected</span>}
                         {" "}&rsaquo;{" "}
-                        {topics.find((t: any) => t.id === selectedTopicId)?.name || <span className="text-red-600">no topic selected</span>}
+                        {selectedTopicIds.length === 0 ? (
+                          <span className="text-red-600">no topic selected</span>
+                        ) : (
+                          <span>
+                            {selectedTopicIds.length} topic{selectedTopicIds.length > 1 ? "s" : ""}:{" "}
+                            {selectedTopicIds.map((tid) => topics.find((t: any) => String(t.id) === String(tid))?.name).filter(Boolean).join(", ")}
+                          </span>
+                        )}
                       </>
                     )}
                     . Questions are generated only from this scope.
@@ -1397,7 +1453,7 @@ export default function AssessmentForm() {
                             id={`ai-${f.key}`}
                             type="number"
                             min={0}
-                            value={(aiConfig as any)[f.key]}
+                            value={String((aiConfig as any)[f.key])}
                             onChange={(e) => setAiConfig((c) => ({ ...c, [f.key]: Math.max(0, Number(e.target.value) || 0) }))}
                           />
                         </Field>
@@ -1457,7 +1513,7 @@ export default function AssessmentForm() {
                               id="ai-easyCount"
                               type="number"
                               min={0}
-                              value={aiConfig.easyCount}
+                              value={String(aiConfig.easyCount)}
                               onChange={(e) => setAiConfig((c) => ({ ...c, easyCount: Math.max(0, Number(e.target.value) || 0) }))}
                             />
                           </Field>
@@ -1466,7 +1522,7 @@ export default function AssessmentForm() {
                               id="ai-mediumCount"
                               type="number"
                               min={0}
-                              value={aiConfig.mediumCount}
+                              value={String(aiConfig.mediumCount)}
                               onChange={(e) => setAiConfig((c) => ({ ...c, mediumCount: Math.max(0, Number(e.target.value) || 0) }))}
                             />
                           </Field>
@@ -1475,7 +1531,7 @@ export default function AssessmentForm() {
                               id="ai-hardCount"
                               type="number"
                               min={0}
-                              value={aiConfig.hardCount}
+                              value={String(aiConfig.hardCount)}
                               onChange={(e) => setAiConfig((c) => ({ ...c, hardCount: Math.max(0, Number(e.target.value) || 0) }))}
                             />
                           </Field>
