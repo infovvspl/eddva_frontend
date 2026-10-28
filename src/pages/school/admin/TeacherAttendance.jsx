@@ -17,6 +17,7 @@ import { CustomSelect } from '@/components/ui/CustomSelect';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import TeacherAttendanceRecords from './TeacherAttendanceRecords';
 
 const STATUS_CYCLE = [null, 'present', 'absent', 'late', 'leave'];
 const STATUS_TABS = [
@@ -30,6 +31,7 @@ const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const PAGE_TABS = [
   { value: 'grid', label: 'Month Grid' },
+  { value: 'records', label: 'Records' },
   { value: 'settings', label: 'Check-In Settings' },
 ];
 
@@ -189,6 +191,7 @@ export default function TeacherAttendance() {
       </div>
 
       {tab === 'grid' && <MonthGridView />}
+      {tab === 'records' && <TeacherAttendanceRecords />}
       {tab === 'settings' && <SettingsView />}
     </div>
   );
