@@ -174,6 +174,7 @@ export function SchoolVideoPlayer({
   onAnswerSubmitted,
   resumeAt,
   savedResponseIds,
+  onPlayingChange,
 }: {
   src: string;
   checkpoints?: QuizCheckpoint[];
@@ -183,6 +184,9 @@ export function SchoolVideoPlayer({
   onAnswerSubmitted?: (questionId: string, option: string, isCorrect: boolean) => void;
   resumeAt?: number;
   savedResponseIds?: string[];
+  /** Real playback state (not mouse activity) — lets a caller credit "actively
+   *  watching" screen time only while the video is actually playing. */
+  onPlayingChange?: (playing: boolean) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -194,7 +198,15 @@ export function SchoolVideoPlayer({
   const activeQuizRef = useRef<QuizCheckpoint | null>(null);
   const shownIdsRef = useRef<Set<string>>(new Set(savedResponseIds ?? []));
 
-  const [playing, setPlaying] = useState(false);
+  const [playing, setPlayingState] = useState(false);
+  const onPlayingChangeRef = useRef(onPlayingChange);
+  onPlayingChangeRef.current = onPlayingChange;
+  const setPlaying = useCallback((v: boolean) => {
+    setPlayingState((prev) => {
+      if (prev !== v) onPlayingChangeRef.current?.(v);
+      return v;
+    });
+  }, []);
   const [localTime, setLocalTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
@@ -461,6 +473,7 @@ export function SchoolVideoPlayer({
       } catch { /* */ }
       ytPlayerRef.current = null;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- onTimeUpdate/resumeAt intentionally omitted (pre-existing); setPlaying is useCallback-stable
   }, [isYouTube, src, autoPlay, onEnded]);
 
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;

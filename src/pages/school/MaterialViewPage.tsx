@@ -19,6 +19,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { getApiBaseUrl } from '@/lib/api-config';
 import { useAuthStore } from '@/lib/auth-store';
+import { useAppActivityTracker } from '@/hooks/use-app-activity-tracker';
 
 function resolveFileUrl(url?: string | null) {
   if (!url) return '';
@@ -368,6 +369,10 @@ export default function SchoolMaterialViewPage() {
   const [material, setMaterial] = useState<SchoolMaterial | null>(null);
   useSetBreadcrumbLabel(material?.title);
   const [loading, setLoading] = useState(true);
+  // Reading is legitimately low-interaction (no mouse/scroll for long
+  // stretches), so this uses a generous idle allowance rather than scoring
+  // it by click/keystroke cadence like a generic page.
+  useAppActivityTracker({ category: 'study_materials', refId: materialId, enabled: isStudent, idleMs: 5 * 60 * 1000 });
 
   useEffect(() => {
     if (!materialId) return;

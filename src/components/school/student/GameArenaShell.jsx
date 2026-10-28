@@ -1,13 +1,18 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { X, Gamepad2 } from 'lucide-react';
+import { useAppActivityTracker } from '@/hooks/use-app-activity-tracker';
 
 // Full-screen shell for the student "Gaming Arena" (Gamification hub + game-zone
 // games). These routes are mounted as siblings to SchoolStudentLayout in App.tsx
 // (not nested under it), so the dashboard sidebar/navbar never renders here —
 // this shell is the only chrome, and Exit is the only way back to the dashboard.
+// It also means SchoolStudentLayout's activity tracker never mounts for these
+// routes, so this shell tracks its own "games" category time directly.
 export default function GameArenaShell({ children }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  useAppActivityTracker({ category: 'games', refId: location.pathname.split('/').pop() });
 
   return (
     <div className="fixed inset-0 z-40 flex flex-col bg-slate-50 font-poppins dark:bg-slate-950">
