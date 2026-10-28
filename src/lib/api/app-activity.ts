@@ -31,8 +31,17 @@ export interface AppActivityHeartbeatBody {
   beats: number[];
 }
 
+export interface AppActivityCategoryBreakdown {
+  category: AppActivityCategory;
+  seconds: number;
+  visits: number;
+  /** The category's own ground-truth fact (game rounds played, submissions made, etc.),
+   *  shaped differently per category; null where no verification source exists yet. */
+  verified: Record<string, unknown> | null;
+}
+
 export interface MyAppActivityBreakdown {
-  byCategory: Array<{ category: AppActivityCategory; seconds: number; visits: number }>;
+  byCategory: AppActivityCategoryBreakdown[];
 }
 
 const data = <T,>(res: { data?: unknown }) => unwrapSchoolData<T>(res, undefined as unknown as T);
@@ -45,7 +54,8 @@ function deviceKind(): "web" | "mobile" | "tablet" {
 
 export const appActivityApi = {
   heartbeat: (body: AppActivityHeartbeatBody) => schoolApi.post("/activity/heartbeat", { ...body, device: deviceKind() }),
-  myBreakdown: async () => data<MyAppActivityBreakdown>(await schoolApi.get("/activity/me")),
+  myBreakdown: async (range: "week" | "month" | "today" = "week") =>
+    data<MyAppActivityBreakdown>(await schoolApi.get("/activity/me", { params: { range } })),
 };
 
 /**
@@ -57,6 +67,7 @@ export const appActivityApi = {
 export function sendFinalAppHeartbeat(body: AppActivityHeartbeatBody) {
   const token = tokenStorage.getAccess();
   if (!token) return;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- user.instituteId/tenantId aren't on the strict User type (same cast learning-path.ts's sendFinalHeartbeat uses)
   const { user, tenantType } = useAuthStore.getState() as any;
   const instituteId = user?.instituteId || (tenantType === "school" ? user?.tenantId : null);
   try {
