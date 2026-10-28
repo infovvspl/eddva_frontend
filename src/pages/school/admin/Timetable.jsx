@@ -3,7 +3,7 @@ import { DataTablePagination } from "@/components/ui/data-table-pagination";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Clock, Plus, Edit2, Trash2, MapPin, Users, Settings, AlertCircle, Search, ChevronDown, Coffee } from 'lucide-react';
+import { Clock, Plus, Edit2, Trash2, MapPin, Users, Settings, AlertCircle, Search, ChevronDown, Coffee, Video, FlaskConical, CalendarPlus, CalendarDays } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { getResponseList } from '@/lib/school/apiData';
 import Modal from '@/components/school/admin/Modal';
@@ -70,6 +70,24 @@ const SLOT_TYPE_STYLES = {
 };
 
 // Natural order for names: Class 2 before Class 10, Section A before Section B.
+// Teacher "My Week" cards: dashboard-style gradient tones.
+const TEACHER_TONES = {
+  offline: { card: 'from-[#F0F7FF] to-[#DCEBFF] border-[#CFE3FB]', tile: 'from-blue-500 to-blue-600 shadow-blue-500/30', text: 'text-blue-700', bar: 'bg-blue-500' },
+  live: { card: 'from-[#FEF2F2] to-[#FFE0E0] border-[#FBCFCF]', tile: 'from-rose-500 to-red-600 shadow-rose-500/30', text: 'text-rose-700', bar: 'bg-rose-500' },
+  lab: { card: 'from-[#F5F3FF] to-[#E7E0FF] border-[#DDD3FB]', tile: 'from-violet-500 to-purple-600 shadow-violet-500/30', text: 'text-violet-700', bar: 'bg-violet-500' },
+  extra: { card: 'from-[#FFF7ED] to-[#FFEAD2] border-[#FFDDB8]', tile: 'from-orange-400 to-orange-600 shadow-orange-500/30', text: 'text-orange-700', bar: 'bg-orange-500' },
+  // Subject palette: cards are coloured per subject so a day does not read as all blue.
+  subjects: [
+    { card: 'from-[#FFF7ED] to-[#FFEAD2] border-[#FFDDB8]', tile: 'from-orange-400 to-orange-600 shadow-orange-500/30', text: 'text-orange-700', bar: 'bg-orange-500' },
+    { card: 'from-[#F5F3FF] to-[#E7E0FF] border-[#DDD3FB]', tile: 'from-violet-500 to-purple-600 shadow-violet-500/30', text: 'text-violet-700', bar: 'bg-violet-500' },
+    { card: 'from-[#FDF2F8] to-[#FCE0EF] border-[#F9CFE5]', tile: 'from-pink-500 to-rose-600 shadow-pink-500/30', text: 'text-pink-700', bar: 'bg-pink-500' },
+    { card: 'from-[#F0FDFA] to-[#D5F7F0] border-[#B5EBE0]', tile: 'from-teal-500 to-cyan-600 shadow-teal-500/30', text: 'text-teal-700', bar: 'bg-teal-500' },
+    { card: 'from-[#FEFCE8] to-[#FEF3C7] border-[#FDE9A6]', tile: 'from-amber-400 to-yellow-600 shadow-amber-500/30', text: 'text-amber-700', bar: 'bg-amber-500' },
+    { card: 'from-[#F0F7FF] to-[#DCEBFF] border-[#CFE3FB]', tile: 'from-blue-500 to-blue-600 shadow-blue-500/30', text: 'text-blue-700', bar: 'bg-blue-500' },    { card: 'from-[#FDF4FF] to-[#F6E0FD] border-[#EDCDF8]', tile: 'from-fuchsia-500 to-purple-600 shadow-fuchsia-500/30', text: 'text-fuchsia-700', bar: 'bg-fuchsia-500' },
+    { card: 'from-[#F0F9FF] to-[#D9F0FF] border-[#BDE4FA]', tile: 'from-sky-400 to-cyan-600 shadow-sky-500/30', text: 'text-sky-700', bar: 'bg-sky-500' },
+  ],
+  now: { card: 'from-[#ECFDF5] to-[#D1FAE5] border-[#A7F3D0]', tile: 'from-emerald-500 to-teal-600 shadow-emerald-500/30', text: 'text-emerald-700', bar: 'bg-emerald-500' },
+};
 const byNameNatural = (a, b) => {
   const norm = (v) => String(v ?? '').replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim();
   return norm(a?.name).localeCompare(norm(b?.name), undefined, { numeric: true, sensitivity: 'base' });
@@ -85,6 +103,9 @@ const DAY_CHIP_COLORS = {
   SATURDAY: 'bg-pink-500 shadow-pink-500/30',
   SUNDAY: 'bg-slate-600 shadow-slate-600/30',
 };
+
+// Natural order for plain strings: "Class 2" before "Class 10", "A" before "B".
+const naturalCompare = (a, b) => String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
 
 const isBreakPeriod = (period) =>
   period?.periodType === 'Break' || String(period?.periodName || '').toLowerCase().includes('break');
@@ -192,6 +213,9 @@ export default function Timetable() {
   const [filterPeriod, setFilterPeriod] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterType, setFilterType] = useState('');
+  // Period-wise Teacher Map: which period rows the admin opened/closed by hand.
+  // A period with no entry follows its default (the current period starts open).
+  const [periodOpen, setPeriodOpen] = useState({});
   const [filterSubject, setFilterSubject] = useState('');
   // Class/Section filters local to the "Scheduled Timetable Slots" list — kept
   // separate from filterClass above (shared by the Period-wise Teacher Map)
@@ -202,6 +226,18 @@ export default function Timetable() {
     const todayIndex = new Date().getDay();
     return todayIndex === 0 ? 'MONDAY' : dayNames[todayIndex];
   });
+  // Switching day starts the Period-wise Teacher Map fresh, so a row opened on Monday doesn't stay open on Tuesday.
+  useEffect(() => { setPeriodOpen({}); }, [activeDay]);
+  // Scroll the current period into view once per visit to the roster tab / day. A callback
+  // ref is used because the rows only exist after the timetable data has loaded.
+  const scrolledForRef = useRef('');
+  const currentPeriodRef = (node) => {
+    if (node && scrolledForRef.current !== activeDay) {
+      scrolledForRef.current = activeDay;
+      node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+  useEffect(() => { scrolledForRef.current = ''; }, [activeView]);
   const [hasInitializedDefaultDay, setHasInitializedDefaultDay] = useState(false);
   const [now, setNow] = useState(() => new Date());
 
@@ -242,6 +278,8 @@ export default function Timetable() {
   // Pagination for the two long lists below: Live Teacher Status ("All Classes")
   // and the day's Scheduled Timetable Slots.
   const TIMETABLE_PAGE_SIZE = 8;
+  // The daily slots grid is 3 cards across, so a page of 9 fills exactly 3 full rows.
+  const SLOTS_PAGE_SIZE = 9;
   const [liveTeacherPage, setLiveTeacherPage] = useState(1);
   const [scheduledSlotsPage, setScheduledSlotsPage] = useState(1);
 
@@ -698,9 +736,22 @@ export default function Timetable() {
     return parts.length ? parts.join(' ') : null;
   };
 
+  // A slot's `section` doesn't always carry its class name (sometimes only the section's own
+  // name, like "A"), which made the class filter list section letters instead of classes.
+  // Fall back to the class list we already loaded.
+  const sectionClassNames = useMemo(() => {
+    const map = new Map();
+    sections.forEach((sec) => { if (sec?.id != null && sec.className) map.set(String(sec.id), sec.className); });
+    return map;
+  }, [sections]);
+
   const formatClassName = (s) => {
     if (!s) return null;
     if (s.className) return s.className;
+    if (s.class?.name) return s.class.name;
+    if (s.class_name) return s.class_name;
+    const fromList = s.id != null ? sectionClassNames.get(String(s.id)) : null;
+    if (fromList) return fromList;
     if (s.name) return s.name;
     return null;
   };
@@ -790,20 +841,20 @@ export default function Timetable() {
   const teachers = schoolTeachers.map((teacher) => teacher.name);
   const assignedClasses = Array.from(
     new Set((teacherProfile?.assignments || []).map(assignmentClassName).filter(Boolean))
-  ).sort();
-  const timetableClasses = Array.from(new Set(visibleTimetables.map((t) => formatClassName(t.section)).filter(Boolean))).sort();
+  ).sort(naturalCompare);
+  const timetableClasses = Array.from(new Set(visibleTimetables.map((t) => formatClassName(t.section)).filter(Boolean))).sort(naturalCompare);
   const classes = isTeacher && assignedClasses.length ? assignedClasses : timetableClasses;
   const subjects = Array.from(new Set(visibleTimetables.map((t) => t.subject?.name).filter(Boolean))).sort();
   const types = Array.from(new Set(visibleTimetables.map((t) => t.type || 'offline').filter(Boolean))).sort();
   // Section options for the Scheduled Timetable Slots filter, narrowed to the selected class.
   const slotsSections = Array.from(
     new Set(
-      sections
-        .filter((sec) => !slotsFilterClass || sec.className === slotsFilterClass)
-        .map((sec) => sec.name)
+      visibleTimetables
+        .filter((t) => !slotsFilterClass || formatClassName(t.section) === slotsFilterClass)
+        .map((t) => t.section?.name)
         .filter(Boolean)
     )
-  ).sort();
+  ).sort(naturalCompare);
   const periodOptions = useMemo(() => {
     const map = new Map();
     visibleTimetables
@@ -954,13 +1005,20 @@ export default function Timetable() {
   const groupedByDay = {};
   days.forEach((day) => {
     let dayTimetables = visibleTimetables.filter((t) => t.dayOfWeek === day);
-    if (!isTeacher && filterTeacher) dayTimetables = dayTimetables.filter((t) => formatTeacherName(t.teacher) === filterTeacher);
-    if (filterClass) dayTimetables = dayTimetables.filter((t) => formatClassName(t.section) === filterClass);
+    // Teacher / class filters belong to the Roster tab; they must not silently hide slots here.
+    if (activeView === 'roster' && !isTeacher && filterTeacher) dayTimetables = dayTimetables.filter((t) => formatTeacherName(t.teacher) === filterTeacher);
+    if (activeView === 'roster' && filterClass) dayTimetables = dayTimetables.filter((t) => formatClassName(t.section) === filterClass);
+    // Period by period; inside a period (the "All classes / All sections" view) go class by
+    // class, then section by section, so the cards read in a predictable order.
     groupedByDay[day] = dayTimetables.sort((a, b) => {
       const aPeriod = Number(a.periodNumber || 999);
       const bPeriod = Number(b.periodNumber || 999);
       if (aPeriod !== bPeriod) return aPeriod - bPeriod;
-      return minutesFromTime(a.startTime) - minutesFromTime(b.startTime);
+      const byTime = minutesFromTime(a.startTime) - minutesFromTime(b.startTime);
+      if (byTime !== 0) return byTime;
+      const byClass = naturalCompare(formatClassName(a.section) || '', formatClassName(b.section) || '');
+      if (byClass !== 0) return byClass;
+      return naturalCompare(a.section?.name || '', b.section?.name || '');
     });
   });
 
@@ -984,11 +1042,16 @@ export default function Timetable() {
     if (slotsFilterSection && slot.section?.name !== slotsFilterSection) return false;
     return true;
   });
-  const scheduledSlotsTotalPages = Math.max(1, Math.ceil(activeDaySlots.length / TIMETABLE_PAGE_SIZE));
+  const scheduledSlotsTotalPages = Math.max(1, Math.ceil(activeDaySlots.length / SLOTS_PAGE_SIZE));
   const safeScheduledSlotsPage = Math.min(scheduledSlotsPage, scheduledSlotsTotalPages);
   const paginatedActiveDaySlots = activeDaySlots.slice(
-    (safeScheduledSlotsPage - 1) * TIMETABLE_PAGE_SIZE,
-    safeScheduledSlotsPage * TIMETABLE_PAGE_SIZE
+    (safeScheduledSlotsPage - 1) * SLOTS_PAGE_SIZE,
+    safeScheduledSlotsPage * SLOTS_PAGE_SIZE
+  );
+
+  // One distinct colour per subject (sorted by name so it is stable), cycling when there are more subjects than colours.
+  const subjectTone = new Map(
+    [...new Set(visibleTimetables.map((t) => t.subject?.name).filter(Boolean))].sort().map((name, i) => [name, i])
   );
 
   return (
@@ -1041,39 +1104,30 @@ export default function Timetable() {
       )}
 
       <div className="grid grid-cols-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-2 sm:gap-4 mb-6">
-        <div className="rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm transition-colors hover:border-slate-500 dark:hover:border-slate-400 flex flex-col justify-center items-center text-center">
-          <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">
-            <span className="hidden sm:inline">Classes Today</span>
-            <span className="inline sm:hidden">Today</span>
-          </p>
-          <p className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white mt-0.5">{todaysTimetables.length}</p>
-        </div>
-        <div className="rounded-xl sm:rounded-2xl border border-blue-200 dark:border-blue-900/50 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm transition-colors hover:border-blue-500 dark:hover:border-blue-500 flex flex-col justify-center items-center text-center">
-          <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">Teachers</p>
-          <p className="text-lg sm:text-2xl font-black text-blue-600 mt-0.5">{teachers.length}</p>
-        </div>
-        <div className="rounded-xl sm:rounded-2xl border border-emerald-200 dark:border-emerald-900/50 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm transition-colors hover:border-emerald-500 dark:hover:border-emerald-500 flex flex-col justify-center items-center text-center">
-          <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">Offline</p>
-          <p className="text-lg sm:text-2xl font-black text-emerald-600 mt-0.5">{todaysTimetables.filter(t => t.type === 'offline').length}</p>
-        </div>
-        <div className="rounded-xl sm:rounded-2xl border border-rose-200 dark:border-rose-900/50 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm transition-colors hover:border-rose-500 dark:hover:border-rose-500 flex flex-col justify-center items-center text-center">
-          <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">Live</p>
-          <p className="text-lg sm:text-2xl font-black text-rose-600 mt-0.5">{todaysTimetables.filter(t => t.type === 'live').length}</p>
-        </div>
-        <div className="rounded-xl sm:rounded-2xl border border-purple-200 dark:border-purple-900/50 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm transition-colors hover:border-purple-500 dark:hover:border-purple-500 flex flex-col justify-center items-center text-center">
-          <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">
-            <span className="hidden sm:inline">Lab Sessions</span>
-            <span className="inline sm:hidden">Labs</span>
-          </p>
-          <p className="text-lg sm:text-2xl font-black text-purple-600 mt-0.5">{todaysTimetables.filter(t => t.type === 'lab').length}</p>
-        </div>
-        <div className="rounded-xl sm:rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm transition-colors hover:border-amber-500 dark:hover:border-amber-500 flex flex-col justify-center items-center text-center">
-          <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">
-            <span className="hidden sm:inline">Extra Classes</span>
-            <span className="inline sm:hidden">Extras</span>
-          </p>
-          <p className="text-lg sm:text-2xl font-black text-amber-600 mt-0.5">{todaysTimetables.filter(t => t.type === 'extra').length}</p>
-        </div>
+        {[
+          { label: 'Total Classes', short: 'Classes', value: visibleTimetables.length, icon: CalendarDays, card: 'border-[#D5DEE9]', blob: 'bg-slate-200', tile: 'from-slate-600 to-slate-800 shadow-slate-500/30' },
+          { label: 'Teachers', value: teachers.length, icon: Users, card: 'border-[#CFE3FB]', blob: 'bg-blue-100', tile: 'from-blue-500 to-blue-600 shadow-blue-500/30' },
+          { label: 'Offline', value: visibleTimetables.filter(t => t.type === 'offline').length, icon: MapPin, card: 'border-[#A7F3D0]', blob: 'bg-emerald-100', tile: 'from-emerald-500 to-teal-600 shadow-emerald-500/30' },
+          { label: 'Live', value: visibleTimetables.filter(t => t.type === 'live').length, icon: Video, card: 'border-[#FBCFCF]', blob: 'bg-rose-100', tile: 'from-rose-500 to-red-600 shadow-rose-500/30' },
+          { label: 'Lab Sessions', short: 'Labs', value: visibleTimetables.filter(t => t.type === 'lab').length, icon: FlaskConical, card: 'border-[#DDD3FB]', blob: 'bg-violet-100', tile: 'from-violet-500 to-purple-600 shadow-violet-500/30' },
+          { label: 'Extra Classes', short: 'Extras', value: visibleTimetables.filter(t => t.type === 'extra').length, icon: CalendarPlus, card: 'border-[#FFDDB8]', blob: 'bg-orange-100', tile: 'from-orange-400 to-orange-600 shadow-orange-500/30' },
+        ].map(({ label, short, value, icon: Icon, card, blob, tile }) => (
+          <div
+            key={label}
+            className={`group relative overflow-hidden rounded-xl sm:rounded-2xl border bg-white dark:bg-slate-900 p-2 sm:p-4 flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-1.5 sm:gap-3.5 text-center sm:text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg ${card}`}
+          >
+            <div className={`pointer-events-none absolute -bottom-6 -right-6 size-16 sm:size-20 rounded-full transition-transform duration-500 group-hover:scale-125 ${blob}`} />
+            <div className={`relative flex size-7 sm:size-11 shrink-0 items-center justify-center rounded-lg sm:rounded-2xl bg-gradient-to-br text-white shadow-lg ${tile}`}>
+              <Icon className="size-3.5 sm:size-5" />
+            </div>
+            <div className="relative min-w-0">
+              <p className="text-lg sm:text-2xl font-black leading-none text-[#1E293B]">{value}</p>
+              <p className="mt-0.5 sm:mt-1 text-[9px] sm:text-xs font-bold uppercase tracking-wide text-slate-500 truncate">
+                {short ? (<><span className="hidden sm:inline">{label}</span><span className="inline sm:hidden">{short}</span></>) : label}
+              </p>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Class & Section Selection Grid Card */}
@@ -1435,35 +1489,41 @@ export default function Timetable() {
       )}
 
       {isTeacher && (
-        <section className="rounded-2xl sm:rounded-3xl border border-slate-100 bg-white p-4 sm:p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-300">My Week</p>
-              <h2 className="mt-1 text-xl font-black text-slate-950 dark:text-white">Teaching Schedule</h2>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                Your assigned classes grouped period-wise for each day.
-              </p>
+        <section className="rounded-[2rem] bg-white p-4 shadow-lg shadow-slate-200/60 ring-1 ring-slate-100 sm:p-6 dark:bg-slate-900 dark:ring-slate-800">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30">
+                <Clock className="size-5" />
+              </span>
+              <div>
+                <h2 className="text-lg font-extrabold leading-tight tracking-tight text-[#112A46] dark:text-white sm:text-xl">Teaching Schedule</h2>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Your classes, period by period</p>
+              </div>
             </div>
-            <div className="rounded-2xl bg-slate-50 px-4 py-3 text-right dark:bg-slate-850">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Today</p>
-              <p className="text-sm font-black text-slate-900 dark:text-white">{currentDay}</p>
-            </div>
+            <span className="shrink-0 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 px-3.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-white shadow-md shadow-blue-500/30">
+              Today · {dayShortNames[currentDay] || currentDay}
+            </span>
           </div>
 
           <div className="mt-5 w-full max-w-full overflow-x-auto">
-            <div className="flex min-w-[20rem] w-full gap-1 rounded-2xl border border-slate-100 bg-slate-50 p-1 dark:border-slate-800 dark:bg-slate-950 sm:w-fit sm:gap-2">
+            <div className="relative grid min-w-[20rem] w-full grid-cols-6 rounded-2xl bg-slate-100/80 p-1 sm:w-[28rem] dark:bg-slate-950">
+              {/* Sliding active pill: moves to the selected day instead of jumping. */}
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-1 left-1 w-[calc((100%-0.5rem)/6)] rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 shadow-md shadow-blue-600/30 transition-transform duration-300 ease-out"
+                style={{ transform: `translateX(${Math.max(0, days.indexOf(activeDay)) * 100}%)` }}
+              />
               {days.map((day) => (
                 <button
                   key={day}
                   type="button"
                   onClick={() => setActiveDay(day)}
-                  className={`flex-1 rounded-xl px-2 py-2.5 text-xs font-black uppercase tracking-wider transition sm:flex-none sm:px-4 ${
-                    activeDay === day
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
-                      : 'text-slate-500 hover:bg-white hover:text-slate-900 dark:hover:bg-slate-900 dark:hover:text-white'
+                  className={`relative z-10 flex items-center justify-center gap-1.5 rounded-xl px-1 py-2.5 text-xs font-black uppercase tracking-wider transition-colors duration-300 ${
+                    activeDay === day ? 'text-white' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   {dayShortNames[day] || day}
+                  {day === currentDay && <span className={`size-1.5 rounded-full transition-colors duration-300 ${activeDay === day ? 'bg-white' : 'bg-emerald-500'}`} title="Today" />}
                 </button>
               ))}
             </div>
@@ -1481,62 +1541,65 @@ export default function Timetable() {
                 const isCurrentPeriod = slot.dayOfWeek === currentDay
                   && currentMinutes >= minutesFromTime(slot.startTime)
                   && currentMinutes < minutesFromTime(slot.endTime);
+                const tone = isCurrentPeriod ? TEACHER_TONES.now : TEACHER_TONES.subjects[(subjectTone.get(slot.subject?.name) ?? 0) % TEACHER_TONES.subjects.length];
 
                 return (
                   <article
                     key={slot.id}
-                    className={`rounded-xl sm:rounded-2xl border p-2.5 sm:p-4 shadow-sm transition hover:shadow-md ${
-                      isCurrentPeriod
-                        ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900/50 dark:bg-emerald-950/20'
-                        : 'border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900'
+                    className={`group relative overflow-hidden rounded-xl sm:rounded-2xl border bg-white p-2.5 pl-3.5 sm:p-4 sm:pl-5 transition-all duration-200 hover:shadow-md dark:bg-slate-900 ${
+                      isCurrentPeriod ? 'border-emerald-300 bg-emerald-50/40' : 'border-slate-200 hover:border-slate-300 dark:border-slate-800'
                     }`}
                   >
+                    <span className={`absolute inset-y-0 left-0 w-1 sm:w-1.5 ${tone.bar}`} />
                     <div className="flex flex-col gap-2">
                       <div className="flex items-start justify-between gap-1.5">
-                        <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[9px] sm:px-3 sm:py-1 sm:text-[11px] font-black uppercase text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 truncate max-w-[80px]">
+                        <span className="truncate max-w-[80px] rounded-md bg-slate-100 px-2 py-0.5 text-[9px] sm:text-[11px] font-bold uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                           {slot.periodName || `P${slot.periodNumber || '-'}`}
                         </span>
                         <div className="flex gap-1 shrink-0">
                           <button
                             onClick={() => handleEditClick(slot)}
-                            className="rounded-lg border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 p-1 sm:p-1.5 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                            className="rounded-lg border border-slate-200 bg-white p-1 sm:p-1.5 text-slate-500 transition hover:bg-slate-50 hover:text-slate-800 dark:border-slate-700 dark:bg-slate-900"
                             title="Edit Slot"
                           >
                             <Edit2 className="size-2.5 sm:size-3" />
                           </button>
                           <button
                             onClick={() => handleDeleteClick(slot.id)}
-                            className="rounded-lg border border-red-100 dark:border-rose-950/40 bg-white dark:bg-slate-900 p-1 sm:p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition"
+                            className="rounded-lg border border-slate-200 bg-white p-1 sm:p-1.5 text-slate-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:bg-slate-900"
                             title="Delete Slot"
                           >
                             <Trash2 className="size-2.5 sm:size-3" />
                           </button>
                         </div>
                       </div>
-                      
-                      <div className="flex items-center justify-between gap-1.5">
-                        <span className={`rounded-full px-2 py-0.5 text-[9px] sm:px-3 sm:py-1 sm:text-[11px] font-black uppercase ${
-                          isCurrentPeriod
-                            ? 'bg-emerald-600 text-white'
-                            : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300'
-                        }`}>
-                          {isCurrentPeriod ? 'Now' : slot.type || 'Offline'}
-                        </span>
+
+                      <div className="flex items-center gap-1.5">
+                        {isCurrentPeriod ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-2 py-0.5 text-[9px] sm:text-[11px] font-bold uppercase text-white">
+                            <span className="size-1.5 animate-pulse rounded-full bg-white" /> Now
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 text-[9px] sm:text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                            <span className={`size-1.5 rounded-full ${tone.bar}`} />
+                            {slot.type || 'Offline'}
+                          </span>
+                        )}
                       </div>
                     </div>
 
-                    <h3 className="mt-2.5 sm:mt-4 text-xs sm:text-base font-black text-slate-950 dark:text-white truncate">
+                    <h3 className="mt-2.5 sm:mt-3.5 text-xs sm:text-base font-bold text-slate-900 dark:text-white truncate">
                       {formatClassName(slot.section) || 'Class'}{slot.section?.name ? ` - ${slot.section.name}` : ''}
                     </h3>
-                    <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-sm font-bold text-blue-700 dark:text-blue-300 truncate">{slot.subject?.name || 'Subject'}</p>
+                    <p className={`mt-0.5 sm:mt-1 text-[10px] sm:text-sm font-semibold truncate ${tone.text}`}>{slot.subject?.name || 'Subject'}</p>
 
-                    <div className="mt-2.5 sm:mt-4 grid gap-1 sm:gap-2 text-[9px] sm:text-xs font-semibold text-slate-600 dark:text-slate-350">
+                    <div className="mt-2.5 sm:mt-3.5 grid gap-1 sm:gap-1.5 border-t border-slate-100 pt-2 sm:pt-3 text-[9px] sm:text-xs font-medium text-slate-600 dark:border-slate-800 dark:text-slate-300">
                       <span className="inline-flex items-center gap-1 sm:gap-2 truncate">
-                        <Clock className="size-3 sm:size-4 text-blue-600 shrink-0" />
+                        <Clock className="size-3 sm:size-3.5 shrink-0 text-slate-400" />
                         {slot.startTime} - {slot.endTime}
                       </span>
                       <span className="inline-flex items-center gap-1 sm:gap-2 truncate" title={slot.room ? `Room ${slot.room}` : 'Room not assigned'}>
-                        <MapPin className="size-3 sm:size-4 text-blue-600 shrink-0" />
+                        <MapPin className="size-3 sm:size-3.5 shrink-0 text-slate-400" />
                         {slot.room ? `Room ${slot.room}` : 'Not assigned'}
                       </span>
                     </div>
@@ -1855,94 +1918,130 @@ export default function Timetable() {
               No periods are created for {activeDay}. Add timetable slots to see engaged and idle teachers.
             </div>
           ) : (
-            <div className="mt-5 overflow-x-auto w-full max-w-full rounded-2xl border border-slate-100 dark:border-slate-800">
-              <div className="min-w-[1000px]">
-                <div className="hidden md:grid grid-cols-12 bg-slate-50 dark:bg-slate-850 px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">
-                  <div className="col-span-2">Period</div>
-                  <div className="col-span-5">Engaged in Class</div>
-                  <div className="col-span-5">Idle / Staff Room</div>
-                </div>
-                <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {periodWiseStatus.map((period) => (
+            <>
+            <div className="mt-5 flex items-center justify-between gap-3">
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                {periodWiseStatus.length} period{periodWiseStatus.length === 1 ? '' : 's'} - click a period to see who is in class and who is free
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPeriodOpen(Object.fromEntries(periodWiseStatus.map((p) => [p.key, true])))}
+                  className="rounded-xl border border-slate-200 dark:border-slate-800 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                >
+                  Expand all
+                </button>
+                <button
+                  onClick={() => setPeriodOpen(Object.fromEntries(periodWiseStatus.map((p) => [p.key, false])))}
+                  className="rounded-xl border border-slate-200 dark:border-slate-800 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                >
+                  Collapse all
+                </button>
+              </div>
+            </div>
+            <div className="mt-3 w-full max-w-full overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800">
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                {periodWiseStatus.map((period) => {
+                  const isOpen = periodOpen[period.key] ?? period.isCurrentPeriod;
+                  return (
                     <div
                       key={period.key}
-                      className={`grid grid-cols-1 gap-4 px-4 py-4 md:grid-cols-12 md:gap-3 ${
-                        period.isCurrentPeriod ? 'bg-emerald-50/80 dark:bg-emerald-950/20' : 'bg-white dark:bg-slate-900'
-                      }`}
+                      ref={period.isCurrentPeriod ? currentPeriodRef : undefined}
+                      className={period.isCurrentPeriod ? 'border-l-4 border-l-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/20' : 'border-l-4 border-l-transparent bg-white dark:bg-slate-900'}
                     >
-                    <div className="md:col-span-2">
-                      <div className="flex items-center gap-2">
-                        <span className={`flex size-8 items-center justify-center rounded-xl text-xs font-black ${
+                      <button
+                        type="button"
+                        onClick={() => setPeriodOpen((prev) => ({ ...prev, [period.key]: !isOpen }))}
+                        aria-expanded={isOpen}
+                        className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-slate-50/70 dark:hover:bg-slate-800/40"
+                      >
+                        <span className={`flex size-8 shrink-0 items-center justify-center rounded-xl text-xs font-black ${
                           period.isCurrentPeriod ? 'bg-emerald-600 text-white' : 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
                         }`}>
                           {period.periodNumber || '-'}
                         </span>
-                        <div>
-                          <p className="text-sm font-black text-slate-950 dark:text-white">{period.periodName}</p>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="truncate text-sm font-black text-slate-950 dark:text-white">{period.periodName}</p>
+                            {period.isCurrentPeriod && (
+                              <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">Now</span>
+                            )}
+                          </div>
                           <p className="text-xs font-semibold text-slate-500">{period.startTime} - {period.endTime}</p>
                         </div>
-                      </div>
-                    </div>
+                        <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+                          {period.engaged.length} engaged
+                        </span>
+                        <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
+                          {period.idle.length} idle
+                        </span>
+                        <ChevronDown className={`size-4 shrink-0 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                      </button>
 
-                    <div className="md:col-span-5">
-                      <p className="mb-2 text-[11px] font-black uppercase tracking-wider text-slate-400 md:hidden">Engaged in Class</p>
-                      {period.engaged.length === 0 ? (
-                        <p className="rounded-xl bg-slate-50 dark:bg-slate-850 px-3 py-2 text-xs font-semibold text-slate-500">
-                          No teacher assigned in this period
-                        </p>
-                      ) : (
-                        <div className="space-y-2">
-                          {period.engaged.map((item) => (
-                            <div key={item.key} className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 dark:border-emerald-900/50 dark:bg-emerald-950/20">
-                              <p className="text-sm font-black text-slate-950 dark:text-white">{item.teacherName}</p>
-                              <p className="text-xs font-semibold text-slate-600 dark:text-slate-350">
-                                {item.className}{item.sectionName ? ` - ${item.sectionName}` : ''} - {item.subjectName}
-                                {item.room ? ` - Room ${item.room}` : ''}
+                      {isOpen && (
+                        <div className="grid grid-cols-1 gap-4 px-4 pb-4 md:grid-cols-2">
+                          <div className="min-w-0">
+                            <p className="mb-1.5 text-[11px] font-black uppercase tracking-wider text-slate-400">Engaged in Class</p>
+                            {period.engaged.length === 0 ? (
+                              <p className="rounded-xl bg-slate-50 dark:bg-slate-850 px-3 py-1.5 text-xs font-semibold text-slate-500">
+                                No teacher assigned in this period
                               </p>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="md:col-span-5">
-                      <p className="mb-2 text-[11px] font-black uppercase tracking-wider text-slate-400 md:hidden">Idle / Staff Room</p>
-                      {period.idle.length === 0 ? (
-                        <p className="rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-300">
-                          All teachers are engaged in this period
-                        </p>
-                      ) : period.idleBySubject.length === 0 ? (
-                        <p className="rounded-xl bg-slate-50 dark:bg-slate-850 px-3 py-2 text-xs font-semibold text-slate-500">
-                          No idle teacher is qualified for this period's subjects
-                        </p>
-                      ) : (
-                        <div className="space-y-2.5">
-                          {period.idleBySubject.map((group) => (
-                            <div key={group.subjectName}>
-                              <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-slate-400">{group.subjectName}</p>
-                              <div className="flex flex-wrap gap-2">
-                                {group.teachers.map((teacher) => (
-                                  <button
-                                    key={`${period.key}-${group.subjectName}-${teacher.id}`}
-                                    onClick={() => handleAssignIdleTeacher(teacher, period, teacher.subjects.find((s) => s.name === group.subjectName)?.id)}
-                                    title={`Click to assign ${teacher.name} to this period`}
-                                    className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition active:scale-95 cursor-pointer dark:border-blue-950/50 dark:bg-blue-950/30 dark:text-blue-300 dark:hover:bg-blue-600 dark:hover:text-white"
-                                  >
-                                    <Plus className="size-3 shrink-0" />
-                                    {teacher.name}
-                                  </button>
+                            ) : (
+                              <div className="grid max-h-44 gap-1.5 overflow-y-auto pr-1">
+                                {period.engaged.map((item) => (
+                                  <div key={item.key} className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-1.5 dark:border-emerald-900/50 dark:bg-emerald-950/20">
+                                    <p className="truncate text-sm font-black text-slate-950 dark:text-white">{item.teacherName}</p>
+                                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-350">
+                                      {item.className}{item.sectionName ? ` - ${item.sectionName}` : ''} - {item.subjectName}
+                                      {item.room ? ` - Room ${item.room}` : ''}
+                                    </p>
+                                  </div>
                                 ))}
                               </div>
-                            </div>
-                          ))}
+                            )}
+                          </div>
+
+                          <div className="min-w-0">
+                            <p className="mb-1.5 text-[11px] font-black uppercase tracking-wider text-slate-400">Idle / Staff Room</p>
+                            {period.idle.length === 0 ? (
+                              <p className="rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-300">
+                                All teachers are engaged in this period
+                              </p>
+                            ) : period.idleBySubject.length === 0 ? (
+                              <p className="rounded-xl bg-slate-50 dark:bg-slate-850 px-3 py-1.5 text-xs font-semibold text-slate-500">
+                                No idle teacher is qualified for this period's subjects
+                              </p>
+                            ) : (
+                              <div className="max-h-44 space-y-2 overflow-y-auto pr-1">
+                                {period.idleBySubject.map((group) => (
+                                  <div key={group.subjectName}>
+                                    <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-slate-400">{group.subjectName}</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {group.teachers.map((teacher) => (
+                                        <button
+                                          key={`${period.key}-${group.subjectName}-${teacher.id}`}
+                                          onClick={() => handleAssignIdleTeacher(teacher, period, teacher.subjects.find((s) => s.name === group.subjectName)?.id)}
+                                          title={`Click to assign ${teacher.name} to this period`}
+                                          className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-700 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition active:scale-95 cursor-pointer dark:border-blue-950/50 dark:bg-blue-950/30 dark:text-blue-300 dark:hover:bg-blue-600 dark:hover:text-white"
+                                        >
+                                          <Plus className="size-3 shrink-0" />
+                                          {teacher.name}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
-          </div>
+            </>
+
         )}
         </div>
       )}
@@ -2077,7 +2176,7 @@ export default function Timetable() {
           </div>
           <DataTablePagination
             page={safeScheduledSlotsPage}
-            limit={TIMETABLE_PAGE_SIZE}
+            limit={SLOTS_PAGE_SIZE}
             total={activeDaySlots.length}
             totalPages={scheduledSlotsTotalPages}
             onPageChange={setScheduledSlotsPage}

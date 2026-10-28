@@ -32,6 +32,24 @@ const DETAIL_TAB_META: Partial<Record<CourseTabId, { label: string; icon: React.
   doubts: { label: 'Student Doubts', icon: MessagesSquare },
 };
 
+// A subject always gets the same colour, so lectures are recognisable at a glance.
+const SUBJECT_TONES = [
+  { grad: 'from-blue-500 to-indigo-700', chip: 'bg-blue-50 text-blue-700' },
+  { grad: 'from-emerald-500 to-teal-700', chip: 'bg-emerald-50 text-emerald-700' },
+  { grad: 'from-violet-500 to-purple-700', chip: 'bg-violet-50 text-violet-700' },
+  { grad: 'from-rose-500 to-pink-700', chip: 'bg-rose-50 text-rose-700' },
+  { grad: 'from-amber-500 to-orange-700', chip: 'bg-amber-50 text-amber-700' },
+  { grad: 'from-cyan-500 to-sky-700', chip: 'bg-cyan-50 text-cyan-700' },
+  { grad: 'from-fuchsia-500 to-purple-700', chip: 'bg-fuchsia-50 text-fuchsia-700' },
+  { grad: 'from-lime-500 to-green-700', chip: 'bg-lime-50 text-lime-700' },
+];
+const subjectTone = (name?: string | null) => {
+  const text = String(name || '');
+  let hash = 0;
+  for (let i = 0; i < text.length; i += 1) hash = (hash * 31 + text.charCodeAt(i)) >>> 0;
+  return SUBJECT_TONES[hash % SUBJECT_TONES.length];
+};
+
 const InfoAlert: React.FC<{ className?: string; children: React.ReactNode }> = ({ className, children }) => (
   <Alert className={cn('flex items-start gap-2 [&>svg]:static [&>svg]:text-current [&>svg~*]:pl-0 [&>svg+div]:translate-y-0', className)}>
     {children}
@@ -1436,10 +1454,10 @@ const ClassManagement: React.FC = () => {
 
     return (
       <Card className={cn(
-        'rounded-2xl bg-white p-4 transition-shadow',
+        'rounded-2xl bg-white p-4 shadow-none transition-colors',
         isLive
-          ? 'border-red-400/50 shadow-[0_0_24px_rgba(239,68,68,0.18)]'
-          : 'border-slate-100 shadow-sm hover:shadow-md',
+          ? 'border-red-300 ring-1 ring-red-200'
+          : 'border-slate-100 hover:border-slate-200',
       )}>
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
@@ -1660,8 +1678,11 @@ const ClassManagement: React.FC = () => {
     const filteredSubjects = Array.from(subjectMap.values()).sort(byNameNatural);
 
     return (
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <span className="text-[11px] font-black uppercase tracking-widest text-slate-400 hidden sm:inline-block">Curriculum</span>
+      <div className="mb-4 flex w-full flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 sm:w-fit sm:max-w-full">
+        <span className="mr-1 inline-flex items-center gap-1.5 text-xs font-extrabold text-slate-700">
+          <span className="flex size-6 items-center justify-center rounded-md bg-blue-50 text-blue-600 ring-1 ring-blue-100"><BookOpen size={13} /></span>
+          <span className="hidden sm:inline">Curriculum</span>
+        </span>
         <CustomSelect
           value={recFilter.classId}
           onChange={(val) => setRecFilter((p) => ({ ...p, classId: val, subjectId: '', chapterId: '', topicId: '' }))}
@@ -1669,7 +1690,7 @@ const ClassManagement: React.FC = () => {
             { value: "", label: "All classes" },
             ...schedClassOptions.map((c: any) => ({ value: c.id, label: c.name })),
           ]}
-          className="w-[140px] flex-1 sm:flex-none"
+          className="min-w-[130px] flex-1 sm:w-[160px] sm:flex-none"
         />
         <CustomSelect
           value={recFilter.subjectId}
@@ -1679,7 +1700,7 @@ const ClassManagement: React.FC = () => {
             ...filteredSubjects.map((s: any) => ({ value: s.id, label: s.name })),
           ]}
           disabled={!recFilter.classId}
-          className="w-[140px] flex-1 sm:flex-none"
+          className="min-w-[130px] flex-1 sm:w-[160px] sm:flex-none"
         />
         <CustomSelect
           value={recFilter.chapterId}
@@ -1689,7 +1710,7 @@ const ClassManagement: React.FC = () => {
             ...filterChapters.map((c: any, i: number) => ({ value: c.id, label: `${i + 1}. ${c.name}` })),
           ]}
           disabled={!recFilter.subjectId}
-          className="w-[140px] flex-1 sm:flex-none"
+          className="min-w-[130px] flex-1 sm:w-[160px] sm:flex-none"
         />
         <CustomSelect
           value={recFilter.topicId}
@@ -1699,8 +1720,19 @@ const ClassManagement: React.FC = () => {
             ...filterTopics.map((t: any, i: number) => ({ value: t.id, label: `${i + 1}. ${t.name}` })),
           ]}
           disabled={!recFilter.chapterId}
-          className="w-[140px] flex-1 sm:flex-none"
+          className="min-w-[130px] flex-1 sm:w-[160px] sm:flex-none"
         />
+        {(recFilter.classId || recFilter.subjectId || recFilter.chapterId || recFilter.topicId) && (
+          <button
+            type="button"
+            onClick={() => setRecFilter((p) => ({ ...p, classId: '', subjectId: '', chapterId: '', topicId: '' }))}
+            title="Clear filters"
+            aria-label="Clear filters"
+            className="flex size-8 shrink-0 items-center justify-center rounded-lg text-rose-500 transition-colors hover:bg-rose-50"
+          >
+            <X size={15} />
+          </button>
+        )}
       </div>
     );
   };
@@ -1846,15 +1878,16 @@ const ClassManagement: React.FC = () => {
         <div className="space-y-3">
           {(showAllRecordedLectures ? uploadedRecordings : uploadedRecordings.slice(0, 10)).map((rec: any) => {
             const date = rec.recorded_date ? new Date(rec.recorded_date).toLocaleDateString('en-GB') : '';
+            const tone = subjectTone(rec.subject_name || rec.title);
             return (
-              <Card key={rec.id} className="rounded-2xl border-slate-100 bg-white p-4 shadow-sm transition hover:shadow-md">
+              <Card key={rec.id} className="rounded-2xl border-slate-100 bg-white p-4 shadow-none transition-colors hover:border-blue-200">
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-3.5 sm:gap-4">
                   <Button variant={null} size={null} onClick={() => navigate(`/school/teacher/recorded-classes/${rec.id}`)}
                     className="group/thumb relative h-36 w-full sm:h-16 sm:w-28 shrink-0 overflow-hidden rounded-xl bg-slate-900">
                     {rec.thumbnail_url ? (
                       <img src={rec.thumbnail_url} alt={rec.title} className="size-full object-cover transition-transform duration-300 group-hover/thumb:scale-105" loading="lazy" />
                     ) : (
-                      <div className="flex size-full items-center justify-center bg-gradient-to-br from-slate-800 to-slate-950"><PlayCircle size={26} className="text-white/60" /></div>
+                      <div className={`flex size-full items-center justify-center bg-gradient-to-br ${tone.grad}`}><PlayCircle size={26} className="text-white/80" /></div>
                     )}
                     {/* Play icon overlay on hover */}
                     <span className="absolute inset-0 flex items-center justify-center bg-black/10 sm:bg-black/0 opacity-100 sm:opacity-0 transition-all group-hover/thumb:bg-black/30 group-hover/thumb:opacity-100">
@@ -1877,16 +1910,29 @@ const ClassManagement: React.FC = () => {
                         >
                           {rec.title}
                         </h4>
-                        <p className="mt-0.5 truncate text-xs font-medium text-slate-500">
-                          · {[rec.topic_name, rec.subject_name, rec.class_name].filter(Boolean)[0] || 'Lecture'} · {date}
-                        </p>
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                          {rec.subject_name && (
+                            <span className={cn('rounded-md px-1.5 py-0.5 text-[10px] font-bold', tone.chip)}>{rec.subject_name}</span>
+                          )}
+                          {rec.class_name && (
+                            <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600">{rec.class_name}</span>
+                          )}
+                          {!rec.subject_name && !rec.class_name && (
+                            <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600">{rec.topic_name || 'Lecture'}</span>
+                          )}
+                          {date && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400">
+                              <CalendarDays size={11} /> {date}
+                            </span>
+                          )}
+                        </div>
                         <Button variant="ghost" size={null} onClick={() => navigate(`/school/teacher/recorded-classes/${rec.id}`)}
-                          className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:underline">
-                          <ChevronRight size={13} /> Click to view details
+                          className="mt-0.5 inline-flex items-center gap-0.5 text-[11px] font-bold text-blue-600 hover:underline">
+                          View details <ChevronRight size={12} />
                         </Button>
                       </div>
                       <div className="flex flex-row sm:flex-col items-center sm:items-end gap-1.5 mt-1.5 sm:mt-0 shrink-0">
-                        <Badge variant="outline" className="rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-black uppercase text-emerald-600 border-transparent">Published</Badge>
+                        <Badge variant="outline" className="gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-black uppercase text-emerald-600 border-transparent"><span className="size-1.5 rounded-full bg-emerald-500" />Published</Badge>
                         <TranscriptStatusBadge
                           rec={rec}
                           onView={() => navigate(`/school/teacher/recorded-classes/${rec.id}`)}
@@ -1927,10 +1973,10 @@ const ClassManagement: React.FC = () => {
                         {renderThumbnailProgress(rec)}
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button variant="ghost" size={null} onClick={() => openEditRecordingModal(rec)} className="text-slate-400 hover:text-blue-600 transition-colors" title="Edit Lecture Details">
+                        <Button variant="ghost" size={null} onClick={() => openEditRecordingModal(rec)} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-600" title="Edit Lecture Details">
                           <Edit size={16} />
                         </Button>
-                        <Button variant="ghost" size={null} onClick={() => deleteRecording(rec.id)} className="text-slate-400 hover:text-rose-500 transition-colors" title="Delete Lecture">
+                        <Button variant="ghost" size={null} onClick={() => deleteRecording(rec.id)} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-500" title="Delete Lecture">
                           <Trash2 size={16} />
                         </Button>
                       </div>
@@ -1982,15 +2028,15 @@ const ClassManagement: React.FC = () => {
         </div>
         <div className="flex gap-2">
           {canGoLive && (
-            <Button variant="outline" onClick={() => setShowScheduleLiveModal(true)}><Radio size={16} /> Schedule Live Class</Button>
+            <Button variant="outline" onClick={() => setShowScheduleLiveModal(true)} className="rounded-xl border-slate-200 bg-white px-4 font-bold text-slate-700 shadow-none hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"><Radio size={16} /> Schedule Live Class</Button>
           )}
-          <Button onClick={() => setShowRecordingModal(true)}><Plus size={16} /> Upload Lecture</Button>
+          <Button onClick={() => setShowRecordingModal(true)} className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 font-bold text-white shadow-none hover:brightness-110 active:scale-[0.98]"><Plus size={16} /> Upload Lecture</Button>
         </div>
       </div>
       <Tabs defaultValue="recorded" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="recorded" className="gap-2 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md"><Video size={16} /> Recorded</TabsTrigger>
-          <TabsTrigger value="live" className="gap-2 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md"><Radio size={16} /> Live Classes</TabsTrigger>
+        <TabsList className="mb-4 h-auto gap-2 bg-transparent p-0">
+          <TabsTrigger value="recorded" className="gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 font-bold text-slate-600 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 data-[state=active]:border-blue-700 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=active]:ring-2 data-[state=active]:ring-blue-200 data-[state=active]:hover:bg-gradient-to-br"><Video size={16} /> Recorded</TabsTrigger>
+          <TabsTrigger value="live" className="gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 font-bold text-slate-600 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 data-[state=active]:border-blue-700 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=active]:ring-2 data-[state=active]:ring-blue-200 data-[state=active]:hover:bg-gradient-to-br"><Radio size={16} /> Live Classes</TabsTrigger>
         </TabsList>
         <TabsContent value="recorded">{recordedContent}</TabsContent>
         <TabsContent value="live">{liveContent}</TabsContent>

@@ -8,6 +8,7 @@ import { PageTransition } from './PageTransition';
 import MaintenanceNotice from '@/components/shared/MaintenanceNotice';
 import { PageErrorBoundary } from '@/components/shared/PageErrorBoundary';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useScreenTimeTracking } from '@/hooks/use-screen-time-tracking';
 import { useAuth } from '@/context/SchoolAuthContext';
 import api from '@/lib/api/school-client';
 import {
@@ -47,6 +48,7 @@ function AdminLayoutShell() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { user, institute, logout } = useAuth();
+  useScreenTimeTracking();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [moreDrawerOpen, setMoreDrawerOpen] = useState(false);
 

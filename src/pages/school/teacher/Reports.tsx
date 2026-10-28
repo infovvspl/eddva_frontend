@@ -1063,7 +1063,7 @@ const Reports: React.FC = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border border-slate-100 bg-white p-1.5 shadow-sm">
+        <TabsList className="h-auto w-fit max-w-full justify-start gap-1 overflow-x-auto rounded-xl border border-slate-100 bg-white p-1.5 shadow-sm">
           {[
             { id: 'students', label: 'Student Performance', icon: <Users size={16} /> },
             { id: 'weakness', label: 'Weakness Analysis', icon: <AlertTriangle size={16} /> },

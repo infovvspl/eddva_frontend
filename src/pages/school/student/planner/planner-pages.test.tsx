@@ -51,16 +51,16 @@ const home: LearningHome = {
     {
       subjectId: "s1", name: "Science", weakChapters: 1, atRiskChapters: 0, hiddenChapters: 5,
       chapters: [{
-        chapterId: "c1", name: "Magnetic Effects", status: "weak", mastery: 18, estMinutes: 65, expanded: true, roadmapState: "ready",
+        chapterId: "c1", name: "Magnetic Effects", status: "weak", mastery: 18, estMinutes: 65, expanded: true, roadmapState: "ready", completed: false,
         topics: [{
-          topicId: "t1", name: "Magnetic field lines", order: 1, status: "weak", mastery: 18, estMinutes: 65, roadmapState: "ready", thread: null, children: [],
-          subtopics: [{ name: "Bar magnet field", order: 1, status: "not_assessed", accuracy: null, answered: 0 }],
+          topicId: "t1", name: "Magnetic field lines", order: 1, status: "weak", mastery: 18, estMinutes: 65, roadmapState: "ready", thread: null, completed: false, children: [],
+          subtopics: [{ id: "sub-t1-1", name: "Bar magnet field", order: 1, status: "not_assessed", accuracy: null, answered: 0, thread: null }],
         }],
       }, {
-        chapterId: "c2", name: "Light", status: "ok", mastery: 74, estMinutes: 20, expanded: false, roadmapState: null,
+        chapterId: "c2", name: "Light", status: "ok", mastery: 74, estMinutes: 20, expanded: false, roadmapState: null, completed: false,
         topics: [{
-          topicId: "t5", name: "Refraction", order: null, status: "weak", mastery: 30, estMinutes: 20, roadmapState: "ready", thread: null, children: [],
-          subtopics: [{ name: "Snell's law", order: 1, status: "weak", accuracy: 20, answered: 5 }],
+          topicId: "t5", name: "Refraction", order: null, status: "weak", mastery: 30, estMinutes: 20, roadmapState: "ready", thread: null, completed: false, children: [],
+          subtopics: [{ id: "sub-t5-1", name: "Snell's law", order: 1, status: "weak", accuracy: 20, answered: 5, thread: null }],
         }],
       }],
     },
@@ -70,6 +70,7 @@ const home: LearningHome = {
 const thread: ThreadView = {
   thread: {
     id: "th1", scope: "topic", status: "active", origin: "mind_map", parentThreadId: null, topicId: "t1", topicName: "Magnetic field lines",
+    subtopicId: null, subtopicName: null,
     chapterId: "c1", chapterName: "Magnetic Effects", subjectId: "s1", subjectName: "Science", round: 1, currentStepId: "st-notes",
     baselineMastery: 18, latestMastery: null, lastActivityAt: "2026-10-23T10:00:00Z", weakConcepts: [],
   },
@@ -115,32 +116,40 @@ describe("PlannerHome", () => {
     try { localStorage.removeItem("planner-roadmap-view"); } catch { /* ignore */ }
   });
 
-  it("shows what was found weak, the study time, and only the weak chapter and topic headings", async () => {
-    wrap(<PlannerHome />);
+  it("shows what was found weak, the study time, and — once its subject is opened — the weak chapter and topic headings", async () => {
+    const { container } = wrap(<PlannerHome />);
     expect(await screen.findByText("Your learning roadmap")).toBeInTheDocument();
     expect(screen.getByText(/4 assessments, 8 games/)).toBeInTheDocument();
     expect(screen.getByText("2h 05m")).toBeInTheDocument();
     expect(screen.getByText(/3-day streak/)).toBeInTheDocument();
+    // Collapsed by default: the subject shows, its weak chapters/topics do not yet.
+    await screen.findByText("Science");
+    expect(screen.queryByText("Magnetic Effects")).not.toBeInTheDocument();
+    const subjectNode = Array.from(container.querySelectorAll<HTMLElement>(".react-flow__node")).find((n) => n.textContent?.includes("Science"))!;
+    fireEvent.click(subjectNode);
     expect(await screen.findByText("Magnetic Effects")).toBeInTheDocument(); // weak chapter
     expect(screen.getByText("Refraction")).toBeInTheDocument(); // weak topic of a chapter that is fine
     expect(screen.queryByText(/Magnetic field lines/)).not.toBeInTheDocument(); // the chapter's topics wait for its page
     expect(screen.queryByText("Bar magnet field")).not.toBeInTheDocument();
   });
 
-  it("lets the student click a mind-map node to open its roadmap", async () => {
+  it("lets the student click a subject to open its branches, then a mind-map node to open its roadmap", async () => {
     const { container } = wrap(<PlannerHome />);
-    expect(await screen.findByText("Magnetic Effects")).toBeInTheDocument();
-    const nodes = Array.from(container.querySelectorAll<HTMLElement>(".react-flow__node"));
-    expect(nodes.length).toBeGreaterThan(0);
+    await screen.findByText("Science");
+    const nodesBefore = Array.from(container.querySelectorAll<HTMLElement>(".react-flow__node"));
+    expect(nodesBefore.length).toBeGreaterThan(0);
     // React Flow turns clicks off (pointer-events: none) on a node unless the flow handles clicks.
-    nodes.forEach((n) => expect(n.style.pointerEvents).not.toBe("none"));
-    const chapterNode = nodes.find((n) => n.textContent?.includes("Magnetic Effects"))!;
+    nodesBefore.forEach((n) => expect(n.style.pointerEvents).not.toBe("none"));
+    const subjectNode = nodesBefore.find((n) => n.textContent?.includes("Science"))!;
+    fireEvent.click(subjectNode);
+    expect(await screen.findByText("Magnetic Effects")).toBeInTheDocument();
+    const chapterNode = Array.from(container.querySelectorAll<HTMLElement>(".react-flow__node")).find((n) => n.textContent?.includes("Magnetic Effects"))!;
     fireEvent.click(chapterNode);
     expect(await screen.findByRole("heading", { name: "Magnetic Effects" })).toBeInTheDocument();
     expect(screen.getByText(/Chapter roadmap/)).toBeInTheDocument();
   });
 
-  it("opens a weak chapter's roadmap, then a topic's learning path", async () => {
+  it("opens a weak chapter's roadmap, then a subtopic's own learning path (the topic itself has nothing of its own to open)", async () => {
     api.openThread.mockResolvedValue(thread);
     api.thread.mockResolvedValue(thread);
     wrap(<PlannerHome />);
@@ -148,13 +157,13 @@ describe("PlannerHome", () => {
     fireEvent.click(screen.getByRole("link", { name: /Magnetic Effects/ }));
     expect(await screen.findByRole("heading", { name: "Magnetic Effects" })).toBeInTheDocument();
     expect(screen.getByText(/Chapter roadmap/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Bar magnet field" })).toBeInTheDocument(); // subtopics show
-    fireEvent.click(screen.getByRole("button", { name: /Magnetic field lines/ }));
-    await waitFor(() => expect(api.openThread).toHaveBeenCalledWith({ topicId: "t1", focusSubtopic: undefined }));
+    expect(screen.getByRole("button", { name: /Magnetic field lines/ })).toBeDisabled(); // nothing of its own to open — it has a subtopic
+    fireEvent.click(screen.getByRole("button", { name: "Bar magnet field" }));
+    await waitFor(() => expect(api.openThread).toHaveBeenCalledWith({ subtopicId: "sub-t1-1" }));
     expect((await screen.findAllByText("Your path for Magnetic field lines"))[0]).toBeInTheDocument();
   });
 
-  it("opens a weak topic's own roadmap of subtopics", async () => {
+  it("opens a weak topic's own subtopic, not the topic", async () => {
     api.openThread.mockResolvedValue(thread);
     api.thread.mockResolvedValue(thread);
     wrap(<div />, "/school/student/planner/topic/t5");
@@ -162,7 +171,7 @@ describe("PlannerHome", () => {
     expect(screen.getByText(/Science · Light · Topic roadmap/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "List" }));
     fireEvent.click(screen.getByRole("button", { name: "Snell's law" }));
-    await waitFor(() => expect(api.openThread).toHaveBeenCalledWith({ topicId: "t5", focusSubtopic: "Snell's law" }));
+    await waitFor(() => expect(api.openThread).toHaveBeenCalledWith({ subtopicId: "sub-t5-1" }));
   });
 
   it("says so when a roadmap is no longer on the list", async () => {
@@ -221,15 +230,13 @@ describe("ThreadPage", () => {
     expect((await screen.findAllByRole("button", { name: "Videos · in progress" }))[0]).toBeInTheDocument();
   });
 
-  it("shows the path first when opened from a subtopic, instead of jumping into the notes", async () => {
-    render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <MemoryRouter initialEntries={[{ pathname: "/school/student/planner/t/th1", state: { focusSubtopic: "Bar magnet field" } }]}>
-          <Routes><Route path="/school/student/planner/t/:threadId" element={<ThreadPage />} /></Routes>
-        </MemoryRouter>
-      </QueryClientProvider>,
-    );
-    expect((await screen.findAllByText("Your path for Magnetic field lines"))[0]).toBeInTheDocument();
+  it("shows the path first for a subtopic's own thread too, instead of jumping into the notes", async () => {
+    api.thread.mockResolvedValue({
+      ...thread,
+      thread: { ...thread.thread, scope: "subtopic", subtopicId: "sub-t1-1", subtopicName: "Bar magnet field" },
+    });
+    wrap(<div />, "/school/student/planner/t/th1");
+    expect((await screen.findAllByText("Your path for Bar magnet field"))[0]).toBeInTheDocument();
     await new Promise((r) => setTimeout(r, 50));
     expect(api.openStep).not.toHaveBeenCalled();
   });

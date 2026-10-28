@@ -6,6 +6,7 @@ import { BackButton } from '@/components/shared/BackButton';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { getApiBaseUrl } from '@/lib/api-config';
 import { schoolContent } from '@/lib/api/school-content';
+import { dismissPptJob } from '@/lib/pptJobs';
 
 // The studio is a separate static app (public/ppt-studio) so it can be
 // iterated on without rebuilding the panel. Override via VITE_PPT_STUDIO_URL
@@ -171,6 +172,14 @@ export default function PptStudioPage() {
         });
         toast.success('PPT saved to Course Content');
         reply('EDVA_PPT_SAVED');
+        // Once a deck is saved to Course Content it's done — this background
+        // job must stop offering "Open" (AI Generate list, the Presentation
+        // card, the "ready" toast), or a teacher could keep re-entering the
+        // full editor for a PPT that's already final. The saved material
+        // itself is view-only (Course Content's materials list has no Edit
+        // action for a ppt); this is what makes the in-progress job agree.
+        const jobId = params.get('job');
+        if (jobId) void dismissPptJob(jobId);
         back();
       } catch (err: unknown) {
         const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Save failed';

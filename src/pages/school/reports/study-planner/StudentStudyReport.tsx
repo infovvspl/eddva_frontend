@@ -1,30 +1,19 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, Loader2, Printer } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle2, Clock, Flame, Loader2, Printer, TrendingUp } from "lucide-react";
 import { learningReportsApi, type ReportPeriod, type ReportSubject, type TrendGranularity } from "@/lib/api/learning-reports";
 import { apiErrorMessage } from "@/lib/api/learning-path";
 import { useSetBreadcrumbLabel } from "@/components/school/breadcrumbs/BreadcrumbContext";
 import { cn } from "@/lib/utils";
 import { classLabel, formatDay, formatDuration, formatImprovement, PERIOD_LABEL, SECTION_LABEL } from "./report-format";
-import { Card, LevelChip, PeriodToggle, StatTile, TrendChart, TrendToggle } from "./ReportParts";
+import { Card, LevelChip, PeriodToggle, SectionDonut, StatTile, SubjectBars, TrendChart } from "./ReportParts";
+
+// The trend chart's bar granularity follows the selected period automatically
+// (a year of daily bars is unreadable) instead of a second, redundant toggle.
+const TREND_FOR_PERIOD: Record<ReportPeriod, TrendGranularity> = { today: "day", week: "day", month: "day", year: "month" };
 
 const PATH_STATUS: Record<string, string> = { active: "In progress", completed: "Completed", needs_teacher: "Needs teacher help", suggested: "Suggested" };
-
-function Bars({ rows }: { rows: { label: string; seconds: number }[] }) {
-  const max = Math.max(1, ...rows.map((r) => r.seconds));
-  if (!rows.length) return <p className="text-xs text-muted-foreground">No study in this period.</p>;
-  return (
-    <ul className="space-y-2">
-      {rows.map((r) => (
-        <li key={r.label} className="text-xs">
-          <div className="flex justify-between gap-2"><span className="text-foreground">{r.label}</span><span className="text-muted-foreground">{formatDuration(r.seconds)}</span></div>
-          <div className="mt-1 h-2 rounded-full bg-muted"><div className="h-2 rounded-full bg-primary" style={{ width: `${Math.max(3, (r.seconds / max) * 100)}%` }} /></div>
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 function Chips({ label, items, tone }: { label: string; items: { name: string; mastery: number | null; chapterName?: string | null }[]; tone: "weak" | "atRisk" }) {
   if (!items.length) return null;
@@ -105,7 +94,7 @@ function SubjectBlock({ s }: { s: ReportSubject }) {
  */
 export default function StudentStudyReport({ studentId, backHref, backLabel, embedded = false }: { studentId: string; backHref?: string; backLabel?: string; embedded?: boolean }) {
   const [period, setPeriod] = useState<ReportPeriod>("month");
-  const [trend, setTrend] = useState<TrendGranularity>("day");
+  const trend = TREND_FOR_PERIOD[period];
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["learning-report", "student", studentId, period, trend],
     queryFn: () => learningReportsApi.student(studentId, { period, trend }),
@@ -179,20 +168,20 @@ export default function StudentStudyReport({ studentId, backHref, backLabel, emb
           <p className="mt-1 text-2xl font-bold leading-none text-foreground">{s.engagementScore}<span className="text-sm font-normal text-muted-foreground"> / 100</span></p>
           <div className="mt-1.5"><LevelChip level={s.engagementLevel} /></div>
         </div>
-        <StatTile label="Study time" value={formatDuration(s.seconds)} hint={`${s.activeDays} active day${s.activeDays === 1 ? "" : "s"}`} />
-        <StatTile label="Streak" value={`${s.streakDays} day${s.streakDays === 1 ? "" : "s"}`} hint={`Last studied: ${formatDay(s.lastActiveDay)}`} />
-        <StatTile label="Steps finished" value={String(s.stepsDone)} hint="Videos, notes, quizzes, assessments" />
-        <StatTile label="Improvement" value={formatImprovement(s.improvement)} hint="Score after a topic's path vs before" tone={s.improvement === null ? "default" : s.improvement > 2 ? "good" : "warn"} />
-        <StatTile label="Topics" value={`${s.topicsCompleted} / ${s.topicsStarted}`} hint="Completed / started" />
+        <StatTile icon={Clock} label="Study time" value={formatDuration(s.seconds)} hint={`${s.activeDays} active day${s.activeDays === 1 ? "" : "s"}`} />
+        <StatTile icon={Flame} label="Streak" value={`${s.streakDays} day${s.streakDays === 1 ? "" : "s"}`} hint={`Last studied: ${formatDay(s.lastActiveDay)}`} />
+        <StatTile icon={CheckCircle2} label="Steps finished" value={String(s.stepsDone)} hint="Videos, notes, quizzes, assessments" />
+        <StatTile icon={TrendingUp} label="Improvement" value={formatImprovement(s.improvement)} hint="Score after a topic's path vs before" tone={s.improvement === null ? "default" : s.improvement > 2 ? "good" : "warn"} />
+        <StatTile icon={BookOpen} label="Topics" value={`${s.topicsCompleted} / ${s.topicsStarted}`} hint="Completed / started" />
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2" title="Usage trend" action={<span className="print:hidden"><TrendToggle value={trend} onChange={setTrend} /></span>}>
+      <div className="space-y-4">
+        <Card title="Usage trend">
           <TrendChart trend={data.trend} granularity={data.granularity} />
         </Card>
-        <div className="grid gap-4">
-          <Card title="Time by section"><Bars rows={data.bySection.map((r) => ({ label: SECTION_LABEL[r.section] ?? r.section, seconds: r.seconds }))} /></Card>
-          <Card title="Time by subject"><Bars rows={data.bySubject.map((r) => ({ label: r.name, seconds: r.seconds }))} /></Card>
+        <div className="grid gap-4 md:grid-cols-2 md:items-start lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+          <Card title="Time by section"><SectionDonut rows={data.bySection.map((r) => ({ label: SECTION_LABEL[r.section] ?? r.section, seconds: r.seconds }))} /></Card>
+          <Card title="Time by subject"><SubjectBars rows={data.bySubject.map((r) => ({ label: r.name, seconds: r.seconds }))} /></Card>
         </div>
       </div>
 

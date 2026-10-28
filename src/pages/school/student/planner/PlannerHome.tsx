@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, Clock, Flame, Loader2, PartyPopper, TrendingDown } from "lucide-react";
 import { useLearningHome, useMyEngagement } from "@/hooks/use-learning-path";
@@ -38,9 +38,13 @@ export default function PlannerHome() {
   const { data: home, isLoading, isError, refetch } = useLearningHome();
   const { data: engagement } = useMyEngagement();
   const [view, setView] = useRoadmapView();
+  // Every subject starts collapsed; clicking one opens its weak chapters and
+  // topics in focus, the same "root and next node, then branch on click" the
+  // course-content mind map uses.
+  const [expandedSubjects, setExpandedSubjects] = useState<Set<string>>(new Set());
   useActivityTracker({ section: "home" });
 
-  const layout = useMemo(() => layoutHomeMap(home?.mindMap ?? []), [home?.mindMap]);
+  const layout = useMemo(() => layoutHomeMap(home?.mindMap ?? [], expandedSubjects), [home?.mindMap, expandedSubjects]);
   const openRoadmap = useCallback(
     (a: MapAction) => {
       if (a.type === "open-chapter-map") navigate(`${PLANNER_BASE}/chapter/${a.chapterId}`);
@@ -48,6 +52,14 @@ export default function PlannerHome() {
     },
     [navigate],
   );
+  const toggleSubject = useCallback((subjectId: string) => {
+    setExpandedSubjects((prev) => {
+      const next = new Set(prev);
+      if (next.has(subjectId)) next.delete(subjectId);
+      else next.add(subjectId);
+      return next;
+    });
+  }, []);
 
   if (isLoading) {
     return (
@@ -73,7 +85,7 @@ export default function PlannerHome() {
   const nothingWeak = layout.nodes.length === 0;
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto p-4 pt-14 sm:p-6 lg:pt-6">
+    <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden p-4 pt-14 sm:p-6 lg:pt-6">
       <header>
         <h1 className="text-xl font-bold text-foreground sm:text-2xl">Your learning roadmap</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -95,7 +107,7 @@ export default function PlannerHome() {
           tone="border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200" />
       </section>
 
-      <section className="flex min-h-[460px] flex-1 flex-col gap-3">
+      <section className="flex min-h-0 flex-1 flex-col gap-3">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-foreground">Roadmap</h2>
@@ -120,11 +132,13 @@ export default function PlannerHome() {
             </p>
           </div>
         ) : view === "map" ? (
-          <div className="flex-1">
-            <MindMapCanvas layout={layout} onActivate={openRoadmap} />
+          <div className="min-h-0 flex-1">
+            <MindMapCanvas layout={layout} onActivate={openRoadmap} onToggle={toggleSubject} />
           </div>
         ) : (
-          <HomeList subjects={mindMap} />
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <HomeList subjects={mindMap} />
+          </div>
         )}
       </section>
 

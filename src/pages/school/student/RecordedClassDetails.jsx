@@ -35,6 +35,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { CourseTabs } from '@/components/student/lecture/CourseTabs';
 import { useSchoolFeature } from '@/hooks/use-school-feature';
 import { useConfirm } from '@/context/ConfirmContext';
+import { useAppActivityTracker } from '@/hooks/use-app-activity-tracker';
 
 function isYouTubeUrl(url = '') {
   return /(?:youtube\.com\/|youtu\.be\/)/i.test(url);
@@ -76,6 +77,10 @@ export default function RecordedClassDetails() {
 
   const [recordings, setRecordings] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Real player-playing state drives screen-time credit here, not mouse
+  // activity — watching a video is legitimately low-interaction.
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  useAppActivityTracker({ category: 'video_lectures', refId: recordingId, mediaPlaying: videoPlaying });
   const hasNotesGen = useSchoolFeature('ai', 'ai_notes_generator');
   const hasQuizGen = useSchoolFeature('ai', 'ai_quiz_generator');
   const hasDoubtResolution = useSchoolFeature('ai', 'ai_doubt_solver');
@@ -579,6 +584,7 @@ export default function RecordedClassDetails() {
           onAnswerSubmitted={handleAnswerSubmitted}
           resumeAt={resumeAt}
           savedResponseIds={savedResponses.map(r => r.questionId)}
+          onPlayingChange={setVideoPlaying}
         />
         {playback.loading && (
           <div className="pointer-events-none absolute right-4 top-4 inline-flex items-center gap-2 rounded-full bg-slate-950/80 px-3 py-1.5 text-xs font-bold text-white z-10">

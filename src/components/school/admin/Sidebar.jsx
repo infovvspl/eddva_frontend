@@ -27,6 +27,7 @@ import {
   CalendarClock,
   Settings as SettingsIcon,
   Shield,
+  Siren,
   Sparkles,
   Ticket,
   ToggleRight,
@@ -98,6 +99,7 @@ const ADMIN_NAV_PATH_TO_MODULE = {
   '/school/admin/document-generator': 'document_generator',
   '/school/admin/audit-logs': 'audit_logs',
   '/school/admin/complaints': 'complaints',
+  '/school/admin/emergency-sos': 'emergency_sos',
 };
 
 function filterByAdminPermissions(groups, isPrimaryAdmin, adminPermissions) {
@@ -139,6 +141,7 @@ function buildInstituteGroups(mods, aiFeats) {
         { path: '/school/admin/subjects', label: 'Subjects', icon: BookOpen },
         competitiveEnabled && { path: '/school/admin/competitive-subjects', label: 'Competitive Exam Prep', icon: Trophy },
         syllabusPlannerEnabled && { path: '/school/admin/syllabus-planner', label: 'Lesson Plan', icon: FileText },
+        syllabusPlannerEnabled && { path: '/school/admin/lesson-plan-approvals', label: 'Lesson Plan Approvals', icon: ClipboardCheck },
         syllabusTrackerEnabled && { path: '/school/admin/syllabus-tracker', label: 'Lesson Tracker', icon: BarChart3 },
       ].filter(Boolean),
     },
@@ -171,6 +174,7 @@ function buildInstituteGroups(mods, aiFeats) {
         { path: '/school/admin/audit-logs', label: 'Audit Logs', icon: FileText },
         { path: '/school/admin/complaints', label: 'Help Desk', icon: Shield },
         { path: '/school/admin/grievances', label: 'Grievances', icon: MessageSquareWarning },
+        { path: '/school/admin/emergency-sos', label: 'Emergency SOS', icon: Siren, danger: true },
       ],
     },
   ].filter(group => group.items && group.items.length > 0);
@@ -219,6 +223,7 @@ function buildTeacherGroups(mods, aiFeats) {
       items: [
         { path: '/school/teacher/announcements', label: 'Announcements', icon: Megaphone },
         chatEnabled && { path: '/school/teacher/chat', label: 'Chat', icon: MessageSquare },
+        { path: '/school/teacher/emergency-sos', label: 'Emergency SOS', icon: Siren, danger: true },
       ].filter(Boolean),
     },
     {

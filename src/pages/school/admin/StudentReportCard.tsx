@@ -8,6 +8,7 @@ import api from '@/lib/api/school-client';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { calculateSubjectBreakdown, getCurrentAcademicYear, getDefaultWeightingFormula } from '@/lib/school/reportCardCalculator';
 
 type ReportType = 'pre_primary' | 'primary' | 'middle' | 'high_school' | 'board_class';
 
@@ -42,7 +43,7 @@ export default function StudentReportCard() {
   const [showSeal, setShowSeal] = useState(true);
   const [showSignatures, setShowSignatures] = useState(true);
   const [showCoScholastic, setShowCoScholastic] = useState(true);
-  const [weightingFormula, setWeightingFormula] = useState<'equal_term' | 'annual_only' | 'custom_cbse'>('equal_term');
+  const [weightingFormula, setWeightingFormula] = useState<'equal_term' | 'cbse_20_80' | 'custom_cbse'>('equal_term');
   const [isPortrait, setIsPortrait] = useState(true);
   const [affiliationText, setAffiliationText] = useState('Affiliated to Central Board of Secondary Education (CBSE)');
   const [teacherRemarks, setTeacherRemarks] = useState('');
@@ -57,7 +58,8 @@ export default function StudentReportCard() {
     publishedAt?: string | null; approvedAt?: string | null; rejectedAt?: string | null;
     rejectionReason?: string | null; checkedByMe?: boolean;
   }>({});
-  const [checkedList, setCheckedList] = useState<{ parentUserId: string; parentName: string; checkedAt: string }[]>([]);
+  const [checkedList, setCheckedList] = useState<{ parentUserId: string; parentName: string; checkedAt: string; signatureUrl?: string | null }[]>([]);
+  const [uploadingSignature, setUploadingSignature] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [approving, setApproving] = useState(false);
   const [rejecting, setRejecting] = useState(false);
@@ -80,6 +82,7 @@ export default function StudentReportCard() {
   const [customLogo, setCustomLogo] = useState<string | null>(null);
   const [customSeal, setCustomSeal] = useState<string | null>(null);
   const [customTeacherSig, setCustomTeacherSig] = useState<string | null>(null);
+  const [customCoordinatorSig, setCustomCoordinatorSig] = useState<string | null>(null);
   const [customPrincipalSig, setCustomPrincipalSig] = useState<string | null>(null);
 
   // Auto-detect template and formula based on class name card selected
@@ -90,17 +93,17 @@ export default function StudentReportCard() {
         setTemplateType('pre_primary');
       } else if (cls.includes('6') || cls.includes('7') || cls.includes('8') || cls.includes('vi') || cls.includes('vii') || cls.includes('viii')) {
         setTemplateType('middle');
-        setWeightingFormula('equal_term');
       } else if (cls.includes('10') || cls.includes('12') || cls.match(/\b(x|xii)\b/)) {
         setTemplateType('board_class');
-        setWeightingFormula('annual_only');
       } else if (cls.includes('1') || cls.includes('2') || cls.includes('3') || cls.includes('4') || cls.includes('5') || cls.match(/\b(i|ii|iii|iv|v)\b/)) {
         setTemplateType('primary');
-        setWeightingFormula('equal_term');
       } else {
         setTemplateType('high_school');
-        setWeightingFormula('custom_cbse');
       }
+      // Shared with the Student Profile's "Class-wise Academic Results" cards
+      // (reportCardCalculator.ts) so both always agree on the same percentage.
+      const defaultFormula = getDefaultWeightingFormula(targetClass);
+      if (defaultFormula) setWeightingFormula(defaultFormula);
     }
   }, [targetClass]);
 
@@ -133,7 +136,7 @@ export default function StudentReportCard() {
     // targetYear/targetClass (from the URL) reflect the specific report card being viewed —
     // e.g. a past class — and must win over the student's current class profile, otherwise
     // actions taken while viewing a historical report card silently apply to the current one.
-    const academicYear = targetYear || profileForRemarks.section?.class?.academicYear || student?.academicYear || '2026-2027';
+    const academicYear = targetYear || profileForRemarks.section?.class?.academicYear || student?.academicYear || getCurrentAcademicYear();
     const className = targetClass || profileForRemarks.section?.class?.name || student?.className || undefined;
     if (!studentUserId || !academicYear) return;
 
@@ -157,7 +160,7 @@ export default function StudentReportCard() {
     const profileForRemarks = student?.studentProfile || {};
     // See note above: targetYear/targetClass must win so workflow actions apply to the
     // report card actually on screen, not the student's current class.
-    const academicYear = targetYear || profileForRemarks.section?.class?.academicYear || student?.academicYear || '2026-2027';
+    const academicYear = targetYear || profileForRemarks.section?.class?.academicYear || student?.academicYear || getCurrentAcademicYear();
     const className = targetClass || profileForRemarks.section?.class?.name || student?.className || undefined;
     return { studentUserId, academicYear, className };
   };
@@ -179,7 +182,6 @@ export default function StudentReportCard() {
   };
 
   const fetchCheckedStatus = async () => {
-    if (isViewerOnly) return;
     const { studentUserId, academicYear } = getReportCardKey();
     if (!studentUserId || !academicYear) return;
     try {
@@ -251,6 +253,7 @@ export default function StudentReportCard() {
       await api.post('/reports/report-card-check', { studentId: studentUserId, academicYear });
       toast.success('Marked as checked');
       await fetchReportCardStatus();
+      await fetchCheckedStatus();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Failed to mark report card as checked');
     } finally {
@@ -258,10 +261,39 @@ export default function StudentReportCard() {
     }
   };
 
+  const handleUploadSignature = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const { studentUserId, academicYear } = getReportCardKey();
+    if (!studentUserId || !academicYear) return;
+    setUploadingSignature(true);
+    try {
+      const presignRes = await api.post('/reports/report-card-signature-upload-url', {
+        studentId: studentUserId,
+        academicYear,
+        fileName: file.name,
+        contentType: file.type,
+        fileSize: file.size,
+      });
+      const { uploadUrl, fileUrl } = presignRes.data?.data || presignRes.data;
+      const putRes = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
+      if (!putRes.ok) throw new Error('Signature upload to storage failed');
+      await api.put('/reports/report-card-signature', { studentId: studentUserId, academicYear, signatureUrl: fileUrl });
+      toast.success('Signature uploaded');
+      await fetchReportCardStatus();
+      await fetchCheckedStatus();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to upload signature');
+    } finally {
+      setUploadingSignature(false);
+    }
+  };
+
   const saveTeacherRemarks = async () => {
     const studentUserId = student?.id || student?.userId || id || searchParams.get('studentId');
     const profileForRemarks = student?.studentProfile || {};
-    const academicYear = targetYear || profileForRemarks.section?.class?.academicYear || student?.academicYear || '2026-2027';
+    const academicYear = targetYear || profileForRemarks.section?.class?.academicYear || student?.academicYear || getCurrentAcademicYear();
     const className = targetClass || profileForRemarks.section?.class?.name || student?.className || undefined;
     if (!studentUserId || !academicYear) return;
 
@@ -284,6 +316,9 @@ export default function StudentReportCard() {
     }
   };
 
+  const escapeHtml = (s: string) =>
+    s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+
   const handlePrint = async () => {
     if (!reportCardRef.current) {
       window.print();
@@ -297,7 +332,6 @@ export default function StudentReportCard() {
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
-        allowTaint: true,
         logging: false,
         backgroundColor: '#ffffff'
       });
@@ -324,7 +358,7 @@ export default function StudentReportCard() {
         <!DOCTYPE html>
         <html>
           <head>
-            <title>Report Card - ${student?.name || 'Student'}</title>
+            <title>Report Card - ${escapeHtml(student?.name || 'Student')}</title>
             <style>
               @page {
                 size: A4 portrait;
@@ -398,267 +432,68 @@ export default function StudentReportCard() {
 
   const profile = student?.studentProfile || {};
   const currentClassName = profile.section?.class?.name || student?.className || targetClass || 'Class IX';
-  const currentAcademicYear = profile.section?.class?.academicYear || student?.academicYear || targetYear || '2026-2027';
+  const currentAcademicYear = profile.section?.class?.academicYear || student?.academicYear || targetYear || getCurrentAcademicYear();
 
-  const isInformationTechnologySubject = (subjectName = '') => {
-    const subject = String(subjectName || '').trim().toLowerCase();
-    return /\b(information|informational)\s+technology\b/.test(subject) || 
-           /\bcomputer\s+science\b/.test(subject) ||
-           /\bcomputer\b/.test(subject) ||
-           subject === 'it' || 
-           subject === 'cs';
-  };
-
-  const getSchoolGrade = (pct: number) => {
-    if (pct >= 91) return 'O';
-    if (pct >= 81) return 'E';
-    if (pct >= 71) return 'A';
-    if (pct >= 61) return 'B';
-    if (pct >= 51) return 'C';
-    if (pct >= 41) return 'D';
-    return 'F';
-  };
-
-  // Parse actual student previousResults dynamically (NOT hardcoded)
+  // Parse actual student previousResults dynamically (NOT hardcoded) via the
+  // shared calculator, so this matches every other view's report-card percentage.
   const scholasticResults = useMemo(() => {
     if (!student || !student.previousResults) return [];
 
-    // Filter results to only match the selected class
     const filtered = student.previousResults.filter((res: any) => {
-      const isTotal = !res.subjectName || (res.assessmentTitle && res.assessmentTitle.toLowerCase().includes('(total)'));
-      if (isTotal) return false; // filter out consolidated overall rows
       if (targetClass && res.className !== targetClass) return false;
       if (targetYear && res.academicYear !== targetYear) return false;
       return true;
     });
 
-    // Group items by subjectName
-    const subjectMap: Record<string, any[]> = {};
-    filtered.forEach((res: any) => {
-      const sub = res.subjectName || 'General';
-      if (!subjectMap[sub]) subjectMap[sub] = [];
-      subjectMap[sub].push(res);
-    });
-
-    return Object.entries(subjectMap).map(([subject, records]) => {
-      const isInformationTechnology = isInformationTechnologySubject(subject);
-      const slotMap = new Map<string, any>();
-      const getTermSlot = (titleStr: string) => {
-        const title = titleStr.toLowerCase();
-        if (title.includes('t1') || title.includes('term 1') || title.includes('mid') || title.includes('half')) {
-          if (title.includes('internal') || title.includes('periodic') || title.includes('unit')) {
-            return 't1Internal';
-          }
-          if (isInformationTechnology) {
-            if (title.includes('practical')) return 'halfYearlyPractical';
-            if (title.includes('theory')) return 'halfYearlyTheory';
-          }
-          return 'halfYearly';
-        }
-        if (title.includes('t2') || title.includes('term 2') || title.includes('annual')) {
-          if (title.includes('internal') || title.includes('periodic') || title.includes('unit')) {
-            return 't2Internal';
-          }
-          if (isInformationTechnology) {
-            if (title.includes('practical')) return 'annualPractical';
-            if (title.includes('theory')) return 'annualTheory';
-          }
-          return 'annual';
-        }
-        return null;
-      };
-
-      [...records]
-        .sort((a: any, b: any) => {
-          const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
-          const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
-          return aTime - bTime;
-        })
-        .forEach((rec: any) => {
-          const slot = getTermSlot(rec.assessmentTitle || '');
-          if (slot) {
-            slotMap.set(slot, rec);
-          }
-        });
-
-      let calculationRecords = Array.from(slotMap.values());
-
-      // Map components from remarks (theory, practical, internal, project, viva)
-      let theoryObtained = 0, theoryMax = 0;
-      let practicalObtained = 0, practicalMax = 0;
-      let internalObtained = 0, internalMax = 0;
-      let projectObtained = 0, projectMax = 0;
-
-      // Look for Term 1 vs Term 2 split if present
-      let t1Int: number | null = null;
-      let h1Exam: number | null = null;
-      let t2Int: number | null = null;
-      let aExam: number | null = null;
-      let halfYearlyTheory: number | null = null;
-      let halfYearlyPractical: number | null = null;
-      let annualTheory: number | null = null;
-      let annualPractical: number | null = null;
-
-      calculationRecords.forEach((rec: any) => {
-        const title = (rec.assessmentTitle || '').toLowerCase();
-        const marks = rec.marksObtained !== undefined && rec.marksObtained !== null ? Number(rec.marksObtained) : null;
-        
-        // Match term-specific marks if title contains T1/T2/Half/Annual
-        if (title.includes('t1') || title.includes('term 1') || title.includes('mid') || title.includes('half')) {
-          if (title.includes('internal') || title.includes('periodic') || title.includes('unit')) {
-            if (marks !== null) t1Int = (t1Int || 0) + marks;
-          } else if (isInformationTechnology && title.includes('practical')) {
-            if (marks !== null) {
-              halfYearlyPractical = (halfYearlyPractical || 0) + marks;
-              h1Exam = (h1Exam || 0) + marks;
-            }
-          } else if (isInformationTechnology && title.includes('theory')) {
-            if (marks !== null) {
-              halfYearlyTheory = (halfYearlyTheory || 0) + marks;
-              h1Exam = (h1Exam || 0) + marks;
-            }
-          } else {
-            if (marks !== null) h1Exam = (h1Exam || 0) + marks;
-          }
-        } else if (title.includes('t2') || title.includes('term 2') || title.includes('annual')) {
-          if (title.includes('internal') || title.includes('periodic') || title.includes('unit')) {
-            if (marks !== null) t2Int = (t2Int || 0) + marks;
-          } else if (isInformationTechnology && title.includes('practical')) {
-            if (marks !== null) {
-              annualPractical = (annualPractical || 0) + marks;
-              aExam = (aExam || 0) + marks;
-            }
-          } else if (isInformationTechnology && title.includes('theory')) {
-            if (marks !== null) {
-              annualTheory = (annualTheory || 0) + marks;
-              aExam = (aExam || 0) + marks;
-            }
-          } else {
-            if (marks !== null) aExam = (aExam || 0) + marks;
-          }
-        }
-
-        // Standard components breakdown
-        try {
-          if (rec.remarks && rec.remarks.trim().startsWith('{')) {
-            const parsed = JSON.parse(rec.remarks);
-            if (parsed.type === 'breakdown' && parsed.components) {
-              const comps = parsed.components;
-              if (comps.theory?.enabled) {
-                theoryObtained += Number(comps.theory.obtained || 0);
-                theoryMax += Number(comps.theory.max || 0);
-              }
-              if (comps.practical?.enabled) {
-                practicalObtained += Number(comps.practical.obtained || 0);
-                practicalMax += Number(comps.practical.max || 0);
-              }
-              if (comps.internal?.enabled) {
-                internalObtained += Number(comps.internal.obtained || 0);
-                internalMax += Number(comps.internal.max || 0);
-              }
-              if (comps.project?.enabled) {
-                projectObtained += Number(comps.project.obtained || 0);
-                projectMax += Number(comps.project.max || 0);
-              }
-            }
-          } else {
-            theoryObtained += Number(rec.marksObtained || 0);
-            theoryMax += Number(rec.totalMarks || 100);
-          }
-        } catch (e) {
-          theoryObtained += Number(rec.marksObtained || 0);
-          theoryMax += Number(rec.totalMarks || 100);
-        }
-      });
-
-      // Default fallback if no Term split matches
-      if (calculationRecords.length > 0 && h1Exam === null && aExam === null) {
-        h1Exam = Math.round(theoryObtained * 0.4);
-        aExam = Math.round(theoryObtained * 0.5);
-        t1Int = Math.round(internalObtained || (theoryObtained * 0.05));
-        t2Int = Math.round(internalObtained || (theoryObtained * 0.05));
-      }
-
-      let h1Max = 80, aMax = 80;
-      calculationRecords.forEach((rec: any) => {
-        const title = (rec.assessmentTitle || '').toLowerCase();
-        const maxVal = Number(rec.totalMarks || 0);
-        if (maxVal > 0) {
-          if (title.includes('t1') || title.includes('term 1') || title.includes('mid') || title.includes('half')) {
-            if (!title.includes('internal') && !title.includes('periodic') && !title.includes('unit')) {
-              h1Max = maxVal;
-            }
-          } else if (title.includes('t2') || title.includes('term 2') || title.includes('annual')) {
-            if (!title.includes('internal') && !title.includes('periodic') && !title.includes('unit')) {
-              aMax = maxVal;
-            }
-          }
-        }
-      });
-
-      const t1Total = (t1Int === null && h1Exam === null) ? null : (t1Int || 0) + (h1Exam || 0);
-      const t2Total = (t2Int === null && aExam === null) ? null : (t2Int || 0) + (aExam || 0);
-
-      // Apply Weighting Formula
-      let finalResult: number | null = null;
-      if (isInformationTechnology) {
-        if (h1Exam !== null || aExam !== null) {
-          finalResult = ((h1Exam || 0) + (aExam || 0)) / 2;
-        }
-      } else if (weightingFormula === 'equal_term') {
-        if (t1Total !== null || t2Total !== null) {
-          finalResult = ((t1Total || 0) + (t2Total || 0)) / 2;
-        }
-      } else if (weightingFormula === 'annual_only') {
-        finalResult = t2Total;
-      } else {
-        // Custom CBSE: 30% HY + 20% Internals + 50% Annual
-        if (h1Exam !== null || t1Int !== null || t2Int !== null || aExam !== null) {
-          const hyScaled = h1Max > 0 && h1Exam !== null ? (h1Exam / h1Max) * 30 : 0;
-          const annualScaled = aMax > 0 && aExam !== null ? (aExam / aMax) * 50 : 0;
-          const internalScaled = (t1Int !== null || t2Int !== null) ? ((t1Int || 0) + (t2Int || 0)) / 2 : 0;
-          finalResult = hyScaled + internalScaled + annualScaled;
-        }
-      }
-
-      // Cap finalResult to 100
-      let finalDisplay: string | number = "";
-      let gradeDisplay = "—";
-      if (finalResult !== null) {
-        finalDisplay = Math.min(100, Math.round(finalResult * 100) / 100);
-        gradeDisplay = getSchoolGrade(Number(finalDisplay));
-      }
-
-      return {
-        subject,
-        isInformationTechnology,
-        theory: theoryObtained,
-        theoryMax,
-        practical: practicalObtained,
-        practicalMax,
-        internal: internalObtained || t1Int,
-        project: projectObtained,
-        t1Internal: t1Int,
-        halfYearlyTheory,
-        halfYearlyPractical,
-        halfYearly: h1Exam,
-        t1Total,
-        t2Internal: t2Int,
-        annualTheory,
-        annualPractical,
-        annual: aExam,
-        t2Total,
-        final: finalDisplay,
-        grade: gradeDisplay
-      };
-    });
+    return calculateSubjectBreakdown(filtered, weightingFormula);
   }, [student, targetClass, targetYear, weightingFormula]);
+
+  const PRE_PRIMARY_CATEGORIES = ['Reading & Phonics', 'Writing & Motor Skills', 'Numeracy & Shapes', 'Communication & Speech', 'Creativity & Arts', 'Social development & Behaviour'];
+
+  const prePrimaryProgress = useMemo(() => {
+    if (!student || !student.previousResults) return PRE_PRIMARY_CATEGORIES.map((key) => ({ key, val: 'No Data' }));
+
+    const filtered = student.previousResults.filter((res: any) => {
+      if (targetClass && res.className !== targetClass) return false;
+      if (targetYear && res.academicYear !== targetYear) return false;
+      return true;
+    });
+
+    const gradeLabel = (pct: number) => {
+      if (pct >= 90) return 'Excellent';
+      if (pct >= 75) return 'Very Good';
+      if (pct >= 60) return 'Good';
+      if (pct >= 40) return 'Satisfactory';
+      return 'Needs Improvement';
+    };
+
+    return PRE_PRIMARY_CATEGORIES.map((key) => {
+      const records = filtered.filter((res: any) => (res.assessmentTitle || '').trim() === key);
+      if (!records.length) return { key, val: 'No Data' };
+      const latest = [...records].sort((a: any, b: any) => {
+        const at = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+        const bt = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+        return bt - at;
+      })[0];
+      const max = Number(latest.totalMarks || 0);
+      const obtained = Number(latest.marksObtained || 0);
+      if (max <= 0) return { key, val: 'No Data' };
+      return { key, val: gradeLabel((obtained / max) * 100) };
+    });
+  }, [student, targetClass, targetYear]);
 
   const overallAvg = useMemo(() => {
     const validSubjects = scholasticResults.filter(res => res.final !== "");
     if (validSubjects.length === 0) return 0;
     const sum = validSubjects.reduce((a, b) => a + Number(b.final), 0);
     return Math.round((sum / validSubjects.length) * 100) / 100;
+  }, [scholasticResults]);
+
+  const promotionStatus = useMemo(() => {
+    const validSubjects = scholasticResults.filter(res => res.final !== "");
+    if (validSubjects.length === 0) return 'Result Awaited';
+    if (validSubjects.some(res => res.grade === 'F')) return 'Not Promoted';
+    return 'Promoted to Next Class';
   }, [scholasticResults]);
 
   if (loading || (isViewerOnly && statusLoading)) {
@@ -822,7 +657,7 @@ export default function StudentReportCard() {
                   className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold"
                 >
                   <option value="equal_term">50% Term 1 + 50% Term 2</option>
-                  <option value="annual_only">20% Internal Assessment + 80% Annual Examination</option>
+                  <option value="cbse_20_80">20% Internal Assessment + 80% Annual Examination</option>
                   <option value="custom_cbse">30% Half-Yearly + 20% Internals + 50% Annual</option>
                 </select>
               </div>
@@ -856,11 +691,16 @@ export default function StudentReportCard() {
                 {/* Signatures Upload */}
                 <div className="space-y-2">
                   <span className="text-[10px] font-semibold text-slate-500 block">Authorized Signatures</span>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <label className="flex flex-col items-center justify-center p-2 border border-dashed rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-[10px] font-bold text-center gap-1">
                       <Upload className="size-3.5 text-slate-400" />
                       <span>Teacher Sig</span>
                       <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, setCustomTeacherSig)} className="hidden" />
+                    </label>
+                    <label className="flex flex-col items-center justify-center p-2 border border-dashed rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-[10px] font-bold text-center gap-1">
+                      <Upload className="size-3.5 text-slate-400" />
+                      <span>Coordinator Sig</span>
+                      <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, setCustomCoordinatorSig)} className="hidden" />
                     </label>
                     <label className="flex flex-col items-center justify-center p-2 border border-dashed rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-[10px] font-bold text-center gap-1">
                       <Upload className="size-3.5 text-slate-400" />
@@ -990,6 +830,7 @@ export default function StudentReportCard() {
                   value={teacherRemarks}
                   onChange={(e) => setTeacherRemarks(e.target.value)}
                   rows={3}
+                  maxLength={2000}
                   disabled={remarksLoading}
                   className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold disabled:opacity-60"
                   placeholder={remarksLoading ? 'Loading remarks...' : 'Enter remarks...'}
@@ -1169,7 +1010,7 @@ export default function StudentReportCard() {
                     <>
                       <div className="border-b border-slate-200/80 pb-1.5 min-w-0">
                         <span className="text-slate-400 uppercase tracking-wider text-[9px] block mb-0.5">Board Roll No</span>
-                        <span className="text-slate-950 font-extrabold block text-xs leading-normal py-0.5">{profile.nationalId || '98234812'}</span>
+                        <span className="text-slate-950 font-extrabold block text-xs leading-normal py-0.5">{profile.nationalId || '—'}</span>
                       </div>
                       <div className="border-b border-slate-200/80 pb-1.5 min-w-0">
                         <span className="text-slate-400 uppercase tracking-wider text-[9px] block mb-0.5">DOB</span>
@@ -1208,14 +1049,7 @@ export default function StudentReportCard() {
                 <div className="space-y-4 pt-2">
                   <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest border-b pb-1.5">Early Learner Progress Indicators</h4>
                   <div className="grid grid-cols-2 gap-4">
-                    {[
-                      { key: 'Reading & Phonics', val: 'Excellent' },
-                      { key: 'Writing & Motor Skills', val: 'Good' },
-                      { key: 'Numeracy & Shapes', val: 'Excellent' },
-                      { key: 'Communication & Speech', val: 'Very Good' },
-                      { key: 'Creativity & Arts', val: 'Excellent' },
-                      { key: 'Social development & Behaviour', val: 'Excellent' }
-                    ].map(p => (
+                    {prePrimaryProgress.map(p => (
                       <div key={p.key} className="flex justify-between p-3 bg-slate-50/60 rounded-xl border text-xs font-bold">
                         <span className="text-slate-500">{p.key}</span>
                         <span className="text-blue-600 uppercase">{p.val}</span>
@@ -1333,10 +1167,10 @@ export default function StudentReportCard() {
                           {scholasticResults.map(res => (
                             <TableRow key={res.subject} className="hover:bg-slate-50/50 transition-colors font-bold">
                               <TableCell className="py-1.5 px-2.5 text-slate-900 font-extrabold">{res.subject}</TableCell>
-                              <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{Math.round(Number(res.final) * 0.7)}</TableCell>
-                              <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{Math.round(Number(res.final) * 0.2)}</TableCell>
-                              <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{Math.round(Number(res.final) * 0.1)}</TableCell>
-                              <TableCell className="py-1.5 px-2.5 text-center font-black text-blue-600">{Math.round(Number(res.final))}</TableCell>
+                              <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{res.theory}</TableCell>
+                              <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{res.practical}</TableCell>
+                              <TableCell className="py-1.5 px-2.5 text-center text-slate-500">{res.internal ?? 0}</TableCell>
+                              <TableCell className="py-1.5 px-2.5 text-center font-black text-blue-600">{res.final === '' ? '—' : Math.round(Number(res.final))}</TableCell>
                               <TableCell className="py-1.5 px-2.5 text-center">
                                 <Badge variant="secondary" className="rounded-md border-transparent bg-blue-50 text-blue-600 font-extrabold uppercase text-[10px] min-w-[20px] h-[20px] leading-none hover:bg-blue-50">
                                   {res.grade}
@@ -1391,32 +1225,56 @@ export default function StudentReportCard() {
                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Academic summary</span>
                     <div className="text-xs font-bold text-slate-700 flex gap-4">
                       <p>Calculated Percentage: <span className="font-extrabold text-slate-900">{overallAvg}%</span></p>
-                      <p>Status: <span className="font-extrabold text-emerald-600">Promoted to Next Class</span></p>
+                      <p>Status: <span className={`font-extrabold ${promotionStatus === 'Not Promoted' ? 'text-red-600' : promotionStatus === 'Result Awaited' ? 'text-amber-600' : 'text-emerald-600'}`}>{promotionStatus}</span></p>
                     </div>
                   </div>
                 </div>
 
                 {/* Signature slots (renders uploaded signature images if present) */}
-                {showSignatures && (
-                  <div className="grid grid-cols-3 gap-6 text-center text-xs font-bold text-slate-400 pt-2">
-                    <div className="space-y-1.5">
-                      <div className="w-24 mx-auto border-b border-slate-300 h-9 flex items-center justify-center">
-                        {customTeacherSig && <img src={customTeacherSig} alt="Teacher Sig" className="max-h-full max-w-full object-contain" />}
+                {showSignatures && (() => {
+                  const parentWithSignature = checkedList.find((c) => c.signatureUrl);
+                  const anyChecked = checkedList[0];
+                  return (
+                    <div className="grid grid-cols-4 gap-6 text-center text-xs font-bold text-slate-400 pt-2">
+                      <div className="space-y-1.5">
+                        <div className="w-20 mx-auto border-b border-slate-300 h-9 flex items-center justify-center">
+                          {customTeacherSig && <img src={customTeacherSig} alt="Teacher Sig" className="max-h-full max-w-full object-contain" />}
+                        </div>
+                        <p className="uppercase tracking-wider text-[8px]">Class Teacher</p>
                       </div>
-                      <p className="uppercase tracking-wider text-[8px]">Class Teacher</p>
-                    </div>
-                    <div className="space-y-1.5">
-                      <div className="w-24 mx-auto border-b border-slate-300 h-9 flex items-center justify-center" />
-                      <p className="uppercase tracking-wider text-[8px]">Coordinator</p>
-                    </div>
-                    <div className="space-y-1.5">
-                      <div className="w-24 mx-auto border-b border-slate-300 h-9 flex items-center justify-center">
-                        {customPrincipalSig && <img src={customPrincipalSig} alt="Principal Sig" className="max-h-full max-w-full object-contain" />}
+                      <div className="space-y-1.5">
+                        <div className="w-20 mx-auto border-b border-slate-300 h-9 flex items-center justify-center">
+                          {customCoordinatorSig && <img src={customCoordinatorSig} alt="Coordinator Sig" className="max-h-full max-w-full object-contain" />}
+                        </div>
+                        <p className="uppercase tracking-wider text-[8px]">Coordinator</p>
                       </div>
-                      <p className="uppercase tracking-wider text-[8px] text-slate-900">Principal Signature</p>
+                      <div className="space-y-1.5">
+                        <div className="w-20 mx-auto border-b border-slate-300 h-9 flex items-center justify-center">
+                          {customPrincipalSig && <img src={customPrincipalSig} alt="Principal Sig" className="max-h-full max-w-full object-contain" />}
+                        </div>
+                        <p className="uppercase tracking-wider text-[8px] text-slate-900">Principal Signature</p>
+                      </div>
+                      <div className="space-y-1.5">
+                        <div className="w-20 mx-auto border-b border-slate-300 h-9 flex items-center justify-center overflow-hidden">
+                          {parentWithSignature?.signatureUrl ? (
+                            <img src={parentWithSignature.signatureUrl} alt="Parent Signature" className="max-h-full max-w-full object-contain" />
+                          ) : anyChecked ? (
+                            <span className="text-[7px] font-semibold text-slate-500 italic leading-tight px-1">
+                              Digitally acknowledged by {anyChecked.parentName}
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="uppercase tracking-wider text-[8px]">Parent's Signature</p>
+                        {isParentView && (
+                          <label className={`block text-[8px] font-bold text-blue-600 underline ${uploadingSignature ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}>
+                            {uploadingSignature ? 'Uploading…' : (parentWithSignature?.signatureUrl ? 'Replace Signature' : 'Upload Signature')}
+                            <input type="file" accept="image/*" onChange={handleUploadSignature} disabled={uploadingSignature} className="hidden" />
+                          </label>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             </div>
 

@@ -35,6 +35,8 @@ export interface SidebarNavItem {
   badge?: string | number;
   /** If set, the item fires an action instead of navigating */
   action?: string;
+  /** Safety-critical items (e.g. Emergency SOS) get a red accent instead of the default slate/indigo styling */
+  danger?: boolean;
 }
 
 export interface SidebarGroup {
@@ -136,17 +138,25 @@ function NavItem({
   onAction?: (action: string) => void;
   badgeOverlay?: React.ReactNode;
 }) {
-  const buttonClass = cn(
-    "h-10 gap-3 rounded-xl text-[13px] font-semibold tracking-tight",
-    "text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-100",
-    activeStyle === "dark"
-      ? "data-[active=true]:bg-indigo-500 data-[active=true]:text-white data-[active=true]:shadow-md data-[active=true]:shadow-indigo-500/30 data-[active=true]:hover:bg-indigo-500 data-[active=true]:hover:text-white dark:data-[active=true]:bg-indigo-600 dark:data-[active=true]:hover:bg-indigo-600"
-      : "data-[active=true]:bg-indigo-50 data-[active=true]:text-indigo-600 dark:data-[active=true]:bg-indigo-950/40 dark:data-[active=true]:text-indigo-400",
-    activeStyle === "dark"
-      ? "group-data-[collapsible=icon]:data-[active=true]:bg-indigo-500 group-data-[collapsible=icon]:data-[active=true]:text-white"
-      : "group-data-[collapsible=icon]:data-[active=true]:bg-indigo-600 group-data-[collapsible=icon]:data-[active=true]:text-white",
-    "[&>svg]:size-[18px]",
-  );
+  const buttonClass = item.danger
+    ? cn(
+        "h-10 gap-3 rounded-xl text-[13px] font-semibold tracking-tight",
+        "text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-950/40 dark:hover:text-rose-300",
+        "data-[active=true]:bg-rose-50 data-[active=true]:text-rose-700 dark:data-[active=true]:bg-rose-950/40 dark:data-[active=true]:text-rose-300",
+        "group-data-[collapsible=icon]:data-[active=true]:bg-rose-600 group-data-[collapsible=icon]:data-[active=true]:text-white",
+        "[&>svg]:size-[18px]",
+      )
+    : cn(
+      "h-10 gap-3 rounded-xl text-[13px] font-semibold tracking-tight",
+      "text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-100",
+      activeStyle === "dark"
+        ? "data-[active=true]:bg-indigo-500 data-[active=true]:text-white data-[active=true]:shadow-md data-[active=true]:shadow-indigo-500/30 data-[active=true]:hover:bg-indigo-500 data-[active=true]:hover:text-white dark:data-[active=true]:bg-indigo-600 dark:data-[active=true]:hover:bg-indigo-600"
+        : "data-[active=true]:bg-indigo-50 data-[active=true]:text-indigo-600 dark:data-[active=true]:bg-indigo-950/40 dark:data-[active=true]:text-indigo-400",
+      activeStyle === "dark"
+        ? "group-data-[collapsible=icon]:data-[active=true]:bg-indigo-500 group-data-[collapsible=icon]:data-[active=true]:text-white"
+        : "group-data-[collapsible=icon]:data-[active=true]:bg-indigo-600 group-data-[collapsible=icon]:data-[active=true]:text-white",
+      "[&>svg]:size-[18px]",
+    );
 
   if (item.action) {
     return (

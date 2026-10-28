@@ -6,6 +6,7 @@ import {
   CalendarCheck,
   ChevronDown,
   ClipboardList,
+  Clock,
   FileText,
   ShieldCheck,
   TrendingUp,
@@ -16,6 +17,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/SchoolAuthContext";
 import { parentClient } from "@/lib/api/parent-client";
+import { formatDurationShort } from "@/lib/format";
 import { useParentContext, type ParentChild } from "@/components/school/parent/ParentAuthGuard";
 import { Skeleton } from "@/components/ui/skeleton";
 import StudentAvatar from "@/assets/images/Student_Avatar.png";
@@ -112,7 +114,17 @@ export default function ParentDashboard() {
     retry: 1,
   });
 
+  const screenTimeQuery = useQuery<any>({
+    queryKey: ["parent-dashboard-screentime", activeChildId],
+    queryFn: () => activeChildId ? parentClient.getScreenTime(activeChildId, "week") : Promise.resolve(null),
+    enabled: !!activeChildId,
+    retry: 1,
+  });
+
   const loading = summaryQuery.isLoading || attendanceQuery.isLoading || marksQuery.isLoading || homeworkQuery.isLoading || testsQuery.isLoading;
+  const screenTime = screenTimeQuery.data as { todaySeconds?: number; totalSeconds?: number; days?: Array<{ date: string; activeSeconds: number }> } | null;
+  const screenTimeDays = screenTime?.days ?? [];
+  const screenTimeMaxSeconds = Math.max(1, ...screenTimeDays.map((d) => d.activeSeconds));
   const analytics = buildAnalytics(summaryQuery.data, attendanceQuery.data, marksQuery.data, homeworkQuery.data, testsQuery.data);
   const feeNotice = buildFeeNotice(feeQuery.data);
 
@@ -241,6 +253,16 @@ export default function ParentDashboard() {
           loading={loading}
           index={3}
         />
+        <MetricCard
+          title="Screen Time"
+          value={formatDurationShort(screenTime?.todaySeconds)}
+          change={`${formatDurationShort(screenTime?.totalSeconds)} this week`}
+          icon={Clock}
+          tone="blue"
+          loading={screenTimeQuery.isLoading}
+          index={4}
+          to="/school/parent/child?tab=screentime"
+        />
       </div>
 
       <div className="grid gap-5">
@@ -334,6 +356,46 @@ export default function ParentDashboard() {
               </div>
             )}
           </Panel>
+
+          <Panel
+            title="Screen Time"
+            action={
+              <div className="flex items-center gap-2">
+                <Badge tone="blue">{formatDurationShort(screenTime?.totalSeconds)} this week</Badge>
+                <Link
+                  to="/school/parent/child?tab=screentime"
+                  className="text-xs font-black text-indigo-600 hover:text-indigo-700 whitespace-nowrap"
+                >
+                  View details →
+                </Link>
+              </div>
+            }
+          >
+            {screenTimeQuery.isLoading ? (
+              <Skeleton className="h-20 rounded-2xl" />
+            ) : screenTimeDays.length === 0 ? (
+              <p className="text-xs font-semibold text-slate-400">No screen-time data yet.</p>
+            ) : (
+              <div className="flex items-end gap-2 sm:gap-3">
+                {screenTimeDays.map((day) => {
+                  const heightPct = Math.max(6, Math.round((day.activeSeconds / screenTimeMaxSeconds) * 100));
+                  const label = new Date(`${day.date}T00:00:00`).toLocaleDateString("en-IN", { weekday: "short" });
+                  return (
+                    <div key={day.date} className="flex flex-1 flex-col items-center gap-1.5">
+                      <p className="text-[9px] font-bold text-slate-400">{formatDurationShort(day.activeSeconds)}</p>
+                      <div className="flex h-20 w-full items-end overflow-hidden rounded-lg bg-slate-100">
+                        <div
+                          className="w-full rounded-lg bg-indigo-500"
+                          style={{ height: `${heightPct}%` }}
+                        />
+                      </div>
+                      <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Panel>
         </div>
       </div>
     </div>
@@ -348,6 +410,7 @@ function MetricCard({
   tone,
   loading,
   index,
+  to,
 }: {
   title: string;
   value: string;
@@ -356,6 +419,7 @@ function MetricCard({
   tone: Tone;
   loading: boolean;
   index: number;
+  to?: string;
 }) {
   const style = toneStyles[tone];
   return (
@@ -363,26 +427,50 @@ function MetricCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, delay: index * 0.04 }}
-      className="rounded-2xl sm:rounded-3xl border border-slate-100 bg-white p-3 sm:p-5 shadow-sm"
+      className={`rounded-2xl sm:rounded-3xl border border-slate-100 bg-white p-3 sm:p-5 shadow-sm ${to ? "transition-all hover:border-blue-200 hover:shadow-md" : ""}`}
     >
-      <div className="flex items-start gap-2.5 sm:gap-4">
-        <span className={`flex size-9 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl ${style.icon}`}>
-          <Icon className="size-4.5 sm:size-5" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-slate-400 truncate">{title}</p>
-          {loading ? (
-            <Skeleton className="mt-1.5 sm:mt-2 h-6 sm:h-8 w-16 sm:w-20 rounded-xl" />
-          ) : (
-            <p className="mt-0.5 sm:mt-1 text-lg sm:text-3xl font-black tracking-tight text-slate-950 truncate">{value}</p>
-          )}
-          <span className={`mt-2 sm:mt-3 inline-flex rounded-full px-1.5 py-0.5 text-[9px] sm:text-xs font-black ${style.pill} max-w-full truncate`}>
-            {change}
-          </span>
-        </div>
-      </div>
+      <MetricCardBody title={title} value={value} change={change} Icon={Icon} tone={tone} loading={loading} to={to} />
     </motion.div>
   );
+}
+
+function MetricCardBody({
+  title,
+  value,
+  change,
+  Icon,
+  tone,
+  loading,
+  to,
+}: {
+  title: string;
+  value: string;
+  change: string;
+  Icon: React.ElementType;
+  tone: Tone;
+  loading: boolean;
+  to?: string;
+}) {
+  const style = toneStyles[tone];
+  const content = (
+    <div className="flex items-start gap-2.5 sm:gap-4">
+      <span className={`flex size-9 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl ${style.icon}`}>
+        <Icon className="size-4.5 sm:size-5" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-slate-400 truncate">{title}</p>
+        {loading ? (
+          <Skeleton className="mt-1.5 sm:mt-2 h-6 sm:h-8 w-16 sm:w-20 rounded-xl" />
+        ) : (
+          <p className="mt-0.5 sm:mt-1 text-lg sm:text-3xl font-black tracking-tight text-slate-950 truncate">{value}</p>
+        )}
+        <span className={`mt-2 sm:mt-3 inline-flex rounded-full px-1.5 py-0.5 text-[9px] sm:text-xs font-black ${style.pill} max-w-full truncate`}>
+          {change}
+        </span>
+      </div>
+    </div>
+  );
+  return to ? <Link to={to}>{content}</Link> : content;
 }
 
 function Panel({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {

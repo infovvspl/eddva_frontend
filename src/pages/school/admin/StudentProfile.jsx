@@ -4,8 +4,11 @@ import {
   User, GraduationCap, Calendar, BarChart2, DollarSign, 
   Mail, Smartphone, MapPin, Download, Users, Phone, Shield,
   Edit2, Clock, CheckCircle, AlertCircle, TrendingUp, HeartPulse, Briefcase, FileText, Printer, Share2, Loader2, Send, Key, X, Plus, Trash2,
-  UserX, FileCheck, CheckCircle2, XCircle, UserCheck
+  UserX, FileCheck, CheckCircle2, XCircle, UserCheck, ChevronLeft, ChevronRight
 } from 'lucide-react';
+import { Area, AreaChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { formatDuration, formatDurationShort } from '@/lib/format';
 import { BackButton } from '@/components/shared/BackButton';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/admin/Modal';
@@ -14,17 +17,17 @@ import StudentExitWorkflowModal from '@/components/school/admin/students/Student
 import { mapStudentFormToApiUpdate } from '@/lib/school/onboardPayload';
 import { notifyDataChanged } from '@/lib/school/apiData';
 import { exportToPDF } from "@/lib/school/pdfExport";
+import { calculateReportCardPercentage, getDefaultWeightingFormula } from '@/lib/school/reportCardCalculator';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BrainCircuit } from 'lucide-react';
 import { useSchoolFeature } from '@/hooks/use-school-feature';
 import StudentStudyReport from '@/pages/school/reports/study-planner/StudentStudyReport';
+import UserScreenTimeTab from '@/components/school/admin/UserScreenTimeTab';
 
 const getInitials = (name) => {
   if (!name) return '??';
@@ -488,6 +491,7 @@ export default function StudentProfile() {
       fetchPerformanceSessions();
     }
   }, [activeTab, student?.id, student?.studentProfile?.id]);
+
 
   useEffect(() => {
     const sectionId = student?.studentProfile?.sectionId || student?.studentProfile?.section?.id;
@@ -1212,19 +1216,46 @@ export default function StudentProfile() {
               {(() => {
                 let totalObtained = 0;
                 let totalMax = 0;
+                const rows = [];
                 prevForm.subjects.forEach(sub => {
                   getResultColumnsForSubject(prevForm.className, sub.subjectName).forEach(({ key }) => {
                     const marks = sub.assessments?.[key] || {};
                     totalObtained += Number(marks.obtained || 0);
                     totalMax += Number(marks.max || 0);
                   });
+
+                  // Same row shape handleSavePrev posts to the backend, so the
+                  // preview uses the exact same weighted-average formula the
+                  // generated report card will — see reportCardCalculator.ts.
+                  if (isBoardResultClass(prevForm.className)) {
+                    const components = Object.fromEntries(
+                      getResultColumnsForSubject(prevForm.className, sub.subjectName).map(({ key }) => [
+                        key,
+                        { enabled: true, obtained: Number(sub.assessments?.[key]?.obtained || 0), max: Number(sub.assessments?.[key]?.max || 0) },
+                      ]),
+                    );
+                    rows.push({
+                      subjectName: sub.subjectName,
+                      assessmentTitle: 'Final Result',
+                      remarks: JSON.stringify({ type: 'breakdown', components }),
+                    });
+                  } else {
+                    getResultColumnsForSubject(prevForm.className, sub.subjectName).forEach(({ key, title }) => {
+                      rows.push({
+                        subjectName: sub.subjectName,
+                        assessmentTitle: title,
+                        marksObtained: Number(sub.assessments?.[key]?.obtained || 0),
+                        totalMarks: Number(sub.assessments?.[key]?.max || 0),
+                      });
+                    });
+                  }
                 });
-                const pct = totalMax > 0 ? Math.round((totalObtained / totalMax) * 100) : 0;
+                const pct = calculateReportCardPercentage(rows, getDefaultWeightingFormula(prevForm.className) || 'equal_term');
                 return (
                   <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center justify-between">
                     <div>
                       <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Calculated Total Result</div>
-                      <div className="text-xs font-bold text-slate-500">Sum of all report-card column marks</div>
+                      <div className="text-xs font-bold text-slate-500">Projected report-card percentage</div>
                     </div>
                     <div className="flex items-center gap-6">
                       <div className="text-right">
@@ -1427,6 +1458,7 @@ export default function StudentProfile() {
             <TabButton active={activeTab === 'family'} onClick={() => setActiveTab('family')} icon={Users} label="Family Details" />
             <TabButton active={activeTab === 'academic'} onClick={() => setActiveTab('academic')} icon={GraduationCap} label="Academic" />
             <TabButton active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={Calendar} label="Attendance" />
+            <TabButton active={activeTab === 'screentime'} onClick={() => setActiveTab('screentime')} icon={Clock} label="Screen Time" />
             <TabButton active={activeTab === 'performance'} onClick={() => setActiveTab('performance')} icon={BarChart2} label="Performance" />
             {hasPlanner && <TabButton active={activeTab === 'study-planner'} onClick={() => setActiveTab('study-planner')} icon={BrainCircuit} label="Study Planner" />}
             <TabButton active={activeTab === 'fees'} onClick={() => setActiveTab('fees')} icon={DollarSign} label="Fees & Payments" />
@@ -1752,9 +1784,10 @@ export default function StudentProfile() {
                               const subjectResults = results.filter((res) => res.subjectName && !(res.assessmentTitle || '').toLowerCase().includes('(total)'));
                               const subjectsList = [...new Set(subjectResults.map((res) => res.subjectName).filter(Boolean))];
                               const subjectsDisplay = subjectsList.length > 0 ? subjectsList.join(', ') : 'General / All Subjects';
-                              const totalMarks = subjectResults.reduce((sum, res) => sum + (res.isAbsent ? 0 : Number(res.totalMarks || 0)), 0);
-                              const marksObtained = subjectResults.reduce((sum, res) => sum + (res.isAbsent ? 0 : Number(res.marksObtained || 0)), 0);
-                              const overallPercentage = totalMarks > 0 ? Math.round((marksObtained / totalMarks) * 100) : 0;
+                              // Same weighted-average formula (and same class-based formula selection)
+                              // the generated report card uses (reportCardCalculator.ts), not a flat sum,
+                              // so this card's % always matches the report card's.
+                              const overallPercentage = calculateReportCardPercentage(results, getDefaultWeightingFormula(classNameVal) || 'equal_term');
 
                               return (
                                 <div
@@ -1986,6 +2019,7 @@ export default function StudentProfile() {
                 </div>
               )}
 
+              {activeTab === 'screentime' && <UserScreenTimeTab userId={student.id} />}
               {activeTab === 'study-planner' && hasPlanner && <StudentStudyReport studentId={id} embedded />}
               {activeTab === 'performance' && (() => {
                 const sessions = performanceSessions;

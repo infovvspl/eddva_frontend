@@ -1,6 +1,6 @@
 import {
-  AlertCircle, BarChart3, BookOpen, Building2, CalendarDays, FileText,
-  GraduationCap, MessageSquare, Shield, Trophy, Users,
+  AlertCircle, BarChart3, BookOpen, Building2, CalendarDays, Clock, FileText,
+  GraduationCap, MessageSquare, Shield, Siren, Trophy, Users,
 } from 'lucide-react';
 
 // Grantable admin-panel module keys — keep in sync by hand with
@@ -27,6 +27,8 @@ export const ADMIN_PERMISSION_MODULES = [
   { key: 'document_generator', label: 'Document Generator', icon: FileText },
   { key: 'audit_logs', label: 'Audit Logs', icon: FileText },
   { key: 'complaints', label: 'Support Tickets', icon: Shield },
+  { key: 'screen_time', label: 'Screen Time', icon: Clock },
+  { key: 'emergency_sos', label: 'Emergency SOS', icon: Siren },
 ];
 
 export const ADMIN_PERMISSION_MODULE_KEYS = ADMIN_PERMISSION_MODULES.map((m) => m.key);

@@ -22,6 +22,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import LoadingSpinner from '@/components/school/LoadingSpinner';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import { exportToPDF } from '@/lib/school/pdfExport';
+import HabitualAbsentees from '@/components/school/teacher/HabitualAbsentees';
 import './AttendanceSystem.css';
 
 interface Student {
@@ -124,7 +125,7 @@ const STATUS_DOT: Record<string, string> = {
 
 const AttendanceSystem: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'entry' | 'history'>('entry');
+  const [activeTab, setActiveTab] = useState<'entry' | 'history' | 'habitual'>('entry');
   const [loading, setLoading] = useState(true);
   const [studentsLoading, setStudentsLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -858,8 +859,8 @@ const AttendanceSystem: React.FC = () => {
       </div>
 
       {/* Tabs Menu Navigation Bar */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'entry' | 'history')} className="mb-6">
-        <TabsList className="tabs-navigation-bar h-auto w-full max-w-md gap-2 rounded-2xl border border-slate-100 bg-white p-1.5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'entry' | 'history' | 'habitual')} className="mb-6">
+        <TabsList className="tabs-navigation-bar h-auto w-full max-w-2xl gap-2 rounded-2xl border border-slate-100 bg-white p-1.5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <TabsTrigger
             value="entry"
             className="flex-1 gap-2 rounded-xl px-2 py-2.5 text-xs font-bold text-slate-600 data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-sm dark:text-slate-400 sm:px-4"
@@ -873,6 +874,13 @@ const AttendanceSystem: React.FC = () => {
           >
             <Calendar className="size-4 shrink-0" />
             <span className="truncate">Attendance History</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="habitual"
+            className="flex-1 gap-2 rounded-xl px-2 py-2.5 text-xs font-bold text-slate-600 data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-sm dark:text-slate-400 sm:px-4"
+          >
+            <UserX className="size-4 shrink-0" />
+            <span className="truncate">Habitual Absentees</span>
           </TabsTrigger>
         </TabsList>
       </Tabs>
@@ -1247,6 +1255,21 @@ const AttendanceSystem: React.FC = () => {
                 </p>
               </Card>
             )}
+          </motion.div>
+        ) : activeTab === 'habitual' ? (
+          <motion.div
+            key="habitual"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.25 }}
+          >
+            <HabitualAbsentees
+              sectionLabel={[
+                classes.find((c) => c.id === selectedClass)?.name,
+                sections.find((sec) => sec.id === selectedSection)?.name,
+              ].filter(Boolean).join(' - ')}
+            />
           </motion.div>
         ) : (
           /* History Page Panel */

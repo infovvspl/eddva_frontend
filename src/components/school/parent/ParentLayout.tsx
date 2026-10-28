@@ -3,6 +3,8 @@ import { UserAvatar } from "@/components/ui/user-avatar"
 import React, { useEffect, useRef, useState, Suspense, useMemo } from "react";
 import { Outlet, NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useScreenTimeTracking } from "@/hooks/use-screen-time-tracking";
+import EmergencyAlertBanner from "@/components/school/EmergencyAlertBanner";
 import {
   Bell,
   GraduationCap,
@@ -63,6 +65,7 @@ export default function ParentLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, institute, logout } = useAuth();
+  useScreenTimeTracking();
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   // Collapsed by default (icon rail) — hovering it peeks the full sidebar open
@@ -249,7 +252,9 @@ export default function ParentLayout() {
   const workspaceName = user?.tenantName || "School Parent Portal";
 
   return (
-    <div className="school-platform layout-fixed font-poppins relative flex h-screen w-full overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/15 to-indigo-50/25">
+    <div className="school-platform layout-fixed font-poppins relative flex flex-col h-screen w-full overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/15 to-indigo-50/25">
+      <EmergencyAlertBanner />
+      <div className="flex min-h-0 flex-1 overflow-hidden">
       <UnifiedSidebar
         groups={filteredNavGroups}
         collapsed={collapsed}
@@ -715,6 +720,7 @@ export default function ParentLayout() {
             );
           })}
         </nav>
+      </div>
       </div>
     </div>
   );

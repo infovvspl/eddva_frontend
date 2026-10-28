@@ -85,6 +85,9 @@ export const PROGRESS_STYLE: Record<"not_started" | "in_progress" | "completed",
   },
 };
 
+/** A quiz or assessment at or above this accuracy counts as passed, everywhere it is shown. */
+export const QUIZ_PASS_THRESHOLD = 70;
+
 /** Colour of the travelling light round a box or circle (see .planner-glow in index.css). */
 export const GLOW_COLOR = {
   in_progress: "#3b82f6",

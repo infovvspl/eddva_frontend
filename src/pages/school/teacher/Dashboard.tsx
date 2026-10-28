@@ -8,10 +8,11 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { birthdaysApi, birthdaySubtitle } from '@/lib/api/birthdays';
 import HabitualAbsenteesCard from '@/components/school/teacher/HabitualAbsenteesCard';
-import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
+import { formatDuration, formatDurationShort } from '@/lib/format';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -76,12 +77,15 @@ const ScheduleTimeline = ({ classes }: { classes: any[] }) => {
     );
   }
   return (
-    <div className="relative pl-6 space-y-8">
-      <div className="absolute left-1 top-2 bottom-2 w-0.5 bg-slate-100" />
+    <div className="relative space-y-6">
       {classes.map((item, i) => (
-        <div className="relative" key={item.id || i}>
+        <div className="relative rounded-xl py-1 pl-8 pr-2 transition-colors hover:bg-slate-50/80" key={item.id || i}>
+          {/* The line is drawn per item, from this dot down to the next one, so it never overshoots the last dot. */}
+          {i < classes.length - 1 && (
+            <span className="absolute -bottom-[33px] left-[5px] top-[21px] w-0.5 rounded-full bg-blue-200" aria-hidden="true" />
+          )}
           <div
-            className="absolute -left-[27px] top-1 size-3 rounded-full ring-4 ring-white"
+            className="absolute left-0 top-[9px] z-10 size-3 rounded-full shadow-md ring-4 ring-white"
             style={{ background: i === 0 ? '#10B981' : '#3B82F6' }}
           />
           <div className="flex justify-between items-start">
@@ -162,8 +166,11 @@ const Dashboard: React.FC = () => {
 
   const loadDashboard = async () => {
     try {
-      const [statsRes] = await Promise.allSettled([
+      // The three calls do not depend on each other, so they travel together.
+      const [statsRes, notificationsRes, doubtsRes] = await Promise.allSettled([
         api.get('/dashboard/stats', { params: { portal: 'teacher' } }),
+        api.get('/notifications'),
+        api.get('/doubts'),
       ]);
 
       if (statsRes.status === 'fulfilled') {
@@ -184,23 +191,21 @@ const Dashboard: React.FC = () => {
         })));
       }
 
-      try {
-        const res = await api.get('/notifications');
-        const list = res.data?.data ?? res.data;
+      if (notificationsRes.status === 'fulfilled') {
+        const list = notificationsRes.value.data?.data ?? notificationsRes.value.data;
         setNotifications(Array.isArray(list) ? list : []);
-      } catch {
+      } else {
         setNotifications([]);
       }
 
-      try {
-        const doubtRes = await api.get('/doubts');
-        const list = unwrapSchoolList(doubtRes);
+      if (doubtsRes.status === 'fulfilled') {
+        const list = unwrapSchoolList(doubtsRes.value);
         setPendingDoubts(
           list.filter((d: { status?: string }) =>
             ['escalated', 'open', 'ai_answered'].includes(d.status || ''),
           ).length,
         );
-      } catch {
+      } else {
         setPendingDoubts(0);
       }
     } catch (error) {
@@ -208,7 +213,8 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  useLiveRefresh(loadDashboard, [], 20000);
+  // Edits already refresh this at once (eddva:data-changed); the timer is only a safety net.
+  useLiveRefresh(loadDashboard, [], 60000);
 
   // Teacher assignments: group flat list by class+section so each card shows all subjects
   const teacherSubjects: any[] = stats?.teacherData?.assignments || [];
@@ -288,6 +294,45 @@ const Dashboard: React.FC = () => {
       });
     return () => { cancelled = true; };
   }, [perfScope?.classId, perfScope?.sectionId, !!stats]);
+
+  // ── Screen Time: the teacher's own active-usage trend ───────────────────────
+  const [screenTimeRange, setScreenTimeRange] = useState<'week' | 'month'>('week');
+  const [screenTime, setScreenTime] = useState<{
+    loading: boolean;
+    todaySeconds: number;
+    totalSeconds: number;
+    days: Array<{ date: string; activeSeconds: number }>;
+  }>({ loading: true, todaySeconds: 0, totalSeconds: 0, days: [] });
+
+  useEffect(() => {
+    let cancelled = false;
+    setScreenTime((prev) => ({ ...prev, loading: true }));
+    api.get('/screen-time/me', { params: { range: screenTimeRange } })
+      .then((res) => {
+        if (cancelled) return;
+        const body: any = res.data?.data ?? res.data ?? {};
+        setScreenTime({
+          loading: false,
+          todaySeconds: Number(body.todaySeconds) || 0,
+          totalSeconds: Number(body.totalSeconds) || 0,
+          days: Array.isArray(body.days) ? body.days : [],
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setScreenTime({ loading: false, todaySeconds: 0, totalSeconds: 0, days: [] });
+      });
+    return () => { cancelled = true; };
+  }, [screenTimeRange]);
+
+  const screenTimeChartData = useMemo(
+    () => screenTime.days.map((d) => ({
+      name: new Date(`${d.date}T00:00:00`).toLocaleDateString(undefined,
+        screenTimeRange === 'week' ? { weekday: 'short' } : { day: 'numeric', month: 'short' }),
+      seconds: d.activeSeconds,
+    })),
+    [screenTime.days, screenTimeRange],
+  );
+  const screenTimeHasActivity = screenTimeChartData.some((d) => d.seconds > 0);
 
   // ── "Needs your attention": real flags built from the teacher's own data ────────────────
   type AttentionFlags = {
@@ -576,13 +621,19 @@ const Dashboard: React.FC = () => {
       <MaintenanceBroadcastBanner />
       <div className="flex flex-col gap-6 mb-6">
         {/* Welcome Banner — full width */}
-        <Card className="relative overflow-hidden rounded-[2rem] shadow-sm group min-h-[300px] border-0">
+        <Card className="relative overflow-hidden rounded-[2rem] shadow-xl shadow-blue-900/10 group min-h-[300px] border-0">
           <div className="absolute inset-0 bg-cover bg-[center_top] bg-no-repeat z-0" style={{ backgroundImage: `url(${BgBanner})` }} />
           <div className="absolute inset-y-0 left-0 w-full md:w-[60%] lg:w-[45%] bg-gradient-to-r from-white/95 via-white/70 to-transparent z-10" />
+          <div className="pointer-events-none absolute -left-16 -top-16 z-10 size-64 rounded-full bg-blue-400/20 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-20 left-1/3 z-10 size-64 rounded-full bg-indigo-400/10 blur-3xl" />
 
           <CardContent className="relative z-20 flex flex-col justify-center max-w-xl p-6 md:p-8 min-h-[300px]">
+            <span className="mb-3 inline-flex w-fit items-center gap-2 rounded-full bg-white/80 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-blue-700 shadow-sm ring-1 ring-blue-100 backdrop-blur">
+              <span className="size-1.5 animate-pulse rounded-full bg-blue-500" />
+              {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
+            </span>
             <h1 className="text-3xl md:text-4xl font-extrabold text-[#112A46] tracking-tight leading-tight">
-              Welcome back, <br /><span className="text-blue-600">{user?.name || 'Teacher'}!</span>
+              Welcome back, <br /><span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{user?.name || 'Teacher'}!</span>
             </h1>
             <div className="my-1.5">
               <p className="text-[15px] font-medium text-slate-700/90 leading-relaxed max-w-md">Here's what's happening with your classes today. You have {upcomingClasses.length} upcoming sessions.</p>
@@ -590,32 +641,41 @@ const Dashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Today's Schedule + Today's Overview — side by side, 50/50 */}
+        {/* Needs Your Attention + Today's Overview — side by side, 50/50 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        <Card className="rounded-[2rem] border-slate-100 bg-white shadow-sm p-6 flex flex-col">
-          <div className="flex justify-between items-end mb-1">
-            <CardTitle className="text-[15px] sm:text-[17px] font-extrabold text-[#112A46] tracking-normal">Needs Your Attention</CardTitle>
+        {/* Needs Your Attention */}
+        <Card className="bg-white rounded-[2rem] p-6 shadow-lg shadow-slate-200/60 ring-1 ring-slate-100 border-slate-100 flex flex-col">
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-orange-500 text-white shadow-lg shadow-rose-500/30">
+                <AlertCircle size={22} />
+              </span>
+              <div className="min-w-0">
+                <h2 className="text-xl font-extrabold leading-tight tracking-tight text-[#112A46]">Needs Your Attention</h2>
+                <p className="mt-0.5 text-xs font-semibold text-slate-500">Tasks and alerts waiting for you</p>
+              </div>
+            </div>
             {attentionItems.length > 0 && (
-              <span className="text-[12px] font-bold text-slate-400">{attentionItems.length} {attentionItems.length === 1 ? 'item' : 'items'}</span>
+              <span className="flex h-8 min-w-[2rem] shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-rose-500 to-orange-500 px-2.5 text-[13px] font-black text-white shadow-md shadow-rose-500/30">
+                {attentionItems.length}
+              </span>
             )}
           </div>
 
-          <div className="flex flex-col gap-3 mt-4">
+          <div className="flex flex-col gap-2.5">
             {!flags.loaded ? (
-              [0, 1, 2].map((i) => <Skeleton key={i} className="h-[72px] w-full rounded-2xl" />)
+              [0, 1, 2].map((i) => <Skeleton key={i} className="h-[76px] w-full rounded-2xl" />)
             ) : attentionItems.length === 0 ? (
-              <Card className="bg-white rounded-2xl p-5 shadow-sm border-slate-100 flex items-center gap-3">
-                <div className="size-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                  <CheckSquare size={16} />
-                </div>
-                <div>
-                  <p className="text-[14px] font-bold text-slate-900 leading-tight">You're all caught up</p>
-                  <p className="text-[12px] font-medium text-slate-500 mt-0.5">No pending reviews, doubts or alerts right now.</p>
-                </div>
-              </Card>
+              <div className="flex flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 px-4 py-10 text-center ring-1 ring-emerald-100">
+                <span className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/30">
+                  <CheckSquare size={26} />
+                </span>
+                <p className="mt-3 text-[15px] font-extrabold text-slate-900 leading-tight">You're all caught up</p>
+                <p className="mt-1 text-xs font-medium text-slate-500">No pending reviews, doubts or alerts right now.</p>
+              </div>
             ) : (
               attentionItems.map((item) => (
-                <Card
+                <div
                   key={item.key}
                   role="button"
                   tabIndex={0}
@@ -626,97 +686,63 @@ const Dashboard: React.FC = () => {
                       navigate(item.path, item.state ? { state: item.state } : undefined);
                     }
                   }}
-                  className="bg-white rounded-2xl p-4 shadow-sm border-slate-100 flex items-center justify-between hover:shadow-md hover:border-blue-200 transition-all cursor-pointer group"
+                  className="group flex cursor-pointer items-center gap-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-3.5 transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-200 hover:bg-white hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className={`size-10 rounded-full ${item.bg} ${item.color} flex items-center justify-center shrink-0`}>
-                      {item.icon}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[14px] font-bold text-slate-900 leading-tight">{item.title}</p>
-                      <p className="text-[12px] font-medium text-slate-500 mt-0.5 break-words">{item.desc}</p>
-                    </div>
+                  <div className={`flex size-12 shrink-0 items-center justify-center rounded-2xl ${item.bg} ${item.color} shadow-sm ring-1 ring-white transition-transform duration-300 group-hover:scale-105`}>
+                    {item.icon}
                   </div>
-                  <ChevronRight size={16} className="shrink-0 text-slate-300 group-hover:text-slate-500 transition-colors" />
-                </Card>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[14px] font-extrabold leading-tight text-slate-900">{item.title}</p>
+                    <p className="mt-1 break-words text-[12px] font-medium leading-snug text-slate-500">{item.desc}</p>
+                  </div>
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm ring-1 ring-slate-100 transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white group-hover:ring-blue-600">
+                    <ChevronRight size={16} />
+                  </span>
+                </div>
               ))
             )}
           </div>
         </Card>
 
         {/* Today's Overview — full width */}
-        <Card className="bg-white rounded-[2rem] p-6 shadow-sm border-slate-100">
+        <Card className="bg-white rounded-[2rem] p-6 shadow-lg shadow-slate-200/60 ring-1 ring-slate-100 border-slate-100">
         <div className="flex justify-between items-end mb-6">
           <CardTitle className="text-xl font-extrabold text-[#112A46] tracking-tight leading-normal">Today's Overview</CardTitle>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Students Card */}
-          <Card className="bg-[#F0F7FF] rounded-[1.5rem] p-5 border-[#E0F0FE]/60 flex flex-col hover:-translate-y-1 transition-transform cursor-pointer" onClick={() => navigate('/school/teacher/students')}>
-            <div className="flex items-start gap-4">
-              <div className="bg-[#E0F0FE] text-[#2563EB] size-14 flex items-center justify-center rounded-full shrink-0 shadow-sm"><Users size={24} /></div>
-              <div className="flex flex-col min-w-0">
-                <p className="text-3xl font-black text-[#1E293B] leading-none">{stats?.totalStudents ?? 0}</p>
-                <p className="text-sm font-semibold text-[#64748B] mt-1 break-words">Students</p>
+          {[
+            { label: 'Students', value: stats?.totalStudents ?? 0, foot: 'Total Assigned', icon: <Users size={24} />, path: '/school/teacher/students', card: 'from-[#F0F7FF] to-[#DCEBFF] border-[#CFE3FB]', tile: 'from-blue-500 to-blue-600 shadow-blue-500/30', dot: 'bg-[#10B981]', footText: 'text-[#059669]' },
+            { label: 'Classes Today', value: upcomingClasses.length, foot: 'Remaining', icon: <Presentation size={24} />, path: '/school/teacher/timetable', card: 'from-[#FFF7ED] to-[#FFEAD2] border-[#FFDDB8]', tile: 'from-orange-400 to-orange-600 shadow-orange-500/30', dot: 'bg-[#F97316]', footText: 'text-[#EA580C]' },
+            { label: 'Assignments', value: stats?.assignments ?? 0, foot: 'Active', icon: <FileText size={24} />, path: '/school/teacher/assignments', card: 'from-[#F5F3FF] to-[#E7E0FF] border-[#DDD3FB]', tile: 'from-violet-500 to-purple-600 shadow-violet-500/30', dot: 'bg-[#8B5CF6]', footText: 'text-[#7C3AED]' },
+            { label: 'Assessments', value: stats?.assessments ?? 0, foot: 'Scheduled', icon: <CheckSquare size={24} />, path: '/school/teacher/assessments', card: 'from-[#FEF2F2] to-[#FFE0E0] border-[#FBCFCF]', tile: 'from-rose-500 to-red-600 shadow-rose-500/30', dot: 'bg-[#3B82F6]', footText: 'text-[#2563EB]' },
+          ].map((c) => (
+            <Card
+              key={c.label}
+              className={`group relative overflow-hidden bg-gradient-to-br ${c.card} rounded-[1.5rem] p-5 flex flex-col cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-xl`}
+              onClick={() => navigate(c.path)}
+            >
+              <div className="pointer-events-none absolute -bottom-8 -right-8 size-28 rounded-full bg-white/50 transition-transform duration-500 group-hover:scale-125" />
+              <div className="relative flex items-start gap-4">
+                <div className={`bg-gradient-to-br ${c.tile} text-white size-14 flex items-center justify-center rounded-2xl shrink-0 shadow-lg`}>{c.icon}</div>
+                <div className="flex flex-col min-w-0">
+                  <p className="text-4xl font-black text-[#1E293B] leading-none">{c.value}</p>
+                  <p className="text-sm font-bold text-[#64748B] mt-1.5 break-words">{c.label}</p>
+                </div>
               </div>
-            </div>
-            <div className="mt-5 flex items-center gap-1.5 text-[12px] font-bold text-[#059669]">
-              <div className="size-2 rounded-full bg-[#10B981]"></div>
-              Total Assigned
-            </div>
-          </Card>
-
-          {/* Classes Today Card */}
-          <Card className="bg-[#FFF7ED] rounded-[1.5rem] p-5 border-[#FFEDD5]/60 flex flex-col hover:-translate-y-1 transition-transform cursor-pointer" onClick={() => navigate('/school/teacher/timetable')}>
-            <div className="flex items-start gap-4">
-              <div className="bg-[#FFEDD5] text-[#EA580C] size-14 flex items-center justify-center rounded-full shrink-0 shadow-sm"><Presentation size={24} /></div>
-              <div className="flex flex-col min-w-0">
-                <p className="text-3xl font-black text-[#1E293B] leading-none">{upcomingClasses.length}</p>
-                <p className="text-sm font-semibold text-[#64748B] mt-1 break-words">Classes Today</p>
+              <div className={`relative mt-5 flex items-center gap-1.5 text-[12px] font-bold ${c.footText}`}>
+                <div className={`size-2 rounded-full ${c.dot}`}></div>
+                {c.foot}
               </div>
-            </div>
-            <div className="mt-5 flex items-center gap-1.5 text-[12px] font-bold text-[#EA580C]">
-              <div className="size-2 rounded-full bg-[#F97316]"></div>
-              Remaining
-            </div>
-          </Card>
-
-          {/* Assignments Card */}
-          <Card className="bg-[#F5F3FF] rounded-[1.5rem] p-5 border-[#EDE9FE]/60 flex flex-col hover:-translate-y-1 transition-transform cursor-pointer" onClick={() => navigate('/school/teacher/assignments')}>
-            <div className="flex items-start gap-4">
-              <div className="bg-[#EDE9FE] text-[#7C3AED] size-14 flex items-center justify-center rounded-full shrink-0 shadow-sm"><FileText size={24} /></div>
-              <div className="flex flex-col min-w-0">
-                <p className="text-3xl font-black text-[#1E293B] leading-none">{stats?.assignments ?? 0}</p>
-                <p className="text-sm font-semibold text-[#64748B] mt-1 break-words">Assignments</p>
-              </div>
-            </div>
-            <div className="mt-5 flex items-center gap-1.5 text-[12px] font-bold text-[#7C3AED]">
-              <div className="size-2 rounded-full bg-[#8B5CF6]"></div>
-              Active
-            </div>
-          </Card>
-
-          {/* Assessments Card */}
-          <Card className="bg-[#FEF2F2] rounded-[1.5rem] p-5 border-[#FEE2E2]/60 flex flex-col hover:-translate-y-1 transition-transform cursor-pointer" onClick={() => navigate('/school/teacher/assessments')}>
-            <div className="flex items-start gap-4">
-              <div className="bg-[#FEE2E2] text-[#DC2626] size-14 flex items-center justify-center rounded-full shrink-0 shadow-sm"><CheckSquare size={24} /></div>
-              <div className="flex flex-col min-w-0">
-                <p className="text-3xl font-black text-[#1E293B] leading-none">{stats?.assessments ?? 0}</p>
-                <p className="text-sm font-semibold text-[#64748B] mt-1 break-words">Assessments</p>
-              </div>
-            </div>
-            <div className="mt-5 flex items-center gap-1.5 text-[12px] font-bold text-[#2563EB]">
-              <div className="size-2 rounded-full bg-[#3B82F6]"></div>
-              Scheduled
-            </div>
-          </Card>
+            </Card>
+          ))}
         </div>
         </Card>
         </div>
       </div>
 
       {/* Quick Actions */}
-      <Card className="bg-white rounded-[2rem] p-6 shadow-sm border-slate-100 mb-6">
+      <Card className="bg-white rounded-[2rem] p-6 shadow-lg shadow-slate-200/60 ring-1 ring-slate-100 border-slate-100 mb-6">
         <div className="flex justify-between items-end mb-6">
           <CardTitle className="text-[22px] font-extrabold text-[#112A46] tracking-tight leading-normal">Quick Actions</CardTitle>
         </div>
@@ -731,7 +757,7 @@ const Dashboard: React.FC = () => {
               key={label}
               variant="ghost"
               onClick={() => navigate(path, { state })}
-              className={`relative overflow-hidden flex items-center justify-between p-5 h-auto rounded-2xl ${bg} shadow-sm transition-transform hover:-translate-y-1 group border-0 min-h-[100px] whitespace-normal`}
+              className={`relative overflow-hidden flex items-center justify-between p-5 h-auto rounded-2xl ${bg} shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group border-0 min-h-[100px] whitespace-normal`}
             >
               <div className="flex items-center gap-3 z-10 w-full pr-[60px]">
                 <div className={`size-10 rounded-full ${iconBg} flex items-center justify-center transition-colors ${text} shrink-0`}>
@@ -757,13 +783,16 @@ const Dashboard: React.FC = () => {
           {/* Performance & Needs Attention Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-4">
             {/* Student Performance */}
-            <Card className="bg-white rounded-[1.5rem] p-7 border-slate-100 shadow-sm flex flex-col">
+            <Card className="bg-white rounded-[1.5rem] p-7 border-slate-100 shadow-lg shadow-slate-200/60 ring-1 ring-slate-100 flex flex-col">
               <div className="flex justify-between items-start mb-6">
-                <div>
+                <div className="flex items-center gap-3">
+                  <span className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/30"><TrendingUp size={19} /></span>
+                  <div>
                   <CardTitle className="text-lg font-extrabold text-slate-900 tracking-tight leading-normal">Student Performance</CardTitle>
                   <p className="text-xs font-semibold text-slate-500 mt-1">
                     {perfScope ? `${perfScope.className} - ${perfScope.sectionName}` : 'No class assigned'}
                   </p>
+                  </div>
                 </div>
                 {classSectionGroups.length > 0 && (
                   <Select value={perfScope ? `${perfScope.classId}__${perfScope.sectionId}` : ''} onValueChange={setPerfScopeKey}>
@@ -875,67 +904,156 @@ const Dashboard: React.FC = () => {
             </Card>
 
             {/* My Classes */}
-            <Card className="bg-white rounded-[1.5rem] p-7 border-slate-100 shadow-sm flex flex-col">
+            <Card className="bg-white rounded-[1.5rem] p-7 border-slate-100 shadow-lg shadow-slate-200/60 ring-1 ring-slate-100 flex flex-col">
               <div className="flex justify-between items-end mb-6">
-                <CardTitle className="text-lg font-extrabold text-slate-900 tracking-tight leading-normal">My Classes</CardTitle>
+                <div className="flex items-center gap-3">
+                  <span className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/30"><BookOpen size={19} /></span>
+                  <CardTitle className="text-lg font-extrabold text-slate-900 tracking-tight leading-normal">My Classes</CardTitle>
+                </div>
                 <Button variant="link" onClick={() => navigate('/school/teacher/classes')} className="h-auto p-0 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:no-underline">View All</Button>
               </div>
 
               <div className="flex flex-col gap-4 flex-1">
-                {classSectionGroups.length === 0 ? (
-                  <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 px-4 py-10 text-center">
-                    <BookOpen size={28} className="text-slate-300" />
-                    <p className="mt-2 text-sm font-bold text-slate-600">No classes assigned yet</p>
+                {/* Class Card 1 */}
+                <Card className="bg-[#F8FAFC] rounded-[1.5rem] p-3 border-slate-100 shadow-none flex gap-4 ring-1 ring-slate-100 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 cursor-pointer items-stretch" onClick={() => navigate('/school/teacher/classes')}>
+                  {/* Left Image Placeholder */}
+                  <div className="w-[110px] bg-[#E8F4FD] rounded-xl flex items-center justify-center shrink-0 relative overflow-hidden">
+                    <img src={ImgChalkboard} alt="Classroom" className="absolute inset-0 size-full object-cover scale-110" />
                   </div>
-                ) : (
-                  classSectionGroups.slice(0, 2).map((g, i) => {
-                    const style = CLASS_CARD_STYLES[i % CLASS_CARD_STYLES.length];
-                    const studentCount = sectionStudentCountMap.get(g.sectionId) ?? null;
-                    const subjectNames = g.subjects.map((s: any) => s.subjectName).filter(Boolean);
-                    const visibleSubjects = subjectNames.slice(0, 3);
-                    const extraCount = subjectNames.length - visibleSubjects.length;
-                    return (
-                      <Card
-                        key={`${g.classId}__${g.sectionId}`}
-                        className="bg-[#F8FAFC] rounded-[1.5rem] p-3 border-slate-100 shadow-none flex gap-4 hover:shadow-sm transition-shadow cursor-pointer items-stretch"
-                        onClick={() => navigate('/school/teacher/classes')}
-                      >
-                        <div className={`w-[110px] ${style.imgBg} rounded-xl flex items-center justify-center shrink-0 relative overflow-hidden`}>
-                          <img src={style.img} alt="" className="absolute inset-0 size-full object-cover scale-110" />
-                        </div>
-                        <div className="flex flex-col flex-1 min-w-0 py-1 pr-2 justify-between">
-                          <div className="flex justify-between items-start gap-2">
-                            <h3 className="text-[17px] font-extrabold text-[#112A46] leading-tight truncate min-w-0">{g.className} - {g.sectionName}</h3>
-                            {g.isClassTeacher && (
-                              <Badge variant="secondary" className="text-[10px] font-bold bg-[#DCFCE7] hover:bg-[#DCFCE7] text-[#059669] px-2.5 py-1 shrink-0 border-0">Class Teacher</Badge>
-                            )}
-                          </div>
-                          <div className="flex items-center flex-wrap gap-x-4 gap-y-1 my-2">
-                            {studentCount != null && (
-                              <div className="flex items-center gap-1.5 text-[12px] font-bold text-[#475569]">
-                                <Users size={14} className="text-[#64748B]" /> {studentCount} Students
-                              </div>
-                            )}
-                            <div className="flex items-center gap-1.5 text-[12px] font-bold text-[#475569]">
-                              <BookOpen size={14} className="text-[#64748B]" /> {plural(subjectNames.length, 'Subject', 'Subjects')}
-                            </div>
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            {visibleSubjects.map((name) => (
-                              <Badge key={name} variant="outline" className={`text-[10px] font-bold px-3 py-1.5 ${style.badgeBg} ${style.badgeText} ${style.badgeBorder}`}>{name}</Badge>
-                            ))}
-                            {extraCount > 0 && (
-                              <Badge variant="secondary" className="text-[10px] font-bold px-2 py-1.5 bg-indigo-100/50 hover:bg-indigo-100/50 text-indigo-700 border-0">+{extraCount}</Badge>
-                            )}
-                          </div>
-                        </div>
-                      </Card>
-                    );
-                  })
-                )}
+                  
+                  {/* Right Content */}
+                  <div className="flex flex-col flex-1 min-w-0 py-1 pr-2 justify-between">
+                    <div className="flex justify-between items-start gap-2">
+                      <h3 className="text-[17px] font-extrabold text-[#112A46] leading-tight truncate min-w-0">Class 10 - Section A</h3>
+                      <Badge variant="secondary" className="text-[10px] font-bold bg-[#DCFCE7] hover:bg-[#DCFCE7] text-[#059669] px-2.5 py-1 shrink-0 border-0">Class Teacher</Badge>
+                    </div>
+
+                    <div className="flex items-center flex-wrap gap-x-4 gap-y-1 my-2">
+                      <div className="flex items-center gap-1.5 text-[12px] font-bold text-[#475569]">
+                        <Users size={14} className="text-[#64748B]"/> 42 Students
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[12px] font-bold text-[#475569]">
+                        <BookOpen size={14} className="text-[#64748B]"/> 6 Subjects
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="outline" className="text-[10px] font-bold px-3 py-1.5 bg-blue-100/50 text-blue-700 border-blue-200/50">Mathematics</Badge>
+                      <Badge variant="outline" className="text-[10px] font-bold px-3 py-1.5 bg-blue-100/50 text-blue-700 border-blue-200/50">Science</Badge>
+                      <Badge variant="outline" className="text-[10px] font-bold px-3 py-1.5 bg-blue-100/50 text-blue-700 border-blue-200/50">History</Badge>
+                      <Badge variant="secondary" className="text-[10px] font-bold px-2 py-1.5 bg-indigo-100/50 hover:bg-indigo-100/50 text-indigo-700 border-0">+2</Badge>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Class Card 2 */}
+                <Card className="bg-[#F8FAFC] rounded-[1.5rem] p-3 border-slate-100 shadow-none flex gap-4 ring-1 ring-slate-100 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 cursor-pointer items-stretch" onClick={() => navigate('/school/teacher/classes')}>
+                  {/* Left Image Placeholder */}
+                  <div className="w-[110px] bg-[#F3E8FF] rounded-xl flex items-center justify-center shrink-0 relative overflow-hidden">
+                    <img src={ImgGlobe} alt="Globe" className="absolute inset-0 size-full object-cover scale-110" />
+                  </div>
+                  
+                  {/* Right Content */}
+                  <div className="flex flex-col flex-1 min-w-0 py-1 pr-2 justify-between">
+                    <div className="flex justify-between items-start gap-2">
+                      <h3 className="text-[17px] font-extrabold text-[#112A46] leading-tight truncate min-w-0">Class 9 - Section A</h3>
+                    </div>
+
+                    <div className="flex items-center flex-wrap gap-x-4 gap-y-1 my-2">
+                      <div className="flex items-center gap-1.5 text-[12px] font-bold text-[#475569]">
+                        <Users size={14} className="text-[#64748B]"/> 39 Students
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[12px] font-bold text-[#475569]">
+                        <BookOpen size={14} className="text-[#64748B]"/> 7 Subjects
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="outline" className="text-[10px] font-bold px-3 py-1.5 bg-purple-100/50 text-purple-700 border-purple-200/50">Mathematics</Badge>
+                      <Badge variant="outline" className="text-[10px] font-bold px-3 py-1.5 bg-purple-100/50 text-purple-700 border-purple-200/50">English</Badge>
+                      <Badge variant="outline" className="text-[10px] font-bold px-3 py-1.5 bg-purple-100/50 text-purple-700 border-purple-200/50">Science</Badge>
+                      <Badge variant="secondary" className="text-[10px] font-bold px-2 py-1.5 bg-indigo-100/50 hover:bg-indigo-100/50 text-indigo-700 border-0">+2</Badge>
+                    </div>
+                  </div>
+                </Card>
               </div>
             </Card>
           </div>
+
+          {/* Screen Time */}
+          <Card className="bg-white rounded-[1.5rem] p-7 border-slate-100 shadow-sm flex flex-col mt-4">
+            <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
+              <div>
+                <CardTitle className="text-lg font-extrabold text-slate-900 tracking-tight leading-normal flex items-center gap-2">
+                  <Clock size={18} className="text-indigo-500" /> Screen Time
+                </CardTitle>
+                <p className="text-xs font-semibold text-slate-500 mt-1">Your active time in EDDVA</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Today</p>
+                  <p className="text-lg font-black text-slate-900 leading-none mt-0.5">{formatDurationShort(screenTime.todaySeconds)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    {screenTimeRange === 'week' ? 'This Week' : 'This Month'}
+                  </p>
+                  <p className="text-lg font-black text-indigo-600 leading-none mt-0.5">{formatDurationShort(screenTime.totalSeconds)}</p>
+                </div>
+                <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-1">
+                  {(['week', 'month'] as const).map((r) => (
+                    <Button
+                      key={r}
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setScreenTimeRange(r)}
+                      className={`h-7 rounded-md px-2.5 text-xs font-bold ${
+                        screenTimeRange === r ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:bg-transparent'
+                      }`}
+                    >
+                      {r === 'week' ? 'Week' : 'Month'}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {screenTime.loading ? (
+              <Skeleton className="h-52 w-full rounded-2xl" />
+            ) : !screenTimeHasActivity ? (
+              <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 px-4 py-10 text-center">
+                <Clock size={28} className="text-slate-300" />
+                <p className="mt-2 text-sm font-bold text-slate-600">No screen time recorded yet</p>
+                <p className="mt-1 text-xs font-medium text-slate-400">Your active usage will appear here as you use EDDVA.</p>
+              </div>
+            ) : (
+              <div className="h-52 w-full">
+                <ChartContainer config={{ seconds: { label: 'Active time', color: 'hsl(var(--primary))' } }} className="h-full w-full aspect-auto">
+                  <AreaChart data={screenTimeChartData} margin={{ top: 5, right: 8, left: -16, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="screenTimeFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--color-seconds)" stopOpacity={0.35} />
+                        <stop offset="95%" stopColor="var(--color-seconds)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} />
+                    <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} interval={screenTimeRange === 'month' ? 4 : 0} />
+                    <YAxis tickLine={false} axisLine={false} tickFormatter={(v) => formatDurationShort(Number(v))} width={48} />
+                    <ChartTooltip content={<ChartTooltipContent formatter={(v) => formatDuration(Number(v)) ?? '0s'} />} />
+                    <Area
+                      dataKey="seconds"
+                      type="monotone"
+                      stroke="var(--color-seconds)"
+                      strokeWidth={2.5}
+                      fill="url(#screenTimeFill)"
+                      dot={{ r: 3, fill: 'var(--color-seconds)' }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </AreaChart>
+                </ChartContainer>
+              </div>
+            )}
+          </Card>
 
           {/* Recent Activity */}
           <div className="mt-4">
@@ -969,10 +1087,10 @@ const Dashboard: React.FC = () => {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(item.path); }
                     }}
-                    className="bg-white rounded-3xl p-5 border-slate-100 shadow-sm flex flex-col gap-3 hover:shadow-md hover:border-blue-200 transition-all cursor-pointer"
+                    className="bg-white rounded-3xl p-5 border-slate-100 shadow-md ring-1 ring-slate-100 flex flex-col gap-3 hover:shadow-xl hover:-translate-y-1 hover:border-blue-200 transition-all duration-300 cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`size-9 rounded-xl ${item.bg} ${item.color} flex items-center justify-center shrink-0`}>
+                      <div className={`size-10 rounded-2xl ${item.bg} ${item.color} flex items-center justify-center shrink-0 shadow-sm`}>
                         {item.icon}
                       </div>
                       <div className="min-w-0">
@@ -994,10 +1112,10 @@ const Dashboard: React.FC = () => {
 
         <div className="dashboard__side">
           {/* Today's Schedule */}
-          <Card className="rounded-[2rem] border-slate-100 bg-white shadow-sm flex flex-col overflow-hidden mt-2">
+          <Card className="rounded-[2rem] border-slate-100 bg-white shadow-lg shadow-slate-200/60 ring-1 ring-slate-100 flex flex-col overflow-hidden">
             <CardHeader className="p-5 sm:p-6 flex-row justify-between items-center space-y-0 bg-white">
               <CardTitle className="text-[15px] sm:text-[17px] font-extrabold text-[#112A46] flex items-center gap-2 leading-normal tracking-normal">
-                <Calendar size={18} className="text-[#1C4ED8]" /> Today's Schedule
+                <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/30"><Calendar size={17} /></span> Today's Schedule
               </CardTitle>
             </CardHeader>
             <Separator className="bg-slate-100" />
@@ -1006,7 +1124,7 @@ const Dashboard: React.FC = () => {
             </CardContent>
             <Separator className="bg-slate-100" />
             <CardFooter className="p-4 bg-white">
-              <Button variant="link" onClick={() => navigate('/school/teacher/timetable')} className="w-full h-auto text-[12px] sm:text-[13px] font-bold text-[#1C4ED8] hover:text-[#1E40AF] hover:no-underline gap-1">
+              <Button variant="link" onClick={() => navigate('/school/teacher/timetable')} className="w-full h-auto rounded-xl py-2.5 text-[12px] sm:text-[13px] font-bold text-[#1C4ED8] hover:bg-blue-50 hover:text-[#1E40AF] hover:no-underline gap-1">
                 View Full Calendar <ArrowRight size={16} />
               </Button>
             </CardFooter>
@@ -1015,7 +1133,7 @@ const Dashboard: React.FC = () => {
           <HabitualAbsenteesCard className="mt-4" />
 
           {/* Quote Card */}
-          <Card className="mt-4 bg-gradient-to-br from-[#E8F4FD] to-[#F1F8FE] rounded-2xl p-6 border-[#D1E9FA] shadow-sm relative overflow-hidden">
+          <Card className="mt-4 bg-gradient-to-br from-[#DBEAFE] via-[#E0E7FF] to-[#F5F3FF] rounded-2xl p-6 border-[#C7D8F8] shadow-lg shadow-blue-200/40 relative overflow-hidden">
             <div className="absolute right-2 bottom-0 size-24 opacity-60">
               {/* Stack of books illustration placeholder */}
               <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
