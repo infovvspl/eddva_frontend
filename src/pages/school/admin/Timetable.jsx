@@ -104,6 +104,9 @@ const DAY_CHIP_COLORS = {
   SUNDAY: 'bg-slate-600 shadow-slate-600/30',
 };
 
+// Natural order for plain strings: "Class 2" before "Class 10", "A" before "B".
+const naturalCompare = (a, b) => String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
+
 const isBreakPeriod = (period) =>
   period?.periodType === 'Break' || String(period?.periodName || '').toLowerCase().includes('break');
 
@@ -260,6 +263,8 @@ export default function Timetable() {
   // Pagination for the two long lists below: Live Teacher Status ("All Classes")
   // and the day's Scheduled Timetable Slots.
   const TIMETABLE_PAGE_SIZE = 8;
+  // The daily slots grid is 3 cards across, so a page of 9 fills exactly 3 full rows.
+  const SLOTS_PAGE_SIZE = 9;
   const [liveTeacherPage, setLiveTeacherPage] = useState(1);
   const [scheduledSlotsPage, setScheduledSlotsPage] = useState(1);
 
@@ -716,9 +721,22 @@ export default function Timetable() {
     return parts.length ? parts.join(' ') : null;
   };
 
+  // A slot's `section` doesn't always carry its class name (sometimes only the section's own
+  // name, like "A"), which made the class filter list section letters instead of classes.
+  // Fall back to the class list we already loaded.
+  const sectionClassNames = useMemo(() => {
+    const map = new Map();
+    sections.forEach((sec) => { if (sec?.id != null && sec.className) map.set(String(sec.id), sec.className); });
+    return map;
+  }, [sections]);
+
   const formatClassName = (s) => {
     if (!s) return null;
     if (s.className) return s.className;
+    if (s.class?.name) return s.class.name;
+    if (s.class_name) return s.class_name;
+    const fromList = s.id != null ? sectionClassNames.get(String(s.id)) : null;
+    if (fromList) return fromList;
     if (s.name) return s.name;
     return null;
   };
@@ -808,20 +826,20 @@ export default function Timetable() {
   const teachers = schoolTeachers.map((teacher) => teacher.name);
   const assignedClasses = Array.from(
     new Set((teacherProfile?.assignments || []).map(assignmentClassName).filter(Boolean))
-  ).sort();
-  const timetableClasses = Array.from(new Set(visibleTimetables.map((t) => formatClassName(t.section)).filter(Boolean))).sort();
+  ).sort(naturalCompare);
+  const timetableClasses = Array.from(new Set(visibleTimetables.map((t) => formatClassName(t.section)).filter(Boolean))).sort(naturalCompare);
   const classes = isTeacher && assignedClasses.length ? assignedClasses : timetableClasses;
   const subjects = Array.from(new Set(visibleTimetables.map((t) => t.subject?.name).filter(Boolean))).sort();
   const types = Array.from(new Set(visibleTimetables.map((t) => t.type || 'offline').filter(Boolean))).sort();
   // Section options for the Scheduled Timetable Slots filter, narrowed to the selected class.
   const slotsSections = Array.from(
     new Set(
-      sections
-        .filter((sec) => !slotsFilterClass || sec.className === slotsFilterClass)
-        .map((sec) => sec.name)
+      visibleTimetables
+        .filter((t) => !slotsFilterClass || formatClassName(t.section) === slotsFilterClass)
+        .map((t) => t.section?.name)
         .filter(Boolean)
     )
-  ).sort();
+  ).sort(naturalCompare);
   const periodOptions = useMemo(() => {
     const map = new Map();
     visibleTimetables
@@ -972,13 +990,20 @@ export default function Timetable() {
   const groupedByDay = {};
   days.forEach((day) => {
     let dayTimetables = visibleTimetables.filter((t) => t.dayOfWeek === day);
-    if (!isTeacher && filterTeacher) dayTimetables = dayTimetables.filter((t) => formatTeacherName(t.teacher) === filterTeacher);
-    if (filterClass) dayTimetables = dayTimetables.filter((t) => formatClassName(t.section) === filterClass);
+    // Teacher / class filters belong to the Roster tab; they must not silently hide slots here.
+    if (activeView === 'roster' && !isTeacher && filterTeacher) dayTimetables = dayTimetables.filter((t) => formatTeacherName(t.teacher) === filterTeacher);
+    if (activeView === 'roster' && filterClass) dayTimetables = dayTimetables.filter((t) => formatClassName(t.section) === filterClass);
+    // Period by period; inside a period (the "All classes / All sections" view) go class by
+    // class, then section by section, so the cards read in a predictable order.
     groupedByDay[day] = dayTimetables.sort((a, b) => {
       const aPeriod = Number(a.periodNumber || 999);
       const bPeriod = Number(b.periodNumber || 999);
       if (aPeriod !== bPeriod) return aPeriod - bPeriod;
-      return minutesFromTime(a.startTime) - minutesFromTime(b.startTime);
+      const byTime = minutesFromTime(a.startTime) - minutesFromTime(b.startTime);
+      if (byTime !== 0) return byTime;
+      const byClass = naturalCompare(formatClassName(a.section) || '', formatClassName(b.section) || '');
+      if (byClass !== 0) return byClass;
+      return naturalCompare(a.section?.name || '', b.section?.name || '');
     });
   });
 
@@ -1000,11 +1025,11 @@ export default function Timetable() {
     if (slotsFilterSection && slot.section?.name !== slotsFilterSection) return false;
     return true;
   });
-  const scheduledSlotsTotalPages = Math.max(1, Math.ceil(activeDaySlots.length / TIMETABLE_PAGE_SIZE));
+  const scheduledSlotsTotalPages = Math.max(1, Math.ceil(activeDaySlots.length / SLOTS_PAGE_SIZE));
   const safeScheduledSlotsPage = Math.min(scheduledSlotsPage, scheduledSlotsTotalPages);
   const paginatedActiveDaySlots = activeDaySlots.slice(
-    (safeScheduledSlotsPage - 1) * TIMETABLE_PAGE_SIZE,
-    safeScheduledSlotsPage * TIMETABLE_PAGE_SIZE
+    (safeScheduledSlotsPage - 1) * SLOTS_PAGE_SIZE,
+    safeScheduledSlotsPage * SLOTS_PAGE_SIZE
   );
 
   // One distinct colour per subject (sorted by name so it is stable), cycling when there are more subjects than colours.
@@ -2098,7 +2123,7 @@ export default function Timetable() {
           </div>
           <DataTablePagination
             page={safeScheduledSlotsPage}
-            limit={TIMETABLE_PAGE_SIZE}
+            limit={SLOTS_PAGE_SIZE}
             total={activeDaySlots.length}
             totalPages={scheduledSlotsTotalPages}
             onPageChange={setScheduledSlotsPage}
