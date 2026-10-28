@@ -11,6 +11,8 @@ import {
   TrendingUp,
   UserRound,
   Sparkles,
+  CheckCircle2,
+  CalendarClock,
 } from "lucide-react";
 import { useAuth } from "@/context/SchoolAuthContext";
 import { parentClient } from "@/lib/api/parent-client";
@@ -20,6 +22,7 @@ import StudentAvatar from "@/assets/images/Student_Avatar.png";
 import SmartCalendar from "@/components/school/SmartCalendar";
 import MaintenanceBroadcastBanner from "@/components/shared/MaintenanceBroadcastBanner";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { cn } from "@/lib/utils";
 
 type Tone = "blue" | "emerald" | "amber" | "rose" | "violet" | "slate";
 
@@ -102,8 +105,16 @@ export default function ParentDashboard() {
     retry: 1,
   });
 
+  const feeQuery = useQuery<any>({
+    queryKey: ["parent-dashboard-fees", activeChildId],
+    queryFn: () => activeChildId ? parentClient.getFeeSummary(activeChildId) : Promise.resolve(null),
+    enabled: !!activeChildId,
+    retry: 1,
+  });
+
   const loading = summaryQuery.isLoading || attendanceQuery.isLoading || marksQuery.isLoading || homeworkQuery.isLoading || testsQuery.isLoading;
   const analytics = buildAnalytics(summaryQuery.data, attendanceQuery.data, marksQuery.data, homeworkQuery.data, testsQuery.data);
+  const feeNotice = buildFeeNotice(feeQuery.data);
 
   return (
     <div className="space-y-5 pb-10">
@@ -278,6 +289,51 @@ export default function ParentDashboard() {
               </div>
             )}
           </Panel>
+
+          <Panel title="Fee Notice" action={<Link to="/school/parent/fees" className="text-xs font-bold text-indigo-600 hover:underline">View All</Link>}>
+            {feeQuery.isLoading ? (
+              <Skeleton className="h-20 rounded-2xl" />
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="flex items-center gap-3 rounded-2xl bg-emerald-50/60 p-3.5">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white">
+                    <CheckCircle2 className="size-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700/70">Last Deposited</p>
+                    {feeNotice.lastPayment ? (
+                      <>
+                        <p className="text-sm font-black text-emerald-700">{formatINR(feeNotice.lastPayment.amountPaid)}</p>
+                        <p className="truncate text-xs font-semibold text-emerald-700/70">
+                          {feeNotice.lastPayment.title} · {formatDate(feeNotice.lastPayment.paidDate)}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-xs font-semibold text-slate-400 italic">No payments yet.</p>
+                    )}
+                  </div>
+                </div>
+                <div className={cn("flex items-center gap-3 rounded-2xl p-3.5", feeNotice.nextDue ? "bg-amber-50/60" : "bg-slate-50/60")}>
+                  <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl text-white", feeNotice.nextDue ? "bg-amber-500" : "bg-slate-300")}>
+                    <CalendarClock className="size-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700/70">Next Due Date</p>
+                    {feeNotice.nextDue ? (
+                      <>
+                        <p className="text-sm font-black text-amber-700">{formatINR(feeNotice.nextDue.balance)}</p>
+                        <p className="truncate text-xs font-semibold text-amber-700/70">
+                          {feeNotice.nextDue.title} · {formatDate(feeNotice.nextDue.dueDate)}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-xs font-semibold text-slate-400 italic">Nothing due right now.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </Panel>
         </div>
       </div>
     </div>
@@ -429,6 +485,26 @@ function buildAnalytics(summary: any, attendance: any, marks: any, homework: any
     completedTests,
     totalTests,
     assessmentsLabel: totalTests ? `${completedTests}/${totalTests}` : "--",
+  };
+}
+
+function formatINR(n: number) {
+  return `₹${Math.round(n || 0).toLocaleString("en-IN")}`;
+}
+
+function formatDate(d?: string | null) {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString(undefined, { day: "numeric", month: "short" });
+}
+
+/** Last deposit + nearest due date, derived from the same payload the Fees page renders. */
+function buildFeeNotice(fees: any) {
+  const recentPayments = Array.isArray(fees?.recentPayments) ? fees.recentPayments : [];
+  const dueFees = Array.isArray(fees?.dueFees) ? fees.dueFees : [];
+  const upcomingFees = Array.isArray(fees?.upcomingFees) ? fees.upcomingFees : [];
+  return {
+    lastPayment: recentPayments[0] || null,
+    nextDue: dueFees[0] || upcomingFees[0] || null,
   };
 }
 

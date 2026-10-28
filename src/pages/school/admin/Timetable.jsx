@@ -977,6 +977,8 @@ export default function Timetable() {
     safeLiveTeacherPage * TIMETABLE_PAGE_SIZE
   );
 
+  const todaysTimetables = visibleTimetables.filter((slot) => slot.dayOfWeek === currentDay);
+
   const activeDaySlots = (groupedByDay[activeDay] || []).filter((slot) => {
     if (slotsFilterClass && formatClassName(slot.section) !== slotsFilterClass) return false;
     if (slotsFilterSection && slot.section?.name !== slotsFilterSection) return false;
@@ -1041,10 +1043,10 @@ export default function Timetable() {
       <div className="grid grid-cols-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-2 sm:gap-4 mb-6">
         <div className="rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm transition-colors hover:border-slate-500 dark:hover:border-slate-400 flex flex-col justify-center items-center text-center">
           <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">
-            <span className="hidden sm:inline">Total Classes</span>
-            <span className="inline sm:hidden">Classes</span>
+            <span className="hidden sm:inline">Classes Today</span>
+            <span className="inline sm:hidden">Today</span>
           </p>
-          <p className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white mt-0.5">{visibleTimetables.length}</p>
+          <p className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white mt-0.5">{todaysTimetables.length}</p>
         </div>
         <div className="rounded-xl sm:rounded-2xl border border-blue-200 dark:border-blue-900/50 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm transition-colors hover:border-blue-500 dark:hover:border-blue-500 flex flex-col justify-center items-center text-center">
           <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">Teachers</p>
@@ -1052,25 +1054,25 @@ export default function Timetable() {
         </div>
         <div className="rounded-xl sm:rounded-2xl border border-emerald-200 dark:border-emerald-900/50 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm transition-colors hover:border-emerald-500 dark:hover:border-emerald-500 flex flex-col justify-center items-center text-center">
           <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">Offline</p>
-          <p className="text-lg sm:text-2xl font-black text-emerald-600 mt-0.5">{visibleTimetables.filter(t => t.type === 'offline').length}</p>
+          <p className="text-lg sm:text-2xl font-black text-emerald-600 mt-0.5">{todaysTimetables.filter(t => t.type === 'offline').length}</p>
         </div>
         <div className="rounded-xl sm:rounded-2xl border border-rose-200 dark:border-rose-900/50 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm transition-colors hover:border-rose-500 dark:hover:border-rose-500 flex flex-col justify-center items-center text-center">
           <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">Live</p>
-          <p className="text-lg sm:text-2xl font-black text-rose-600 mt-0.5">{visibleTimetables.filter(t => t.type === 'live').length}</p>
+          <p className="text-lg sm:text-2xl font-black text-rose-600 mt-0.5">{todaysTimetables.filter(t => t.type === 'live').length}</p>
         </div>
         <div className="rounded-xl sm:rounded-2xl border border-purple-200 dark:border-purple-900/50 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm transition-colors hover:border-purple-500 dark:hover:border-purple-500 flex flex-col justify-center items-center text-center">
           <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">
             <span className="hidden sm:inline">Lab Sessions</span>
             <span className="inline sm:hidden">Labs</span>
           </p>
-          <p className="text-lg sm:text-2xl font-black text-purple-600 mt-0.5">{visibleTimetables.filter(t => t.type === 'lab').length}</p>
+          <p className="text-lg sm:text-2xl font-black text-purple-600 mt-0.5">{todaysTimetables.filter(t => t.type === 'lab').length}</p>
         </div>
         <div className="rounded-xl sm:rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm transition-colors hover:border-amber-500 dark:hover:border-amber-500 flex flex-col justify-center items-center text-center">
           <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">
             <span className="hidden sm:inline">Extra Classes</span>
             <span className="inline sm:hidden">Extras</span>
           </p>
-          <p className="text-lg sm:text-2xl font-black text-amber-600 mt-0.5">{visibleTimetables.filter(t => t.type === 'extra').length}</p>
+          <p className="text-lg sm:text-2xl font-black text-amber-600 mt-0.5">{todaysTimetables.filter(t => t.type === 'extra').length}</p>
         </div>
       </div>
 
@@ -1812,7 +1814,7 @@ export default function Timetable() {
                 onChange={(e) => setFilterStatus(e.target.value)}
                 className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 outline-none focus:border-blue-400"
               >
-                <option value="">Engaged + Idle</option>
+                <option value="">Both</option>
                 <option value="engaged">Engaged Only</option>
                 <option value="idle">Idle Only</option>
               </select>

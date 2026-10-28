@@ -3,8 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import {
   Users, UserCheck, FileText, ClipboardList, Clock, MapPin, MessageSquare, CalendarDays,
   ChevronRight, CheckSquare, PlusCircle, Video, TrendingUp, AlertCircle, ArrowUpRight,
-  BookOpen, Edit3, UploadCloud, Calendar, ArrowRight, Presentation
+  BookOpen, Edit3, UploadCloud, Calendar, ArrowRight, Presentation, Cake
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { birthdaysApi, birthdaySubtitle } from '@/lib/api/birthdays';
+import HabitualAbsenteesCard from '@/components/school/teacher/HabitualAbsenteesCard';
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -455,6 +458,13 @@ const Dashboard: React.FC = () => {
     return () => { cancelled = true; };
   }, []);
 
+  // Today's birthdays, folded into Recent Activity below rather than shown as a separate card.
+  const { data: todaysBirthdays } = useQuery({
+    queryKey: ['school-birthdays', 1],
+    queryFn: () => birthdaysApi.upcoming(1),
+    staleTime: 5 * 60_000,
+  });
+
   const timeAgo = (value: any) => {
     const t = new Date(value).getTime();
     if (!Number.isFinite(t)) return '';
@@ -512,8 +522,18 @@ const Dashboard: React.FC = () => {
       });
     });
 
+    (todaysBirthdays || []).forEach((b) => {
+      push({
+        key: `bd-${b.userId}`, when: new Date().toISOString(),
+        icon: <Cake size={18} />, color: 'text-pink-600', bg: 'bg-pink-100',
+        title: `${b.name}'s Birthday`, sub: birthdaySubtitle(b),
+        context: 'Today',
+        path: '/school/teacher/notifications',
+      });
+    });
+
     return items.sort((x, y) => y.at - x.at).slice(0, 4);
-  }, [ownWork, notifications]);
+  }, [ownWork, notifications, todaysBirthdays]);
   const hiddenGroupCount = Math.max(0, classSectionGroups.length - MAX_CLASS_CARDS_SHOWN);
 
   // "My Classes" card art/colors cycle through a fixed palette — purely decorative,
@@ -991,6 +1011,8 @@ const Dashboard: React.FC = () => {
               </Button>
             </CardFooter>
           </Card>
+
+          <HabitualAbsenteesCard className="mt-4" />
 
           {/* Quote Card */}
           <Card className="mt-4 bg-gradient-to-br from-[#E8F4FD] to-[#F1F8FE] rounded-2xl p-6 border-[#D1E9FA] shadow-sm relative overflow-hidden">

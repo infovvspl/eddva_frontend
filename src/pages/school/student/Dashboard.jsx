@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import SmartCalendar from '@/components/school/SmartCalendar';
 import ScoreTrendChart, { scoreTrendDelta } from '@/components/school/student/ScoreTrendChart';
+import BirthdayWidget from '@/components/school/shared/BirthdayWidget';
 import './Dashboard.css';
 
 function getSubjectConfig(name) {
@@ -454,7 +455,6 @@ export default function Dashboard() {
 
   return (
     <div className="student-dashboard space-y-5 pb-12 font-sans bg-[#f8fafc] min-h-screen">
-      
       {/* Row 1 & 2: Top Section */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
         {/* Left Column: Banner + Stat Cards */}
@@ -488,7 +488,7 @@ export default function Dashboard() {
           </div>
         </div>
         
-        {/* Right Column: Calendar + Next Live Class */}
+        {/* Right Column: Calendar + Next Live Class + Birthdays */}
         <div className="xl:col-span-4 flex flex-col gap-5">
           <div className="bg-white rounded-[1.5rem] p-5 shadow-sm border border-slate-100 flex-1 min-h-[260px]">
             <SmartCalendar />
@@ -499,6 +499,7 @@ export default function Dashboard() {
           <div className="shrink-0 h-auto sm:h-[104px]">
              <NextLiveClassCard schedule={todayPlan} />
           </div>
+          <BirthdayWidget className="rounded-[1.5rem]" />
         </div>
       </div>
 
@@ -532,7 +533,7 @@ export default function Dashboard() {
         <ScoreTrendChart data={scoreTrend} height={240} />
       </div>
 
-      {/* Row 4: Subject Performance, Announcements */}
+      {/* Row 4: Subject Performance, Announcements, Birthdays */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2 bg-white rounded-[1.5rem] p-5 shadow-sm border border-slate-100 flex flex-col overflow-hidden h-full">
           <SectionHeader title="Subject Performance" action="This Term" isDropdown />

@@ -17,7 +17,16 @@ const TYPE_OPTIONS = [
 
 const LOW_ATTENDANCE_THRESHOLD = 75;
 
-function AttendanceRing({ value }) {
+// The % is always a rolling trend, never just the day being viewed — this
+// mirrors the backend window (trailing 30 days by default, or the picked
+// week/month range) so the tooltip doesn't drift out of sync with it.
+function getPercentagePeriodLabel(filterType) {
+  if (filterType === 'weekly') return 'this week';
+  if (filterType === 'monthly') return 'this month';
+  return 'last 30 days';
+}
+
+function AttendanceRing({ value, periodLabel }) {
   if (typeof value !== 'number') {
     return <span className="text-surface-400">-</span>;
   }
@@ -57,14 +66,10 @@ function AttendanceRing({ value }) {
         </svg>
         <span className="absolute text-[10px] font-bold text-surface-700">{Math.round(pct)}%</span>
       </div>
-      {isLow && (
-        <>
-          <AlertTriangle className="size-4 shrink-0 text-red-600" />
-          <span className="pointer-events-none absolute -top-9 left-1/2 z-10 -translate-x-1/2 scale-0 whitespace-nowrap rounded bg-surface-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">
-            Low attendance: below {LOW_ATTENDANCE_THRESHOLD}%
-          </span>
-        </>
-      )}
+      <span className="pointer-events-none absolute -top-9 left-1/2 z-10 -translate-x-1/2 scale-0 whitespace-nowrap rounded bg-surface-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">
+        {isLow ? `Low attendance (${periodLabel}): below ${LOW_ATTENDANCE_THRESHOLD}%` : `Attendance over ${periodLabel}`}
+      </span>
+      {isLow && <AlertTriangle className="size-4 shrink-0 text-red-600" />}
     </div>
   );
 }
@@ -603,7 +608,10 @@ export default function Attendance() {
                 {selectedRole === 'STUDENT' && <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Class / Section</TableHead>}
                 <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Date</TableHead>
                 <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Status</TableHead>
-                <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Attendance %</TableHead>
+                <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">
+                  Attendance %
+                  <span className="block text-[10px] font-normal normal-case text-surface-400">({getPercentagePeriodLabel(filterType)})</span>
+                </TableHead>
                 <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -656,7 +664,7 @@ export default function Attendance() {
                       </Badge>
                     </TableCell>
                     <TableCell className="p-4 px-6 py-4 text-surface-600">
-                      <AttendanceRing value={record.attendancePercentage} />
+                      <AttendanceRing value={record.attendancePercentage} periodLabel={getPercentagePeriodLabel(filterType)} />
                     </TableCell>
                     <TableCell className="p-4 px-6 py-4">
                       <div className="flex gap-2">
@@ -742,8 +750,8 @@ export default function Attendance() {
                   <span className="font-semibold block mt-0.5">{new Date(record.date).toLocaleDateString()}</span>
                 </div>
                 <div>
-                  <span className="block text-[9px] uppercase tracking-wider text-surface-400 font-bold">Attendance %</span>
-                  <span className="font-semibold block mt-0.5"><AttendanceRing value={record.attendancePercentage} /></span>
+                  <span className="block text-[9px] uppercase tracking-wider text-surface-400 font-bold">Attendance % ({getPercentagePeriodLabel(filterType)})</span>
+                  <span className="font-semibold block mt-0.5"><AttendanceRing value={record.attendancePercentage} periodLabel={getPercentagePeriodLabel(filterType)} /></span>
                 </div>
               </div>
 
