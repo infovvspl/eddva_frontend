@@ -15,6 +15,7 @@ import { useSchoolFeature } from "@/hooks/use-school-feature";
 import StudentStudyReport from "@/pages/school/reports/study-planner/StudentStudyReport";
 import { cn } from '@/lib/utils';
 import { calculateReportCardPercentage } from '@/lib/school/reportCardCalculator';
+import ActivityCategoryBreakdown from '@/components/school/shared/ActivityCategoryBreakdown';
 
 type ChildTab = "attendance" | "marks" | "performance" | "homework" | "tests" | "screentime" | "planner";
 const VALID_TABS: ChildTab[] = ["attendance", "marks", "performance", "homework", "tests", "screentime", "planner"];
@@ -362,7 +363,8 @@ function AttendanceTab({ studentId }: { studentId: string | null }) {
 }
 
 function ScreenTimeTab({ studentId }: { studentId: string | null }) {
-  const [view, setView] = useState<"week" | "calendar" | "year">("week");
+  const [view, setView] = useState<"today" | "week" | "calendar" | "year">("week");
+  const [showCategory, setShowCategory] = useState(false);
   const [month, setMonth] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -395,6 +397,19 @@ function ScreenTimeTab({ studentId }: { studentId: string | null }) {
     enabled: !!studentId,
     retry: 1,
   });
+
+  // The "Category" toggle always reflects whichever range pill is currently
+  // selected above it, rather than being its own fixed range.
+  const activityRange = view === "today" ? "today" : view === "calendar" ? "month" : view === "year" ? "year" : "week";
+  const activityRangeLabel = view === "today" ? "today" : view === "calendar" ? "this month" : view === "year" ? "this year" : "this week";
+  const { data: activityData, isLoading: activityLoading } = useQuery<any>({
+    queryKey: ['parent-screentime-activity', studentId, activityRange],
+    queryFn: () => studentId ? parentClient.getScreenTimeActivity(studentId, activityRange) : null,
+    enabled: !!studentId && showCategory,
+    retry: 1,
+  });
+  const byCategory: Array<{ category: string; seconds: number; visits: number; verified: Record<string, unknown> | null }> =
+    activityData?.byCategory ?? [];
 
   const weekDays: Array<{ date: string; activeSeconds: number }> = weekData?.days ?? [];
   const weekChartData = useMemo(
@@ -478,6 +493,7 @@ function ScreenTimeTab({ studentId }: { studentId: string | null }) {
       <div className="flex items-center justify-end">
         <div className="flex items-center gap-2 rounded-xl bg-slate-100 p-1">
           {([
+            { id: "today", label: "Today" },
             { id: "week", label: "This Week" },
             { id: "calendar", label: "By Month" },
             { id: "year", label: "Annually" },
@@ -495,7 +511,25 @@ function ScreenTimeTab({ studentId }: { studentId: string | null }) {
         </div>
       </div>
 
-      {view === "week" ? (
+      <div className="flex items-center justify-end">
+        <button
+          onClick={() => setShowCategory((v) => !v)}
+          className={`rounded-lg px-3.5 py-1.5 text-xs font-bold transition-colors ${
+            showCategory ? "bg-blue-600 text-white shadow-sm" : "bg-slate-100 text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          Category
+        </button>
+      </div>
+
+      {showCategory ? null : view === "today" ? (
+        <div className="rounded-2xl border border-slate-100 bg-white p-10 text-center">
+          <div className="text-3xl font-black text-blue-600">
+            {weekLoading ? <Loader2 className="mx-auto size-6 animate-spin" /> : formatDurationShort(weekData?.todaySeconds)}
+          </div>
+          <p className="mt-2 text-xs font-black uppercase text-slate-400">Active today</p>
+        </div>
+      ) : view === "week" ? (
         weekLoading ? (
           <Skeleton className="h-64 w-full rounded-2xl" />
         ) : (
@@ -693,6 +727,26 @@ function ScreenTimeTab({ studentId }: { studentId: string | null }) {
                 </div>
               )}
             </>
+          )}
+        </div>
+      )}
+
+      {showCategory && (
+        <div className="space-y-3">
+          <div>
+            <h4 className="text-sm font-black text-slate-900">By Category ({activityRangeLabel})</h4>
+            <p className="text-xs font-medium text-slate-400">
+              Time open alongside what the data actually shows they did — not every page has something to verify.
+            </p>
+          </div>
+          {activityLoading ? (
+            <Skeleton className="h-32 w-full rounded-2xl" />
+          ) : (
+            <ActivityCategoryBreakdown
+              byCategory={byCategory}
+              loading={false}
+              emptyLabel={`No category activity recorded ${activityRangeLabel} yet.`}
+            />
           )}
         </div>
       )}

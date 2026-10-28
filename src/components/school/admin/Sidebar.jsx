@@ -13,7 +13,6 @@ import {
   BookOpen,
   Building2,
   CalendarDays,
-  Clock,
   ClipboardCheck,
   ClipboardList,
   FileText,
@@ -100,7 +99,6 @@ const ADMIN_NAV_PATH_TO_MODULE = {
   '/school/admin/document-generator': 'document_generator',
   '/school/admin/audit-logs': 'audit_logs',
   '/school/admin/complaints': 'complaints',
-  '/school/admin/screen-time': 'screen_time',
   '/school/admin/emergency-sos': 'emergency_sos',
 };
 
@@ -176,7 +174,6 @@ function buildInstituteGroups(mods, aiFeats) {
         { path: '/school/admin/audit-logs', label: 'Audit Logs', icon: FileText },
         { path: '/school/admin/complaints', label: 'Help Desk', icon: Shield },
         { path: '/school/admin/grievances', label: 'Grievances', icon: MessageSquareWarning },
-        { path: '/school/admin/screen-time', label: 'Screen Time', icon: Clock },
         { path: '/school/admin/emergency-sos', label: 'Emergency SOS', icon: Siren, danger: true },
       ],
     },

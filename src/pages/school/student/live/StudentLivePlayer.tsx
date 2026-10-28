@@ -24,6 +24,7 @@ import FloatingReactionLayer, { useFloatingReactions } from '@/components/school
 import api, { unwrapSchoolData } from '@/lib/api/school-client';
 import { useConfirm } from '@/context/ConfirmContext';
 import { BackButton } from '@/components/shared/BackButton';
+import { useAppActivityTracker } from '@/hooks/use-app-activity-tracker';
 
 type Phase = 'waiting' | 'live' | 'ended' | 'cancelled' | 'missed';
 
@@ -45,6 +46,9 @@ export default function StudentLivePlayer() {
   const [phase, setPhase] = useState<Phase>('waiting');
   const [playbackUrl, setPlaybackUrl] = useState('');
   const [buffering, setBuffering] = useState(false);
+  // Live is always "playing" once the stream is up and not buffering — there's
+  // no pause control on a live feed, so phase/buffering IS the real signal.
+  useAppActivityTracker({ category: 'video_lectures', refId: id, mediaPlaying: phase === 'live' && !buffering });
   const [muted, setMuted] = useState(true);
   const [qualities, setQualities] = useState<Array<{ label: string; url: string }>>([]);
   const [selectedQuality, setSelectedQuality] = useState('Auto');

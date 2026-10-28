@@ -13,6 +13,8 @@ import MaintenanceNotice from '@/components/shared/MaintenanceNotice';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSchoolFeature } from '@/hooks/use-school-feature';
 import { useScreenTimeTracking } from '@/hooks/use-screen-time-tracking';
+import { useAppActivityTracker } from '@/hooks/use-app-activity-tracker';
+import { resolveActivityCategory, resolveActivityIdleMs } from '@/config/activity-categories';
 import { useAuth } from '@/context/SchoolAuthContext';
 import {
   LayoutDashboard,
@@ -43,6 +45,12 @@ function StudentLayoutShell() {
   const isMobile = useIsMobile();
   const { logout } = useAuth();
   useScreenTimeTracking();
+  const activityCategory = resolveActivityCategory(location.pathname);
+  useAppActivityTracker({
+    category: activityCategory ?? 'nav',
+    enabled: activityCategory !== null,
+    idleMs: resolveActivityIdleMs(activityCategory),
+  });
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [moreDrawerOpen, setMoreDrawerOpen] = useState(false);
