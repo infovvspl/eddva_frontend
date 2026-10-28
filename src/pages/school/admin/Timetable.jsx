@@ -104,6 +104,9 @@ const DAY_CHIP_COLORS = {
   SUNDAY: 'bg-slate-600 shadow-slate-600/30',
 };
 
+// Natural order for plain strings: "Class 2" before "Class 10", "A" before "B".
+const naturalCompare = (a, b) => String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
+
 const isBreakPeriod = (period) =>
   period?.periodType === 'Break' || String(period?.periodName || '').toLowerCase().includes('break');
 
@@ -210,6 +213,9 @@ export default function Timetable() {
   const [filterPeriod, setFilterPeriod] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterType, setFilterType] = useState('');
+  // Period-wise Teacher Map: which period rows the admin opened/closed by hand.
+  // A period with no entry follows its default (the current period starts open).
+  const [periodOpen, setPeriodOpen] = useState({});
   const [filterSubject, setFilterSubject] = useState('');
   // Class/Section filters local to the "Scheduled Timetable Slots" list — kept
   // separate from filterClass above (shared by the Period-wise Teacher Map)
@@ -220,6 +226,18 @@ export default function Timetable() {
     const todayIndex = new Date().getDay();
     return todayIndex === 0 ? 'MONDAY' : dayNames[todayIndex];
   });
+  // Switching day starts the Period-wise Teacher Map fresh, so a row opened on Monday doesn't stay open on Tuesday.
+  useEffect(() => { setPeriodOpen({}); }, [activeDay]);
+  // Scroll the current period into view once per visit to the roster tab / day. A callback
+  // ref is used because the rows only exist after the timetable data has loaded.
+  const scrolledForRef = useRef('');
+  const currentPeriodRef = (node) => {
+    if (node && scrolledForRef.current !== activeDay) {
+      scrolledForRef.current = activeDay;
+      node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+  useEffect(() => { scrolledForRef.current = ''; }, [activeView]);
   const [hasInitializedDefaultDay, setHasInitializedDefaultDay] = useState(false);
   const [now, setNow] = useState(() => new Date());
 
@@ -260,6 +278,8 @@ export default function Timetable() {
   // Pagination for the two long lists below: Live Teacher Status ("All Classes")
   // and the day's Scheduled Timetable Slots.
   const TIMETABLE_PAGE_SIZE = 8;
+  // The daily slots grid is 3 cards across, so a page of 9 fills exactly 3 full rows.
+  const SLOTS_PAGE_SIZE = 9;
   const [liveTeacherPage, setLiveTeacherPage] = useState(1);
   const [scheduledSlotsPage, setScheduledSlotsPage] = useState(1);
 
@@ -716,9 +736,22 @@ export default function Timetable() {
     return parts.length ? parts.join(' ') : null;
   };
 
+  // A slot's `section` doesn't always carry its class name (sometimes only the section's own
+  // name, like "A"), which made the class filter list section letters instead of classes.
+  // Fall back to the class list we already loaded.
+  const sectionClassNames = useMemo(() => {
+    const map = new Map();
+    sections.forEach((sec) => { if (sec?.id != null && sec.className) map.set(String(sec.id), sec.className); });
+    return map;
+  }, [sections]);
+
   const formatClassName = (s) => {
     if (!s) return null;
     if (s.className) return s.className;
+    if (s.class?.name) return s.class.name;
+    if (s.class_name) return s.class_name;
+    const fromList = s.id != null ? sectionClassNames.get(String(s.id)) : null;
+    if (fromList) return fromList;
     if (s.name) return s.name;
     return null;
   };
@@ -808,20 +841,20 @@ export default function Timetable() {
   const teachers = schoolTeachers.map((teacher) => teacher.name);
   const assignedClasses = Array.from(
     new Set((teacherProfile?.assignments || []).map(assignmentClassName).filter(Boolean))
-  ).sort();
-  const timetableClasses = Array.from(new Set(visibleTimetables.map((t) => formatClassName(t.section)).filter(Boolean))).sort();
+  ).sort(naturalCompare);
+  const timetableClasses = Array.from(new Set(visibleTimetables.map((t) => formatClassName(t.section)).filter(Boolean))).sort(naturalCompare);
   const classes = isTeacher && assignedClasses.length ? assignedClasses : timetableClasses;
   const subjects = Array.from(new Set(visibleTimetables.map((t) => t.subject?.name).filter(Boolean))).sort();
   const types = Array.from(new Set(visibleTimetables.map((t) => t.type || 'offline').filter(Boolean))).sort();
   // Section options for the Scheduled Timetable Slots filter, narrowed to the selected class.
   const slotsSections = Array.from(
     new Set(
-      sections
-        .filter((sec) => !slotsFilterClass || sec.className === slotsFilterClass)
-        .map((sec) => sec.name)
+      visibleTimetables
+        .filter((t) => !slotsFilterClass || formatClassName(t.section) === slotsFilterClass)
+        .map((t) => t.section?.name)
         .filter(Boolean)
     )
-  ).sort();
+  ).sort(naturalCompare);
   const periodOptions = useMemo(() => {
     const map = new Map();
     visibleTimetables
@@ -972,13 +1005,20 @@ export default function Timetable() {
   const groupedByDay = {};
   days.forEach((day) => {
     let dayTimetables = visibleTimetables.filter((t) => t.dayOfWeek === day);
-    if (!isTeacher && filterTeacher) dayTimetables = dayTimetables.filter((t) => formatTeacherName(t.teacher) === filterTeacher);
-    if (filterClass) dayTimetables = dayTimetables.filter((t) => formatClassName(t.section) === filterClass);
+    // Teacher / class filters belong to the Roster tab; they must not silently hide slots here.
+    if (activeView === 'roster' && !isTeacher && filterTeacher) dayTimetables = dayTimetables.filter((t) => formatTeacherName(t.teacher) === filterTeacher);
+    if (activeView === 'roster' && filterClass) dayTimetables = dayTimetables.filter((t) => formatClassName(t.section) === filterClass);
+    // Period by period; inside a period (the "All classes / All sections" view) go class by
+    // class, then section by section, so the cards read in a predictable order.
     groupedByDay[day] = dayTimetables.sort((a, b) => {
       const aPeriod = Number(a.periodNumber || 999);
       const bPeriod = Number(b.periodNumber || 999);
       if (aPeriod !== bPeriod) return aPeriod - bPeriod;
-      return minutesFromTime(a.startTime) - minutesFromTime(b.startTime);
+      const byTime = minutesFromTime(a.startTime) - minutesFromTime(b.startTime);
+      if (byTime !== 0) return byTime;
+      const byClass = naturalCompare(formatClassName(a.section) || '', formatClassName(b.section) || '');
+      if (byClass !== 0) return byClass;
+      return naturalCompare(a.section?.name || '', b.section?.name || '');
     });
   });
 
@@ -995,16 +1035,18 @@ export default function Timetable() {
     safeLiveTeacherPage * TIMETABLE_PAGE_SIZE
   );
 
+  const todaysTimetables = visibleTimetables.filter((slot) => slot.dayOfWeek === currentDay);
+
   const activeDaySlots = (groupedByDay[activeDay] || []).filter((slot) => {
     if (slotsFilterClass && formatClassName(slot.section) !== slotsFilterClass) return false;
     if (slotsFilterSection && slot.section?.name !== slotsFilterSection) return false;
     return true;
   });
-  const scheduledSlotsTotalPages = Math.max(1, Math.ceil(activeDaySlots.length / TIMETABLE_PAGE_SIZE));
+  const scheduledSlotsTotalPages = Math.max(1, Math.ceil(activeDaySlots.length / SLOTS_PAGE_SIZE));
   const safeScheduledSlotsPage = Math.min(scheduledSlotsPage, scheduledSlotsTotalPages);
   const paginatedActiveDaySlots = activeDaySlots.slice(
-    (safeScheduledSlotsPage - 1) * TIMETABLE_PAGE_SIZE,
-    safeScheduledSlotsPage * TIMETABLE_PAGE_SIZE
+    (safeScheduledSlotsPage - 1) * SLOTS_PAGE_SIZE,
+    safeScheduledSlotsPage * SLOTS_PAGE_SIZE
   );
 
   // One distinct colour per subject (sorted by name so it is stable), cycling when there are more subjects than colours.
@@ -1835,7 +1877,7 @@ export default function Timetable() {
                 onChange={(e) => setFilterStatus(e.target.value)}
                 className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 outline-none focus:border-blue-400"
               >
-                <option value="">Engaged + Idle</option>
+                <option value="">Both</option>
                 <option value="engaged">Engaged Only</option>
                 <option value="idle">Idle Only</option>
               </select>
@@ -1876,94 +1918,130 @@ export default function Timetable() {
               No periods are created for {activeDay}. Add timetable slots to see engaged and idle teachers.
             </div>
           ) : (
-            <div className="mt-5 overflow-x-auto w-full max-w-full rounded-2xl border border-slate-100 dark:border-slate-800">
-              <div className="min-w-[1000px]">
-                <div className="hidden md:grid grid-cols-12 bg-slate-50 dark:bg-slate-850 px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-500">
-                  <div className="col-span-2">Period</div>
-                  <div className="col-span-5">Engaged in Class</div>
-                  <div className="col-span-5">Idle / Staff Room</div>
-                </div>
-                <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {periodWiseStatus.map((period) => (
+            <>
+            <div className="mt-5 flex items-center justify-between gap-3">
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                {periodWiseStatus.length} period{periodWiseStatus.length === 1 ? '' : 's'} - click a period to see who is in class and who is free
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPeriodOpen(Object.fromEntries(periodWiseStatus.map((p) => [p.key, true])))}
+                  className="rounded-xl border border-slate-200 dark:border-slate-800 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                >
+                  Expand all
+                </button>
+                <button
+                  onClick={() => setPeriodOpen(Object.fromEntries(periodWiseStatus.map((p) => [p.key, false])))}
+                  className="rounded-xl border border-slate-200 dark:border-slate-800 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                >
+                  Collapse all
+                </button>
+              </div>
+            </div>
+            <div className="mt-3 w-full max-w-full overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800">
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                {periodWiseStatus.map((period) => {
+                  const isOpen = periodOpen[period.key] ?? period.isCurrentPeriod;
+                  return (
                     <div
                       key={period.key}
-                      className={`grid grid-cols-1 gap-4 px-4 py-4 md:grid-cols-12 md:gap-3 ${
-                        period.isCurrentPeriod ? 'bg-emerald-50/80 dark:bg-emerald-950/20' : 'bg-white dark:bg-slate-900'
-                      }`}
+                      ref={period.isCurrentPeriod ? currentPeriodRef : undefined}
+                      className={period.isCurrentPeriod ? 'border-l-4 border-l-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/20' : 'border-l-4 border-l-transparent bg-white dark:bg-slate-900'}
                     >
-                    <div className="md:col-span-2">
-                      <div className="flex items-center gap-2">
-                        <span className={`flex size-8 items-center justify-center rounded-xl text-xs font-black ${
+                      <button
+                        type="button"
+                        onClick={() => setPeriodOpen((prev) => ({ ...prev, [period.key]: !isOpen }))}
+                        aria-expanded={isOpen}
+                        className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-slate-50/70 dark:hover:bg-slate-800/40"
+                      >
+                        <span className={`flex size-8 shrink-0 items-center justify-center rounded-xl text-xs font-black ${
                           period.isCurrentPeriod ? 'bg-emerald-600 text-white' : 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
                         }`}>
                           {period.periodNumber || '-'}
                         </span>
-                        <div>
-                          <p className="text-sm font-black text-slate-950 dark:text-white">{period.periodName}</p>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="truncate text-sm font-black text-slate-950 dark:text-white">{period.periodName}</p>
+                            {period.isCurrentPeriod && (
+                              <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">Now</span>
+                            )}
+                          </div>
                           <p className="text-xs font-semibold text-slate-500">{period.startTime} - {period.endTime}</p>
                         </div>
-                      </div>
-                    </div>
+                        <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+                          {period.engaged.length} engaged
+                        </span>
+                        <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
+                          {period.idle.length} idle
+                        </span>
+                        <ChevronDown className={`size-4 shrink-0 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                      </button>
 
-                    <div className="md:col-span-5">
-                      <p className="mb-2 text-[11px] font-black uppercase tracking-wider text-slate-400 md:hidden">Engaged in Class</p>
-                      {period.engaged.length === 0 ? (
-                        <p className="rounded-xl bg-slate-50 dark:bg-slate-850 px-3 py-2 text-xs font-semibold text-slate-500">
-                          No teacher assigned in this period
-                        </p>
-                      ) : (
-                        <div className="space-y-2">
-                          {period.engaged.map((item) => (
-                            <div key={item.key} className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 dark:border-emerald-900/50 dark:bg-emerald-950/20">
-                              <p className="text-sm font-black text-slate-950 dark:text-white">{item.teacherName}</p>
-                              <p className="text-xs font-semibold text-slate-600 dark:text-slate-350">
-                                {item.className}{item.sectionName ? ` - ${item.sectionName}` : ''} - {item.subjectName}
-                                {item.room ? ` - Room ${item.room}` : ''}
+                      {isOpen && (
+                        <div className="grid grid-cols-1 gap-4 px-4 pb-4 md:grid-cols-2">
+                          <div className="min-w-0">
+                            <p className="mb-1.5 text-[11px] font-black uppercase tracking-wider text-slate-400">Engaged in Class</p>
+                            {period.engaged.length === 0 ? (
+                              <p className="rounded-xl bg-slate-50 dark:bg-slate-850 px-3 py-1.5 text-xs font-semibold text-slate-500">
+                                No teacher assigned in this period
                               </p>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="md:col-span-5">
-                      <p className="mb-2 text-[11px] font-black uppercase tracking-wider text-slate-400 md:hidden">Idle / Staff Room</p>
-                      {period.idle.length === 0 ? (
-                        <p className="rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-300">
-                          All teachers are engaged in this period
-                        </p>
-                      ) : period.idleBySubject.length === 0 ? (
-                        <p className="rounded-xl bg-slate-50 dark:bg-slate-850 px-3 py-2 text-xs font-semibold text-slate-500">
-                          No idle teacher is qualified for this period's subjects
-                        </p>
-                      ) : (
-                        <div className="space-y-2.5">
-                          {period.idleBySubject.map((group) => (
-                            <div key={group.subjectName}>
-                              <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-slate-400">{group.subjectName}</p>
-                              <div className="flex flex-wrap gap-2">
-                                {group.teachers.map((teacher) => (
-                                  <button
-                                    key={`${period.key}-${group.subjectName}-${teacher.id}`}
-                                    onClick={() => handleAssignIdleTeacher(teacher, period, teacher.subjects.find((s) => s.name === group.subjectName)?.id)}
-                                    title={`Click to assign ${teacher.name} to this period`}
-                                    className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition active:scale-95 cursor-pointer dark:border-blue-950/50 dark:bg-blue-950/30 dark:text-blue-300 dark:hover:bg-blue-600 dark:hover:text-white"
-                                  >
-                                    <Plus className="size-3 shrink-0" />
-                                    {teacher.name}
-                                  </button>
+                            ) : (
+                              <div className="grid max-h-44 gap-1.5 overflow-y-auto pr-1">
+                                {period.engaged.map((item) => (
+                                  <div key={item.key} className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-1.5 dark:border-emerald-900/50 dark:bg-emerald-950/20">
+                                    <p className="truncate text-sm font-black text-slate-950 dark:text-white">{item.teacherName}</p>
+                                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-350">
+                                      {item.className}{item.sectionName ? ` - ${item.sectionName}` : ''} - {item.subjectName}
+                                      {item.room ? ` - Room ${item.room}` : ''}
+                                    </p>
+                                  </div>
                                 ))}
                               </div>
-                            </div>
-                          ))}
+                            )}
+                          </div>
+
+                          <div className="min-w-0">
+                            <p className="mb-1.5 text-[11px] font-black uppercase tracking-wider text-slate-400">Idle / Staff Room</p>
+                            {period.idle.length === 0 ? (
+                              <p className="rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-300">
+                                All teachers are engaged in this period
+                              </p>
+                            ) : period.idleBySubject.length === 0 ? (
+                              <p className="rounded-xl bg-slate-50 dark:bg-slate-850 px-3 py-1.5 text-xs font-semibold text-slate-500">
+                                No idle teacher is qualified for this period's subjects
+                              </p>
+                            ) : (
+                              <div className="max-h-44 space-y-2 overflow-y-auto pr-1">
+                                {period.idleBySubject.map((group) => (
+                                  <div key={group.subjectName}>
+                                    <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-slate-400">{group.subjectName}</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {group.teachers.map((teacher) => (
+                                        <button
+                                          key={`${period.key}-${group.subjectName}-${teacher.id}`}
+                                          onClick={() => handleAssignIdleTeacher(teacher, period, teacher.subjects.find((s) => s.name === group.subjectName)?.id)}
+                                          title={`Click to assign ${teacher.name} to this period`}
+                                          className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-700 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition active:scale-95 cursor-pointer dark:border-blue-950/50 dark:bg-blue-950/30 dark:text-blue-300 dark:hover:bg-blue-600 dark:hover:text-white"
+                                        >
+                                          <Plus className="size-3 shrink-0" />
+                                          {teacher.name}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
-          </div>
+            </>
+
         )}
         </div>
       )}
@@ -2098,7 +2176,7 @@ export default function Timetable() {
           </div>
           <DataTablePagination
             page={safeScheduledSlotsPage}
-            limit={TIMETABLE_PAGE_SIZE}
+            limit={SLOTS_PAGE_SIZE}
             total={activeDaySlots.length}
             totalPages={scheduledSlotsTotalPages}
             onPageChange={setScheduledSlotsPage}

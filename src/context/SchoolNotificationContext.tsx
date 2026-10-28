@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { createNotificationSocket } from "@/lib/notification-socket";
 import api from "@/lib/api/school-client";
 import { useAuth } from "@/context/SchoolAuthContext";
+import { toast } from "@/components/ui/sonner";
+import { Bell, Megaphone, MessageSquare, ClipboardCheck, BookOpen, Radio, X } from "lucide-react";
 
 export interface NotificationPreferences {
   desktopNotificationsEnabled: boolean;
@@ -76,6 +78,58 @@ const playChime = () => {
     console.error("Audio synthesis failed:", e);
   }
 };
+
+// Swiggy/Zomato-style "order update" card for a live notification — icon badge,
+// title/message, tap to open. Students only (see the socket handler below);
+// everyone else keeps the existing bell-dropdown + desktop-notification behavior.
+const LIVE_TOAST_STYLES: Record<string, { icon: React.ElementType; accent: string; bg: string }> = {
+  chat: { icon: MessageSquare, accent: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/30" },
+  announcement: { icon: Megaphone, accent: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/30" },
+  notice: { icon: Megaphone, accent: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/30" },
+  attendance: { icon: ClipboardCheck, accent: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/30" },
+  assignment: { icon: BookOpen, accent: "text-purple-600 dark:text-purple-400", bg: "bg-purple-50 dark:bg-purple-900/30" },
+  live_class: { icon: Radio, accent: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-900/30" },
+};
+
+function LiveNotificationToastCard({
+  notif,
+  onOpen,
+  onDismiss,
+}: {
+  notif: any;
+  onOpen: () => void;
+  onDismiss: () => void;
+}) {
+  const type = String(notif.type || notif.category || "").toLowerCase();
+  const style = LIVE_TOAST_STYLES[type] || { icon: Bell, accent: "text-slate-600 dark:text-slate-300", bg: "bg-slate-100 dark:bg-slate-800" };
+  const Icon = style.icon;
+  return (
+    <div
+      role="button"
+      onClick={onOpen}
+      className="flex w-[360px] max-w-[calc(100vw-2rem)] cursor-pointer items-start gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-2xl transition hover:-translate-y-0.5 dark:border-slate-800 dark:bg-slate-900"
+    >
+      <div className={`flex size-10 shrink-0 items-center justify-center rounded-full ${style.bg} ${style.accent}`}>
+        <Icon className="size-5" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{notif.title || "New notification"}</p>
+        <p className="mt-0.5 line-clamp-2 text-xs font-medium text-slate-500 dark:text-slate-400">{notif.message}</p>
+      </div>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onDismiss();
+        }}
+        className="shrink-0 rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"
+        aria-label="Dismiss"
+      >
+        <X className="size-4" />
+      </button>
+    </div>
+  );
+}
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
@@ -254,6 +308,28 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         // 4. Update state
         setNotifications(prev => [newNotif, ...prev]);
         setUnreadCount(prev => prev + 1);
+
+        // 4b. Live in-app toast (Swiggy/Zomato style slide-in) — students only.
+        // Everyone else still gets the existing bell dropdown + desktop notification.
+        const isStudent = String(user?.role || "").toUpperCase().split(",").map(r => r.trim()).includes("STUDENT");
+        if (isStudent) {
+          toast.custom((t) => (
+            <LiveNotificationToastCard
+              notif={newNotif}
+              onDismiss={() => toast.dismiss(t)}
+              onOpen={() => {
+                toast.dismiss(t);
+                if (!newNotif.isRead && newNotif.id) {
+                  api.patch(`/notifications/${newNotif.id}/read`).catch(() => {});
+                  setUnreadCount(prev => Math.max(0, prev - 1));
+                }
+                if (newNotif.actionUrl) {
+                  navigate(newNotif.actionUrl);
+                }
+              }}
+            />
+          ), { duration: 6000 });
+        }
 
         // 5. Play Sound
         if (currentSettings.soundEnabled) {

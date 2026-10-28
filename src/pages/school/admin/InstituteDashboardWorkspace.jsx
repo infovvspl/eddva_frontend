@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import {
   GraduationCap,
   Users,
@@ -18,7 +18,8 @@ import {
   IndianRupee,
   ChevronRight,
   Award,
-  Bell,
+  Cake,
+  Gift,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -43,6 +44,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import SmartCalendar from '@/components/school/SmartCalendar';
+import { useQuery } from '@tanstack/react-query';
+import { birthdaysApi, birthdaySubtitle } from '@/lib/api/birthdays';
+import FeeNoticesCard from '@/components/school/admin/FeeNoticesCard';
 import api from '@/lib/api/school-client';
 import { cn } from '@/lib/utils';
 
@@ -195,6 +199,32 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
     return () => { alive = false; };
   }, []);
   const navigate = useNavigate();
+  const { data: todaysBirthdays } = useQuery({
+    queryKey: ['school-birthdays', 1],
+    queryFn: () => birthdaysApi.upcoming(1),
+    staleTime: 5 * 60_000,
+  });
+  // Auto-scrolls the birthday list, pausing while the pointer is over it, looping at the bottom.
+  const birthdayListRef = useRef(null);
+  useEffect(() => {
+    const el = birthdayListRef.current;
+    if (!el || (todaysBirthdays?.length || 0) <= 3) return;
+    let paused = false;
+    const onEnter = () => { paused = true; };
+    const onLeave = () => { paused = false; };
+    el.addEventListener('pointerenter', onEnter);
+    el.addEventListener('pointerleave', onLeave);
+    const id = window.setInterval(() => {
+      if (paused) return;
+      if (el.scrollTop + el.clientHeight >= el.scrollHeight - 1) el.scrollTop = 0;
+      else el.scrollTop += 1;
+    }, 40);
+    return () => {
+      window.clearInterval(id);
+      el.removeEventListener('pointerenter', onEnter);
+      el.removeEventListener('pointerleave', onLeave);
+    };
+  }, [todaysBirthdays]);
   // Live flags computed by the dashboard API; the stored notifications are only a fallback
   // for an older backend that does not send them.
   const attentionFlags = Array.isArray(stats?.attentionFlags) ? stats.attentionFlags : flags;
@@ -615,33 +645,54 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
           </div>
         </Card>
 
-        {/* Recent Activity */}
-        <Card className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-lg shadow-slate-200/60 dark:shadow-none ring-1 ring-slate-100 dark:ring-0 rounded-2xl p-5 font-semibold flex flex-col">
-          <SectionHeading
-            icon={Bell}
-            tone="indigo"
-            title="Recent Activity"
-            description="Admissions, attendance, fees, results"
-            action={
-              <button onClick={() => navigate('/school/admin/notices')} className="text-xs font-semibold text-[#013889] hover:underline flex items-center gap-1 shrink-0">
-                View All <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            }
-          />
-          <div className="mt-3 space-y-1 flex-1">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-3 py-2">
-                <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
-                  <Clock className="w-4 h-4 text-slate-500" />
+        {/* Today's Birthdays — always light, regardless of app theme */}
+        <Card className="bg-white border border-slate-200/70 shadow-sm rounded-2xl p-4 font-semibold flex flex-col w-full">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="flex w-7 h-7 items-center justify-center rounded-full bg-pink-500 text-white shrink-0">
+                <Cake className="w-3.5 h-3.5" />
+              </span>
+              <p className="text-sm font-bold text-slate-900">Today's Birthdays</p>
+            </div>
+            <button onClick={() => navigate('/school/admin/notices')} className="text-[11px] font-semibold text-[#013889] hover:underline flex items-center gap-1 shrink-0">
+              View All <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <div ref={birthdayListRef} className="mt-3 space-y-1.5 flex-1 max-h-64 overflow-y-auto pr-1">
+            {!todaysBirthdays?.length ? (
+              <div className="flex items-center gap-2 py-1.5">
+                <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                  <Clock className="w-3.5 h-3.5 text-slate-500" />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">Syllabus behind schedule</p>
-                  <p className="text-[10px] font-semibold text-slate-400">3d ago</p>
-                </div>
+                <p className="text-xs font-semibold text-slate-400">No birthdays today</p>
               </div>
-            ))}
+            ) : (
+              todaysBirthdays.map((b) => (
+                <div key={b.userId} className="flex items-center gap-2 py-1.5">
+                  {b.avatar ? (
+                    <img src={b.avatar} alt="" className="w-7 h-7 rounded-full object-cover shrink-0" />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-[10px] font-bold text-slate-500">
+                      {b.name.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('')}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-slate-900 truncate">{b.name}</p>
+                    <p className="text-[10px] font-semibold text-slate-400 truncate">{birthdaySubtitle(b)}</p>
+                  </div>
+                  <span className="flex w-6 h-6 items-center justify-center rounded-full bg-pink-500 text-white shrink-0">
+                    <Gift className="w-3 h-3" />
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </Card>
+      </div>
+
+      {/* ── Fee Notices — deposits + what's due next, own row so it can't stretch siblings ── */}
+      <div className="px-4 md:px-6 mb-6">
+        <FeeNoticesCard />
       </div>
 
       {/* ── Calendar & Notices ── */}
@@ -696,6 +747,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
           </Card>
         </div>
       </div>
+
 
       {/* ── Fee Overview, Star Students, Support & Security ── */}
       <div className="px-4 md:px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

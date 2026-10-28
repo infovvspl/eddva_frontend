@@ -64,6 +64,12 @@ export const parentClient = {
       .then(extractData)
       .catch((e) => logParentApiError('getScreenTimeYear', `/school/parent/students/${studentId}/screen-time/year`, e)),
 
+  /** Per-category time-open vs. verified-engagement breakdown (games, assignments, doubts, etc.). */
+  getScreenTimeActivity: (studentId: string, range: 'today' | 'week' | 'month' | 'year' = 'week') =>
+    schoolApi.get(`/parent/students/${studentId}/screen-time/activity?range=${range}`)
+      .then(extractData)
+      .catch((e) => logParentApiError('getScreenTimeActivity', `/school/parent/students/${studentId}/screen-time/activity`, e)),
+
   getFeeSummary: (studentId: string) =>
     schoolApi.get(`/parent/students/${studentId}/fees`)
       .then(extractData)

@@ -17,7 +17,16 @@ const TYPE_OPTIONS = [
 
 const LOW_ATTENDANCE_THRESHOLD = 75;
 
-function AttendanceRing({ value }) {
+// The % is always a rolling trend, never just the day being viewed — this
+// mirrors the backend window (trailing 30 days by default, or the picked
+// week/month range) so the tooltip doesn't drift out of sync with it.
+function getPercentagePeriodLabel(filterType) {
+  if (filterType === 'weekly') return 'this week';
+  if (filterType === 'monthly') return 'this month';
+  return 'last 30 days';
+}
+
+function AttendanceRing({ value, periodLabel }) {
   if (typeof value !== 'number') {
     return <span className="text-surface-400">-</span>;
   }
@@ -57,17 +66,16 @@ function AttendanceRing({ value }) {
         </svg>
         <span className="absolute text-[10px] font-bold text-surface-700">{Math.round(pct)}%</span>
       </div>
-      {isLow && (
-        <>
-          <AlertTriangle className="size-4 shrink-0 text-red-600" />
-          <span className="pointer-events-none absolute -top-9 left-1/2 z-10 -translate-x-1/2 scale-0 whitespace-nowrap rounded bg-surface-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">
-            Low attendance: below {LOW_ATTENDANCE_THRESHOLD}%
-          </span>
-        </>
-      )}
+      <span className="pointer-events-none absolute -top-9 left-1/2 z-10 -translate-x-1/2 scale-0 whitespace-nowrap rounded bg-surface-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">
+        {isLow ? `Low attendance (${periodLabel}): below ${LOW_ATTENDANCE_THRESHOLD}%` : `Attendance over ${periodLabel}`}
+      </span>
+      {isLow && <AlertTriangle className="size-4 shrink-0 text-red-600" />}
     </div>
   );
 }
+
+// Shared look for the filter dropdowns: same 40px height as the text inputs next to them.
+const FILTER_SELECT = 'flex h-10 w-full items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-50';
 
 export default function Attendance() {
   const [attendance, setAttendance] = useState([]);
@@ -265,7 +273,7 @@ export default function Attendance() {
         <p className="mt-1 text-xs sm:text-sm text-surface-500">Track student and teacher attendance.</p>
       </div>
 
-      <div className="mb-6 rounded-lg border border-surface-200 bg-white p-3 shadow-sm">
+      <div className="mb-6 rounded-2xl border border-slate-200 bg-gradient-to-br from-blue-50/60 via-white to-slate-50 p-4 shadow-none">
         {/* ── Mobile Layout Filters ── */}
         <div className="flex flex-col md:hidden gap-3">
           <div className="flex items-center justify-between gap-2">
@@ -295,7 +303,7 @@ export default function Attendance() {
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
               placeholder="Search user..."
-              className="w-full rounded-lg border border-surface-200 py-2 pl-9 pr-3 text-sm font-semibold text-surface-900 outline-none placeholder:text-surface-400 focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+              className="h-10 w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-medium placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
             />
           </div>
 
@@ -303,8 +311,9 @@ export default function Attendance() {
             <div className="flex flex-col gap-3 pt-3 border-t border-surface-100">
               {/* Type filter */}
               <div className="w-full">
-                <label className="mb-1 block text-xs font-semibold text-surface-700">Type</label>
+                <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">Type</label>
                 <CustomSelect
+                  triggerClassName={FILTER_SELECT}
                   onChange={setFilterType}
                   value={filterType}
                   options={TYPE_OPTIONS}
@@ -315,30 +324,31 @@ export default function Attendance() {
               {/* Date / Month picker, depending on Type */}
               {filterType === 'monthly' ? (
                 <div className="w-full">
-                  <label className="mb-1 block text-xs font-semibold text-surface-700">Month</label>
+                  <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">Month</label>
                   <input
                     type="month"
                     value={filterMonth}
                     onChange={(e) => setFilterMonth(e.target.value)}
-                    className="w-full rounded-lg border border-surface-200 px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-medium placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
               ) : (
                 <div className="w-full">
-                  <label className="mb-1 block text-xs font-semibold text-surface-700">{filterType === 'weekly' ? 'Week of' : 'Date'}</label>
+                  <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">{filterType === 'weekly' ? 'Week of' : 'Date'}</label>
                   <input
                     type="date"
                     value={filterDate}
                     onChange={(e) => setFilterDate(e.target.value)}
-                    className="w-full rounded-lg border border-surface-200 px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-medium placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
               )}
 
               {/* Role filter (Teacher/Student) */}
               <div className="w-full">
-                <label className="mb-1 block text-xs font-semibold text-surface-700">Role</label>
+                <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">Role</label>
                 <CustomSelect
+                  triggerClassName={FILTER_SELECT}
                   onChange={handleRoleFilterChange}
                   value={selectedRole}
                   options={[
@@ -355,8 +365,9 @@ export default function Attendance() {
               {selectedRole === 'STUDENT' && (
                 <>
                   <div className="w-full">
-                    <label className="mb-1 block text-xs font-semibold text-surface-700">Class</label>
+                    <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">Class</label>
                     <CustomSelect
+                      triggerClassName={FILTER_SELECT}
                       onChange={handleClassFilterChange}
                       value={selectedClassId}
                       options={[
@@ -369,8 +380,9 @@ export default function Attendance() {
 
                   {selectedClassId && sections.length > 0 && (
                     <div className="w-full">
-                      <label className="mb-1 block text-xs font-semibold text-surface-700">Section</label>
+                      <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">Section</label>
                       <CustomSelect
+                        triggerClassName={FILTER_SELECT}
                         onChange={handleSectionFilterChange}
                         value={selectedSectionId}
                         options={[
@@ -383,13 +395,13 @@ export default function Attendance() {
                   )}
 
                   <div className="w-full">
-                    <label className="mb-1 block text-xs font-semibold text-surface-700">Roll Number</label>
+                    <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">Roll Number</label>
                     <input
                       type="text"
                       value={rollNoQuery}
                       onChange={(e) => { setRollNoQuery(e.target.value); setPage(1); }}
                       placeholder="Search roll number..."
-                      className="w-full rounded-lg border border-surface-200 px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                      className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-medium placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                     />
                   </div>
                 </>
@@ -398,8 +410,9 @@ export default function Attendance() {
               {/* Teacher Name filter — only when Role = Teacher */}
               {selectedRole === 'TEACHER' && (
                 <div className="w-full">
-                  <label className="mb-1 block text-xs font-semibold text-surface-700">Teacher Name</label>
+                  <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">Teacher Name</label>
                   <CustomSelect
+                    triggerClassName={FILTER_SELECT}
                     onChange={setSelectedTeacherId}
                     value={selectedTeacherId}
                     options={[
@@ -413,8 +426,9 @@ export default function Attendance() {
 
               {/* Status filter */}
               <div className="w-full">
-                <label className="mb-1 block text-xs font-semibold text-surface-700">Status</label>
+                <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">Status</label>
                 <CustomSelect
+                  triggerClassName={FILTER_SELECT}
                   onChange={setSelectedStatus}
                   value={selectedStatus}
                   options={[
@@ -431,7 +445,7 @@ export default function Attendance() {
               <div className="flex justify-end mt-2 pt-2 border-t border-surface-100">
                 <button
                   onClick={handleClearFilters}
-                  className="text-sm font-semibold text-brand-600 hover:text-brand-700"
+                  className="rounded-lg px-3 py-1.5 text-xs font-bold text-rose-600 transition-colors hover:bg-rose-50"
                 >
                   Clear Filters
                 </button>
@@ -441,11 +455,12 @@ export default function Attendance() {
         </div>
 
         {/* ── Desktop Layout Filters ── */}
-        <div className="hidden md:flex flex-wrap items-center gap-3">
+        <div className="hidden md:flex flex-wrap items-end gap-3">
           {/* Type filter */}
           <div className="w-36">
-            <label className="mb-1 block text-xs font-semibold text-surface-700">Type</label>
+            <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">Type</label>
             <CustomSelect
+              triggerClassName={FILTER_SELECT}
               onChange={setFilterType}
               value={filterType}
               options={TYPE_OPTIONS}
@@ -456,42 +471,46 @@ export default function Attendance() {
           {/* Date / Month picker, depending on Type */}
           {filterType === 'monthly' ? (
             <div className="w-36">
-              <label className="mb-1 block text-xs font-semibold text-surface-700">Month</label>
+              <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">Month</label>
               <input
                 type="month"
                 value={filterMonth}
                 onChange={(e) => setFilterMonth(e.target.value)}
-                className="w-full rounded-lg border border-surface-200 px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-medium placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
               />
             </div>
           ) : (
             <div className="w-36">
-              <label className="mb-1 block text-xs font-semibold text-surface-700">{filterType === 'weekly' ? 'Week of' : 'Date'}</label>
+              <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">{filterType === 'weekly' ? 'Week of' : 'Date'}</label>
               <input
                 type="date"
                 value={filterDate}
                 onChange={(e) => setFilterDate(e.target.value)}
-                className="w-full rounded-lg border border-surface-200 px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-medium placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
               />
             </div>
           )}
 
           {/* Search filter */}
           <div className="w-44">
-            <label className="mb-1 block text-xs font-semibold text-surface-700">Search Name</label>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-              placeholder="Search user..."
-              className="w-full rounded-lg border border-surface-200 px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
-            />
+            <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">Search Name</label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+                placeholder="Search user..."
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-medium placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              />
+            </div>
           </div>
 
           {/* Role filter (Teacher/Student) */}
           <div className="w-36">
-            <label className="mb-1 block text-xs font-semibold text-surface-700">Role</label>
+            <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">Role</label>
             <CustomSelect
+              triggerClassName={FILTER_SELECT}
               onChange={handleRoleFilterChange}
               value={selectedRole}
               options={[
@@ -508,8 +527,9 @@ export default function Attendance() {
           {selectedRole === 'STUDENT' && (
             <>
               <div className="w-40">
-                <label className="mb-1 block text-xs font-semibold text-surface-700">Class</label>
+                <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">Class</label>
                 <CustomSelect
+                  triggerClassName={FILTER_SELECT}
                   onChange={handleClassFilterChange}
                   value={selectedClassId}
                   options={[
@@ -522,8 +542,9 @@ export default function Attendance() {
 
               {selectedClassId && sections.length > 0 && (
                 <div className="w-40">
-                  <label className="mb-1 block text-xs font-semibold text-surface-700">Section</label>
+                  <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">Section</label>
                   <CustomSelect
+                    triggerClassName={FILTER_SELECT}
                     onChange={handleSectionFilterChange}
                     value={selectedSectionId}
                     options={[
@@ -536,13 +557,13 @@ export default function Attendance() {
               )}
 
               <div className="w-36">
-                <label className="mb-1 block text-xs font-semibold text-surface-700">Roll Number</label>
+                <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">Roll Number</label>
                 <input
                   type="text"
                   value={rollNoQuery}
                   onChange={(e) => { setRollNoQuery(e.target.value); setPage(1); }}
                   placeholder="Roll no..."
-                  className="w-full rounded-lg border border-surface-200 px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-medium placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                 />
               </div>
             </>
@@ -551,8 +572,9 @@ export default function Attendance() {
           {/* Teacher Name - only when Role = Teacher */}
           {selectedRole === 'TEACHER' && (
             <div className="w-44">
-              <label className="mb-1 block text-xs font-semibold text-surface-700">Teacher Name</label>
+              <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">Teacher Name</label>
               <CustomSelect
+                triggerClassName={FILTER_SELECT}
                 onChange={setSelectedTeacherId}
                 value={selectedTeacherId}
                 options={[
@@ -566,8 +588,9 @@ export default function Attendance() {
 
           {/* Status filter */}
           <div className="w-36">
-            <label className="mb-1 block text-xs font-semibold text-surface-700">Status</label>
+            <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">Status</label>
             <CustomSelect
+              triggerClassName={FILTER_SELECT}
               onChange={setSelectedStatus}
               value={selectedStatus}
               options={[
@@ -584,7 +607,7 @@ export default function Attendance() {
           <div className="ml-auto">
             <button
               onClick={handleClearFilters}
-              className="text-sm font-semibold text-brand-600 hover:text-brand-700"
+              className="h-10 rounded-xl border border-rose-200 bg-rose-50 px-4 text-xs font-bold text-rose-600 transition-colors hover:bg-rose-100"
             >
               Clear
             </button>
@@ -603,7 +626,10 @@ export default function Attendance() {
                 {selectedRole === 'STUDENT' && <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Class / Section</TableHead>}
                 <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Date</TableHead>
                 <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Status</TableHead>
-                <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Attendance %</TableHead>
+                <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">
+                  Attendance %
+                  <span className="block text-[10px] font-normal normal-case text-surface-400">({getPercentagePeriodLabel(filterType)})</span>
+                </TableHead>
                 <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -656,7 +682,7 @@ export default function Attendance() {
                       </Badge>
                     </TableCell>
                     <TableCell className="p-4 px-6 py-4 text-surface-600">
-                      <AttendanceRing value={record.attendancePercentage} />
+                      <AttendanceRing value={record.attendancePercentage} periodLabel={getPercentagePeriodLabel(filterType)} />
                     </TableCell>
                     <TableCell className="p-4 px-6 py-4">
                       <div className="flex gap-2">
@@ -742,8 +768,8 @@ export default function Attendance() {
                   <span className="font-semibold block mt-0.5">{new Date(record.date).toLocaleDateString()}</span>
                 </div>
                 <div>
-                  <span className="block text-[9px] uppercase tracking-wider text-surface-400 font-bold">Attendance %</span>
-                  <span className="font-semibold block mt-0.5"><AttendanceRing value={record.attendancePercentage} /></span>
+                  <span className="block text-[9px] uppercase tracking-wider text-surface-400 font-bold">Attendance % ({getPercentagePeriodLabel(filterType)})</span>
+                  <span className="font-semibold block mt-0.5"><AttendanceRing value={record.attendancePercentage} periodLabel={getPercentagePeriodLabel(filterType)} /></span>
                 </div>
               </div>
 
