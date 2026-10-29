@@ -7,19 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { useTeacherDetail } from "@/hooks/use-admin";
-
-const statusColors: Record<string, string> = {
-  active: "bg-emerald-500/10 text-emerald-600",
-  pending_verification: "bg-amber-500/10 text-amber-600",
-  suspended: "bg-red-500/10 text-red-600",
-  inactive: "bg-gray-500/10 text-gray-500",
-};
-
-const batchStatusColors: Record<string, string> = {
-  active: "bg-emerald-500/10 text-emerald-600",
-  inactive: "bg-gray-500/10 text-gray-500",
-  completed: "bg-blue-500/10 text-blue-600",
-};
+import { StatusBadge, toStatusBadgeKey } from "@/components/admin/StatusBadge";
 
 const TeacherDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -66,9 +54,7 @@ const TeacherDetailPage = () => {
             <div>
               <h1 className="text-xl font-bold text-foreground">{teacher.fullName}</h1>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${statusColors[status] || statusColors.inactive}`}>
-                  {status === "pending_verification" ? "Pending" : status}
-                </span>
+                <StatusBadge status={toStatusBadgeKey(status)} label={status === "pending_verification" ? "Pending" : status} />
                 <span className="text-xs text-muted-foreground">
                   Joined {new Date(teacher.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                 </span>
@@ -170,9 +156,7 @@ const TeacherDetailPage = () => {
                     }
                   </TableCell>
                   <TableCell className="p-4">
-                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${batchStatusColors[b.status] || batchStatusColors.inactive}`}>
-                      {b.status}
-                    </span>
+                    <StatusBadge status={toStatusBadgeKey(b.status)} label={b.status} />
                   </TableCell>
                 </TableRow>
               ))}

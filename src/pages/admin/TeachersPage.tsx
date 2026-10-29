@@ -5,7 +5,6 @@ import {
   Plus, Loader2, GraduationCap, X, Copy, Check,
   Upload, Download, AlertCircle, Mail, Users, ChevronDown, Shield, Search
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { useTeachers, useCreateTeacher, useBulkCreateTeachers, useBatches } from "@/hooks/use-admin";
 import { useRoles } from "@/hooks/use-roles";
@@ -13,6 +12,9 @@ import type { BulkTeacherRow } from "@/lib/api/admin";
 import { useAuthStore } from "@/lib/auth-store";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { StatusBadge, toStatusBadgeKey } from "@/components/admin/StatusBadge";
+import { adminButton } from "@/components/admin/adminButtonVariants";
+import { cn } from "@/lib/utils";
 
 type View = "list" | "add-single" | "add-bulk" | "created" | "bulk-result";
 
@@ -192,23 +194,23 @@ const TeachersPage = () => {
           view === "list" ? (
             <>
               {isStaffBased && (
-                <Button variant="outline" onClick={() => navigate("/admin/roles")} className="gap-2 border-slate-200 text-slate-700 rounded-[1.25rem] h-[42px] font-bold">
+                <button onClick={() => navigate("/admin/roles")} className={cn(adminButton.secondary, "rounded-[1.25rem]")}>
                   <Shield className="w-4 h-4 shrink-0" /> Manage Roles
-                </Button>
+                </button>
               )}
               {!isStaffBased && (
-                <Button variant="outline" onClick={() => setView("add-bulk")} className="gap-2 border-slate-200 text-slate-700 rounded-[1.25rem] h-[42px] font-bold">
+                <button onClick={() => setView("add-bulk")} className={cn(adminButton.secondary, "rounded-[1.25rem]")}>
                   <Upload className="w-4 h-4 shrink-0" /> Bulk Import
-                </Button>
+                </button>
               )}
-              <Button onClick={() => setView("add-single")} className="gap-2 rounded-[1.25rem] h-[42px] font-bold shadow-sm" style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}>
+              <button onClick={() => setView("add-single")} className={cn(adminButton.primary, "rounded-[1.25rem]")}>
                 <Plus className="w-4 h-4 shrink-0" /> {isStaffBased ? "Add Staff Member" : "Add Teacher"}
-              </Button>
+              </button>
             </>
           ) : (
-            <Button variant="ghost" onClick={resetView} className="gap-2 rounded-[1.25rem] h-[42px] font-bold">
+            <button onClick={resetView} className={cn(adminButton.ghost, "rounded-[1.25rem]")}>
               <X className="w-4 h-4 shrink-0" /> Cancel
-            </Button>
+            </button>
           )
         }
       />
@@ -288,9 +290,9 @@ const TeachersPage = () => {
             </div>
 
             <div className="flex justify-end pt-2">
-              <Button type="submit" disabled={createTeacher.isPending || !form.fullName || form.phoneNumber.length < 10 || !form.email} className="px-6 h-11 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-sm">
+              <button type="submit" disabled={createTeacher.isPending || !form.fullName || form.phoneNumber.length < 10 || !form.email} className={cn(adminButton.primary, "px-6 rounded-2xl")}>
                 {createTeacher.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : isStaffBased ? "Create Staff Member" : "Create Teacher"}
-              </Button>
+              </button>
             </div>
           </motion.form>
         )}
@@ -326,7 +328,7 @@ const TeachersPage = () => {
             <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
               <Mail className="w-3.5 h-3.5" /> Credentials email sent to {createdResult.teacher.email}
             </div>
-            <Button variant="ghost" onClick={resetView} className="mt-3 text-sm">Done</Button>
+            <button onClick={resetView} className={cn(adminButton.ghost, "mt-3 min-h-9 text-sm")}>Done</button>
           </motion.div>
         )}
 
@@ -337,18 +339,18 @@ const TeachersPage = () => {
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-foreground">Bulk Import Teachers</h3>
-              <Button variant="outline" size="sm" onClick={downloadTemplate} className="gap-2 text-xs">
+              <button onClick={downloadTemplate} className={cn(adminButton.secondary, "min-h-9 text-xs")}>
                 <Download className="w-3.5 h-3.5" /> Download Template
-              </Button>
+              </button>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
               Upload a CSV file with columns: <code className="bg-secondary px-1.5 py-0.5 rounded text-xs">Full Name, Phone Number, Email</code>
             </p>
 
             <input ref={fileRef} type="file" accept=".csv" onChange={handleCsvUpload} className="hidden" />
-            <Button variant="outline" onClick={() => fileRef.current?.click()} className="gap-2 mb-4">
+            <button onClick={() => fileRef.current?.click()} className={cn(adminButton.secondary, "mb-4")}>
               <Upload className="w-4 h-4" /> Choose CSV File
-            </Button>
+            </button>
 
             {csvError && (
               <div className="flex items-center gap-2 text-red-500 text-sm mb-4">
@@ -381,11 +383,11 @@ const TeachersPage = () => {
                   </Table>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Button onClick={handleBulkSubmit} disabled={bulkCreate.isPending} className="gap-2">
+                  <button onClick={handleBulkSubmit} disabled={bulkCreate.isPending} className={adminButton.primary}>
                     {bulkCreate.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                     Import {csvRows.length} Teachers
-                  </Button>
-                  <Button variant="ghost" onClick={() => { setCsvRows([]); setCsvError(""); }}>Clear</Button>
+                  </button>
+                  <button onClick={() => { setCsvRows([]); setCsvError(""); }} className={cn(adminButton.ghost, "min-h-9")}>Clear</button>
                 </div>
               </>
             )}
@@ -434,11 +436,7 @@ const TeachersPage = () => {
                         ) : "—"}
                       </TableCell>
                       <TableCell className="p-3">
-                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${
-                          r.status === "created" ? "bg-emerald-500/10 text-emerald-600" : "bg-orange-500/10 text-orange-600"
-                        }`}>
-                          {r.status}
-                        </span>
+                        <StatusBadge status={toStatusBadgeKey(r.status)} label={r.status} />
                         {r.error && <span className="text-xs text-red-400 ml-2">{r.error}</span>}
                       </TableCell>
                     </TableRow>
@@ -449,7 +447,7 @@ const TeachersPage = () => {
             <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
               <Mail className="w-3.5 h-3.5" /> Credentials emailed to all created teachers
             </div>
-            <Button variant="ghost" onClick={resetView} className="mt-3 text-sm">Done</Button>
+            <button onClick={resetView} className={cn(adminButton.ghost, "mt-3 min-h-9 text-sm")}>Done</button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -545,11 +543,7 @@ const TeachersPage = () => {
                     </TableCell>
                   )}
                   <TableCell className="p-4">
-                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                      (t.status || "").toLowerCase() === "active" ? "bg-emerald-500/10 text-emerald-600" : "bg-orange-500/10 text-orange-600"
-                    }`}>
-                      {t.status}
-                    </span>
+                    <StatusBadge status={toStatusBadgeKey(t.status)} label={t.status} />
                   </TableCell>
                 </TableRow>
               ))}

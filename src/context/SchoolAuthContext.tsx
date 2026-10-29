@@ -221,7 +221,10 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
 
-      if (token && storeUser && tenantType === "school") {
+      // super_admin only ever exists on the coaching side — a stale/leftover
+      // tenantType of "school" from earlier testing must never make this
+      // hydrate check validate (and on 401, wipe) a valid coaching session.
+      if (token && storeUser && tenantType === "school" && storeUser.role !== "super_admin") {
         try {
           const res = await apiClient.get("/school/auth/me");
           const me = res.data?.data ?? res.data;

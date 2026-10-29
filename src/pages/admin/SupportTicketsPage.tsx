@@ -34,6 +34,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { StatusBadge, toStatusBadgeKey } from '@/components/admin/StatusBadge';
 
 export default function SupportTicketsPage() {
   const navigate = useNavigate();
@@ -334,30 +335,14 @@ export default function SupportTicketsPage() {
                         </span>
                         <div className="flex items-center gap-1.5 flex-wrap justify-end">
                           {t.escalationStatus === 'ESCALATED' && (
-                            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-purple-600 border border-purple-100 bg-purple-50 rounded-md px-2 py-0.5">
-                              <ShieldAlert className="h-3 w-3 shrink-0" /> Escalated
-                            </span>
+                            <StatusBadge
+                              status="escalated"
+                              className="gap-0.5 text-[10px]"
+                              label={<><ShieldAlert className="h-3 w-3 shrink-0" /> Escalated</>}
+                            />
                           )}
-                          <span
-                            className={cn(
-                              'rounded-md px-2 py-0.5 text-[10px] font-bold border',
-                              prio.bg,
-                              prio.text,
-                              prio.border,
-                            )}
-                          >
-                            {prio.label}
-                          </span>
-                          <span
-                            className={cn(
-                              'rounded-md px-2 py-0.5 text-[10px] font-bold border',
-                              stat.bg,
-                              stat.text,
-                              stat.border,
-                            )}
-                          >
-                            {stat.label}
-                          </span>
+                          <StatusBadge status={toStatusBadgeKey(t.priority)} label={prio.label} className="text-[10px]" />
+                          <StatusBadge status={toStatusBadgeKey(t.status)} label={stat.label} className="text-[10px]" />
                         </div>
                       </div>
 
@@ -431,28 +416,10 @@ export default function SupportTicketsPage() {
                           </TableCell>
                           <TableCell className="px-5 py-4 text-slate-600">{t.category}</TableCell>
                           <TableCell className="px-5 py-4">
-                            <span
-                              className={cn(
-                                'rounded-md px-2 py-0.5 text-[11px] font-bold border',
-                                prio.bg,
-                                prio.text,
-                                prio.border,
-                              )}
-                            >
-                              {prio.label}
-                            </span>
+                            <StatusBadge status={toStatusBadgeKey(t.priority)} label={prio.label} className="text-[11px]" />
                           </TableCell>
                           <TableCell className="px-5 py-4">
-                            <span
-                              className={cn(
-                                'rounded-md px-2 py-0.5 text-[11px] font-bold border',
-                                stat.bg,
-                                stat.text,
-                                stat.border,
-                              )}
-                            >
-                              {stat.label}
-                            </span>
+                            <StatusBadge status={toStatusBadgeKey(t.status)} label={stat.label} className="text-[11px]" />
                           </TableCell>
                           <TableCell className="px-5 py-4 text-slate-500 font-normal">
                             {new Date(t.updatedAt).toLocaleDateString()}

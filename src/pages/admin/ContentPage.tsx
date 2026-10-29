@@ -37,6 +37,7 @@ import {
 import * as adminApi from "@/lib/api/admin";
 import type { TopicResourceType, Subject, Chapter, Topic, TopicResource, BulkImportPayload, BulkImportSubject } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
+import { StatusBadge, toStatusBadgeKey } from "@/components/admin/StatusBadge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog";
 import { IfAiFeature } from "@/components/ai/AiFeatureGate";
@@ -620,11 +621,6 @@ function AddResourceModal({
 
 function CompactLectureRow({ lec, onPlay }: { lec: AdminTopicLectureRow; onPlay: () => void }) {
   const videoHref = lec.videoUrl ? resolveUrl(lec.videoUrl) : "";
-  const s = (lec.status || "").toLowerCase();
-  const statusCls = s === "published" ? "text-emerald-700 bg-emerald-50 border-emerald-100"
-    : s === "live" ? "text-red-700 bg-red-50 border-red-100"
-      : s === "scheduled" ? "text-amber-700 bg-amber-50 border-amber-100"
-        : "text-slate-500 bg-slate-100 border-slate-200";
   return (
     <div className="group flex items-center gap-3 p-3 rounded-2xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all">
       <div
@@ -647,7 +643,7 @@ function CompactLectureRow({ lec, onPlay }: { lec: AdminTopicLectureRow; onPlay:
           {lec.title}
         </p>
         <div className="flex items-center gap-2 mt-0.5">
-          <span className={cn("text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full border", statusCls)}>{lec.status}</span>
+          <StatusBadge status={toStatusBadgeKey(lec.status)} label={lec.status} className="text-[10px] uppercase tracking-wide" />
           {lec.scheduledAt && <span className="text-[10px] text-slate-400">{new Date(lec.scheduledAt).toLocaleDateString()}</span>}
         </div>
       </div>
@@ -1592,9 +1588,9 @@ function getTopicStatus(tc: TopicCoverage): "empty" | "in_progress" | "completed
 }
 
 function topicStatusLabel(s: "empty" | "in_progress" | "completed") {
-  if (s === "empty") return { label: "Empty", className: "bg-slate-100 text-slate-600 border-slate-200" };
-  if (s === "completed") return { label: "100%", className: "bg-emerald-50 text-emerald-800 border-emerald-200" };
-  return { label: "In progress", className: "bg-amber-50 text-amber-900 border-amber-200" };
+  if (s === "empty") return { label: "Empty", status: "draft" as const };
+  if (s === "completed") return { label: "100%", status: "active" as const };
+  return { label: "In progress", status: "scheduled" as const };
 }
 
 function ContentCoverageOverview({
@@ -2409,9 +2405,7 @@ function TopicBrowseView({
                     </div>
                   </div>
                   <div className="flex shrink-0 items-center gap-2 sm:flex-col sm:items-end sm:justify-between">
-                    <span className={cn("rounded-full border px-2.5 py-0.5 text-[10px] font-black", statusUi.className)}>
-                      {statusUi.label}
-                    </span>
+                    <StatusBadge status={statusUi.status} label={statusUi.label} className="text-[10px]" />
                     <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-100 bg-slate-50 text-slate-300 transition-all group-hover:border-violet-200 group-hover:bg-violet-50 group-hover:text-violet-700">
                       <ChevronRight className="h-5 w-5" />
                     </span>
@@ -3456,16 +3450,6 @@ type AdminTopicLectureRow = {
   thumbnailUrl?: string | null;
 };
 
-function lectureStatusStyles(status: string) {
-  const s = (status || "").toLowerCase();
-  if (s === "published") return "bg-emerald-100 text-emerald-800";
-  if (s === "live") return "bg-red-100 text-red-800";
-  if (s === "scheduled") return "bg-amber-100 text-amber-900";
-  if (s === "ended") return "bg-slate-100 text-slate-700";
-  if (s === "draft" || s === "processing") return "bg-slate-100 text-slate-500";
-  return "bg-slate-100 text-slate-600";
-}
-
 function LectureAdminCard({ lec }: { lec: AdminTopicLectureRow }) {
   const videoHref = lec.videoUrl ? resolveUrl(lec.videoUrl) : "";
   const ytId = videoHref && isYouTube(videoHref) ? getYouTubeId(videoHref) : null;
@@ -3476,9 +3460,7 @@ function LectureAdminCard({ lec }: { lec: AdminTopicLectureRow }) {
         <div className="min-w-0 flex-1">
           <p className="text-sm font-black text-slate-900 leading-snug">{lec.title}</p>
           <div className="flex flex-wrap items-center gap-2 mt-1.5">
-            <span className={cn("text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full", lectureStatusStyles(lec.status))}>
-              {lec.status}
-            </span>
+            <StatusBadge status={toStatusBadgeKey(lec.status)} label={lec.status} className="text-[10px] uppercase tracking-wide" />
             <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full uppercase">
               {lec.type}
             </span>
@@ -3544,13 +3526,7 @@ function LectureAdminCard({ lec }: { lec: AdminTopicLectureRow }) {
 // ─── Course Card (used in grid) ───────────────────────────────────────────────
 
 function CourseCard({ batch, onClick }: { batch: any; onClick: () => void }) {
-  const statusColor =
-    batch.status === "active" ? "#10B981" :
-      batch.status === "completed" ? "#3B82F6" : "#94A3B8";
-  const statusBg =
-    batch.status === "active" ? "bg-emerald-50 text-emerald-700" :
-      batch.status === "completed" ? "bg-blue-50 text-blue-700" :
-        "bg-slate-100 text-slate-500";
+  const [thumbError, setThumbError] = useState(false);
 
   return (
     <motion.button
@@ -3559,11 +3535,12 @@ function CourseCard({ batch, onClick }: { batch: any; onClick: () => void }) {
       onClick={onClick}
       className="group bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-blue-200 text-left overflow-hidden transition-all w-full"
     >
-      {/* Thumbnail or gradient */}
-      {batch.thumbnailUrl ? (
+      {/* Thumbnail, or a graceful icon fallback if missing/broken */}
+      {batch.thumbnailUrl && !thumbError ? (
         <img
           src={resolveUrl(batch.thumbnailUrl)}
           alt={batch.name}
+          onError={() => setThumbError(true)}
           className="w-full h-24 sm:h-36 object-cover"
         />
       ) : (
@@ -3577,9 +3554,7 @@ function CourseCard({ batch, onClick }: { batch: any; onClick: () => void }) {
       <div className="p-3 sm:p-4">
         {/* Badges row */}
         <div className="flex items-center gap-1.5 sm:gap-2 mb-2 flex-wrap">
-          <span className={cn("text-[9px] sm:text-[10px] font-black uppercase tracking-wide px-1.5 sm:px-2 py-0.5 rounded-full", statusBg)}>
-            {batch.status}
-          </span>
+          <StatusBadge status={toStatusBadgeKey(batch.status)} label={batch.status} className="text-[9px] sm:text-[10px] uppercase tracking-wide" />
           {batch.examTarget && (
             <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 bg-slate-50 px-1.5 sm:px-2 py-0.5 rounded-full">
               {batch.examTarget}
@@ -3605,7 +3580,6 @@ function CourseCard({ batch, onClick }: { batch: any; onClick: () => void }) {
         {/* Stats row */}
         <div className="flex items-center gap-3 pt-3 border-t border-slate-100 mt-3">
           <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
-            <span className="w-1.5 h-1.5 rounded-full" style={{ background: statusColor }} />
             <Users className="w-3 h-3" />
             {batch.enrolledCount ?? batch.studentCount ?? 0} enrolled
           </div>
@@ -3674,11 +3648,6 @@ function ContentBatchLayout() {
     );
   }
 
-  const statusBg =
-    batch.status === "active" ? "bg-emerald-100 text-emerald-700" :
-      batch.status === "completed" ? "bg-blue-100 text-blue-700" :
-        "bg-slate-100 text-slate-500";
-
   const ctx: ContentBatchOutletCtx = { batch, setShowAddSubject, setShowBulkImport };
 
   return (
@@ -3701,7 +3670,7 @@ function ContentBatchLayout() {
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="truncate text-lg font-black tracking-tight text-slate-900 sm:text-xl">{batch.name}</h1>
                 {batch.status != null && (
-                  <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase", statusBg)}>{batch.status}</span>
+                  <StatusBadge status={toStatusBadgeKey(batch.status)} label={batch.status} className="shrink-0 text-[10px] uppercase" />
                 )}
               </div>
               <p className="text-xs text-slate-400">
@@ -3721,7 +3690,7 @@ function ContentBatchLayout() {
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-900 truncate max-w-[180px] sm:max-w-md">{batch.name}</h1>
                   {batch.status != null && (
-                    <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase", statusBg)}>{batch.status}</span>
+                    <StatusBadge status={toStatusBadgeKey(batch.status)} label={batch.status} className="shrink-0 text-[9px] uppercase" />
                   )}
                 </div>
                 <p className="text-xs text-slate-400 mt-0.5">

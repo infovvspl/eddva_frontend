@@ -10,6 +10,7 @@ import {
   Building2, Sparkles, Unlock, RotateCcw, Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { StatusBadge, toStatusBadgeKey } from "@/components/admin/StatusBadge";
 import {
   useBatches, useCreateBatch, useUpdateBatch, useDeleteBatch,
   useBatchRoster, useCreateBatchStudent, useBulkCreateBatchStudents,
@@ -102,13 +103,6 @@ const TeacherAssignPanel = ({ batchId, teachers }: { batchId: string; teachers: 
 
   const handleRemove = async (id: string) => {
     await remove.mutateAsync(id);
-  };
-
-  const statusBadge = (status: string | null) => {
-    if (!status) return "";
-    if (status === "active") return "bg-emerald-500/10 text-emerald-600";
-    if (status === "pending_verification") return "bg-amber-500/10 text-amber-600";
-    return "bg-secondary text-muted-foreground";
   };
 
   return (
@@ -208,9 +202,7 @@ const TeacherAssignPanel = ({ batchId, teachers }: { batchId: string; teachers: 
                       </div>
                     </td>
                     <td className="px-4 py-3 hidden sm:table-cell">
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${statusBadge(a.teacherStatus)}`}>
-                        {a.teacherStatus?.replace("_", " ") || "—"}
-                      </span>
+                      <StatusBadge status={toStatusBadgeKey(a.teacherStatus)} label={a.teacherStatus?.replace("_", " ") || "—"} />
                     </td>
                     <td className="px-4 py-3 text-right">
                       <button
@@ -498,9 +490,10 @@ const StudentImportPanel = ({ batchId, batchName }: { batchId: string; batchName
                             ) : <span className="text-xs text-muted-foreground">—</span>}
                           </td>
                           <td className="px-3 py-2">
-                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${r.status === "created" ? "bg-emerald-500/10 text-emerald-600" : "bg-orange-500/10 text-orange-600"}`}>
-                              {r.status === "created" ? "✓ created" : r.error || "skipped"}
-                            </span>
+                            <StatusBadge
+                              status={toStatusBadgeKey(r.status)}
+                              label={r.status === "created" ? "✓ created" : r.error || "skipped"}
+                            />
                           </td>
                         </tr>
                       ))}
@@ -622,11 +615,6 @@ function CourseThumbnail({ name, examTarget, imageUrl, className = "" }: {
 
 // ─── Main BatchesPage ──────────────────────────────────────────────────────────
 
-const statusColor: Record<string, { pill: string; dot: string }> = {
-  active:    { pill: "bg-emerald-50 text-emerald-600 border border-emerald-100",  dot: "bg-emerald-500" },
-  inactive:  { pill: "bg-slate-100 text-slate-500 border border-slate-200",        dot: "bg-slate-400"   },
-  completed: { pill: "bg-blue-50 text-blue-600 border border-blue-100",            dot: "bg-blue-500"    },
-};
 
 // ─── Attendance Tab ───────────────────────────────────────────────────────────
 
@@ -1690,7 +1678,6 @@ const BatchesPage = () => {
       ) : (
         <div className="space-y-4">
           {batchList.map((b: any, _bIdx: number) => {
-            const sc = statusColor[b.status] ?? statusColor.inactive;
             const enrolled = b.enrolledCount ?? b.studentCount ?? 0;
             const examStyle = EXAM_STYLES[b.examTarget?.toLowerCase()] ?? EXAM_STYLES.default;
             return (
@@ -1721,9 +1708,11 @@ const BatchesPage = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
                       <p className="font-black text-slate-900 text-base truncate group-hover:text-blue-700 transition-colors">{b.name}</p>
-                      <span className={`shrink-0 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${sc.pill}`}>
-                        {b.status}
-                      </span>
+                      <StatusBadge
+                        status={toStatusBadgeKey(b.status)}
+                        label={b.status}
+                        className="shrink-0 text-[9px] uppercase tracking-wider"
+                      />
                       {/* Paid / Free badge */}
                       {b.isPaid ? (
                         <span className="shrink-0 flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">

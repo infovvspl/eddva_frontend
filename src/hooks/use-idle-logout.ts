@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api/client";
 import { useAuth } from "@/context/SchoolAuthContext";
+import { useAuthStore } from "@/lib/auth-store";
 
 // Single source of truth for "how long is a school session allowed to sit
 // idle" on the frontend — must stay in step with the backend's own default
@@ -28,6 +29,14 @@ const HEARTBEAT_INTERVAL_MS = 5 * 60_000;
  */
 export function useIdleLogout() {
   const { isAuthenticated, logout } = useAuth();
+  // isAuthenticated here is true for a coaching super_admin too (schoolUser's
+  // super_admin bypass in SchoolAuthContext), but this whole mechanism — and
+  // its /school/auth/me heartbeat — is school-only. Firing it for a coaching
+  // session sends a coaching token to a school-only endpoint, which 401s and
+  // (via the global axios interceptor's school-401 handling) wipes the valid
+  // coaching session and force-navigates to /login.
+  const tenantType = useAuthStore((s) => s.tenantType);
+  const isSchoolSession = isAuthenticated && tenantType === "school";
   const warnTimer = useRef<ReturnType<typeof setTimeout>>();
   const logoutTimer = useRef<ReturnType<typeof setTimeout>>();
   const warningToastId = useRef<string | number | null>(null);
@@ -35,7 +44,7 @@ export function useIdleLogout() {
   const lastHeartbeatAt = useRef(0);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isSchoolSession) return;
 
     const dismissWarning = () => {
       if (warningToastId.current != null) {
@@ -87,5 +96,5 @@ export function useIdleLogout() {
       ACTIVITY_EVENTS.forEach((e) => window.removeEventListener(e, onActivity));
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- logout is stable per auth state; re-running per render would thrash the timers
-  }, [isAuthenticated]);
+  }, [isSchoolSession]);
 }

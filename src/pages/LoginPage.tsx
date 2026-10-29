@@ -343,7 +343,7 @@ const LoginPage = () => {
       };
 
       // Try school DB first on institute subdomains, school return routes, or school email formats
-      const isSchoolContext = (returnTo && returnTo.startsWith('/school')) || identifier.toLowerCase().includes('school') || identifier.toLowerCase().includes('@eddva.in');
+      const isSchoolContext = (returnTo && returnTo.startsWith('/school')) || identifier.toLowerCase().includes('school');
       const schoolFirst = !!getSubdomainFromHost() || !!isSchoolContext;
       let primaryErr = "";
       let fallbackErr = "";
