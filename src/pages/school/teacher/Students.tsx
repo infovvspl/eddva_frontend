@@ -15,22 +15,40 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
 
 const attendanceTone = (pct: number) => (pct >= 75 ? 'bg-emerald-500' : pct >= 60 ? 'bg-amber-500' : 'bg-red-500');
+const attendanceText = (pct: number) => (pct >= 75 ? 'text-emerald-600' : pct >= 60 ? 'text-amber-600' : 'text-red-600');
+
+// A steady gradient per student (by name) so the list is easy to scan.
+const AVATAR_GRADIENTS = [
+  'from-blue-500 to-indigo-600 shadow-blue-500/30',
+  'from-violet-500 to-purple-600 shadow-violet-500/30',
+  'from-emerald-500 to-teal-600 shadow-emerald-500/30',
+  'from-orange-400 to-orange-600 shadow-orange-500/30',
+  'from-rose-500 to-pink-600 shadow-rose-500/30',
+  'from-sky-400 to-cyan-600 shadow-sky-500/30',
+];
+const avatarGradient = (name?: string) => {
+  const key = String(name || '?');
+  let h = 0;
+  for (let i = 0; i < key.length; i += 1) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+  return AVATAR_GRADIENTS[h % AVATAR_GRADIENTS.length];
+};
 
 const StatusBadge: React.FC<{ active: boolean }> = ({ active }) => (
   <Badge
     variant="outline"
-    className={active
-      ? 'border-transparent bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-      : 'border-transparent bg-red-500/10 text-red-600 dark:text-red-400'}
+    className={`gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold ring-1 ring-inset ${active
+      ? 'border-transparent bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/30'
+      : 'border-transparent bg-red-50 text-red-600 ring-red-200 dark:bg-red-500/10 dark:text-red-400 dark:ring-red-500/30'}`}
   >
+    <span className={`size-1.5 rounded-full ${active ? 'bg-emerald-500' : 'bg-red-500'}`} />
     {active ? 'Active' : 'Inactive'}
   </Badge>
 );
 
 const StudentAvatar: React.FC<{ student: any }> = ({ student }) => (
-  <Avatar className="size-8 shrink-0">
+  <Avatar className="size-9 shrink-0 shadow-md ring-2 ring-white dark:ring-slate-900">
     {student.profileImage && <AvatarImage src={student.profileImage} alt={student.name} className="object-cover" />}
-    <AvatarFallback className="bg-brand-100 text-xs font-bold text-brand-700 dark:bg-brand-900/30 dark:text-brand-400">
+    <AvatarFallback className={`bg-gradient-to-br text-xs font-bold text-white ${avatarGradient(student.name)}`}>
       {student.name?.charAt(0).toUpperCase()}
     </AvatarFallback>
   </Avatar>
@@ -42,9 +60,9 @@ const AttendanceBar: React.FC<{ student: any }> = ({ student }) => {
   }
   const pct = student.attendancePct;
   return (
-    <div className="flex items-center gap-2">
-      <Progress value={pct} className="h-2 w-16 bg-slate-100 dark:bg-slate-800" indicatorClassName={attendanceTone(pct)} />
-      <span className="text-xs font-medium text-slate-600 dark:text-slate-400">{pct}%</span>
+    <div className="flex items-center gap-2.5">
+      <Progress value={pct} className="h-2 w-20 bg-slate-100 dark:bg-slate-800" indicatorClassName={attendanceTone(pct)} />
+      <span className={`text-xs font-bold ${attendanceText(pct)}`}>{pct}%</span>
     </div>
   );
 };
@@ -142,16 +160,23 @@ const Students: React.FC = () => {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-3">
-        <div className="grid size-11 shrink-0 place-items-center rounded-2xl bg-indigo-500/10 text-indigo-500">
+        <div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30">
           <User className="size-6" />
         </div>
-        <div className="min-w-0">
-          <h1 className="text-xl font-black text-slate-900 dark:text-white">Assigned Students</h1>
-          <p className="text-sm text-slate-500">View and filter students in the classes assigned to you.</p>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">Assigned Students</h1>
+            {!loading && total > 0 && (
+              <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/30">
+                {total} {total === 1 ? 'student' : 'students'}
+              </span>
+            )}
+          </div>
+          <p className="text-sm font-medium text-slate-500">View and filter students in the classes assigned to you.</p>
         </div>
       </div>
 
-      <Card className="rounded-2xl border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <Card className="rounded-2xl border-slate-200 bg-white shadow-none dark:border-slate-800 dark:bg-slate-900">
         <CardHeader className="gap-3 p-4 sm:p-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
             <div className="relative w-full flex-1">
@@ -160,13 +185,13 @@ const Students: React.FC = () => {
                 placeholder="Search by name, roll no or enrollment no..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
+                className="h-10 rounded-xl border-slate-200 bg-slate-50 pl-9 focus-visible:bg-white"
               />
             </div>
 
             <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-3 lg:flex lg:w-auto lg:shrink-0 lg:items-center">
               <Select value={selectedClass} onValueChange={(v) => { setSelectedClass(v); setSelectedSection('All'); }}>
-                <SelectTrigger className="w-full lg:w-[150px]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-10 w-full rounded-xl border-slate-200 bg-slate-50 font-medium lg:w-[150px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="All">All Classes</SelectItem>
                   {classOptions.map((c) => (
@@ -178,7 +203,7 @@ const Students: React.FC = () => {
               </Select>
 
               <Select value={selectedSection} onValueChange={setSelectedSection}>
-                <SelectTrigger className="w-full lg:w-[150px]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-10 w-full rounded-xl border-slate-200 bg-slate-50 font-medium lg:w-[150px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="All">All Sections</SelectItem>
                   {sectionOptions.map((sec) => (
@@ -188,7 +213,7 @@ const Students: React.FC = () => {
               </Select>
 
               <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as 'All' | 'Active' | 'Inactive')}>
-                <SelectTrigger className="w-full lg:w-[130px]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-10 w-full rounded-xl border-slate-200 bg-slate-50 font-medium lg:w-[130px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="All">All Status</SelectItem>
                   <SelectItem value="Active">Active</SelectItem>
@@ -197,7 +222,7 @@ const Students: React.FC = () => {
               </Select>
 
               {hasActiveFilters && (
-                <Button variant="ghost" onClick={resetFilters} className="shrink-0 px-2 text-slate-500 hover:text-slate-800 sm:col-span-3 lg:col-span-1">
+                <Button variant="ghost" onClick={resetFilters} className="h-10 shrink-0 rounded-xl px-3 font-semibold text-rose-600 hover:bg-rose-50 hover:text-rose-700 sm:col-span-3 lg:col-span-1">
                   <X className="mr-1 size-4" /> Clear
                 </Button>
               )}
@@ -217,8 +242,8 @@ const Students: React.FC = () => {
               ))}
             </div>
           ) : students.length === 0 ? (
-            <div className="flex min-h-[300px] flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-200 text-center text-slate-500 dark:border-slate-800">
-              <Filter className="size-12 text-slate-300 dark:text-slate-700" />
+            <div className="flex min-h-[300px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-200 text-center font-medium text-slate-500 dark:border-slate-800">
+              <span className="grid size-14 place-items-center rounded-2xl bg-blue-50 text-blue-500 dark:bg-blue-500/10"><Filter className="size-7" /></span>
               <p>{isError ? 'Could not load students. Please try again.' : 'No students found matching your criteria'}</p>
               <Button variant="outline" onClick={resetFilters}>Clear Filters</Button>
             </div>
@@ -233,22 +258,20 @@ const Students: React.FC = () => {
                     tabIndex={0}
                     onClick={() => openStudent(student.id)}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openStudent(student.id); } }}
-                    className="cursor-pointer rounded-xl border-slate-200 p-4 shadow-none transition-colors hover:border-brand-400 dark:border-slate-800"
+                    className="cursor-pointer rounded-xl border-slate-200 p-4 shadow-none transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md dark:border-slate-800"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-3">
                         <StudentAvatar student={student} />
                         <div className="min-w-0">
-                          <p className="truncate font-medium text-slate-900 dark:text-white">{student.name}</p>
-                          <p className="text-xs text-slate-500">Roll {student.studentProfile?.rollNo || '-'}</p>
+                          <p className="truncate font-semibold text-slate-900 dark:text-white">{student.name}</p>
+                          <p className="text-xs font-medium text-slate-500">Roll {student.studentProfile?.rollNo || '-'}</p>
                         </div>
                       </div>
-                      <Badge variant={student.isActive ? 'success' : 'error'} className="shrink-0">
-                        {student.isActive ? 'Active' : 'Inactive'}
-                      </Badge>
+                      <StatusBadge active={!!student.isActive} />
                     </div>
-                    <div className="mt-3 flex items-center justify-between gap-3 text-xs text-slate-600 dark:text-slate-400">
-                      <span>
+                    <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-100 pt-3 text-xs text-slate-600 dark:border-slate-800 dark:text-slate-400">
+                      <span className="rounded-md bg-slate-100 px-2 py-0.5 font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                         {student.studentProfile?.section?.class?.name || '-'} • Sec {student.studentProfile?.section?.name || '-'}
                       </span>
                       <span className="flex items-center gap-2">
@@ -263,7 +286,7 @@ const Students: React.FC = () => {
                             />
                           )}
                         </span>
-                        <span className="font-medium">{student.attendancePct != null ? `${student.attendancePct}%` : '—'}</span>
+                        <span className={`font-bold ${student.attendancePct != null ? attendanceText(student.attendancePct) : ''}`}>{student.attendancePct != null ? `${student.attendancePct}%` : '—'}</span>
                       </span>
                     </div>
                   </Card>
@@ -271,36 +294,37 @@ const Students: React.FC = () => {
               </div>
 
               {/* Tablet / desktop: table */}
-              <div className="hidden overflow-hidden rounded-lg border border-slate-100 dark:border-slate-800 md:block">
+              <div className="hidden overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 md:block">
                 <Table>
-                  <TableHeader className="bg-slate-50 dark:bg-slate-900/50">
+                  <TableHeader className="bg-slate-50/80 dark:bg-slate-900/50">
                     <TableRow>
-                      <TableHead className="px-4 py-3 text-xs font-semibold uppercase lg:px-6">Student</TableHead>
-                      <TableHead className="px-4 py-3 text-xs font-semibold uppercase lg:px-6">Roll No</TableHead>
-                      <TableHead className="px-4 py-3 text-xs font-semibold uppercase lg:px-6">Class/Section</TableHead>
-                      <TableHead className="px-4 py-3 text-xs font-semibold uppercase lg:px-6">Attendance</TableHead>
-                      <TableHead className="px-4 py-3 text-right text-xs font-semibold uppercase lg:px-6">Status</TableHead>
+                      <TableHead className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 lg:px-6">Student</TableHead>
+                      <TableHead className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 lg:px-6">Roll No</TableHead>
+                      <TableHead className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 lg:px-6">Class/Section</TableHead>
+                      <TableHead className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 lg:px-6">Attendance</TableHead>
+                      <TableHead className="px-4 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-slate-500 lg:px-6">Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {students.map((student) => (
-                      <TableRow key={student.id} onClick={() => openStudent(student.id)} className="cursor-pointer">
+                      <TableRow key={student.id} onClick={() => openStudent(student.id)} className="cursor-pointer transition-colors hover:bg-blue-50/50 dark:hover:bg-slate-800/50">
                         <TableCell className="px-4 py-3 lg:px-6">
                           <div className="flex items-center gap-3">
                             <StudentAvatar student={student} />
-                            <span className="font-medium text-slate-900 dark:text-white">{student.name}</span>
+                            <span className="font-semibold text-slate-900 dark:text-white">{student.name}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="px-4 py-3 text-slate-600 dark:text-slate-400 lg:px-6">
-                          {student.studentProfile?.rollNo || '-'}
+                        <TableCell className="px-4 py-3 lg:px-6">
+                          <span className="inline-flex min-w-8 justify-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                            {student.studentProfile?.rollNo || '-'}
+                          </span>
                         </TableCell>
                         <TableCell className="px-4 py-3 lg:px-6">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium text-slate-700 dark:text-slate-300">
+                            <span className="rounded-md bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
                               {student.studentProfile?.section?.class?.name || '-'}
                             </span>
-                            <span className="text-slate-400 dark:text-slate-500">•</span>
-                            <span className="text-slate-600 dark:text-slate-400">
+                            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                               Sec {student.studentProfile?.section?.name || '-'}
                             </span>
                           </div>
