@@ -13,6 +13,7 @@ import { useMockTests } from "@/hooks/use-admin";
 import { useAdminPresenceStats } from "@/hooks/use-presence";
 import { cn } from "@/lib/utils";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { StatusBadge, toStatusBadgeKey } from "@/components/admin/StatusBadge";
 
 const BLUE = "#013889";
 const BLUE_M = "#0257c8";
@@ -241,11 +242,6 @@ export default function ReportsPage() {
                 </TableHeader>
                 <TableBody className="divide-y divide-slate-50">
                   {batchList.map((b: any) => {
-                    const statusStyle: Record<string, string> = {
-                      active: "bg-emerald-50 text-emerald-600 border-emerald-200",
-                      inactive: "bg-slate-100 text-slate-500 border-slate-200",
-                      completed: "bg-blue-50 text-blue-600 border-blue-200",
-                    };
                     return (
                       <TableRow key={b.id} className="hover:bg-slate-50/50 transition-colors">
                         <TableCell className="px-6 py-4 font-bold text-slate-900 text-sm">{b.name}</TableCell>
@@ -256,9 +252,7 @@ export default function ReportsPage() {
                         </TableCell>
                         <TableCell className="px-6 py-4 text-sm font-bold text-slate-700">{b.studentCount}</TableCell>
                         <TableCell className="px-6 py-4">
-                          <span className={cn("text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border", statusStyle[b.status] ?? statusStyle.inactive)}>
-                            {b.status}
-                          </span>
+                          <StatusBadge status={toStatusBadgeKey(b.status)} label={b.status} className="text-[10px] uppercase tracking-widest" />
                         </TableCell>
                       </TableRow>
                     );
@@ -271,18 +265,11 @@ export default function ReportsPage() {
             <div className="md:hidden flex flex-col">
               <div className="flex flex-col divide-y divide-slate-50 max-h-72 overflow-y-auto">
                 {(showAllBatchesMobile ? batchList : batchList.slice(0, 3)).map((b: any) => {
-                  const statusStyle: Record<string, string> = {
-                    active: "bg-emerald-50 text-emerald-600 border-emerald-200",
-                    inactive: "bg-slate-100 text-slate-500 border-slate-200",
-                    completed: "bg-blue-50 text-blue-600 border-blue-200",
-                  };
                   return (
                     <div key={b.id} className="p-4 flex flex-col gap-3 hover:bg-slate-50/50 transition-colors">
                       <div className="flex items-center justify-between gap-2">
                         <p className="font-bold text-slate-900 text-sm truncate">{b.name}</p>
-                        <span className={cn("text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border shrink-0", statusStyle[b.status] ?? statusStyle.inactive)}>
-                          {b.status}
-                        </span>
+                        <StatusBadge status={toStatusBadgeKey(b.status)} label={b.status} className="text-[10px] uppercase tracking-widest shrink-0" />
                       </div>
                       <div className="flex items-center justify-between gap-2">
                         <span className="inline-flex px-2.5 py-1 rounded-lg bg-slate-100 text-[10px] font-bold text-slate-600 uppercase tracking-wider truncate">
@@ -335,12 +322,6 @@ export default function ReportsPage() {
             <div className="flex flex-col">
               <div className="divide-y divide-slate-50 max-h-72 overflow-y-auto">
                 {lecList.slice(0, 20).map((lec: any, i: number) => {
-                  const badgeMap: Record<string, string> = {
-                    published: "bg-emerald-50 text-emerald-600",
-                    draft: "bg-slate-100 text-slate-500",
-                    processing: "bg-amber-50 text-amber-600",
-                    live: "bg-rose-50 text-rose-600",
-                  };
                   return (
                     <div key={lec.id} className={cn("items-center justify-between px-6 py-4 hover:bg-slate-50 transition-colors", !showAllLecturesMobile && i >= 3 ? "hidden md:flex" : "flex")}>
                       <div className="flex-1 min-w-0">
@@ -349,9 +330,7 @@ export default function ReportsPage() {
                           {lec.teacher?.fullName ?? "—"} {lec.batch?.name ? `· ${lec.batch.name}` : ""}
                         </p>
                       </div>
-                      <span className={cn("text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ml-4 shrink-0", badgeMap[lec.status] ?? badgeMap.draft)}>
-                        {lec.status}
-                      </span>
+                      <StatusBadge status={toStatusBadgeKey(lec.status)} label={lec.status} className="text-[10px] uppercase tracking-wider ml-4 shrink-0" />
                     </div>
                   );
                 })}

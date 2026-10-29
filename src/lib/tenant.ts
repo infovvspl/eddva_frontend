@@ -13,7 +13,11 @@ const SUBDOMAIN_STORAGE_KEY = "eddva_tenant_subdomain";
  *  If subdomain is falsy (e.g. super-admin has no tenant), clear any stored value
  *  so the app falls back to PlatformRoutes on the next render. */
 export function storeSubdomain(subdomain: string | null | undefined): void {
-  if (subdomain) {
+  // The platform tenant (super-admins) has its own row with subdomain "platform" —
+  // that's an internal bookkeeping value, not a real institute subdomain, and storing
+  // it here makes getSubdomain() think the session is tenant-scoped, which routes
+  // super-admins into TenantRoutes instead of PlatformRoutes on bare localhost.
+  if (subdomain && subdomain !== "platform") {
     localStorage.setItem(SUBDOMAIN_STORAGE_KEY, subdomain);
   } else {
     // No tenant on this account — remove stale subdomain so super-admin

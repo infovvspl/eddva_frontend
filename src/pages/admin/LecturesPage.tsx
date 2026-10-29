@@ -18,6 +18,7 @@ import {
 } from "@/hooks/use-admin";
 import type { Subject, Chapter, Topic } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
+import { StatusBadge as SharedStatusBadge, toStatusBadgeKey } from "@/components/admin/StatusBadge";
 import { useHasAiFeature } from "@/hooks/use-tenant-features";
 import { toast } from "sonner";
 import { LectureVideoUpload } from "@/components/upload/LectureVideoUpload";
@@ -104,19 +105,8 @@ function fmtDuration(seconds?: number) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    published: "bg-emerald-500/10 text-emerald-600",
-    draft: "bg-muted text-muted-foreground",
-    processing: "bg-amber-500/10 text-amber-600",
-    scheduled: "bg-blue-500/10 text-blue-600",
-    live: "bg-rose-500/10 text-rose-600",
-  };
-  return (
-    <span className={`text-xs font-bold px-2 py-0.5 rounded-full capitalize ${map[status] ?? "bg-muted text-muted-foreground"}`}>
-      {status}
-    </span>
-  );
+function LectureStatusBadge({ status }: { status: string }) {
+  return <SharedStatusBadge status={toStatusBadgeKey(status)} label={status} className="capitalize" />;
 }
 
 // ─── Stats Drawer ────────────────────────────────────────────────────────────
@@ -283,8 +273,6 @@ function CoursePicker({ onSelect }: { onSelect: (batch: any) => void }) {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {filtered.map(b => {
-              const statusColor = b.status === "active" ? "#10B981" : b.status === "completed" ? "#3B82F6" : "#94A3B8";
-              const statusBg = b.status === "active" ? "bg-emerald-50 text-emerald-700" : b.status === "completed" ? "bg-blue-50 text-blue-700" : "bg-slate-100 text-slate-500";
               return (
                 <motion.button
                   key={b.id}
@@ -299,12 +287,11 @@ function CoursePicker({ onSelect }: { onSelect: (batch: any) => void }) {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-black text-slate-900 group-hover:text-blue-700 transition-colors leading-snug truncate">{b.name}</p>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
-                      <span className={cn("text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full", statusBg)}>{b.status}</span>
+                      <SharedStatusBadge status={toStatusBadgeKey(b.status)} label={b.status} className="text-[10px] uppercase tracking-wide" />
                       {b.examTarget && <span className="text-[10px] text-slate-400 font-semibold">{b.examTarget}</span>}
                       {b.class && <span className="text-[10px] text-slate-400">Cls {b.class}</span>}
                     </div>
                     <div className="flex items-center gap-1 mt-1.5 text-[11px] text-slate-400">
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: statusColor }} />
                       {b.enrolledCount ?? 0} students
                     </div>
                   </div>
@@ -1294,7 +1281,7 @@ const LecturesPage = () => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-semibold text-foreground text-sm truncate">{lec.title}</p>
-                  <StatusBadge status={lec.status} />
+                  <LectureStatusBadge status={lec.status} />
                   {lec.type === "live" && (
                     <span className="text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full bg-rose-50 text-rose-600">Live</span>
                   )}

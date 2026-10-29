@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useCreateTenant } from "@/hooks/use-tenants";
 import { sendEmailOtp, verifyEmailOtp } from "@/lib/api/otp";
 import { COACHING_AI_FEATURES } from "@/lib/constants/coachingAiFeatures";
+import { COACHING_LANGUAGES } from "@/lib/constants/coachingLanguages";
 
 const DEFAULT_STUDENTS = 1000;
 const DEFAULT_TEACHERS = 50;
@@ -57,6 +58,14 @@ const NewInstitutePage = () => {
       live_lectures: true, recorded_lectures: true, mock_tests: true, doubt_queue: true, leaderboard: true,
       calendar: true, pyq_bank: true, content_library: true, notifications: true
     };
+  });
+
+  const [enabledLanguages] = useState<string[]>(() => {
+    try {
+      const s = localStorage.getItem("coaching_language_defaults");
+      if (s) return JSON.parse(s);
+    } catch { }
+    return COACHING_LANGUAGES.map(l => l.key);
   });
 
   const [subdomainStatus, setSubdomainStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
@@ -173,6 +182,7 @@ const NewInstitutePage = () => {
         pincode: form.pincode,
         aiEnabled,
         aiFeatures: aiEnabled ? aiFeatures : [],
+        enabledLanguages,
         operationalModel: form.operationalModel,
         adminPortalEnabled: form.adminPortalEnabled,
         teacherPortalEnabled: form.teacherPortalEnabled,
