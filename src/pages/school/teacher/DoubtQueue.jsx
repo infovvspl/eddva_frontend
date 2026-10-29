@@ -15,7 +15,6 @@ import {
   RefreshCw,
   Send,
   Sparkles,
-  User,
   Zap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -33,21 +32,45 @@ import { isAnswerPlaceholder } from '@/lib/doubt-answer';
 const statusMeta = {
   escalated: {
     label: 'Needs reply',
-    tone: 'bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-200',
+    tone: 'bg-amber-50 text-amber-800 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-900/50',
+    bar: 'from-amber-400 to-orange-500',
+    dot: 'bg-amber-500',
   },
   open: {
     label: 'Open',
-    tone: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+    tone: 'bg-sky-50 text-sky-700 ring-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:ring-sky-900/50',
+    bar: 'from-sky-400 to-sky-600',
+    dot: 'bg-sky-500',
   },
   ai_answered: {
     label: 'AI answered',
-    tone: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300',
+    tone: 'bg-indigo-50 text-indigo-700 ring-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:ring-indigo-900/50',
+    bar: 'from-indigo-400 to-violet-600',
+    dot: 'bg-indigo-500',
   },
   teacher_answered: {
     label: 'Answered',
-    tone: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300',
+    tone: 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-900/50',
+    bar: 'from-emerald-400 to-teal-600',
+    dot: 'bg-emerald-500',
   },
 };
+
+// A steady gradient per student (by name) for the avatar.
+const AVATAR_GRADIENTS = [
+  'from-blue-500 to-indigo-600 shadow-blue-500/30',
+  'from-violet-500 to-purple-600 shadow-violet-500/30',
+  'from-emerald-500 to-teal-600 shadow-emerald-500/30',
+  'from-orange-400 to-orange-600 shadow-orange-500/30',
+  'from-rose-500 to-pink-600 shadow-rose-500/30',
+  'from-sky-400 to-cyan-600 shadow-sky-500/30',
+];
+function avatarGradient(name) {
+  const key = String(name || '?');
+  let h = 0;
+  for (let i = 0; i < key.length; i += 1) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+  return AVATAR_GRADIENTS[h % AVATAR_GRADIENTS.length];
+}
 
 function sortByNewest(list, dateField = 'createdAt') {
   return [...list].sort((a, b) => new Date(b[dateField] || 0) - new Date(a[dateField] || 0));
@@ -100,19 +123,23 @@ function DoubtCard({
   const [viewMode, setViewMode] = useState('brief');
 
   return (
-    <Card className="rounded-xl sm:rounded-2xl border-slate-100 bg-white p-3.5 sm:p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <Card className="relative overflow-hidden rounded-xl sm:rounded-2xl border-slate-200 bg-white p-3.5 pl-5 sm:p-5 sm:pl-6 shadow-none transition-all duration-200 hover:border-slate-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+      <span className={cn('absolute inset-y-0 left-0 w-1 bg-gradient-to-b sm:w-1.5', meta.bar)} />
       <div className="flex items-start justify-between gap-2">
-        <Badge variant="outline" className={cn('rounded border-transparent px-1.5 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-widest', meta.tone)}>
+        <Badge variant="outline" className={cn('gap-1.5 rounded-full border-transparent px-2.5 py-0.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider ring-1 ring-inset', meta.tone)}>
+          <span className={cn('size-1.5 rounded-full', meta.dot)} />
           {meta.label}
         </Badge>
-        <time className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-slate-400">
+        <time className="text-[9px] sm:text-[11px] font-semibold text-slate-400">
           {doubt.createdAt ? new Date(doubt.createdAt).toLocaleString() : ''}
         </time>
       </div>
 
       <div className="mt-2.5 sm:mt-3 flex flex-wrap items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-bold text-slate-500">
-        <User className="size-3.5 shrink-0" />
-        <span className="truncate max-w-[120px] sm:max-w-none">{doubt.studentName || 'Student'}</span>
+        <span className={cn('grid size-6 sm:size-7 shrink-0 place-items-center rounded-full bg-gradient-to-br text-[11px] font-bold text-white shadow-md', avatarGradient(doubt.studentName))}>
+          {String(doubt.studentName || 'S').trim().charAt(0).toUpperCase()}
+        </span>
+        <span className="truncate max-w-[140px] sm:max-w-none text-slate-800 dark:text-slate-200">{doubt.studentName || 'Student'}</span>
         {(doubt.className || doubt.sectionName) && (
           <Badge variant="outline" className="shrink-0 rounded border-transparent bg-slate-100 px-1.5 py-0.5 text-[11px] sm:text-xs font-bold text-slate-500 dark:bg-slate-800">
             {[doubt.className, doubt.sectionName && `Sec ${doubt.sectionName}`].filter(Boolean).join(' · ')}
@@ -126,7 +153,7 @@ function DoubtCard({
       </div>
 
       {doubt.questionText && (
-        <p className="mt-2.5 sm:mt-3 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 leading-relaxed">{doubt.questionText}</p>
+        <p className="mt-3 rounded-xl bg-slate-50 px-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 dark:bg-slate-800/60 dark:text-slate-200 leading-relaxed">{doubt.questionText}</p>
       )}
       {doubt.questionImageUrl && (
         <div className="mt-2.5 sm:mt-3">
@@ -240,7 +267,7 @@ function DoubtCard({
             onChange={(e) => setReplyText(e.target.value)}
             rows={4}
             placeholder="Write or edit your answer for the student..."
-            className="min-h-0 w-full resize-none rounded-lg sm:rounded-xl border-slate-200 bg-slate-50 p-2.5 sm:p-3 text-xs sm:text-sm font-medium dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+            className="min-h-0 w-full resize-none rounded-lg sm:rounded-xl border-slate-200 bg-slate-50 p-2.5 sm:p-3 text-xs sm:text-sm font-medium focus-visible:border-blue-400 focus-visible:bg-white dark:border-slate-700 dark:bg-slate-950 dark:text-white"
           />
           <DoubtImageAttach
             label="Attach answer image"
@@ -256,7 +283,7 @@ function DoubtCard({
               type="button"
               disabled={submitting || (replyText.trim().length < 5 && !replyImageUrl)}
               onClick={() => onSubmitReply(doubt.id)}
-              className="h-auto gap-1.5 rounded-lg sm:rounded-xl px-3.5 py-2 text-[11px] sm:text-xs font-black"
+              className="h-auto gap-1.5 rounded-lg sm:rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3.5 py-2 text-[11px] sm:text-xs font-bold text-white shadow-md shadow-blue-600/25 hover:brightness-110"
             >
               {submitting ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5" />}
               Send to student
@@ -285,7 +312,7 @@ function DoubtCard({
             setReplyImageUrl(null);
             setReplyImagePreview(null);
           }}
-          className="mt-3 h-auto w-full gap-1.5 rounded-lg px-3.5 py-2 text-[11px] font-black sm:mt-4 sm:w-auto sm:rounded-xl sm:text-xs"
+          className="mt-3 h-auto w-full gap-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-3.5 py-2 text-[11px] font-bold text-white shadow-md shadow-blue-600/25 hover:brightness-110 sm:mt-4 sm:w-auto sm:rounded-xl sm:text-xs"
         >
           <MessageSquare className="size-3.5" />
           Reply to student
@@ -400,17 +427,22 @@ export default function DoubtQueue() {
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-row items-center justify-between gap-4">
-        <div>
-          <h1 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white">Student Doubts</h1>
-          <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm font-medium text-slate-500 hidden sm:block">
-            Answer questions from students in your assigned classes and subjects.
-          </p>
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="grid size-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30 sm:size-12">
+            <HelpCircle className="size-5 sm:size-6" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">Student Doubts</h1>
+            <p className="mt-0.5 text-xs sm:text-sm font-medium text-slate-500 hidden sm:block">
+              Answer questions from students in your assigned classes and subjects.
+            </p>
+          </div>
         </div>
         <Button
           type="button"
           variant="outline"
           onClick={() => load(true)}
-          className="h-auto shrink-0 gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-black shadow-sm sm:gap-2 sm:rounded-xl sm:px-4 sm:py-2.5 sm:text-xs"
+          className="h-auto shrink-0 gap-1 rounded-lg border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-700 shadow-none hover:bg-slate-50 sm:gap-2 sm:rounded-xl sm:px-4 sm:py-2.5 sm:text-xs"
         >
           <RefreshCw className={cn('size-3.5 sm:size-4', loading && 'animate-spin')} />
           <span>Refresh</span>
@@ -418,18 +450,21 @@ export default function DoubtQueue() {
       </div>
 
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
-        <Card className="rounded-xl sm:rounded-2xl border-amber-200 bg-amber-50 p-2.5 sm:p-4 dark:border-amber-900/50 dark:bg-amber-950/30 shadow-none">
-          <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-300">Pending</p>
-          <p className="mt-0.5 sm:mt-1 text-lg sm:text-2xl font-black text-amber-900 dark:text-amber-100">{pendingList.length}</p>
-        </Card>
-        <Card className="rounded-xl sm:rounded-2xl border-emerald-200 bg-emerald-50 p-2.5 sm:p-4 dark:border-emerald-900/50 dark:bg-emerald-950/30 shadow-none">
-          <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-300">Answered</p>
-          <p className="mt-0.5 sm:mt-1 text-lg sm:text-2xl font-black text-emerald-900 dark:text-emerald-100">{answeredList.length}</p>
-        </Card>
-        <Card className="rounded-xl sm:rounded-2xl border-slate-200 bg-white p-2.5 sm:p-4 dark:border-slate-800 dark:bg-slate-900 shadow-none">
-          <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500">All in queue</p>
-          <p className="mt-0.5 sm:mt-1 text-lg sm:text-2xl font-black text-slate-900 dark:text-white">{doubts.length}</p>
-        </Card>
+        {[
+          { label: 'Pending', value: pendingList.length, icon: Clock, tile: 'from-orange-400 to-orange-600 shadow-orange-500/30', border: 'border-orange-200 hover:border-orange-400' },
+          { label: 'Answered', value: answeredList.length, icon: CheckCircle2, tile: 'from-emerald-500 to-teal-600 shadow-emerald-500/30', border: 'border-emerald-200 hover:border-emerald-400' },
+          { label: 'All in queue', value: doubts.length, icon: HelpCircle, tile: 'from-blue-500 to-blue-600 shadow-blue-500/30', border: 'border-blue-200 hover:border-blue-400' },
+        ].map(({ label, value, icon: Icon, tile, border }) => (
+          <Card key={label} className={cn('flex flex-col items-center gap-1.5 rounded-xl bg-white p-2.5 text-center shadow-none transition-colors dark:bg-slate-900 sm:flex-row sm:gap-3 sm:rounded-2xl sm:p-4 sm:text-left', border)}>
+            <span className={cn('grid size-8 shrink-0 place-items-center rounded-xl bg-gradient-to-br text-white shadow-lg sm:size-11', tile)}>
+              <Icon className="size-4 sm:size-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-lg sm:text-2xl font-extrabold leading-none text-slate-900 dark:text-white">{value}</p>
+              <p className="mt-1 text-[9px] sm:text-[11px] font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+            </div>
+          </Card>
+        ))}
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
@@ -442,7 +477,7 @@ export default function DoubtQueue() {
             <TabsTrigger
               key={id}
               value={id}
-              className="gap-1 rounded-lg bg-slate-100 px-2.5 py-1.5 text-[11px] font-black text-slate-600 hover:bg-slate-200 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-600/20 dark:bg-slate-800 dark:text-slate-300 sm:gap-2 sm:rounded-xl sm:px-4 sm:py-2 sm:text-xs"
+              className="gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 hover:bg-slate-50 data-[state=active]:border-transparent data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-blue-600/25 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 sm:gap-2 sm:rounded-xl sm:px-4 sm:py-2 sm:text-xs"
             >
               <Icon className="size-3.5 shrink-0 sm:size-4" />
               <span>{label}</span>
@@ -460,8 +495,8 @@ export default function DoubtQueue() {
 
       {shown.length === 0 ? (
         <Card className="rounded-2xl border-dashed border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900 shadow-none">
-          <HelpCircle className="mx-auto size-10 text-slate-300" />
-          <h3 className="mt-3 text-sm font-black text-slate-900 dark:text-white">
+          <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-blue-50 text-blue-500 dark:bg-blue-500/10"><HelpCircle className="size-7" /></span>
+          <h3 className="mt-3 text-sm font-bold text-slate-900 dark:text-white">
             {tab === 'pending' ? 'No pending doubts' : tab === 'answered' ? 'No answered doubts yet' : 'No doubts yet'}
           </h3>
           <p className="mt-1 text-sm text-slate-500">
