@@ -18,21 +18,30 @@ import api from '@/lib/api/school-client';
 import './GrievanceHandling.css';
 
 const TONE_BADGE: Record<string, string> = {
-  success: 'bg-emerald-500/10 text-emerald-700',
-  info: 'bg-blue-500/10 text-blue-700',
-  warning: 'bg-amber-500/10 text-amber-700',
-  error: 'bg-red-500/10 text-red-700',
-  purple: 'bg-violet-500/10 text-violet-700',
-  default: 'bg-slate-500/10 text-slate-600',
+  success: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+  info: 'bg-blue-50 text-blue-700 ring-blue-200',
+  warning: 'bg-amber-50 text-amber-700 ring-amber-200',
+  error: 'bg-red-50 text-red-700 ring-red-200',
+  purple: 'bg-violet-50 text-violet-700 ring-violet-200',
+  default: 'bg-slate-100 text-slate-600 ring-slate-200',
 };
 
 function ToneBadge({ tone, className, children }: { tone: string; className?: string; children: React.ReactNode }) {
   return (
-    <Badge variant="outline" className={cn('border-transparent', TONE_BADGE[tone] ?? TONE_BADGE.default, className)}>
+    <Badge variant="outline" className={cn('rounded-full border-transparent font-bold ring-1 ring-inset', TONE_BADGE[tone] ?? TONE_BADGE.default, className)}>
       {children}
     </Badge>
   );
 }
+
+// Left-edge stripe per ticket status on the cards.
+const STATUS_BAR: Record<string, string> = {
+  open: 'from-red-400 to-rose-600',
+  'in-progress': 'from-amber-400 to-orange-500',
+  reopened: 'from-red-400 to-rose-600',
+  resolved: 'from-emerald-400 to-teal-600',
+  closed: 'from-slate-300 to-slate-400',
+};
 
 const STATUS_TONE: Record<string, string> = {
   open: 'error',
@@ -264,8 +273,9 @@ const GrievanceHandling: React.FC = () => {
           tabIndex={0}
           onClick={() => openTicketMessages(item)}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openTicketMessages(item); } }}
-          className="flex cursor-pointer flex-col gap-2 rounded-2xl border-slate-100 bg-white p-3.5 shadow-sm transition hover:border-blue-300 dark:border-slate-800 dark:bg-slate-900"
+          className="relative flex cursor-pointer flex-col gap-2 overflow-hidden rounded-2xl border-slate-200 bg-white p-3.5 pl-5 shadow-none transition-all hover:border-blue-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
         >
+          <span className={cn('absolute inset-y-0 left-0 w-1 bg-gradient-to-b', STATUS_BAR[item.status] || STATUS_BAR.closed)} />
           <div className="flex items-center justify-between gap-2">
             <ToneBadge tone="info" className="rounded-md px-2 py-0.5 text-[10px] font-black uppercase tracking-wider">
               #{ticketNo(item)}
@@ -273,7 +283,7 @@ const GrievanceHandling: React.FC = () => {
             {renderStatusBadge(item.status)}
           </div>
 
-          <h4 className="text-xs font-bold leading-snug text-slate-800 dark:text-slate-200">{item.title}</h4>
+          <h4 className="text-sm font-bold leading-snug text-slate-900 dark:text-slate-100">{item.title}</h4>
 
           <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
             <ToneBadge tone={categoryTone(item.category)} className="text-[9px] capitalize">{item.category}</ToneBadge>
@@ -298,7 +308,7 @@ const GrievanceHandling: React.FC = () => {
     <>
       <div className="md:hidden">{renderMobileGrievanceList(data)}</div>
       <div className="grievance__section hidden w-full overflow-x-auto md:block">
-        <DataTable columns={columns} data={data} onRowClick={openTicketMessages} />
+        <DataTable columns={columns} data={data} onRowClick={openTicketMessages} className="!rounded-2xl !border-slate-200 !bg-white !shadow-none" />
       </div>
     </>
   );
@@ -307,13 +317,13 @@ const GrievanceHandling: React.FC = () => {
     <>
       <div className="md:hidden">{renderMobileGrievanceList(grievancesList)}</div>
       <div className="grievance__section hidden md:block">
-        <Card className="rounded-2xl border-slate-200 bg-white p-[18px] shadow-sm">
+        <Card className="rounded-2xl border-slate-200 bg-white p-[18px] shadow-none">
           <CardHeader className="p-0 pb-3">
-            <CardTitle className="grievance__support-title text-base leading-normal tracking-normal">Support Requests</CardTitle>
+            <CardTitle className="grievance__support-title text-base font-bold leading-normal tracking-normal">Support Requests</CardTitle>
           </CardHeader>
           <CardContent className="grievance__support-list p-0">
             {grievancesList.map((g) => (
-              <div key={g.id} className="grievance__support-item cursor-pointer transition hover:bg-slate-50/50" onClick={() => openTicketMessages(g)}>
+              <div key={g.id} className="grievance__support-item cursor-pointer !rounded-xl !border-slate-200 !bg-white transition-all hover:!border-blue-300 hover:shadow-md" onClick={() => openTicketMessages(g)}>
                 <div className="grievance__support-priority">
                   <div className={`grievance__priority-dot grievance__priority-dot--${g.priority}`} />
                 </div>
@@ -346,14 +356,14 @@ const GrievanceHandling: React.FC = () => {
       <div className="flex w-full flex-col items-stretch justify-between gap-3 lg:flex-row lg:items-center">
         <div className="no-scrollbar flex w-full flex-row flex-nowrap gap-1.5 overflow-x-auto sm:gap-2.5">
           {[
-            { icon: <AlertCircle className="grievance__stat-icon--open size-3 shrink-0 sm:size-3.5" />, label: `${stats.open} Open` },
-            { icon: <Clock className="grievance__stat-icon--progress size-3 shrink-0 sm:size-3.5" />, label: `${stats.inProgress} In Progress` },
-            { icon: <CheckCircle className="grievance__stat-icon--resolved size-3 shrink-0 sm:size-3.5" />, label: `${stats.resolved} Resolved` },
+            { icon: <AlertCircle className="size-3 sm:size-3.5" />, count: stats.open, label: 'Open', tile: 'from-red-500 to-rose-600 shadow-red-500/30', border: 'border-red-200' },
+            { icon: <Clock className="size-3 sm:size-3.5" />, count: stats.inProgress, label: 'In Progress', tile: 'from-orange-400 to-orange-600 shadow-orange-500/30', border: 'border-orange-200' },
+            { icon: <CheckCircle className="size-3 sm:size-3.5" />, count: stats.resolved, label: 'Resolved', tile: 'from-emerald-500 to-teal-600 shadow-emerald-500/30', border: 'border-emerald-200' },
           ].map((pill) => (
-            <Badge key={pill.label} variant="outline" className="grievance__stat-pill shrink-0 gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold sm:px-2.5 sm:py-1 sm:text-xs">
-              {pill.icon}
-              <span>{pill.label}</span>
-            </Badge>
+            <span key={pill.label} className={cn('inline-flex shrink-0 items-center gap-2 rounded-full border bg-white py-1 pl-1 pr-3 text-[10px] font-semibold text-slate-600 dark:bg-slate-900 sm:text-xs', pill.border)}>
+              <span className={cn('grid size-6 place-items-center rounded-full bg-gradient-to-br text-white shadow-md sm:size-7', pill.tile)}>{pill.icon}</span>
+              <span><b className="text-sm font-extrabold text-slate-900 dark:text-white sm:text-base">{pill.count}</b> {pill.label}</span>
+            </span>
           ))}
         </div>
 
@@ -372,7 +382,7 @@ const GrievanceHandling: React.FC = () => {
                 }
               }}
               onBlur={commitSearch}
-              className="h-9 w-full rounded-xl border-slate-200 bg-white pl-8 pr-8 text-xs text-slate-800 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 sm:pl-9 sm:text-sm"
+              className="h-10 w-full rounded-xl border-slate-200 bg-slate-50 pl-8 pr-8 text-xs text-slate-800 focus-visible:bg-white dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 sm:pl-9 sm:text-sm"
             />
             {searchInput && (
               <Button
@@ -391,7 +401,7 @@ const GrievanceHandling: React.FC = () => {
             value={statusFilter}
             onValueChange={(val) => { setStatusFilter(val); setPage(1); }}
           >
-            <SelectTrigger className="h-9 w-[150px] shrink-0 rounded-xl border-slate-200 bg-white text-xs dark:border-slate-800 dark:bg-slate-900 sm:text-sm">
+            <SelectTrigger className="h-10 w-[150px] shrink-0 rounded-xl border-slate-200 bg-slate-50 text-xs font-medium dark:border-slate-800 dark:bg-slate-900 sm:text-sm">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -403,7 +413,7 @@ const GrievanceHandling: React.FC = () => {
               <SelectItem value="CLOSED">Closed</SelectItem>
             </SelectContent>
           </Select>
-          <Button className="shrink-0 gap-1.5" onClick={() => setShowComplaintModal(true)} aria-label="Raise Complaint">
+          <Button className="h-10 shrink-0 gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 font-bold text-white shadow-md shadow-blue-600/25 hover:brightness-110" onClick={() => setShowComplaintModal(true)} aria-label="Raise Complaint">
             <Plus size={16} />
             <span className="hidden sm:inline">Raise Complaint</span>
           </Button>
@@ -418,7 +428,7 @@ const GrievanceHandling: React.FC = () => {
             setPage(1);
           }}
         >
-          <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border border-slate-100 bg-white p-1.5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-none dark:border-slate-800 dark:bg-slate-900">
             {[
               { id: 'all', label: 'All Complaints', icon: <MessageSquareWarning size={16} /> },
               { id: 'academic', label: 'Academic', icon: <AlertCircle size={16} /> },
@@ -428,7 +438,7 @@ const GrievanceHandling: React.FC = () => {
               <TabsTrigger
                 key={t.id}
                 value={t.id}
-                className="shrink-0 gap-2 rounded-lg px-3 py-2 text-xs font-bold text-slate-500 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm sm:text-sm"
+                className="shrink-0 gap-2 rounded-lg px-3 py-2 text-xs font-bold text-slate-500 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-blue-600/25 sm:text-sm"
               >
                 {t.icon}
                 {t.label}
@@ -462,7 +472,10 @@ const GrievanceHandling: React.FC = () => {
       <Dialog open={showComplaintModal} onOpenChange={setShowComplaintModal}>
         <DialogContent className="max-h-[90vh] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-2xl sm:rounded-2xl">
           <DialogHeader className="text-left">
-            <DialogTitle>Raise New Complaint</DialogTitle>
+            <div className="flex items-center gap-3">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30"><MessageSquareWarning className="size-5" /></span>
+              <DialogTitle>Raise New Complaint</DialogTitle>
+            </div>
             <DialogDescription className="sr-only">Describe the issue and submit it to the institute admin.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -512,7 +525,7 @@ const GrievanceHandling: React.FC = () => {
           </div>
           <DialogFooter className="flex-col-reverse gap-2 sm:flex-row">
             <Button variant="outline" onClick={() => setShowComplaintModal(false)}>Cancel</Button>
-            <Button onClick={handleCreateComplaint}>Submit Complaint</Button>
+            <Button onClick={handleCreateComplaint} className="bg-gradient-to-r from-blue-600 to-indigo-600 font-bold text-white shadow-md shadow-blue-600/25 hover:brightness-110">Submit Complaint</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -522,9 +535,9 @@ const GrievanceHandling: React.FC = () => {
         <DialogContent className="flex max-h-[85vh] w-[calc(100%-1.5rem)] max-w-2xl flex-col gap-0 overflow-hidden rounded-2xl border-slate-100 bg-white p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-950 sm:max-h-[90vh] sm:w-full sm:rounded-3xl">
           {selectedTicket && (
             <>
-              <DialogHeader className="border-b border-slate-100 p-4 pr-12 text-left dark:border-slate-800 sm:p-6 sm:pr-14">
+              <DialogHeader className="border-b border-slate-100 bg-gradient-to-r from-blue-50 to-white p-4 pr-12 text-left dark:border-slate-800 dark:from-slate-900 dark:to-slate-950 sm:p-6 sm:pr-14">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Support Ticket</span>
-                <p className="mt-1 text-xs font-black uppercase tracking-widest text-blue-600">#{ticketNo(selectedTicket)}</p>
+                <p className="mt-1.5 inline-flex w-fit rounded-md bg-blue-600 px-2 py-0.5 text-[11px] font-bold uppercase tracking-widest text-white">#{ticketNo(selectedTicket)}</p>
                 <DialogTitle className="mt-1 text-base font-bold leading-snug tracking-normal text-slate-950 dark:text-white sm:text-xl">
                   {selectedTicket.title}
                 </DialogTitle>
@@ -579,7 +592,7 @@ const GrievanceHandling: React.FC = () => {
                     ) : (
                       <div className="space-y-2">
                         {ticketMessages.map((message) => (
-                          <Card key={message.id} className="rounded-xl border-slate-100 bg-white p-2.5 shadow-sm dark:border-slate-800 dark:bg-slate-950 sm:p-3">
+                          <Card key={message.id} className="rounded-xl border-slate-200 border-l-4 border-l-blue-500 bg-white p-2.5 shadow-none dark:border-slate-800 dark:bg-slate-950 sm:p-3">
                             <p className="whitespace-pre-wrap break-words text-xs font-medium leading-relaxed text-slate-700 dark:text-slate-200 sm:text-sm">
                               {message.content || 'Message unavailable'}
                             </p>
