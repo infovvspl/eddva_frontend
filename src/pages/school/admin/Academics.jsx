@@ -162,9 +162,14 @@ export default function Academics() {
   return (
     <div className="w-full px-3 sm:px-5 lg:px-8 xl:px-10">
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="font-display text-2xl sm:text-3xl font-bold text-surface-950 dark:text-white">Class & Sections</h1>
-          <p className="mt-1 text-xs sm:text-sm text-surface-500 dark:text-surface-400">Manage classes, sections and academic structure</p>
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30">
+            <School className="size-5" />
+          </span>
+          <div className="min-w-0">
+            <h1 className="font-display text-2xl sm:text-3xl font-bold leading-tight text-surface-950 dark:text-white">Class & Sections</h1>
+            <p className="mt-0.5 text-xs sm:text-sm text-surface-500 dark:text-surface-400">Manage classes, sections and academic structure</p>
+          </div>
         </div>
         <div className="flex flex-col gap-2 w-full sm:w-auto">
           <div className="flex items-center gap-2 w-full">
@@ -179,7 +184,7 @@ export default function Academics() {
             </div>
             <button
               onClick={handleAddClass}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-blue-700"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3.5 py-2 text-xs font-bold text-white shadow-md shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]"
             >
               <Plus className="size-4" />
               <span>Add Class</span>
@@ -193,7 +198,7 @@ export default function Academics() {
         <SummaryCard icon={Layers} tone="emerald" label="Total Sections" value={totalSections} helper={`Academic Year ${academicYear}`} />
       </div>
 
-      <section className="mt-5 overflow-hidden rounded-xl border border-surface-200 bg-white shadow-sm dark:border-surface-800 dark:bg-surface-900">
+      <section className="mt-5 overflow-hidden rounded-2xl border border-surface-200 bg-white dark:border-surface-800 dark:bg-surface-900">
         <div className="flex flex-col gap-3 border-b border-surface-200 p-4 md:flex-row md:items-center md:justify-between dark:border-surface-800">
           {/* ── Mobile Filters ── */}
           <div className="flex flex-col md:hidden gap-3 w-full">
@@ -223,7 +228,7 @@ export default function Academics() {
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
                 placeholder="Search class or section..."
-                className="h-10 w-full rounded-lg border border-surface-200 bg-white pl-10 pr-4 text-sm font-medium outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-surface-800 dark:bg-surface-955 dark:text-white"
+                className="h-10 w-full rounded-xl border border-surface-200 bg-white pl-10 pr-4 text-sm font-medium outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-surface-800 dark:bg-surface-955 dark:text-white"
               />
             </div>
 
@@ -252,7 +257,7 @@ export default function Academics() {
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
                   placeholder="Search class or section..."
-                  className="h-11 w-full rounded-lg border border-surface-200 bg-white pl-10 pr-4 text-sm font-medium outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 sm:w-72 dark:border-surface-800 dark:bg-surface-950 dark:text-white"
+                  className="h-10 w-full rounded-xl border border-surface-200 bg-white pl-10 pr-4 text-sm font-medium outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 sm:w-72 dark:border-surface-800 dark:bg-surface-950 dark:text-white"
                 />
               </div>
               <CustomSelect
@@ -272,13 +277,13 @@ export default function Academics() {
         {/* Desktop View */}
         <div className="hidden md:block overflow-x-auto">
           <Table className="w-full min-w-[900px] text-left">
-            <TableHeader className="bg-surface-50 text-xs font-bold text-surface-600 dark:bg-surface-955/50 dark:text-surface-300">
+            <TableHeader className="border-b border-surface-200 bg-surface-50 text-[11px] font-bold uppercase tracking-wider text-surface-600 dark:border-surface-800 dark:bg-surface-955/50 dark:text-surface-300">
               <TableRow className="hover:bg-transparent border-b-0">
-                <TableHead className="h-auto px-3 py-4 sticky left-0 z-20 bg-surface-50 dark:bg-slate-850 shadow-sm text-surface-600 dark:text-surface-300">Class</TableHead>
-                <TableHead className="h-auto px-3 py-4 text-center text-surface-600 dark:text-surface-300">Sections</TableHead>
-                <TableHead className="h-auto px-3 py-4 text-center text-surface-600 dark:text-surface-300">Students</TableHead>
-                <TableHead className="h-auto px-3 py-4 text-surface-600 dark:text-surface-300">Status</TableHead>
-                <TableHead className="h-auto px-3 py-4 text-center text-surface-600 dark:text-surface-300">Actions</TableHead>
+                <TableHead className="h-auto px-4 py-3 sticky left-0 z-20 bg-surface-50 dark:bg-slate-850 text-surface-600 dark:text-surface-300">Class</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-center text-surface-600 dark:text-surface-300">Sections</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-center text-surface-600 dark:text-surface-300">Students</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-surface-600 dark:text-surface-300">Status</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-center text-surface-600 dark:text-surface-300">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="divide-y divide-surface-200 text-sm dark:divide-surface-800 [&_tr]:border-b-0">
@@ -292,12 +297,12 @@ export default function Academics() {
               ) : (
                 filteredClasses.map((cls) => {
                   return (
-                    <TableRow key={cls.id} className="bg-white align-middle hover:bg-surface-50/80 dark:bg-surface-900 dark:hover:bg-surface-800/40">
-                      <TableCell className="p-4 px-3 py-4 font-bold text-surface-950 dark:text-white sticky left-0 z-20 bg-white dark:bg-slate-900">{cls.name}</TableCell>
-                      <TableCell className="p-4 px-3 py-4 text-center font-semibold text-blue-700 dark:text-blue-300">{sectionCount(cls)}</TableCell>
-                      <TableCell className="p-4 px-3 py-4 text-center text-surface-700 dark:text-surface-200">{classStudents(cls)}</TableCell>
-                      <TableCell className="p-4 px-3 py-4"><StatusPill /></TableCell>
-                      <TableCell className="p-4 px-3 py-4">
+                    <TableRow key={cls.id} className="group/row bg-white align-middle transition-colors hover:bg-blue-50/50 dark:bg-surface-900 dark:hover:bg-surface-800/40">
+                      <TableCell className="p-4 px-4 py-3 font-bold text-surface-950 dark:text-white sticky left-0 z-20 bg-white transition-colors group-hover/row:bg-blue-50 dark:bg-slate-900 dark:group-hover/row:bg-slate-800">{cls.name}</TableCell>
+                      <TableCell className="p-4 px-4 py-3 text-center"><span className="inline-flex min-w-8 justify-center rounded-lg bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">{sectionCount(cls)}</span></TableCell>
+                      <TableCell className="p-4 px-4 py-3 text-center text-surface-700 dark:text-surface-200">{classStudents(cls)}</TableCell>
+                      <TableCell className="p-4 px-4 py-3"><StatusPill /></TableCell>
+                      <TableCell className="p-4 px-4 py-3">
                         <div className="flex justify-center gap-2">
                           <IconButton title="Open sections page" onClick={() => openSectionsPage(cls.id)} icon={Eye} />
                           <IconButton title="Edit class" onClick={() => handleEditClass(cls)} icon={Edit2} />
@@ -406,21 +411,23 @@ export default function Academics() {
 
 function SummaryCard({ icon: Icon, tone, label, value, helper }) {
   const tones = {
-    blue: 'bg-blue-50 text-blue-600 dark:bg-blue-950/40',
-    emerald: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40',
-    indigo: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40',
+    blue: { card: 'border-blue-100 from-white to-blue-50/80', blob: 'bg-blue-100', tile: 'from-blue-500 to-sky-500 shadow-blue-500/30' },
+    emerald: { card: 'border-emerald-100 from-white to-emerald-50/80', blob: 'bg-emerald-100', tile: 'from-emerald-500 to-teal-500 shadow-emerald-500/30' },
+    indigo: { card: 'border-indigo-100 from-white to-indigo-50/80', blob: 'bg-indigo-100', tile: 'from-indigo-500 to-violet-500 shadow-indigo-500/30' },
   };
+  const t = tones[tone] || tones.blue;
 
   return (
-    <div className="rounded-xl border border-surface-200 bg-white p-3 sm:p-6 shadow-sm dark:border-surface-800 dark:bg-surface-900">
-      <div className="flex items-center gap-3 sm:gap-5">
-        <span className={`grid size-10 sm:size-16 place-items-center rounded-full shrink-0 ${tones[tone]}`}>
-          <Icon className="size-5 sm:size-7" />
+    <div className={cn('relative overflow-hidden rounded-2xl border bg-gradient-to-br p-3 transition-colors hover:border-surface-300 sm:p-5 dark:border-surface-800 dark:from-surface-900 dark:to-surface-900', t.card)}>
+      <span className={cn('pointer-events-none absolute -right-6 -top-6 size-24 rounded-full opacity-60 dark:opacity-10', t.blob)} />
+      <div className="relative flex items-center gap-3 sm:gap-4">
+        <span className={cn('grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br text-white shadow-md sm:size-14 sm:rounded-2xl', t.tile)}>
+          <Icon className="size-5 sm:size-6" />
         </span>
         <div className="min-w-0">
-          <p className="text-xs sm:text-sm font-medium text-surface-600 dark:text-surface-300 truncate">{label}</p>
-          <p className="mt-0.5 sm:mt-1 text-xl sm:text-3xl font-bold leading-none text-surface-950 dark:text-white">{value}</p>
-          <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-sm text-surface-500 dark:text-surface-400 truncate">{helper}</p>
+          <p className="truncate text-xs font-semibold text-surface-600 dark:text-surface-300 sm:text-sm">{label}</p>
+          <p className="mt-0.5 text-xl font-bold leading-none text-surface-950 dark:text-white sm:mt-1 sm:text-3xl">{value}</p>
+          <p className="mt-0.5 truncate text-[10px] text-surface-500 dark:text-surface-400 sm:mt-1 sm:text-sm">{helper}</p>
         </div>
       </div>
     </div>
@@ -439,15 +446,15 @@ function StatusPill() {
 }
 
 function IconButton({ icon: Icon, title, onClick, danger = false }) {
-  const size = 'size-9';
+  const size = 'size-8';
   const colors = danger
-    ? 'border-red-100 text-red-500 hover:bg-red-50 dark:border-red-900/60 dark:hover:bg-red-950/30'
-    : 'border-surface-200 text-surface-600 hover:border-blue-200 hover:text-blue-600 dark:border-surface-800 dark:text-surface-300';
+    ? 'border-red-100 text-red-500 hover:border-red-300 hover:bg-red-50 dark:border-red-900/60 dark:hover:bg-red-950/30'
+    : 'border-surface-200 text-surface-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 dark:border-surface-800 dark:text-surface-300 dark:hover:bg-surface-800';
 
   return (
     <button
       onClick={onClick}
-      className={`grid ${size} place-items-center rounded-lg border ${colors}`}
+      className={`grid ${size} place-items-center rounded-lg border transition-colors ${colors}`}
       title={title}
     >
       <Icon className="size-4" />
