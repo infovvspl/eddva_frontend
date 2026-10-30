@@ -273,7 +273,7 @@ const GrievanceHandling: React.FC = () => {
           tabIndex={0}
           onClick={() => openTicketMessages(item)}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openTicketMessages(item); } }}
-          className="relative flex cursor-pointer flex-col gap-2 overflow-hidden rounded-2xl border-slate-200 bg-white p-3.5 pl-5 shadow-none transition-all hover:border-blue-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+          className="relative flex cursor-pointer flex-col gap-2 overflow-hidden rounded-2xl border-slate-300 bg-white p-3.5 pl-5 shadow-none transition-all hover:border-blue-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
         >
           <span className={cn('absolute inset-y-0 left-0 w-1 bg-gradient-to-b', STATUS_BAR[item.status] || STATUS_BAR.closed)} />
           <div className="flex items-center justify-between gap-2">
@@ -290,14 +290,14 @@ const GrievanceHandling: React.FC = () => {
             <ToneBadge tone={priorityTone(item.priority)} className="text-[9px] capitalize">{item.priority} Priority</ToneBadge>
           </div>
 
-          <div className="mt-1 flex items-center justify-between border-t border-slate-100/60 pt-2 text-[9px] font-semibold text-slate-400 dark:border-slate-800/60 dark:text-slate-500">
+          <div className="mt-1 flex items-center justify-between border-t border-slate-200/60 pt-2 text-[9px] font-semibold text-slate-400 dark:border-slate-800/60 dark:text-slate-500">
             <span>By: {item.raisedBy}</span>
             <span>{item.date}</span>
           </div>
         </Card>
       ))}
       {data.length === 0 && (
-        <Card className="rounded-2xl border-slate-100 bg-white py-8 text-center text-xs font-semibold text-slate-400 shadow-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-500">
+        <Card className="rounded-2xl border-slate-300 bg-white py-8 text-center text-xs font-semibold text-slate-400 shadow-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-500">
           No complaints found.
         </Card>
       )}
@@ -308,7 +308,7 @@ const GrievanceHandling: React.FC = () => {
     <>
       <div className="md:hidden">{renderMobileGrievanceList(data)}</div>
       <div className="grievance__section hidden w-full overflow-x-auto md:block">
-        <DataTable columns={columns} data={data} onRowClick={openTicketMessages} className="!rounded-2xl !border-slate-200 !bg-white !shadow-none" />
+        <DataTable columns={columns} data={data} onRowClick={openTicketMessages} className="!rounded-2xl !border-slate-300 !bg-white !shadow-none" />
       </div>
     </>
   );
@@ -317,13 +317,13 @@ const GrievanceHandling: React.FC = () => {
     <>
       <div className="md:hidden">{renderMobileGrievanceList(grievancesList)}</div>
       <div className="grievance__section hidden md:block">
-        <Card className="rounded-2xl border-slate-200 bg-white p-[18px] shadow-none">
+        <Card className="rounded-2xl border-slate-300 bg-white p-[18px] shadow-none">
           <CardHeader className="p-0 pb-3">
             <CardTitle className="grievance__support-title text-base font-bold leading-normal tracking-normal">Support Requests</CardTitle>
           </CardHeader>
           <CardContent className="grievance__support-list p-0">
             {grievancesList.map((g) => (
-              <div key={g.id} className="grievance__support-item cursor-pointer !rounded-xl !border-slate-200 !bg-white transition-all hover:!border-blue-300 hover:shadow-md" onClick={() => openTicketMessages(g)}>
+              <div key={g.id} className="grievance__support-item cursor-pointer !rounded-xl !border-slate-300 !bg-white transition-all hover:!border-blue-300 hover:shadow-md" onClick={() => openTicketMessages(g)}>
                 <div className="grievance__support-priority">
                   <div className={`grievance__priority-dot grievance__priority-dot--${g.priority}`} />
                 </div>
@@ -356,9 +356,9 @@ const GrievanceHandling: React.FC = () => {
       <div className="flex w-full flex-col items-stretch justify-between gap-3 lg:flex-row lg:items-center">
         <div className="no-scrollbar flex w-full flex-row flex-nowrap gap-1.5 overflow-x-auto sm:gap-2.5">
           {[
-            { icon: <AlertCircle className="size-3 sm:size-3.5" />, count: stats.open, label: 'Open', tile: 'from-red-500 to-rose-600 shadow-red-500/30', border: 'border-red-200' },
-            { icon: <Clock className="size-3 sm:size-3.5" />, count: stats.inProgress, label: 'In Progress', tile: 'from-orange-400 to-orange-600 shadow-orange-500/30', border: 'border-orange-200' },
-            { icon: <CheckCircle className="size-3 sm:size-3.5" />, count: stats.resolved, label: 'Resolved', tile: 'from-emerald-500 to-teal-600 shadow-emerald-500/30', border: 'border-emerald-200' },
+            { icon: <AlertCircle className="size-3 sm:size-3.5" />, count: stats.open, label: 'Open', tile: 'from-red-500 to-rose-600 shadow-red-500/30', border: 'border-red-300' },
+            { icon: <Clock className="size-3 sm:size-3.5" />, count: stats.inProgress, label: 'In Progress', tile: 'from-orange-400 to-orange-600 shadow-orange-500/30', border: 'border-orange-300' },
+            { icon: <CheckCircle className="size-3 sm:size-3.5" />, count: stats.resolved, label: 'Resolved', tile: 'from-emerald-500 to-teal-600 shadow-emerald-500/30', border: 'border-emerald-300' },
           ].map((pill) => (
             <span key={pill.label} className={cn('inline-flex shrink-0 items-center gap-2 rounded-full border bg-white py-1 pl-1 pr-3 text-[10px] font-semibold text-slate-600 dark:bg-slate-900 sm:text-xs', pill.border)}>
               <span className={cn('grid size-6 place-items-center rounded-full bg-gradient-to-br text-white shadow-md sm:size-7', pill.tile)}>{pill.icon}</span>
@@ -382,7 +382,7 @@ const GrievanceHandling: React.FC = () => {
                 }
               }}
               onBlur={commitSearch}
-              className="h-10 w-full rounded-xl border-slate-200 bg-slate-50 pl-8 pr-8 text-xs text-slate-800 focus-visible:bg-white dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 sm:pl-9 sm:text-sm"
+              className="h-10 w-full rounded-xl border-slate-300 bg-slate-50 pl-8 pr-8 text-xs text-slate-800 focus-visible:bg-white dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 sm:pl-9 sm:text-sm"
             />
             {searchInput && (
               <Button
@@ -401,7 +401,7 @@ const GrievanceHandling: React.FC = () => {
             value={statusFilter}
             onValueChange={(val) => { setStatusFilter(val); setPage(1); }}
           >
-            <SelectTrigger className="h-10 w-[150px] shrink-0 rounded-xl border-slate-200 bg-slate-50 text-xs font-medium dark:border-slate-800 dark:bg-slate-900 sm:text-sm">
+            <SelectTrigger className="h-10 w-[150px] shrink-0 rounded-xl border-slate-300 bg-slate-50 text-xs font-medium dark:border-slate-800 dark:bg-slate-900 sm:text-sm">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -428,7 +428,7 @@ const GrievanceHandling: React.FC = () => {
             setPage(1);
           }}
         >
-          <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-none dark:border-slate-800 dark:bg-slate-900">
+          <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border border-slate-300 bg-white p-1.5 shadow-none dark:border-slate-800 dark:bg-slate-900">
             {[
               { id: 'all', label: 'All Complaints', icon: <MessageSquareWarning size={16} /> },
               { id: 'academic', label: 'Academic', icon: <AlertCircle size={16} /> },
@@ -456,7 +456,7 @@ const GrievanceHandling: React.FC = () => {
       </div>
 
       {grievancesList.length > 0 && (
-        <div className="mt-4 border-t border-slate-100 pt-4 dark:border-slate-800">
+        <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-800">
           <DataTablePagination
             page={page}
             limit={limit}
@@ -532,10 +532,10 @@ const GrievanceHandling: React.FC = () => {
 
       {/* Ticket details */}
       <Dialog open={!!selectedTicket} onOpenChange={(open) => { if (!open) closeTicketModal(); }}>
-        <DialogContent className="flex max-h-[85vh] w-[calc(100%-1.5rem)] max-w-2xl flex-col gap-0 overflow-hidden rounded-2xl border-slate-100 bg-white p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-950 sm:max-h-[90vh] sm:w-full sm:rounded-3xl">
+        <DialogContent className="flex max-h-[85vh] w-[calc(100%-1.5rem)] max-w-2xl flex-col gap-0 overflow-hidden rounded-2xl border-slate-300 bg-white p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-950 sm:max-h-[90vh] sm:w-full sm:rounded-3xl">
           {selectedTicket && (
             <>
-              <DialogHeader className="border-b border-slate-100 bg-gradient-to-r from-blue-50 to-white p-4 pr-12 text-left dark:border-slate-800 dark:from-slate-900 dark:to-slate-950 sm:p-6 sm:pr-14">
+              <DialogHeader className="border-b border-slate-200 bg-gradient-to-r from-blue-50 to-white p-4 pr-12 text-left dark:border-slate-800 dark:from-slate-900 dark:to-slate-950 sm:p-6 sm:pr-14">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Support Ticket</span>
                 <p className="mt-1.5 inline-flex w-fit rounded-md bg-blue-600 px-2 py-0.5 text-[11px] font-bold uppercase tracking-widest text-white">#{ticketNo(selectedTicket)}</p>
                 <DialogTitle className="mt-1 text-base font-bold leading-snug tracking-normal text-slate-950 dark:text-white sm:text-xl">
@@ -553,7 +553,7 @@ const GrievanceHandling: React.FC = () => {
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
-                  <Card className="rounded-xl border-slate-100 p-3 shadow-none dark:border-slate-800 sm:rounded-2xl sm:p-4">
+                  <Card className="rounded-xl border-slate-300 p-3 shadow-none dark:border-slate-800 sm:rounded-2xl sm:p-4">
                     <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 sm:text-xs">Status</h4>
                     <div className="mt-1.5">
                       <ToneBadge tone={selectedTicket.status === 'resolved' || selectedTicket.status === 'closed' ? 'success' : 'warning'}>
@@ -562,7 +562,7 @@ const GrievanceHandling: React.FC = () => {
                     </div>
                   </Card>
 
-                  <Card className="rounded-xl border-slate-100 p-3 shadow-none dark:border-slate-800 sm:rounded-2xl sm:p-4">
+                  <Card className="rounded-xl border-slate-300 p-3 shadow-none dark:border-slate-800 sm:rounded-2xl sm:p-4">
                     <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 sm:text-xs">Created At</h4>
                     <p className="mt-1.5 flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200 sm:text-sm">
                       <Calendar className="size-3.5 text-slate-400" />
@@ -570,7 +570,7 @@ const GrievanceHandling: React.FC = () => {
                     </p>
                   </Card>
 
-                  <Card className="rounded-xl border-slate-100 p-3 shadow-none dark:border-slate-800 sm:rounded-2xl sm:p-4">
+                  <Card className="rounded-xl border-slate-300 p-3 shadow-none dark:border-slate-800 sm:rounded-2xl sm:p-4">
                     <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 sm:text-xs">Category</h4>
                     <p className="mt-1.5 text-xs font-bold capitalize text-slate-800 dark:text-slate-200 sm:text-sm">
                       {selectedTicket.category || 'General'}
@@ -578,7 +578,7 @@ const GrievanceHandling: React.FC = () => {
                   </Card>
 
                   {/* Ticket messages */}
-                  <Card className="col-span-full rounded-xl border-slate-100 bg-slate-50/50 p-3 shadow-none dark:border-slate-800 sm:rounded-2xl sm:p-4">
+                  <Card className="col-span-full rounded-xl border-slate-300 bg-slate-50/50 p-3 shadow-none dark:border-slate-800 sm:rounded-2xl sm:p-4">
                     <h4 className="mb-2.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 sm:mb-3 sm:text-xs">
                       <MessageSquare className="size-3.5 text-slate-400" />
                       Institute Admin Replies
@@ -586,13 +586,13 @@ const GrievanceHandling: React.FC = () => {
                     {loadingMessages ? (
                       <p className="text-xs font-bold text-slate-500 sm:text-sm">Loading replies...</p>
                     ) : ticketMessages.length === 0 ? (
-                      <div className="rounded-xl border border-dashed border-slate-200 bg-white p-3 text-[11px] font-semibold text-slate-500 sm:p-4 sm:text-xs">
+                      <div className="rounded-xl border border-dashed border-slate-300 bg-white p-3 text-[11px] font-semibold text-slate-500 sm:p-4 sm:text-xs">
                         No replies have been sent for this ticket yet.
                       </div>
                     ) : (
                       <div className="space-y-2">
                         {ticketMessages.map((message) => (
-                          <Card key={message.id} className="rounded-xl border-slate-200 border-l-4 border-l-blue-500 bg-white p-2.5 shadow-none dark:border-slate-800 dark:bg-slate-950 sm:p-3">
+                          <Card key={message.id} className="rounded-xl border-slate-300 border-l-4 border-l-blue-500 bg-white p-2.5 shadow-none dark:border-slate-800 dark:bg-slate-950 sm:p-3">
                             <p className="whitespace-pre-wrap break-words text-xs font-medium leading-relaxed text-slate-700 dark:text-slate-200 sm:text-sm">
                               {message.content || 'Message unavailable'}
                             </p>
@@ -607,8 +607,8 @@ const GrievanceHandling: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex flex-col items-stretch justify-between gap-3 border-t border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50 sm:flex-row sm:items-center sm:p-6">
-                <Label className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400 sm:justify-start">
+              <div className="flex flex-col items-stretch justify-between gap-3 border-t border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50 sm:flex-row sm:items-center sm:p-6">
+                <Label className="flex items-center justify-between gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400 sm:justify-start">
                   <span>Reopen</span>
                   <Switch
                     checked={String(selectedTicket.status || '').toUpperCase() === 'REOPENED'}
@@ -625,7 +625,7 @@ const GrievanceHandling: React.FC = () => {
                     type="button"
                     variant="outline"
                     onClick={() => void openChatForTicket(selectedTicket)}
-                    className="gap-1.5 rounded-xl border-blue-200 bg-blue-50 text-xs font-bold text-blue-700 hover:bg-blue-100 hover:text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/50 dark:text-blue-400"
+                    className="gap-1.5 rounded-xl border-blue-300 bg-blue-50 text-xs font-bold text-blue-700 hover:bg-blue-100 hover:text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/50 dark:text-blue-400"
                   >
                     <MessageSquare className="size-3.5" />
                     Chat

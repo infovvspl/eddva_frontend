@@ -90,7 +90,7 @@ const StatusToggle: React.FC<{ value: string; onChange: (v: StatusValue) => void
     onValueChange={(v) => { if (v) onChange(v as StatusValue); }}
     className={compact
       ? 'grid w-full grid-cols-2 gap-1.5 min-[380px]:grid-cols-4'
-      : 'inline-flex gap-2 rounded-2xl border border-slate-100 bg-slate-50 p-1.5 dark:border-slate-800 dark:bg-slate-950'}
+      : 'inline-flex gap-2 rounded-2xl border border-slate-300 bg-slate-50 p-1.5 dark:border-slate-800 dark:bg-slate-950'}
   >
     {STATUS_OPTIONS.map((o) => (
       <ToggleGroupItem
@@ -101,7 +101,7 @@ const StatusToggle: React.FC<{ value: string; onChange: (v: StatusValue) => void
           'h-auto gap-1 font-black text-slate-600 data-[state=on]:text-white data-[state=on]:shadow-sm dark:text-slate-400',
           '[&[data-state=on]_svg]:fill-white [&[data-state=on]_svg]:text-white',
           compact
-            ? 'justify-center rounded-lg border border-slate-100 bg-slate-50 py-2 text-[10px] dark:border-slate-800/80 dark:bg-slate-950'
+            ? 'justify-center rounded-lg border border-slate-300 bg-slate-50 py-2 text-[10px] dark:border-slate-800/80 dark:bg-slate-950'
             : 'rounded-xl px-4 py-2 text-xs',
           o.on,
         )}
@@ -860,7 +860,7 @@ const AttendanceSystem: React.FC = () => {
 
       {/* Tabs Menu Navigation Bar */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'entry' | 'history' | 'habitual')} className="mb-6">
-        <TabsList className="tabs-navigation-bar h-auto w-full max-w-2xl gap-2 rounded-2xl border border-slate-100 bg-white p-1.5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <TabsList className="tabs-navigation-bar h-auto w-full max-w-2xl gap-2 rounded-2xl border border-slate-300 bg-white p-1.5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <TabsTrigger
             value="entry"
             className="flex-1 gap-2 rounded-xl px-2 py-2.5 text-xs font-bold text-slate-600 data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-sm dark:text-slate-400 sm:px-4"
@@ -898,7 +898,7 @@ const AttendanceSystem: React.FC = () => {
           >
             {/* Z-index controls for select dropdown layering */}
             {/* Header Control Form */}
-            <Card className="rounded-2xl border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 p-6 attendance-filters-card">
+            <Card className="rounded-2xl border-slate-300 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 p-6 attendance-filters-card">
               <div className="flex items-center gap-2 mb-4 text-indigo-600 dark:text-indigo-400">
                 <Filter className="size-4" />
                 <h3 className="text-xs font-bold uppercase tracking-wider">Attendance Selector</h3>
@@ -964,7 +964,7 @@ const AttendanceSystem: React.FC = () => {
 
               <div className="mt-5 flex items-center justify-between flex-wrap gap-3">
                 {editingSessionId && (
-                  <Badge variant="outline" className="flex items-center gap-1.5 border-violet-200 bg-violet-50 px-3 py-1.5 text-violet-700 dark:border-violet-900 dark:bg-violet-950/30 dark:text-violet-300">
+                  <Badge variant="outline" className="flex items-center gap-1.5 border-violet-300 bg-violet-50 px-3 py-1.5 text-violet-700 dark:border-violet-900 dark:bg-violet-950/30 dark:text-violet-300">
                     <Info className="size-3.5" /> Editing Session: Class {currentClassName} - {currentSectionName}
                   </Badge>
                 )}
@@ -981,7 +981,7 @@ const AttendanceSystem: React.FC = () => {
 
             {/* Attendance Sheet content */}
             {duplicateSessionId ? (
-              <Card className="rounded-2xl border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 p-8 border-2 border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-900/10 attendance-results-card">
+              <Card className="rounded-2xl border-slate-300 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 p-8 border-2 border-amber-300 dark:border-amber-900 bg-amber-50 dark:bg-amber-900/10 attendance-results-card">
                 <div className="flex flex-col items-center justify-center text-center">
                   <div className="size-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mb-4">
                     <AlertCircle className="size-8 text-amber-600 dark:text-amber-500" />
@@ -1018,8 +1018,8 @@ const AttendanceSystem: React.FC = () => {
               <div className="flex flex-col gap-6">
 
                 {/* Main Attendance Sheet (Full width) */}
-                <Card className="rounded-2xl border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 p-6 attendance-results-card">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 pb-4 border-b border-slate-100 dark:border-slate-800">
+                <Card className="rounded-2xl border-slate-300 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 p-6 attendance-results-card">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 pb-4 border-b border-slate-200 dark:border-slate-800">
                       <div>
                         <h2 className="text-base font-bold text-slate-800 dark:text-white">Attendance Marking Sheet</h2>
                         <p className="text-slate-400 text-xs mt-0.5">Toggle student presence status. Default is Present.</p>
@@ -1042,7 +1042,7 @@ const AttendanceSystem: React.FC = () => {
                     </div>
 
                     {/* Quick Action Buttons */}
-                    <div className="quick-actions-bar mb-4 flex flex-wrap gap-2 rounded-2xl border border-slate-100 bg-slate-50 p-2.5 dark:border-slate-800 dark:bg-slate-950">
+                    <div className="quick-actions-bar mb-4 flex flex-wrap gap-2 rounded-2xl border border-slate-300 bg-slate-50 p-2.5 dark:border-slate-800 dark:bg-slate-950">
                       <span className="mr-2 flex items-center text-xs font-bold text-slate-500">Quick Actions:</span>
                       <Button variant="ghost" size="sm" onClick={() => handleMarkAll('present')}
                         className="h-auto rounded-lg bg-emerald-500/10 px-3 py-1.5 text-[10px] font-black text-emerald-600 hover:bg-emerald-500 hover:text-white">
@@ -1060,7 +1060,7 @@ const AttendanceSystem: React.FC = () => {
                     </div>
 
                     {/* Desktop / tablet table */}
-                    <div className="hidden overflow-hidden rounded-lg border border-slate-100 dark:border-slate-800 md:block">
+                    <div className="hidden overflow-hidden rounded-lg border border-slate-300 dark:border-slate-800 md:block">
                       <Table>
                         <TableHeader className="bg-slate-50/60 dark:bg-slate-900/40">
                           <TableRow>
@@ -1112,7 +1112,7 @@ const AttendanceSystem: React.FC = () => {
                       {displayedStudents.map((s) => {
                         const currentStatus = attendanceData[s.id] || 'present';
                         return (
-                          <Card key={s.id} className="space-y-3 rounded-xl border-slate-100 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
+                          <Card key={s.id} className="space-y-3 rounded-xl border-slate-300 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
                             <div className="flex items-center justify-between gap-2">
                               <Badge variant="secondary" className="rounded bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-400 hover:bg-slate-50 dark:bg-slate-950">
                                 Roll #{s.roll_no ? String(s.roll_no).padStart(2, '0') : '--'}
@@ -1144,7 +1144,7 @@ const AttendanceSystem: React.FC = () => {
                     </div>
 
                     {students.length > 0 && (
-                      <div className="mt-4 border-t border-slate-100 dark:border-slate-800 pt-4">
+                      <div className="mt-4 border-t border-slate-200 dark:border-slate-800 pt-4">
                         <DataTablePagination
                           page={markingPage}
                           limit={markingLimit}
@@ -1158,8 +1158,8 @@ const AttendanceSystem: React.FC = () => {
                   </Card>
 
                   {/* Live Summary Card */}
-                  <Card className="rounded-2xl border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 p-6 shadow-sm border border-slate-100 dark:border-slate-800">
-                    <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+                  <Card className="rounded-2xl border-slate-300 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 p-6 shadow-sm border border-slate-300 dark:border-slate-800">
+                    <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-200 dark:border-slate-800">
                       <TrendingUp className="size-4.5 text-indigo-600" />
                       <h3 className="text-sm font-bold text-slate-800 dark:text-white">Attendance Summary</h3>
                     </div>
@@ -1209,7 +1209,7 @@ const AttendanceSystem: React.FC = () => {
                   </Card>
 
                   {/* Save Attendance Actions */}
-                  <Card className="rounded-2xl border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 p-6 shadow-sm border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                  <Card className="rounded-2xl border-slate-300 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 p-6 shadow-sm border border-slate-300 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
                     <Button
                       size="lg"
@@ -1245,7 +1245,7 @@ const AttendanceSystem: React.FC = () => {
               </div>
             ) : (
               // Empty State before loading students
-              <Card className="rounded-2xl border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 p-12 text-center flex flex-col items-center justify-center">
+              <Card className="rounded-2xl border-slate-300 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 p-12 text-center flex flex-col items-center justify-center">
                 <div className="size-28 bg-indigo-50 dark:bg-indigo-950/30 rounded-full flex items-center justify-center mb-5 border border-indigo-100 dark:border-indigo-900/30 shadow-inner">
                   <Calendar className="size-12 text-indigo-600 dark:text-indigo-400" />
                 </div>
@@ -1282,7 +1282,7 @@ const AttendanceSystem: React.FC = () => {
             className="space-y-6"
           >
             {/* Filters Row */}
-            <Card className="rounded-2xl border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 p-5 attendance-filters-card">
+            <Card className="rounded-2xl border-slate-300 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 p-5 attendance-filters-card">
               <div className="flex items-center gap-2 mb-3 text-indigo-600 dark:text-indigo-400">
                 <Filter className="size-4" />
                 <h3 className="text-xs font-bold uppercase tracking-wider">Filter History Logs</h3>
@@ -1351,7 +1351,7 @@ const AttendanceSystem: React.FC = () => {
             </Card>
 
             {/* History Records Table */}
-            <Card className="rounded-2xl border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 p-6 attendance-results-card">
+            <Card className="rounded-2xl border-slate-300 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 p-6 attendance-results-card">
               {historyLoading ? (
                 <div className="flex h-48 items-center justify-center">
                   <LoadingSpinner size="md" />
@@ -1361,7 +1361,7 @@ const AttendanceSystem: React.FC = () => {
                   {/* Mobile: one card per session */}
                   <div className="space-y-3 md:hidden">
                     {historyRecords.map((item) => (
-                      <Card key={item.sessionId} className="space-y-3 rounded-xl border-slate-100 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
+                      <Card key={item.sessionId} className="space-y-3 rounded-xl border-slate-300 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
                             <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{item.date}</p>
@@ -1382,7 +1382,7 @@ const AttendanceSystem: React.FC = () => {
                           <span className="font-bold text-emerald-600">Present: {item.present}</span>
                           <span className="text-right font-bold text-rose-500">Absent: {item.absent}</span>
                         </div>
-                        <div className="flex justify-end gap-1.5 border-t border-slate-100 pt-3 dark:border-slate-800">
+                        <div className="flex justify-end gap-1.5 border-t border-slate-200 pt-3 dark:border-slate-800">
                           <Button variant="outline" size="icon" title="View Attendance" onClick={() => handleViewDetails(item.sessionId)} className="size-9 rounded-xl text-slate-600 hover:text-indigo-600">
                             <Eye className="size-4" />
                           </Button>
@@ -1398,7 +1398,7 @@ const AttendanceSystem: React.FC = () => {
                   </div>
 
                   {/* Tablet / desktop table */}
-                  <div className="hidden overflow-hidden rounded-lg border border-slate-100 dark:border-slate-800 md:block">
+                  <div className="hidden overflow-hidden rounded-lg border border-slate-300 dark:border-slate-800 md:block">
                     <Table>
                       <TableHeader className="bg-slate-50/60 dark:bg-slate-900/40">
                         <TableRow>
@@ -1467,7 +1467,7 @@ const AttendanceSystem: React.FC = () => {
               )}
 
               {historyRecords.length > 0 && !historyLoading && (
-                <div className="mt-4 border-t border-slate-100 dark:border-slate-800 pt-4">
+                <div className="mt-4 border-t border-slate-200 dark:border-slate-800 pt-4">
                   <DataTablePagination
                     page={page}
                     limit={limit}
@@ -1485,17 +1485,17 @@ const AttendanceSystem: React.FC = () => {
 
       {/* Viewing details modal */}
       <Dialog open={!!viewingSession} onOpenChange={(open) => { if (!open) setViewingSession(null); }}>
-        <DialogContent className="flex max-h-[85vh] w-[calc(100%-2rem)] max-w-2xl flex-col gap-0 rounded-3xl border-slate-200 bg-white p-4 shadow-2xl dark:border-slate-800 dark:bg-slate-950 sm:rounded-3xl sm:p-6">
+        <DialogContent className="flex max-h-[85vh] w-[calc(100%-2rem)] max-w-2xl flex-col gap-0 rounded-3xl border-slate-300 bg-white p-4 shadow-2xl dark:border-slate-800 dark:bg-slate-950 sm:rounded-3xl sm:p-6">
           {viewingSession && (
             <>
               {/* Modal Header */}
-              <DialogHeader className="border-b border-slate-100 pb-4 text-left dark:border-slate-800">
+              <DialogHeader className="border-b border-slate-200 pb-4 text-left dark:border-slate-800">
                 <DialogTitle className="text-base font-bold leading-normal tracking-normal text-slate-800 dark:text-white">Attendance Logs</DialogTitle>
                 <DialogDescription className="text-xs text-slate-400">Session details and student statuses.</DialogDescription>
               </DialogHeader>
 
               {/* Session Meta */}
-              <div className="my-4 grid grid-cols-2 gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-xs font-semibold dark:border-slate-800 dark:bg-slate-900/40 sm:grid-cols-4">
+              <div className="my-4 grid grid-cols-2 gap-3 rounded-2xl border border-slate-300 bg-slate-50 p-4 text-xs font-semibold dark:border-slate-800 dark:bg-slate-900/40 sm:grid-cols-4">
                 <div>
                   <span className="block text-[10px] uppercase tracking-wide text-slate-400">Date</span>
                   <span className="text-slate-700 dark:text-slate-300">{viewingSession.session.date}</span>
@@ -1543,7 +1543,7 @@ const AttendanceSystem: React.FC = () => {
                               variant="outline"
                               className={cn(
                                 'gap-1 rounded-lg px-2.5 py-1 text-[10px] font-black uppercase',
-                                STATUS_PILL[st] ?? 'border-slate-100 bg-slate-50 text-slate-600',
+                                STATUS_PILL[st] ?? 'border-slate-300 bg-slate-50 text-slate-600',
                               )}
                             >
                               <Circle className={cn('size-2', STATUS_DOT[st] ?? 'fill-slate-400 text-slate-400')} />
@@ -1558,7 +1558,7 @@ const AttendanceSystem: React.FC = () => {
               </div>
 
               {/* Close Footer */}
-              <DialogFooter className="mt-4 gap-2 border-t border-slate-100 pt-4 dark:border-slate-800 sm:space-x-0">
+              <DialogFooter className="mt-4 gap-2 border-t border-slate-200 pt-4 dark:border-slate-800 sm:space-x-0">
                 <Button
                   variant="outline"
                   onClick={() => setViewingSession(null)}

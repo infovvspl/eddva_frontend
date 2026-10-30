@@ -1531,7 +1531,7 @@ export default function Timetable() {
 
           <div className="mt-5 grid grid-cols-2 gap-2.5 md:gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {groupedByDay[activeDay].length === 0 ? (
-              <div className="col-span-full rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center dark:border-slate-800 dark:bg-slate-950">
+              <div className="col-span-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center dark:border-slate-800 dark:bg-slate-950">
                 <Clock className="mx-auto size-10 text-slate-300 dark:text-slate-700" />
                 <h3 className="mt-4 text-sm font-bold text-slate-700 dark:text-slate-300">No classes scheduled for {dayShortNames[activeDay] || activeDay}</h3>
                 <p className="mt-1 text-xs font-semibold text-slate-400">Your assigned timetable slots will appear here.</p>
@@ -1547,7 +1547,7 @@ export default function Timetable() {
                   <article
                     key={slot.id}
                     className={`group relative overflow-hidden rounded-xl sm:rounded-2xl border bg-white p-2.5 pl-3.5 sm:p-4 sm:pl-5 transition-all duration-200 hover:shadow-md dark:bg-slate-900 ${
-                      isCurrentPeriod ? 'border-emerald-300 bg-emerald-50/40' : 'border-slate-200 hover:border-slate-300 dark:border-slate-800'
+                      isCurrentPeriod ? 'border-emerald-300 bg-emerald-50/40' : 'border-slate-300 hover:border-slate-400 dark:border-slate-800'
                     }`}
                   >
                     <span className={`absolute inset-y-0 left-0 w-1 sm:w-1.5 ${tone.bar}`} />
@@ -1559,14 +1559,14 @@ export default function Timetable() {
                         <div className="flex gap-1 shrink-0">
                           <button
                             onClick={() => handleEditClick(slot)}
-                            className="rounded-lg border border-slate-200 bg-white p-1 sm:p-1.5 text-slate-500 transition hover:bg-slate-50 hover:text-slate-800 dark:border-slate-700 dark:bg-slate-900"
+                            className="rounded-lg border border-slate-300 bg-white p-1 sm:p-1.5 text-slate-500 transition hover:bg-slate-50 hover:text-slate-800 dark:border-slate-700 dark:bg-slate-900"
                             title="Edit Slot"
                           >
                             <Edit2 className="size-2.5 sm:size-3" />
                           </button>
                           <button
                             onClick={() => handleDeleteClick(slot.id)}
-                            className="rounded-lg border border-slate-200 bg-white p-1 sm:p-1.5 text-slate-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:bg-slate-900"
+                            className="rounded-lg border border-slate-300 bg-white p-1 sm:p-1.5 text-slate-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:bg-slate-900"
                             title="Delete Slot"
                           >
                             <Trash2 className="size-2.5 sm:size-3" />
@@ -1593,7 +1593,7 @@ export default function Timetable() {
                     </h3>
                     <p className={`mt-0.5 sm:mt-1 text-[10px] sm:text-sm font-semibold truncate ${tone.text}`}>{slot.subject?.name || 'Subject'}</p>
 
-                    <div className="mt-2.5 sm:mt-3.5 grid gap-1 sm:gap-1.5 border-t border-slate-100 pt-2 sm:pt-3 text-[9px] sm:text-xs font-medium text-slate-600 dark:border-slate-800 dark:text-slate-300">
+                    <div className="mt-2.5 sm:mt-3.5 grid gap-1 sm:gap-1.5 border-t border-slate-200 pt-2 sm:pt-3 text-[9px] sm:text-xs font-medium text-slate-600 dark:border-slate-800 dark:text-slate-300">
                       <span className="inline-flex items-center gap-1 sm:gap-2 truncate">
                         <Clock className="size-3 sm:size-3.5 shrink-0 text-slate-400" />
                         {slot.startTime} - {slot.endTime}

@@ -983,7 +983,7 @@ const AssignmentManagement: React.FC = () => {
 
   const renderGrader = () =>
     gradingAnswers.length === 0 ? null : (
-      <div className="mb-2 space-y-3 rounded-lg border border-slate-200 bg-white p-3 text-xs">
+      <div className="mb-2 space-y-3 rounded-lg border border-slate-300 bg-white p-3 text-xs">
         {gradingAnswers.map((q) => (
           <div key={q.id} className="space-y-1">
             <p className="font-semibold text-slate-900">
@@ -1020,7 +1020,7 @@ const AssignmentManagement: React.FC = () => {
             </div>
           </div>
         ))}
-        <p className="border-t border-slate-100 pt-2 text-right font-bold text-slate-900">
+        <p className="border-t border-slate-200 pt-2 text-right font-bold text-slate-900">
           Total: {gradingTotal} / {gradingAnswers.reduce((n, q) => n + Number(q.marks), 0)}
         </p>
       </div>
@@ -1147,7 +1147,7 @@ const AssignmentManagement: React.FC = () => {
 
       {/* Metrics Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="rounded-2xl bg-white shadow-sm transition-colors dark:bg-slate-900 border-blue-200 hover:border-blue-500 dark:border-blue-900/50 dark:hover:border-blue-500">
+        <Card className="rounded-2xl bg-white shadow-sm transition-colors dark:bg-slate-900 border-blue-300 hover:border-blue-500 dark:border-blue-900/50 dark:hover:border-blue-500">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Total Workspace Assignments
@@ -1162,7 +1162,7 @@ const AssignmentManagement: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl bg-white shadow-sm transition-colors dark:bg-slate-900 border-amber-200 hover:border-amber-500 dark:border-amber-900/50 dark:hover:border-amber-500">
+        <Card className="rounded-2xl bg-white shadow-sm transition-colors dark:bg-slate-900 border-amber-300 hover:border-amber-500 dark:border-amber-900/50 dark:hover:border-amber-500">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Pending Submissions
@@ -1180,7 +1180,7 @@ const AssignmentManagement: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl bg-white shadow-sm transition-colors dark:bg-slate-900 border-violet-200 hover:border-violet-500 dark:border-violet-900/50 dark:hover:border-violet-500">
+        <Card className="rounded-2xl bg-white shadow-sm transition-colors dark:bg-slate-900 border-violet-300 hover:border-violet-500 dark:border-violet-900/50 dark:hover:border-violet-500">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Group Projects
@@ -1193,7 +1193,7 @@ const AssignmentManagement: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl bg-white shadow-sm transition-colors dark:bg-slate-900 border-emerald-200 hover:border-emerald-500 dark:border-emerald-900/50 dark:hover:border-emerald-500">
+        <Card className="rounded-2xl bg-white shadow-sm transition-colors dark:bg-slate-900 border-emerald-300 hover:border-emerald-500 dark:border-emerald-900/50 dark:hover:border-emerald-500">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Avg Submission Rate
@@ -1209,7 +1209,7 @@ const AssignmentManagement: React.FC = () => {
 
       {/* Main Tabs Navigation */}
       <Tabs value={mainTab} onValueChange={(val: any) => setMainTab(val)} className="w-full space-y-6">
-        <TabsList className="grid h-auto w-full max-w-md grid-cols-3 gap-1 rounded-xl border border-slate-100 bg-white p-1.5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <TabsList className="grid h-auto w-full max-w-md grid-cols-3 gap-1 rounded-xl border border-slate-300 bg-white p-1.5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <TabsTrigger value="manage" className="gap-2 rounded-lg px-2 py-2 text-xs font-bold text-slate-500 data-[state=active]:bg-brand-600 data-[state=active]:text-white data-[state=active]:shadow-sm">
             <BookOpen className="size-3.5" />
             My Assignments
@@ -1232,7 +1232,7 @@ const AssignmentManagement: React.FC = () => {
         {/* TAB 1: MY ASSIGNMENTS */}
         <TabsContent value="manage" className="space-y-6 p-2">
           {/* Workspace Hierarchy Navigation */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-4 dark:border-slate-800 dark:bg-slate-900">
+          <div className="rounded-2xl border border-slate-300 bg-white p-4 shadow-sm space-y-4 dark:border-slate-800 dark:bg-slate-900">
             {level === 'workspace' && (
               <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-600">
                 <span className="text-slate-400">Context:</span>
@@ -1242,7 +1242,7 @@ const AssignmentManagement: React.FC = () => {
                 {selectedClass && (
                   <>
                     <ChevronRight className="size-3.5 text-slate-400" />
-                    <Badge variant="outline" className="h-6 border-blue-200 bg-blue-50 px-2.5 text-xs font-semibold text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300">
+                    <Badge variant="outline" className="h-6 border-blue-300 bg-blue-50 px-2.5 text-xs font-semibold text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300">
                       {selectedClass.name}
                     </Badge>
                   </>
@@ -1250,7 +1250,7 @@ const AssignmentManagement: React.FC = () => {
                 {selectedSection && (
                   <>
                     <ChevronRight className="size-3.5 text-slate-400" />
-                    <Badge variant="outline" className="h-6 border-violet-200 bg-violet-50 px-2.5 text-xs font-semibold text-violet-700 dark:border-violet-900/50 dark:bg-violet-950/40 dark:text-violet-300">
+                    <Badge variant="outline" className="h-6 border-violet-300 bg-violet-50 px-2.5 text-xs font-semibold text-violet-700 dark:border-violet-900/50 dark:bg-violet-950/40 dark:text-violet-300">
                       {selectedSection.name}
                     </Badge>
                   </>
@@ -1275,7 +1275,7 @@ const AssignmentManagement: React.FC = () => {
                     {[0, 1, 2].map((i) => <Skeleton key={i} className="h-44 rounded-2xl" />)}
                   </div>
                 ) : classes.length === 0 ? (
-                  <Card className="rounded-2xl border-2 border-dashed border-blue-200 bg-blue-50/40 p-8 text-center text-sm text-slate-500 shadow-none dark:border-blue-900/50 dark:bg-slate-900">
+                  <Card className="rounded-2xl border-2 border-dashed border-blue-300 bg-blue-50/40 p-8 text-center text-sm text-slate-500 shadow-none dark:border-blue-900/50 dark:bg-slate-900">
                     No classes assigned to you yet.
                   </Card>
                 ) : (
@@ -1295,7 +1295,7 @@ const AssignmentManagement: React.FC = () => {
 
             {/* Level 4: Workspace Filters & Search */}
             {level === 'workspace' && (
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 border-t border-slate-100">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 border-t border-slate-200">
                 <div className="relative flex-1 max-w-sm">
                   <Search className="absolute left-3 top-2.5 size-4 text-slate-400" />
                   <Input
@@ -1354,7 +1354,7 @@ const AssignmentManagement: React.FC = () => {
                   <Skeleton className="h-44 w-full rounded-xl" />
                 </div>
               ) : filteredAssignments.length === 0 ? (
-                <Card className="space-y-3 rounded-2xl border-2 border-dashed border-blue-200 bg-blue-50/40 p-8 text-center dark:border-blue-900/50 dark:bg-slate-900">
+                <Card className="space-y-3 rounded-2xl border-2 border-dashed border-blue-300 bg-blue-50/40 p-8 text-center dark:border-blue-900/50 dark:bg-slate-900">
                   <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-blue-100 text-blue-600">
                     <FileText className="size-6" />
                   </div>
@@ -1375,8 +1375,8 @@ const AssignmentManagement: React.FC = () => {
                         key={a.id}
                         className={`flex flex-col justify-between rounded-2xl bg-white shadow-sm transition-all hover:shadow-md dark:bg-slate-900 ${
                           isGroup
-                            ? 'border-violet-200 hover:border-violet-500 dark:border-violet-900/50 dark:hover:border-violet-500'
-                            : 'border-blue-200 hover:border-blue-500 dark:border-blue-900/50 dark:hover:border-blue-500'
+                            ? 'border-violet-300 hover:border-violet-500 dark:border-violet-900/50 dark:hover:border-violet-500'
+                            : 'border-blue-300 hover:border-blue-500 dark:border-blue-900/50 dark:hover:border-blue-500'
                         }`}
                       >
                         <CardHeader className="p-4 pb-2 space-y-2">
@@ -1423,7 +1423,7 @@ const AssignmentManagement: React.FC = () => {
                           </div>
                         </CardContent>
 
-                        <CardFooter className="p-4 pt-3.5 mt-3 flex items-center justify-between border-t border-slate-100 gap-2">
+                        <CardFooter className="p-4 pt-3.5 mt-3 flex items-center justify-between border-t border-slate-200 gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -1452,8 +1452,8 @@ const AssignmentManagement: React.FC = () => {
 
         {/* TAB 2: SUBMISSIONS INBOX */}
         <TabsContent value="inbox" className="space-y-4">
-          <Card className="shadow-sm border-slate-200 rounded-2xl dark:border-slate-800 dark:bg-slate-900">
-            <CardHeader className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <Card className="shadow-sm border-slate-300 rounded-2xl dark:border-slate-800 dark:bg-slate-900">
+            <CardHeader className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
                 <CardTitle className="text-base font-bold text-slate-900">Submissions Inbox</CardTitle>
                 <CardDescription className="text-xs">
@@ -1482,7 +1482,7 @@ const AssignmentManagement: React.FC = () => {
                   {/* Phones: one card per submission */}
                   <div className="space-y-3 p-3 md:hidden">
                     {inboxItems.map((sub) => (
-                      <Card key={sub.id} className="space-y-3 rounded-xl border-slate-200 p-4 shadow-none dark:border-slate-800 dark:bg-slate-900">
+                      <Card key={sub.id} className="space-y-3 rounded-xl border-slate-300 p-4 shadow-none dark:border-slate-800 dark:bg-slate-900">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex min-w-0 items-center gap-2">
                             <Avatar className="size-8 shrink-0">
@@ -1507,7 +1507,7 @@ const AssignmentManagement: React.FC = () => {
 
                         {sub.feedback && <p className="text-[11px] italic text-slate-500">"{sub.feedback}"</p>}
 
-                        <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+                        <div className="flex flex-wrap gap-2 border-t border-slate-200 pt-3">
                           {sub.file_path && (
                             <>
                               <Button variant="outline" size="sm" onClick={() => openSubmissionPreview(sub)} className="h-8 gap-1 text-xs">
@@ -1718,8 +1718,8 @@ const AssignmentManagement: React.FC = () => {
 
         {/* TAB 3: GROUP PROJECTS TRACKER */}
         <TabsContent value="groups" className="space-y-4">
-          <Card className="shadow-sm border-slate-200 rounded-2xl dark:border-slate-800 dark:bg-slate-900">
-            <CardHeader className="p-4 border-b border-slate-100">
+          <Card className="shadow-sm border-slate-300 rounded-2xl dark:border-slate-800 dark:bg-slate-900">
+            <CardHeader className="p-4 border-b border-slate-200">
               <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <GroupIcon className="size-5 text-blue-600" />
                 Active Group Assignments Tracker
@@ -1743,7 +1743,7 @@ const AssignmentManagement: React.FC = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {groupAssignmentsList.map((ga) => (
-                    <Card key={ga.id} className="border-slate-200 rounded-2xl dark:border-slate-800 dark:bg-slate-900">
+                    <Card key={ga.id} className="border-slate-300 rounded-2xl dark:border-slate-800 dark:bg-slate-900">
                       <CardHeader className="p-4 pb-2">
                         <div className="flex items-center justify-between">
                           <Badge variant="default" className="bg-brand-600 text-[10px] gap-1">
@@ -1790,7 +1790,7 @@ const AssignmentManagement: React.FC = () => {
           </DialogHeader>
 
           {/* Stepper Indicator */}
-          <div className="flex flex-wrap items-center justify-between gap-y-2 border-y border-slate-100 py-3 my-2 text-xs font-semibold">
+          <div className="flex flex-wrap items-center justify-between gap-y-2 border-y border-slate-200 py-3 my-2 text-xs font-semibold">
             {stepKeys.map((key, i) => (
               <React.Fragment key={key}>
                 {i > 0 && <ChevronRight className="size-4 text-slate-300" />}
@@ -1806,7 +1806,7 @@ const AssignmentManagement: React.FC = () => {
           {currentStep === 'basics' && (
             <div className="space-y-4">
               {!loadingStudents && studentsRoster.length === 0 && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-800">
+                <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs font-semibold text-amber-800">
                   No students were found in {selectedSection?.name || 'this section'}, so this assignment can't be created yet.
                 </div>
               )}
@@ -2005,7 +2005,7 @@ const AssignmentManagement: React.FC = () => {
                   </div>
 
                   {unassignedStudents.length > 0 && (
-                    <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-3 space-y-2">
+                    <div className="rounded-lg border border-amber-300 bg-amber-50/60 p-3 space-y-2">
                       <span className="text-[11px] font-bold text-amber-900">
                         Not in any group ({unassignedStudents.length})
                       </span>
@@ -2157,7 +2157,7 @@ const AssignmentManagement: React.FC = () => {
                       Search
                     </Button>
                   </div>
-                  <div className="max-h-56 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100">
+                  <div className="max-h-56 overflow-y-auto rounded-xl border border-slate-300 divide-y divide-slate-100">
                     {bankResults.length === 0 ? (
                       <p className="p-4 text-center text-xs text-muted-foreground">
                         Search to browse questions from your school's saved papers.
@@ -2287,7 +2287,7 @@ const AssignmentManagement: React.FC = () => {
                           Add all
                         </Button>
                       </div>
-                      <div className="max-h-52 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100">
+                      <div className="max-h-52 overflow-y-auto rounded-xl border border-slate-300 divide-y divide-slate-100">
                         {aiQResults.map((q, i) => (
                           <div key={i} className="flex items-start justify-between gap-3 p-2.5 text-xs">
                             <div className="min-w-0 space-y-0.5">
@@ -2309,7 +2309,7 @@ const AssignmentManagement: React.FC = () => {
                 </TabsContent>
               </Tabs>
 
-              <div className="rounded-xl border border-slate-200 bg-slate-50">
+              <div className="rounded-xl border border-slate-300 bg-slate-50">
                 <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2 text-xs">
                   <span className="font-bold text-slate-800">Selected questions ({questions.length})</span>
                   <span className="font-semibold text-slate-600">Total: {questionTotal} marks</span>
@@ -2362,7 +2362,7 @@ const AssignmentManagement: React.FC = () => {
                   {([['now', 'Publish immediately'], ['scheduled', 'Schedule for later']] as const).map(([val, label]) => (
                     <label
                       key={val}
-                      className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs cursor-pointer ${publishMode === val ? 'border-primary bg-primary/5 font-semibold' : 'border-slate-200 bg-white'}`}
+                      className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs cursor-pointer ${publishMode === val ? 'border-primary bg-primary/5 font-semibold' : 'border-slate-300 bg-white'}`}
                     >
                       <input type="radio" name="publish-mode" checked={publishMode === val} onChange={() => setPublishMode(val)} />
                       {label}
@@ -2417,7 +2417,7 @@ const AssignmentManagement: React.FC = () => {
           {/* STEP: REVIEW */}
           {currentStep === 'review' && (
             <div className="space-y-3 text-xs">
-              <div className="rounded-xl border border-slate-200 bg-slate-50 divide-y divide-slate-200">
+              <div className="rounded-xl border border-slate-300 bg-slate-50 divide-y divide-slate-200">
                 {([
                   ['Title', formData.title || '-'],
                   ['Type', formData.type],
@@ -2448,7 +2448,7 @@ const AssignmentManagement: React.FC = () => {
             </div>
           )}
 
-          <DialogFooter className="pt-4 border-t border-slate-100 flex items-center justify-between">
+          <DialogFooter className="pt-4 border-t border-slate-200 flex items-center justify-between">
             {createStep > 1 ? (
               <Button variant="outline" size="sm" onClick={() => setCreateStep((prev) => prev - 1)}>
                 Previous
@@ -2505,7 +2505,7 @@ const AssignmentManagement: React.FC = () => {
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto p-6 space-y-5">
           {selectedAssignment && (
             <>
-              <DialogHeader className="space-y-2 pb-3 border-b border-slate-100">
+              <DialogHeader className="space-y-2 pb-3 border-b border-slate-200">
                 <div className="flex items-center justify-between pr-6">
                   <Badge variant={selectedAssignment.target_type === 'group' ? 'default' : 'secondary'} className="text-[10px]">
                     {selectedAssignment.target_type === 'group' ? 'Group Project' : 'Individual Task'}
@@ -2545,7 +2545,7 @@ const AssignmentManagement: React.FC = () => {
                 </TabsList>
 
                 <TabsContent value="details" className="space-y-4 pt-4 text-xs text-slate-700">
-                  <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                  <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-300">
                     <div>
                       <span className="text-slate-400 block text-[11px]">Due Date</span>
                       <span className="font-semibold text-slate-900">
@@ -2573,7 +2573,7 @@ const AssignmentManagement: React.FC = () => {
                       <span className="font-semibold block text-slate-800">
                         Questions ({detailQuestions.length})
                       </span>
-                      <div className="max-h-56 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100">
+                      <div className="max-h-56 overflow-y-auto rounded-xl border border-slate-300 divide-y divide-slate-100">
                         {detailQuestions.map((q) => (
                           <div key={q.id} className="p-2.5 space-y-0.5">
                             <p className="font-medium text-slate-900">
@@ -2594,7 +2594,7 @@ const AssignmentManagement: React.FC = () => {
                   )}
 
                   {(selectedAssignment.status === 'draft' || selectedAssignment.status === 'scheduled') && (
-                    <div className="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                    <div className="flex items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 p-3">
                       <span className="text-amber-900">
                         {selectedAssignment.status === 'draft'
                           ? 'This draft is not visible to students yet.'
@@ -2633,7 +2633,7 @@ const AssignmentManagement: React.FC = () => {
                           ['Evaluated', `${analytics.summary.evaluated}/${analytics.summary.submitted}`, `${analytics.summary.awaitingEvaluation} awaiting grading`],
                           ['Late', String(analytics.summary.late), 'submitted after due date'],
                         ] as const).map(([label, value, hint]) => (
-                          <div key={label} className="rounded-xl border border-slate-200 bg-white p-3">
+                          <div key={label} className="rounded-xl border border-slate-300 bg-white p-3">
                             <span className="block text-[11px] text-slate-500">{label}</span>
                             <span className="block text-xl font-bold text-slate-900">{value}</span>
                             <span className="block text-[10px] text-slate-400">{hint}</span>
@@ -2641,7 +2641,7 @@ const AssignmentManagement: React.FC = () => {
                         ))}
                       </div>
 
-                      <div className="grid grid-cols-3 gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                      <div className="grid grid-cols-3 gap-3 rounded-xl border border-slate-300 bg-slate-50 p-3">
                         {([
                           ['Average', analytics.summary.avgMarks, analytics.summary.avgPercent != null ? `${analytics.summary.avgPercent}%` : ''],
                           ['Highest', analytics.summary.highest, ''],
@@ -2696,7 +2696,7 @@ const AssignmentManagement: React.FC = () => {
 
                           <div className="space-y-1.5">
                             <span className="font-semibold text-slate-800">Question-wise performance</span>
-                            <div className="rounded-xl border border-slate-200 divide-y divide-slate-100 max-h-72 overflow-y-auto">
+                            <div className="rounded-xl border border-slate-300 divide-y divide-slate-100 max-h-72 overflow-y-auto">
                               {analytics.questionLevel.questions.map((q: any) => (
                                 <div key={q.id} className="px-3 py-2 space-y-0.5">
                                   <div className="flex items-start justify-between gap-3">
@@ -2725,7 +2725,7 @@ const AssignmentManagement: React.FC = () => {
                         <span className="font-semibold text-slate-800">
                           {analytics.unitLabel === 'groups' ? 'Group-wise performance' : 'Student-wise status'}
                         </span>
-                        <div className="rounded-xl border border-slate-200 divide-y divide-slate-100 max-h-64 overflow-y-auto">
+                        <div className="rounded-xl border border-slate-300 divide-y divide-slate-100 max-h-64 overflow-y-auto">
                           {analytics.units.length === 0 ? (
                             <p className="p-4 text-center text-muted-foreground">Nobody has been assigned yet.</p>
                           ) : (
@@ -2769,7 +2769,7 @@ const AssignmentManagement: React.FC = () => {
                     </div>
                   ) : (
                     assignmentGroups.map((g) => (
-                      <Card key={g.id} className="p-3 border-slate-200 text-xs space-y-2">
+                      <Card key={g.id} className="p-3 border-slate-300 text-xs space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-slate-900">{g.name}</span>
                           <Badge
@@ -2804,7 +2804,7 @@ const AssignmentManagement: React.FC = () => {
                   ) : (
                     <div className="space-y-3">
                       {submissions.map((sub) => (
-                        <Card key={sub.id} className="p-3 border-slate-200 text-xs space-y-3 rounded-2xl dark:border-slate-800 dark:bg-slate-900">
+                        <Card key={sub.id} className="p-3 border-slate-300 text-xs space-y-3 rounded-2xl dark:border-slate-800 dark:bg-slate-900">
                           <div className="flex items-center justify-between">
                             <span className="font-bold text-slate-900">
                               {sub.group_name ? `${sub.group_name} (submitted by ${sub.student_name || 'Student'})` : (sub.student_name || 'Student')}
@@ -2828,7 +2828,7 @@ const AssignmentManagement: React.FC = () => {
                             </p>
                           )}
 
-                          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100">
+                          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-200">
                             <span className="text-[11px] text-slate-500">
                               {sub.submitted_at ? new Date(sub.submitted_at).toLocaleDateString() : 'Submitted'}
                             </span>
@@ -2873,7 +2873,7 @@ const AssignmentManagement: React.FC = () => {
 
                           {/* Inline Grading Form */}
                           {gradingId === sub.id && (
-                            <div className="pt-2 border-t border-slate-100">
+                            <div className="pt-2 border-t border-slate-200">
                             {renderGrader()}
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                               {gradingAnswers.length === 0 && (
@@ -2936,7 +2936,7 @@ const AssignmentManagement: React.FC = () => {
 
             return (
               <>
-                <DialogHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100 pr-10 sm:pr-12">
+                <DialogHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-200 pr-10 sm:pr-12">
                   <div className="min-w-0 flex-1">
                     <DialogTitle className="text-base font-bold text-slate-900 truncate">
                       {name}
@@ -2962,7 +2962,7 @@ const AssignmentManagement: React.FC = () => {
                   </Button>
                 </DialogHeader>
 
-                <div className="min-h-[60vh] rounded-xl border border-slate-200 bg-slate-50/50 flex flex-col items-center justify-center p-2 overflow-hidden">
+                <div className="min-h-[60vh] rounded-xl border border-slate-300 bg-slate-50/50 flex flex-col items-center justify-center p-2 overflow-hidden">
                   {!url || previewFileMissing ? (
                     <div className="text-center space-y-2 p-6">
                       <AlertCircle className="size-10 text-amber-500 mx-auto" />

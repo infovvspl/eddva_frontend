@@ -77,7 +77,7 @@ const DOUBT_STATUS_META = {
 // A plain count — no upper bound, so it reads as a stat tile rather than a meter.
 function StatTile({ label, value, icon: Icon }) {
   return (
-    <Card className="flex items-center gap-3 rounded-2xl border-slate-100 bg-white p-4 shadow-none">
+    <Card className="flex items-center gap-3 rounded-2xl border-slate-300 bg-white p-4 shadow-none">
       <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-50">
         <Icon className="size-5 text-blue-600" />
       </span>
@@ -99,7 +99,7 @@ function StatMeter({ label, value, icon: Icon }) {
   const toneFill = { emerald: 'bg-emerald-500', amber: 'bg-amber-500', rose: 'bg-rose-500' }[tone];
 
   return (
-    <Card className="rounded-2xl border-slate-100 bg-white p-4 shadow-none">
+    <Card className="rounded-2xl border-slate-300 bg-white p-4 shadow-none">
       <div className="mb-3 flex items-center gap-2.5">
         <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-50">
           <Icon className="size-4 text-slate-500" />
@@ -523,7 +523,7 @@ export default function TeacherRecordedClassDetails() {
   const renderVideoPlayer = () => {
     if (!recording.video_url) {
       return (
-        <Card className="flex aspect-video w-full flex-col items-center justify-center rounded-2xl border-slate-200 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 px-6 text-center shadow-none">
+        <Card className="flex aspect-video w-full flex-col items-center justify-center rounded-2xl border-slate-300 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 px-6 text-center shadow-none">
           <PlayCircle className="size-12 text-slate-400" />
           <h3 className="mt-4 text-xl font-black text-white">Video is not available</h3>
           <p className="mt-2 max-w-md text-sm leading-6 text-slate-300">
@@ -535,7 +535,7 @@ export default function TeacherRecordedClassDetails() {
 
     if (playback.loading && !playback.src) {
       return (
-        <Card className="flex aspect-video w-full flex-col items-center justify-center rounded-2xl border-slate-200 bg-slate-950 text-center text-white shadow-none">
+        <Card className="flex aspect-video w-full flex-col items-center justify-center rounded-2xl border-slate-300 bg-slate-950 text-center text-white shadow-none">
           <Loader2 className="size-10 animate-spin" />
           <p className="mt-3 text-sm font-bold">Preparing video...</p>
         </Card>
@@ -544,7 +544,7 @@ export default function TeacherRecordedClassDetails() {
 
     if (playback.error) {
       return (
-        <Card className="flex aspect-video w-full flex-col items-center justify-center rounded-2xl border-slate-200 bg-slate-950 px-6 text-center text-white shadow-none">
+        <Card className="flex aspect-video w-full flex-col items-center justify-center rounded-2xl border-slate-300 bg-slate-950 px-6 text-center text-white shadow-none">
           <PlayCircle className="size-10 text-white/60" />
           <h3 className="mt-4 text-lg font-bold">Video could not start</h3>
           <p className="mt-2 max-w-md text-sm text-white/70">{playback.error}</p>
@@ -570,7 +570,7 @@ export default function TeacherRecordedClassDetails() {
       const imageCount = Array.isArray(recording.notes_images) ? recording.notes_images.length : 0;
       return (
         <div className="space-y-4">
-          <Card className="flex items-center justify-between gap-3 rounded-xl border-slate-100 bg-slate-50 px-3.5 py-2.5 shadow-none">
+          <Card className="flex items-center justify-between gap-3 rounded-xl border-slate-300 bg-slate-50 px-3.5 py-2.5 shadow-none">
             <div className="flex items-center gap-2 text-xs text-slate-500">
               {imageCount > 0 ? (
                 <>
@@ -772,7 +772,7 @@ export default function TeacherRecordedClassDetails() {
           </Alert>
         )}
 
-        <div className="grid grid-cols-3 gap-3 rounded-2xl border-b border-slate-100 bg-slate-50/50 p-4">
+        <div className="grid grid-cols-3 gap-3 rounded-2xl border-b border-slate-200 bg-slate-50/50 p-4">
           {[
             { label: 'Questions', value: quiz.length, icon: ListChecks, color: 'text-blue-600', bg: 'bg-blue-50' },
             { label: 'Attempted By', value: quizAnalyticsError ? '—' : (analytics.students.filter((s) => s.answeredCount > 0).length ?? 0), icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50' },
@@ -789,7 +789,7 @@ export default function TeacherRecordedClassDetails() {
         </div>
 
         <Tabs value={quizSubTab} onValueChange={setQuizSubTab}>
-          <TabsList className="h-auto w-full justify-start rounded-none border-b border-slate-100 bg-transparent p-0">
+          <TabsList className="h-auto w-full justify-start rounded-none border-b border-slate-200 bg-transparent p-0">
             {['questions', 'students'].map((k) => (
               <TabsTrigger
                 key={k}
@@ -823,7 +823,7 @@ export default function TeacherRecordedClassDetails() {
             });
 
             return (
-              <Card key={qKey} className="overflow-hidden rounded-2xl border-slate-100 bg-white shadow-sm">
+              <Card key={qKey} className="overflow-hidden rounded-2xl border-slate-300 bg-white shadow-sm">
                 <Button variant="ghost" size={null}
                   type="button"
                   onClick={() => setExpandedQuestion(isExpanded ? null : qKey)}
@@ -854,14 +854,14 @@ export default function TeacherRecordedClassDetails() {
                 </Button>
 
                 {isExpanded && (
-                  <div className="space-y-2.5 border-t border-slate-100 bg-slate-50/50 p-4">
+                  <div className="space-y-2.5 border-t border-slate-200 bg-slate-50/50 p-4">
                     <p className="mb-2 text-[9px] font-black uppercase tracking-wider text-slate-400">Option Breakdown</p>
                     {(cp.options || []).map((opt) => {
                       const count = optionCounts[opt.label] ?? 0;
                       const pct = totalAnswered > 0 ? Math.round((count / totalAnswered) * 100) : 0;
                       const isCorrect = opt.label === cp.correctOption;
                       return (
-                        <Card key={opt.label} className={cn('rounded-xl p-3 shadow-none', isCorrect ? 'border-emerald-100 bg-emerald-50 text-emerald-800' : 'border-slate-100 bg-white text-slate-700')}>
+                        <Card key={opt.label} className={cn('rounded-xl p-3 shadow-none', isCorrect ? 'border-emerald-100 bg-emerald-50 text-emerald-800' : 'border-slate-300 bg-white text-slate-700')}>
                           <div className="mb-1.5 flex items-center gap-2">
                             <span className={cn('flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-black', isCorrect ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-500')}>{opt.label}</span>
                             <div className={cn('flex-1 pointer-events-none text-xs', isCorrect ? 'font-bold text-emerald-800' : 'text-slate-700')}>
@@ -902,7 +902,7 @@ export default function TeacherRecordedClassDetails() {
                   .filter((s) => s.answeredCount > 0)
                   .sort((a, b) => (b.quizScore ?? 0) - (a.quizScore ?? 0))
                   .map((s) => (
-                    <Card key={s.studentId} className="overflow-hidden rounded-2xl border-slate-100 bg-white shadow-sm">
+                    <Card key={s.studentId} className="overflow-hidden rounded-2xl border-slate-300 bg-white shadow-sm">
                       <div className="flex items-center gap-3 p-3">
                         <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-black text-blue-600">
                           {s.studentName.charAt(0).toUpperCase()}
@@ -924,7 +924,7 @@ export default function TeacherRecordedClassDetails() {
                           {s.quizScore !== null ? `${s.quizScore}%` : '—'}
                         </div>
                       </div>
-                      <div className="flex flex-wrap gap-2 border-t border-slate-100 bg-slate-50/50 px-3 py-2">
+                      <div className="flex flex-wrap gap-2 border-t border-slate-200 bg-slate-50/50 px-3 py-2">
                         {quiz.map((cp, qi) => {
                           const qKey = cp.id || `q-${qi}`;
                           const resp = s.responses.find((r) => r.questionId === qKey);
@@ -966,7 +966,7 @@ export default function TeacherRecordedClassDetails() {
         </div>
 
         {recording.description && (
-          <Card className="rounded-2xl border-slate-100 bg-white p-4 shadow-none">
+          <Card className="rounded-2xl border-slate-300 bg-white p-4 shadow-none">
             <p className="mb-1.5 text-[10px] font-black uppercase tracking-wider text-slate-400">Description</p>
             <p className="text-sm leading-relaxed text-slate-700">{recording.description}</p>
           </Card>
@@ -974,18 +974,18 @@ export default function TeacherRecordedClassDetails() {
 
         {(recording.resolution || recording.video_size || recording.source) && (
           <div className="grid grid-cols-2 gap-3">
-            <Card className="rounded-xl border-slate-100 bg-slate-50 p-3 shadow-none">
+            <Card className="rounded-xl border-slate-300 bg-slate-50 p-3 shadow-none">
               <p className="text-[10px] font-bold text-slate-400">Format</p>
               <p className="text-sm font-black text-slate-900">{recording.source === 'youtube' ? 'YouTube' : 'Recorded'}</p>
             </Card>
             {recording.resolution && (
-              <Card className="rounded-xl border-slate-100 bg-slate-50 p-3 shadow-none">
+              <Card className="rounded-xl border-slate-300 bg-slate-50 p-3 shadow-none">
                 <p className="text-[10px] font-bold text-slate-400">Resolution</p>
                 <p className="text-sm font-black text-slate-900">{recording.resolution}</p>
               </Card>
             )}
             {recording.video_size && (
-              <Card className="rounded-xl border-slate-100 bg-slate-50 p-3 shadow-none">
+              <Card className="rounded-xl border-slate-300 bg-slate-50 p-3 shadow-none">
                 <p className="text-[10px] font-bold text-slate-400">File Size</p>
                 <p className="text-sm font-black text-slate-900">
                   {recording.video_size > 1024 * 1024 * 1024
@@ -1037,7 +1037,7 @@ export default function TeacherRecordedClassDetails() {
             <p className="text-base font-black text-emerald-900">{answeredDoubts.length}</p>
             <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Answered</p>
           </Card>
-          <Card className="rounded-xl border-slate-100 bg-white p-2.5 text-center shadow-none">
+          <Card className="rounded-xl border-slate-300 bg-white p-2.5 text-center shadow-none">
             <p className="text-base font-black text-slate-900">{recDoubts.length}</p>
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Total</p>
           </Card>
@@ -1066,7 +1066,7 @@ export default function TeacherRecordedClassDetails() {
             <Loader2 className="size-7 animate-spin text-blue-500" />
           </div>
         ) : shownDoubts.length === 0 ? (
-          <Card className="flex flex-col items-center justify-center rounded-2xl border-dashed border-slate-200 bg-slate-50 py-10 text-center shadow-none">
+          <Card className="flex flex-col items-center justify-center rounded-2xl border-dashed border-slate-300 bg-slate-50 py-10 text-center shadow-none">
             <HelpCircle className="size-8 text-slate-300" />
             <p className="mt-2 text-sm font-bold text-slate-700">
               {recDoubtTab === 'pending' ? 'No pending doubts' : recDoubtTab === 'answered' ? 'No answered doubts yet' : 'No doubts yet'}
@@ -1084,7 +1084,7 @@ export default function TeacherRecordedClassDetails() {
               const isPending = ['escalated', 'open', 'ai_answered'].includes(doubt.status);
               const isReplying = doubtReplyingId === doubt.id;
               return (
-                <Card key={doubt.id} className="space-y-3 rounded-xl border-slate-100 bg-white p-4 shadow-sm">
+                <Card key={doubt.id} className="space-y-3 rounded-xl border-slate-300 bg-white p-4 shadow-sm">
                   <div className="flex items-start justify-between gap-2">
                     <Badge variant="outline" className={cn('rounded border-transparent px-1.5 py-0.5 text-[9px] font-black uppercase tracking-widest', meta.tone)}>
                       {meta.label}
@@ -1132,7 +1132,7 @@ export default function TeacherRecordedClassDetails() {
                         type="button"
                         disabled={doubtAiSuggesting || doubtSubmitting}
                         onClick={() => aiSuggestDoubtReply(doubt.id)}
-                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-[11px] font-black text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-2 text-[11px] font-black text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
                       >
                         {doubtAiSuggesting ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
                         Draft with AI (edit before sending)
@@ -1142,7 +1142,7 @@ export default function TeacherRecordedClassDetails() {
                         onChange={(e) => setDoubtReplyText(e.target.value)}
                         rows={4}
                         placeholder="Write your answer for the student..."
-                        className="min-h-0 w-full resize-none rounded-lg border-slate-200 bg-slate-50 p-2.5 text-xs font-medium text-slate-800"
+                        className="min-h-0 w-full resize-none rounded-lg border-slate-300 bg-slate-50 p-2.5 text-xs font-medium text-slate-800"
                       />
                       <div className="flex gap-2">
                         <Button variant="default" size={null}
@@ -1204,7 +1204,7 @@ export default function TeacherRecordedClassDetails() {
     return (
       <div className="space-y-6">
         <BackButton to="/school/teacher/classes" />
-        <Card className="rounded-[2rem] border-dashed border-slate-200 bg-white p-12 text-center shadow-sm">
+        <Card className="rounded-[2rem] border-dashed border-slate-300 bg-white p-12 text-center shadow-sm">
           <FileText className="mx-auto size-12 text-slate-300" />
           <h2 className="mt-4 text-xl font-bold text-slate-900">Lecture not found</h2>
           <p className="mt-1 text-sm text-slate-500">This recorded lecture is not available right now or may have been removed.</p>
@@ -1215,7 +1215,7 @@ export default function TeacherRecordedClassDetails() {
 
   return (
     <div className="-mx-3 -mb-3 min-h-[calc(100vh-76px)] bg-slate-50 sm:-mx-5 sm:-mb-5 lg:-mx-6 lg:-mb-6 lg:flex lg:h-[calc(100vh-76px)] lg:min-h-0 lg:flex-col lg:overflow-hidden">
-      <div className="border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6 lg:shrink-0">
+      <div className="border-b border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-6 lg:shrink-0">
         <div className="flex w-full items-center gap-3">
           <div className="min-w-0 flex-1">
             <p className="truncate text-[11px] font-bold text-blue-600">{recording.chapter_name || recording.subject_name || 'Recorded Class'}</p>
@@ -1238,7 +1238,7 @@ export default function TeacherRecordedClassDetails() {
           <main className="min-w-0 space-y-4 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:pb-5 scrollbar-hide">
             {renderVideoPlayer()}
 
-            <Card className="rounded-2xl border-slate-100 bg-white p-5 shadow-sm">
+            <Card className="rounded-2xl border-slate-300 bg-white p-5 shadow-sm">
               <div className="flex flex-wrap items-center gap-2">
                 {recording.subject_name && (
                   <Badge variant="outline" className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-blue-700 border-transparent">{recording.subject_name}</Badge>
@@ -1251,17 +1251,17 @@ export default function TeacherRecordedClassDetails() {
               {recording.description && <p className="mt-2 text-sm leading-6 text-slate-500">{recording.description}</p>}
 
               <div className="mt-5 flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
-                <Badge variant="outline" className="inline-flex items-center gap-1.5 rounded-xl border-slate-100 bg-slate-50 px-3 py-1.5">
+                <Badge variant="outline" className="inline-flex items-center gap-1.5 rounded-xl border-slate-300 bg-slate-50 px-3 py-1.5">
                   <CalendarDays size={13} />
                   {dateLabel(recording.recorded_date)}
                 </Badge>
-                <Badge variant="outline" className="inline-flex items-center gap-1.5 rounded-xl border-slate-100 bg-slate-50 px-3 py-1.5">
+                <Badge variant="outline" className="inline-flex items-center gap-1.5 rounded-xl border-slate-300 bg-slate-50 px-3 py-1.5">
                   <Clock3 size={13} />
                   {recording.duration
                     ? (parseFloat(recording.duration) >= 1 ? `${Math.round(parseFloat(recording.duration))} mins` : `${Math.round(parseFloat(recording.duration) * 60)}s`)
                     : 'Duration pending'}
                 </Badge>
-                <Badge variant="outline" className="inline-flex items-center gap-1.5 rounded-xl border-slate-100 bg-slate-50 px-3 py-1.5">
+                <Badge variant="outline" className="inline-flex items-center gap-1.5 rounded-xl border-slate-300 bg-slate-50 px-3 py-1.5">
                   <Tag size={13} />
                   {recording.topic_name || recording.chapter_name || 'General topic'}
                 </Badge>
@@ -1277,10 +1277,10 @@ export default function TeacherRecordedClassDetails() {
                 its real available space and its bottom ~60px — including the tail
                 of the Notes/Quiz scroll area — was clipped by the page's outer
                 overflow-hidden wrapper instead of being reachable by scrolling. */}
-            <Card className="flex h-[600px] flex-col overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm lg:h-full">
+            <Card className="flex h-[600px] flex-col overflow-hidden rounded-2xl border-slate-300 bg-white shadow-sm lg:h-full">
               <div className="w-full min-w-0 shrink-0 overflow-hidden">
                 <Tabs value={detailTab} onValueChange={setDetailTab} className="w-full">
-                  <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-none border-b border-slate-100 bg-transparent px-2 py-1.5">
+                  <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-none border-b border-slate-200 bg-transparent px-2 py-1.5">
                     {availableTabs.map((tabId) => {
                       const meta = DETAIL_TAB_META[tabId];
                       if (!meta) return null;

@@ -74,8 +74,8 @@ function PlainSelect({
 }
 
 const FIELD_LABEL = 'text-[10px] sm:text-[11px] font-black uppercase tracking-wider sm:tracking-[0.18em] text-slate-400';
-const FIELD_INPUT = 'h-auto rounded-xl sm:rounded-2xl border-slate-200 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-bold text-slate-800 focus-visible:border-blue-400 focus-visible:bg-white focus-visible:ring-0 focus-visible:ring-offset-0';
-const FIELD_SELECT = 'h-auto rounded-xl sm:rounded-2xl border-slate-200 bg-white px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-semibold text-slate-700 shadow-sm';
+const FIELD_INPUT = 'h-auto rounded-xl sm:rounded-2xl border-slate-300 bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-bold text-slate-800 focus-visible:border-blue-400 focus-visible:bg-white focus-visible:ring-0 focus-visible:ring-offset-0';
+const FIELD_SELECT = 'h-auto rounded-xl sm:rounded-2xl border-slate-300 bg-white px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-semibold text-slate-700 shadow-sm';
 
 type MeetingRow = {
   id: string;
@@ -374,7 +374,7 @@ export default function TeacherMeetingsPage() {
           { label: 'Incoming Requests', value: summary.incoming, icon: Users, icon_tone: 'from-violet-500 to-purple-600 shadow-violet-500/30', ring: 'hover:border-violet-300' },
           { label: 'Scheduled / Done', value: summary.scheduled, icon: CheckCircle2, icon_tone: 'from-emerald-500 to-teal-600 shadow-emerald-500/30', ring: 'hover:border-emerald-300' },
         ].map((item) => (
-          <Card key={item.label} className={`flex items-center gap-3 rounded-xl sm:rounded-2xl border-slate-200 bg-white p-3 sm:p-4 shadow-none transition-colors dark:border-slate-800 dark:bg-slate-900 ${item.ring}`}>
+          <Card key={item.label} className={`flex items-center gap-3 rounded-xl sm:rounded-2xl border-slate-300 bg-white p-3 sm:p-4 shadow-none transition-colors dark:border-slate-800 dark:bg-slate-900 ${item.ring}`}>
             <div className={`flex size-9 sm:size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-lg ${item.icon_tone}`}>
               <item.icon className="size-4 sm:size-5" />
             </div>
@@ -386,7 +386,7 @@ export default function TeacherMeetingsPage() {
         ))}
       </section>
 
-      <Card className="rounded-2xl border-slate-200 bg-white p-3 sm:p-4 shadow-none">
+      <Card className="rounded-2xl border-slate-300 bg-white p-3 sm:p-4 shadow-none">
         <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 sm:left-4 top-1/2 size-3.5 sm:size-4 -translate-y-1/2 text-slate-400" />
@@ -394,7 +394,7 @@ export default function TeacherMeetingsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search parent, title, date"
-              className="h-auto w-full rounded-xl border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-xs font-semibold text-slate-700 focus-visible:border-blue-400 focus-visible:bg-white focus-visible:ring-0 focus-visible:ring-offset-0 sm:rounded-2xl sm:py-3 sm:pl-11"
+              className="h-auto w-full rounded-xl border-slate-300 bg-slate-50 py-2 pl-9 pr-4 text-xs font-semibold text-slate-700 focus-visible:border-blue-400 focus-visible:bg-white focus-visible:ring-0 focus-visible:ring-offset-0 sm:rounded-2xl sm:py-3 sm:pl-11"
             />
           </div>
           <div className="grid w-full grid-cols-2 gap-2 lg:flex lg:w-auto">
@@ -408,7 +408,7 @@ export default function TeacherMeetingsPage() {
               ]}
               leading={<Filter className="size-3.5 shrink-0 text-slate-400" />}
               className="lg:w-[150px]"
-              triggerClassName="h-auto gap-1.5 rounded-xl border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 sm:py-2.5 sm:text-sm"
+              triggerClassName="h-auto gap-1.5 rounded-xl border-slate-300 bg-slate-50 px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 sm:py-2.5 sm:text-sm"
             />
             <PlainSelect
               value={statusFilter}
@@ -423,7 +423,7 @@ export default function TeacherMeetingsPage() {
                 { value: 'cancelled', label: 'Cancelled' },
               ]}
               className="lg:w-[150px]"
-              triggerClassName="h-auto rounded-xl border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 shadow-sm sm:px-4 sm:py-2.5 sm:text-sm"
+              triggerClassName="h-auto rounded-xl border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 shadow-sm sm:px-4 sm:py-2.5 sm:text-sm"
             />
           </div>
         </div>
@@ -433,7 +433,7 @@ export default function TeacherMeetingsPage() {
         {loading ? (
           <div className="space-y-3" aria-busy="true">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Card key={i} className="rounded-xl border-slate-200 p-4 shadow-none sm:rounded-2xl sm:p-5">
+              <Card key={i} className="rounded-xl border-slate-300 p-4 shadow-none sm:rounded-2xl sm:p-5">
                 <Skeleton className="h-5 w-1/3" />
                 <Skeleton className="mt-3 h-4 w-1/4" />
                 <div className="mt-4 grid grid-cols-2 gap-2 xl:grid-cols-4">
@@ -473,7 +473,7 @@ export default function TeacherMeetingsPage() {
             return (
               <Card
                 key={meeting.id}
-                className={`relative overflow-hidden rounded-xl sm:rounded-2xl border-slate-200 bg-gradient-to-br ${statusStyle.wash} via-white to-white p-3.5 pl-5 sm:p-5 sm:pl-6 shadow-none transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg dark:border-slate-800`}
+                className={`relative overflow-hidden rounded-xl sm:rounded-2xl border-slate-300 bg-gradient-to-br ${statusStyle.wash} via-white to-white p-3.5 pl-5 sm:p-5 sm:pl-6 shadow-none transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-400 hover:shadow-lg dark:border-slate-800`}
               >
                 <span className={`absolute inset-y-0 left-0 w-1 sm:w-1.5 bg-gradient-to-b ${statusStyle.bar}`} />
                 <div className="flex flex-col gap-3.5 sm:gap-5 xl:flex-row xl:items-start xl:justify-between">
@@ -507,7 +507,7 @@ export default function TeacherMeetingsPage() {
                         { label: 'Duration', icon: Clock3, value: meeting.durationMinutes ? `${meeting.durationMinutes} mins` : 'Not set' },
                         { label: 'Location / Link', icon: MapPin, value: meeting.meetingMode === 'offline' ? meeting.location || 'Campus' : meeting.meetingPlatform || meeting.meetingLink || 'Online', truncate: true },
                       ].map((info) => (
-                        <div key={info.label} className="flex min-w-0 items-center gap-2 rounded-xl border border-slate-100 bg-white px-2.5 py-2 shadow-sm sm:gap-2.5 sm:px-3 sm:py-2.5">
+                        <div key={info.label} className="flex min-w-0 items-center gap-2 rounded-xl border border-slate-300 bg-white px-2.5 py-2 shadow-sm sm:gap-2.5 sm:px-3 sm:py-2.5">
                           <span className={`flex size-6 sm:size-8 shrink-0 items-center justify-center rounded-lg ${statusStyle.tile}`}><info.icon className="size-3 sm:size-4" /></span>
                           <div className="min-w-0">
                             <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400">{info.label}</p>
@@ -518,7 +518,7 @@ export default function TeacherMeetingsPage() {
                     </div>
 
                     {meeting.description && (
-                      <p className="mt-3 rounded-xl border-l-2 border-slate-200 bg-slate-50/70 px-3 py-2.5 text-xs sm:text-sm font-medium text-slate-600">
+                      <p className="mt-3 rounded-xl border-l-2 border-slate-300 bg-slate-50/70 px-3 py-2.5 text-xs sm:text-sm font-medium text-slate-600">
                         {meeting.description}
                       </p>
                     )}
@@ -538,7 +538,7 @@ export default function TeacherMeetingsPage() {
                     )}
 
                     {meeting.meetingMode === 'offline' && meeting.location && (
-                      <Card className="flex-1 inline-flex items-center justify-center rounded-xl border-slate-200 bg-slate-50 px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-semibold text-slate-700 shadow-none">
+                      <Card className="flex-1 inline-flex items-center justify-center rounded-xl border-slate-300 bg-slate-50 px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-semibold text-slate-700 shadow-none">
                         <MapPin className="mr-1.5 size-3.5 sm:mr-2 sm:size-4" />
                         {meeting.location}
                       </Card>
@@ -559,7 +559,7 @@ export default function TeacherMeetingsPage() {
                           variant="ghost"
                           disabled={updatingId === meeting.id}
                           onClick={() => void updateStatus(meeting.id, 'rejected')}
-                          className="h-auto flex-1 rounded-xl border border-rose-200 bg-white px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 hover:text-rose-700 sm:px-4 sm:py-2.5 sm:text-sm"
+                          className="h-auto flex-1 rounded-xl border border-rose-300 bg-white px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 hover:text-rose-700 sm:px-4 sm:py-2.5 sm:text-sm"
                         >
                           Reject
                         </Button>
@@ -572,7 +572,7 @@ export default function TeacherMeetingsPage() {
                         variant="secondary"
                         disabled={updatingId === meeting.id}
                         onClick={() => void updateStatus(meeting.id, 'cancelled')}
-                        className="h-auto flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 sm:px-4 sm:py-2.5 sm:text-sm"
+                        className="h-auto flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 sm:px-4 sm:py-2.5 sm:text-sm"
                       >
                         Cancel
                       </Button>
@@ -584,7 +584,7 @@ export default function TeacherMeetingsPage() {
                         variant="ghost"
                         disabled={updatingId === meeting.id}
                         onClick={() => void updateStatus(meeting.id, 'completed')}
-                        className="h-auto flex-1 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100 hover:text-blue-700 sm:px-4 sm:py-2.5 sm:text-sm"
+                        className="h-auto flex-1 rounded-xl border border-blue-300 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100 hover:text-blue-700 sm:px-4 sm:py-2.5 sm:text-sm"
                       >
                         Complete
                       </Button>
@@ -707,7 +707,7 @@ export default function TeacherMeetingsPage() {
                         label: `${parent.name}${parent.studentName ? ` • ${parent.studentName}` : ''}${parent.className ? ` • ${parent.className}` : ''}${parent.sectionName ? `-${parent.sectionName}` : ''}`
                       }))}
                       className="w-full"
-                      triggerClassName="flex size-full items-center justify-between gap-1 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 shadow-sm"
+                      triggerClassName="flex size-full items-center justify-between gap-1 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl border border-slate-300 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 shadow-sm"
                     />
                     {!loadingParents && parents.length === 0 && (
                       <p className="flex items-start gap-1.5 pt-1 text-[11px] font-semibold text-amber-600">
@@ -741,7 +741,7 @@ export default function TeacherMeetingsPage() {
                       rows={2}
                       value={form.description}
                       onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-                      className="min-h-0 resize-none rounded-xl border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 focus-visible:border-blue-400 focus-visible:bg-white focus-visible:ring-0 focus-visible:ring-offset-0 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm"
+                      className="min-h-0 resize-none rounded-xl border-slate-300 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 focus-visible:border-blue-400 focus-visible:bg-white focus-visible:ring-0 focus-visible:ring-offset-0 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm"
                       placeholder="Discuss attendance, performance, assessments, or classroom follow-up."
                     />
                   </div>
@@ -762,7 +762,7 @@ export default function TeacherMeetingsPage() {
                         <ToggleGroupItem
                           key={mode}
                           value={mode}
-                          className="h-auto gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black capitalize text-slate-500 data-[state=on]:border-blue-500 data-[state=on]:bg-blue-50 data-[state=on]:text-blue-700 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm"
+                          className="h-auto gap-1.5 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-black capitalize text-slate-500 data-[state=on]:border-blue-500 data-[state=on]:bg-blue-50 data-[state=on]:text-blue-700 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm"
                         >
                           {mode === 'online' ? <Video className="size-3.5" /> : <MapPin className="size-3.5" />}
                           {mode}

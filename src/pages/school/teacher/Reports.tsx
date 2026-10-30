@@ -611,7 +611,7 @@ const Reports: React.FC = () => {
               ...classes.map((cls) => ({ value: cls.id, label: cls.name })),
             ]}
             id="class-filter"
-            triggerClassName="h-auto rounded-lg border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm sm:px-4 sm:py-2.5 sm:text-sm"
+            triggerClassName="h-auto rounded-lg border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm sm:px-4 sm:py-2.5 sm:text-sm"
           />
         </div>
 
@@ -626,7 +626,7 @@ const Reports: React.FC = () => {
             ]}
             id="section-filter"
             disabled={selectedClass === 'all' && sections.length === 0}
-            triggerClassName="h-auto rounded-lg border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm sm:px-4 sm:py-2.5 sm:text-sm"
+            triggerClassName="h-auto rounded-lg border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm sm:px-4 sm:py-2.5 sm:text-sm"
           />
         </div>
 
@@ -658,7 +658,7 @@ const Reports: React.FC = () => {
       {/* Mobile: one card per student */}
       <div className="space-y-3 md:hidden">
         {paginatedStudents.map((row: any) => (
-          <Card key={row.id} className="space-y-2.5 rounded-xl border-slate-200 p-4 shadow-none">
+          <Card key={row.id} className="space-y-2.5 rounded-xl border-slate-300 p-4 shadow-none">
             <div className="flex items-start justify-between gap-2">
               <span
                 onClick={() => navigate(`/school/teacher/reports/student/${row.id}`)}
@@ -680,7 +680,7 @@ const Reports: React.FC = () => {
       </div>
 
       {/* Tablet / desktop table */}
-      <div className="hidden w-full overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 md:block">
+      <div className="hidden w-full overflow-x-auto rounded-xl border border-slate-300 dark:border-slate-800 md:block">
         <DataTable columns={studentColumns} data={paginatedStudents} />
       </div>
 
@@ -705,7 +705,7 @@ const Reports: React.FC = () => {
                   { value: '20', label: '20' },
                   { value: '50', label: '50' },
                 ]}
-                triggerClassName="h-8 rounded-lg border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-sm"
+                triggerClassName="h-8 rounded-lg border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-sm"
               />
             </div>
           </div>
@@ -769,13 +769,13 @@ const Reports: React.FC = () => {
         <Card className="reports__empty rounded-xl border-dashed shadow-none">No assigned class or subject data is available for weakness analysis.</Card>
       )}
       {!loading && !reportAssignments.length && weaknessData.length > 0 && (
-        <Alert className="reports__error rounded-xl border-rose-200 bg-rose-50 text-sm font-semibold text-rose-700">
+        <Alert className="reports__error rounded-xl border-rose-300 bg-rose-50 text-sm font-semibold text-rose-700">
           Couldn't match this data to your specific classes/sections — showing it grouped generically below. Refresh the page, or contact an admin if this persists.
         </Alert>
       )}
       <div className="reports__weakness-class-list">
         {weaknessClassGroups.map((classGroup: any) => (
-          <Card key={classGroup.id} className="reports__weakness-class-card rounded-2xl border-slate-200 bg-white p-[18px] shadow-sm">
+          <Card key={classGroup.id} className="reports__weakness-class-card rounded-2xl border-slate-300 bg-white p-[18px] shadow-sm">
             <div className="reports__weakness-class-header">
               <div>
                 <span>Class</span>
@@ -811,7 +811,7 @@ const Reports: React.FC = () => {
                           key={subject.id || subject.name}
                           role="button"
                           tabIndex={0}
-                          className="reports__weakness-card cursor-pointer rounded-xl border-slate-200 bg-white p-[18px] shadow-none transition-all hover:-translate-y-0.5 hover:border-amber-400 hover:shadow-md"
+                          className="reports__weakness-card cursor-pointer rounded-xl border-slate-300 bg-white p-[18px] shadow-none transition-all hover:-translate-y-0.5 hover:border-amber-400 hover:shadow-md"
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' || e.key === ' ') {
                               e.preventDefault();
@@ -867,24 +867,24 @@ const Reports: React.FC = () => {
   const testContent = (
     <div className="reports__section">
       <div className="reports__weekly-stats">
-        <Card className="reports__weekly-card rounded-2xl border-slate-200 bg-white p-[18px] shadow-sm">
+        <Card className="reports__weekly-card rounded-2xl border-slate-300 bg-white p-[18px] shadow-sm">
           <span className="reports__weekly-label">Weekly Average</span>
           <strong>{weeklyAnalysis.averageScore}%</strong>
         </Card>
-        <Card className="reports__weekly-card rounded-2xl border-slate-200 bg-white p-[18px] shadow-sm">
+        <Card className="reports__weekly-card rounded-2xl border-slate-300 bg-white p-[18px] shadow-sm">
           <span className="reports__weekly-label">Weekly Pass Rate</span>
           <strong>{weeklyAnalysis.passRate}%</strong>
         </Card>
-        <Card className="reports__weekly-card rounded-2xl border-slate-200 bg-white p-[18px] shadow-sm">
+        <Card className="reports__weekly-card rounded-2xl border-slate-300 bg-white p-[18px] shadow-sm">
           <span className="reports__weekly-label">Weekly At-Risk</span>
           <strong>{weeklyAnalysis.atRiskStudents}</strong>
         </Card>
-        <Card className="reports__weekly-card rounded-2xl border-slate-200 bg-white p-[18px] shadow-sm">
+        <Card className="reports__weekly-card rounded-2xl border-slate-300 bg-white p-[18px] shadow-sm">
           <span className="reports__weekly-label">Tests This Week</span>
           <strong>{weeklyAnalysis.assessments}</strong>
         </Card>
       </div>
-      <Card className="rounded-2xl border-slate-200 bg-white p-[18px] shadow-sm">
+      <Card className="rounded-2xl border-slate-300 bg-white p-[18px] shadow-sm">
         <h3 className="reports__chart-title">Weekly Performance</h3>
         {!loading && !weeklyDays.some((item: any) => item.avgScore > 0) && (
           <Card className="reports__empty rounded-xl border-dashed shadow-none">No weekly test performance is available yet.</Card>
@@ -926,7 +926,7 @@ const Reports: React.FC = () => {
           </span>
         </div>
       </Card>
-      <Card className="rounded-2xl border-slate-200 bg-white p-[18px] shadow-sm">
+      <Card className="rounded-2xl border-slate-300 bg-white p-[18px] shadow-sm">
         <h3 className="reports__chart-title">Performance Over Time</h3>
         {!loading && !performanceChartData.length && (
           <Card className="reports__empty rounded-xl border-dashed shadow-none">No test performance history is available yet.</Card>
@@ -995,7 +995,7 @@ const Reports: React.FC = () => {
           {/* Mobile: one card per class */}
           <div className="space-y-3 md:hidden">
             {paginatedClassAnalytics.map((row: any, i: number) => (
-              <Card key={row.class || i} className="space-y-2.5 rounded-xl border-slate-200 p-4 shadow-none">
+              <Card key={row.class || i} className="space-y-2.5 rounded-xl border-slate-300 p-4 shadow-none">
                 <div className="flex items-center justify-between gap-2">
                   <ToneBadge tone="purple">{row.class}</ToneBadge>
                   <ToneBadge tone={row.passRate >= 90 ? 'success' : 'info'}>Pass {row.passRate}%</ToneBadge>
@@ -1011,7 +1011,7 @@ const Reports: React.FC = () => {
           </div>
 
           {/* Tablet / desktop table */}
-          <div className="hidden w-full overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 md:block">
+          <div className="hidden w-full overflow-x-auto rounded-xl border border-slate-300 dark:border-slate-800 md:block">
             <DataTable columns={classColumns} data={paginatedClassAnalytics} />
           </div>
           <DataTablePagination
@@ -1039,7 +1039,7 @@ const Reports: React.FC = () => {
 
   return (
     <div className="reports font-poppins">
-      {error && <Alert className="reports__error rounded-xl border-rose-200 bg-rose-50 text-sm font-semibold text-rose-700">{error}</Alert>}
+      {error && <Alert className="reports__error rounded-xl border-rose-300 bg-rose-50 text-sm font-semibold text-rose-700">{error}</Alert>}
       {loading && (
         <div className="space-y-3" aria-busy="true">
           <Skeleton className="h-6 w-40" />
@@ -1047,7 +1047,7 @@ const Reports: React.FC = () => {
         </div>
       )}
       {scope?.isClassTeacherScope && (
-        <Card className="reports__scope rounded-xl border-slate-200 shadow-none">
+        <Card className="reports__scope rounded-xl border-slate-300 shadow-none">
           <div>
             <span>Class Teacher View</span>
             <strong>{scopeLabel}</strong>
@@ -1056,14 +1056,14 @@ const Reports: React.FC = () => {
         </Card>
       )}
       <div className="reports__stats">
-        <StatCard title="Class Average" value={`${summary.classAverage}%`} change={classAverageTone.label} changeType={classAverageTone.changeType} icon={<BarChart3 size={24} />} />
-        <StatCard title="Pass Rate" value={`${summary.passRate}%`} change={passRateTone.label} changeType={passRateTone.changeType} icon={<Target size={24} />} gradient="var(--gradient-cool)" />
-        <StatCard title="At-Risk Students" value={String(summary.atRiskStudents)} change={atRiskTone.label} changeType={atRiskTone.changeType} icon={<AlertTriangle size={24} />} gradient="var(--gradient-warm)" />
-        <StatCard title="Total Students" value={String(summary.totalStudents)} icon={<Users size={24} />} gradient="var(--gradient-accent)" />
+        <StatCard className="!border-blue-400 !shadow-none hover:!border-blue-600 hover:!shadow-none" title="Class Average" value={`${summary.classAverage}%`} change={classAverageTone.label} changeType={classAverageTone.changeType} icon={<BarChart3 size={24} />} />
+        <StatCard className="!border-sky-400 !shadow-none hover:!border-sky-600 hover:!shadow-none" title="Pass Rate" value={`${summary.passRate}%`} change={passRateTone.label} changeType={passRateTone.changeType} icon={<Target size={24} />} gradient="var(--gradient-cool)" />
+        <StatCard className="!border-orange-400 !shadow-none hover:!border-orange-600 hover:!shadow-none" title="At-Risk Students" value={String(summary.atRiskStudents)} change={atRiskTone.label} changeType={atRiskTone.changeType} icon={<AlertTriangle size={24} />} gradient="var(--gradient-warm)" />
+        <StatCard className="!border-emerald-400 !shadow-none hover:!border-emerald-600 hover:!shadow-none" title="Total Students" value={String(summary.totalStudents)} icon={<Users size={24} />} gradient="var(--gradient-accent)" />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="h-auto w-fit max-w-full justify-start gap-1 overflow-x-auto rounded-xl border border-slate-100 bg-white p-1.5 shadow-sm">
+        <TabsList className="h-auto w-fit max-w-full justify-start gap-1 overflow-x-auto rounded-xl border border-slate-300 bg-white p-1.5 shadow-sm">
           {[
             { id: 'students', label: 'Student Performance', icon: <Users size={16} /> },
             { id: 'weakness', label: 'Weakness Analysis', icon: <AlertTriangle size={16} /> },

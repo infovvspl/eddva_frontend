@@ -1073,7 +1073,7 @@ const ClassManagement: React.FC = () => {
     const progress = job?.progress ?? backendProgress;
     const status = job?.status ?? 'processing';
     return (
-      <div className="mt-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+      <div className="mt-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2">
         <div className="mb-1 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400">
           <span>{status === 'done' ? 'Thumbnail Ready' : 'Generating Thumbnail'}</span>
           <span>{progress}%</span>
@@ -1457,7 +1457,7 @@ const ClassManagement: React.FC = () => {
         'rounded-2xl bg-white p-4 shadow-none transition-colors',
         isLive
           ? 'border-red-300 ring-1 ring-red-200'
-          : 'border-slate-100 hover:border-slate-200',
+          : 'border-slate-300 hover:border-slate-200',
       )}>
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
@@ -1502,7 +1502,7 @@ const ClassManagement: React.FC = () => {
 
           {/* Status badge */}
           {isLive ? (
-            <Badge variant="outline" className="shrink-0 gap-1.5 border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-black text-red-600">
+            <Badge variant="outline" className="shrink-0 gap-1.5 border-red-300 bg-red-50 px-2.5 py-1 text-[11px] font-black text-red-600">
               <span className="relative flex size-2">
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-red-400 opacity-75" />
                 <span className="relative inline-flex size-2 rounded-full bg-red-500" />
@@ -1511,28 +1511,28 @@ const ClassManagement: React.FC = () => {
             </Badge>
           ) : isEnded ? (
             lec.status === 'PROCESSING_FAILED' ? (
-              <Badge variant="outline" className="inline-flex shrink-0 items-center gap-1 rounded-full border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-black text-rose-600">
+              <Badge variant="outline" className="inline-flex shrink-0 items-center gap-1 rounded-full border-rose-300 bg-rose-50 px-2.5 py-1 text-[11px] font-black text-rose-600">
                 Processing failed
               </Badge>
             ) : isCancelled ? (
-              <Badge variant="outline" className="inline-flex shrink-0 items-center gap-1 rounded-full border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-500">
+              <Badge variant="outline" className="inline-flex shrink-0 items-center gap-1 rounded-full border-slate-300 bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-500">
                 Cancelled
               </Badge>
             ) : isMissed ? (
-              <Badge variant="outline" className="inline-flex shrink-0 items-center gap-1 rounded-full border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-500">
+              <Badge variant="outline" className="inline-flex shrink-0 items-center gap-1 rounded-full border-slate-300 bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-500">
                 Missed
               </Badge>
             ) : !lec.recordingUrl ? (
-              <Badge variant="outline" className="inline-flex shrink-0 items-center gap-1 rounded-full border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-black text-amber-600">
+              <Badge variant="outline" className="inline-flex shrink-0 items-center gap-1 rounded-full border-amber-300 bg-amber-50 px-2.5 py-1 text-[11px] font-black text-amber-600">
                 <Loader2 size={11} className="animate-spin" /> Processing recording…
               </Badge>
             ) : (
-              <Badge variant="outline" className="inline-flex shrink-0 items-center gap-1 rounded-full border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-500">
+              <Badge variant="outline" className="inline-flex shrink-0 items-center gap-1 rounded-full border-slate-300 bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-500">
                 Ended
               </Badge>
             )
           ) : (
-            <Badge variant="outline" className="inline-flex shrink-0 items-center gap-1 rounded-full border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-black text-violet-600">
+            <Badge variant="outline" className="inline-flex shrink-0 items-center gap-1 rounded-full border-violet-300 bg-violet-50 px-2.5 py-1 text-[11px] font-black text-violet-600">
               <AlarmClock size={11} /> Scheduled
             </Badge>
           )}
@@ -1558,7 +1558,7 @@ const ClassManagement: React.FC = () => {
           </InfoAlert>
         )}
         {isMissed && (
-          <InfoAlert className="mt-3 flex items-start gap-2 rounded-xl border-slate-200 bg-slate-50 px-3 py-2">
+          <InfoAlert className="mt-3 flex items-start gap-2 rounded-xl border-slate-300 bg-slate-50 px-3 py-2">
             <AlarmClock className="mt-0.5 size-3.5 shrink-0 text-slate-400" />
             <p className="text-[11px] font-medium text-slate-500">
               This class was scheduled but never started — there is no recording to process.
@@ -1566,7 +1566,7 @@ const ClassManagement: React.FC = () => {
           </InfoAlert>
         )}
         {isCancelled && (
-          <InfoAlert className="mt-3 flex items-start gap-2 rounded-xl border-slate-200 bg-slate-50 px-3 py-2">
+          <InfoAlert className="mt-3 flex items-start gap-2 rounded-xl border-slate-300 bg-slate-50 px-3 py-2">
             <AlarmClock className="mt-0.5 size-3.5 shrink-0 text-slate-400" />
             <p className="text-[11px] font-medium text-slate-500">
               This class was cancelled before it started.
@@ -1594,7 +1594,7 @@ const ClassManagement: React.FC = () => {
         )}
 
         {/* Actions */}
-        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-200 pt-3">
           {/* B-12: stream credentials only while the class can still be streamed. */}
           {!isEnded && (
             <Button variant="outline" size={null}
@@ -1678,7 +1678,7 @@ const ClassManagement: React.FC = () => {
     const filteredSubjects = Array.from(subjectMap.values()).sort(byNameNatural);
 
     return (
-      <div className="mb-4 flex w-full flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 sm:w-fit sm:max-w-full">
+      <div className="mb-4 flex w-full flex-wrap items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 sm:w-fit sm:max-w-full">
         <span className="mr-1 inline-flex items-center gap-1.5 text-xs font-extrabold text-slate-700">
           <span className="flex size-6 items-center justify-center rounded-md bg-blue-50 text-blue-600 ring-1 ring-blue-100"><BookOpen size={13} /></span>
           <span className="hidden sm:inline">Curriculum</span>
@@ -1805,13 +1805,13 @@ const ClassManagement: React.FC = () => {
       </div>
 
       {!canGoLive ? (
-        <Card className="rounded-2xl border-dashed shadow-none border-amber-200 bg-amber-50 py-14 text-center">
+        <Card className="rounded-2xl border-dashed shadow-none border-amber-300 bg-amber-50 py-14 text-center">
           <Radio className="mx-auto mb-3 size-10 text-amber-300" />
           <h3 className="text-base font-black text-slate-900">Live Classes Disabled</h3>
           <p className="mt-1 text-sm text-slate-500">Live streaming is not enabled for your school. Contact the super admin to enable it.</p>
         </Card>
       ) : filteredObsLectures.length === 0 ? (
-        <Card className="rounded-2xl border-dashed shadow-none border-slate-200 bg-slate-50 py-14 text-center">
+        <Card className="rounded-2xl border-dashed shadow-none border-slate-300 bg-slate-50 py-14 text-center">
           <Radio className="mx-auto mb-3 size-10 text-slate-300" />
           <h3 className="text-base font-black text-slate-900">
             {liveStatusFilter === 'ongoing'
@@ -1864,12 +1864,12 @@ const ClassManagement: React.FC = () => {
       {renderCurriculumFilters()}
 
       {!recordingsLoaded ? (
-        <Card className="rounded-2xl border-dashed shadow-none border-slate-200 bg-slate-50/60 p-12 text-center" aria-busy="true">
+        <Card className="rounded-2xl border-dashed shadow-none border-slate-300 bg-slate-50/60 p-12 text-center" aria-busy="true">
           <Loader2 size={28} className="mx-auto animate-spin text-slate-300" />
           <p className="mt-3 text-sm font-bold text-slate-500">Loading recordings…</p>
         </Card>
       ) : uploadedRecordings.length === 0 ? (
-        <Card className="rounded-2xl border-dashed shadow-none border-slate-200 bg-slate-50/60 p-12 text-center">
+        <Card className="rounded-2xl border-dashed shadow-none border-slate-300 bg-slate-50/60 p-12 text-center">
           <Video size={36} className="mx-auto text-slate-300" />
           <p className="mt-3 text-sm font-bold text-slate-700">No recordings yet</p>
           <p className="mt-1 text-sm text-slate-400">Upload a recorded lecture or paste a YouTube link.</p>
@@ -1880,7 +1880,7 @@ const ClassManagement: React.FC = () => {
             const date = rec.recorded_date ? new Date(rec.recorded_date).toLocaleDateString('en-GB') : '';
             const tone = subjectTone(rec.subject_name || rec.title);
             return (
-              <Card key={rec.id} className="rounded-2xl border-slate-100 bg-white p-4 shadow-none transition-colors hover:border-blue-200">
+              <Card key={rec.id} className="rounded-2xl border-slate-300 bg-white p-4 shadow-none transition-colors hover:border-blue-200">
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-3.5 sm:gap-4">
                   <Button variant={null} size={null} onClick={() => navigate(`/school/teacher/recorded-classes/${rec.id}`)}
                     className="group/thumb relative h-36 w-full sm:h-16 sm:w-28 shrink-0 overflow-hidden rounded-xl bg-slate-900">
@@ -1940,7 +1940,7 @@ const ClassManagement: React.FC = () => {
                         />
                       </div>
                     </div>
-                    <div className="mt-3 flex items-start justify-between gap-3 border-t border-slate-100 pt-2">
+                    <div className="mt-3 flex items-start justify-between gap-3 border-t border-slate-200 pt-2">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <Button variant="outline" size={null} onClick={() => navigate(`/school/teacher/recorded-classes/${rec.id}`, { state: { openTab: 'overview' } })}
@@ -2028,15 +2028,15 @@ const ClassManagement: React.FC = () => {
         </div>
         <div className="flex gap-2">
           {canGoLive && (
-            <Button variant="outline" onClick={() => setShowScheduleLiveModal(true)} className="rounded-xl border-slate-200 bg-white px-4 font-bold text-slate-700 shadow-none hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"><Radio size={16} /> Schedule Live Class</Button>
+            <Button variant="outline" onClick={() => setShowScheduleLiveModal(true)} className="rounded-xl border-slate-300 bg-white px-4 font-bold text-slate-700 shadow-none hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"><Radio size={16} /> Schedule Live Class</Button>
           )}
           <Button onClick={() => setShowRecordingModal(true)} className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 font-bold text-white shadow-none hover:brightness-110 active:scale-[0.98]"><Plus size={16} /> Upload Lecture</Button>
         </div>
       </div>
       <Tabs defaultValue="recorded" className="w-full">
         <TabsList className="mb-4 h-auto gap-2 bg-transparent p-0">
-          <TabsTrigger value="recorded" className="gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 font-bold text-slate-600 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 data-[state=active]:border-blue-700 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=active]:ring-2 data-[state=active]:ring-blue-200 data-[state=active]:hover:bg-gradient-to-br"><Video size={16} /> Recorded</TabsTrigger>
-          <TabsTrigger value="live" className="gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 font-bold text-slate-600 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 data-[state=active]:border-blue-700 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=active]:ring-2 data-[state=active]:ring-blue-200 data-[state=active]:hover:bg-gradient-to-br"><Radio size={16} /> Live Classes</TabsTrigger>
+          <TabsTrigger value="recorded" className="gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 font-bold text-slate-600 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 data-[state=active]:border-blue-700 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=active]:ring-2 data-[state=active]:ring-blue-200 data-[state=active]:hover:bg-gradient-to-br"><Video size={16} /> Recorded</TabsTrigger>
+          <TabsTrigger value="live" className="gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 font-bold text-slate-600 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 data-[state=active]:border-blue-700 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=active]:ring-2 data-[state=active]:ring-blue-200 data-[state=active]:hover:bg-gradient-to-br"><Radio size={16} /> Live Classes</TabsTrigger>
         </TabsList>
         <TabsContent value="recorded">{recordedContent}</TabsContent>
         <TabsContent value="live">{liveContent}</TabsContent>
@@ -2047,7 +2047,7 @@ const ClassManagement: React.FC = () => {
         <div className="absolute inset-0 z-[50] overflow-y-auto bg-slate-50 lg:overflow-hidden"
           onClick={(e) => { if (e.target === e.currentTarget) setDetailRec(null); }}>
           <div className="min-size-full bg-slate-50 lg:flex lg:h-full lg:min-h-0 lg:flex-col">
-            <div className="sticky top-0 z-10 border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6 lg:shrink-0">
+            <div className="sticky top-0 z-10 border-b border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-6 lg:shrink-0">
               <div className="flex items-center justify-between gap-3">
                 <Button variant={null} size={null} onClick={() => setDetailRec(null)} className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-blue-600 hover:text-white" aria-label="Back to recorded lectures"><ArrowLeft size={17} /></Button>
                 <div className="min-w-0 flex-1">
@@ -2072,7 +2072,7 @@ const ClassManagement: React.FC = () => {
             <div className="w-full px-4 py-5 sm:px-6 lg:px-8 lg:min-h-0 lg:flex-1">
               <div className={`grid gap-6 transition-all duration-300 lg:h-full lg:min-h-0 lg:grid-rows-[minmax(0,1fr)] ${detailPanelOpen ? 'lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]' : 'grid-cols-1'}`}>
                 <main className="min-w-0 space-y-4 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:pb-5 scrollbar-hide">
-                  <Card className="overflow-hidden rounded-2xl border-slate-200 bg-black shadow-sm">
+                  <Card className="overflow-hidden rounded-2xl border-slate-300 bg-black shadow-sm">
                     {detailRec.video_url ? (
                       <SchoolVideoPlayer
                         src={detailRec.video_url}
@@ -2085,7 +2085,7 @@ const ClassManagement: React.FC = () => {
                       </div>
                     )}
                   </Card>
-                  <Card className="rounded-2xl border-slate-100 bg-white p-5 shadow-sm">
+                  <Card className="rounded-2xl border-slate-300 bg-white p-5 shadow-sm">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
@@ -2110,11 +2110,11 @@ const ClassManagement: React.FC = () => {
                       </div>
                     </div>
                     <div className="mt-5 flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
-                      <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
+                      <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5">
                         <CalendarDays size={13} />
                         {detailRec.recorded_date ? new Date(detailRec.recorded_date).toLocaleDateString('en-GB') : 'Date pending'}
                       </span>
-                      <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
+                      <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5">
                         <Clock3 size={13} />
                         {detailRec.duration
                           ? (parseFloat(detailRec.duration) >= 1
@@ -2122,7 +2122,7 @@ const ClassManagement: React.FC = () => {
                             : `${Math.round(parseFloat(detailRec.duration) * 60)}s`)
                           : 'Duration pending'}
                       </span>
-                      <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
+                      <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5">
                         <Tag size={13} />
                         {detailRec.topic_name || detailRec.chapter_name || 'General topic'}
                       </span>
@@ -2132,7 +2132,7 @@ const ClassManagement: React.FC = () => {
                         </span>
                       )}
                       {detailRec.video_size && (
-                        <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
+                        <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5">
                           {detailRec.video_size > 1024 * 1024 * 1024
                             ? `${(detailRec.video_size / (1024 * 1024 * 1024)).toFixed(1)} GB`
                             : `${Math.round(detailRec.video_size / (1024 * 1024))} MB`}
@@ -2143,9 +2143,9 @@ const ClassManagement: React.FC = () => {
                 </main>
 
                 <aside className={`${detailPanelOpen ? 'block' : 'hidden'} min-w-0 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:pb-5 scrollbar-hide`}>
-                  <Card className="overflow-hidden rounded-2xl border-slate-100 bg-white shadow-sm">
+                  <Card className="overflow-hidden rounded-2xl border-slate-300 bg-white shadow-sm">
                     <Tabs value={detailTab} onValueChange={(v) => setDetailTab(v as CourseTabId)} className="w-full">
-                      <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-none border-b border-slate-100 bg-transparent px-2 py-1.5">
+                      <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-none border-b border-slate-200 bg-transparent px-2 py-1.5">
                         {availableTabs.map((tabId: CourseTabId) => {
                           const meta = DETAIL_TAB_META[tabId];
                           if (!meta) return null;
@@ -2171,11 +2171,11 @@ const ClassManagement: React.FC = () => {
                             <p className="mt-1 text-xs font-semibold text-blue-600">Use this panel for teacher stats, content details, transcript, notes, and quiz management.</p>
                           </Alert>
                           <div className="grid grid-cols-2 gap-3">
-                            <Card className="rounded-xl border-slate-100 p-3 shadow-none">
+                            <Card className="rounded-xl border-slate-300 p-3 shadow-none">
                               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Type</p>
                               <p className="mt-0.5 text-sm font-bold text-slate-800">{detailRec.source === 'youtube' ? 'YouTube' : 'Recorded'}</p>
                             </Card>
-                            <Card className="rounded-xl border-slate-100 p-3 shadow-none">
+                            <Card className="rounded-xl border-slate-300 p-3 shadow-none">
                               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Topic</p>
                               <p className="mt-0.5 truncate text-sm font-bold text-slate-800">{detailRec.topic_name || detailRec.subject_name || '—'}</p>
                             </Card>
@@ -2189,7 +2189,7 @@ const ClassManagement: React.FC = () => {
                                 { label: 'Avg Watch', value: `${detailRec.avg_watch_percentage ?? 0}%` },
                                 { label: 'Confusion Spots', value: 0 },
                               ].map((s) => (
-                                <Card key={s.label} className="rounded-xl border-slate-100 p-3 shadow-none">
+                                <Card key={s.label} className="rounded-xl border-slate-300 p-3 shadow-none">
                                   <p className="text-xl font-black text-slate-900">{s.value}</p>
                                   <p className="text-xs font-medium text-slate-400">{s.label}</p>
                                 </Card>
@@ -2197,7 +2197,7 @@ const ClassManagement: React.FC = () => {
                             </div>
                           </div>
                           {detailRec.description && (
-                            <Card className="rounded-xl border-slate-100 p-3 shadow-none">
+                            <Card className="rounded-xl border-slate-300 p-3 shadow-none">
                               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Description</p>
                               <p className="mt-1 text-sm text-slate-700">{detailRec.description}</p>
                             </Card>
@@ -2208,13 +2208,13 @@ const ClassManagement: React.FC = () => {
                               <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Video Info</p>
                               <div className="grid grid-cols-2 gap-3">
                                 {detailRec.resolution && (
-                                  <Card className="rounded-xl border-slate-100 p-3 shadow-none">
+                                  <Card className="rounded-xl border-slate-300 p-3 shadow-none">
                                     <p className="text-sm font-black text-slate-900">{detailRec.resolution}</p>
                                     <p className="text-xs font-medium text-slate-400">Resolution</p>
                                   </Card>
                                 )}
                                 {detailRec.video_size && (
-                                  <Card className="rounded-xl border-slate-100 p-3 shadow-none">
+                                  <Card className="rounded-xl border-slate-300 p-3 shadow-none">
                                     <p className="text-sm font-black text-slate-900">
                                       {detailRec.video_size > 1024 * 1024 * 1024
                                         ? `${(detailRec.video_size / (1024 * 1024 * 1024)).toFixed(1)} GB`
@@ -2251,7 +2251,7 @@ const ClassManagement: React.FC = () => {
                               {/* Floating delete tooltip — appears on highlight click */}
                               {deleteToolbar && (
                                 <Card
-                                  className="fixed z-[260] flex items-center gap-2 rounded-2xl bg-white/95 backdrop-blur-md p-2 shadow-2xl border-slate-200"
+                                  className="fixed z-[260] flex items-center gap-2 rounded-2xl bg-white/95 backdrop-blur-md p-2 shadow-2xl border-slate-300"
                                   style={{
                                     top: Math.max(10, deleteToolbar.rect.top - 56) + 'px',
                                     left: Math.max(10, deleteToolbar.rect.left + deleteToolbar.rect.width / 2 - 80) + 'px',
@@ -2277,7 +2277,7 @@ const ClassManagement: React.FC = () => {
                               {/* Floating highlight toolbar — appears on text selection */}
                               {notesToolbar && (
                                 <Card
-                                  className="fixed z-[250] flex items-center gap-2 rounded-2xl bg-white/95 backdrop-blur-md p-2 shadow-2xl border-slate-200"
+                                  className="fixed z-[250] flex items-center gap-2 rounded-2xl bg-white/95 backdrop-blur-md p-2 shadow-2xl border-slate-300"
                                   style={{
                                     top: Math.max(10, notesToolbar.rect.top - 56) + "px",
                                     left: Math.max(10, notesToolbar.rect.left + notesToolbar.rect.width / 2 - 120) + "px",
@@ -2514,7 +2514,7 @@ const ClassManagement: React.FC = () => {
                                     </Alert>
                                   )}
                                   {/* Summary strip */}
-                                  <div className="grid grid-cols-3 gap-3 p-4 border-b border-slate-100 bg-slate-50/50 rounded-2xl shrink-0">
+                                  <div className="grid grid-cols-3 gap-3 p-4 border-b border-slate-200 bg-slate-50/50 rounded-2xl shrink-0">
                                     {[
                                       { label: "Questions", value: detailRec.quiz.length, icon: ListChecks, color: "text-blue-600", bg: "bg-blue-50" },
                                       { label: "Attempted By", value: quizAnalyticsError ? "—" : (analytics?.students.filter(s => s.answeredCount > 0).length ?? 0), icon: Users, color: "text-indigo-600", bg: "bg-indigo-50" },
@@ -2532,7 +2532,7 @@ const ClassManagement: React.FC = () => {
 
                                   {/* Sub-tabs */}
                                   <Tabs value={quizSubTab} onValueChange={(v) => setQuizSubTab(v as any)} className="shrink-0">
-                                    <TabsList className="h-auto w-full justify-start rounded-none border-b border-slate-100 bg-transparent p-0">
+                                    <TabsList className="h-auto w-full justify-start rounded-none border-b border-slate-200 bg-transparent p-0">
                                       {(["questions", "students"] as const).map(k => (
                                         <TabsTrigger
                                           key={k}
@@ -2567,7 +2567,7 @@ const ClassManagement: React.FC = () => {
                                       }
 
                                       return (
-                                        <Card key={cp.id || `q-${i}`} className="border-slate-100 rounded-2xl overflow-hidden bg-white shadow-sm">
+                                        <Card key={cp.id || `q-${i}`} className="border-slate-300 rounded-2xl overflow-hidden bg-white shadow-sm">
                                           <Button variant="ghost" size={null}
                                             type="button"
                                             onClick={() => setExpandedQuestion(isExpanded ? null : (cp.id || `q-${i}`))}
@@ -2599,14 +2599,14 @@ const ClassManagement: React.FC = () => {
                                           </Button>
 
                                           {isExpanded && (
-                                            <div className="border-t border-slate-100 p-4 space-y-2.5 bg-slate-50/50">
+                                            <div className="border-t border-slate-200 p-4 space-y-2.5 bg-slate-50/50">
                                               <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-2">Option Breakdown</p>
                                               {cp.options.map((opt: any) => {
                                                 const count = optionCounts[opt.label] ?? 0;
                                                 const pct = totalAnswered > 0 ? Math.round((count / totalAnswered) * 100) : 0;
                                                 const isCorrect = opt.label === cp.correctOption;
                                                 return (
-                                                  <Card key={opt.label} className={cn("rounded-xl p-3 border", isCorrect ? "bg-emerald-50 border-emerald-100 text-emerald-800" : "bg-white border-slate-100 text-slate-700")}>
+                                                  <Card key={opt.label} className={cn("rounded-xl p-3 border", isCorrect ? "bg-emerald-50 border-emerald-100 text-emerald-800" : "bg-white border-slate-300 text-slate-700")}>
                                                     <div className="flex items-center gap-2 mb-1.5">
                                                       <span className={cn("size-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0",
                                                         isCorrect ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-500")}>{opt.label}</span>
@@ -2652,7 +2652,7 @@ const ClassManagement: React.FC = () => {
                                             .filter(s => s.answeredCount > 0)
                                             .sort((a, b) => (b.quizScore ?? 0) - (a.quizScore ?? 0))
                                             .map((s, idx) => (
-                                              <Card key={s.studentId} className="border-slate-100 rounded-2xl overflow-hidden bg-white shadow-sm">
+                                              <Card key={s.studentId} className="border-slate-300 rounded-2xl overflow-hidden bg-white shadow-sm">
                                                 <div className="flex items-center gap-3 p-3">
                                                   <div className="size-8 rounded-full bg-blue-50 flex items-center justify-center text-xs font-black text-blue-600 shrink-0">
                                                     {s.studentName.charAt(0).toUpperCase()}
@@ -2673,7 +2673,7 @@ const ClassManagement: React.FC = () => {
                                                   </div>
                                                 </div>
                                                 {s.answeredCount > 0 && (
-                                                  <div className="border-t border-slate-100 px-3 py-2 bg-slate-50/50 flex flex-wrap gap-2">
+                                                  <div className="border-t border-slate-200 px-3 py-2 bg-slate-50/50 flex flex-wrap gap-2">
                                                     {detailRec.quiz.map((cp: any, qi: number) => {
                                                       const resp = s.responses.find(r => r.questionId === (cp.id || `q-${qi}`));
                                                       return (
@@ -2781,7 +2781,7 @@ const ClassManagement: React.FC = () => {
                                 <p className="text-base font-black text-emerald-900">{answeredDoubts.length}</p>
                                 <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Answered</p>
                               </Card>
-                              <Card className="rounded-xl border-slate-100 bg-white p-2.5 text-center shadow-none">
+                              <Card className="rounded-xl border-slate-300 bg-white p-2.5 text-center shadow-none">
                                 <p className="text-base font-black text-slate-900">{recDoubts.length}</p>
                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Total</p>
                               </Card>
@@ -2811,7 +2811,7 @@ const ClassManagement: React.FC = () => {
                                 <Loader2 className="size-7 animate-spin text-blue-500" />
                               </div>
                             ) : shownDoubts.length === 0 ? (
-                              <Card className="flex flex-col items-center justify-center rounded-2xl border-dashed border-slate-200 bg-slate-50 py-10 text-center shadow-none">
+                              <Card className="flex flex-col items-center justify-center rounded-2xl border-dashed border-slate-300 bg-slate-50 py-10 text-center shadow-none">
                                 <HelpCircle className="size-8 text-slate-300" />
                                 <p className="mt-2 text-sm font-bold text-slate-700">
                                   {recDoubtTab === 'pending' ? 'No pending doubts' : recDoubtTab === 'answered' ? 'No answered doubts yet' : 'No doubts yet'}
@@ -2829,7 +2829,7 @@ const ClassManagement: React.FC = () => {
                                   const isPending = ['escalated', 'open', 'ai_answered'].includes(doubt.status);
                                   const isReplying = doubtReplyingId === doubt.id;
                                   return (
-                                    <Card key={doubt.id} className="rounded-xl border-slate-100 bg-white p-4 shadow-sm space-y-3">
+                                    <Card key={doubt.id} className="rounded-xl border-slate-300 bg-white p-4 shadow-sm space-y-3">
                                       {/* Status + time */}
                                       <div className="flex items-start justify-between gap-2">
                                         <span className={cn('rounded px-1.5 py-0.5 text-[9px] font-black uppercase tracking-widest', meta.tone)}>
@@ -2883,7 +2883,7 @@ const ClassManagement: React.FC = () => {
                                             type="button"
                                             disabled={doubtAiSuggesting || doubtSubmitting}
                                             onClick={() => aiSuggestDoubtReply(doubt.id)}
-                                            className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-[11px] font-black text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+                                            className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-2 text-[11px] font-black text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
                                           >
                                             {doubtAiSuggesting ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
                                             Draft with AI (edit before sending)
@@ -2893,7 +2893,7 @@ const ClassManagement: React.FC = () => {
                                             onChange={(e) => setDoubtReplyText(e.target.value)}
                                             rows={4}
                                             placeholder="Write your answer for the student..."
-                                            className="min-h-0 w-full resize-none rounded-lg border-slate-200 bg-slate-50 p-2.5 text-xs font-medium text-slate-800"
+                                            className="min-h-0 w-full resize-none rounded-lg border-slate-300 bg-slate-50 p-2.5 text-xs font-medium text-slate-800"
                                           />
                                           <div className="flex gap-2">
                                             <Button variant="default" size={null}
@@ -3051,7 +3051,7 @@ const ClassManagement: React.FC = () => {
                           value={schedLiveForm.title}
                           onChange={(e) => setSchedLiveForm((p) => ({ ...p, title: e.target.value }))}
                           placeholder="e.g. Electrostatics — Doubt Session"
-                          className="h-9 sm:h-11 w-full rounded-lg sm:rounded-xl border-slate-200 bg-slate-50 px-3 sm:px-4 text-xs sm:text-sm"
+                          className="h-9 sm:h-11 w-full rounded-lg sm:rounded-xl border-slate-300 bg-slate-50 px-3 sm:px-4 text-xs sm:text-sm"
                         />
                       </div>
 
@@ -3063,7 +3063,7 @@ const ClassManagement: React.FC = () => {
                           value={schedLiveForm.description}
                           onChange={(e) => setSchedLiveForm((p) => ({ ...p, description: e.target.value }))}
                           placeholder="What topics will be covered? Any prerequisites?"
-                          className="min-h-0 w-full resize-none rounded-lg sm:rounded-xl border-slate-200 bg-slate-50 p-2.5 sm:p-3 text-xs sm:text-sm"
+                          className="min-h-0 w-full resize-none rounded-lg sm:rounded-xl border-slate-300 bg-slate-50 p-2.5 sm:p-3 text-xs sm:text-sm"
                         />
                       </div>
 
@@ -3076,7 +3076,7 @@ const ClassManagement: React.FC = () => {
                           min={isoToLocalInput(new Date().toISOString())}
                           value={schedLiveForm.scheduledFor}
                           onChange={(e) => setSchedLiveForm((p) => ({ ...p, scheduledFor: e.target.value }))}
-                          className="h-9 sm:h-11 w-full rounded-lg sm:rounded-xl border-slate-200 bg-slate-50 px-3 sm:px-4 text-xs sm:text-sm"
+                          className="h-9 sm:h-11 w-full rounded-lg sm:rounded-xl border-slate-300 bg-slate-50 px-3 sm:px-4 text-xs sm:text-sm"
                         />
                       </div>
                     </div>
@@ -3255,7 +3255,7 @@ const ClassManagement: React.FC = () => {
               value={recordingForm.description}
               placeholder="Brief description for students…"
               onChange={(e) => setRecordingForm((prev) => ({ ...prev, description: e.target.value }))}
-              className="min-h-0 w-full resize-none rounded-xl border-slate-200 p-2.5 text-sm"
+              className="min-h-0 w-full resize-none rounded-xl border-slate-300 p-2.5 text-sm"
             />
           </div>
 
@@ -3288,7 +3288,7 @@ const ClassManagement: React.FC = () => {
                   key={opt.id}
                   type="button"
                   onClick={() => setVideoSource(opt.id)}
-                  className={`flex items-center justify-center gap-2 rounded-xl border-2 py-2.5 text-sm font-bold transition ${videoSource === opt.id ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}
+                  className={`flex items-center justify-center gap-2 rounded-xl border-2 py-2.5 text-sm font-bold transition ${videoSource === opt.id ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-slate-300 text-slate-500 hover:border-slate-400'}`}
                 >
                   <opt.icon size={16} /> {opt.label}
                 </Button>
@@ -3431,7 +3431,7 @@ const ClassManagement: React.FC = () => {
               value={editForm.description}
               placeholder="Brief description for students…"
               onChange={(e) => setEditForm((prev) => ({ ...prev, description: e.target.value }))}
-              className="min-h-0 w-full resize-none rounded-xl border-slate-200 p-2.5 text-sm"
+              className="min-h-0 w-full resize-none rounded-xl border-slate-300 p-2.5 text-sm"
             />
           </div>
           <div className="class__modal-actions">

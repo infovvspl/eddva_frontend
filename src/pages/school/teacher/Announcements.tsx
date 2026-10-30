@@ -161,10 +161,10 @@ export default function Announcements() {
   const countOf = (item: string) => (item === 'All' ? notices.length : notices.filter((n) => n.category === item).length);
 
   const stats = [
-    { label: 'All notices', value: notices.length, icon: Megaphone, border: 'border-blue-200 hover:border-blue-300 hover:bg-blue-50/60 dark:border-blue-900/60 dark:hover:border-blue-800 dark:hover:bg-blue-950/20', tile: 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300' },
-    { label: 'Exam', value: notices.filter((n) => n.category === 'EXAM').length, icon: ClipboardList, border: 'border-rose-200 hover:border-rose-300 hover:bg-rose-50/60 dark:border-rose-900/60 dark:hover:border-rose-800 dark:hover:bg-rose-950/20', tile: 'bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-300' },
-    { label: 'Holiday', value: notices.filter((n) => n.category === 'HOLIDAY').length, icon: CalendarDays, border: 'border-emerald-200 hover:border-emerald-300 hover:bg-emerald-50/60 dark:border-emerald-900/60 dark:hover:border-emerald-800 dark:hover:bg-emerald-950/20', tile: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300' },
-    { label: 'Notifications', value: notifications.length, icon: MessageSquare, border: 'border-violet-200 hover:border-violet-300 hover:bg-violet-50/60 dark:border-violet-900/60 dark:hover:border-violet-800 dark:hover:bg-violet-950/20', tile: 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300' },
+    { label: 'All notices', value: notices.length, icon: Megaphone, border: 'border-blue-300 hover:border-blue-300 hover:bg-blue-50/60 dark:border-blue-900/60 dark:hover:border-blue-800 dark:hover:bg-blue-950/20', tile: 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300' },
+    { label: 'Exam', value: notices.filter((n) => n.category === 'EXAM').length, icon: ClipboardList, border: 'border-rose-300 hover:border-rose-300 hover:bg-rose-50/60 dark:border-rose-900/60 dark:hover:border-rose-800 dark:hover:bg-rose-950/20', tile: 'bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-300' },
+    { label: 'Holiday', value: notices.filter((n) => n.category === 'HOLIDAY').length, icon: CalendarDays, border: 'border-emerald-300 hover:border-emerald-300 hover:bg-emerald-50/60 dark:border-emerald-900/60 dark:hover:border-emerald-800 dark:hover:bg-emerald-950/20', tile: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300' },
+    { label: 'Notifications', value: notifications.length, icon: MessageSquare, border: 'border-violet-300 hover:border-violet-300 hover:bg-violet-50/60 dark:border-violet-900/60 dark:hover:border-violet-800 dark:hover:bg-violet-950/20', tile: 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300' },
   ];
 
   return (
@@ -179,7 +179,7 @@ export default function Announcements() {
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            className="h-11 w-full rounded-full border-indigo-200 bg-white pl-11 pr-11 text-base font-semibold text-slate-900 placeholder:font-medium placeholder:text-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-white sm:text-sm [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
+            className="h-11 w-full rounded-full border-indigo-300 bg-white pl-11 pr-11 text-base font-semibold text-slate-900 placeholder:font-medium placeholder:text-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-white sm:text-sm [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
             placeholder="Search notices"
             aria-label="Search notices"
             type="search"
@@ -231,7 +231,7 @@ export default function Announcements() {
                 'h-auto shrink-0 gap-2.5 whitespace-nowrap rounded-xl px-4 py-2.5 text-xs font-black uppercase tracking-wider transition-all',
                 active
                   ? cn(fill, 'border-transparent text-white shadow-md hover:text-white dark:text-white', item === 'All' ? 'hover:bg-slate-900 dark:!text-slate-900 dark:hover:bg-white' : '', item !== 'All' ? 'hover:brightness-110' : '')
-                  : 'border-slate-200 bg-white text-slate-600 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white hover:shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-700',
+                  : 'border-slate-300 bg-white text-slate-600 hover:-translate-y-0.5 hover:border-slate-400 hover:bg-white hover:shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-700',
               )}
             >
               {item}
@@ -246,7 +246,7 @@ export default function Announcements() {
       <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
         <div className="min-w-0 space-y-4">
           {filteredNotices.length === 0 ? (
-            <Card className="rounded-2xl border-dashed border-slate-200 bg-white p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <Card className="rounded-2xl border-dashed border-slate-300 bg-white p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <Megaphone className="mx-auto size-10 text-slate-300" />
               <h2 className="mt-3 text-sm font-black text-slate-900 dark:text-white">No notices found</h2>
               <p className="mt-1 text-sm text-slate-500">School announcements will appear here.</p>
@@ -261,7 +261,7 @@ export default function Announcements() {
               return (
                 <article key={notice.id} className="flex gap-3 sm:gap-4">
                   <DateBlock value={notice.postedDate} colorClass={color.block} />
-                  <Card className="min-w-0 flex-1 rounded-2xl border-slate-100 bg-white p-4 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800 dark:bg-slate-900 sm:p-5">
+                  <Card className="min-w-0 flex-1 rounded-2xl border-slate-300 bg-white p-4 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800 dark:bg-slate-900 sm:p-5">
                     <div className="flex flex-col gap-4 md:flex-row md:items-start md:gap-5">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
@@ -277,7 +277,7 @@ export default function Announcements() {
                         <p className="mt-2 whitespace-pre-line break-words text-sm font-medium leading-6 text-slate-600 dark:text-slate-300">{notice.content}</p>
 
                         {attachments.length > 0 && (
-                          <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
+                          <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-200 pt-4 dark:border-slate-800">
                             <Paperclip className="size-4 text-slate-400" />
                             {imageAttachments.slice(1).map((file) => (
                               <Button
@@ -321,7 +321,7 @@ export default function Announcements() {
                           type="button"
                           variant="ghost"
                           onClick={() => setPreviewImage(imageAttachments[0])}
-                          className="group block h-auto w-full shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-50 p-0 text-left hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 md:w-48 lg:w-52"
+                          className="group block h-auto w-full shrink-0 overflow-hidden rounded-xl border border-slate-300 bg-slate-50 p-0 text-left hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 md:w-48 lg:w-52"
                           aria-label={`Open ${imageAttachments[0].name}`}
                         >
                           <img
@@ -340,7 +340,7 @@ export default function Announcements() {
         </div>
 
         {/* Notifications as a simple feed with a dotted rail. */}
-        <Card className="rounded-2xl border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:sticky lg:top-4">
+        <Card className="rounded-2xl border-slate-300 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:sticky lg:top-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-black text-slate-950 dark:text-white">Recent Notifications</h2>
             <span className="flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-black text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
@@ -349,11 +349,11 @@ export default function Announcements() {
             </span>
           </div>
           {notifications.length === 0 ? (
-            <p className="mt-5 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center text-sm font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-950/50">
+            <p className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5 text-center text-sm font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-950/50">
               No unread updates.
             </p>
           ) : (
-            <ol className="mt-5 space-y-4 border-l-2 border-slate-100 pl-5 dark:border-slate-800">
+            <ol className="mt-5 space-y-4 border-l-2 border-slate-300 pl-5 dark:border-slate-800">
               {notifications.slice(0, 8).map((note) => (
                 <li key={note.id} className="relative">
                   <span className="absolute -left-[27px] top-1.5 size-2.5 rounded-full bg-blue-500 ring-4 ring-white dark:ring-slate-900" />
@@ -370,7 +370,7 @@ export default function Announcements() {
         <DialogContent className="flex max-h-[92vh] w-[calc(100%-2rem)] max-w-4xl flex-col gap-0 overflow-hidden rounded-2xl bg-white p-0 shadow-2xl dark:bg-slate-950 sm:rounded-2xl">
           {previewImage && (
             <>
-              <DialogHeader className="border-b border-slate-100 px-4 py-3 pr-12 text-left dark:border-slate-800">
+              <DialogHeader className="border-b border-slate-200 px-4 py-3 pr-12 text-left dark:border-slate-800">
                 <DialogTitle className="truncate text-sm font-bold leading-normal tracking-normal text-slate-900 dark:text-white">{previewImage.name}</DialogTitle>
                 <DialogDescription className="sr-only">Image preview</DialogDescription>
               </DialogHeader>

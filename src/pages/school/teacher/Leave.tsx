@@ -43,12 +43,12 @@ const STATUS_DOT: Record<string, string> = {
 
 // One colour per leave type (by position) for the balance cards.
 const BALANCE_TONES = [
-  { tile: 'from-blue-500 to-blue-600 shadow-blue-500/30', border: 'border-blue-200 hover:border-blue-400', bar: 'bg-blue-500', text: 'text-blue-600' },
-  { tile: 'from-emerald-500 to-teal-600 shadow-emerald-500/30', border: 'border-emerald-200 hover:border-emerald-400', bar: 'bg-emerald-500', text: 'text-emerald-600' },
-  { tile: 'from-violet-500 to-purple-600 shadow-violet-500/30', border: 'border-violet-200 hover:border-violet-400', bar: 'bg-violet-500', text: 'text-violet-600' },
-  { tile: 'from-orange-400 to-orange-600 shadow-orange-500/30', border: 'border-orange-200 hover:border-orange-400', bar: 'bg-orange-500', text: 'text-orange-600' },
-  { tile: 'from-rose-500 to-pink-600 shadow-rose-500/30', border: 'border-rose-200 hover:border-rose-400', bar: 'bg-rose-500', text: 'text-rose-600' },
-  { tile: 'from-sky-400 to-cyan-600 shadow-sky-500/30', border: 'border-sky-200 hover:border-sky-400', bar: 'bg-sky-500', text: 'text-sky-600' },
+  { tile: 'from-blue-500 to-blue-600 shadow-blue-500/30', border: 'border-blue-300 hover:border-blue-400', bar: 'bg-blue-500', text: 'text-blue-600' },
+  { tile: 'from-emerald-500 to-teal-600 shadow-emerald-500/30', border: 'border-emerald-300 hover:border-emerald-400', bar: 'bg-emerald-500', text: 'text-emerald-600' },
+  { tile: 'from-violet-500 to-purple-600 shadow-violet-500/30', border: 'border-violet-300 hover:border-violet-400', bar: 'bg-violet-500', text: 'text-violet-600' },
+  { tile: 'from-orange-400 to-orange-600 shadow-orange-500/30', border: 'border-orange-300 hover:border-orange-400', bar: 'bg-orange-500', text: 'text-orange-600' },
+  { tile: 'from-rose-500 to-pink-600 shadow-rose-500/30', border: 'border-rose-300 hover:border-rose-400', bar: 'bg-rose-500', text: 'text-rose-600' },
+  { tile: 'from-sky-400 to-cyan-600 shadow-sky-500/30', border: 'border-sky-300 hover:border-sky-400', bar: 'bg-sky-500', text: 'text-sky-600' },
 ];
 
 const EMPTY_FORM = {
@@ -147,9 +147,9 @@ export default function TeacherLeavePage() {
         </Button>
       </div>
 
-      {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{error}</div>}
+      {error && <div className="bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded-lg text-sm">{error}</div>}
 
-      <Card className="rounded-2xl border-slate-200 shadow-none dark:border-slate-800">
+      <Card className="rounded-2xl border-slate-300 shadow-none dark:border-slate-800">
         <CardHeader>
           <CardTitle className="text-base font-bold flex items-center gap-2.5">
             <span className="grid size-8 place-items-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-md shadow-amber-500/30"><Bell className="h-4 w-4" /></span>
@@ -164,7 +164,7 @@ export default function TeacherLeavePage() {
           ) : (
             <div className="space-y-2">
               {notifications.map((n) => (
-                <div key={n.notification_id} className="flex items-start justify-between gap-4 rounded-xl border border-slate-100 bg-slate-50/60 p-3 transition-colors hover:border-slate-200 dark:border-slate-800 dark:bg-slate-900">
+                <div key={n.notification_id} className="flex items-start justify-between gap-4 rounded-xl border border-slate-300 bg-slate-50/60 p-3 transition-colors hover:border-slate-200 dark:border-slate-800 dark:bg-slate-900">
                   <p className="flex items-start gap-2.5 text-sm font-medium text-slate-700 dark:text-slate-300">
                     <span className="mt-1.5 size-2 shrink-0 rounded-full bg-blue-500" />
                     {n.message}
@@ -177,7 +177,7 @@ export default function TeacherLeavePage() {
         </CardContent>
       </Card>
 
-      <Card className="rounded-2xl border-slate-200 shadow-none dark:border-slate-800">
+      <Card className="rounded-2xl border-slate-300 shadow-none dark:border-slate-800">
         <CardHeader>
           <CardTitle className="text-base font-bold">Leave Balance ({new Date().getFullYear()})</CardTitle>
         </CardHeader>
@@ -219,7 +219,7 @@ export default function TeacherLeavePage() {
         </CardContent>
       </Card>
 
-      <Card className="rounded-2xl border-slate-200 shadow-none dark:border-slate-800">
+      <Card className="rounded-2xl border-slate-300 shadow-none dark:border-slate-800">
         <CardHeader>
           <CardTitle className="text-base font-bold">My Applications</CardTitle>
         </CardHeader>
@@ -231,7 +231,7 @@ export default function TeacherLeavePage() {
           ) : (
             <div className="space-y-3">
               {applications.map((a) => (
-                <div key={a.application_id} className="relative flex items-center justify-between gap-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-3 pl-5 transition-all hover:border-slate-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+                <div key={a.application_id} className="relative flex items-center justify-between gap-4 overflow-hidden rounded-xl border border-slate-300 bg-white p-3 pl-5 transition-all hover:border-slate-400 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
                   <span className={cn('absolute inset-y-0 left-0 w-1 bg-gradient-to-b', STATUS_BAR[a.status] || STATUS_BAR.cancelled)} />
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -255,7 +255,7 @@ export default function TeacherLeavePage() {
                     )}
                   </div>
                   {(a.status === 'pending' || a.status === 'approved') && (
-                    <Button variant="outline" size="sm" onClick={() => handleCancel(a.application_id)} className="shrink-0 rounded-lg border-rose-200 font-semibold text-rose-600 hover:bg-rose-50 hover:text-rose-700">
+                    <Button variant="outline" size="sm" onClick={() => handleCancel(a.application_id)} className="shrink-0 rounded-lg border-rose-300 font-semibold text-rose-600 hover:bg-rose-50 hover:text-rose-700">
                       <X className="h-4 w-4 mr-1" /> Cancel
                     </Button>
                   )}
@@ -278,7 +278,7 @@ export default function TeacherLeavePage() {
             </div>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {formError && <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">{formError}</div>}
+            {formError && <div className="bg-red-50 border border-red-300 text-red-700 px-3 py-2 rounded-lg text-sm">{formError}</div>}
 
             <div>
               <Label>Leave Type *</Label>
@@ -308,7 +308,7 @@ export default function TeacherLeavePage() {
             </div>
 
             {sameDay && (
-              <div className="flex items-center justify-between rounded-lg border border-slate-100 dark:border-slate-800 p-3">
+              <div className="flex items-center justify-between rounded-lg border border-slate-300 dark:border-slate-800 p-3">
                 <div>
                   <Label className="mb-0">Half day</Label>
                   <p className="text-xs text-slate-500">Counts as 0.5 day instead of 1</p>

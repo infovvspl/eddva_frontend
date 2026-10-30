@@ -176,7 +176,7 @@ const Students: React.FC = () => {
         </div>
       </div>
 
-      <Card className="rounded-2xl border-slate-200 bg-white shadow-none dark:border-slate-800 dark:bg-slate-900">
+      <Card className="rounded-2xl border-slate-300 bg-white shadow-none dark:border-slate-800 dark:bg-slate-900">
         <CardHeader className="gap-3 p-4 sm:p-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
             <div className="relative w-full flex-1">
@@ -185,13 +185,13 @@ const Students: React.FC = () => {
                 placeholder="Search by name, roll no or enrollment no..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-10 rounded-xl border-slate-200 bg-slate-50 pl-9 focus-visible:bg-white"
+                className="h-10 rounded-xl border-slate-300 bg-slate-50 pl-9 focus-visible:bg-white"
               />
             </div>
 
             <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-3 lg:flex lg:w-auto lg:shrink-0 lg:items-center">
               <Select value={selectedClass} onValueChange={(v) => { setSelectedClass(v); setSelectedSection('All'); }}>
-                <SelectTrigger className="h-10 w-full rounded-xl border-slate-200 bg-slate-50 font-medium lg:w-[150px]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-10 w-full rounded-xl border-slate-300 bg-slate-50 font-medium lg:w-[150px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="All">All Classes</SelectItem>
                   {classOptions.map((c) => (
@@ -203,7 +203,7 @@ const Students: React.FC = () => {
               </Select>
 
               <Select value={selectedSection} onValueChange={setSelectedSection}>
-                <SelectTrigger className="h-10 w-full rounded-xl border-slate-200 bg-slate-50 font-medium lg:w-[150px]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-10 w-full rounded-xl border-slate-300 bg-slate-50 font-medium lg:w-[150px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="All">All Sections</SelectItem>
                   {sectionOptions.map((sec) => (
@@ -213,7 +213,7 @@ const Students: React.FC = () => {
               </Select>
 
               <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as 'All' | 'Active' | 'Inactive')}>
-                <SelectTrigger className="h-10 w-full rounded-xl border-slate-200 bg-slate-50 font-medium lg:w-[130px]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-10 w-full rounded-xl border-slate-300 bg-slate-50 font-medium lg:w-[130px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="All">All Status</SelectItem>
                   <SelectItem value="Active">Active</SelectItem>
@@ -232,7 +232,7 @@ const Students: React.FC = () => {
 
         <CardContent className={`flex flex-col gap-4 p-4 pt-0 transition-opacity sm:p-6 sm:pt-0 ${isFetching && !loading ? 'opacity-60' : ''}`}>
           {loading ? (
-            <div className="space-y-3 rounded-lg border border-slate-100 p-4 dark:border-slate-800">
+            <div className="space-y-3 rounded-lg border border-slate-300 p-4 dark:border-slate-800">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <Skeleton className="size-8 shrink-0 rounded-full" />
@@ -242,7 +242,7 @@ const Students: React.FC = () => {
               ))}
             </div>
           ) : students.length === 0 ? (
-            <div className="flex min-h-[300px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-200 text-center font-medium text-slate-500 dark:border-slate-800">
+            <div className="flex min-h-[300px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-300 text-center font-medium text-slate-500 dark:border-slate-800">
               <span className="grid size-14 place-items-center rounded-2xl bg-blue-50 text-blue-500 dark:bg-blue-500/10"><Filter className="size-7" /></span>
               <p>{isError ? 'Could not load students. Please try again.' : 'No students found matching your criteria'}</p>
               <Button variant="outline" onClick={resetFilters}>Clear Filters</Button>
@@ -258,7 +258,7 @@ const Students: React.FC = () => {
                     tabIndex={0}
                     onClick={() => openStudent(student.id)}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openStudent(student.id); } }}
-                    className="cursor-pointer rounded-xl border-slate-200 p-4 shadow-none transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md dark:border-slate-800"
+                    className="cursor-pointer rounded-xl border-slate-300 p-4 shadow-none transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md dark:border-slate-800"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-3">
@@ -270,7 +270,7 @@ const Students: React.FC = () => {
                       </div>
                       <StatusBadge active={!!student.isActive} />
                     </div>
-                    <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-100 pt-3 text-xs text-slate-600 dark:border-slate-800 dark:text-slate-400">
+                    <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-300 pt-3 text-xs text-slate-600 dark:border-slate-800 dark:text-slate-400">
                       <span className="rounded-md bg-slate-100 px-2 py-0.5 font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                         {student.studentProfile?.section?.class?.name || '-'} • Sec {student.studentProfile?.section?.name || '-'}
                       </span>
@@ -294,9 +294,9 @@ const Students: React.FC = () => {
               </div>
 
               {/* Tablet / desktop: table */}
-              <div className="hidden overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 md:block">
+              <div className="hidden overflow-hidden rounded-xl border border-slate-300 dark:border-slate-800 md:block">
                 <Table>
-                  <TableHeader className="bg-slate-50/80 dark:bg-slate-900/50">
+                  <TableHeader className="border-b border-slate-300 bg-slate-50/80 dark:bg-slate-900/50">
                     <TableRow>
                       <TableHead className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 lg:px-6">Student</TableHead>
                       <TableHead className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 lg:px-6">Roll No</TableHead>
@@ -307,7 +307,7 @@ const Students: React.FC = () => {
                   </TableHeader>
                   <TableBody>
                     {students.map((student) => (
-                      <TableRow key={student.id} onClick={() => openStudent(student.id)} className="cursor-pointer transition-colors hover:bg-blue-50/50 dark:hover:bg-slate-800/50">
+                      <TableRow key={student.id} onClick={() => openStudent(student.id)} className="cursor-pointer border-slate-200 transition-colors hover:bg-blue-50/50 dark:hover:bg-slate-800/50">
                         <TableCell className="px-4 py-3 lg:px-6">
                           <div className="flex items-center gap-3">
                             <StudentAvatar student={student} />
@@ -344,7 +344,7 @@ const Students: React.FC = () => {
           )}
 
           {total > 0 && (
-            <div className="border-t border-slate-100 pt-4 dark:border-slate-800">
+            <div className="border-t border-slate-300 pt-4 dark:border-slate-800">
               <DataTablePagination
                 page={page}
                 limit={limit}

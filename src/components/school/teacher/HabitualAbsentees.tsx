@@ -61,14 +61,14 @@ export default function HabitualAbsentees({ sectionLabel }: { sectionLabel?: str
             {sectionLabel ? `${sectionLabel} • ` : ''}{MIN_ABSENCES}+ absent days or {MIN_STREAK}+ in a row, in the last {WINDOW_DAYS} days
           </p>
         </div>
-        {/* <Badge variant="outline" className="w-fit border-amber-200 bg-amber-50 text-[11px] font-bold text-amber-700">Sample data</Badge> */}
+        {/* <Badge variant="outline" className="w-fit border-amber-300 bg-amber-50 text-[11px] font-bold text-amber-700">Sample data</Badge> */}
       </div>
 
       <div className="grid grid-cols-3 gap-2 sm:gap-4">
         {[
-          { label: 'Habitual absentees', value: rows.length, icon: Users, tone: 'from-rose-500 to-red-600 shadow-rose-500/30', border: 'border-rose-200 hover:border-rose-400' },
-          { label: 'Longest streak', value: `${longest}d`, icon: Flame, tone: 'from-orange-400 to-orange-600 shadow-orange-500/30', border: 'border-orange-200 hover:border-orange-400' },
-          { label: 'Absent days (total)', value: totalAbsences, icon: CalendarX2, tone: 'from-violet-500 to-purple-600 shadow-violet-500/30', border: 'border-violet-200 hover:border-violet-400' },
+          { label: 'Habitual absentees', value: rows.length, icon: Users, tone: 'from-rose-500 to-red-600 shadow-rose-500/30', border: 'border-rose-300 hover:border-rose-400' },
+          { label: 'Longest streak', value: `${longest}d`, icon: Flame, tone: 'from-orange-400 to-orange-600 shadow-orange-500/30', border: 'border-orange-300 hover:border-orange-400' },
+          { label: 'Absent days (total)', value: totalAbsences, icon: CalendarX2, tone: 'from-violet-500 to-purple-600 shadow-violet-500/30', border: 'border-violet-300 hover:border-violet-400' },
         ].map((item) => (
           <Card key={item.label} className={cn('flex flex-col items-center gap-1.5 rounded-xl bg-white p-2.5 text-center shadow-none transition-colors sm:flex-row sm:gap-3 sm:rounded-2xl sm:p-4 sm:text-left dark:bg-slate-900', item.border)}>
             <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-lg sm:size-11', item.tone)}>
@@ -82,7 +82,7 @@ export default function HabitualAbsentees({ sectionLabel }: { sectionLabel?: str
         ))}
       </div>
 
-      <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white p-0 shadow-none dark:border-slate-800 dark:bg-slate-900">
+      <Card className="overflow-hidden rounded-2xl border-slate-300 bg-white p-0 shadow-none dark:border-slate-800 dark:bg-slate-900">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -110,14 +110,14 @@ export default function HabitualAbsentees({ sectionLabel }: { sectionLabel?: str
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="border-rose-200 bg-rose-50 text-xs font-bold text-rose-700">
+                    <Badge variant="outline" className="border-rose-300 bg-rose-50 text-xs font-bold text-rose-700">
                       <UserX className="mr-1 size-3" />{r.absences} / {r.totalDays}
                     </Badge>
                   </TableCell>
                   <TableCell className={cn('text-sm font-bold', r.percentage < 75 ? 'text-rose-600' : 'text-amber-600')}>{r.percentage}%</TableCell>
                   <TableCell>
                     {r.streak >= MIN_STREAK ? (
-                      <Badge variant="outline" className="border-orange-200 bg-orange-50 text-xs font-bold text-orange-700">
+                      <Badge variant="outline" className="border-orange-300 bg-orange-50 text-xs font-bold text-orange-700">
                         <Flame className="mr-1 size-3" />{r.streak} days
                       </Badge>
                     ) : (
@@ -131,7 +131,7 @@ export default function HabitualAbsentees({ sectionLabel }: { sectionLabel?: str
                       variant="outline"
                       size="sm"
                       onClick={() => navigate(`/school/teacher/meetings${r.parentId ? `?parentId=${encodeURIComponent(r.parentId)}` : ''}`)}
-                      className="h-8 rounded-lg border-indigo-200 text-xs font-bold text-indigo-700 hover:bg-indigo-50 hover:text-indigo-700"
+                      className="h-8 rounded-lg border-indigo-300 text-xs font-bold text-indigo-700 hover:bg-indigo-50 hover:text-indigo-700"
                     >
                       <Video className="mr-1.5 size-3.5" /> Meet parent
                     </Button>
