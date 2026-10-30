@@ -703,7 +703,23 @@ export function useUpdateInstituteBranding() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: adminApi.updateInstituteBranding,
-    onSuccess: () => qc.invalidateQueries({ queryKey: settingsKeys.branding }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: settingsKeys.branding });
+      // Re-sync the tenant brandColor/logoUrl baked into the auth store,
+      // since DashboardLayout themes off `user.tenant`, not this query.
+      qc.invalidateQueries({ queryKey: ["auth", "me"] });
+    },
+  });
+}
+
+export function useUploadInstituteLogo() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => adminApi.uploadInstituteLogo(file),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: settingsKeys.branding });
+      qc.invalidateQueries({ queryKey: ["auth", "me"] });
+    },
   });
 }
 

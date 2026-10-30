@@ -69,7 +69,7 @@ type Settings = {
 };
 
 const ROOT =
-  "relative isolate m-0 inline-flex items-center justify-center gap-2 rounded-[var(--star-border-radius)] border-0 px-6 py-3.5 font-medium leading-tight no-underline [background:var(--star-border-surface)] text-[color:var(--star-border-text)] [-webkit-tap-highlight-color:transparent] before:pointer-events-none before:absolute before:inset-0 before:-z-1 before:rounded-[inherit] before:shadow-[inset_0_0_0_var(--star-border-thickness)_var(--star-border-track)] before:content-[''] focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[color:var(--star-border-track)] disabled:cursor-not-allowed disabled:opacity-50";
+  "relative isolate overflow-hidden m-0 inline-flex items-center justify-center gap-2 rounded-[var(--star-border-radius)] border-0 px-6 py-3.5 font-medium leading-tight no-underline [background:var(--star-border-surface)] text-[color:var(--star-border-text)] [-webkit-tap-highlight-color:transparent] before:pointer-events-none before:absolute before:inset-0 before:-z-1 before:rounded-[inherit] before:shadow-[inset_0_0_0_var(--star-border-thickness)_var(--star-border-track)] before:content-[''] focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[color:var(--star-border-track)] disabled:cursor-not-allowed disabled:opacity-50";
 
 const LIGHT = 'pointer-events-none absolute top-[-48px] left-[-48px] -z-1 h-[calc(100%+96px)] w-[calc(100%+96px)]';
 

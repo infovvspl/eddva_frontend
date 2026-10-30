@@ -19,6 +19,7 @@ import { coachingSupportTicketApi, CoachingSupportTicket, TicketMessage, TicketP
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow, format } from 'date-fns';
+import { StatusBadge, toStatusBadgeKey } from '@/components/admin/StatusBadge';
 
 const TICKET_CATEGORIES = [
   'ACADEMIC',
@@ -129,17 +130,7 @@ export default function StudentSupportTicketsPage() {
     }
   }
 
-  const getStatusColor = (status: TicketStatus) => {
-    switch (status) {
-      case 'OPEN': return 'bg-amber-100 text-amber-700 border-amber-200';
-      case 'IN_PROGRESS': return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'RESOLVED': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-      case 'CLOSED': return 'bg-slate-100 text-slate-700 border-slate-200';
-      default: return 'bg-slate-100 text-slate-700 border-slate-200';
-    }
-  };
-
-  const filteredTickets = tickets.filter(t => 
+  const filteredTickets = tickets.filter(t =>
     t.subject?.toLowerCase().includes(search.toLowerCase()) || 
     t.ticketNumber?.toLowerCase().includes(search.toLowerCase())
   );
@@ -228,9 +219,7 @@ export default function StudentSupportTicketsPage() {
                       #{ticket.ticketNumber || ticket.id.substring(0, 8).toUpperCase()}
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className={cn("px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide border", getStatusColor(ticket.status))}>
-                        {ticket.status.replace('_', ' ')}
-                      </span>
+                      <StatusBadge status={toStatusBadgeKey(ticket.status)} label={ticket.status.replace('_', ' ')} className="text-[10px] tracking-wide" />
                       <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
                         {ticket.category}
                       </span>
@@ -273,9 +262,7 @@ export default function StudentSupportTicketsPage() {
                       <h2 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white">
                         {selectedTicket.subject}
                       </h2>
-                      <span className={cn("px-2 py-0.5 rounded-md text-xs font-bold tracking-wide border", getStatusColor(selectedTicket.status))}>
-                        {selectedTicket.status.replace('_', ' ')}
-                      </span>
+                      <StatusBadge status={toStatusBadgeKey(selectedTicket.status)} label={selectedTicket.status.replace('_', ' ')} className="text-xs tracking-wide" />
                     </div>
                     <div className="flex items-center gap-4 text-xs font-medium text-slate-500">
                       <span>Ticket #{selectedTicket.ticketNumber || selectedTicket.id.substring(0, 8).toUpperCase()}</span>

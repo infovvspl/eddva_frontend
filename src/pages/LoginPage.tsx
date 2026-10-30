@@ -270,6 +270,9 @@ const LoginPage = () => {
       teacher: "/teacher",
       student: "/student",
     };
+    if (user.role === "teacher" || user.role === "student") {
+      sessionStorage.setItem("celebrate_login", "1");
+    }
     navigate(returnTo || paths[user.role] || "/student");
   };
 

@@ -107,6 +107,7 @@ export interface Tenant {
   name: string;
   subdomain: string;
   brandColor?: string;
+  logoUrl?: string;
   plan: "starter" | "growth" | "scale" | "enterprise";
   status: "active" | "trial" | "suspended";
   studentCount: number;

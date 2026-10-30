@@ -1522,6 +1522,22 @@ export async function uploadInstituteOrgImage(file: File): Promise<{ url: string
 }
 
 
+export async function uploadInstituteLogo(file: File): Promise<{ url: string }> {
+  const url = await uploadToS3(
+    {
+      type: "profile",
+      fileName: file.name,
+      contentType: file.type,
+      fileSize: file.size,
+    },
+    file
+  );
+
+  await apiClient.patch("/institute/settings/branding", { logoUrl: url });
+
+  return { url };
+}
+
 export async function getInstituteBranding() {
   const res = await apiClient.get("/institute/settings/branding");
   return extractData<{ logoUrl: string | null; brandColor: string; welcomeMessage: string; name: string; subdomain: string }>(res);

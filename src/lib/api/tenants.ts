@@ -16,6 +16,8 @@ export interface TenantCreatePayload {
   pincode?: string;
   aiEnabled?: boolean;
   aiFeatures?: string[];
+  brandColor?: string;
+  logoUrl?: string;
 }
 
 export interface TenantResponse {
@@ -102,6 +104,16 @@ export async function getTenantStats(id: string) {
 export async function updateTenant(id: string, payload: Partial<TenantCreatePayload>) {
   const res = await apiClient.patch(`/admin/tenants/${id}`, payload);
   return extractData<TenantResponse>(res);
+}
+
+/** Upload a tenant's institute logo (super admin, by tenant id) */
+export async function uploadTenantLogo(id: string, file: File): Promise<{ url: string }> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await apiClient.post(`/upload/tenant-logo/${id}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return extractData<{ url: string }>(res);
 }
 
 /** Suspend a tenant */

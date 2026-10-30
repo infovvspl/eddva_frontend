@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-// Coaching institute-admin panel only — do not use for school/super-admin/teacher/student pages.
+// Coaching product only (institute-admin, teacher, student portals) — do not use for school/super-admin pages.
 export type StatusBadgeStatus =
   | "active" | "done"
   | "scheduled" | "pending" | "high-priority" | "in_progress" | "waiting"
@@ -27,7 +27,7 @@ const STATUS_STYLES: Record<StatusBadgeStatus, string> = {
 /** Maps a free-form backend status/priority string onto the badge's 4 semantic buckets. */
 export function toStatusBadgeKey(raw: string | null | undefined): StatusBadgeStatus {
   const s = (raw || "").toLowerCase();
-  if (["active", "done", "resolved", "created", "open", "completed", "published"].includes(s)) return "active";
+  if (["active", "done", "resolved", "created", "open", "completed", "published", "processed"].includes(s)) return "active";
   if (["escalated", "blocked", "urgent", "live", "suspended"].includes(s)) return "escalated";
   if (["scheduled", "pending", "pending_verification", "high", "high-priority", "in_progress", "waiting_for_user", "medium", "reopened", "skipped", "processing"].includes(s)) return "scheduled";
   return "draft";

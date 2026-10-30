@@ -18,10 +18,11 @@ import {
 } from "lucide-react";
 
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
-import { cn } from "@/lib/utils";
+import { cn, hexToHslTriplet, contrastForegroundHsl } from "@/lib/utils";
 import { usePresenceHeartbeat } from "@/hooks/use-presence";
 import { useTenantFeatures } from "@/hooks/use-tenant-features";
 import { AeroBackground } from "@/components/shared/AeroBackground";
+import { CelebrationCursor } from "@/components/ui/celebration-cursor";
 import { motion, AnimatePresence } from "framer-motion";
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import { NAV_ICON_COLORS, DEFAULT_NAV_COLOR } from "@/components/layout/nav-colors";
@@ -206,6 +207,17 @@ const DashboardLayout = () => {
   const notifs = Array.isArray(notifResult) ? notifResult : (notifResult?.data ?? []);
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllRead();
+
+  // ── Login celebration (teacher/student only, fires once per login) ──
+  const [showCelebration, setShowCelebration] = useState(false);
+  useEffect(() => {
+    if (!user || (user.role !== "teacher" && user.role !== "student")) return;
+    if (sessionStorage.getItem("celebrate_login") !== "1") return;
+    sessionStorage.removeItem("celebrate_login");
+    setShowCelebration(true);
+    const timer = setTimeout(() => setShowCelebration(false), 3200);
+    return () => clearTimeout(timer);
+  }, [user]);
 
   const isCompactLayout = useIsCompactLayout();
   const isMobile = useIsMobile();
@@ -480,6 +492,26 @@ const DashboardLayout = () => {
   if (!user) {
     return <Navigate to="/login" replace />;
   }
+
+  // Per-institute branding (coaching admin/teacher/student only — super_admin has no tenant of its own)
+  const tenantBrandColor = user.role !== "super_admin" ? user.tenant?.brandColor : undefined;
+  const tenantLogoUrlRaw = user.role !== "super_admin" ? user.tenant?.logoUrl : undefined;
+  const tenantLogoUrl = tenantLogoUrlRaw
+    ? (tenantLogoUrlRaw.startsWith("http") || tenantLogoUrlRaw.startsWith("blob:")
+      ? tenantLogoUrlRaw
+      : `${getApiOrigin() || "http://127.0.0.1:3000"}${tenantLogoUrlRaw}`)
+    : null;
+  const brandHsl = hexToHslTriplet(tenantBrandColor);
+  const brandForegroundHsl = brandHsl ? contrastForegroundHsl(tenantBrandColor) : null;
+  const brandDarkHsl = brandHsl
+    ? brandHsl.replace(/(\d+)%$/, (_m, l) => `${Math.max(0, Number(l) - 10)}%`)
+    : null;
+  const brandStyle: React.CSSProperties | undefined = brandHsl
+    ? ({ "--primary": brandHsl, "--primary-foreground": brandForegroundHsl, "--primary-dark": brandDarkHsl } as React.CSSProperties)
+    : undefined;
+  const brandLogo = tenantLogoUrl
+    ? <img src={tenantLogoUrl} alt={user.tenant?.name ?? "Institute logo"} className="h-16 w-auto max-w-full object-contain cursor-pointer transition-transform duration-500 hover:scale-105" />
+    : <EddvaLogo className="h-16 w-auto max-w-full cursor-pointer transition-transform duration-500 hover:scale-105" />;
 
   // Redirect to onboarding â€” driven by backend flag (set at login) so it fires exactly once
   if (user.role === "teacher" && user.teacherProfile === null) {
@@ -839,7 +871,7 @@ const DashboardLayout = () => {
       >
         {/* â”€â”€ Brand â”€â”€ */}
         <div className="h-24 px-4 flex items-center justify-between shrink-0 border-b border-slate-100/50">
-          <EddvaLogo className="h-16 w-auto max-w-full cursor-pointer transition-transform duration-500 hover:scale-105" />
+          {brandLogo}
           {forceOpen && (
             <button
               type="button"
@@ -1051,7 +1083,8 @@ const DashboardLayout = () => {
 
   return (
     <div
-      className={cn("layout-fixed flex h-dvh max-h-dvh min-h-0 overflow-hidden text-slate-900 selection:bg-indigo-600/10 font-poppins", (user.role === "super_admin" || user.role === "teacher") ? "bg-white" : "")}
+      className={cn("coaching-b0-theme layout-fixed flex h-dvh max-h-dvh min-h-0 overflow-hidden text-slate-900 selection:bg-indigo-600/10 font-poppins", (user.role === "super_admin" || user.role === "teacher") ? "bg-white" : "")}
+      style={brandStyle}
     >
       {!lightDashboardShell && <AeroBackground />}
 
@@ -1064,7 +1097,7 @@ const DashboardLayout = () => {
           showCollapseToggle={false}
           mobileOpen={mobileSidebarOpen}
           onMobileClose={() => setMobileSidebarOpen(false)}
-          logo={<EddvaLogo className="h-16 w-auto max-w-full cursor-pointer transition-transform duration-500 hover:scale-105" />}
+          logo={brandLogo}
           logoCollapsed={<div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white text-xs">E</div>}
           onNavClick={() => setMobileSidebarOpen(false)}
           onAction={(action) => {
@@ -1792,7 +1825,12 @@ const DashboardLayout = () => {
           onNext={advancePageFeature}
           onSkip={skipTour}
         />
-      )}    </div>
+      )}
+
+      {showCelebration && (
+        <CelebrationCursor style={{ position: "fixed", inset: 0, zIndex: 9999 }} autoplay autoplayDelay={100} />
+      )}
+    </div>
   );
 };
 

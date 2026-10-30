@@ -1,6 +1,6 @@
-// Coaching institute-admin panel only. A scoped indigo accent for /admin/* pages —
-// does NOT touch the shared Button component or --primary CSS var used by school/
-// super-admin/teacher/student, so it stays local to this product area.
+// Coaching product only (institute-admin, teacher, student portals). A scoped
+// indigo accent — does NOT touch the shared Button component or --primary CSS
+// var used by the school vertical/super-admin, so it stays local to coaching.
 export const adminButton = {
   primary:
     "inline-flex items-center justify-center gap-2 min-h-11 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:pointer-events-none",

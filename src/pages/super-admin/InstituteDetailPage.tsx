@@ -1,19 +1,32 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Building2, Users, GraduationCap, Calendar, Mail, Globe,
   Shield, CreditCard, BookOpen, Ban, ArrowUpCircle,
   Swords, ChevronLeft, Loader2, AlertCircle, Video, ClipboardList,
-  Activity, DollarSign, TrendingUp, Sparkles, Check, MapPin, Palette, LayoutDashboard, MonitorPlay
+  Activity, DollarSign, TrendingUp, Sparkles, Check, MapPin, Palette, LayoutDashboard, MonitorPlay,
+  Upload, X, Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTenant, useTenantStats, useSuspendTenant, useActivateTenant, useUpdateTenant } from "@/hooks/use-tenants";
+import { uploadTenantLogo } from "@/lib/api/tenants";
 import { toast } from "sonner";
 import { useConfirm } from "@/context/ConfirmContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import InstituteErpModulesTab from "./components/InstituteErpModulesTab";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+
+const BRAND_COLOR_PRESETS = [
+  { label: "Orange",  value: "#F97316" },
+  { label: "Indigo",  value: "#4F46E5" },
+  { label: "Blue",    value: "#2563EB" },
+  { label: "Emerald", value: "#10B981" },
+  { label: "Teal",    value: "#0D9488" },
+  { label: "Rose",    value: "#E11D48" },
+  { label: "Violet",  value: "#7C3AED" },
+  { label: "Amber",   value: "#D97706" },
+];
 
 const AI_FEATURE_OPTIONS = [
   { key: "ai_study_assistant", label: "AI Study Assistant", desc: "AI tutor & interactive study sessions" },
@@ -70,6 +83,55 @@ const InstituteDetailPage = () => {
   const toggleAiFeature = (key: string) => {
     setAiDirty(true);
     setAiFeatures((prev) => prev.includes(key) ? prev.filter(f => f !== key) : [...prev, key]);
+  };
+
+  // Branding edit state
+  const [editingBranding, setEditingBranding] = useState(false);
+  const [editBrandColor, setEditBrandColor] = useState("#F97316");
+  const [editLogoUrl, setEditLogoUrl] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  const startEditingBranding = (t: any) => {
+    setEditBrandColor(t?.brandColor || "#F97316");
+    setEditLogoUrl(t?.logoUrl || null);
+    setEditingBranding(true);
+  };
+
+  const handleLogoPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !id) return;
+    e.target.value = "";
+    const blobUrl = URL.createObjectURL(file);
+    setEditLogoUrl(blobUrl);
+    setUploadingLogo(true);
+    try {
+      const { url } = await uploadTenantLogo(id, file);
+      URL.revokeObjectURL(blobUrl);
+      setEditLogoUrl(url);
+      toast.success("Logo uploaded — don't forget to save");
+    } catch (err: any) {
+      URL.revokeObjectURL(blobUrl);
+      setEditLogoUrl(null);
+      toast.error(err?.response?.data?.message || "Logo upload failed");
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const handleSaveBranding = async () => {
+    if (!id) return;
+    try {
+      await updateMutation.mutateAsync({
+        id,
+        brandColor: editBrandColor,
+        logoUrl: editLogoUrl || undefined,
+      } as any);
+      setEditingBranding(false);
+      toast.success("Branding updated successfully");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to update branding");
+    }
   };
 
   const tabs = [
@@ -355,29 +417,122 @@ const InstituteDetailPage = () => {
                     </div>
 
                     <div className="bg-white rounded-[28px] border border-slate-100 shadow-sm p-6">
-                      <h3 className="text-sm font-bold text-slate-900 mb-5 flex items-center gap-2">
-                        <Palette className="w-4 h-4 text-amber-500" /> Branding & Onboarding
-                      </h3>
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-2">Brand Color</p>
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-md shadow-sm border border-slate-200" style={{ backgroundColor: tenant.brandColor || '#F97316' }} />
-                            <p className="text-sm font-semibold text-slate-800">{tenant.brandColor || "Default (Orange)"}</p>
-                          </div>
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-1">Logo Status</p>
-                          <p className="text-sm font-semibold text-slate-800">{tenant.logoUrl ? "Custom Logo Uploaded" : "No Custom Logo"}</p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-1">Onboarding Status</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <div className={`w-2 h-2 rounded-full ${tenant.onboardingComplete ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                            <p className="text-sm font-semibold text-slate-800">{tenant.onboardingComplete ? "Completed" : "Pending"}</p>
-                          </div>
-                        </div>
+                      <div className="flex items-center justify-between mb-5">
+                        <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                          <Palette className="w-4 h-4 text-amber-500" /> Branding & Onboarding
+                        </h3>
+                        {!editingBranding && (
+                          <button
+                            type="button"
+                            onClick={() => startEditingBranding(tenant)}
+                            className="w-7 h-7 rounded-lg bg-slate-50 hover:bg-slate-100 flex items-center justify-center text-slate-500 transition-colors"
+                            title="Edit branding"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
+
+                      {!editingBranding ? (
+                        <div className="space-y-4">
+                          <div>
+                            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-2">Brand Color</p>
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-md shadow-sm border border-slate-200" style={{ backgroundColor: tenant.brandColor || '#F97316' }} />
+                              <p className="text-sm font-semibold text-slate-800">{tenant.brandColor || "Default (Orange)"}</p>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-2">Logo</p>
+                            {tenant.logoUrl ? (
+                              <div className="flex items-center gap-2">
+                                <img src={tenant.logoUrl} alt="Institute logo" className="w-10 h-10 rounded-lg border border-slate-200 object-contain bg-slate-50" />
+                                <p className="text-sm font-semibold text-slate-800">Custom Logo Uploaded</p>
+                              </div>
+                            ) : (
+                              <p className="text-sm font-semibold text-slate-800">No Custom Logo</p>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-1">Onboarding Status</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <div className={`w-2 h-2 rounded-full ${tenant.onboardingComplete ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                              <p className="text-sm font-semibold text-slate-800">{tenant.onboardingComplete ? "Completed" : "Pending"}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-5">
+                          <div>
+                            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-2">Logo</p>
+                            <div className="flex items-center gap-3">
+                              <div className="w-14 h-14 rounded-xl border-2 border-slate-100 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
+                                {editLogoUrl ? (
+                                  <img src={editLogoUrl} alt="Institute logo" className="w-full h-full object-contain" />
+                                ) : (
+                                  <Building2 className="w-5 h-5 text-slate-300" />
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => logoInputRef.current?.click()}
+                                disabled={uploadingLogo}
+                                className="h-9 px-3 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 flex items-center gap-1.5 transition-colors"
+                              >
+                                {uploadingLogo ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                                {uploadingLogo ? "Uploading…" : "Upload Logo"}
+                              </button>
+                              <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoPick} />
+                            </div>
+                          </div>
+
+                          <div>
+                            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-2">Brand Color</p>
+                            <div className="flex flex-wrap gap-2">
+                              {BRAND_COLOR_PRESETS.map(preset => (
+                                <button
+                                  key={preset.value}
+                                  type="button"
+                                  title={preset.label}
+                                  onClick={() => setEditBrandColor(preset.value)}
+                                  className="relative w-8 h-8 rounded-lg border-2 shadow-sm transition-transform hover:scale-105"
+                                  style={{ backgroundColor: preset.value, borderColor: editBrandColor === preset.value ? preset.value : "transparent" }}
+                                >
+                                  {editBrandColor.toLowerCase() === preset.value.toLowerCase() && (
+                                    <span className="absolute inset-0 flex items-center justify-center">
+                                      <Check className="w-4 h-4 text-white drop-shadow" />
+                                    </span>
+                                  )}
+                                </button>
+                              ))}
+                              <label className="relative w-8 h-8 rounded-lg border-2 border-dashed border-slate-300 flex items-center justify-center cursor-pointer overflow-hidden"
+                                style={{ backgroundColor: editBrandColor }}
+                              >
+                                <input
+                                  type="color"
+                                  value={editBrandColor}
+                                  onChange={(e) => setEditBrandColor(e.target.value)}
+                                  className="absolute inset-0 opacity-0 cursor-pointer"
+                                />
+                              </label>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 pt-1">
+                            <Button type="button" size="sm" onClick={handleSaveBranding} disabled={updateMutation.isPending || uploadingLogo} className="gap-1.5">
+                              {updateMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                              Save
+                            </Button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingBranding(false)}
+                              className="h-8 px-3 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-50 flex items-center gap-1.5 transition-colors"
+                            >
+                              <X className="w-3.5 h-3.5" /> Cancel
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
