@@ -196,20 +196,22 @@ export default function Grievances() {
   return (
     <div className="w-full space-y-6 px-4 sm:px-6 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-            <MessageSquareWarning className="text-amber-500" size={24} />
-            Grievances
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">Review and respond to grievances raised by teachers and parents.</p>
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30">
+            <MessageSquareWarning className="size-5" />
+          </span>
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold leading-tight tracking-tight text-slate-900 dark:text-white sm:text-3xl">Grievances</h1>
+            <p className="mt-0.5 text-sm text-slate-500">Review and respond to grievances raised by teachers and parents.</p>
+          </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {[
-            { icon: <AlertCircle className="text-rose-500 size-3.5" />, label: `${stats.open} Open` },
-            { icon: <Clock className="text-amber-500 size-3.5" />, label: `${stats.inProgress} In Progress` },
-            { icon: <CheckCircle className="text-emerald-500 size-3.5" />, label: `${stats.resolved} Resolved` },
+            { icon: <AlertCircle className="text-rose-500 size-3.5" />, label: `${stats.open} Open`, tone: 'border-rose-100 bg-rose-50 text-rose-700' },
+            { icon: <Clock className="text-amber-500 size-3.5" />, label: `${stats.inProgress} In Progress`, tone: 'border-amber-100 bg-amber-50 text-amber-700' },
+            { icon: <CheckCircle className="text-emerald-500 size-3.5" />, label: `${stats.resolved} Resolved`, tone: 'border-emerald-100 bg-emerald-50 text-emerald-700' },
           ].map((pill) => (
-            <Badge key={pill.label} variant="outline" className="gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold">
+            <Badge key={pill.label} variant="outline" className={cn('gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold', pill.tone)}>
               {pill.icon}{pill.label}
             </Badge>
           ))}
@@ -225,7 +227,7 @@ export default function Grievances() {
             onChange={(e) => setSearchInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') { setPage(1); setSearchQuery(searchInput); } }}
             onBlur={commitSearch}
-            className="h-9 pl-9 pr-8"
+            className="h-10 rounded-xl pl-9 pr-8"
           />
           {searchInput && (
             <Button type="button" variant="ghost" size="icon" onClick={() => { setSearchInput(''); setSearchQuery(''); setPage(1); }} className="absolute right-1 top-1/2 size-7 -translate-y-1/2 text-slate-400">
@@ -234,7 +236,7 @@ export default function Grievances() {
           )}
         </div>
         <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-          <SelectTrigger className="h-9 w-[160px]"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectTrigger className="h-10 w-[160px] rounded-xl"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">All Statuses</SelectItem>
             <SelectItem value="OPEN">Open</SelectItem>
@@ -246,12 +248,12 @@ export default function Grievances() {
         </Select>
       </div>
 
-      <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+      <div className="hidden md:block overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700">
         <DataTable columns={columns} data={list} onRowClick={openTicketMessages} />
       </div>
       <div className="md:hidden space-y-3">
         {list.map((item) => (
-          <Card key={item.id} role="button" tabIndex={0} onClick={() => openTicketMessages(item)} className="flex cursor-pointer flex-col gap-2 rounded-2xl p-3.5 shadow-sm">
+          <Card key={item.id} role="button" tabIndex={0} onClick={() => openTicketMessages(item)} className="flex cursor-pointer flex-col gap-2 rounded-2xl p-3.5 shadow-none transition-colors hover:border-blue-200">
             <div className="flex items-center justify-between gap-2">
               <ToneBadge tone="info" className="rounded-md px-2 py-0.5 text-[10px] font-black uppercase">#{ticketNo(item)}</ToneBadge>
               <ToneBadge tone={STATUS_TONE[String(item.status || 'open').toLowerCase()] ?? 'default'} className="capitalize">{String(item.status || 'open').toLowerCase().replace('_', ' ')}</ToneBadge>

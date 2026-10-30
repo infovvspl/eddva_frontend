@@ -10,7 +10,8 @@ import {
   X,
   Eye,
   EyeOff,
-  UserPlus
+  UserPlus,
+  Users as UsersIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -23,6 +24,32 @@ import { CustomSelect } from "@/components/ui/CustomSelect";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+
+// Soft, stable avatar colour per user so a long list isn't a wall of identical tiles.
+const AVATAR_TONES = [
+  'bg-blue-100 text-blue-700',
+  'bg-emerald-100 text-emerald-700',
+  'bg-violet-100 text-violet-700',
+  'bg-rose-100 text-rose-700',
+  'bg-amber-100 text-amber-700',
+  'bg-cyan-100 text-cyan-700',
+];
+const avatarTone = (name) => {
+  const text = String(name || '');
+  let hash = 0;
+  for (let i = 0; i < text.length; i += 1) hash = (hash * 31 + text.charCodeAt(i)) >>> 0;
+  return AVATAR_TONES[hash % AVATAR_TONES.length];
+};
+
+// Each role gets its own tag colour, so the Role column can be scanned at a glance.
+const ROLE_TONES = {
+  INSTITUTE_ADMIN: 'bg-indigo-50 text-indigo-700 hover:bg-indigo-50',
+  TEACHER: 'bg-purple-50 text-purple-700 hover:bg-purple-50',
+  STUDENT: 'bg-blue-50 text-blue-700 hover:bg-blue-50',
+  PARENT: 'bg-amber-50 text-amber-700 hover:bg-amber-50',
+  STAFF: 'bg-slate-100 text-slate-700 hover:bg-slate-100',
+};
+const roleTone = (role) => ROLE_TONES[String(role || '').toUpperCase()] || 'bg-blue-50 text-blue-700 hover:bg-blue-50';
 
 function getPaginationWindowSize() {
   if (typeof window === 'undefined') return 7;
@@ -409,17 +436,22 @@ export default function Users() {
   return (
     <div className="w-full min-h-full p-4 sm:p-6 lg:p-8 space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="font-display text-2xl sm:text-3xl font-bold text-surface-950">Registered Users</h1>
-          <p className="mt-1 text-xs sm:text-sm font-medium text-surface-500">
-            View and manage all registered users across the platform.
-          </p>
+        <div className="flex min-w-0 items-center gap-3">
+          {/* <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30">
+            <UsersIcon className="size-5" />
+          </span> */}
+          <div className="min-w-0">
+            <h1 className="font-display text-2xl sm:text-3xl font-bold leading-tight text-surface-950">Registered Users</h1>
+            <p className="mt-0.5 text-xs sm:text-sm font-medium text-surface-500">
+              View and manage all registered users across the platform.
+            </p>
+          </div>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           {!isSuperAdmin && (
             <button
               onClick={() => setShowAddStaff(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-brand-700 sm:px-4 sm:py-2 sm:text-sm self-start sm:self-auto"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2 text-xs font-bold text-white shadow-md shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99] sm:px-4 sm:py-2 sm:text-sm self-start sm:self-auto"
             >
               <UserPlus className="size-4" />
               Add Staff / User
@@ -427,7 +459,7 @@ export default function Users() {
           )}
           <button
             onClick={exportData}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 bg-white px-3 py-2 text-xs font-bold text-surface-700 transition hover:bg-surface-50 hover:text-brand-600 self-start sm:self-auto sm:px-4 sm:py-2 sm:text-sm"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-surface-200 bg-white px-3 py-2 text-xs font-bold text-surface-700 transition hover:bg-surface-50 hover:text-brand-600 self-start sm:self-auto sm:px-4 sm:py-2 sm:text-sm"
           >
             <Download className="size-4" />
             Export CSV
@@ -437,7 +469,7 @@ export default function Users() {
 
       {error && <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
 
-      <div className="glass-panel overflow-hidden rounded-lg shadow-soft">
+      <div className="glass-panel overflow-hidden rounded-2xl shadow-none border border-surface-200">
         {/* ── Mobile Filters ── */}
         <div className="flex flex-col md:hidden gap-3 border-b border-surface-200 p-3 bg-surface-50">
           <div className="flex items-center justify-between gap-2">
@@ -466,7 +498,7 @@ export default function Users() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, email..."
-              className="w-full rounded-lg border border-surface-200 bg-white py-2 pl-10 pr-4 text-sm font-medium outline-none transition focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-xl border border-surface-200 bg-white py-2 pl-10 pr-4 text-sm font-medium outline-none transition focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
             />
           </div>
 
@@ -560,7 +592,7 @@ export default function Users() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, email..."
-              className="w-full rounded-lg border border-surface-200 bg-white py-2 pl-10 pr-4 text-sm font-medium outline-none transition focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-xl border border-surface-200 bg-white py-2 pl-10 pr-4 text-sm font-medium outline-none transition focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
             />
           </div>
         </div>
@@ -569,25 +601,25 @@ export default function Users() {
         <div className="hidden md:block overflow-x-auto">
           <Table className="w-full text-left">
             <TableHeader>
-              <TableRow className="bg-surface-50 text-xs font-bold uppercase text-surface-500 hover:bg-surface-50 border-b-0">
-                <TableHead className="h-auto p-4 pl-5 text-surface-500">User</TableHead>
-                <TableHead className="h-auto p-4 text-surface-500">Role & Institute</TableHead>
-                <TableHead className="h-auto p-4 text-surface-500">Contact</TableHead>
-                <TableHead className="h-auto p-4 text-surface-500">Registered</TableHead>
-                <TableHead className="h-auto p-4 text-surface-500">Status</TableHead>
-                <TableHead className="h-auto p-4 text-surface-500">Actions</TableHead>
+              <TableRow className="border-b border-surface-200 bg-surface-50 text-xs font-bold uppercase tracking-wide text-surface-500 hover:bg-surface-50">
+                <TableHead className="h-auto px-4 py-3 text-surface-500">User</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-surface-500">Role & Institute</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-surface-500">Contact</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-surface-500">Registered</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-surface-500">Status</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-surface-500">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 Array.from({ length: 5 }).map((_, index) => (
                   <TableRow key={index} className="border-t border-surface-100 border-b-0 hover:bg-transparent">
-                    <TableCell className="p-4 pl-5"><Skeleton className="h-10 w-48" /></TableCell>
-                    <TableCell className="p-4"><Skeleton className="h-8 w-40" /></TableCell>
-                    <TableCell className="p-4"><Skeleton className="h-8 w-36" /></TableCell>
-                    <TableCell className="p-4"><Skeleton className="h-8 w-24" /></TableCell>
-                    <TableCell className="p-4"><Skeleton className="h-8 w-20" /></TableCell>
-                    <TableCell className="p-4"><Skeleton className="ml-auto h-8 w-16" /></TableCell>
+                    <TableCell className="p-4 px-4 py-3"><Skeleton className="h-10 w-48" /></TableCell>
+                    <TableCell className="p-4 px-4 py-3"><Skeleton className="h-8 w-40" /></TableCell>
+                    <TableCell className="p-4 px-4 py-3"><Skeleton className="h-8 w-36" /></TableCell>
+                    <TableCell className="p-4 px-4 py-3"><Skeleton className="h-8 w-24" /></TableCell>
+                    <TableCell className="p-4 px-4 py-3"><Skeleton className="h-8 w-20" /></TableCell>
+                    <TableCell className="p-4 px-4 py-3"><Skeleton className="ml-auto h-8 w-16" /></TableCell>
                   </TableRow>
                 ))
               ) : users.length === 0 ? (
@@ -598,11 +630,11 @@ export default function Users() {
                 </TableRow>
               ) : (
                 users.map((item) => (
-                  <TableRow key={item.id} className="border-t border-surface-100 border-b-0 transition hover:bg-surface-50">
-                    <TableCell className="p-4 pl-5">
+                  <TableRow key={item.id} className="border-t border-surface-100 border-b-0 transition-colors hover:bg-blue-50/50">
+                    <TableCell className="p-4 px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <Avatar className="size-10 shrink-0 rounded-xl bg-brand-100">
-                          <AvatarFallback className="rounded-xl bg-brand-100 text-sm font-bold tracking-tight text-brand-700">
+                        <Avatar className="size-10 shrink-0 rounded-xl">
+                          <AvatarFallback className={cn('rounded-xl text-sm font-bold tracking-tight', avatarTone(item.name))}>
                             {(item.name || 'U').charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
@@ -612,9 +644,9 @@ export default function Users() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="p-4">
+                    <TableCell className="p-4 px-4 py-3">
                       <div className="flex flex-col gap-1">
-                        <Badge variant="secondary" className="w-fit rounded-md border-transparent bg-blue-50 text-xs font-bold text-blue-700 hover:bg-blue-50">
+                        <Badge variant="secondary" className={cn('w-fit rounded-md border-transparent text-xs font-bold', roleTone(item.role))}>
                           {item.role?.replace('_', ' ')}
                         </Badge>
                         <p className="text-xs font-semibold text-surface-600 truncate max-w-[200px]" title={item.institute_name || item.tenant?.name || 'Eddva HQ'}>
@@ -622,16 +654,16 @@ export default function Users() {
                         </p>
                       </div>
                     </TableCell>
-                    <TableCell className="p-4">
+                    <TableCell className="p-4 px-4 py-3">
                       <p className="text-sm font-medium text-surface-700">{item.phone || item.parent_phone || item.phoneNumber || item.contact || 'N/A'}</p>
                     </TableCell>
-                    <TableCell className="p-4">
+                    <TableCell className="p-4 px-4 py-3">
                       <p className="text-sm font-medium text-surface-700">{new Date(item.createdAt).toLocaleDateString()}</p>
                     </TableCell>
-                    <TableCell className="p-4">
+                    <TableCell className="p-4 px-4 py-3">
                       <StatusBadge status={item.status || 'ACTIVE'} />
                     </TableCell>
-                    <TableCell className="p-4">
+                    <TableCell className="p-4 px-4 py-3">
                       <button
                         onClick={() => setResetTarget(item)}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 bg-white px-2.5 py-1.5 text-xs font-bold text-surface-700 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 transition"
@@ -666,8 +698,8 @@ export default function Users() {
               <div key={item.id} className="p-4 space-y-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <Avatar className="size-10 shrink-0 rounded-xl bg-brand-100">
-                      <AvatarFallback className="rounded-xl bg-brand-100 text-sm font-bold tracking-tight text-brand-700">
+                    <Avatar className="size-10 shrink-0 rounded-xl">
+                      <AvatarFallback className={cn('rounded-xl text-sm font-bold tracking-tight', avatarTone(item.name))}>
                         {(item.name || 'U').charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
@@ -682,7 +714,7 @@ export default function Users() {
                 </div>
 
                 <div className="flex flex-wrap gap-2 text-xs font-semibold">
-                  <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-blue-700">
+                  <span className={cn('inline-flex items-center rounded-md px-2 py-0.5', roleTone(item.role))}>
                     {item.role?.replace('_', ' ')}
                   </span>
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-surface-600 truncate max-w-[180px]">
@@ -708,7 +740,7 @@ export default function Users() {
 
         {/* Pagination Controls */}
         {!loading && users.length > 0 && (
-          <div className="flex flex-col gap-3 border-t border-surface-200 bg-surface-50 p-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-3 border-t border-surface-200 bg-surface-50 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
             <p className="text-xs font-medium text-surface-500 sm:text-sm">
               Showing <span className="font-bold text-surface-900">{pageStart}</span> to <span className="font-bold text-surface-900">{pageEnd}</span> of <span className="font-bold text-surface-900">{totalItems || users.length}</span> users
             </p>

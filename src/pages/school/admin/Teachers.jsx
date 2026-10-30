@@ -28,6 +28,22 @@ const getInitials = (name) => {
   return name.substring(0, 2).toUpperCase();
 };
 
+// Soft, stable avatar colour per teacher so a long list isn't a wall of identical blue tiles.
+const AVATAR_TONES = [
+  'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-200',
+  'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200',
+  'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-200',
+  'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-200',
+  'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200',
+  'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/20 dark:text-cyan-200',
+];
+const avatarTone = (name) => {
+  const text = String(name || '');
+  let hash = 0;
+  for (let i = 0; i < text.length; i += 1) hash = (hash * 31 + text.charCodeAt(i)) >>> 0;
+  return AVATAR_TONES[hash % AVATAR_TONES.length];
+};
+
 function downloadCsv(filename, rows) {
   const csv = rows
     .map((row) =>
@@ -420,9 +436,14 @@ export default function Teachers() {
   return (
     <div className="w-full px-3 sm:px-5 lg:px-8 xl:px-10">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="font-display text-3xl font-bold text-slate-950 dark:text-white">Teachers</h1>
-          <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">Manage teaching staff and assignments.</p>
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30">
+            <School className="size-5" />
+          </span>
+          <div className="min-w-0">
+            <h1 className="font-display text-2xl font-bold leading-tight text-slate-950 dark:text-white sm:text-3xl">Teachers</h1>
+            <p className="mt-0.5 text-sm font-medium text-slate-500 dark:text-slate-400">Manage teaching staff and assignments.</p>
+          </div>
         </div>
         <div className="flex flex-wrap gap-1.5 sm:gap-2">
           <button
@@ -453,36 +474,36 @@ export default function Teachers() {
             title: 'Total Teachers',
             value: dashboardKpis.total,
             subtitle: 'Teaching staff',
-            tone: 'from-blue-600 to-sky-500',
-            iconBg: 'bg-blue-100 dark:bg-blue-500/20',
-            iconColor: 'text-blue-600 dark:text-blue-400',
+            card: 'border-blue-100 from-white to-blue-50/80',
+            blob: 'bg-blue-100',
+            tile: 'from-blue-500 to-sky-500 shadow-blue-500/30',
             Icon: School,
           },
           {
             title: 'Present Today',
             value: dashboardKpis.presentToday,
             subtitle: 'Attendance today',
-            tone: 'from-emerald-600 to-teal-500',
-            iconBg: 'bg-emerald-100 dark:bg-emerald-500/20',
-            iconColor: 'text-emerald-600 dark:text-emerald-400',
+            card: 'border-emerald-100 from-white to-emerald-50/80',
+            blob: 'bg-emerald-100',
+            tile: 'from-emerald-500 to-teal-500 shadow-emerald-500/30',
             Icon: CheckCircle2,
           },
           {
             title: 'New This Month',
             value: dashboardKpis.newThisMonth,
             subtitle: 'Recently added',
-            tone: 'from-violet-600 to-indigo-500',
-            iconBg: 'bg-violet-100 dark:bg-violet-500/20',
-            iconColor: 'text-violet-600 dark:text-violet-400',
+            card: 'border-violet-100 from-white to-violet-50/80',
+            blob: 'bg-violet-100',
+            tile: 'from-violet-500 to-indigo-500 shadow-violet-500/30',
             Icon: UserPlus,
           },
           {
             title: 'Absent Today',
             value: dashboardKpis.absentToday,
             subtitle: 'Absent today',
-            tone: 'from-rose-600 to-orange-500',
-            iconBg: 'bg-rose-100 dark:bg-rose-500/20',
-            iconColor: 'text-rose-600 dark:text-rose-400',
+            card: 'border-rose-100 from-white to-rose-50/80',
+            blob: 'bg-rose-100',
+            tile: 'from-rose-500 to-orange-500 shadow-rose-500/30',
             Icon: XCircle,
           },
         ].map((card, idx) => (
@@ -491,19 +512,23 @@ export default function Teachers() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: 0.03 * idx }}
-            className="glass-premium rounded-2xl p-3 sm:p-4"
+            className={cn(
+              'relative overflow-hidden rounded-2xl border bg-gradient-to-br p-3 transition-colors hover:border-slate-300 sm:p-4 dark:border-slate-800 dark:from-slate-900 dark:to-slate-900',
+              card.card,
+            )}
           >
-            <div className="flex items-start justify-between gap-2 sm:gap-3">
+            <span className={cn('pointer-events-none absolute -right-5 -top-5 size-20 rounded-full opacity-60 dark:opacity-10', card.blob)} />
+            <div className="relative flex items-center justify-between gap-2 sm:gap-3">
               <div className="min-w-0">
-                <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">{card.title}</p>
-                <p className="mt-1 sm:mt-2 font-display text-xl sm:text-3xl font-bold text-slate-950 dark:text-white">
+                <p className="truncate text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 sm:text-xs">{card.title}</p>
+                <p className="mt-1 font-display text-xl font-bold leading-none text-slate-950 dark:text-white sm:mt-2 sm:text-3xl">
                   {formatNumber(card.value)}
                 </p>
-                <p className="mt-0.5 sm:mt-1 text-[9px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 truncate">{card.subtitle}</p>
+                <p className="mt-1 truncate text-[9px] font-semibold text-slate-500 dark:text-slate-400 sm:text-xs">{card.subtitle}</p>
               </div>
-              <div className={`flex size-9 sm:size-11 shrink-0 items-center justify-center rounded-2xl ${card.iconBg}`}>
-                <card.Icon className={`size-4 sm:size-5 ${card.iconColor}`} />
-              </div>
+              <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-md sm:size-11 sm:rounded-2xl', card.tile)}>
+                <card.Icon className="size-4 sm:size-5" />
+              </span>
             </div>
           </motion.div>
         ))}
@@ -600,7 +625,7 @@ export default function Teachers() {
 
             {/* Right Action Badges & Buttons */}
             <div className="ml-auto flex shrink-0 items-center gap-2">
-              <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/60 bg-slate-50/80 px-2.5 py-1.5 text-xs font-bold text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+              <div className="inline-flex items-center gap-1.5 rounded-xl border border-blue-100 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
                 <Users className="size-3.5 text-blue-500" />
                 <span>{formatNumber(filtered.length)} results</span>
               </div>
@@ -620,13 +645,13 @@ export default function Teachers() {
         {/* Desktop View */}
         <div className="hidden md:block overflow-x-auto rounded-b-2xl overflow-hidden">
           <Table className="min-w-[980px] w-full text-left text-sm">
-            <TableHeader className="bg-slate-50/50 text-slate-500 dark:bg-slate-800/40 dark:text-slate-400">
+            <TableHeader className="border-b border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-400">
               <TableRow className="hover:bg-transparent border-b-0">
-                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider sticky left-0 z-20 bg-slate-50 dark:bg-slate-850 shadow-sm text-slate-500 dark:text-slate-400">Teacher Name</TableHead>
-                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Email</TableHead>
-                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Class/Section</TableHead>
-                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</TableHead>
-                <TableHead className="h-auto px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Actions</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-[11px] font-bold uppercase tracking-wider sticky left-0 z-20 bg-slate-50 dark:bg-slate-850 text-slate-500 dark:text-slate-400">Teacher Name</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Email</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Class/Section</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</TableHead>
+                <TableHead className="h-auto px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="divide-y divide-slate-100 dark:divide-slate-800 [&_tr]:border-b-0">
@@ -638,12 +663,12 @@ export default function Teachers() {
                 </TableRow>
               ) : (
                 filtered.map((teacher) => (
-                  <TableRow key={teacher.id} className="transition hover:bg-blue-50/40 dark:hover:bg-slate-800/40">
-                    <TableCell className="p-4 px-5 py-4 sticky left-0 z-20 bg-white dark:bg-slate-900">
+                  <TableRow key={teacher.id} className="group/row transition hover:bg-blue-50/50 dark:hover:bg-slate-800/40">
+                    <TableCell className="p-4 px-4 py-3 sticky left-0 z-20 bg-white transition-colors group-hover/row:bg-blue-50 dark:bg-slate-900 dark:group-hover/row:bg-slate-800">
                       <div className="flex items-center gap-4">
-                        <Avatar className="size-11 shrink-0 rounded-2xl border-2 border-white bg-slate-100 shadow-sm dark:border-slate-800 dark:bg-slate-800">
+                        <Avatar className="size-10 shrink-0 rounded-xl border border-white bg-slate-100 dark:border-slate-800 dark:bg-slate-800">
                           <AvatarImage src={teacher.profileImage} alt={teacher.name} className="object-cover" />
-                          <AvatarFallback className="rounded-2xl bg-blue-600/10 text-[13px] font-bold tracking-tight text-blue-700 dark:bg-blue-500/20 dark:text-sky-200">
+                          <AvatarFallback className={cn('rounded-xl text-[13px] font-bold tracking-tight', avatarTone(teacher.name))}>
                             {(teacher.name || 'T').slice(0, 1).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
@@ -657,8 +682,8 @@ export default function Teachers() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="p-4 px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{teacher.email || '-'}</TableCell>
-                    <TableCell className="p-4 px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">
+                    <TableCell className="p-4 px-4 py-3 font-semibold text-slate-600 dark:text-slate-300">{teacher.email || '-'}</TableCell>
+                    <TableCell className="p-4 px-4 py-3 font-semibold text-slate-600 dark:text-slate-300">
                       <div className="flex flex-wrap gap-1">
                         {getClassSectionLabels(teacher).map((label) => (
                           <Badge key={label} variant="secondary" className="rounded-full px-2 bg-blue-50 dark:bg-blue-950/30 text-xs font-bold text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30">
@@ -668,7 +693,7 @@ export default function Teachers() {
                         {getClassSectionLabels(teacher).length === 0 && <span className="text-slate-400">—</span>}
                       </div>
                     </TableCell>
-                    <TableCell className="p-4 px-5 py-4">
+                    <TableCell className="p-4 px-4 py-3">
                       <button
                         onClick={async () => {
                           try {
@@ -702,18 +727,18 @@ export default function Teachers() {
                         </span>
                       </button>
                     </TableCell>
-                    <TableCell className="p-4 px-5 py-4">
+                    <TableCell className="p-4 px-4 py-3">
                       <div className="flex items-center gap-2">
                         <Link
                           to={`/school/admin/teachers/${teacher.id}`}
-                          className="group relative flex size-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                          className="group relative flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
                         >
                           <Eye className="size-4" />
                           <span className="absolute -top-10 left-1/2 -translate-x-1/2 scale-0 rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">View</span>
                         </Link>
                         <button
                           onClick={() => handleEdit(teacher)}
-                          className="group relative flex size-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                          className="group relative flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
                           aria-label="Edit teacher"
                         >
                           <Edit2 className="size-4" />
@@ -738,9 +763,9 @@ export default function Teachers() {
             filtered.map((teacher) => (
               <div key={teacher.id} className="p-4 space-y-3 hover:bg-blue-50/40 dark:hover:bg-slate-800/40 transition">
                 <div className="flex items-center gap-4">
-                  <Avatar className="size-11 shrink-0 rounded-2xl border-2 border-white bg-slate-100 shadow-sm dark:border-slate-800 dark:bg-slate-800">
+                  <Avatar className="size-10 shrink-0 rounded-xl border border-white bg-slate-100 dark:border-slate-800 dark:bg-slate-800">
                     <AvatarImage src={teacher.profileImage} alt={teacher.name} className="object-cover" />
-                    <AvatarFallback className="rounded-2xl bg-blue-600/10 text-[13px] font-bold tracking-tight text-blue-700 dark:bg-blue-500/20 dark:text-sky-200">
+                    <AvatarFallback className={cn('rounded-xl text-[13px] font-bold tracking-tight', avatarTone(teacher.name))}>
                       {(teacher.name || 'T').slice(0, 1).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>

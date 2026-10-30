@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import schoolApi from '@/lib/api/school-client';
-import { Loader2, Download, Plus, CheckCircle2, XCircle, FileWarning, UploadCloud, AlertTriangle, Search } from 'lucide-react';
+import { Loader2, Download, Plus, CheckCircle2, XCircle, FileWarning, UploadCloud, AlertTriangle, Search, IdCard } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import { CustomSelect } from "@/components/ui/CustomSelect";
@@ -537,15 +537,20 @@ export default function DocumentGenerator() {
   return (
     <div className="p-6 w-full space-y-6">
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Document Generator</h1>
-          <p className="text-muted-foreground">Generate and manage printable ID Cards and Admit Cards in bulk.</p>
+        <div className="flex min-w-0 items-center gap-3">
+          {/* <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30">
+            <IdCard className="size-5" />
+          </span> */}
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold leading-tight tracking-tight sm:text-3xl">Document Generator</h1>
+            <p className="mt-0.5 text-sm text-muted-foreground">Generate and manage printable ID Cards and Admit Cards in bulk.</p>
+          </div>
         </div>
       </div>
 
       {/* School Logo Warning Banner */}
       {!schoolLogo && (
-        <div className="flex items-center gap-3 p-4 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700">
+        <div className="flex flex-wrap items-center gap-3 p-4 rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700">
           <AlertTriangle className="size-5 text-amber-600 flex-shrink-0" />
           <div className="flex-1">
             <p className="text-sm font-medium text-amber-800 dark:text-amber-300">No School Logo Found</p>
@@ -560,7 +565,7 @@ export default function DocumentGenerator() {
         </div>
       )}
       {schoolLogo && (
-        <div className="flex items-center gap-3 p-3 rounded-lg border border-green-200 bg-green-50 dark:bg-green-950/30 dark:border-green-700">
+        <div className="flex items-center gap-3 p-3 rounded-2xl border border-green-200 bg-green-50 dark:bg-green-950/30 dark:border-green-700">
           <img src={schoolLogo} alt="School Logo" className="size-10 rounded-full object-cover border" />
           <div className="flex-1">
             <p className="text-sm font-medium text-green-800 dark:text-green-300">School Logo Active</p>
@@ -582,17 +587,17 @@ export default function DocumentGenerator() {
         else if (v === 'CERTIFICATE') setSelectedType('CERTIFICATE');
         else if (v === 'history') loadHistory();
       }}>
-        <TabsList className="mb-4">
-          <TabsTrigger value="id-cards">Student ID Cards</TabsTrigger>
-          <TabsTrigger value="staff-cards">Staff ID Cards</TabsTrigger>
-          <TabsTrigger value="admit-cards">Admit Cards</TabsTrigger>
-          <TabsTrigger value="CERTIFICATE">Certificates</TabsTrigger>
-          <TabsTrigger value="history">Card History</TabsTrigger>
+        <TabsList className="mb-4 h-auto flex-wrap justify-start gap-2 bg-transparent p-0">
+          <TabsTrigger value="id-cards" className="gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 font-bold text-slate-600 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 data-[state=active]:border-blue-700 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=active]:ring-2 data-[state=active]:ring-blue-200 data-[state=active]:hover:bg-gradient-to-br">Student ID Cards</TabsTrigger>
+          <TabsTrigger value="staff-cards" className="gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 font-bold text-slate-600 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 data-[state=active]:border-blue-700 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=active]:ring-2 data-[state=active]:ring-blue-200 data-[state=active]:hover:bg-gradient-to-br">Staff ID Cards</TabsTrigger>
+          <TabsTrigger value="admit-cards" className="gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 font-bold text-slate-600 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 data-[state=active]:border-blue-700 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=active]:ring-2 data-[state=active]:ring-blue-200 data-[state=active]:hover:bg-gradient-to-br">Admit Cards</TabsTrigger>
+          <TabsTrigger value="CERTIFICATE" className="gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 font-bold text-slate-600 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 data-[state=active]:border-blue-700 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=active]:ring-2 data-[state=active]:ring-blue-200 data-[state=active]:hover:bg-gradient-to-br">Certificates</TabsTrigger>
+          <TabsTrigger value="history" className="gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 font-bold text-slate-600 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 data-[state=active]:border-blue-700 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=active]:ring-2 data-[state=active]:ring-blue-200 data-[state=active]:hover:bg-gradient-to-br">Card History</TabsTrigger>
         </TabsList>
 
         {/* STUDENT ID CARDS */}
         <TabsContent value="id-cards">
-          <Card>
+          <Card className="rounded-2xl shadow-none">
             <CardHeader>
               <CardTitle>Bulk Generate Student ID Cards</CardTitle>
               <CardDescription>Select a class or specific students to generate printable QR-enabled ID cards.</CardDescription>
@@ -701,7 +706,7 @@ export default function DocumentGenerator() {
                   )}
                 </div>
               </div>
-              <Button onClick={() => handleGenerateIdCard('STUDENT')} disabled={loading} className="w-full md:w-auto mt-6">
+              <Button onClick={() => handleGenerateIdCard('STUDENT')} disabled={loading} className="w-full md:w-auto mt-6 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:brightness-110 hover:from-blue-600 hover:to-indigo-600">
                 {loading && <Loader2 className="mr-2 size-4 animate-spin" />}
                 {!loading && <Download className="mr-2 size-4" />}
                 Generate Student ID Cards
@@ -712,7 +717,7 @@ export default function DocumentGenerator() {
 
         {/* STAFF ID CARDS */}
         <TabsContent value="staff-cards">
-          <Card>
+          <Card className="rounded-2xl shadow-none">
             <CardHeader>
               <CardTitle>Generate Staff ID Cards</CardTitle>
               <CardDescription>Select a teacher to generate professional employee ID cards.</CardDescription>
@@ -780,7 +785,7 @@ export default function DocumentGenerator() {
                   )}
                 </div>
               </div>
-              <Button onClick={() => handleGenerateIdCard('STAFF')} disabled={loading} className="w-full md:w-auto mt-6">
+              <Button onClick={() => handleGenerateIdCard('STAFF')} disabled={loading} className="w-full md:w-auto mt-6 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:brightness-110 hover:from-blue-600 hover:to-indigo-600">
                 {loading && <Loader2 className="mr-2 size-4 animate-spin" />}
                 {!loading && <Download className="mr-2 size-4" />}
                 Generate Staff ID Cards
@@ -791,7 +796,7 @@ export default function DocumentGenerator() {
 
         {/* ADMIT CARDS */}
         <TabsContent value="admit-cards">
-          <Card>
+          <Card className="rounded-2xl shadow-none">
             <CardHeader>
               <CardTitle>Bulk Generate Admit Cards</CardTitle>
               <CardDescription>Generate admit cards containing exam timetables for a specific exam.</CardDescription>
@@ -893,7 +898,7 @@ export default function DocumentGenerator() {
                   )}
                 </div>
               </div>
-              <Button onClick={handleGenerateAdmitCard} disabled={loading} className="w-full md:w-auto">
+              <Button onClick={handleGenerateAdmitCard} disabled={loading} className="w-full md:w-auto rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:brightness-110 hover:from-blue-600 hover:to-indigo-600">
                 {loading && <Loader2 className="mr-2 size-4 animate-spin" />}
                 {!loading && <Download className="mr-2 size-4" />}
                 Generate Admit Cards PDF
@@ -904,7 +909,7 @@ export default function DocumentGenerator() {
 
         {/* CERTIFICATES */}
         <TabsContent value="CERTIFICATE">
-          <Card>
+          <Card className="rounded-2xl shadow-none">
             <CardHeader>
               <CardTitle>Generate Certificates</CardTitle>
               <CardDescription>Generate A4 certificates (e.g. Transfer, Bonafide) for students.</CardDescription>
@@ -1012,7 +1017,7 @@ export default function DocumentGenerator() {
                   )}
                 </div>
               </div>
-              <Button onClick={handleGenerateCertificate} disabled={loading} className="w-full md:w-auto">
+              <Button onClick={handleGenerateCertificate} disabled={loading} className="w-full md:w-auto rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:brightness-110 hover:from-blue-600 hover:to-indigo-600">
                 {loading && <Loader2 className="mr-2 size-4 animate-spin" />}
                 {!loading && <Download className="mr-2 size-4" />}
                 Generate Certificates PDF
@@ -1023,7 +1028,7 @@ export default function DocumentGenerator() {
 
         {/* HISTORY */}
         <TabsContent value="history">
-          <Card>
+          <Card className="rounded-2xl shadow-none">
             <CardHeader>
               <CardTitle>ID Card Tracking</CardTitle>
               <CardDescription>Manage previously generated cards, revoke access, or track lost cards.</CardDescription>
@@ -1092,9 +1097,10 @@ export default function DocumentGenerator() {
                   </Button>
                 )}
               </div>
+              <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
               <Table>
-                <TableHeader>
-                  <TableRow>
+                <TableHeader className="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50">
+                  <TableRow className="hover:bg-transparent">
                     <TableHead>Type</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Status</TableHead>
@@ -1111,7 +1117,7 @@ export default function DocumentGenerator() {
                     </TableRow>
                   )}
                   {filteredHistoryLogs.slice((historyPage - 1) * historyLimit, historyPage * historyLimit).map(log => (
-                    <TableRow key={log?.id}>
+                    <TableRow key={log?.id} className="transition-colors hover:bg-blue-50/50 dark:hover:bg-slate-800/40">
                       <TableCell className="font-medium">{log?.targetType}</TableCell>
                       <TableCell className="text-sm">
                         {log?.targetName || <span className="text-xs text-muted-foreground" title={log?.targetId}>{log?.targetId?.substring(0,8)}...</span>}
@@ -1141,6 +1147,7 @@ export default function DocumentGenerator() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
               <DataTablePagination
                 page={historyPage}
                 limit={historyLimit}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, Users, GraduationCap, UserCheck, Filter, Search, Flag, AlertTriangle } from 'lucide-react';
+import { Eye, Users, GraduationCap, UserCheck, Filter, Search, Flag, AlertTriangle, CalendarCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import api from '@/lib/api/school-client';
 import { getResponseList } from '@/lib/school/apiData';
@@ -267,10 +267,15 @@ export default function Attendance() {
   if (loading) return <div className="p-8">Loading...</div>;
 
   return (
-    <div className="w-full px-3 sm:px-5 lg:px-8 xl:px-10">
-      <div className="mb-5">
-        <h1 className="font-display text-2xl sm:text-3xl font-bold text-surface-955">Attendance</h1>
-        <p className="mt-1 text-xs sm:text-sm text-surface-500">Track student and teacher attendance.</p>
+    <div className="w-full mb-2 px-3 sm:px-5 lg:px-8 xl:px-10">
+      <div className="mb-5 flex items-center gap-3">
+        {/* <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30">
+          <CalendarCheck className="size-5" />
+        </span> */}
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl sm:text-3xl font-bold leading-tight text-surface-955">Attendance</h1>
+          <p className="mt-0.5 text-xs sm:text-sm text-surface-500">Track student and teacher attendance.</p>
+        </div>
       </div>
 
       <div className="mb-6 rounded-2xl border border-slate-200 bg-gradient-to-br from-blue-50/60 via-white to-slate-50 p-4 shadow-none">
@@ -616,21 +621,21 @@ export default function Attendance() {
       </div>
 
       {/* Desktop View */}
-      <div className="hidden md:block overflow-hidden rounded-lg border border-surface-200 bg-white shadow-sm">
+      <div className="hidden md:block overflow-hidden rounded-2xl border border-surface-200 bg-white">
         <div className="overflow-x-auto">
           <Table className="min-w-[800px] w-full text-left text-sm">
-            <TableHeader className="bg-surface-50 text-surface-500">
+            <TableHeader className="border-b border-surface-200 bg-surface-50 text-xs uppercase tracking-wide text-surface-500">
               <TableRow className="hover:bg-transparent border-b-0">
-                <TableHead className="h-auto px-6 py-4 font-semibold sticky left-0 z-20 bg-surface-50 dark:bg-slate-850 shadow-sm text-surface-500">Name</TableHead>
-                <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">{selectedRole === 'STUDENT' ? 'Roll No.' : 'Role'}</TableHead>
-                {selectedRole === 'STUDENT' && <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Class / Section</TableHead>}
-                <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Date</TableHead>
-                <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Status</TableHead>
-                <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">
+                <TableHead className="h-auto px-4 py-3 font-bold sticky left-0 z-20 bg-surface-50 dark:bg-slate-850 text-surface-500">Name</TableHead>
+                <TableHead className="h-auto px-4 py-3 font-bold text-surface-500">{selectedRole === 'STUDENT' ? 'Roll No.' : 'Role'}</TableHead>
+                {selectedRole === 'STUDENT' && <TableHead className="h-auto px-4 py-3 font-bold text-surface-500">Class / Section</TableHead>}
+                <TableHead className="h-auto px-4 py-3 font-bold text-surface-500">Date</TableHead>
+                <TableHead className="h-auto px-4 py-3 font-bold text-surface-500">Status</TableHead>
+                <TableHead className="h-auto px-4 py-3 font-bold text-surface-500">
                   Attendance %
                   <span className="block text-[10px] font-normal normal-case text-surface-400">({getPercentagePeriodLabel(filterType)})</span>
                 </TableHead>
-                <TableHead className="h-auto px-6 py-4 font-semibold text-surface-500">Actions</TableHead>
+                <TableHead className="h-auto px-4 py-3 font-bold text-surface-500">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="divide-y divide-surface-200 [&_tr]:border-b-0">
@@ -642,9 +647,9 @@ export default function Attendance() {
                 </TableRow>
               ) : (
                 attendance.map(record => (
-                  <TableRow key={record.id} className="hover:bg-surface-50 transition-colors">
-                    <TableCell className="p-4 px-6 py-4 font-semibold text-surface-950 sticky left-0 z-20 bg-white dark:bg-slate-900">{record.user?.name || '-'}</TableCell>
-                    <TableCell className="p-4 px-6 py-4">
+                  <TableRow key={record.id} className="group/row transition-colors hover:bg-blue-50/50">
+                    <TableCell className="p-4 px-4 py-3 font-bold text-surface-950 sticky left-0 z-20 bg-white transition-colors group-hover/row:bg-blue-50 dark:bg-slate-900">{record.user?.name || '-'}</TableCell>
+                    <TableCell className="p-4 px-4 py-3">
                       {selectedRole === 'STUDENT' ? (
                         <span className="font-semibold text-surface-700">{record.user?.studentProfile?.rollNo || '-'}</span>
                       ) : hasRole(record.user?.role, 'STUDENT') ? (
@@ -664,9 +669,9 @@ export default function Attendance() {
                       )}
                     </TableCell>
                     {selectedRole === 'STUDENT' && (
-                      <TableCell className="p-4 px-6 py-4 text-surface-600">
+                      <TableCell className="p-4 px-4 py-3 text-surface-600">
                         {hasRole(record.user?.role, 'STUDENT') && record.user?.studentProfile?.section?.class ? (
-                          <span>
+                          <span className="inline-flex rounded-lg bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700">
                             {record.user.studentProfile.section.class.name}
                             {record.user.studentProfile.section.name ? ` - ${record.user.studentProfile.section.name}` : ''}
                           </span>
@@ -675,21 +680,21 @@ export default function Attendance() {
                         )}
                       </TableCell>
                     )}
-                    <TableCell className="p-4 px-6 py-4">{new Date(record.date).toLocaleDateString()}</TableCell>
-                    <TableCell className="p-4 px-6 py-4">
+                    <TableCell className="p-4 px-4 py-3 text-[13px] font-semibold tabular-nums text-surface-600">{new Date(record.date).toLocaleDateString()}</TableCell>
+                    <TableCell className="p-4 px-4 py-3">
                       <Badge className={`rounded-full text-xs font-bold border-transparent ${statusColors[record.status?.toUpperCase()] || statusColors.PRESENT}`}>
                         {record.status?.toUpperCase()}
                       </Badge>
                     </TableCell>
-                    <TableCell className="p-4 px-6 py-4 text-surface-600">
+                    <TableCell className="p-4 px-4 py-3 text-surface-600">
                       <AttendanceRing value={record.attendancePercentage} periodLabel={getPercentagePeriodLabel(filterType)} />
                     </TableCell>
-                    <TableCell className="p-4 px-6 py-4">
+                    <TableCell className="p-4 px-4 py-3">
                       <div className="flex gap-2">
                         {record.user?.id ? (
                           <Link
                             to={hasRole(record.user.role, 'STUDENT') ? `/school/admin/students/${record.user.id}` : `/school/admin/teachers/${record.user.id}`}
-                            className="group relative flex size-8 items-center justify-center rounded-lg border border-surface-200 bg-white text-surface-500 transition-all hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600"
+                            className="group relative flex size-8 items-center justify-center rounded-lg border border-surface-200 bg-white text-surface-500 transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600"
                           >
                             <Eye className="size-4" />
                             <span className="absolute -top-9 left-1/2 -translate-x-1/2 scale-0 rounded bg-surface-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">View</span>
@@ -717,12 +722,12 @@ export default function Attendance() {
       {/* Mobile View */}
       <div className="block md:hidden space-y-4">
         {attendance.length === 0 ? (
-          <div className="rounded-lg border border-surface-200 bg-white p-8 text-center text-surface-500 text-sm">
+          <div className="rounded-2xl border border-surface-200 bg-white p-8 text-center text-surface-500 text-sm">
             No attendance records match the current filters
           </div>
         ) : (
           attendance.map(record => (
-            <div key={record.id} className="rounded-lg border border-surface-200 bg-white p-4 shadow-sm space-y-3">
+            <div key={record.id} className="rounded-2xl border border-surface-200 bg-white p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-surface-950 text-sm">{record.user?.name || '-'}</span>
                 <Badge className={`rounded-full border-transparent text-[10px] font-bold ${statusColors[record.status?.toUpperCase()] || statusColors.PRESENT}`}>
@@ -790,7 +795,7 @@ export default function Attendance() {
           ))
         )}
       </div>
-      <div className="mt-4 rounded-lg border border-surface-200 bg-white">
+      <div className="mt-4 overflow-hidden rounded-2xl border border-surface-200 bg-white">
         <DataTablePagination
           page={page}
           limit={limit}

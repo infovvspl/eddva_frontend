@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, CheckCircle, Clock, Plus, Search, X, Building2, User, Mail, Phone, Globe, Calendar, MessageSquare, Send } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, Plus, Search, X, Building2, User, Mail, Phone, Globe, Calendar, MessageSquare, Send, LifeBuoy } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import api from '@/lib/api/school-client';
@@ -394,13 +394,18 @@ export default function Complaints() {
   return (
     <div className="w-full min-h-full p-4 sm:p-6 lg:p-8 space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <h1 className="font-display text-2xl sm:text-3xl font-bold text-surface-950">Help Desk</h1>
-          <p className="mt-1 text-xs sm:text-sm font-medium text-surface-500">
-            {user?.role === 'SUPER_ADMIN'
-              ? 'Monitor tenant support activity across institutes.'
-              : 'Manage parent & teacher tickets, or raise issues to platform support.'}
-          </p>
+        <div className="flex min-w-0 items-center gap-3">
+          {/* <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30">
+            <LifeBuoy className="size-5" />
+          </span> */}
+          <div className="min-w-0">
+            <h1 className="font-display text-2xl sm:text-3xl font-bold leading-tight text-surface-950">Help Desk</h1>
+            <p className="mt-0.5 text-xs sm:text-sm font-medium text-surface-500">
+              {user?.role === 'SUPER_ADMIN'
+                ? 'Monitor tenant support activity across institutes.'
+                : 'Manage parent & teacher tickets, or raise issues to platform support.'}
+            </p>
+          </div>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
           {isSuperAdminView && (
@@ -443,7 +448,7 @@ export default function Complaints() {
               value={query}
               onChange={(e) => { setQuery(e.target.value); setPage(1); }}
               placeholder={activeTab === 'user-support' ? "Search parent & teacher tickets..." : "Search platform tickets..."}
-              className="w-full rounded-lg border border-surface-200 bg-white py-2 pl-10 pr-4 text-sm font-medium outline-none transition focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-xl border border-surface-200 bg-white py-2 pl-10 pr-4 text-sm font-medium outline-none transition focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
             />
           </div>
         </div>
@@ -458,35 +463,36 @@ export default function Complaints() {
       {/* Dynamic Status Counter Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         {[
-          ['Total', activeCounts.total, 'bg-brand-50 text-brand-700'],
-          ['Open', activeCounts.OPEN, 'bg-red-50 text-red-600'],
-          ['In Progress', activeCounts.IN_PROGRESS, 'bg-amber-50 text-amber-700'],
-          ['Resolved', (activeCounts.RESOLVED || 0) + (activeCounts.CLOSED || 0), 'bg-emerald-50 text-emerald-600'],
-        ].map(([label, value, tone]) => (
-          <div key={label} className="glass-panel rounded-lg p-3 sm:p-5 shadow-soft">
-            <div className={`mb-2 inline-flex rounded-lg px-2.5 py-1 text-xs sm:px-3 sm:py-2 sm:text-sm font-bold ${tone}`}>{label}</div>
-            <p className="font-display text-xl sm:text-3xl font-bold text-surface-955">{value}</p>
+          ['Total', activeCounts.total, 'bg-brand-100 text-brand-700', 'border-blue-100 from-white to-blue-50/80', 'bg-blue-100'],
+          ['Open', activeCounts.OPEN, 'bg-red-100 text-red-600', 'border-red-100 from-white to-red-50/80', 'bg-red-100'],
+          ['In Progress', activeCounts.IN_PROGRESS, 'bg-amber-100 text-amber-700', 'border-amber-100 from-white to-amber-50/80', 'bg-amber-100'],
+          ['Resolved', (activeCounts.RESOLVED || 0) + (activeCounts.CLOSED || 0), 'bg-emerald-100 text-emerald-600', 'border-emerald-100 from-white to-emerald-50/80', 'bg-emerald-100'],
+        ].map(([label, value, tone, card, blob]) => (
+          <div key={label} className={`relative overflow-hidden rounded-2xl border bg-gradient-to-br p-3 transition-colors hover:border-surface-300 sm:p-5 ${card}`}>
+            <span className={`pointer-events-none absolute -right-6 -top-6 size-20 rounded-full opacity-60 ${blob}`} />
+            <div className={`relative mb-2 inline-flex rounded-lg px-2.5 py-1 text-xs sm:px-3 sm:py-1.5 sm:text-sm font-bold ${tone}`}>{label}</div>
+            <p className="relative font-display text-xl sm:text-3xl font-bold leading-none text-surface-955">{value}</p>
           </div>
         ))}
       </div>
 
       {/* Tabs selector for Institute Admin */}
       {isInstituteAdmin && (
-        <div className="flex border-b border-surface-200 dark:border-surface-800">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setActiveTab('user-support')}
-            className={`px-6 py-3 text-sm font-bold border-b-2 transition-all ${activeTab === 'user-support'
-                ? 'border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-500'
-                : 'border-transparent text-surface-500 hover:text-surface-700'
+            className={`rounded-xl border px-4 py-2.5 text-sm font-bold transition-colors ${activeTab === 'user-support'
+                ? 'border-blue-700 bg-gradient-to-br from-blue-600 to-indigo-600 text-white ring-2 ring-blue-200'
+                : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700'
               }`}
           >
             User Support (Parents & Teachers)
           </button>
           <button
             onClick={() => setActiveTab('platform-support')}
-            className={`px-6 py-3 text-sm font-bold border-b-2 transition-all ${activeTab === 'platform-support'
-                ? 'border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-500'
-                : 'border-transparent text-surface-500 hover:text-surface-700'
+            className={`rounded-xl border px-4 py-2.5 text-sm font-bold transition-colors ${activeTab === 'platform-support'
+                ? 'border-blue-700 bg-gradient-to-br from-blue-600 to-indigo-600 text-white ring-2 ring-blue-200'
+                : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700'
               }`}
           >
             Platform Support (To Super Admin)
@@ -496,24 +502,24 @@ export default function Complaints() {
 
       {/* PLATFORM SUPPORT CREATE TICKET FORM */}
       {isInstituteAdmin && activeTab === 'platform-support' && (
-        <form onSubmit={createTicket} className="glass-panel rounded-lg p-5 shadow-soft">
+        <form onSubmit={createTicket} className="glass-panel rounded-2xl border border-surface-200 p-5 shadow-none">
           <h2 className="font-display text-lg font-bold text-surface-950">Create Support Ticket</h2>
           <div className="mt-4 grid gap-4 lg:grid-cols-[0.9fr_1.3fr_auto]">
             <input
               required
               value={newTicket.title}
               onChange={(e) => setNewTicket({ ...newTicket, title: e.target.value })}
-              className="rounded-lg border border-surface-200 bg-surface-50 px-4 py-3 text-sm font-medium outline-none focus:border-brand-300 focus:bg-white focus:ring-4 focus:ring-brand-100"
+              className="rounded-xl border border-surface-200 bg-surface-50 px-4 py-3 text-sm font-medium outline-none focus:border-brand-300 focus:bg-white focus:ring-4 focus:ring-brand-100"
               placeholder="Ticket title"
             />
             <input
               required
               value={newTicket.description}
               onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
-              className="rounded-lg border border-surface-200 bg-surface-50 px-4 py-3 text-sm font-medium outline-none focus:border-brand-300 focus:bg-white focus:ring-4 focus:ring-brand-100"
+              className="rounded-xl border border-surface-200 bg-surface-50 px-4 py-3 text-sm font-medium outline-none focus:border-brand-300 focus:bg-white focus:ring-4 focus:ring-brand-100"
               placeholder="Describe the issue"
             />
-            <button className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]">
+            <button className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]">
               <Plus className="size-4" />
               Create
             </button>
@@ -522,30 +528,30 @@ export default function Complaints() {
       )}
 
       {/* TICKETS LIST TABLE */}
-      <div className="glass-panel overflow-hidden rounded-lg shadow-soft">
+      <div className="glass-panel overflow-hidden rounded-2xl border border-surface-200 shadow-none">
         {/* Desktop View */}
         <div className="hidden md:block overflow-x-auto">
           {activeTab === 'user-support' ? (
             /* USER SUPPORT TABLE (GRIEVANCES) */
             <Table className="min-w-[700px] w-full text-left">
               <TableHeader>
-                <TableRow className="bg-surface-50 text-xs font-bold uppercase text-surface-500 hover:bg-surface-50 border-b-0">
-                  <TableHead className="h-auto p-4 pl-5 text-surface-500">Ticket / Concern</TableHead>
-                  <TableHead className="h-auto p-4 text-surface-500">Raised By</TableHead>
-                  <TableHead className="h-auto p-4 text-surface-500">Status</TableHead>
-                  <TableHead className="h-auto p-4 text-surface-500">Created</TableHead>
-                  <TableHead className="h-auto p-4 text-right text-surface-500">Update Status</TableHead>
+                <TableRow className="border-b border-surface-200 bg-surface-50 text-xs font-bold uppercase tracking-wide text-surface-500 hover:bg-surface-50">
+                  <TableHead className="h-auto px-4 py-3 text-surface-500">Ticket / Concern</TableHead>
+                  <TableHead className="h-auto px-4 py-3 text-surface-500">Raised By</TableHead>
+                  <TableHead className="h-auto px-4 py-3 text-surface-500">Status</TableHead>
+                  <TableHead className="h-auto px-4 py-3 text-surface-500">Created</TableHead>
+                  <TableHead className="h-auto px-4 py-3 text-right text-surface-500">Update Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, index) => (
                     <TableRow key={index} className="border-t border-surface-100 border-b-0 hover:bg-transparent">
-                      <TableCell className="p-4 pl-5"><Skeleton className="h-12 w-72" /></TableCell>
-                      <TableCell className="p-4"><Skeleton className="h-10 w-44" /></TableCell>
-                      <TableCell className="p-4"><Skeleton className="h-8 w-28" /></TableCell>
-                      <TableCell className="p-4"><Skeleton className="h-8 w-28" /></TableCell>
-                      <TableCell className="p-4"><Skeleton className="ml-auto h-8 w-24" /></TableCell>
+                      <TableCell className="p-4 px-4 py-3"><Skeleton className="h-12 w-72" /></TableCell>
+                      <TableCell className="p-4 px-4 py-3"><Skeleton className="h-10 w-44" /></TableCell>
+                      <TableCell className="p-4 px-4 py-3"><Skeleton className="h-8 w-28" /></TableCell>
+                      <TableCell className="p-4 px-4 py-3"><Skeleton className="h-8 w-28" /></TableCell>
+                      <TableCell className="p-4 px-4 py-3"><Skeleton className="ml-auto h-8 w-24" /></TableCell>
                     </TableRow>
                   ))
                 ) : filteredGrievances.length === 0 ? (
@@ -565,32 +571,32 @@ export default function Complaints() {
                         key={item.id}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="border-t border-surface-100 border-b-0 transition hover:bg-surface-50 cursor-pointer"
+                        className="border-t border-surface-100 border-b-0 transition-colors hover:bg-blue-50/50 cursor-pointer"
                         onClick={() => { setSelectedItem(item); setSelectedType('grievance'); }}
                       >
-                        <TableCell className="p-4 pl-5">
+                        <TableCell className="p-4 px-4 py-3">
                           <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-blue-600">
                             #{item.ticketNumber || item.ticket_number || `USR-${String(item.id || '').replace(/-/g, '').slice(0, 8).toUpperCase()}`}
                           </p>
                           <p className="font-bold text-surface-950">{item.title}</p>
-                          <p className="mt-1 max-w-xl text-xs font-medium text-surface-500">{item.description}</p>
+                          <p className="mt-1 line-clamp-2 max-w-xl text-xs font-medium text-surface-500">{item.description}</p>
                         </TableCell>
-                        <TableCell className="p-4">
+                        <TableCell className="p-4 px-4 py-3">
                           <p className="text-sm font-bold text-surface-800">{item.raised_by_name || 'Anonymous'}</p>
                           <span className={`mt-0.5 inline-block text-[10px] font-bold uppercase ${roleLabel === 'Teacher' ? 'text-violet-600' : 'text-blue-600'}`}>
                             {roleLabel} · {categoryLabel}
                           </span>
                         </TableCell>
-                        <TableCell className="p-4">
+                        <TableCell className="p-4 px-4 py-3">
                           <span className="inline-flex items-center gap-2">
                             <Icon className="size-4 text-brand-600" />
                             <StatusBadge status={statusUpper} />
                           </span>
                         </TableCell>
-                        <TableCell className="p-4 text-sm font-medium text-surface-500">
+                        <TableCell className="p-4 px-4 py-3 text-sm font-medium text-surface-500">
                           {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'N/A'}
                         </TableCell>
-                        <TableCell className="p-4 text-right">
+                        <TableCell className="p-4 px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <CustomSelect
                               value={statusUpper}
@@ -615,23 +621,23 @@ export default function Complaints() {
             /* PLATFORM SUPPORT TABLE (COMPLAINTS) */
             <Table className="min-w-[700px] w-full text-left">
               <TableHeader>
-                <TableRow className="bg-surface-50 text-xs font-bold uppercase text-surface-500 hover:bg-surface-50 border-b-0">
-                  <TableHead className="h-auto p-4 pl-5 text-surface-500">Ticket</TableHead>
-                  {user?.role === 'SUPER_ADMIN' && <TableHead className="h-auto p-4 text-surface-500">Institute</TableHead>}
-                  <TableHead className="h-auto p-4 text-surface-500">Status</TableHead>
-                  <TableHead className="h-auto p-4 text-surface-500">Created</TableHead>
-                  <TableHead className="h-auto p-4 text-right text-surface-500">Move</TableHead>
+                <TableRow className="border-b border-surface-200 bg-surface-50 text-xs font-bold uppercase tracking-wide text-surface-500 hover:bg-surface-50">
+                  <TableHead className="h-auto px-4 py-3 text-surface-500">Ticket</TableHead>
+                  {user?.role === 'SUPER_ADMIN' && <TableHead className="h-auto px-4 py-3 text-surface-500">Institute</TableHead>}
+                  <TableHead className="h-auto px-4 py-3 text-surface-500">Status</TableHead>
+                  <TableHead className="h-auto px-4 py-3 text-surface-500">Created</TableHead>
+                  <TableHead className="h-auto px-4 py-3 text-right text-surface-500">Move</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, index) => (
                     <TableRow key={index} className="border-t border-surface-100 border-b-0 hover:bg-transparent">
-                      <TableCell className="p-4 pl-5"><Skeleton className="h-12 w-72" /></TableCell>
-                      {user?.role === 'SUPER_ADMIN' && <TableCell className="p-4"><Skeleton className="h-10 w-44" /></TableCell>}
-                      <TableCell className="p-4"><Skeleton className="h-8 w-28" /></TableCell>
-                      <TableCell className="p-4"><Skeleton className="h-8 w-28" /></TableCell>
-                      <TableCell className="p-4"><Skeleton className="ml-auto h-8 w-24" /></TableCell>
+                      <TableCell className="p-4 px-4 py-3"><Skeleton className="h-12 w-72" /></TableCell>
+                      {user?.role === 'SUPER_ADMIN' && <TableCell className="p-4 px-4 py-3"><Skeleton className="h-10 w-44" /></TableCell>}
+                      <TableCell className="p-4 px-4 py-3"><Skeleton className="h-8 w-28" /></TableCell>
+                      <TableCell className="p-4 px-4 py-3"><Skeleton className="h-8 w-28" /></TableCell>
+                      <TableCell className="p-4 px-4 py-3"><Skeleton className="ml-auto h-8 w-24" /></TableCell>
                     </TableRow>
                   ))
                 ) : filteredComplaints.length === 0 ? (
@@ -648,34 +654,34 @@ export default function Complaints() {
                         key={item.id}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="border-t border-surface-100 border-b-0 transition hover:bg-surface-50 cursor-pointer"
+                        className="border-t border-surface-100 border-b-0 transition-colors hover:bg-blue-50/50 cursor-pointer"
                         onClick={() => { setSelectedItem(item); setSelectedType('complaint'); }}
                       >
-                        <TableCell className="p-4 pl-5">
+                        <TableCell className="p-4 px-4 py-3">
                           <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-blue-600">
                             #{item.ticketNumber || `PLT-${String(item.id || '').replace(/-/g, '').slice(0, 8).toUpperCase()}`}
                           </p>
                           <p className="font-bold text-surface-950">{item.title}</p>
-                          <p className="mt-1 max-w-xl text-xs font-medium text-surface-500">{item.description}</p>
+                          <p className="mt-1 line-clamp-2 max-w-xl text-xs font-medium text-surface-500">{item.description}</p>
                         </TableCell>
                         {user?.role === 'SUPER_ADMIN' && (
-                          <TableCell className="p-4">
+                          <TableCell className="p-4 px-4 py-3">
                             <div className="flex items-center gap-3">
                               <SchoolLogo src={item.institute?.logo} alt={item.institute?.name} size="navbar" />
                               <p className="text-sm font-bold text-surface-700">{item.institute?.name || 'Unknown'}</p>
                             </div>
                           </TableCell>
                         )}
-                        <TableCell className="p-4">
+                        <TableCell className="p-4 px-4 py-3">
                           <span className="inline-flex items-center gap-2">
                             <Icon className="size-4 text-brand-600" />
                             <StatusBadge status={item.status} />
                           </span>
                         </TableCell>
-                        <TableCell className="p-4 text-sm font-medium text-surface-500">
+                        <TableCell className="p-4 px-4 py-3 text-sm font-medium text-surface-500">
                           {new Date(item.createdAt).toLocaleDateString()}
                         </TableCell>
-                        <TableCell className="p-4 text-right">
+                        <TableCell className="p-4 px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-2">
                             {user?.role === 'SUPER_ADMIN' ? (
                               <CustomSelect
