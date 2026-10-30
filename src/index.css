@@ -1508,3 +1508,58 @@ code, kbd, pre, samp,
     display: none;
   }
 }
+
+/*
+ * b0 preset theme ("Neutral"), scoped to the coaching product only
+ * (admin/teacher/student — the only roles DashboardLayout renders; the
+ * school vertical uses its own separate layout components and is
+ * untouched). Converted from the preset's oklch tokens to this project's
+ * existing `hsl(var(--x))` convention, since `--color-primary: hsl(var(--primary))`
+ * is already defined globally and expects an H S% L% triplet, not a raw
+ * oklch() color.
+ */
+.coaching-b0-theme {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 3.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 3.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 3.9%;
+  --primary: 0 0% 9.1%;
+  --primary-foreground: 0 0% 98%;
+  --primary-dark: 0 0% 3.9%;
+  --secondary: 0 0% 96.1%;
+  --secondary-foreground: 0 0% 9.1%;
+  --muted: 0 0% 96.1%;
+  --muted-foreground: 0 0% 45.1%;
+  --accent: 0 0% 96.1%;
+  --accent-foreground: 0 0% 9.1%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 0 0% 89.8%;
+  --input: 0 0% 89.8%;
+  --ring: 0 0% 63%;
+}
+
+.dark .coaching-b0-theme {
+  --background: 0 0% 3.9%;
+  --foreground: 0 0% 98%;
+  --card: 0 0% 9.1%;
+  --card-foreground: 0 0% 98%;
+  --popover: 0 0% 9.1%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 0 0% 89.8%;
+  --primary-foreground: 0 0% 9.1%;
+  --primary-dark: 0 0% 98%;
+  --secondary: 0 0% 14.9%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 0 0% 14.9%;
+  --muted-foreground: 0 0% 63%;
+  --accent: 0 0% 14.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 70% 50%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 0 0% 20%;
+  --input: 0 0% 20%;
+  --ring: 0 0% 45.1%;
+}

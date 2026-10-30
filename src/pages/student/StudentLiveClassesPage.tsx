@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useIsCompactLayout } from '@/hooks/use-mobile';
 import { liveBroadcast, type BroadcastLecture } from '@/lib/api/live-broadcast';
+import { StatusBadge as SharedStatusBadge, toStatusBadgeKey } from '@/components/admin/StatusBadge';
 
 function fmtDateTime(iso: string | null) {
   if (!iso) return '—';
@@ -35,34 +36,26 @@ function StatusBadge({ status }: { status: BroadcastLecture['status'] }) {
   switch (status) {
     case 'LIVE':
       return (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 dark:bg-red-900/30 px-2.5 py-1 text-xs font-black text-red-600 dark:text-red-400">
-          <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" /> LIVE NOW
-        </span>
+        <SharedStatusBadge
+          status={toStatusBadgeKey(status)}
+          className="gap-1.5 text-xs"
+          label={<><span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" /> LIVE NOW</>}
+        />
       );
     case 'SCHEDULED':
       return (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-900/30 px-2.5 py-1 text-xs font-bold text-amber-600 dark:text-amber-400">
-          <CalendarDays size={11} /> Scheduled
-        </span>
+        <SharedStatusBadge status={toStatusBadgeKey(status)} className="gap-1.5 text-xs" label={<><CalendarDays size={11} /> Scheduled</>} />
       );
     case 'ENDED':
       return (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-bold text-slate-500">
-          <CheckCircle2 size={11} /> Ended
-        </span>
+        <SharedStatusBadge status={toStatusBadgeKey(status)} className="gap-1.5 text-xs" label={<><CheckCircle2 size={11} /> Ended</>} />
       );
     case 'PROCESSED':
       return (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 dark:bg-green-900/30 px-2.5 py-1 text-xs font-bold text-green-600 dark:text-green-400">
-          <CheckCircle2 size={11} /> Recording Ready
-        </span>
+        <SharedStatusBadge status={toStatusBadgeKey(status)} className="gap-1.5 text-xs" label={<><CheckCircle2 size={11} /> Recording Ready</>} />
       );
     default:
-      return (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-bold text-slate-500">
-          {status}
-        </span>
-      );
+      return <SharedStatusBadge status={toStatusBadgeKey(status)} label={status} className="text-xs" />;
   }
 }
 

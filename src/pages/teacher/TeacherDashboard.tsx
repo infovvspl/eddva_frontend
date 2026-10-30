@@ -20,6 +20,7 @@ import { useTeacherPresenceStats } from "@/hooks/use-presence";
 import { useIsCompactLayout } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatusBadge, toStatusBadgeKey } from "@/components/admin/StatusBadge";
 
 /* ── colours ────────────────────────────────────────────────────────────── */
 const C = {
@@ -38,12 +39,6 @@ const DOUBT_COLORS: Record<string, string> = {
   ai_resolved: C.blue,
   teacher_resolved: C.green,
   escalated: C.red,
-};
-
-const statusBadge: Record<string, string> = {
-  active: "bg-emerald-500/15 text-emerald-400",
-  inactive: "bg-slate-500/15 text-slate-400",
-  completed: "bg-blue-500/15 text-blue-400",
 };
 
 /* ── custom tooltip ─────────────────────────────────────────────────────── */
@@ -289,9 +284,7 @@ const TeacherDashboard = () => {
                     <p className="text-[10px] text-muted-foreground uppercase mt-0.5 tracking-wide font-medium">{b.examTarget} · Class {b.class}</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${statusBadge[b.status] ?? statusBadge.inactive}`}>
-                      {b.status}
-                    </span>
+                    <StatusBadge status={toStatusBadgeKey(b.status)} label={b.status} className="text-[9px]" />
                   </div>
                 </div>
               ))}
@@ -710,9 +703,7 @@ const TeacherDashboard = () => {
                         <p className="text-xs sm:text-sm font-bold text-foreground">{b.studentCount ?? 0}</p>
                         <p className="text-[10px] sm:text-xs text-muted-foreground">students</p>
                       </div>
-                      <span className={`text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-full ${statusBadge[b.status] ?? statusBadge.inactive}`}>
-                        {b.status}
-                      </span>
+                      <StatusBadge status={toStatusBadgeKey(b.status)} label={b.status} className="text-[10px] sm:text-xs" />
                     </div>
                   </div>
                 ))}

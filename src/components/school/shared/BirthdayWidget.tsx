@@ -88,7 +88,10 @@ export default function BirthdayWidget({ days = 7, className }: { days?: number;
           No birthdays in the next {days} days.
         </div>
       ) : (
-        <ul ref={listRef} className="max-h-64 space-y-1.5 overflow-y-auto pr-1">
+        <ul
+          ref={listRef}
+          className="max-h-64 space-y-1.5 overflow-y-auto pr-2.5 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20"
+        >
           {data.map((b) => (
             <li
               key={b.userId}

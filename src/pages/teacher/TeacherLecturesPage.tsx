@@ -66,17 +66,10 @@ import {
 } from "@/lib/lecture-source";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { Table, TableHead, TableCell } from "@/components/ui/table";
+import { StatusBadge, toStatusBadgeKey } from "@/components/admin/StatusBadge";
+import { adminButton } from "@/components/admin/adminButtonVariants";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const statusColor: Record<string, string> = {
-  published: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-  draft: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-  processing: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-  live: "bg-red-500/10 text-red-600 border-red-500/20",
-  scheduled: "bg-violet-500/10 text-violet-600 border-violet-500/20",
-  ended: "bg-slate-500/10 text-slate-600 border-slate-500/20",
-};
 
 const statusLabel: Record<string, string> = {
   published: "Published", draft: "Review AI Notes", processing: "AI Processing…",
@@ -3274,10 +3267,11 @@ function LectureDetailPanel({
                         {lecture.batch.name}
                       </span>
                     )}
-                    <span className={cn("inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full border shrink-0", statusColor[lecture.status] ?? "bg-secondary text-foreground border-border")}>
-                      {lecture.status === "processing" && <Loader2 className="w-3 h-3 animate-spin" />}
-                      {statusLabel[lecture.status] ?? lecture.status}
-                    </span>
+                    <StatusBadge
+                      status={toStatusBadgeKey(lecture.status)}
+                      className="inline-flex items-center gap-1 shrink-0"
+                      label={<>{lecture.status === "processing" && <Loader2 className="w-3 h-3 animate-spin" />}{statusLabel[lecture.status] ?? lecture.status}</>}
+                    />
                   </div>
                   <h2 className="mt-3 text-xl font-black text-slate-950">{lecture.title}</h2>
                   {lecture.description && (
@@ -4662,10 +4656,11 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
               </button>
             </div>
             <div className="flex flex-row sm:flex-col items-center sm:items-end flex-wrap gap-1.5 shrink-0">
-              <span className={cn("rounded-md px-2 py-0.5 text-[10px] font-black uppercase border", statusColor[lecture.status] ?? "bg-secondary text-foreground border-border")}>
-                {lecture.status === "processing" && <Loader2 className="w-3 h-3 animate-spin" />}
-                {statusLabel[lecture.status] ?? lecture.status}
-              </span>
+              <StatusBadge
+                status={toStatusBadgeKey(lecture.status)}
+                className="text-[10px] uppercase"
+                label={<>{lecture.status === "processing" && <Loader2 className="w-3 h-3 animate-spin" />}{statusLabel[lecture.status] ?? lecture.status}</>}
+              />
               {(isTranscribing || isGeneratingNotes) && (
                 <span className="text-[10px] text-muted-foreground font-medium">Est. ~5-9 min</span>
               )}
@@ -4754,9 +4749,9 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
             </Button>
           )}
           {lecture.status === "published" && onAssignments && (
-            <Button variant="outline" size="sm" onClick={e => { e.stopPropagation(); onAssignments(); }} className="gap-1.5 h-8 text-xs text-orange-600 border-orange-500/30 hover:bg-orange-55">
+            <button onClick={e => { e.stopPropagation(); onAssignments(); }} className={cn(adminButton.secondary, "gap-1.5 min-h-8 h-8 text-xs")}>
               <ListChecks className="w-3.5 h-3.5" /> Assignments
-            </Button>
+            </button>
           )}
           {(queuePosition ?? 0) > 0 && (
             <div className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200/70 rounded-lg px-3 py-1.5">
@@ -5242,10 +5237,11 @@ function LiveCard({ lecture, onDelete, onStartClass }: { lecture: Lecture; onDel
               )}
             </div>
           </div>
-          <span className={cn("inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full border shrink-0", statusColor[lecture.status] ?? "bg-secondary text-foreground border-border")}>
-            {lecture.status === "live" && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}
-            {statusLabel[lecture.status] ?? lecture.status}
-          </span>
+          <StatusBadge
+            status={toStatusBadgeKey(lecture.status)}
+            className="inline-flex items-center gap-1 shrink-0"
+            label={<>{lecture.status === "live" && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}{statusLabel[lecture.status] ?? lecture.status}</>}
+          />
         </div>
 
         {lecture.liveMeetingUrl && lecture.status !== "ended" && (
@@ -5268,18 +5264,18 @@ function LiveCard({ lecture, onDelete, onStartClass }: { lecture: Lecture; onDel
         {/* Mobile Actions Container (< 768px / md:hidden) */}
         <div className="md:hidden flex items-center justify-between gap-2">
           {lecture.status === "scheduled" && (
-            <Button size="sm" onClick={startClass} className="gap-1.5 h-8 text-xs bg-red-500 hover:bg-red-600 text-white border-0 shrink-0 whitespace-nowrap">
+            <button onClick={startClass} className={cn(adminButton.primary, "gap-1.5 min-h-8 h-8 text-xs shrink-0 whitespace-nowrap")}>
               <Radio className="w-3.5 h-3.5" /> {onStartClass ? "Open OBS Dashboard" : (isPast ? "Start Class Now" : "Open Live Room")}
-            </Button>
+            </button>
           )}
           {lecture.status === "live" && (
             <div className="flex items-center gap-2 flex-wrap">
-              <Button size="sm" onClick={() => navigate(`/live/${lecture.id}`)} className="gap-1.5 h-8 text-xs bg-red-500 hover:bg-red-600 text-white border-0">
+              <button onClick={() => navigate(`/live/${lecture.id}`)} className={cn(adminButton.primary, "gap-1.5 min-h-8 h-8 text-xs")}>
                 <Radio className="w-3.5 h-3.5" /> Enter Live Room
-              </Button>
-              <Button size="sm" onClick={endClass} variant="outline" className="gap-1.5 h-8 text-xs border-red-500/40 text-red-600 hover:bg-red-500/10">
+              </button>
+              <button onClick={endClass} className={cn(adminButton.destructive, "gap-1.5 min-h-8 h-8 text-xs")}>
                 <StopCircle className="w-3.5 h-3.5" /> End Class
-              </Button>
+              </button>
             </div>
           )}
           {lecture.status === "ended" && !recordingReady && !showRecordingInput && (
@@ -5295,18 +5291,18 @@ function LiveCard({ lecture, onDelete, onStartClass }: { lecture: Lecture; onDel
         {/* Desktop Actions Container (>= 768px / hidden md:flex) */}
         <div className="hidden md:flex items-center gap-2 flex-wrap">
           {lecture.status === "scheduled" && (
-            <Button size="sm" onClick={startClass} className="gap-1.5 h-8 text-xs bg-red-500 hover:bg-red-600 text-white border-0">
+            <button onClick={startClass} className={cn(adminButton.primary, "gap-1.5 min-h-8 h-8 text-xs")}>
               <Radio className="w-3.5 h-3.5" /> {onStartClass ? "Open OBS Dashboard" : (isPast ? "Start Class Now" : "Open Live Room")}
-            </Button>
+            </button>
           )}
           {lecture.status === "live" && (
             <>
-              <Button size="sm" onClick={() => navigate(`/live/${lecture.id}`)} className="gap-1.5 h-8 text-xs bg-red-500 hover:bg-red-600 text-white border-0">
+              <button onClick={() => navigate(`/live/${lecture.id}`)} className={cn(adminButton.primary, "gap-1.5 min-h-8 h-8 text-xs")}>
                 <Radio className="w-3.5 h-3.5" /> Enter Live Room
-              </Button>
-              <Button size="sm" onClick={endClass} variant="outline" className="gap-1.5 h-8 text-xs border-red-500/40 text-red-600 hover:bg-red-500/10">
+              </button>
+              <button onClick={endClass} className={cn(adminButton.destructive, "gap-1.5 min-h-8 h-8 text-xs")}>
                 <StopCircle className="w-3.5 h-3.5" /> End Class
-              </Button>
+              </button>
             </>
           )}
           {lecture.status === "ended" && !recordingReady && !showRecordingInput && (
@@ -6133,16 +6129,15 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
               {defaultTab === "live" && (
                 <button
                   onClick={() => setShowSchedule(true)}
-                  className="flex items-center gap-1.5 px-3.5 py-2 sm:px-4.5 sm:py-2.5 rounded-full text-xs sm:text-sm font-extrabold border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 transition-colors shadow-xs whitespace-nowrap shrink-0"
+                  className={cn(adminButton.primary, "px-3.5 sm:px-4.5 rounded-full text-xs sm:text-sm whitespace-nowrap shrink-0")}
                 >
-                  <Radio className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500 animate-pulse shrink-0" /> Schedule Live
+                  <Radio className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" /> Schedule Live
                 </button>
               )}
               {defaultTab === "recorded" && (
                 <button
                   onClick={() => setShowUpload(true)}
-                  className="flex items-center gap-1.5 px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-2xl text-xs sm:text-sm font-black text-white transition-opacity hover:opacity-90 shadow-sm whitespace-nowrap shrink-0"
-                  style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}
+                  className={cn(adminButton.primary, "px-3.5 sm:px-5 rounded-2xl text-xs sm:text-sm whitespace-nowrap shrink-0")}
                 >
                   <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" /> Upload Lecture
                 </button>

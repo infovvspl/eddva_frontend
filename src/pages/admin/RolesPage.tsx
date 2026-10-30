@@ -5,6 +5,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { adminButton } from "@/components/admin/adminButtonVariants";
+import { cn } from "@/lib/utils";
 import { useRoles, useCreateRole, useUpdateRole, useDeleteRole } from "@/hooks/use-roles";
 import { useConfirm } from "@/context/ConfirmContext";
 import type { CustomRole } from "@/lib/api/roles";
@@ -141,13 +143,13 @@ const RolesPage = () => {
         subtitle="Manage dynamic staff roles and access control lists" 
         actions={
           mode === "list" ? (
-            <Button onClick={handleCreateClick} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl">
+            <button onClick={handleCreateClick} className={cn(adminButton.primary, "rounded-2xl")}>
               <Plus className="w-4 h-4" /> Create Custom Role
-            </Button>
+            </button>
           ) : (
-            <Button variant="ghost" onClick={() => setMode("list")} className="gap-2 rounded-2xl">
+            <button onClick={() => setMode("list")} className={cn(adminButton.ghost, "rounded-2xl")}>
               <X className="w-4 h-4" /> Back to List
-            </Button>
+            </button>
           )
         }
       />
@@ -166,9 +168,9 @@ const RolesPage = () => {
                 <Shield className="w-12 h-12 mx-auto mb-4 opacity-30 text-slate-400" />
                 <p className="font-bold text-slate-700">No custom roles yet</p>
                 <p className="text-sm text-slate-400 mt-1">Create a custom role to define specific access capabilities for your staff.</p>
-                <Button onClick={handleCreateClick} className="mt-4 gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl">
+                <button onClick={handleCreateClick} className={cn(adminButton.primary, "mt-4 rounded-2xl")}>
                   <Plus className="w-4 h-4" /> Get Started
-                </Button>
+                </button>
               </div>
             ) : (
               roleList.map((role) => (
@@ -321,25 +323,24 @@ const RolesPage = () => {
             </div>
 
             <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => setMode("list")} 
-                className="px-5 h-11 border-slate-200 rounded-2xl font-bold transition-all text-slate-600"
+              <button
+                type="button"
+                onClick={() => setMode("list")}
+                className={cn(adminButton.secondary, "px-5 rounded-2xl")}
               >
                 Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={createRoleMutation.isPending || updateRoleMutation.isPending} 
-                className="px-6 h-11 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-sm gap-2"
+              </button>
+              <button
+                type="submit"
+                disabled={createRoleMutation.isPending || updateRoleMutation.isPending}
+                className={cn(adminButton.primary, "px-6 rounded-2xl")}
               >
                 {(createRoleMutation.isPending || updateRoleMutation.isPending) ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   "Save Role"
                 )}
-              </Button>
+              </button>
             </div>
           </motion.form>
         )}

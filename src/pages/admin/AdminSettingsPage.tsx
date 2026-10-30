@@ -7,12 +7,13 @@ import {
   ChevronRight, Sparkles, Users, GraduationCap, X,
   Upload, RefreshCw, Globe, Mail, MessageSquare,
   Smartphone, Zap, TrendingUp, ArrowRight,
-  User, Building2, BookOpen, Award, Monitor, Tag,
+  User, Building2, BookOpen, Award, Monitor, Tag, Palette, Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   useInstituteProfile, useUpdateInstituteProfile, useUploadInstituteOrgImage,
+  useInstituteBranding, useUpdateInstituteBranding, useUploadInstituteLogo,
   useInstituteNotificationPrefs, useUpdateInstituteNotificationPrefs,
   useCalendarEvents, useCreateCalendarEvent, useDeleteCalendarEvent,
 } from "@/hooks/use-admin";
@@ -21,12 +22,24 @@ import { CustomSelect } from "@/components/ui/CustomSelect";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
-type SettingsTab = "profile" | "calendar" | "notifications";
+type SettingsTab = "profile" | "branding" | "calendar" | "notifications";
 
 const TABS: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
   { id: "profile",       label: "Profile",         icon: <User className="w-4 h-4" /> },
+  { id: "branding",      label: "Branding",        icon: <Palette className="w-4 h-4" /> },
   { id: "calendar",      label: "Academic Calendar", icon: <Calendar className="w-4 h-4" /> },
   { id: "notifications", label: "Notifications",    icon: <Bell className="w-4 h-4" /> },
+];
+
+const BRAND_COLOR_PRESETS = [
+  { label: "Orange",  value: "#F97316" },
+  { label: "Indigo",  value: "#4F46E5" },
+  { label: "Blue",    value: "#2563EB" },
+  { label: "Emerald", value: "#10B981" },
+  { label: "Teal",    value: "#0D9488" },
+  { label: "Rose",    value: "#E11D48" },
+  { label: "Violet",  value: "#7C3AED" },
+  { label: "Amber",   value: "#D97706" },
 ];
 
 const EVENT_TYPES = [
@@ -402,6 +415,154 @@ function ProfileTab() {
 }
 
 // ─── Branding Tab ──────────────────────────────────────────────────────────────
+
+function BrandingTab() {
+  const { data, isLoading } = useInstituteBranding();
+  const updateBranding = useUpdateInstituteBranding();
+  const uploadLogo = useUploadInstituteLogo();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [brandColor, setBrandColor] = useState("#F97316");
+  const [customColor, setCustomColor] = useState("#F97316");
+  const [welcomeMessage, setWelcomeMessage] = useState("");
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (data) {
+      setLogoUrl(resolveMediaUrl(data.logoUrl ?? undefined) ?? data.logoUrl ?? null);
+      setBrandColor(data.brandColor || "#F97316");
+      setCustomColor(data.brandColor || "#F97316");
+      setWelcomeMessage(data.welcomeMessage || "");
+    }
+  }, [data]);
+
+  const handleLogoPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+
+    const previousUrl = logoUrl;
+    const blobUrl = URL.createObjectURL(file);
+    setLogoUrl(blobUrl);
+
+    try {
+      const result = await uploadLogo.mutateAsync(file);
+      URL.revokeObjectURL(blobUrl);
+      setLogoUrl(resolveMediaUrl(result.url) ?? result.url);
+      toast.success("Institute logo updated");
+    } catch {
+      URL.revokeObjectURL(blobUrl);
+      setLogoUrl(previousUrl);
+      toast.error("Logo upload failed — please try again");
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      await updateBranding.mutateAsync({ brandColor, welcomeMessage: welcomeMessage || undefined });
+      setSaved(true);
+      toast.success("Branding saved — reload to see it applied across your dashboard");
+      setTimeout(() => setSaved(false), 2500);
+    } catch {
+      toast.error("Failed to save branding");
+    }
+  };
+
+  if (isLoading) return <LoadingState />;
+
+  return (
+    <div className="w-full space-y-8">
+
+      {/* Logo */}
+      <div className="bg-card border border-border rounded-2xl p-6 flex items-center gap-5">
+        <div className="relative shrink-0">
+          <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-border bg-slate-50 flex items-center justify-center">
+            {logoUrl ? (
+              <img src={logoUrl} alt="Institute logo" className="w-full h-full object-cover" />
+            ) : (
+              <Building2 className="w-8 h-8 text-muted-foreground" />
+            )}
+          </div>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadLogo.isPending}
+            className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center shadow hover:bg-primary/90 transition-colors"
+          >
+            {uploadLogo.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+          </button>
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoPick} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Institute Logo</p>
+          <p className="text-sm text-muted-foreground">Shown in your sidebar and on student/teacher-facing pages.</p>
+        </div>
+      </div>
+
+      {/* Theme color */}
+      <div className="space-y-3">
+        <label className="text-sm font-semibold text-white bg-black/70 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg w-fit">
+          <Palette className="w-4 h-4 text-white/80" /> Theme Color
+        </label>
+        <p className="text-xs text-muted-foreground">Pick an accent color for your institute's dashboards (admin, teacher, student).</p>
+        <div className="flex flex-wrap gap-3">
+          {BRAND_COLOR_PRESETS.map(preset => (
+            <button
+              key={preset.value}
+              type="button"
+              title={preset.label}
+              onClick={() => { setBrandColor(preset.value); setCustomColor(preset.value); }}
+              className="relative w-11 h-11 rounded-2xl border-2 shadow-sm transition-transform hover:scale-105"
+              style={{ backgroundColor: preset.value, borderColor: brandColor === preset.value ? preset.value : "transparent" }}
+            >
+              {brandColor.toLowerCase() === preset.value.toLowerCase() && (
+                <span className="absolute inset-0 flex items-center justify-center">
+                  <Check className="w-5 h-5 text-white drop-shadow" />
+                </span>
+              )}
+            </button>
+          ))}
+          <label className="relative w-11 h-11 rounded-2xl border-2 border-dashed border-border shadow-sm flex items-center justify-center cursor-pointer overflow-hidden"
+            style={{ backgroundColor: customColor }}
+          >
+            <input
+              type="color"
+              value={customColor}
+              onChange={e => { setCustomColor(e.target.value); setBrandColor(e.target.value); }}
+              className="absolute inset-0 opacity-0 cursor-pointer"
+            />
+            {!BRAND_COLOR_PRESETS.some(p => p.value.toLowerCase() === customColor.toLowerCase()) && (
+              <Check className="w-5 h-5 text-white drop-shadow pointer-events-none" />
+            )}
+          </label>
+        </div>
+      </div>
+
+      {/* Welcome message */}
+      <div className="space-y-2">
+        <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <MessageSquare className="w-4 h-4 text-primary" /> Welcome Message
+        </label>
+        <p className="text-xs text-muted-foreground">Shown to students/teachers on their dashboard — optional.</p>
+        <textarea
+          rows={3}
+          placeholder="Welcome to our institute — let's achieve great results together!"
+          value={welcomeMessage}
+          onChange={e => setWelcomeMessage(e.target.value)}
+          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors resize-none"
+        />
+      </div>
+
+      <div className="flex justify-end pt-2">
+        <Button onClick={handleSave} disabled={updateBranding.isPending} className="gap-2">
+          {updateBranding.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle2 className="w-4 h-4" /> : null}
+          {saved ? "Saved!" : "Save Branding"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Calendar Tab ──────────────────────────────────────────────────────────────
 
 function CalendarTab() {
@@ -756,6 +917,7 @@ const AdminSettingsPage = () => {
           className="w-full"
         >
           {activeTab === "profile"       && <ProfileTab />}
+          {activeTab === "branding"      && <BrandingTab />}
           {activeTab === "calendar"      && <CalendarTab />}
           {activeTab === "notifications" && <NotificationsTab />}
         </motion.div>

@@ -12,14 +12,9 @@ import { Button } from "@/components/ui/button";
 import { useMyBatches, useBatchRoster, useBatchPerformance } from "@/hooks/use-teacher";
 import { getInactiveStudents, sendBulkReminder, type InactiveStudent } from "@/lib/api/teacher";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { StatusBadge, toStatusBadgeKey } from "@/components/admin/StatusBadge";
 
 // ─── Types & helpers ──────────────────────────────────────────────────────────
-
-const statusColor: Record<string, string> = {
-  active: "bg-emerald-500/10 text-emerald-600",
-  inactive: "bg-gray-400/10 text-gray-500",
-  completed: "bg-blue-500/10 text-blue-600",
-};
 
 type Tab = "roster" | "performance" | "inactive";
 
@@ -388,9 +383,7 @@ const TeacherBatchesPage = () => {
                   <Users className="w-4 h-4" />
                   <span>{batch.studentCount ?? 0} enrolled</span>
                 </div>
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${statusColor[batch.status] ?? statusColor.inactive}`}>
-                  {batch.status}
-                </span>
+                <StatusBadge status={toStatusBadgeKey(batch.status)} label={batch.status} />
                 {expandedId === batch.id
                   ? <ChevronDown className="w-4 h-4 text-muted-foreground" />
                   : <ChevronRight className="w-4 h-4 text-muted-foreground" />}

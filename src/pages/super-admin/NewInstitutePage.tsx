@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, X, Loader2, Building2, Mail, Globe, Copy, AlertCircle, ShieldCheck, ArrowRight, Sparkles, Shield, Home, Search, GraduationCap, BookOpen } from "lucide-react";
+import { Check, X, Loader2, Building2, Mail, Globe, Copy, AlertCircle, ShieldCheck, ArrowRight, Sparkles, Shield, Home, Search, GraduationCap, BookOpen, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCreateTenant } from "@/hooks/use-tenants";
 import { sendEmailOtp, verifyEmailOtp } from "@/lib/api/otp";
@@ -10,6 +10,17 @@ import { COACHING_LANGUAGES } from "@/lib/constants/coachingLanguages";
 
 const DEFAULT_STUDENTS = 1000;
 const DEFAULT_TEACHERS = 50;
+
+const BRAND_COLOR_PRESETS = [
+  { label: "Orange",  value: "#F97316" },
+  { label: "Indigo",  value: "#4F46E5" },
+  { label: "Blue",    value: "#2563EB" },
+  { label: "Emerald", value: "#10B981" },
+  { label: "Teal",    value: "#0D9488" },
+  { label: "Rose",    value: "#E11D48" },
+  { label: "Violet",  value: "#7C3AED" },
+  { label: "Amber",   value: "#D97706" },
+];
 
 const AI_FEATURE_OPTIONS = COACHING_AI_FEATURES.map(f => ({
   key: f.key,
@@ -37,6 +48,7 @@ const NewInstitutePage = () => {
   const [form, setForm] = useState(INITIAL_FORM);
   const [portalSearch, setPortalSearch] = useState("");
   const [aiEnabled, setAiEnabled] = useState(false);
+  const [brandColor, setBrandColor] = useState("#F97316");
 
   const [aiFeatures, setAiFeatures] = useState<string[]>(() => {
     try {
@@ -183,6 +195,7 @@ const NewInstitutePage = () => {
         aiEnabled,
         aiFeatures: aiEnabled ? aiFeatures : [],
         enabledLanguages,
+        brandColor,
         operationalModel: form.operationalModel,
         adminPortalEnabled: form.adminPortalEnabled,
         teacherPortalEnabled: form.teacherPortalEnabled,
@@ -807,6 +820,51 @@ const NewInstitutePage = () => {
                         />
                       </div>
                     </div>
+                  </div>
+
+                  {/* ── Branding Section ── */}
+                  <div className="bg-slate-50/50 p-8 rounded-[36px] border border-slate-100 space-y-5">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm">
+                        <Palette className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900">Branding</h3>
+                        <p className="text-[11px] font-semibold text-slate-400">Pick a theme color for this institute's dashboards</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      {BRAND_COLOR_PRESETS.map(preset => (
+                        <button
+                          key={preset.value}
+                          type="button"
+                          title={preset.label}
+                          onClick={() => setBrandColor(preset.value)}
+                          className="relative w-11 h-11 rounded-2xl border-2 shadow-sm transition-transform hover:scale-105"
+                          style={{ backgroundColor: preset.value, borderColor: brandColor === preset.value ? preset.value : "transparent" }}
+                        >
+                          {brandColor.toLowerCase() === preset.value.toLowerCase() && (
+                            <span className="absolute inset-0 flex items-center justify-center">
+                              <Check className="w-5 h-5 text-white drop-shadow" />
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                      <label className="relative w-11 h-11 rounded-2xl border-2 border-dashed border-slate-300 shadow-sm flex items-center justify-center cursor-pointer overflow-hidden"
+                        style={{ backgroundColor: brandColor }}
+                      >
+                        <input
+                          type="color"
+                          value={brandColor}
+                          onChange={(e) => setBrandColor(e.target.value)}
+                          className="absolute inset-0 opacity-0 cursor-pointer"
+                        />
+                        {!BRAND_COLOR_PRESETS.some(p => p.value.toLowerCase() === brandColor.toLowerCase()) && (
+                          <Check className="w-5 h-5 text-white drop-shadow pointer-events-none" />
+                        )}
+                      </label>
+                    </div>
+                    <p className="text-[11px] text-slate-400">A logo can be added afterwards from the institute's detail page.</p>
                   </div>
 
                   {/* ── AI Features Section ── */}

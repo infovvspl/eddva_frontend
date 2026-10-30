@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription } from '@/components/ui/alert-dialog';
+import { StatusBadge, toStatusBadgeKey } from '@/components/admin/StatusBadge';
 import { useToast } from '@/hooks/use-toast';
 import {
   ArrowLeft,
@@ -1711,9 +1712,11 @@ export default function TeacherLiveDashboard() {
                   <div className="flex-grow flex flex-col min-h-0 bg-slate-50/50 animate-in fade-in slide-in-from-bottom-2 duration-200">
                     <div className="p-3 bg-slate-100/60 border-b border-slate-200 flex-shrink-0 flex items-center justify-between">
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Student Q&A</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${questionsActive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-500'}`}>
-                        {questionsActive ? 'Session Active' : 'Session Closed'}
-                      </span>
+                      <StatusBadge
+                        status={toStatusBadgeKey(questionsActive ? "active" : "closed")}
+                        label={questionsActive ? "Session Active" : "Session Closed"}
+                        className="text-[10px]"
+                      />
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">

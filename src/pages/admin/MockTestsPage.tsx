@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { StatusBadge, toStatusBadgeKey } from "@/components/admin/StatusBadge";
 import { useHasAiFeature } from "@/hooks/use-tenant-features";
 import { IfAiFeature } from "@/components/ai/AiFeatureGate";
 import {
@@ -3347,9 +3348,7 @@ function MockTestDetail({ testId, onBack }: { testId: string; onBack: () => void
               {TYPE_LABELS[test.type] ?? test.type}
             </span>
           )}
-          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${test.isPublished ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-500"}`}>
-            {test.isPublished ? "Published" : "Draft"}
-          </span>
+          <StatusBadge status={toStatusBadgeKey(test.isPublished ? "published" : "draft")} label={test.isPublished ? "Published" : "Draft"} />
         </div>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" className="gap-1.5" disabled={publishMockTest.isPending}
@@ -3842,10 +3841,11 @@ const MockTestsPage = () => {
                           {TYPE_LABELS[test.type] ?? test.type}
                         </span>
                       )}
-                      <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-full shrink-0",
-                        test.isPublished ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-400")}>
-                        {test.isPublished ? "Published" : "Draft"}
-                      </span>
+                      <StatusBadge
+                        status={toStatusBadgeKey(test.isPublished ? "published" : "draft")}
+                        label={test.isPublished ? "Published" : "Draft"}
+                        className="shrink-0"
+                      />
                     </div>
                     <p className="text-xs text-slate-400 mt-0.5">
                       {(test.questionIds?.length ?? 0)} questions · {test.durationMinutes} min · {test.totalMarks} marks

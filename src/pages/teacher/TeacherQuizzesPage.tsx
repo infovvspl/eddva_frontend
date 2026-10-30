@@ -21,6 +21,8 @@ import {
   type CreateQuestionPayload,
 } from "@/lib/api/teacher";
 import { apiClient, extractData } from "@/lib/api/client";
+import { StatusBadge, toStatusBadgeKey } from "@/components/admin/StatusBadge";
+import { adminButton } from "@/components/admin/adminButtonVariants";
 import { QuizAnalyticsModal } from "@/components/teacher/QuizAnalyticsModal";
 import {
   BookOpen, Plus, Trash2, Edit2, Eye, BarChart2, X, ChevronRight, ChevronLeft,
@@ -137,12 +139,6 @@ const DIFFICULTY_COLOR: Record<DifficultyLevel, string> = {
   easy: "bg-emerald-100 text-emerald-700",
   medium: "bg-amber-100 text-amber-700",
   hard: "bg-red-100 text-red-700",
-};
-
-const STATUS_BADGE: Record<string, string> = {
-  published: "bg-emerald-100 text-emerald-700",
-  draft: "bg-slate-100 text-slate-600",
-  scheduled: "bg-blue-100 text-blue-700",
 };
 
 function getQuizStatus(q: MockTest): string {
@@ -1757,9 +1753,7 @@ function QuizCard({ quiz, onView, onDelete }: {
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium capitalize", STATUS_BADGE[status] || STATUS_BADGE.draft)}>
-              {status}
-            </span>
+            <StatusBadge status={toStatusBadgeKey(status)} label={status} className="capitalize" />
             <span className="text-xs text-muted-foreground capitalize">{quiz.type?.replace(/_/g, " ")}</span>
           </div>
           <h3 className="font-semibold mt-1.5 truncate group-hover:text-primary transition-colors">{quiz.title}</h3>
@@ -1965,9 +1959,7 @@ function QuizDetailPanel({ quiz, onClose, onPublish }: { quiz: MockTest; onClose
         </div>
         <div className="flex-1 overflow-y-auto p-5 space-y-5">
           <div className="flex items-center gap-2">
-            <span className={cn("text-xs px-2 py-1 rounded-full font-medium capitalize", STATUS_BADGE[status])}>
-              {status}
-            </span>
+            <StatusBadge status={toStatusBadgeKey(status)} label={status} className="capitalize" />
             <span className="text-xs text-muted-foreground capitalize">{quiz.type?.replace("_", " ")}</span>
           </div>
 
@@ -2260,8 +2252,7 @@ export default function TeacherQuizzesPage() {
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-1.5 px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-2xl text-xs sm:text-sm font-black text-white transition-opacity hover:opacity-90 shadow-sm whitespace-nowrap shrink-0"
-          style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}
+          className={cn(adminButton.primary, "px-3.5 sm:px-5 rounded-2xl text-xs sm:text-sm whitespace-nowrap shrink-0")}
         >
           <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" /> Create Quiz
         </button>

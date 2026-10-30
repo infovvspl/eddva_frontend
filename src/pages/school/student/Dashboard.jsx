@@ -460,7 +460,7 @@ export default function Dashboard() {
         {/* Left Column: Banner + Stat Cards */}
         <div className="xl:col-span-8 flex flex-col gap-5">
           {/* Welcome Banner */}
-          <div className="relative rounded-[1.5rem] overflow-hidden shadow-sm flex flex-col justify-center min-h-[260px] border border-slate-100">
+          <div className="relative rounded-[1.5rem] overflow-hidden shadow-sm flex flex-col justify-center min-h-[180px] border border-slate-100">
             <div 
               className="absolute inset-0 bg-cover bg-center" 
               style={{ backgroundImage: `url(${bgBanner})` }}
@@ -468,9 +468,9 @@ export default function Dashboard() {
             {/* Subtle gradient to ensure text readability */}
             <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
             
-            <div className="relative z-10 p-8 sm:p-10 max-w-lg">
-              <h1 className="text-[28px] sm:text-[34px] leading-tight font-bold text-white mb-3 flex items-center gap-2 flex-wrap">
-                <span>Welcome back,<br/>{user?.name?.split(' ')[0] || 'Abhijit'}!</span>
+            <div className="relative z-10 p-6 sm:p-7 max-w-lg">
+              <h1 className="text-xl sm:text-2xl leading-tight font-bold text-white mb-2 flex items-center gap-2 flex-wrap">
+                <span>Welcome back, {user?.name?.split(' ')[0] || 'Abhijit'}!</span>
                 {/* <PartyPopper className="size-7 shrink-0 text-white/90" /> */}
               </h1>
               <p className="text-white/90 text-xs sm:text-[13px] font-medium leading-relaxed tracking-wide max-w-xs">
@@ -486,11 +486,19 @@ export default function Dashboard() {
             <StatCard icon={Star} iconColor="text-white" bgColor="bg-amber-500" title="Pending Assignments" value={pendingAssignments.length} link="View All" to="/school/student/assignments" />
             <StatCard icon={Award} iconColor="text-white" bgColor="bg-blue-500" title="EDDVA Points" value={dashboardData?.eddvaCoins || user?.eddvaCoins || 680} link="Top 15% in class" isGrayLink />
           </div>
+
+          {/* Today's Schedule — moved up here to fill the height next to Calendar/Pending Assignments on the right */}
+          <div className="bg-white rounded-[1.5rem] p-5 shadow-sm border border-slate-100 flex-1 flex flex-col">
+            <SectionHeader title="Today's Schedule" action="View full timetable" to="/school/student/timetable" />
+            <div className="max-h-[420px] overflow-y-auto pr-1">
+              <Timeline schedule={todayPlan} />
+            </div>
+          </div>
         </div>
-        
+
         {/* Right Column: Calendar + Next Live Class + Birthdays */}
         <div className="xl:col-span-4 flex flex-col gap-5">
-          <div className="bg-white rounded-[1.5rem] p-5 shadow-sm border border-slate-100 flex-1 min-h-[260px]">
+          <div className="bg-white rounded-[1.5rem] p-5 shadow-sm border border-slate-100 min-h-[260px]">
             <SmartCalendar />
           </div>
           {/* Fixed height fit the sm:flex-row layout only — below sm the card
@@ -499,23 +507,19 @@ export default function Dashboard() {
           <div className="shrink-0 h-auto sm:h-[104px]">
              <NextLiveClassCard schedule={todayPlan} />
           </div>
-          <BirthdayWidget className="rounded-[1.5rem]" />
+          <div className="bg-white rounded-[1.5rem] p-5 shadow-sm border border-slate-100 flex-1 flex flex-col">
+            <SectionHeader title="Pending Assignments" action="View all" to="/school/student/assignments" />
+            <PendingAssignmentsList assignments={pendingAssignments} />
+          </div>
         </div>
       </div>
 
-      {/* Row 3: Schedule, Progress, Pending Assignments */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <div className="bg-white rounded-[1.5rem] p-5 shadow-sm border border-slate-100 flex flex-col h-full">
-          <SectionHeader title="Today's Schedule" action="View full timetable" to="/school/student/timetable" />
-          <Timeline schedule={todayPlan} />
-        </div>
-        <div className="bg-white rounded-[1.5rem] p-5 shadow-sm border border-slate-100 flex flex-col h-full">
+      {/* Row 3: Birthdays, Progress */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+        <BirthdayWidget className="rounded-[1.5rem]" />
+        <div className="bg-white rounded-[1.5rem] p-5 shadow-sm border border-slate-100 flex flex-col">
           <SectionHeader title="Your Progress" action="This Month" isDropdown />
           <ProgressCard assignments={assignments} mockTests={mockTests} />
-        </div>
-        <div className="bg-white rounded-[1.5rem] p-5 shadow-sm border border-slate-100 flex flex-col h-full">
-          <SectionHeader title="Pending Assignments" action="View all" to="/school/student/assignments" />
-          <PendingAssignmentsList assignments={pendingAssignments} />
         </div>
       </div>
 

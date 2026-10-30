@@ -25,8 +25,8 @@ import {
   TicketStatus,
 } from '@/constants/ticket-categories';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { StatusBadge, toStatusBadgeKey } from '@/components/admin/StatusBadge';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 
 export default function TeacherSupportTicketsPage() {
@@ -231,16 +231,7 @@ export default function TeacherSupportTicketsPage() {
                         <span className="text-xs font-extrabold text-indigo-600">
                           {t.ticketNumber}
                         </span>
-                        <span
-                          className={cn(
-                            'rounded-md px-2 py-0.5 text-[10px] font-bold border',
-                            stat.bg,
-                            stat.text,
-                            stat.border,
-                          )}
-                        >
-                          {stat.label}
-                        </span>
+                        <StatusBadge status={toStatusBadgeKey(t.status)} label={stat.label} className="text-[10px]" />
                       </div>
 
                       <h4 className="text-xs font-bold text-slate-900 line-clamp-2 leading-snug">
@@ -252,16 +243,7 @@ export default function TeacherSupportTicketsPage() {
                           <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-semibold">
                             {t.category}
                           </span>
-                          <span
-                            className={cn(
-                              'rounded-md px-1.5 py-0.5 font-bold border',
-                              prio.bg,
-                              prio.text,
-                              prio.border,
-                            )}
-                          >
-                            {prio.label}
-                          </span>
+                          <StatusBadge status={toStatusBadgeKey(t.priority)} label={prio.label} className="text-[10px]" />
                         </div>
                         <div className="flex items-center gap-1 text-indigo-600 font-bold ml-auto">
                           <span>View</span>
@@ -304,28 +286,10 @@ export default function TeacherSupportTicketsPage() {
                           </TableCell>
                           <TableCell className="px-5 py-4 text-slate-600">{t.category}</TableCell>
                           <TableCell className="px-5 py-4">
-                            <span
-                              className={cn(
-                                'rounded-md px-2 py-0.5 text-[11px] font-bold border',
-                                prio.bg,
-                                prio.text,
-                                prio.border,
-                              )}
-                            >
-                              {prio.label}
-                            </span>
+                            <StatusBadge status={toStatusBadgeKey(t.priority)} label={prio.label} className="text-[11px]" />
                           </TableCell>
                           <TableCell className="px-5 py-4">
-                            <span
-                              className={cn(
-                                'rounded-md px-2 py-0.5 text-[11px] font-bold border',
-                                stat.bg,
-                                stat.text,
-                                stat.border,
-                              )}
-                            >
-                              {stat.label}
-                            </span>
+                            <StatusBadge status={toStatusBadgeKey(t.status)} label={stat.label} className="text-[11px]" />
                           </TableCell>
                           <TableCell className="px-5 py-4 text-slate-500 font-normal">
                             {new Date(t.updatedAt).toLocaleDateString()}

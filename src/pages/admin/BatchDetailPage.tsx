@@ -10,6 +10,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { StatusBadge, toStatusBadgeKey } from "@/components/admin/StatusBadge";
 import { useConfirm } from "@/context/ConfirmContext";
 import {
   useBatch,
@@ -499,12 +500,6 @@ function BatchFeedbackSection({ batchId }: { batchId: string }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-const STATUS_COLORS: Record<string, string> = {
-  active:    "bg-emerald-50 text-emerald-600 border-emerald-100",
-  inactive:  "bg-slate-100 text-slate-500 border-slate-200",
-  completed: "bg-blue-50 text-blue-600 border-blue-100",
-};
-
 export default function BatchDetailPage() {
   const confirm = useConfirm();
   const { id } = useParams<{ id: string }>();
@@ -557,7 +552,6 @@ export default function BatchDetailPage() {
 
   const enrolled = (batch as any).studentCount ?? 0;
   const examStyle = EXAM_STYLES[batch.examTarget?.toLowerCase()] ?? EXAM_STYLES.default;
-  const sc = STATUS_COLORS[batch.status] ?? STATUS_COLORS.inactive;
 
   return (
     <div className="w-full px-4 py-5 sm:p-6 lg:p-8 space-y-6 pb-20">
@@ -625,9 +619,11 @@ export default function BatchDetailPage() {
             {/* Title + badges */}
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">{batch.name}</h1>
-              <span className={`shrink-0 text-[9px] sm:text-[10px] font-black uppercase tracking-wider px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full border ${sc}`}>
-                {batch.status}
-              </span>
+              <StatusBadge
+                status={toStatusBadgeKey(batch.status)}
+                label={batch.status}
+                className="shrink-0 text-[9px] sm:text-[10px] uppercase tracking-wider"
+              />
               {batch.isPaid ? (
                 <span className="shrink-0 text-[9px] sm:text-[10px] font-black uppercase tracking-wider px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full border bg-blue-50 text-blue-600 border-blue-100">
                   ₹{batch.feeAmount}
