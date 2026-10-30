@@ -43,7 +43,7 @@ function LiveRecordingCard({ rec }) {
   };
 
   return (
-    <div className={`flex gap-3 overflow-hidden rounded-2xl border bg-white p-3 sm:p-4 shadow-sm dark:bg-slate-900 ${isProcessing ? 'border-amber-100 dark:border-amber-900/30' : 'border-blue-100 dark:border-blue-900/30'}`}>
+    <div className={`flex gap-3 overflow-hidden rounded-2xl border bg-white p-3 sm:p-4 transition-shadow hover:shadow-md dark:bg-slate-900 ${isProcessing ? 'border-amber-200 dark:border-amber-900/30' : 'border-blue-200 dark:border-blue-900/30'}`}>
       <div className="relative flex h-20 w-28 sm:h-24 sm:w-32 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900">
         {rec.thumbnailKey && !isProcessing && !imgError ? (
           <img 
@@ -96,7 +96,7 @@ function LiveRecordingCard({ rec }) {
           <div className="mt-auto pt-2">
             <Link
               to={`/school/student/live-classes/${rec.classRecordingId}/recording`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-sky-50 px-3 py-1.5 text-[10px] sm:text-xs font-bold text-blue-600 transition hover:from-blue-100 hover:to-sky-100 hover:border-blue-300 hover:text-blue-700 disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-3.5 py-2 text-[10px] sm:text-xs font-bold text-white shadow-sm transition hover:from-blue-700 hover:to-indigo-700"
             >
               <PlayCircle size={12} />
               Watch Recording
@@ -117,7 +117,7 @@ function RecordedClassCard({ recording, renderRecordingStatus }) {
 
   return (
     <div
-      className="overflow-hidden rounded-2xl border border-slate-100 bg-white p-3.5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 sm:rounded-[1.75rem] sm:p-4"
+      className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-3.5 text-left transition hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 sm:rounded-[1.75rem] sm:p-4"
     >
       <div className="flex flex-col gap-3.5 sm:flex-row sm:gap-4">
         <Link
@@ -201,7 +201,7 @@ function RecordedClassCard({ recording, renderRecordingStatus }) {
           <div className="mt-auto pt-3 sm:pt-4">
             <Link
               to={`/school/student/recorded-classes/${recording.id}${canWatch ? '?play=1' : ''}`}
-              className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-sky-50 px-4 py-2 text-xs sm:text-sm font-bold text-blue-600 transition hover:from-blue-100 hover:to-sky-100 hover:border-blue-300 hover:text-blue-700"
+              className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm transition hover:from-blue-700 hover:to-indigo-700"
             >
               {canWatch ? <PlayCircle size={14} /> : <FileText size={14} />}
               {canWatch ? 'Watch Video' : 'Open Details'}
@@ -440,6 +440,13 @@ export default function Classes() {
       ? 'Watch teacher-uploaded recorded lectures, open transcript, and study from generated notes.'
       : 'Explore classes, chapters, topics, notes, assignments, tests, and teacher resources.';
 
+  const HeaderIcon = isLiveView ? Radio : isRecordedView ? MonitorPlay : BookOpen;
+  const headerGradient = isLiveView
+    ? 'from-rose-500 to-pink-600'
+    : isRecordedView
+      ? 'from-indigo-500 to-violet-600'
+      : 'from-blue-500 to-indigo-600';
+
   const renderRecordingStatus = (recording) => {
     if (!hasNotesGen) return null;
 
@@ -495,70 +502,35 @@ export default function Classes() {
   const liveClassesView = (
     <div className="space-y-5">
       {/* ── Status filter bar ── */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-        <button
-          type="button"
-          onClick={() => setSchoolStudentLiveFilter('all')}
-          className={cn(
-            "px-4 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 flex items-center gap-1.5",
-            schoolStudentLiveFilter === 'all'
-              ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-              : "bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800"
-          )}
-        >
-          All Classes
-          <span className={cn("px-1.5 py-0.5 rounded-full text-[10px] font-black", schoolStudentLiveFilter === 'all' ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400")}>
-            {totalLiveClassesCount}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setSchoolStudentLiveFilter('scheduled')}
-          className={cn(
-            "px-4 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 flex items-center gap-1.5",
-            schoolStudentLiveFilter === 'scheduled'
-              ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-              : "bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800"
-          )}
-        >
-          Scheduled
-          <span className={cn("px-1.5 py-0.5 rounded-full text-[10px] font-black", schoolStudentLiveFilter === 'scheduled' ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400")}>
-            {scheduledCount}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setSchoolStudentLiveFilter('ongoing')}
-          className={cn(
-            "px-4 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 flex items-center gap-1.5",
-            schoolStudentLiveFilter === 'ongoing'
-              ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-              : "bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800"
-          )}
-        >
-          Ongoing (Live)
-          <span className={cn("px-1.5 py-0.5 rounded-full text-[10px] font-black", schoolStudentLiveFilter === 'ongoing' ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400")}>
-            {ongoingCount}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setSchoolStudentLiveFilter('completed')}
-          className={cn(
-            "px-4 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 flex items-center gap-1.5",
-            schoolStudentLiveFilter === 'completed' || schoolStudentLiveFilter === 'finished'
-              ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-              : "bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800"
-          )}
-        >
-          Completed
-          <span className={cn("px-1.5 py-0.5 rounded-full text-[10px] font-black", schoolStudentLiveFilter === 'completed' || schoolStudentLiveFilter === 'finished' ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400")}>
-            {completedCount}
-          </span>
-        </button>
+      <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none">
+        {[
+          { id: 'all', label: 'All Classes', count: totalLiveClassesCount },
+          { id: 'scheduled', label: 'Scheduled', count: scheduledCount },
+          { id: 'ongoing', label: 'Ongoing (Live)', count: ongoingCount },
+          { id: 'completed', label: 'Completed', count: completedCount },
+        ].map((tab) => {
+          const active = tab.id === 'completed'
+            ? schoolStudentLiveFilter === 'completed' || schoolStudentLiveFilter === 'finished'
+            : schoolStudentLiveFilter === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setSchoolStudentLiveFilter(tab.id)}
+              className={cn(
+                'flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold transition-all',
+                active
+                  ? 'border-transparent bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20'
+                  : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300',
+              )}
+            >
+              {tab.label}
+              <span className={cn('rounded-full px-1.5 py-0.5 text-[10px] font-black', active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400')}>
+                {tab.count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Live Now — OBS broadcasts currently streaming */}
@@ -573,7 +545,7 @@ export default function Classes() {
           </h3>
           <div className="grid gap-4 lg:grid-cols-2">
             {obsLiveLectures.map((lec) => (
-              <div key={lec.id} className="overflow-hidden rounded-2xl sm:rounded-[1.5rem] border border-indigo-200 bg-white shadow-sm dark:border-indigo-900/40 dark:bg-slate-900">
+              <div key={lec.id} className="overflow-hidden rounded-2xl sm:rounded-[1.5rem] border border-indigo-200 bg-white dark:border-indigo-900/40 dark:bg-slate-900">
                 <div className="flex items-center justify-between gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 sm:px-5 sm:py-3 text-white">
                   <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-black uppercase tracking-[0.2em]"><Radio size={12} /> Live</span>
                   <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] sm:text-[11px] font-bold">streaming now</span>
@@ -605,7 +577,7 @@ export default function Classes() {
           </h3>
           <div className="grid gap-4 lg:grid-cols-2">
             {obsScheduledLectures.map((lec) => (
-              <div key={lec.id} className="overflow-hidden rounded-2xl sm:rounded-[1.5rem] border border-blue-200 bg-white shadow-sm dark:border-blue-900/40 dark:bg-slate-900">
+              <div key={lec.id} className="overflow-hidden rounded-2xl sm:rounded-[1.5rem] border border-blue-200 bg-white dark:border-blue-900/40 dark:bg-slate-900">
                 <div className="flex items-center justify-between gap-3 bg-gradient-to-r from-blue-600 to-indigo-500 px-4 py-2.5 sm:px-5 sm:py-3 text-white">
                   <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-black uppercase tracking-[0.2em]"><Video size={12} /> Scheduled</span>
                   {lec.scheduledFor && (
@@ -637,8 +609,9 @@ export default function Classes() {
             {(showAllSchoolStudentLive ? liveClasses : liveClasses.slice(0, 10)).map((cls, index) => (
               <div
                 key={`${cls.day}-${cls.startTime}-${cls.subject}-${index}`}
-                className="rounded-2xl sm:rounded-[1.5rem] border border-slate-100 bg-white p-4 sm:p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                className="relative overflow-hidden rounded-2xl sm:rounded-[1.5rem] border border-slate-200 bg-white p-4 pl-5 sm:p-5 sm:pl-6 transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-900"
               >
+                <span aria-hidden className="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-blue-500 to-indigo-600" />
                 <div className="flex items-start justify-between gap-3 sm:gap-4">
                   <div className="min-w-0">
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-0.5 text-[9px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-blue-700">
@@ -648,7 +621,7 @@ export default function Classes() {
                     <h3 className="mt-3 sm:mt-4 text-sm sm:text-xl font-black text-slate-900 dark:text-white">{cls.subject || 'Live session'}</h3>
                     <p className="mt-0.5 text-xs sm:text-sm font-semibold text-slate-500">{cls.teacher || 'Teacher not assigned'}</p>
                   </div>
-                  <div className="rounded-xl bg-slate-50 p-2 sm:p-3 text-blue-600 dark:bg-slate-800 shrink-0">
+                  <div className="grid size-10 sm:size-12 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md">
                     <Video size={18} />
                   </div>
                 </div>
@@ -670,7 +643,7 @@ export default function Classes() {
                       href={cls.meetingLink}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs sm:text-sm font-bold text-white transition hover:bg-blue-700"
+                      className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 text-xs sm:text-sm font-bold text-white shadow-sm transition hover:from-blue-700 hover:to-indigo-700"
                     >
                       <Radio size={13} />
                       Join Class
@@ -762,11 +735,13 @@ export default function Classes() {
     <div className="space-y-6">
       {/* ── Filter bar ── */}
       {recordings.length > 0 && (
-        <div className="rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
           <div className="flex flex-wrap items-center gap-2.5">
             {/* Label */}
-            <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest text-slate-400 shrink-0">
-              <SlidersHorizontal size={13} />
+            <div className="flex shrink-0 items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-500">
+              <span className="grid size-8 place-items-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm">
+                <SlidersHorizontal size={14} />
+              </span>
               <span className="hidden sm:inline">Filter</span>
             </div>
 
@@ -833,9 +808,9 @@ export default function Classes() {
 
       {/* ── Recording cards ── */}
       {recordings.length === 0 ? (
-        <div className="rounded-2xl sm:rounded-[2rem] border border-dashed border-slate-200 bg-white p-8 sm:p-12 text-center shadow-sm">
+        <div className="rounded-2xl sm:rounded-[2rem] border border-dashed border-slate-200 bg-white p-8 sm:p-12 text-center dark:border-slate-800 dark:bg-slate-900">
           <Video className="mx-auto size-10 sm:size-12 text-slate-300" />
-          <h3 className="mt-3 sm:mt-4 text-base sm:text-lg font-bold text-slate-900">No recorded classes yet</h3>
+          <h3 className="mt-3 sm:mt-4 text-base sm:text-lg font-bold text-slate-900 dark:text-white">No recorded classes yet</h3>
           <p className="mt-1 text-xs sm:text-sm text-slate-500">
             Once your teachers upload recorded lectures, transcript and notes will appear here.
           </p>
@@ -888,10 +863,13 @@ export default function Classes() {
   return (
     <div className="space-y-6">
       {!isMobile && (
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">{title}</h1>
-            <p className="mt-1 text-xs sm:text-sm font-medium text-slate-500">{subtitle}</p>
+        <div className="flex items-center gap-4">
+          <span className={`grid size-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br text-white shadow-md ${headerGradient}`}>
+            <HeaderIcon className="size-6" />
+          </span>
+          <div className="min-w-0">
+            <h1 className="!text-xl font-black text-slate-900 dark:text-white sm:!text-2xl">{title}</h1>
+            <p className="mt-0.5 text-xs sm:text-sm font-medium text-slate-500">{subtitle}</p>
           </div>
         </div>
       )}
@@ -903,25 +881,24 @@ export default function Classes() {
       ) : (
         <>
       <div className="grid gap-2.5 grid-cols-3 sm:gap-4">
-        <div className="rounded-2xl border border-blue-100 bg-blue-50 p-3 sm:p-4 dark:border-blue-900/40 dark:bg-blue-950/20">
-          <Radio className="size-5 sm:size-6 text-blue-600" />
-          <h2 className="mt-3 text-xs sm:text-sm font-black text-slate-950 dark:text-white">Live Session</h2>
-          <p className="mt-1 text-[10px] sm:text-xs font-medium text-slate-500 hidden sm:block">Live sessions support auto attendance and classroom interaction.</p>
-        </div>
-        <div className="rounded-2xl border border-violet-100 bg-violet-50 p-3 sm:p-4 dark:border-violet-900/40 dark:bg-violet-950/20">
-          <Hand className="size-5 sm:size-6 text-violet-600" />
-          <h2 className="mt-3 text-xs sm:text-sm font-black text-slate-950 dark:text-white">Raise Hand</h2>
-          <p className="mt-1 text-[10px] sm:text-xs font-medium text-slate-500 hidden sm:block">Ask questions during class and participate in polls or quizzes.</p>
-        </div>
-        <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-3 sm:p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20">
-          <BarChart3 className="size-5 sm:size-6 text-emerald-600" />
-          <h2 className="mt-3 text-xs sm:text-sm font-black text-slate-950 dark:text-white">Progress</h2>
-          <p className="mt-1 text-[10px] sm:text-xs font-medium text-slate-500 hidden sm:block">Recorded lessons can resume from your last watched point.</p>
-        </div>
+        {[
+          { icon: Radio, title: 'Live Session', text: 'Live sessions support auto attendance and classroom interaction.', border: 'border-blue-200 hover:border-blue-300 dark:border-blue-900/50', circle: 'bg-blue-200/50 dark:bg-blue-500/10', grad: 'from-blue-500 to-indigo-600' },
+          { icon: Hand, title: 'Raise Hand', text: 'Ask questions during class and participate in polls or quizzes.', border: 'border-violet-200 hover:border-violet-300 dark:border-violet-900/50', circle: 'bg-violet-200/50 dark:bg-violet-500/10', grad: 'from-violet-500 to-purple-600' },
+          { icon: BarChart3, title: 'Progress', text: 'Recorded lessons can resume from your last watched point.', border: 'border-emerald-200 hover:border-emerald-300 dark:border-emerald-900/50', circle: 'bg-emerald-200/50 dark:bg-emerald-500/10', grad: 'from-emerald-500 to-teal-600' },
+        ].map(({ icon: Icon, title: tileTitle, text, border, circle, grad }) => (
+          <div key={tileTitle} className={`relative overflow-hidden rounded-2xl border bg-white p-3 transition-colors sm:p-4 dark:bg-slate-900 ${border}`}>
+            <span aria-hidden className={`pointer-events-none absolute -right-5 -top-5 size-16 rounded-full sm:size-20 ${circle}`} />
+            <span className={`relative grid size-9 place-items-center rounded-xl bg-gradient-to-br text-white shadow-md sm:size-11 ${grad}`}>
+              <Icon className="size-4 sm:size-5" />
+            </span>
+            <h2 className="relative mt-3 text-xs sm:text-sm font-black text-slate-950 dark:text-white">{tileTitle}</h2>
+            <p className="relative mt-1 hidden text-[10px] sm:block sm:text-xs font-medium text-slate-500">{text}</p>
+          </div>
+        ))}
       </div>
 
       {courses.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-[2rem] border border-slate-100 border-dashed bg-white p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex flex-col items-center justify-center rounded-[2rem] border border-dashed border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
           <BookOpen className="mb-4 size-12 text-slate-300 dark:text-slate-700" />
           <h3 className="text-lg font-bold text-slate-900 dark:text-white">No active classes</h3>
           <p className="mt-1 text-sm text-slate-500">You are not enrolled in any active classes yet.</p>
@@ -929,7 +906,7 @@ export default function Classes() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {courses.map((course) => (
-            <div key={course.enrollmentId} className="group flex flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl dark:border-slate-800 dark:bg-slate-900">
+            <div key={course.enrollmentId} className="group flex flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white transition-all hover:-translate-y-1 hover:border-blue-300 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900">
               <div className="relative h-36 sm:h-48 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
                 {course.batch?.thumbnailUrl ? (
                   <img src={course.batch.thumbnailUrl} alt={course.batch.name} className="size-full object-cover transition-transform duration-500 group-hover:scale-105" />
@@ -946,12 +923,12 @@ export default function Classes() {
               <div className="flex flex-1 flex-col p-4 sm:p-6">
                 <div className="mb-2 flex flex-wrap gap-1.5">
                   {course.subjects?.slice(0, 3).map((sub, i) => (
-                    <span key={i} className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                    <span key={i} className="rounded-full bg-blue-50 px-2 py-0.5 text-[9px] sm:text-[10px] font-bold text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
                       {sub}
                     </span>
                   ))}
                   {(course.subjects?.length || 0) > 3 && (
-                    <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[9px] sm:text-[10px] font-bold text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
                       +{course.subjects.length - 3}
                     </span>
                   )}
@@ -977,16 +954,16 @@ export default function Classes() {
                     <span className="text-slate-500">Course Progress</span>
                     <span className="text-blue-600">{course.progress?.overallPct || 0}%</span>
                   </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                     <div 
-                      className="h-full rounded-full bg-blue-600 transition-all duration-1000" 
+                      className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-1000" 
                       style={{ width: `${course.progress?.overallPct || 0}%` }}
                     />
                   </div>
                   
                   <Link
                     to={`/school/student/classes/${course.batch?.id}`}
-                    className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl bg-slate-50 py-2.5 text-xs sm:text-sm font-bold text-blue-600 transition-colors hover:bg-blue-50 dark:bg-slate-800/50 dark:hover:bg-blue-900/20"
+                    className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm transition hover:from-blue-700 hover:to-indigo-700"
                   >
                     View Curriculum
                     <ChevronRight size={14} />

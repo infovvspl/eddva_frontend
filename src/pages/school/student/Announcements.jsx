@@ -105,9 +105,14 @@ export default function Announcements() {
   return (
     <div className="space-y-6 py-2">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <h1 className="!text-2xl font-black tracking-tight text-slate-900 dark:text-white">Announcements</h1>
-          <p className="mt-1 text-sm font-medium text-slate-500">Institute notices, exam notices, holiday notices, and teacher messages.</p>
+        <div className="flex items-center gap-3 sm:gap-4">
+          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/25 sm:size-14">
+            <Megaphone className="size-5 sm:size-7" />
+          </span>
+          <div className="min-w-0">
+            <h1 className="!text-2xl font-black tracking-tight text-slate-900 dark:text-white">Announcements</h1>
+            <p className="mt-0.5 text-sm font-medium text-slate-500">Institute notices, exam notices, holiday notices, and teacher messages.</p>
+          </div>
         </div>
         <div className="relative w-full lg:max-w-sm">
           <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
@@ -178,7 +183,7 @@ export default function Announcements() {
       <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
         <div className="min-w-0 space-y-4">
           {filteredNotices.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center dark:border-slate-700 dark:bg-slate-900">
               <Megaphone className="mx-auto size-10 text-slate-300" />
               <h2 className="mt-3 text-sm font-black text-slate-900 dark:text-white">No notices found</h2>
               <p className="mt-1 text-sm text-slate-500">School announcements will appear here.</p>
@@ -193,7 +198,7 @@ export default function Announcements() {
               return (
                 <article key={notice.id} className="flex gap-3 sm:gap-4">
                   <DateBlock value={notice.postedDate} colorClass={color.block} />
-                  <div className="min-w-0 flex-1 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800 dark:bg-slate-900 sm:p-5">
+                  <div className="min-w-0 flex-1 rounded-3xl border border-slate-300 bg-white p-4 transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-900 sm:p-5">
                     <div className="flex flex-col gap-4 md:flex-row md:items-start md:gap-5">
                       <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
@@ -265,7 +270,7 @@ export default function Announcements() {
         </div>
 
         {/* Notifications as a simple feed with a dotted rail. */}
-        <aside className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:sticky lg:top-4">
+        <aside className="rounded-3xl border border-slate-300 bg-white p-5 dark:border-slate-700 dark:bg-slate-900 lg:sticky lg:top-4">
           <div className="flex items-center justify-between">
             <h2 className="!text-base font-black text-slate-950 dark:text-white">Recent Notifications</h2>
             <span className="flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-black text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">

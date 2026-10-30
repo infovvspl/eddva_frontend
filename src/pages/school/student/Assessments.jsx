@@ -591,9 +591,14 @@ export default function Assessments() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white">Assessments</h1>
-          <p className="mt-1 text-sm font-medium text-slate-500">Practice tests, topic tests, unit tests, subject tests, mock exams, and final exams.</p>
+        <div className="flex items-center gap-4">
+          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/25">
+            <ClipboardList size={24} />
+          </span>
+          <div className="min-w-0">
+            <h1 className="!text-2xl font-black text-slate-900 dark:text-white">Assessments</h1>
+            <p className="mt-0.5 text-sm font-medium text-slate-500">Practice tests, topic tests, unit tests, subject tests, mock exams, and final exams.</p>
+          </div>
         </div>
       </div>
 
@@ -611,7 +616,7 @@ export default function Assessments() {
           />
         </div>
       ) : (
-        <div className="flex w-fit max-w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex w-fit max-w-full overflow-x-auto rounded-2xl border border-slate-300 bg-white p-1.5 dark:border-slate-700 dark:bg-slate-900">
           <div className="flex min-w-max gap-1">
             {TEST_TYPE_FILTERS.map((filter) => {
               const Icon = filter.icon;
@@ -625,7 +630,7 @@ export default function Assessments() {
                   }}
                   className={cn(
                     'inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-black text-slate-500 transition hover:bg-slate-50 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100',
-                    typeFilter === filter.id && 'bg-blue-600 text-white shadow-sm hover:bg-blue-600 hover:text-white dark:bg-blue-600 dark:text-white dark:hover:bg-blue-600'
+                    typeFilter === filter.id && 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20 hover:bg-transparent hover:text-white dark:text-white dark:hover:text-white'
                   )}
                 >
                   <Icon size={16} />
@@ -651,32 +656,31 @@ export default function Assessments() {
       </div>
 
       {/* Tabs */}
-      <div className="flex w-fit max-w-full overflow-x-auto pb-px custom-scrollbar dark:border-slate-800">
-        <div className="flex gap-6">
-          {[
-            { id: 'available', label: 'Available Tests' },
-            { id: 'results',   label: 'My Results' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                'whitespace-nowrap border-b-2 py-3 text-sm font-bold transition-all',
-                activeTab === tab.id
-                  ? 'border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400'
-                  : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:text-slate-300'
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+      <div className="flex w-fit max-w-full gap-1 overflow-x-auto rounded-2xl bg-slate-100 p-1.5 dark:bg-slate-800/60">
+        {[
+          { id: 'available', label: 'Available Tests', icon: ClipboardList },
+          { id: 'results',   label: 'My Results', icon: Award },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={cn(
+              'inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-bold transition-all',
+              activeTab === tab.id
+                ? 'bg-white text-blue-700 shadow-sm ring-1 ring-slate-200/70 dark:bg-slate-900 dark:text-blue-300 dark:ring-slate-700'
+                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+            )}
+          >
+            <tab.icon size={16} />
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {activeTab === 'available' && (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {filteredAssessments.length === 0 ? (
-             <div className="col-span-full flex flex-col items-center justify-center rounded-[2rem] border border-slate-100 border-dashed bg-white p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+             <div className="col-span-full flex flex-col items-center justify-center rounded-[2rem] border border-dashed border-slate-300 bg-white p-12 text-center dark:border-slate-700 dark:bg-slate-900">
                <ClipboardList className="mb-4 size-12 text-slate-300 dark:text-slate-700" />
                <h3 className="text-lg font-bold text-slate-900 dark:text-white">No available {selectedTypeLabel.toLowerCase()}</h3>
                <p className="mt-1 text-sm text-slate-500">You don't have any pending assessments in this category right now.</p>
@@ -835,7 +839,7 @@ export default function Assessments() {
               <Loader2 className="size-7 animate-spin text-blue-600" />
             </div>
           ) : filteredResults.length === 0 ? (
-            <div className="col-span-full flex flex-col items-center justify-center rounded-[2rem] border border-dashed border-slate-200 bg-white p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="col-span-full flex flex-col items-center justify-center rounded-[2rem] border border-dashed border-slate-300 bg-white p-12 text-center dark:border-slate-700 dark:bg-slate-900">
               <BarChart3 className="mb-4 size-12 text-slate-300 dark:text-slate-700" />
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">No {selectedTypeLabel.toLowerCase()} results yet</h3>
               <p className="mt-1 text-sm text-slate-500">Your teacher hasn't published marks in this category yet.</p>

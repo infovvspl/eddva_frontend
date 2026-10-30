@@ -27,11 +27,19 @@ const statusLabels = {
 };
 
 const statCards = [
-  { id: 'pending', label: 'Pending', icon: AlertCircle },
-  { id: 'submitted', label: 'Submitted', icon: UploadCloud },
-  { id: 'evaluated', label: 'Evaluated', icon: CheckCircle2 },
-  { id: 'overdue', label: 'Overdue', icon: Calendar },
+  { id: 'pending', label: 'Pending', icon: AlertCircle, grad: 'from-amber-400 to-orange-600', circle: 'bg-amber-200/50 dark:bg-amber-500/10', border: 'border-amber-200 hover:border-amber-300 dark:border-amber-900/50', active: 'border-amber-400 ring-2 ring-amber-100 dark:border-amber-600 dark:ring-amber-950' },
+  { id: 'submitted', label: 'Submitted', icon: UploadCloud, grad: 'from-blue-500 to-indigo-600', circle: 'bg-blue-200/50 dark:bg-blue-500/10', border: 'border-blue-200 hover:border-blue-300 dark:border-blue-900/50', active: 'border-blue-400 ring-2 ring-blue-100 dark:border-blue-600 dark:ring-blue-950' },
+  { id: 'evaluated', label: 'Evaluated', icon: CheckCircle2, grad: 'from-emerald-500 to-teal-600', circle: 'bg-emerald-200/50 dark:bg-emerald-500/10', border: 'border-emerald-200 hover:border-emerald-300 dark:border-emerald-900/50', active: 'border-emerald-400 ring-2 ring-emerald-100 dark:border-emerald-600 dark:ring-emerald-950' },
+  { id: 'overdue', label: 'Overdue', icon: Calendar, grad: 'from-rose-500 to-pink-600', circle: 'bg-rose-200/50 dark:bg-rose-500/10', border: 'border-rose-200 hover:border-rose-300 dark:border-rose-900/50', active: 'border-rose-400 ring-2 ring-rose-100 dark:border-rose-600 dark:ring-rose-950' },
 ];
+
+// Left accent bar colour per assignment bucket.
+const BUCKET_BAR = {
+  pending: 'bg-amber-500',
+  submitted: 'bg-blue-500',
+  evaluated: 'bg-emerald-500',
+  overdue: 'bg-rose-500',
+};
 
 /** Resolve the teacher's attachment URL (stored as S3/CDN URL or local uploads). */
 function resolveTeacherFileUrl(filePath) {
@@ -223,15 +231,21 @@ export default function Assignments() {
   return (
     <div className="space-y-6">
       {!isMobile && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">
-              Academic Work
-            </p>
-            <h1 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">Assignments</h1>
-            <p className="mt-1 max-w-2xl text-sm font-medium text-slate-500">
-              View homework from your teachers, download attachments, and upload your work.
-            </p>
+        <div className="relative overflow-hidden rounded-3xl border border-slate-300 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+          <span aria-hidden className="pointer-events-none absolute -right-10 -top-12 size-44 rounded-full bg-amber-100/70 dark:bg-amber-500/10" />
+          <div className="relative flex items-center gap-4">
+            <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 text-white shadow-lg shadow-orange-500/25">
+              <FileText size={26} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-orange-600 dark:text-orange-400">
+                Academic Work
+              </p>
+              <h1 className="mt-1 !text-2xl font-black text-slate-950 dark:text-white">Assignments</h1>
+              <p className="mt-1 max-w-2xl text-sm font-medium text-slate-500">
+                View homework from your teachers, download attachments, and upload your work.
+              </p>
+            </div>
           </div>
         </div>
       )}
@@ -245,19 +259,18 @@ export default function Assignments() {
               type="button"
               onClick={() => setActiveStatus(stat.id)}
               className={cn(
-                'rounded-2xl border bg-white p-4 sm:p-5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:bg-slate-900',
-                activeStatus === stat.id
-                  ? 'border-blue-300 ring-2 ring-blue-100 dark:border-blue-700 dark:ring-blue-950'
-                  : 'border-slate-200 dark:border-slate-800',
+                'relative overflow-hidden rounded-2xl border bg-white p-4 sm:p-5 text-left transition-all hover:-translate-y-0.5 dark:bg-slate-900',
+                activeStatus === stat.id ? stat.active : stat.border,
               )}
             >
-              <div className="flex items-center justify-between gap-3">
-                <div className="grid size-8 sm:size-10 place-items-center rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                  <Icon className="h-4 sm:size-5" />
+              <span aria-hidden className={`pointer-events-none absolute -right-5 -top-5 size-20 rounded-full ${stat.circle}`} />
+              <div className="relative flex items-center justify-between gap-3">
+                <div className={`grid size-9 sm:size-11 place-items-center rounded-xl bg-gradient-to-br text-white shadow-md ${stat.grad}`}>
+                  <Icon className="size-4 sm:size-5" />
                 </div>
                 <p className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-white">{counts[stat.id]}</p>
               </div>
-              <p className="mt-3 sm:mt-5 text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+              <p className="relative mt-3 sm:mt-5 text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
                 {stat.label}
               </p>
             </button>
@@ -265,7 +278,7 @@ export default function Assignments() {
         })}
       </div>
 
-      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:flex-row sm:items-center sm:justify-between sm:p-2">
+      <div className="flex flex-col gap-3 rounded-2xl border border-slate-300 bg-white p-3 dark:border-slate-700 dark:bg-slate-900 sm:flex-row sm:items-center sm:justify-between sm:p-2">
         <div className="flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden -mx-1 px-1 pb-1 sm:pb-0 w-full sm:w-auto">
           {[
             ['all', 'All'],
@@ -279,9 +292,9 @@ export default function Assignments() {
               type="button"
               onClick={() => setActiveStatus(id)}
               className={cn(
-                'shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 text-[10px] font-black uppercase tracking-wider transition sm:px-4 sm:py-2 sm:text-xs',
+                'shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-wider transition sm:px-4 sm:py-2 sm:text-xs',
                 activeStatus === id
-                  ? 'bg-blue-600 text-white shadow-sm'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20'
                   : 'text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800',
               )}
             >
@@ -306,7 +319,7 @@ export default function Assignments() {
       </div>
 
       {filteredAssignments.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-[2rem] border border-slate-100 border-dashed bg-white p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex flex-col items-center justify-center rounded-[2rem] border border-dashed border-slate-300 bg-white p-12 text-center dark:border-slate-700 dark:bg-slate-900">
           <FileText className="mb-4 size-12 text-slate-300 dark:text-slate-700" />
           <h3 className="text-lg font-bold text-slate-900 dark:text-white">No assignments</h3>
           <p className="mt-1 text-sm text-slate-500">
@@ -326,8 +339,9 @@ export default function Assignments() {
             return (
               <div
                 key={assignment.id}
-                className="flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 sm:p-5"
+                className="relative flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-300 bg-white p-4 pl-5 transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 sm:p-5 sm:pl-6"
               >
+                <span aria-hidden className={`absolute inset-y-0 left-0 w-1.5 ${BUCKET_BAR[assignment.bucket] || BUCKET_BAR.pending}`} />
                 <div>
                   {/* Header Row: Title & Details on left, Status Badge on right */}
                   <div className="flex items-start justify-between gap-3">
@@ -464,7 +478,7 @@ export default function Assignments() {
                     <button
                       type="button"
                       onClick={() => openSubmit(assignment)}
-                      className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-blue-600 py-2 text-xs font-bold text-white transition-colors hover:bg-blue-700 shadow-sm"
+                      className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 py-2.5 text-xs font-bold text-white shadow-sm transition hover:from-blue-700 hover:to-indigo-700"
                     >
                       <UploadCloud size={14} />
                       <span>Submit Work</span>

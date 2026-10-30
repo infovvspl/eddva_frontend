@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   TrendingUp,
   CalendarDays,
+  LifeBuoy,
 } from 'lucide-react';
 
 /* ─── helpers ──────────────────────────────────────────────────────────────── */
@@ -57,6 +58,14 @@ const STATUS = {
 function getMeta(status) { return STATUS[normalizeStatus(status)] || null; }
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+// Gradient used on each stat card's icon tile.
+const STAT_GRAD = {
+  Present: 'from-emerald-500 to-teal-600',
+  Absent: 'from-rose-500 to-pink-600',
+  Leave: 'from-amber-400 to-orange-600',
+  'Total Classes': 'from-blue-500 to-indigo-600',
+};
 
 /* ─── component ────────────────────────────────────────────────────────────── */
 export default function Attendance() {
@@ -150,25 +159,37 @@ export default function Attendance() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-2">
 
-      <div className="flex items-center gap-2 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
-        <button
-          onClick={() => setActiveTab('overview')}
-          className={`flex-1 rounded-lg px-4 py-2 text-sm font-bold transition ${activeTab === 'overview' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
-        >
-          Overview
-        </button>
-        <button
-          onClick={() => setActiveTab('issues')}
-          className={`flex-1 rounded-lg px-4 py-2 text-sm font-bold transition ${activeTab === 'issues' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
-        >
-          Issues
-        </button>
+      {/* Compact segmented tabs: full width on phones, only as wide as the tabs from sm up */}
+      <div className="grid w-full grid-cols-2 gap-1 rounded-2xl bg-slate-100 p-1.5 dark:bg-slate-800/60 sm:inline-grid sm:w-auto" role="tablist">
+        {[
+          { id: 'overview', label: 'Overview', icon: CalendarCheck2 },
+          { id: 'issues', label: 'Issues', icon: LifeBuoy },
+        ].map((tab) => {
+          const active = activeTab === tab.id;
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setActiveTab(tab.id)}
+              className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-bold transition-all sm:px-6 ${active
+                ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200/70 dark:bg-slate-900 dark:text-indigo-300 dark:ring-slate-700'
+                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                }`}
+            >
+              <Icon size={16} />
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       {activeTab === 'issues' && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="rounded-3xl border border-slate-300 bg-white p-8 text-center dark:border-slate-700 dark:bg-slate-900">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">Issues & Support</h2>
           <p className="mt-2 text-sm text-slate-500">Report any issues related to Attendance here.</p>
         </div>
@@ -220,7 +241,7 @@ export default function Attendance() {
             </div>
 
             {/* Unified Dashboard Widget Card */}
-            <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm flex flex-col gap-3.5 dark:border-slate-800 dark:bg-slate-900">
+            <div className="rounded-3xl border border-slate-300 bg-white p-4 flex flex-col gap-3.5 dark:border-slate-700 dark:bg-slate-900">
               <div className="flex items-center gap-4">
                 <div className="relative size-16 shrink-0">
                   <svg width={64} height={64} viewBox="0 0 80 80" className="-rotate-90">
@@ -249,7 +270,7 @@ export default function Attendance() {
                 {statCards.map(s => {
                   const Icon = s.Icon;
                   return (
-                    <div key={s.label} className="flex items-center justify-between rounded-xl border border-slate-50/50 bg-slate-50/30 p-2.5 dark:border-slate-800/30 dark:bg-slate-900/30">
+                    <div key={s.label} className={`flex items-center justify-between rounded-xl border p-2.5 ${s.tw.border} ${s.tw.bg} dark:bg-slate-900/40`}>
                       <div className="min-w-0">
                         <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 truncate">{s.label}</p>
                         <p className={`text-base font-black ${s.tw.text} mt-0.5`}>{s.value}</p>
@@ -264,7 +285,7 @@ export default function Attendance() {
             </div>
 
             {/* Monthly Calendar - Day cells grid optimized for mobile grids without text */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="rounded-3xl border border-slate-300 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
               <div className="flex flex-col gap-3">
                 <div>
                   <h2 className="text-sm font-black text-slate-900 dark:text-white">Monthly Calendar</h2>
@@ -323,7 +344,7 @@ export default function Attendance() {
             </div>
 
             {/* Weekly Trend bar chart */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="rounded-3xl border border-slate-300 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="text-sm font-black text-slate-900 dark:text-white">Weekly Trend</h2>
@@ -335,7 +356,7 @@ export default function Attendance() {
               <div className="mt-4 flex items-end gap-2.5">
                 {weeklyTrend.map((w) => {
                   const TRACK = 60;
-                  const barColor = w.pct >= 75 ? 'bg-blue-500' : w.marked ? 'bg-rose-400' : 'bg-slate-100 dark:bg-slate-800';
+                  const barColor = w.pct >= 75 ? 'bg-gradient-to-t from-blue-600 to-indigo-400' : w.marked ? 'bg-rose-400' : 'bg-slate-100 dark:bg-slate-800';
                   const barH = w.marked ? Math.max(4, Math.round((w.pct / 100) * TRACK)) : 4;
                   return (
                     <div key={w.label} className="flex flex-1 flex-col items-center gap-1">
@@ -354,7 +375,7 @@ export default function Attendance() {
             </div>
 
             {/* Recent records timeline */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="rounded-3xl border border-slate-300 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="text-sm font-black text-slate-900 dark:text-white">Recent Records</h2>
@@ -410,13 +431,17 @@ export default function Attendance() {
           <div className="space-y-6">
             {/* ── Header ──────────────────────────────────────────────────────── */}
             <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-black uppercase tracking-widest text-blue-600">
-                  <CalendarCheck2 size={12} />
-                  {monthLabel(selectedMonth)}
+              <div className="flex items-center gap-4">
+                <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25">
+                  <CalendarCheck2 size={26} />
                 </span>
-                <h1 className="mt-2 text-2xl font-black text-slate-900 dark:text-white">Attendance</h1>
-                <p className="mt-1 text-sm font-medium text-slate-500">Track your monthly presence and class records</p>
+                <div className="min-w-0">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-0.5 text-[11px] font-black uppercase tracking-widest text-blue-600 dark:border-blue-900/40 dark:bg-blue-950/30 dark:text-blue-300">
+                    {monthLabel(selectedMonth)}
+                  </span>
+                  <h1 className="mt-1 !text-2xl font-black text-slate-900 dark:text-white">Attendance</h1>
+                  <p className="mt-0.5 text-sm font-medium text-slate-500">Track your monthly presence and class records</p>
+                </div>
               </div>
 
               <div className="flex items-center gap-2">
@@ -453,7 +478,7 @@ export default function Attendance() {
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
 
               {/* Ring card */}
-              <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex flex-col items-center justify-center gap-3 rounded-3xl border border-slate-300 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
                 <div className="relative size-20">
                   <svg width={80} height={80} viewBox="0 0 80 80" className="-rotate-90">
                     <circle cx={40} cy={40} r={32} fill="none" stroke="#f1f5f9" strokeWidth={8} className="dark:stroke-slate-800" />
@@ -478,16 +503,17 @@ export default function Attendance() {
                 return (
                   <div
                     key={s.label}
-                    className={`flex flex-col gap-2.5 rounded-2xl border bg-white p-5 shadow-sm border-t-4 ${s.tw.border.replace('border-', 'border-t-')} dark:bg-slate-900 dark:border-slate-800`}
+                    className={`relative flex flex-col gap-2.5 overflow-hidden rounded-3xl border bg-white p-5 transition-transform hover:-translate-y-0.5 dark:bg-slate-900 ${s.tw.border}`}
                   >
-                    <div className="flex items-center justify-between">
+                    <span aria-hidden className={`pointer-events-none absolute -right-6 -top-6 size-24 rounded-full opacity-70 ${s.tw.bg}`} />
+                    <div className="relative flex items-center justify-between">
                       <p className={`text-[11px] font-black uppercase tracking-widest ${s.tw.text}`}>{s.label}</p>
-                      <div className={`flex size-8 items-center justify-center rounded-xl ${s.tw.bg}`}>
-                        <Icon size={15} className={s.tw.text} />
+                      <div className={`flex size-9 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-md ${STAT_GRAD[s.label] || STAT_GRAD.Present}`}>
+                        <Icon size={16} />
                       </div>
                     </div>
-                    <p className={`text-3xl font-black ${s.tw.text}`}>{s.value}</p>
-                    <p className="text-[11px] font-semibold text-slate-400">days this month</p>
+                    <p className={`relative text-3xl font-black ${s.tw.text}`}>{s.value}</p>
+                    <p className="relative text-[11px] font-semibold text-slate-400">days this month</p>
                   </div>
                 );
               })}
@@ -497,40 +523,42 @@ export default function Attendance() {
             <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
 
               {/* Weekly trend bar chart */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-col rounded-3xl border border-slate-300 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
+                <div className="flex items-center gap-3">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md">
+                    <TrendingUp size={18} />
+                  </span>
                   <div>
                     <h2 className="text-base font-black text-slate-900 dark:text-white">Weekly Trend</h2>
                     <p className="mt-0.5 text-xs font-medium text-slate-400">Attendance rate per week of the month</p>
                   </div>
-                  <TrendingUp size={18} className="text-blue-500" />
                 </div>
 
-                <div className="mt-5 flex items-end gap-3">
+                {/* The chart grows to fill the card so there is no empty gap under it */}
+                <div className="mt-4 flex min-h-[170px] flex-1 items-stretch gap-3 sm:gap-4">
                   {weeklyTrend.map((w) => {
-                    const TRACK = 80;
-                    const barColor = w.pct >= 75 ? 'bg-blue-500' : w.marked ? 'bg-rose-400' : 'bg-slate-100 dark:bg-slate-800';
-                    const barH = w.marked ? Math.max(6, Math.round((w.pct / 100) * TRACK)) : 6;
+                    const barColor = w.pct >= 75 ? 'bg-gradient-to-t from-blue-600 to-indigo-400' : w.marked ? 'bg-gradient-to-t from-rose-500 to-rose-300' : 'bg-slate-200 dark:bg-slate-700';
+                    const barPct = w.marked ? Math.max(4, w.pct) : 3;
                     return (
-                      <div key={w.label} className="flex flex-1 flex-col items-center gap-1">
-                        <span className="min-h-[16px] text-[11px] font-black text-slate-700 dark:text-slate-350">
+                      <div key={w.label} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
+                        <span className="min-h-[18px] text-xs font-black text-slate-800 dark:text-slate-100">
                           {w.marked ? `${w.pct}%` : ''}
                         </span>
-                        <div className="flex w-full flex-col justify-end overflow-hidden rounded-lg border border-slate-100 bg-slate-50 dark:bg-slate-900 dark:border-slate-800" style={{ height: TRACK }}>
-                          <div className={`w-full rounded-t-lg transition-all duration-500 ${barColor}`} style={{ height: barH }} />
+                        <div className="relative flex w-full flex-1 flex-col justify-end overflow-hidden rounded-xl border border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/40">
+                          <div className={`w-full rounded-t-xl transition-all duration-700 ${barColor}`} style={{ height: `${barPct}%` }} />
                         </div>
-                        <span className="mt-1 text-[10px] font-black uppercase tracking-widest text-slate-400">{w.label}</span>
-                        <span className="text-[10px] font-semibold text-slate-300 dark:text-slate-650">{w.attended}/{w.marked}d</span>
+                        <span className="mt-0.5 text-[11px] font-black uppercase tracking-widest text-slate-500">{w.label}</span>
+                        <span className="text-[10px] font-semibold text-slate-400">{w.attended}/{w.marked}d</span>
                       </div>
                     );
                   })}
                 </div>
 
-                <div className="mt-4 flex flex-wrap gap-4 border-t border-slate-100 pt-4 dark:border-slate-850">
+                <div className="mt-4 flex flex-wrap gap-4 border-t border-slate-100 pt-3 dark:border-slate-800">
                   {[
                     { cls: 'bg-blue-500',   label: '≥75% good' },
                     { cls: 'bg-rose-400',   label: '<75% low' },
-                    { cls: 'bg-slate-200 dark:bg-slate-800',  label: 'No classes' },
+                    { cls: 'bg-slate-200 dark:bg-slate-700',  label: 'No classes' },
                   ].map(l => (
                     <span key={l.label} className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
                       <span className={`inline-block size-2.5 rounded-sm ${l.cls}`} />
@@ -541,13 +569,15 @@ export default function Attendance() {
               </div>
 
               {/* Recent records timeline */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                <div className="flex items-start justify-between gap-3">
+              <div className="rounded-3xl border border-slate-300 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
+                <div className="flex items-center gap-3">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-md">
+                    <CalendarDays size={18} />
+                  </span>
                   <div>
                     <h2 className="text-base font-black text-slate-900 dark:text-white">Recent Records</h2>
                     <p className="mt-0.5 text-xs font-medium text-slate-400">Latest marked entries</p>
                   </div>
-                  <CalendarDays size={18} className="text-slate-400" />
                 </div>
 
                 <div className="mt-5 space-y-0">
@@ -557,10 +587,10 @@ export default function Attendance() {
                       <p className="text-sm font-black text-slate-400">No records yet</p>
                       <p className="mt-1 text-xs font-medium text-slate-300">Marked days will appear here</p>
                     </div>
-                  ) : recentRecords.map((item, i) => {
+                  ) : recentRecords.slice(0, 5).map((item, i, list) => {
                     const meta   = getMeta(item.status);
                     const Icon   = meta?.Icon;
-                    const isLast = i === recentRecords.length - 1;
+                    const isLast = i === list.length - 1;
                     return (
                       <div key={item.id || `${item.date}-${item.status}`} className={`relative flex gap-3 ${isLast ? '' : 'pb-4'}`}>
                         {!isLast && (
@@ -597,11 +627,16 @@ export default function Attendance() {
             </div>
 
             {/* ── Monthly calendar ────────────────────────────────────────────── */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="rounded-3xl border border-slate-300 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-base font-black text-slate-900 dark:text-white">Monthly Calendar</h2>
-                  <p className="mt-0.5 text-xs font-medium text-slate-400">Each day coloured by attendance status</p>
+                <div className="flex items-center gap-3">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md">
+                    <CalendarCheck2 size={18} />
+                  </span>
+                  <div>
+                    <h2 className="text-base font-black text-slate-900 dark:text-white">Monthly Calendar</h2>
+                    <p className="mt-0.5 text-xs font-medium text-slate-400">Each day coloured by attendance status</p>
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {Object.entries(STATUS).map(([key, s]) => (
@@ -641,10 +676,10 @@ export default function Attendance() {
                             ? 'border-blue-400 ring-2 ring-blue-100'
                             : isMarked
                             ? `${meta.tw.bg} ${meta.tw.border}`
-                            : 'border-slate-100 bg-white'
+                            : 'border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900'
                         }`}
                       >
-                        <p className={`text-[13px] font-black ${day.isToday ? 'text-blue-600' : 'text-slate-900'}`}>
+                        <p className={`text-[13px] font-black ${day.isToday ? 'text-blue-600' : 'text-slate-900 dark:text-slate-100'}`}>
                           {day.day}
                         </p>
                         {Icon

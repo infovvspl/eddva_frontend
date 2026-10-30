@@ -83,37 +83,52 @@ export default function CareerHome() {
   const weak = (marks ?? []).filter((s) => s.accuracy < 60).map((s) => s.subjectName);
 
   const careerCategories = [
-    { label: 'Science Careers', stream: 'science', icon: GraduationCap, color: 'from-blue-500 to-indigo-500' },
-    { label: 'Commerce Careers', stream: 'commerce', icon: Target, color: 'from-amber-500 to-orange-500' },
-    { label: 'Arts Careers', stream: 'arts', icon: BrainCircuit, color: 'from-rose-500 to-pink-500' },
-    { label: 'Modern Careers', stream: 'any', icon: Sparkles, color: 'from-violet-500 to-purple-500' },
+    { label: 'Science Careers', hint: 'Medicine, tech, research', stream: 'science', icon: GraduationCap, color: 'from-blue-500 to-indigo-600' },
+    { label: 'Commerce Careers', hint: 'Business, finance, law', stream: 'commerce', icon: Target, color: 'from-amber-400 to-orange-600' },
+    { label: 'Arts Careers', hint: 'Design, media, humanities', stream: 'arts', icon: BrainCircuit, color: 'from-rose-500 to-pink-600' },
+    { label: 'Modern Careers', hint: 'Emerging and creative paths', stream: 'any', icon: Sparkles, color: 'from-violet-500 to-purple-600' },
   ];
+
+  const CARD = 'rounded-3xl border border-slate-300 bg-white p-4 sm:p-6 dark:border-slate-700 dark:bg-slate-900';
+  const tile = (grad: string) => `grid size-10 sm:size-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br text-white shadow-md ${grad}`;
+  const primaryBtn = 'inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm transition hover:from-blue-700 hover:to-indigo-700';
 
   return (
     <div className="w-full space-y-4 sm:space-y-6 p-1">
       {/* Header */}
-      <div>
-        <h1 className="flex items-center gap-2 text-xl sm:text-2xl font-black text-slate-900">
-          <Compass className="text-blue-600 size-5 sm:size-6" /> Career Guidance
-        </h1>
-        <p className="mt-0.5 text-xs sm:text-sm font-medium text-slate-500">Discover your strengths and ideal career path</p>
+      <div className="flex items-center gap-3 sm:gap-4">
+        <span className="grid size-11 sm:size-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25">
+          <Compass className="size-5 sm:size-7" />
+        </span>
+        <div className="min-w-0">
+          <h1 className="!text-xl sm:!text-2xl font-black text-slate-900 dark:text-white">Career Guidance</h1>
+          <p className="mt-0.5 text-xs sm:text-sm font-medium text-slate-500">Discover your strengths and ideal career path</p>
+        </div>
       </div>
 
       {/* Explore Careers */}
-      <section className="rounded-xl sm:rounded-2xl border border-slate-100 bg-white p-4 sm:p-5 shadow-sm">
-        <div className="mb-3.5 flex items-center justify-between">
-          <div>
-            <h2 className="text-xs sm:text-sm font-black uppercase tracking-wide text-slate-500">Explore Careers</h2>
-            <p className="text-[10px] sm:text-xs text-slate-400">Browse all career paths</p>
+      <section className={CARD}>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className={tile('from-emerald-500 to-teal-600')}><Compass className="size-5" /></span>
+            <div className="min-w-0">
+              <h2 className="!text-sm sm:!text-base font-black text-slate-900 dark:text-white">Explore Careers</h2>
+              <p className="text-[11px] sm:text-xs font-medium text-slate-500">Browse all career paths</p>
+            </div>
           </div>
-          <button onClick={() => navigate('/school/student/career/explore')} className="text-xs font-bold text-blue-600 hover:underline">View All →</button>
+          <button onClick={() => navigate('/school/student/career/explore')} className="inline-flex shrink-0 items-center gap-1 rounded-full bg-indigo-50 px-3 py-1.5 text-[11px] font-bold text-indigo-600 transition hover:bg-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-300">
+            View All <ChevronRight className="size-3.5" />
+          </button>
         </div>
-        <div className="flex gap-2.5 overflow-x-auto pb-1">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {careerCategories.map((c) => (
             <button key={c.label} onClick={() => navigate(`/school/student/career/explore?stream=${c.stream}`)}
-              className={`flex w-32 sm:w-40 shrink-0 flex-col gap-1.5 sm:gap-2 rounded-xl bg-gradient-to-br ${c.color} p-3.5 sm:p-4 text-left text-white transition hover:opacity-90`}>
-              <c.icon className="size-5 sm:size-6" />
-              <span className="text-xs sm:text-sm font-bold leading-snug">{c.label}</span>
+              className={`group relative flex min-w-0 flex-col gap-2 overflow-hidden rounded-2xl bg-gradient-to-br ${c.color} p-4 text-left text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg`}>
+              <span aria-hidden className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full bg-white/15" />
+              <c.icon className="relative size-6 sm:size-7" />
+              <span className="relative text-sm font-black leading-snug">{c.label}</span>
+              <span className="relative hidden text-[11px] font-medium text-white/85 sm:block">{c.hint}</span>
+              <ChevronRight className="absolute bottom-3 right-3 size-4 text-white/70 transition-transform group-hover:translate-x-0.5" />
             </button>
           ))}
         </div>
@@ -122,18 +137,18 @@ export default function CareerHome() {
       {/* Profiles side-by-side */}
       <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2">
         {/* Section 2 — Interest profile */}
-        <section className="rounded-xl sm:rounded-2xl border border-slate-100 bg-white p-4 sm:p-5 shadow-sm">
+        <section className={CARD}>
           {statusLoading ? (
             <SkeletonBlock className="h-24 w-full" />
           ) : status?.completed ? (
             <div className="flex items-start gap-3 sm:gap-4">
-              <div className="rounded-xl bg-emerald-50 p-2.5 sm:p-3 text-emerald-600"><CheckCircle2 className="size-5 sm:size-6" /></div>
+              <span className={tile('from-emerald-500 to-teal-600')}><CheckCircle2 className="size-5 sm:size-6" /></span>
               <div className="min-w-0 flex-1">
-                <h3 className="text-base sm:text-lg font-bold text-slate-900">Interest Profile Complete</h3>
-                <p className="text-xs sm:text-sm font-semibold text-blue-600 mt-0.5">Your type: {status.hollandCode ? hollandLabel(status.hollandCode) : '—'}</p>
+                <h3 className="!text-base sm:!text-lg font-black text-slate-900 dark:text-white">Interest Profile Complete</h3>
+                <p className="mt-0.5 text-xs sm:text-sm font-semibold text-blue-600 dark:text-blue-300">Your type: {status.hollandCode ? hollandLabel(status.hollandCode) : '—'}</p>
                 {status.completedAt && <p className="mt-0.5 text-[10px] sm:text-xs text-slate-400">Completed {new Date(status.completedAt).toLocaleDateString('en-GB')}</p>}
                 {status.canRetake ? (
-                  <button onClick={() => navigate('/school/student/career/quiz')} className="mt-2 text-xs font-bold text-blue-600 hover:underline">Retake Quiz</button>
+                  <button onClick={() => navigate('/school/student/career/quiz')} className="mt-3 inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-600 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300">Retake Quiz</button>
                 ) : (
                   status.canRetakeAfter && (
                     <CooldownCountdown targetDate={status.canRetakeAfter} onFinish={refreshStatus} />
@@ -143,11 +158,11 @@ export default function CareerHome() {
             </div>
           ) : (
             <div className="flex flex-col items-start gap-3 sm:flex-row sm:gap-4">
-              <div className="rounded-xl bg-blue-50 p-2.5 sm:p-3 text-blue-600"><BrainCircuit className="size-5 sm:size-6" /></div>
+              <span className={tile('from-blue-500 to-indigo-600')}><BrainCircuit className="size-5 sm:size-6" /></span>
               <div className="min-w-0 flex-1">
-                <h3 className="text-base sm:text-lg font-bold text-slate-900">Discover Your Interests</h3>
-                <p className="text-xs sm:text-sm text-slate-500 leading-relaxed mt-0.5">Take a 15-question quiz to help us understand what careers suit your personality.</p>
-                <button onClick={() => navigate('/school/student/career/quiz')} className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-xs sm:text-sm font-bold text-white hover:bg-blue-700">
+                <h3 className="!text-base sm:!text-lg font-black text-slate-900 dark:text-white">Discover Your Interests</h3>
+                <p className="mt-0.5 text-xs sm:text-sm leading-relaxed text-slate-500">Take a 15-question quiz to help us understand what careers suit your personality.</p>
+                <button onClick={() => navigate('/school/student/career/quiz')} className={`mt-3 ${primaryBtn}`}>
                   Start Quiz <ChevronRight className="size-4" />
                 </button>
                 <p className="mt-1.5 text-[10px] sm:text-xs text-slate-400">Takes about 5 minutes</p>
@@ -157,8 +172,11 @@ export default function CareerHome() {
         </section>
 
         {/* Section 1 — Academic snapshot */}
-        <section className="rounded-xl sm:rounded-2xl border border-slate-100 bg-white p-4 sm:p-5 shadow-sm">
-          <h2 className="mb-3 sm:mb-4 text-xs sm:text-sm font-black uppercase tracking-wide text-slate-500">Your Academic Profile</h2>
+        <section className={CARD}>
+          <div className="mb-3 flex items-center gap-3 sm:mb-4">
+            <span className={tile('from-sky-400 to-blue-600')}><GraduationCap className="size-5" /></span>
+            <h2 className="!text-sm sm:!text-base font-black text-slate-900 dark:text-white">Your Academic Profile</h2>
+          </div>
           {marksLoading ? (
             <div className="flex gap-3 overflow-x-auto">
               {Array.from({ length: 4 }).map((_, i) => <SkeletonBlock key={i} className="h-28 w-36 shrink-0" />)}
@@ -171,12 +189,12 @@ export default function CareerHome() {
                 {marks.map((s) => {
                   const pct = Math.round(s.accuracy);
                   return (
-                    <div key={s.subjectName} className="w-28 sm:w-36 shrink-0 rounded-xl border border-slate-100 p-2.5 sm:p-3">
-                      <p className="truncate text-[10px] sm:text-xs font-bold text-slate-655 text-slate-500" title={s.subjectName}>{s.subjectName}</p>
-                      <p className="mt-0.5 text-xl sm:text-2xl font-black text-slate-900">{pct}%</p>
+                    <div key={s.subjectName} className="w-28 sm:w-36 shrink-0 rounded-2xl border border-slate-200 p-3 dark:border-slate-700">
+                      <p className="truncate text-[10px] sm:text-xs font-bold text-slate-500" title={s.subjectName}>{s.subjectName}</p>
+                      <p className="mt-0.5 text-xl sm:text-2xl font-black text-slate-900 dark:text-white">{pct}%</p>
                       <span className={`mt-1 inline-block rounded px-1.5 py-0.5 text-[9px] sm:text-[10px] font-black ${gradeBadge(toLetter(pct))}`}>{toLetter(pct)}</span>
-                      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                        <div className="h-full rounded-full bg-blue-500" style={{ width: `${Math.min(100, pct)}%` }} />
+                      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                        <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500" style={{ width: `${Math.min(100, pct)}%` }} />
                       </div>
                     </div>
                   );
@@ -192,29 +210,34 @@ export default function CareerHome() {
       </div>
 
       {/* Section 3 — Career report */}
-      <section className="rounded-xl sm:rounded-2xl border border-slate-100 bg-white p-4 sm:p-5 shadow-sm">
+      <section className={CARD}>
         {reportLoading ? (
           <SkeletonBlock className="h-24 w-full" />
         ) : report ? (
           <div>
-            <div className="flex items-center gap-2"><Sparkles className="size-4 sm:size-5 text-blue-600" /><h3 className="text-base sm:text-lg font-bold text-slate-900">Your Career Report</h3></div>
-            <p className="mt-0.5 text-[10px] sm:text-xs text-slate-400">Last generated {new Date(report.generatedAt).toLocaleDateString('en-GB')}</p>
-            <div className="mt-3 flex flex-wrap gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-3">
+              <span className={tile('from-violet-500 to-purple-600')}><Sparkles className="size-5" /></span>
+              <div>
+                <h3 className="!text-base sm:!text-lg font-black text-slate-900 dark:text-white">Your Career Report</h3>
+                <p className="text-[10px] sm:text-xs text-slate-400">Last generated {new Date(report.generatedAt).toLocaleDateString('en-GB')}</p>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-1.5 sm:gap-2">
               {report.topCareers.slice(0, 3).map((c) => (
-                <span key={c.careerId} className="rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">{c.title} {c.fitScore}%</span>
+                <span key={c.careerId} className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-300">{c.title} {c.fitScore}%</span>
               ))}
             </div>
-            <button onClick={() => navigate('/school/student/career/report')} className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs sm:text-sm font-bold text-white hover:bg-blue-700">
+            <button onClick={() => navigate('/school/student/career/report')} className={`mt-4 ${primaryBtn}`}>
               View Full Report <ChevronRight className="size-4" />
             </button>
           </div>
         ) : status?.completed ? (
           <div className="flex flex-col items-start gap-3 sm:flex-row sm:gap-4">
-            <div className="rounded-xl bg-violet-50 p-2.5 sm:p-3 text-violet-600"><Sparkles className="size-5 sm:size-6" /></div>
+            <span className={tile('from-violet-500 to-purple-600')}><Sparkles className="size-5 sm:size-6" /></span>
             <div className="min-w-0 flex-1">
-              <h3 className="text-base sm:text-lg font-bold text-slate-900">Generate Your Career Report</h3>
-              <p className="text-xs sm:text-sm text-slate-500 leading-relaxed mt-0.5">Our AI will analyse your marks, test performance, and interest profile to suggest the best career paths for you.</p>
-              <button onClick={() => navigate('/school/student/career/report')} className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-xs sm:text-sm font-bold text-white hover:bg-blue-700">
+              <h3 className="!text-base sm:!text-lg font-black text-slate-900 dark:text-white">Generate Your Career Report</h3>
+              <p className="mt-0.5 text-xs sm:text-sm leading-relaxed text-slate-500">Our AI will analyse your marks, test performance, and interest profile to suggest the best career paths for you.</p>
+              <button onClick={() => navigate('/school/student/career/report')} className={`mt-3 ${primaryBtn}`}>
                 Generate Report <ChevronRight className="size-4" />
               </button>
               <p className="mt-1.5 text-[10px] sm:text-xs text-slate-400">Powered by EDVA AI</p>
@@ -222,11 +245,11 @@ export default function CareerHome() {
           </div>
         ) : (
           <div className="flex items-start gap-3 opacity-80 sm:gap-4">
-            <div className="rounded-xl bg-slate-100 p-2.5 sm:p-3 text-slate-400"><Lock className="size-5 sm:size-6" /></div>
+            <span className="grid size-10 sm:size-11 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-400 dark:bg-slate-800"><Lock className="size-5 sm:size-6" /></span>
             <div className="min-w-0 flex-1">
-              <h3 className="text-base sm:text-lg font-bold text-slate-700">Career Report</h3>
-              <p className="text-xs sm:text-sm text-slate-500 leading-relaxed mt-0.5">Complete the interest quiz first to unlock your personalised career report.</p>
-              <button disabled className="mt-3 cursor-not-allowed rounded-xl bg-slate-200 px-3.5 py-2 text-xs sm:text-sm font-bold text-slate-500">Complete Quiz First</button>
+              <h3 className="!text-base sm:!text-lg font-black text-slate-700 dark:text-slate-200">Career Report</h3>
+              <p className="mt-0.5 text-xs sm:text-sm leading-relaxed text-slate-500">Complete the interest quiz first to unlock your personalised career report.</p>
+              <button disabled className="mt-3 cursor-not-allowed rounded-xl bg-slate-200 px-3.5 py-2 text-xs sm:text-sm font-bold text-slate-500 dark:bg-slate-800">Complete Quiz First</button>
             </div>
           </div>
         )}

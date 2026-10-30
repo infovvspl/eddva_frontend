@@ -77,7 +77,7 @@ function DoubtCard({ doubt, onHelpful, escalating }) {
   const [viewMode, setViewMode] = useState('brief');
 
   return (
-    <article className="relative overflow-hidden rounded-xl sm:rounded-2xl border border-slate-100 bg-white p-4 pl-5 sm:p-5 sm:pl-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700">
+    <article className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-300 bg-white p-4 pl-5 sm:p-5 sm:pl-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
       <span aria-hidden className={cn('absolute inset-y-0 left-0 w-1', status.bar)} />
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
@@ -437,13 +437,16 @@ export default function Doubts() {
           <button
             type="button"
             onClick={() => setView('list')}
-            className="mt-1 flex size-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+            className="mt-1 flex size-10 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
             aria-label="Back to my doubts"
           >
             <ArrowLeft className="size-5" />
           </button>
+          <span className="hidden size-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/25 sm:grid">
+            <BrainCircuit className="size-7" />
+          </span>
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl font-black text-slate-900 dark:text-white">Ask a Doubt</h1>
+            <h1 className="!text-2xl font-black text-slate-900 dark:text-white">Ask a Doubt</h1>
             <p className="mt-1 text-sm font-medium text-slate-500">
               Get instant help from AI or send your question to your subject teacher.
             </p>
@@ -477,7 +480,7 @@ export default function Doubts() {
           </div>
         )}
 
-        <section className="rounded-2xl sm:rounded-[2rem] border border-slate-100 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <section className="rounded-3xl border border-slate-300 bg-white p-4 sm:p-6 dark:border-slate-700 dark:bg-slate-900">
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Subject (optional)</label>
@@ -516,7 +519,7 @@ export default function Doubts() {
           onChange={(e) => setQuestion(e.target.value)}
           rows={4}
           placeholder="Describe what you are stuck on (text or image, min. 10 characters if text only)..."
-          className="mt-1 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-medium text-slate-900 ring-0 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+          className="mt-1 w-full resize-none rounded-2xl border border-slate-300 bg-slate-50 p-4 text-sm font-medium text-slate-900 ring-0 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
         />
 
         <div className="mt-3">
@@ -556,7 +559,7 @@ export default function Doubts() {
                 type="button"
                 disabled={!canSubmit}
                 onClick={() => submit(false)}
-                className="inline-flex h-10 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-indigo-600 px-5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-slate-900 sm:w-auto"
+                className="inline-flex h-10 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:from-indigo-700 hover:to-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-slate-900 sm:w-auto"
               >
                 {submittingTo === 'ai' ? <Loader2 className="size-4 animate-spin" /> : <BrainCircuit className="size-4" />}
                 Ask AI Tutor
@@ -583,17 +586,22 @@ export default function Doubts() {
   return (
     <div className="relative space-y-6 pb-20">
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white">My Doubts</h1>
-          <p className="mt-1 text-sm font-medium text-slate-500">
-            Track your questions and teacher replies.
-          </p>
-          {classBadge && (
-            <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-200">
-              <span className="size-1.5 rounded-full bg-blue-500" />
-              {classBadge}
+        <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/25 sm:size-14">
+            <HelpCircle className="size-5 sm:size-7" />
+          </span>
+          <div className="min-w-0">
+            <h1 className="!text-2xl font-black text-slate-900 dark:text-white">My Doubts</h1>
+            <p className="mt-0.5 text-sm font-medium text-slate-500">
+              Track your questions and teacher replies.
             </p>
-          )}
+            {classBadge && (
+              <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-200">
+                <span className="size-1.5 rounded-full bg-blue-500" />
+                {classBadge}
+              </p>
+            )}
+          </div>
         </div>
         <button
           type="button"
@@ -659,7 +667,7 @@ export default function Doubts() {
       )}
 
       {doubts.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-gradient-to-b from-white to-slate-50 p-12 text-center shadow-sm dark:border-slate-800 dark:from-slate-900 dark:to-slate-900">
+        <div className="rounded-3xl border border-dashed border-slate-300 bg-gradient-to-b from-white to-slate-50 p-12 text-center dark:border-slate-700 dark:from-slate-900 dark:to-slate-900">
           <span className="mx-auto flex size-20 items-center justify-center rounded-3xl bg-gradient-to-br from-blue-50 to-indigo-100 text-blue-400 dark:from-blue-950/40 dark:to-indigo-950/40">
             <HelpCircle className="size-10" />
           </span>
@@ -675,7 +683,7 @@ export default function Doubts() {
           </button>
         </div>
       ) : shownDoubts.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-gradient-to-b from-white to-slate-50 p-12 text-center shadow-sm dark:border-slate-800 dark:from-slate-900 dark:to-slate-900">
+        <div className="rounded-3xl border border-dashed border-slate-300 bg-gradient-to-b from-white to-slate-50 p-12 text-center dark:border-slate-700 dark:from-slate-900 dark:to-slate-900">
           <span className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 text-slate-400 dark:from-slate-800 dark:to-slate-800">
             <HelpCircle className="size-8" />
           </span>

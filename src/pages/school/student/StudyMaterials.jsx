@@ -568,26 +568,32 @@ export default function StudyMaterials() {
       <div className="space-y-6 sm:space-y-8">
         {/* Header */}
         {!isMobile && (
-          <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:flex-row md:items-center md:justify-between">
-            <div>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
-                <Tag size={12} /> Topic Overview
+          <div className="relative flex flex-col gap-4 overflow-hidden rounded-3xl border border-slate-300 bg-white p-6 dark:border-slate-700 dark:bg-slate-900 md:flex-row md:items-center md:justify-between">
+            <span aria-hidden className="pointer-events-none absolute -right-8 -top-10 size-36 rounded-full bg-indigo-100/70 dark:bg-indigo-500/10" />
+            <div className="relative flex items-start gap-4">
+              <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-md">
+                <Tag size={22} />
               </span>
-              <h2 className="mt-2 text-xl font-black text-slate-900 dark:text-white">{selectedTopic}</h2>
-              <p className="mt-1 text-xs font-semibold text-slate-400">
-                Chapter: {selectedChapter} · Subject: {selectedSubject}
-              </p>
+              <div className="min-w-0">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
+                  Topic Overview
+                </span>
+                <h2 className="mt-2 !text-xl font-black text-slate-900 dark:text-white">{selectedTopic}</h2>
+                <p className="mt-1 text-xs font-semibold text-slate-400">
+                  Chapter: {selectedChapter} · Subject: {selectedSubject}
+                </p>
+              </div>
             </div>
-            <div className="flex shrink-0 items-center gap-3">
-              <span className="text-xs font-bold text-slate-400">
-                Total resources: <span className="font-black text-slate-800 dark:text-slate-200">{unfilteredTopicMaterials.length}</span>
+            <div className="relative flex shrink-0 items-center gap-3">
+              <span className="rounded-2xl border border-emerald-200 bg-emerald-50/60 px-4 py-2 text-xs font-bold text-slate-500 dark:border-emerald-900/50 dark:bg-emerald-950/20">
+                Total resources: <span className="text-base font-black text-slate-800 dark:text-slate-100">{unfilteredTopicMaterials.length}</span>
               </span>
             </div>
           </div>
         )}
 
         {/* Search & Navigation Card */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="rounded-2xl border border-slate-300 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
           <div className="flex flex-wrap items-center gap-3">
             {/* Search */}
             <div className="relative flex-1 min-w-[180px] max-w-xs">
@@ -643,7 +649,7 @@ export default function StudyMaterials() {
                   onClick={() => setSelectedType(type.value)}
                   className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all duration-200 border flex items-center gap-1.5 shrink-0 snap-start ${
                     isSelected
-                      ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-500/20'
+                      ? 'border-transparent bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20'
                       : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 hover:border-slate-300'
                   }`}
                 >
@@ -669,8 +675,10 @@ export default function StudyMaterials() {
         {/* Videos Section */}
         {videoItems.length > 0 && (
           <div className="space-y-4">
-            <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
-              <PlayCircle size={20} className="text-rose-500" />
+            <div className="flex items-center gap-3 border-b border-slate-200 pb-3 dark:border-slate-800">
+              <span className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-md">
+                <PlayCircle size={18} />
+              </span>
               <h3 className="text-sm font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Videos ({videoItems.length})</h3>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -684,8 +692,10 @@ export default function StudyMaterials() {
         {/* Animations Section */}
         {animationItems.length > 0 && (
           <div className="space-y-4">
-            <div className="flex items-center gap-2 border-b border-purple-200 pb-2">
-              <Clapperboard size={20} className="text-purple-500" />
+            <div className="flex items-center gap-3 border-b border-purple-200 pb-3 dark:border-slate-800">
+              <span className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-purple-500 to-fuchsia-600 text-white shadow-md">
+                <Clapperboard size={18} />
+              </span>
               <h3 className="text-sm font-black uppercase tracking-wider text-purple-700 dark:text-purple-300">Animations ({animationItems.length})</h3>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -699,8 +709,10 @@ export default function StudyMaterials() {
         {/* Notes & Study Materials Section */}
         {materialItems.length > 0 && (
           <div className="space-y-4">
-            <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
-              <FileText size={20} className="text-blue-500" />
+            <div className="flex items-center gap-3 border-b border-slate-200 pb-3 dark:border-slate-800">
+              <span className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md">
+                <FileText size={18} />
+              </span>
               <h3 className="text-sm font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Notes & PDFs ({materialItems.length})</h3>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -714,8 +726,10 @@ export default function StudyMaterials() {
         {/* Practice & Tasks Section */}
         {practiceItems.length > 0 && (
           <div className="space-y-4">
-            <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
-              <ClipboardList size={20} className="text-violet-500" />
+            <div className="flex items-center gap-3 border-b border-slate-200 pb-3 dark:border-slate-800">
+              <span className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-md">
+                <ClipboardList size={18} />
+              </span>
               <h3 className="text-sm font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Practice & Tasks ({practiceItems.length})</h3>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -763,13 +777,18 @@ export default function StudyMaterials() {
           )}
         </div>
       ) : (
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">
-                <Library size={14} /> Academic Resources
+        <section className="relative overflow-hidden rounded-3xl border border-slate-300 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+          <span aria-hidden className="pointer-events-none absolute -right-10 -top-12 size-44 rounded-full bg-indigo-100/70 dark:bg-indigo-500/10" />
+          <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-start gap-4">
+              <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25">
+                <Library size={26} />
+              </span>
+              <div className="min-w-0">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">
+                Academic Resources
               </p>
-              <h1 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">Study Materials</h1>
+              <h1 className="mt-1 !text-2xl font-black text-slate-950 dark:text-white">Study Materials</h1>
               <p className="mt-1 max-w-2xl text-sm font-medium text-slate-500 dark:text-slate-400">
                 {selectedTopic
                   ? `Explore resources for ${selectedTopic}.`
@@ -779,12 +798,13 @@ export default function StudyMaterials() {
                       ? `Browse chapters and learning resources for ${selectedSubject}.`
                       : 'Browse notes, videos, presentations, practice resources, and teacher-shared files by subject.'}
               </p>
+              </div>
             </div>
 
             <div className="flex items-center gap-3 w-full lg:w-auto shrink-0">
               <div className="grid grid-cols-2 gap-3 w-full lg:w-auto lg:min-w-[380px]">
-                <StatChip icon={<GraduationCap size={17} />} label="Class" value={`${className} · Sec ${sectionName}`} />
-                <StatChip icon={<BookOpen size={17} />} label="Resources" value={`${scopedResources.count} ${scopedResources.scope}`} />
+                <StatChip tone="blue" icon={<GraduationCap size={17} />} label="Class" value={`${className} · Sec ${sectionName}`} />
+                <StatChip tone="emerald" icon={<BookOpen size={17} />} label="Resources" value={`${scopedResources.count} ${scopedResources.scope}`} />
               </div>
               {selectedSubject && (
                 <button
@@ -965,23 +985,25 @@ function SubjectCard({ name, stats, color, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-3.5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 sm:p-5 w-full"
+      className="group relative overflow-hidden rounded-3xl border border-slate-300 bg-white p-3.5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 sm:p-5 w-full"
     >
       {/* Top accent strip */}
-      <div className="absolute inset-x-0 top-0 h-1 rounded-t-2xl" style={{ background: `linear-gradient(90deg, ${color.from}, ${color.to})` }} />
+      <div className="absolute inset-x-0 top-0 h-1.5" style={{ background: `linear-gradient(90deg, ${color.from}, ${color.to})` }} />
+      {/* Tinted corner circle */}
+      <span aria-hidden className="pointer-events-none absolute -right-8 -top-8 size-24 rounded-full opacity-70 sm:size-28" style={{ background: color.light }} />
 
       <div className="flex items-start justify-between gap-2 sm:gap-3">
         <div
-          className="flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl shadow-sm"
+          className="relative flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-2xl shadow-md"
           style={{ background: `linear-gradient(135deg, ${color.from}, ${color.to})` }}
         >
           <BookMarked size={18} className="text-white sm:size-5" />
         </div>
         <span
-          className="hidden sm:inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-black transition group-hover:opacity-80"
+          className="relative hidden sm:inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-black transition group-hover:gap-2"
           style={{ background: color.light, color: color.text }}
         >
-          Open
+          Open <ArrowRight size={13} />
         </span>
       </div>
 
@@ -1003,8 +1025,9 @@ function ChapterCard({ chapterName, topicCount, materialCount, color, onClick, i
     <button
       type="button"
       onClick={onClick}
-      className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-3.5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 sm:p-5"
+      className="group relative overflow-hidden rounded-3xl border border-slate-300 bg-white p-3.5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 sm:p-5"
     >
+      <span aria-hidden className="pointer-events-none absolute -right-8 -top-8 size-24 rounded-full opacity-70" style={{ background: color.light }} />
       {/* Decorative vertical strip */}
       <div
         className="absolute left-0 inset-y-0 w-1 sm:w-1.5 transition-all duration-300 group-hover:w-2 sm:group-hover:w-2.5"
@@ -1014,8 +1037,8 @@ function ChapterCard({ chapterName, topicCount, materialCount, color, onClick, i
       <div className="pl-1.5 sm:pl-3 flex flex-col h-full justify-between gap-3 sm:gap-4">
         <div>
           <span
-            className="inline-flex items-center justify-center size-7 sm:size-8 rounded-lg text-[10px] sm:text-xs font-black mb-2 sm:mb-3"
-            style={{ backgroundColor: color.light, color: color.text }}
+            className="relative inline-flex items-center justify-center size-8 sm:size-9 rounded-xl text-xs sm:text-sm font-black mb-2 sm:mb-3 text-white shadow-md"
+            style={{ background: `linear-gradient(135deg, ${color.from}, ${color.to})` }}
           >
             {index + 1}
           </span>
@@ -1050,12 +1073,13 @@ function TopicCard({ topicName, materialCount, hasVideo, hasMaterial, hasPractic
     <button
       type="button"
       onClick={onClick}
-      className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-3.5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 sm:p-5"
+      className="group relative overflow-hidden rounded-3xl border border-slate-300 bg-white p-3.5 pl-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 sm:p-5 sm:pl-6"
     >
+      <span aria-hidden className="absolute inset-y-0 left-0 w-1.5" style={{ background: `linear-gradient(to bottom, ${color.from}, ${color.to})` }} />
       <div className="flex flex-col h-full justify-between gap-3 sm:gap-4">
         <div>
           <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
-            <div className="flex size-6 sm:size-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+            <div className="flex size-7 sm:size-8 items-center justify-center rounded-lg text-white shadow-sm" style={{ background: `linear-gradient(135deg, ${color.from}, ${color.to})` }}>
               <Tag size={12} className="sm:size-3.5" />
             </div>
             <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400">
@@ -1090,10 +1114,16 @@ function Pill({ label, color }) {
   );
 }
 
-function StatChip({ icon, label, value }) {
+const STAT_TONES = {
+  blue: { box: 'border-blue-200 bg-blue-50/60 dark:border-blue-900/50 dark:bg-blue-950/20', icon: 'from-blue-500 to-indigo-600' },
+  emerald: { box: 'border-emerald-200 bg-emerald-50/60 dark:border-emerald-900/50 dark:bg-emerald-950/20', icon: 'from-emerald-500 to-teal-600' },
+};
+
+function StatChip({ icon, label, value, tone = 'blue' }) {
+  const t = STAT_TONES[tone] || STAT_TONES.blue;
   return (
-    <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400">{icon}</div>
+    <div className={`flex min-w-0 items-center gap-3 rounded-2xl border px-4 py-3 ${t.box}`}>
+      <div className={`flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-md ${t.icon}`}>{icon}</div>
       <div>
         <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">{label}</p>
         <p className="truncate text-sm font-black text-slate-900 dark:text-white">{value}</p>
@@ -1124,14 +1154,14 @@ function MaterialCard({ m, onView }) {
 
   return (
     <div
-      className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 sm:p-5"
+      className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-300 bg-white p-3.5 transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 sm:p-5"
     >
       {/* Top accent strip */}
       <div className={`absolute inset-x-0 top-0 h-1.5 ${meta.dot}`} />
 
       <div>
         <div className="flex items-center justify-between gap-2 mb-2.5 sm:mb-3">
-          <div className={`flex size-8 sm:size-9 shrink-0 items-center justify-center rounded-xl ${meta.bg} ${meta.color}`}>
+          <div className={`flex size-9 sm:size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-md ${meta.grad}`}>
             <TypeIcon className="size-4 sm:size-5" />
           </div>
 
@@ -1211,7 +1241,7 @@ function MaterialCard({ m, onView }) {
 
 function EmptyMaterials({ schoolClassName }) {
   return (
-    <div className="rounded-[2rem] border border-dashed border-slate-200 bg-white py-20 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div className="rounded-[2rem] border border-dashed border-slate-300 bg-white py-20 text-center dark:border-slate-700 dark:bg-slate-900">
       <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800">
         <BookOpen size={28} className="text-slate-300" />
       </div>

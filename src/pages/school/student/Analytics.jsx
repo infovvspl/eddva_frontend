@@ -146,21 +146,24 @@ export default function Analytics() {
   return (
     <div className="w-full space-y-4 px-3 pb-20 sm:space-y-6 sm:px-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-            <BarChart3 className="text-indigo-600 size-5 sm:size-6" /> Performance Analytics
-          </h1>
-          <p className="mt-0.5 text-xs sm:text-sm font-medium text-slate-500">Track your learning progress and get AI insights.</p>
+        <div className="flex items-center gap-3 sm:gap-4">
+          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/25 sm:size-14">
+            <BarChart3 className="size-5 sm:size-7" />
+          </span>
+          <div className="min-w-0">
+            <h1 className="!text-xl font-black text-slate-900 dark:text-white sm:!text-2xl">Performance Analytics</h1>
+            <p className="mt-0.5 text-xs sm:text-sm font-medium text-slate-500">Track your learning progress and get AI insights.</p>
+          </div>
         </div>
         {performance?.profile && (
-          <div className="rounded-lg sm:rounded-xl border border-slate-200 bg-white px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 w-fit">
+          <div className="w-fit rounded-full border border-indigo-200 bg-indigo-50 px-3.5 py-1.5 text-xs sm:text-sm font-bold text-indigo-700 dark:border-indigo-900/50 dark:bg-indigo-950/30 dark:text-indigo-300">
             {[performance.profile.class_name, performance.profile.section_name].filter(Boolean).join(' - ')}
           </div>
         )}
       </div>
 
       {(!performance || performance.questionsAttempted === 0) && !loading ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl sm:rounded-[2rem] border border-slate-100 border-dashed bg-white p-8 sm:p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white p-8 sm:p-12 text-center dark:border-slate-700 dark:bg-slate-900">
           <Activity className="mb-4 size-10 sm:size-12 text-slate-300 dark:text-slate-700" />
           <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">No analytics available</h3>
           <p className="mt-1 text-xs sm:text-sm text-slate-500">Your analytics will appear after your teacher publishes assessment results.</p>
@@ -170,39 +173,44 @@ export default function Analytics() {
           
           {/* Key Metrics */}
           <div className="md:col-span-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className="flex flex-col rounded-2xl sm:rounded-[2rem] border border-slate-100 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <Target className="mb-1.5 size-5 sm:size-6 text-blue-500" />
-              <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">Accuracy</p>
-              <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-0.5">{performance?.overallAccuracy || 0}%</p>
+            <div className="relative flex flex-col overflow-hidden rounded-3xl border bg-white p-4 sm:p-6 transition-transform hover:-translate-y-0.5 dark:bg-slate-900 border-blue-200 hover:border-blue-300 dark:border-blue-900/50">
+              <span aria-hidden className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full bg-blue-200/50 dark:bg-blue-500/10" />
+              <span className="relative mb-2.5 grid size-9 place-items-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md sm:size-11"><Target className="size-4 sm:size-5" /></span>
+              <p className="relative text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">Accuracy</p>
+              <p className="relative text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-0.5">{performance?.overallAccuracy || 0}%</p>
             </div>
             
-            <div className="flex flex-col rounded-2xl sm:rounded-[2rem] border border-slate-100 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <TrendingUp className="mb-1.5 size-5 sm:size-6 text-emerald-500" />
-              <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">Practiced</p>
-              <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-0.5">{performance?.questionsAttempted || 0}</p>
+            <div className="relative flex flex-col overflow-hidden rounded-3xl border bg-white p-4 sm:p-6 transition-transform hover:-translate-y-0.5 dark:bg-slate-900 border-emerald-200 hover:border-emerald-300 dark:border-emerald-900/50">
+              <span aria-hidden className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full bg-emerald-200/50 dark:bg-emerald-500/10" />
+              <span className="relative mb-2.5 grid size-9 place-items-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md sm:size-11"><TrendingUp className="size-4 sm:size-5" /></span>
+              <p className="relative text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">Practiced</p>
+              <p className="relative text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-0.5">{performance?.questionsAttempted || 0}</p>
             </div>
             
-            <div className="flex flex-col rounded-2xl sm:rounded-[2rem] border border-slate-100 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <Clock className="mb-1.5 size-5 sm:size-6 text-amber-500" />
-              <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">Study Time</p>
-              <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-0.5">
+            <div className="relative flex flex-col overflow-hidden rounded-3xl border bg-white p-4 sm:p-6 transition-transform hover:-translate-y-0.5 dark:bg-slate-900 border-amber-200 hover:border-amber-300 dark:border-amber-900/50">
+              <span aria-hidden className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full bg-amber-200/50 dark:bg-amber-500/10" />
+              <span className="relative mb-2.5 grid size-9 place-items-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-600 text-white shadow-md sm:size-11"><Clock className="size-4 sm:size-5" /></span>
+              <p className="relative text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">Study Time</p>
+              <p className="relative text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-0.5">
                 {Math.floor((performance?.totalTimeSpentSeconds || 0) / 3600)}h
               </p>
             </div>
             
-            <div className="flex flex-col rounded-2xl sm:rounded-[2rem] border border-slate-100 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <Activity className="mb-1.5 size-5 sm:size-6 text-rose-500" />
-              <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">Streak</p>
-              <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-0.5">{performance?.streakDays || 0} days</p>
+            <div className="relative flex flex-col overflow-hidden rounded-3xl border bg-white p-4 sm:p-6 transition-transform hover:-translate-y-0.5 dark:bg-slate-900 border-rose-200 hover:border-rose-300 dark:border-rose-900/50">
+              <span aria-hidden className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full bg-rose-200/50 dark:bg-rose-500/10" />
+              <span className="relative mb-2.5 grid size-9 place-items-center rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-md sm:size-11"><Activity className="size-4 sm:size-5" /></span>
+              <p className="relative text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">Streak</p>
+              <p className="relative text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-0.5">{performance?.streakDays || 0} days</p>
             </div>
           </div>
 
           {/* Improvement Metrics */}
-          <div className="md:col-span-3 rounded-2xl sm:rounded-[2rem] border border-slate-100 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="md:col-span-3 rounded-3xl border border-slate-300 bg-white p-4 sm:p-6 dark:border-slate-700 dark:bg-slate-900">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-              <h2 className="flex items-center gap-2 text-base sm:text-lg font-black text-slate-900 dark:text-white">
-                <TrendingUp className="size-5 sm:size-6 text-emerald-600" /> Improvement Metrics
-              </h2>
+              <div className="flex items-center gap-3">
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-fuchsia-500 to-purple-600 text-white shadow-md"><TrendingUp size={19} /></span>
+                <h2 className="!text-base font-black text-slate-900 dark:text-white sm:!text-lg">Improvement Metrics</h2>
+              </div>
               {(() => {
                 const delta = scoreTrendDelta(performance?.scoreTrend);
                 if (delta === null) return null;
@@ -221,17 +229,21 @@ export default function Analytics() {
 
           <div className="md:col-span-2 space-y-4 sm:space-y-6">
             {/* Subject Mastery */}
-            <div className="rounded-2xl sm:rounded-[2rem] border border-slate-100 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <h2 className="mb-4 sm:mb-6 text-base sm:text-lg font-black text-slate-900 dark:text-white">Subject Mastery</h2>
+            <div className="rounded-3xl border border-slate-300 bg-white p-4 sm:p-6 dark:border-slate-700 dark:bg-slate-900">
+              <div className="mb-4 flex items-center gap-3 sm:mb-6">
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-sky-400 to-blue-600 text-white shadow-md"><BarChart3 size={19} /></span>
+                <h2 className="!text-base font-black text-slate-900 dark:text-white sm:!text-lg">Subject Mastery</h2>
+              </div>
               
               <SubjectMasteryChart data={currentClassSubjectMastery} height={isMobile ? 280 : 320} compact={isMobile} />
             </div>
 
             {/* Class Cards */}
             <div className="space-y-4">
-              <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4 flex items-center gap-2">
-                <GraduationCap className="text-indigo-600 size-4" /> Academic Report Cards
-              </h3>
+              <div className="mb-4 flex items-center gap-3">
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-md"><GraduationCap size={19} /></span>
+                <h3 className="!text-base font-black text-slate-900 dark:text-white sm:!text-lg">Academic Report Cards</h3>
+              </div>
               {Object.keys(resultsByClass).length > 0 ? (
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,17rem),1fr))] gap-4 sm:gap-6">
                   {Object.entries(resultsByClass).map(([classKey, results]) => {
@@ -248,7 +260,7 @@ export default function Analytics() {
                       <GlassCard
                         key={classKey}
                         onClick={() => navigate(`/school/student/analytics/report-card?class=${encodeURIComponent(classNameVal)}&year=${encodeURIComponent(academicYearVal)}`)}
-                        className="group relative cursor-pointer p-5 sm:p-6 rounded-3xl border border-slate-200/85 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 flex flex-col justify-between gap-4 min-h-48 h-auto min-w-0 w-full active:scale-[0.99] student-report-classes__card"
+                        className="group relative cursor-pointer p-5 sm:p-6 rounded-3xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 flex flex-col justify-between gap-4 min-h-48 h-auto min-w-0 w-full active:scale-[0.99] student-report-classes__card"
                       >
                         <div className="min-w-0 space-y-2">
                           <div className="flex justify-between items-start gap-2">
@@ -285,17 +297,18 @@ export default function Analytics() {
                   })}
                 </div>
               ) : (
-                <div className="p-8 text-center border border-dashed rounded-2xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+                <div className="p-8 text-center border border-dashed rounded-3xl bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700">
                   <p className="text-xs font-bold text-slate-400">No report cards available yet.</p>
                 </div>
               )}
             </div>
             
             {/* AI Insights */}
-            <div className="rounded-2xl sm:rounded-[2rem] border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white p-4 sm:p-6 shadow-sm dark:border-indigo-900/30 dark:from-indigo-950/20 dark:to-slate-900">
-              <h2 className="mb-3 text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <BrainCircuit className="text-indigo-600 size-5 sm:size-6" /> AI Learning Insights
-              </h2>
+            <div className="rounded-3xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-4 sm:p-6 dark:border-indigo-900/40 dark:from-indigo-950/20 dark:to-slate-900">
+              <div className="mb-3 flex items-center gap-3">
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-md"><BrainCircuit size={19} /></span>
+                <h2 className="!text-base font-black text-slate-900 dark:text-white sm:!text-lg">AI Learning Insights</h2>
+              </div>
               
               {insights?.summary ? (
                 <p className="text-xs sm:text-sm leading-relaxed text-slate-700 dark:text-slate-300">
@@ -309,17 +322,18 @@ export default function Analytics() {
 
           <div className="space-y-4 sm:space-y-6">
             {/* Weak Areas */}
-            <div className="rounded-2xl sm:rounded-[2rem] border border-slate-100 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <h2 className="mb-3.5 text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <AlertTriangle className="text-rose-500 size-5 sm:size-6" /> Focus Areas
-              </h2>
+            <div className="rounded-3xl border border-slate-300 bg-white p-4 sm:p-6 dark:border-slate-700 dark:bg-slate-900">
+              <div className="mb-3.5 flex items-center gap-3">
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-md"><AlertTriangle size={19} /></span>
+                <h2 className="!text-base font-black text-slate-900 dark:text-white sm:!text-lg">Focus Areas</h2>
+              </div>
               
               <div className="space-y-2.5 sm:space-y-3">
                 {performance?.weakTopics?.length === 0 ? (
                   <p className="text-xs sm:text-sm text-slate-500">No weak areas identified yet. Keep up the good work!</p>
                 ) : (
                   performance?.weakTopics?.map((topic, i) => (
-                    <div key={i} className="rounded-xl border border-rose-100 bg-rose-50 p-2.5 sm:p-3 dark:border-rose-900/30 dark:bg-rose-900/10">
+                    <div key={i} className="rounded-2xl border border-rose-200 bg-rose-50 p-3 sm:p-3.5 dark:border-rose-900/30 dark:bg-rose-900/10">
                       <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">{topic.name}</p>
                       <p className="mt-1 flex items-center justify-between text-[10px] sm:text-xs font-semibold">
                         <span className="text-slate-500">{topic.subjectName}</span>
@@ -334,7 +348,7 @@ export default function Analytics() {
                 <button
                   type="button"
                   onClick={() => navigate('/school/student/planner')}
-                  className="mt-4 w-full rounded-xl bg-slate-900 py-2.5 text-xs sm:text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+                  className="mt-4 w-full rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm transition hover:from-indigo-700 hover:to-violet-700"
                 >
                   Practice Weak Topics
                 </button>
